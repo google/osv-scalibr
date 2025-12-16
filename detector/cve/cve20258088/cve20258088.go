@@ -63,7 +63,7 @@ func (Detector) Requirements() *plugin.Capabilities {
 
 // RequiredExtractors of the detector.
 func (Detector) RequiredExtractors() []string {
-	return []string{"windows/ospackages", "windows/peversion"}
+	return []string{"windows/ospackages", "os/peversion"}
 }
 
 // DetectedFinding returns generic vulnerability information about what is detected.
@@ -115,9 +115,11 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 				log.Infof("cve20258088: Vulnerable WinRAR package found: Package %q, Version: %q",
 					pkg.Name, normalizedVersion)
 
-				details := fmt.Sprintf("WinRAR %s detected via package index", normalizedVersion)
-				vuln := d.makePackageVuln(pkg, normalizedVersion, "WinRAR vulnerable version detected", details)
-				findings = append(findings, vuln)
+				dbSpecific := map[string]any{
+					"extra": fmt.Sprintf("%s %s %s", pkg.Name, normalizedVersion, strings.Join(pkg.Locations, ", ")),
+				}
+				finding := d.findingForPackage(dbSpecific)
+				findings = append(findings, finding.PackageVulns...)
 			}
 		}
 	}
@@ -126,15 +128,6 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		return inventory.Finding{}, nil
 	}
 	return inventory.Finding{PackageVulns: findings}, nil
-}
-
-// makePackageVuln constructs a PackageVuln for CVE-2025-8088.
-// normalizedVersion should be the already-normalized version string (e.g. "6.10").
-func (d Detector) makePackageVuln(pkg *extractor.Package, normalizedVersion, summary, details string) *inventory.PackageVuln {
-	dbSpecific := map[string]any{
-		"extra": fmt.Sprintf("%s %s %s", pkg.Name, normalizedVersion, strings.Join(pkg.Locations, ", ")),
-	}
-	return d.makePackageVulnWithDb(pkg, normalizedVersion, summary, details, dbSpecific)
 }
 
 // makePackageVulnWithDb constructs a PackageVuln for CVE-2025-8088 with custom DatabaseSpecific.
@@ -151,11 +144,6 @@ func (Detector) makePackageVulnWithDb(pkg *extractor.Package, normalizedVersion,
 			}),
 			DatabaseSpecific: dbSpecific,
 		},
-	}
-
-	// Override the versions field to include the actual detected version
-	if len(vuln.Vulnerability.Affected) > 0 && normalizedVersion != "7.13" {
-		vuln.Vulnerability.Affected[0].Versions = []string{normalizedVersion}
 	}
 
 	return vuln

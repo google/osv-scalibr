@@ -13,30 +13,31 @@
 // limitations under the License.
 
 // Package peversion extracts product names and versions from Windows PE executables and DLLs.
-// This is a generic extractor that walks the filesystem, parses PE version resources from
-// .exe and .dll files, and emits packages with product name and version information.
+// This extractor parses PE version resources from .exe and .dll files and emits packages
+// with product name and version information.
 package peversion
 
 import (
 	"context"
 	"fmt"
-	"io/fs"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/saferwall/pe"
 )
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "windows/peversion"
+	Name = "os/peversion"
 	// Maximum file size to parse (300 MB).
 	maxFileSizeBytes = 300 * 1024 * 1024
 )
@@ -47,20 +48,26 @@ var (
 	verRegex  = regexp.MustCompile(`(\d+[\._-]?\d*)`)
 )
 
+// Common Windows system directories that typically contain many PE files
+// but are less relevant for security scanning.
+var systemDirFragments = []string{
+	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "System32",
+	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "WinSxS",
+	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "Servicing",
+	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "SoftwareDistribution",
+}
+
 // Config configures the PE version extractor behavior.
 type Config struct {
 	// SkipSystemDirs, if true, skips common Windows system directories
 	// like System32, WinSxS to reduce noise and scan time.
 	SkipSystemDirs bool
-	// MaxFiles limits the number of PE files processed (0 = unlimited).
-	MaxFiles int
 }
 
 // DefaultConfig returns the recommended default configuration.
 func DefaultConfig() Config {
 	return Config{
 		SkipSystemDirs: true,
-		MaxFiles:       0, // unlimited
 	}
 }
 
@@ -70,12 +77,12 @@ type Extractor struct {
 }
 
 // New creates a new PE version extractor with the given configuration.
-func New(config Config) standalone.Extractor {
+func New(config Config) filesystem.Extractor {
 	return &Extractor{config: config}
 }
 
 // NewDefault returns an extractor with default configuration.
-func NewDefault() standalone.Extractor {
+func NewDefault() filesystem.Extractor {
 	return New(DefaultConfig())
 }
 
@@ -94,116 +101,94 @@ func (Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
-// Common Windows system directories that typically contain many PE files
-// but are less relevant for security scanning.
-var systemDirFragments = []string{
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "System32",
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "WinSxS",
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "Servicing",
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "SoftwareDistribution",
+// FileRequired returns true if the file is a PE executable (.exe or .dll)
+// that should be scanned for version information.
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
+
+	// Only process .exe and .dll files.
+	ext := strings.ToLower(filepath.Ext(path))
+	if ext != ".exe" && ext != ".dll" {
+		return false
+	}
+
+	// Skip common Windows system directories if configured.
+	if e.config.SkipSystemDirs && shouldSkipSystemDir(path) {
+		log.Debugf("peversion: Skipping system directory file: %q", path)
+		return false
+	}
+
+	// Skip files that are too large.
+	info, err := api.Stat()
+	if err != nil {
+		log.Debugf("peversion: Could not stat file %q: %v", path, err)
+		return false
+	}
+	if info.Size() > maxFileSizeBytes {
+		log.Debugf("peversion: Skipping large file %q (%d bytes)", path, info.Size())
+		return false
+	}
+
+	return true
 }
 
-// Extract walks the filesystem and extracts package information from PE files.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
-	log.Debugf("peversion: Starting PE version extraction from root: %q", input.ScanRoot.Path)
-	log.Debugf("peversion: Configuration - SkipSystemDirs: %v, MaxFiles: %d",
-		e.config.SkipSystemDirs, e.config.MaxFiles)
+// Extract extracts package information from a PE file.
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	// Check for context cancellation.
+	if err := ctx.Err(); err != nil {
+		return inventory.Inventory{}, err
+	}
 
-	var pkgs []*extractor.Package
-	count := 0
-
-	rootInfo, err := os.Stat(input.ScanRoot.Path)
+	// Get the real filesystem path for PE parsing.
+	// The PE library needs direct file access, not a reader.
+	absPath, err := input.GetRealPath()
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to stat scan root %q: %w", input.ScanRoot.Path, err)
-	}
-	if !rootInfo.IsDir() {
-		return inventory.Inventory{}, fmt.Errorf("scan root %q is not a directory", input.ScanRoot.Path)
+		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
 	}
 
-	err = filepath.WalkDir(input.ScanRoot.Path, func(path string, d fs.DirEntry, walkErr error) error {
-		// Check for context cancellation.
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
-		// Handle walk errors gracefully.
-		if walkErr != nil {
-			log.Infof("peversion: walk error at %q: %v", path, walkErr)
-			return nil
-		}
-
-		// Process directories: check if we should skip them.
-		if d.IsDir() {
-			if e.config.SkipSystemDirs && shouldSkipSystemDir(path) {
-				log.Debugf("peversion: Skipping system directory: %q", path)
-				return fs.SkipDir
+	// Clean up temporary file if created.
+	if input.Root == "" {
+		defer func() {
+			dir := filepath.Dir(absPath)
+			if err := os.RemoveAll(dir); err != nil {
+				log.Debugf("peversion: Failed to clean up temporary directory %s: %v", dir, err)
 			}
-			return nil
-		}
-
-		// Only process .exe and .dll files.
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if ext != ".exe" && ext != ".dll" {
-			return nil
-		}
-
-		// Check file count limit.
-		if e.config.MaxFiles > 0 && count >= e.config.MaxFiles {
-			return fs.SkipAll
-		}
-
-		// Skip files that are too large.
-		info, err := d.Info()
-		if err == nil && info.Size() > maxFileSizeBytes {
-			log.Debugf("peversion: skipping large file %q (%d bytes)",
-				path, info.Size())
-			return nil
-		}
-
-		// Extract version and product name from PE resources.
-		version, prodName, peMetadata := extractPEVersionWithMetadata(path)
-		log.Debugf("peversion: Extracted PE metadata - version: %q, prodName: %q, metadata: %v", version, prodName, peMetadata)
-
-		if prodName == "" {
-			// No useful product name found, skip this file.
-			log.Debugf("peversion: Skipping %q - no product name found", path)
-			return nil
-		}
-
-		normalizedVersion := normalizeVersion(version)
-		log.Debugf("peversion: Found PE package: %q (version: %q) at %q",
-			prodName, normalizedVersion, path)
-
-		// Create package with extracted information.
-		metadata := map[string]any{
-			"original_path": path,
-			"raw_version":   version,
-		}
-		// Add PE version resource metadata if available
-		for key, value := range peMetadata {
-			metadata["pe_"+key] = value
-		}
-
-		pkg := &extractor.Package{
-			Name:       prodName,
-			Version:    normalizedVersion,
-			PURLType:   "generic",
-			Locations:  []string{path},
-			Metadata:   metadata,
-			SourceCode: &extractor.SourceCodeIdentifier{},
-		}
-
-		pkgs = append(pkgs, pkg)
-		count++
-		return nil
-	})
-
-	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("filesystem walk failed: %w", err)
+		}()
 	}
 
-	log.Debugf("peversion: Extraction complete. Found %d PE packages", len(pkgs))
-	return inventory.Inventory{Packages: pkgs}, nil
+	// Extract version and product name from PE resources.
+	version, prodName, peMetadata := extractPEVersionWithMetadata(absPath)
+	log.Debugf("peversion: Extracted PE metadata - version: %q, prodName: %q, metadata: %v", version, prodName, peMetadata)
+
+	if prodName == "" {
+		// No useful product name found, skip this file.
+		log.Debugf("peversion: Skipping %q - no product name found", input.Path)
+		return inventory.Inventory{}, nil
+	}
+
+	normalizedVersion := normalizeVersion(version)
+	log.Debugf("peversion: Found PE package: %q (version: %q) at %q", prodName, normalizedVersion, input.Path)
+
+	// Create metadata map with PE version resource information.
+	metadata := map[string]any{
+		"original_path": input.Path,
+		"raw_version":   version,
+	}
+	// Add PE version resource metadata if available.
+	for key, value := range peMetadata {
+		metadata["pe_"+key] = value
+	}
+
+	pkg := &extractor.Package{
+		Name:       prodName,
+		Version:    normalizedVersion,
+		PURLType:   purl.TypeGeneric,
+		Locations:  []string{input.Path},
+		Metadata:   metadata,
+		SourceCode: &extractor.SourceCodeIdentifier{},
+	}
+
+	return inventory.Inventory{Packages: []*extractor.Package{pkg}}, nil
 }
 
 // shouldSkipSystemDir checks if a path contains common system directories.
@@ -260,7 +245,7 @@ func extractPEVersionWithMetadata(exePath string) (version, prodName string, met
 		prodName = originalFilename
 	}
 
-	// Store additional PE version resource fields for security analysis
+	// Store additional PE version resource fields for security analysis.
 	interestingFields := []string{
 		"CompanyName", "LegalCopyright", "FileDescription",
 		"OriginalFilename", "InternalName", "LegalTrademarks",
@@ -282,7 +267,7 @@ func extractPEVersionWithMetadata(exePath string) (version, prodName string, met
 	// If no product name found in PE resources, use the base filename as fallback.
 	if prodName == "" {
 		base := filepath.Base(exePath)
-		// Remove file extension to get a cleaner product name
+		// Remove file extension to get a cleaner product name.
 		prodName = strings.TrimSuffix(base, filepath.Ext(base))
 	}
 
@@ -320,8 +305,8 @@ func extractVersionFromFilename(exePath string) (version, prodName string) {
 		}
 	}
 
-	// Return empty product name - filenames are too unreliable for product identification
-	// However, provide filename as product name if we found a version (increases confidence)
+	// Return empty product name - filenames are too unreliable for product identification.
+	// However, provide filename as product name if we found a version (increases confidence).
 	if version != "" {
 		baseName := strings.TrimSuffix(base, filepath.Ext(base))
 		prodName = baseName
@@ -337,3 +322,9 @@ func normalizeVersion(ver string) string {
 	ver = strings.ReplaceAll(ver, "-", ".")
 	return ver
 }
+
+// Ensure Extractor implements the filesystem.Extractor interface.
+var _ filesystem.Extractor = (*Extractor)(nil)
+
+// Ensure io.Reader is used (for potential future use).
+var _ io.Reader

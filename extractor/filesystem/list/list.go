@@ -86,6 +86,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macports"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/peversion"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
@@ -253,21 +254,22 @@ var (
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {dpkg.NewDefault},
-		apk.Name:      {apk.NewDefault},
-		rpm.Name:      {rpm.NewDefault},
-		cos.Name:      {cos.NewDefault},
-		snap.Name:     {snap.NewDefault},
-		nix.Name:      {nix.New},
-		module.Name:   {module.NewDefault},
-		vmlinuz.Name:  {vmlinuz.NewDefault},
-		pacman.Name:   {pacman.NewDefault},
-		portage.Name:  {portage.NewDefault},
-		flatpak.Name:  {flatpak.NewDefault},
-		homebrew.Name: {homebrew.New},
-		macapps.Name:  {macapps.NewDefault},
-		macports.Name: {macports.New},
-		winget.Name:   {winget.NewDefault},
+		dpkg.Name:      {dpkg.NewDefault},
+		apk.Name:       {apk.NewDefault},
+		rpm.Name:       {rpm.NewDefault},
+		cos.Name:       {cos.NewDefault},
+		snap.Name:      {snap.NewDefault},
+		nix.Name:       {nix.New},
+		module.Name:    {module.NewDefault},
+		vmlinuz.Name:   {vmlinuz.NewDefault},
+		pacman.Name:    {pacman.NewDefault},
+		peversion.Name: {peversion.NewDefault},
+		portage.Name:   {portage.NewDefault},
+		flatpak.Name:   {flatpak.NewDefault},
+		homebrew.Name:  {homebrew.New},
+		macapps.Name:   {macapps.NewDefault},
+		macports.Name:  {macports.New},
+		winget.Name:    {winget.NewDefault},
 	}
 
 	// SecretExtractors for Extractor interface.
