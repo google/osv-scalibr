@@ -26,36 +26,41 @@ import (
 )
 
 func main() {
-	os.Exit(run(os.Args))
+	runFn := getRunFn(os.Args, flag.CommandLine)
+	os.Exit(runFn())
 }
 
-func run(args []string) int {
+func getRunFn(args []string, fs *flag.FlagSet) func() int {
 	var subcommand string
 	if len(args) >= 2 {
 		subcommand = args[1]
 	}
 	switch subcommand {
 	case "scan":
-		flags, err := parseFlags(args[2:])
+		flags, err := parseFlags(args[2:], fs)
 		if err != nil {
-			log.Errorf("Error parsing CLI args: %v", err)
-			return 1
+			return parseErrorFunc(err)
 		}
-		return scanrunner.RunScan(flags)
+		return func() int { return scanrunner.RunScan(flags) }
 	default:
 		// Assume 'scan' if subcommand is not recognized/specified.
-		flags, err := parseFlags(args[1:])
+		flags, err := parseFlags(args[1:], fs)
 		if err != nil {
-			log.Errorf("Error parsing CLI args: %v", err)
-			return 1
+			return parseErrorFunc(err)
 		}
-		return scanrunner.RunScan(flags)
+		return func() int { return scanrunner.RunScan(flags) }
 	}
 }
 
-func parseFlags(args []string) (*cli.Flags, error) {
-	fs := flag.NewFlagSet("scalibr", flag.ExitOnError)
-	printVersion := fs.Bool("version", false, `Prints the version of the scanner`)
+func parseErrorFunc(err error) func() int {
+	return func() int {
+		log.Errorf("Error parsing CLI args: %v", err)
+		return 1
+	}
+}
+
+func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
+	printVersion := fs.Bool("version", false, "Prints the version of the scanner")
 	root := fs.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := fs.String("result", "", "The path of the output scan result file")
 	var output cli.Array
