@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
+	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
@@ -80,8 +81,8 @@ var (
 
 	// VulnMatching enrichers.
 	VulnMatching = InitMap{
-
-		osvdev.Name: {noCFG(osvdev.NewDefault)},
+		osvdev.Name:   {noCFG(osvdev.NewDefault)},
+		osvlocal.Name: {noCFG(osvlocal.NewDefault)},
 	}
 
 	// VEX related enrichers.
