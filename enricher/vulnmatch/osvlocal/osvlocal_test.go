@@ -1,8 +1,9 @@
-package osvlocal_test
+package osvlocal
 
 import (
 	"context"
-	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
-	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal"
+	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -362,10 +363,35 @@ func TestEnrich(t *testing.T) {
 		}
 	)
 
-	client := fakeclient.New(map[string][]*osvpb.Vulnerability{
-		fmt.Sprintf("%s:%s:", goPkg.Name, goPkg.Version): {&goVuln1, &goVuln2, &goVuln3},
-		fmt.Sprintf("%s:%s:", jsPkg.Name, jsPkg.Version): {&jsVuln1, &jsVuln2},
-		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {&pyPkgSameVulnAsFzf},
+	ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "Go/all.zip") {
+			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+				goVuln1.Id + ".json": &goVuln1,
+				goVuln2.Id + ".json": &goVuln2,
+				goVuln3.Id + ".json": &goVuln3,
+			})
+
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "npm/all.zip") {
+			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+				jsVuln1.Id + ".json": &jsVuln1,
+				jsVuln2.Id + ".json": &jsVuln2,
+			})
+
+			return
+		}
+
+		if strings.HasSuffix(r.URL.Path, "PyPI/all.zip") {
+			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+				pyPkgSameVulnAsFzf.Id + ".json": &pyPkgSameVulnAsFzf,
+			})
+
+			return
+		}
+
+		t.Fatalf("unexpected call")
 	})
 
 	tests := []struct {
@@ -396,9 +422,9 @@ func TestEnrich(t *testing.T) {
 			name:     "simple_test",
 			packages: []*extractor.Package{goPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{osvlocal.Name}},
+				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{Name}},
 			},
 		},
 		{
@@ -415,11 +441,11 @@ func TestEnrich(t *testing.T) {
 			name:     "interleaving_covered_not_covered",
 			packages: []*extractor.Package{goPkg, fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{osvlocal.Name}},
+				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{Name}},
+				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{Name}},
 			},
 		},
 		{
@@ -430,8 +456,8 @@ func TestEnrich(t *testing.T) {
 			packages: []*extractor.Package{fzfPkg, jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: &fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
-				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{osvlocal.Name}},
+				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{Name}},
+				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{Name}},
 			},
 		},
 		{
@@ -441,8 +467,8 @@ func TestEnrich(t *testing.T) {
 			},
 			packages: []*extractor.Package{jsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
-				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{osvlocal.Name, "mock/plugin"}},
-				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{osvlocal.Name}},
+				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{Name, "mock/plugin"}},
+				{Vulnerability: &jsVuln2, Package: jsPkg, Plugins: []string{Name}},
 			},
 		},
 		{
@@ -453,7 +479,7 @@ func TestEnrich(t *testing.T) {
 			packages: []*extractor.Package{fzfPkg, pyPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: &fzfVulnLocal, Package: fzfPkg, Plugins: []string{"mock/plugin"}},
-				{Vulnerability: &pyPkgSameVulnAsFzf, Package: pyPkg, Plugins: []string{osvlocal.Name}},
+				{Vulnerability: &pyPkgSameVulnAsFzf, Package: pyPkg, Plugins: []string{Name}},
 			},
 		},
 		{
@@ -463,11 +489,11 @@ func TestEnrich(t *testing.T) {
 				{
 					Vulnerability:         &goVuln1,
 					Package:               goPkgWithSignals,
-					Plugins:               []string{osvlocal.Name},
+					Plugins:               []string{Name},
 					ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Plugin: "annotator/example", Justification: vex.Unspecified}},
 				},
-				{Vulnerability: &goVuln2, Package: goPkgWithSignals, Plugins: []string{osvlocal.Name}},
-				{Vulnerability: &goVuln3, Package: goPkgWithSignals, Plugins: []string{osvlocal.Name}},
+				{Vulnerability: &goVuln2, Package: goPkgWithSignals, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkgWithSignals, Plugins: []string{Name}},
 			}},
 	}
 
@@ -477,7 +503,7 @@ func TestEnrich(t *testing.T) {
 				tt.ctx = context.Background()
 			}
 
-			e := osvlocal.NewDefault()
+			e := newForTesting(ts.URL)
 
 			var input *enricher.ScanInput
 
