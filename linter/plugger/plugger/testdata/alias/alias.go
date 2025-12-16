@@ -12,13 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package nolint is a test package for the nolint comment
-package nolint
+package alias
 
-// PluginNotUsed is a struct implementing Plugin that is not used.
-//
-//nolint:plugger // Example nolint
-type PluginNotUsed struct{}
+import "testdata/basic"
 
-// Run implements the MyPlugin interface
-func (p *PluginNotUsed) Run() {}
+func NewDefault() basic.MyPlugin {
+	return basic.NewPluginA()
+}
+
+func NewDetector() basic.MyPlugin {
+	return basic.NewPluginA()
+}
+
+func NewValidator() basic.MyPlugin {
+	return basic.NewPluginA()
+}
