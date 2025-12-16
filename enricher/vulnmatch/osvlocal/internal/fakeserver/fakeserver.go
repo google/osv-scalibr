@@ -56,7 +56,7 @@ func WriteOSVsZip(t *testing.T, w http.ResponseWriter, osvs map[string]*osvschem
 
 	z := ZipOSVs(t, osvs)
 
-	w.Header().Add("x-goog-hash", "crc32c="+ComputeCRC32CHash(t, z))
+	w.Header().Add("X-Goog-Hash", "crc32c="+ComputeCRC32CHash(t, z))
 
 	return w.Write(z)
 }

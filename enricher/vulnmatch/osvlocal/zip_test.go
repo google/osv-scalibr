@@ -267,7 +267,7 @@ func TestNewZippedDB_Online_WithSameCache(t *testing.T) {
 			t.Errorf("unexpected %s request", r.Method)
 		}
 
-		w.Header().Add("x-goog-hash", "crc32c="+fakeserver.ComputeCRC32CHash(t, cache))
+		w.Header().Add("X-Goog-Hash", "crc32c="+fakeserver.ComputeCRC32CHash(t, cache))
 
 		_, _ = w.Write(cache)
 	})
