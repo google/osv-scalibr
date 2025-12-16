@@ -39,15 +39,33 @@ var _ enricher.Enricher = &Enricher{}
 // Enricher uses the OSV.dev zip databases to find vulnerabilities in the inventory packages
 type Enricher struct {
 	zippedDBRemoteHost string
+
+	localPath string
+	download  bool
 }
 
 // NewDefault creates a new Enricher with the default configuration
 func NewDefault() enricher.Enricher {
-	return &Enricher{"https://osv-vulnerabilities.storage.googleapis.com"}
+	return &Enricher{
+		zippedDBRemoteHost: "https://osv-vulnerabilities.storage.googleapis.com",
+
+		localPath: "",
+		download:  true,
+	}
+}
+
+// NewOffline creates a new Enricher configured to only use databases that are locally available
+func NewOffline() enricher.Enricher {
+	return &Enricher{
+		zippedDBRemoteHost: "https://osv-vulnerabilities.storage.googleapis.com",
+
+		localPath: "",
+		download:  false,
+	}
 }
 
 func newForTesting(zippedDBRemoteHost string) enricher.Enricher {
-	return &Enricher{zippedDBRemoteHost}
+	return &Enricher{zippedDBRemoteHost, "", true}
 }
 
 // Name of the Enricher.
@@ -78,9 +96,9 @@ func (Enricher) RequiredPlugins() []string {
 // Enrich checks for vulnerabilities in the inventory packages using zip files exported by osv.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	dbs, err := newlocalMatcher(
-		"",
+		e.localPath,
 		"osv-scanner_scan/"+scalibrversion.ScannerVersion,
-		true,
+		e.download,
 		e.zippedDBRemoteHost,
 	)
 
