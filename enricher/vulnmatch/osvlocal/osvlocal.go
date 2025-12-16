@@ -79,10 +79,16 @@ func (Enricher) Version() int {
 }
 
 // Requirements of the Enricher.
-// Needs network access so it can download databases.
-func (Enricher) Requirements() *plugin.Capabilities {
+// Needs network access if database downloading is enabled.
+func (e Enricher) Requirements() *plugin.Capabilities {
+	network := plugin.NetworkOffline
+
+	if e.download {
+		network = plugin.NetworkOnline
+	}
+
 	return &plugin.Capabilities{
-		Network: plugin.NetworkOnline,
+		Network: network,
 	}
 }
 

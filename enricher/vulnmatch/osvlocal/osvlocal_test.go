@@ -28,12 +28,31 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func TestRequirements(t *testing.T) {
+	var e enricher.Enricher
+
+	// we should be online by default
+	e = NewDefault()
+
+	if e.Requirements().Network != plugin.NetworkOnline {
+		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkOnline)
+	}
+
+	// we should not be online
+	e = NewOffline()
+
+	if e.Requirements().Network != plugin.NetworkOffline {
+		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkOffline)
+	}
+}
 
 func TestEnrich(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(context.Background())
