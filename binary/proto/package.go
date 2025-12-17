@@ -32,7 +32,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -131,10 +130,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch m := meta.(type) {
-	case *homebrew.Metadata:
-		p.Metadata = &spb.Package_HomebrewMetadata{
-			HomebrewMetadata: &spb.HomebrewPackageMetadata{},
-		}
 	case *modulemeta.Metadata:
 		p.Metadata = &spb.Package_KernelModuleMetadata{
 			KernelModuleMetadata: &spb.KernelModuleMetadata{
@@ -403,8 +398,6 @@ func metadataToStruct(md *spb.Package) any {
 
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch md.GetMetadata().(type) {
-	case *spb.Package_HomebrewMetadata:
-		return &homebrew.Metadata{}
 	case *spb.Package_KernelModuleMetadata:
 		return &modulemeta.Metadata{
 			PackageName:                    md.GetKernelModuleMetadata().GetPackageName(),

@@ -536,7 +536,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:      "rclone",
 		Version:   "1.67.0",
 		PURLType:  purl.TypeBrew,
-		Metadata:  &homebrew.Metadata{},
 		Locations: []string{"/file1"},
 		Plugins:   []string{homebrew.Name},
 	}
@@ -549,7 +548,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "rclone",
 			Version: "1.67.0",
 		},
-		Metadata:  &spb.Package_HomebrewMetadata{},
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/homebrew"},
 	}

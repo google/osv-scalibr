@@ -105,7 +105,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Version:   p.AppVersion,
 			PURLType:  purl.TypeBrew,
 			Locations: []string{input.Path},
-			Metadata:  &Metadata{},
 		},
 	}}, nil
 }
