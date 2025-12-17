@@ -24,7 +24,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
-	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -157,24 +156,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionCodename: m.OSVersionCodename,
 				OsVersionId:       m.OSVersionID,
 				RwRootFs:          m.RWRootFS,
-			},
-		}
-	case *ctrdfs.Metadata:
-		p.Metadata = &spb.Package_ContainerdContainerMetadata{
-			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
-				NamespaceName: m.Namespace,
-				ImageName:     m.ImageName,
-				ImageDigest:   m.ImageDigest,
-				Runtime:       m.Runtime,
-				Id:            m.ID,
-				PodName:       m.PodName,
-				PodNamespace:  m.PodNamespace,
-				Pid:           int32(m.PID),
-				Snapshotter:   m.Snapshotter,
-				SnapshotKey:   m.SnapshotKey,
-				LowerDir:      m.LowerDir,
-				UpperDir:      m.UpperDir,
-				WorkDir:       m.WorkDir,
 			},
 		}
 	case *ctrdruntime.Metadata:
@@ -423,22 +404,6 @@ func metadataToStruct(md *spb.Package) any {
 			OSVersionCodename: md.GetVmlinuzMetadata().GetOsVersionCodename(),
 			OSVersionID:       md.GetVmlinuzMetadata().GetOsVersionId(),
 			RWRootFS:          md.GetVmlinuzMetadata().GetRwRootFs(),
-		}
-	case *spb.Package_ContainerdContainerMetadata:
-		return &ctrdfs.Metadata{
-			Namespace:    md.GetContainerdContainerMetadata().GetNamespaceName(),
-			ImageName:    md.GetContainerdContainerMetadata().GetImageName(),
-			ImageDigest:  md.GetContainerdContainerMetadata().GetImageDigest(),
-			Runtime:      md.GetContainerdContainerMetadata().GetRuntime(),
-			ID:           md.GetContainerdContainerMetadata().GetId(),
-			PodName:      md.GetContainerdContainerMetadata().GetPodName(),
-			PodNamespace: md.GetContainerdContainerMetadata().GetPodNamespace(),
-			PID:          int(md.GetContainerdContainerMetadata().GetPid()),
-			Snapshotter:  md.GetContainerdContainerMetadata().GetSnapshotter(),
-			SnapshotKey:  md.GetContainerdContainerMetadata().GetSnapshotKey(),
-			LowerDir:     md.GetContainerdContainerMetadata().GetLowerDir(),
-			UpperDir:     md.GetContainerdContainerMetadata().GetUpperDir(),
-			WorkDir:      md.GetContainerdContainerMetadata().GetWorkDir(),
 		}
 	case *spb.Package_ContainerdRuntimeContainerMetadata:
 		return &ctrdruntime.Metadata{

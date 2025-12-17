@@ -17,6 +17,7 @@ package proto
 import (
 	"reflect"
 
+	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -99,6 +100,9 @@ var (
 		reflect.TypeFor[*spb.Package_WingetMetadata](): func(p *spb.Package) any {
 			return wingetmeta.ToStruct(p.GetWingetMetadata())
 		},
+		reflect.TypeFor[*spb.Package_ContainerdContainerMetadata](): func(md *spb.Package) any {
+			return ctrdfs.ToStruct(md.GetContainerdContainerMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -121,5 +125,6 @@ var (
 		(*nodeversionmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
+		(*ctrdfs.Metadata)(nil),
 	}
 )
