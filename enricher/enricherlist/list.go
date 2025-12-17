@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
+	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/secrets/hashicorp"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
@@ -142,6 +143,7 @@ var (
 	Reachability = InitMap{
 		java.Name:       {noCFG(java.NewDefault)},
 		govcsource.Name: {govcsource.New},
+		rust.Name:       {rust.New},
 	}
 
 	// TransitiveDependency enrichers.
