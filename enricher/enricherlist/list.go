@@ -143,7 +143,7 @@ var (
 	Reachability = InitMap{
 		java.Name:       {noCFG(java.NewDefault)},
 		govcsource.Name: {govcsource.New},
-		rust.Name:       {noCFG(rust.New)},
+		rust.Name:       {rust.New},
 	}
 
 	// TransitiveDependency enrichers.

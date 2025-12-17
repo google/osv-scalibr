@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/inventory"
@@ -67,7 +68,7 @@ func (*Enricher) RequiredPlugins() []string {
 }
 
 // New returns a new rust reachability enricher.
-func New() enricher.Enricher {
+func New(cfg *cpb.PluginConfig) enricher.Enricher {
 	return &Enricher{client: &realClient{}}
 }
 
