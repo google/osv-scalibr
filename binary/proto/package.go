@@ -32,7 +32,6 @@ import (
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
-	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
@@ -140,23 +139,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionCodename:              m.OSVersionCodename,
 				OsVersionId:                    m.OSVersionID,
 				PackageAuthor:                  m.PackageAuthor},
-		}
-	case *vmlinuzmeta.Metadata:
-		p.Metadata = &spb.Package_VmlinuzMetadata{
-			VmlinuzMetadata: &spb.VmlinuzMetadata{
-				Name:              m.Name,
-				Version:           m.Version,
-				Architecture:      m.Architecture,
-				ExtendedVersion:   m.ExtendedVersion,
-				Format:            m.Format,
-				SwapDevice:        m.SwapDevice,
-				RootDevice:        m.RootDevice,
-				VideoMode:         m.VideoMode,
-				OsId:              m.OSID,
-				OsVersionCodename: m.OSVersionCodename,
-				OsVersionId:       m.OSVersionID,
-				RwRootFs:          m.RWRootFS,
-			},
 		}
 	case *ctrdruntime.Metadata:
 		p.Metadata = &spb.Package_ContainerdRuntimeContainerMetadata{
@@ -389,21 +371,6 @@ func metadataToStruct(md *spb.Package) any {
 			OSVersionCodename:              md.GetKernelModuleMetadata().GetOsVersionCodename(),
 			OSVersionID:                    md.GetKernelModuleMetadata().GetOsVersionId(),
 			PackageAuthor:                  md.GetKernelModuleMetadata().GetPackageAuthor(),
-		}
-	case *spb.Package_VmlinuzMetadata:
-		return &vmlinuzmeta.Metadata{
-			Name:              md.GetVmlinuzMetadata().GetName(),
-			Version:           md.GetVmlinuzMetadata().GetVersion(),
-			Architecture:      md.GetVmlinuzMetadata().GetArchitecture(),
-			ExtendedVersion:   md.GetVmlinuzMetadata().GetExtendedVersion(),
-			Format:            md.GetVmlinuzMetadata().GetFormat(),
-			SwapDevice:        md.GetVmlinuzMetadata().GetSwapDevice(),
-			RootDevice:        md.GetVmlinuzMetadata().GetRootDevice(),
-			VideoMode:         md.GetVmlinuzMetadata().GetVideoMode(),
-			OSID:              md.GetVmlinuzMetadata().GetOsId(),
-			OSVersionCodename: md.GetVmlinuzMetadata().GetOsVersionCodename(),
-			OSVersionID:       md.GetVmlinuzMetadata().GetOsVersionId(),
-			RWRootFS:          md.GetVmlinuzMetadata().GetRwRootFs(),
 		}
 	case *spb.Package_ContainerdRuntimeContainerMetadata:
 		return &ctrdruntime.Metadata{

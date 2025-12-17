@@ -25,6 +25,7 @@ import (
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	macportsmeta "github.com/google/osv-scalibr/extractor/filesystem/os/macports/metadata"
 	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
@@ -103,6 +104,9 @@ var (
 		reflect.TypeFor[*spb.Package_ContainerdContainerMetadata](): func(md *spb.Package) any {
 			return ctrdfs.ToStruct(md.GetContainerdContainerMetadata())
 		},
+		reflect.TypeFor[*spb.Package_VmlinuzMetadata](): func(p *spb.Package) any {
+			return vmlinuzmeta.ToStruct(p.GetVmlinuzMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -126,5 +130,6 @@ var (
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
 		(*ctrdfs.Metadata)(nil),
+		(*vmlinuzmeta.Metadata)(nil),
 	}
 )
