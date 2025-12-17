@@ -35,7 +35,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
-	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/purl"
@@ -139,18 +138,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				OsVersionCodename:              m.OSVersionCodename,
 				OsVersionId:                    m.OSVersionID,
 				PackageAuthor:                  m.PackageAuthor},
-		}
-	case *ctrdruntime.Metadata:
-		p.Metadata = &spb.Package_ContainerdRuntimeContainerMetadata{
-			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
-				NamespaceName: m.Namespace,
-				ImageName:     m.ImageName,
-				ImageDigest:   m.ImageDigest,
-				Runtime:       m.Runtime,
-				Id:            m.ID,
-				Pid:           int32(m.PID),
-				RootfsPath:    m.RootFS,
-			},
 		}
 	case *spdxmeta.Metadata:
 		p.Metadata = &spb.Package_SpdxMetadata{
@@ -371,16 +358,6 @@ func metadataToStruct(md *spb.Package) any {
 			OSVersionCodename:              md.GetKernelModuleMetadata().GetOsVersionCodename(),
 			OSVersionID:                    md.GetKernelModuleMetadata().GetOsVersionId(),
 			PackageAuthor:                  md.GetKernelModuleMetadata().GetPackageAuthor(),
-		}
-	case *spb.Package_ContainerdRuntimeContainerMetadata:
-		return &ctrdruntime.Metadata{
-			Namespace:   md.GetContainerdRuntimeContainerMetadata().GetNamespaceName(),
-			ImageName:   md.GetContainerdRuntimeContainerMetadata().GetImageName(),
-			ImageDigest: md.GetContainerdRuntimeContainerMetadata().GetImageDigest(),
-			Runtime:     md.GetContainerdRuntimeContainerMetadata().GetRuntime(),
-			ID:          md.GetContainerdRuntimeContainerMetadata().GetId(),
-			PID:         int(md.GetContainerdRuntimeContainerMetadata().GetPid()),
-			RootFS:      md.GetContainerdRuntimeContainerMetadata().GetRootfsPath(),
 		}
 	case *spb.Package_SpdxMetadata:
 		return &spdxmeta.Metadata{
