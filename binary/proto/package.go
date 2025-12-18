@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
 	"github.com/google/uuid"
@@ -125,19 +124,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				IsTransitive: m.IsTransitive,
 			},
 		}
-	case *chromeextensions.Metadata:
-		p.Metadata = &spb.Package_ChromeExtensionsMetadata{
-			ChromeExtensionsMetadata: &spb.ChromeExtensionsMetadata{
-				Name:                 m.Name,
-				Description:          m.Description,
-				AuthorEmail:          m.AuthorEmail,
-				HostPermissions:      m.HostPermissions,
-				ManifestVersion:      int32(m.ManifestVersion),
-				MinimumChromeVersion: m.MinimumChromeVersion,
-				Permissions:          m.Permissions,
-				UpdateUrl:            m.UpdateURL,
-			},
-		}
 	case *podman.Metadata:
 		exposedPorts := map[uint32]*spb.Protocol{}
 		for p, protocols := range m.ExposedPorts {
@@ -226,17 +212,6 @@ func metadataToStruct(md *spb.Package) any {
 			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
 			GroupID:      md.GetJavaLockfileMetadata().GetGroupId(),
 			IsTransitive: md.GetJavaLockfileMetadata().GetIsTransitive(),
-		}
-	case *spb.Package_ChromeExtensionsMetadata:
-		return &chromeextensions.Metadata{
-			Name:                 md.GetChromeExtensionsMetadata().GetName(),
-			Description:          md.GetChromeExtensionsMetadata().GetDescription(),
-			AuthorEmail:          md.GetChromeExtensionsMetadata().GetAuthorEmail(),
-			HostPermissions:      md.GetChromeExtensionsMetadata().GetHostPermissions(),
-			ManifestVersion:      int(md.GetChromeExtensionsMetadata().GetManifestVersion()),
-			MinimumChromeVersion: md.GetChromeExtensionsMetadata().GetMinimumChromeVersion(),
-			Permissions:          md.GetChromeExtensionsMetadata().GetPermissions(),
-			UpdateURL:            md.GetChromeExtensionsMetadata().GetUpdateUrl(),
 		}
 	case *spb.Package_PodmanMetadata:
 		exposedPorts := map[uint16][]string{}

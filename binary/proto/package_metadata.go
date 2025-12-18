@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
@@ -147,6 +148,9 @@ var (
 		reflect.TypeFor[*spb.Package_CdxMetadata](): func(p *spb.Package) any {
 			return cdxmeta.ToStruct(p.GetCdxMetadata())
 		},
+		reflect.TypeFor[*spb.Package_ChromeExtensionsMetadata](): func(p *spb.Package) any {
+			return chromeextensions.ToStruct(p.GetChromeExtensionsMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -181,5 +185,6 @@ var (
 		(*requirements.Metadata)(nil),
 		(*spdxmeta.Metadata)(nil),
 		(*cdxmeta.Metadata)(nil),
+		(*chromeextensions.Metadata)(nil),
 	}
 )
