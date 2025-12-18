@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
@@ -165,12 +164,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				HashCheckingModeValues: m.HashCheckingModeValues,
 				VersionComparator:      m.VersionComparator,
 				Requirement:            m.Requirement,
-			},
-		}
-	case *setup.Metadata:
-		p.Metadata = &spb.Package_PythonSetupMetadata{
-			PythonSetupMetadata: &spb.PythonSetupMetadata{
-				VersionComparator: m.VersionComparator,
 			},
 		}
 	case *winmetadata.OSVersion:
@@ -361,10 +354,6 @@ func metadataToStruct(md *spb.Package) any {
 			HashCheckingModeValues: md.GetPythonRequirementsMetadata().GetHashCheckingModeValues(),
 			VersionComparator:      md.GetPythonRequirementsMetadata().GetVersionComparator(),
 			Requirement:            md.GetPythonRequirementsMetadata().GetRequirement(),
-		}
-	case *spb.Package_PythonSetupMetadata:
-		return &setup.Metadata{
-			VersionComparator: md.GetPythonSetupMetadata().GetVersionComparator(),
 		}
 	case *spb.Package_WindowsOsVersionMetadata:
 		return &winmetadata.OSVersion{

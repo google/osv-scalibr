@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
@@ -119,6 +120,9 @@ var (
 		reflect.TypeFor[*spb.Package_JavaArchiveMetadata](): func(p *spb.Package) any {
 			return archivemeta.ToStruct(p.GetJavaArchiveMetadata())
 		},
+		reflect.TypeFor[*spb.Package_PythonSetupMetadata](): func(p *spb.Package) any {
+			return setup.ToStruct(p.GetPythonSetupMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -146,5 +150,6 @@ var (
 		(*ctrdruntime.Metadata)(nil),
 		(*osv.Metadata)(nil),
 		(*archivemeta.Metadata)(nil),
+		(*setup.Metadata)(nil),
 	}
 )
