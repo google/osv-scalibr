@@ -32,7 +32,6 @@ import (
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
@@ -167,15 +166,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				ArtifactId:   m.ArtifactID,
 				GroupId:      m.GroupID,
 				IsTransitive: m.IsTransitive,
-			},
-		}
-	case *osv.Metadata:
-		p.Metadata = &spb.Package_OsvMetadata{
-			OsvMetadata: &spb.OSVPackageMetadata{
-				PurlType:  m.PURLType,
-				Commit:    m.Commit,
-				Ecosystem: m.Ecosystem,
-				CompareAs: m.CompareAs,
 			},
 		}
 	case *requirements.Metadata:
@@ -380,13 +370,6 @@ func metadataToStruct(md *spb.Package) any {
 			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
 			GroupID:      md.GetJavaLockfileMetadata().GetGroupId(),
 			IsTransitive: md.GetJavaLockfileMetadata().GetIsTransitive(),
-		}
-	case *spb.Package_OsvMetadata:
-		return &osv.Metadata{
-			PURLType:  md.GetOsvMetadata().GetPurlType(),
-			Commit:    md.GetOsvMetadata().GetCommit(),
-			Ecosystem: md.GetOsvMetadata().GetEcosystem(),
-			CompareAs: md.GetOsvMetadata().GetCompareAs(),
 		}
 	case *spb.Package_PythonRequirementsMetadata:
 		return &requirements.Metadata{

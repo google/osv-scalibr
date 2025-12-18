@@ -15,6 +15,10 @@
 // Package osv defines OSV-specific fields for parsed source packages.
 package osv
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata holds parsing information for packages extracted by an OSV extractor wrapper.
 type Metadata struct {
 	PURLType  string
@@ -40,4 +44,37 @@ var _ DepGroups = DepGroupMetadata{}
 // DepGroups return the dependency groups property in the metadata
 func (dgm DepGroupMetadata) DepGroups() []string {
 	return dgm.DepGroupVals
+}
+
+// SetProto sets the OSVPackageMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_OsvMetadata{
+		OsvMetadata: &pb.OSVPackageMetadata{
+			PurlType:  m.PURLType,
+			Commit:    m.Commit,
+			Ecosystem: m.Ecosystem,
+			CompareAs: m.CompareAs,
+		},
+	}
+}
+
+// ToStruct converts the OSVPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.OSVPackageMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PURLType:  m.GetPurlType(),
+		Commit:    m.GetCommit(),
+		Ecosystem: m.GetEcosystem(),
+		CompareAs: m.GetCompareAs(),
+	}
 }

@@ -34,6 +34,7 @@ import (
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	nodeversionmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
@@ -111,6 +112,9 @@ var (
 		reflect.TypeFor[*spb.Package_ContainerdRuntimeContainerMetadata](): func(p *spb.Package) any {
 			return ctrdruntime.ToStruct(p.GetContainerdRuntimeContainerMetadata())
 		},
+		reflect.TypeFor[*spb.Package_OsvMetadata](): func(p *spb.Package) any {
+			return osv.ToStruct(p.GetOsvMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -136,5 +140,6 @@ var (
 		(*ctrdfs.Metadata)(nil),
 		(*vmlinuzmeta.Metadata)(nil),
 		(*ctrdruntime.Metadata)(nil),
+		(*osv.Metadata)(nil),
 	}
 )
