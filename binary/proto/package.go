@@ -18,24 +18,15 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
-	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
-	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
-	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
-	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MetadataProtoSetter is an interface for metadata structs that can set themselves on a Package proto.
@@ -118,88 +109,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 		return
 	}
 
-	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
-	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
-	switch m := meta.(type) {
-	case *spdxmeta.Metadata:
-		p.Metadata = &spb.Package_SpdxMetadata{
-			SpdxMetadata: &spb.SPDXPackageMetadata{
-				Purl: purlToProto(m.PURL),
-				Cpes: m.CPEs,
-			},
-		}
-	case *cdxmeta.Metadata:
-		p.Metadata = &spb.Package_CdxMetadata{
-			CdxMetadata: &spb.CDXPackageMetadata{
-				Purl: purlToProto(m.PURL),
-				Cpes: m.CPEs,
-			},
-		}
-	case *javalockfile.Metadata:
-		p.Metadata = &spb.Package_JavaLockfileMetadata{
-			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
-				ArtifactId:   m.ArtifactID,
-				GroupId:      m.GroupID,
-				IsTransitive: m.IsTransitive,
-			},
-		}
-	case *requirements.Metadata:
-		p.Metadata = &spb.Package_PythonRequirementsMetadata{
-			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
-				HashCheckingModeValues: m.HashCheckingModeValues,
-				VersionComparator:      m.VersionComparator,
-				Requirement:            m.Requirement,
-			},
-		}
-	case *chromeextensions.Metadata:
-		p.Metadata = &spb.Package_ChromeExtensionsMetadata{
-			ChromeExtensionsMetadata: &spb.ChromeExtensionsMetadata{
-				Name:                 m.Name,
-				Description:          m.Description,
-				AuthorEmail:          m.AuthorEmail,
-				HostPermissions:      m.HostPermissions,
-				ManifestVersion:      int32(m.ManifestVersion),
-				MinimumChromeVersion: m.MinimumChromeVersion,
-				Permissions:          m.Permissions,
-				UpdateUrl:            m.UpdateURL,
-			},
-		}
-	case *podman.Metadata:
-		exposedPorts := map[uint32]*spb.Protocol{}
-		for p, protocols := range m.ExposedPorts {
-			exposedPorts[uint32(p)] = &spb.Protocol{Names: protocols}
-		}
-		p.Metadata = &spb.Package_PodmanMetadata{
-			PodmanMetadata: &spb.PodmanMetadata{
-				ExposedPorts:  exposedPorts,
-				Pid:           int32(m.PID),
-				NamespaceName: m.NameSpace,
-				StartedTime:   timestamppb.New(m.StartedTime),
-				FinishedTime:  timestamppb.New(m.FinishedTime),
-				Status:        m.Status,
-				ExitCode:      m.ExitCode,
-				Exited:        m.Exited,
-			},
-		}
-	case *docker.Metadata:
-		ports := make([]*spb.DockerPort, 0, len(m.Ports))
-		for _, p := range m.Ports {
-			ports = append(ports, &spb.DockerPort{
-				Ip:          p.IP,
-				PrivatePort: uint32(p.PrivatePort),
-				PublicPort:  uint32(p.PublicPort),
-				Type:        p.Type,
-			})
-		}
-		p.Metadata = &spb.Package_DockerContainersMetadata{
-			DockerContainersMetadata: &spb.DockerContainersMetadata{
-				ImageName:   m.ImageName,
-				ImageDigest: m.ImageDigest,
-				Id:          m.ID,
-				Ports:       ports,
-			},
-		}
-	}
+	log.Errorf("Failed to convert metadata of type %T to proto: %+v", meta, meta)
 }
 
 func purlToProto(p *purl.PackageURL) *spb.Purl {
@@ -286,75 +196,7 @@ func metadataToStruct(md *spb.Package) any {
 		return converter(md)
 	}
 
-	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
-	switch md.GetMetadata().(type) {
-	case *spb.Package_SpdxMetadata:
-		return &spdxmeta.Metadata{
-			PURL: purlToStruct(md.GetSpdxMetadata().GetPurl()),
-			CPEs: md.GetSpdxMetadata().GetCpes(),
-		}
-	case *spb.Package_CdxMetadata:
-		return &cdxmeta.Metadata{
-			PURL: purlToStruct(md.GetCdxMetadata().GetPurl()),
-			CPEs: md.GetCdxMetadata().GetCpes(),
-		}
-	case *spb.Package_JavaLockfileMetadata:
-		return &javalockfile.Metadata{
-			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
-			GroupID:      md.GetJavaLockfileMetadata().GetGroupId(),
-			IsTransitive: md.GetJavaLockfileMetadata().GetIsTransitive(),
-		}
-	case *spb.Package_PythonRequirementsMetadata:
-		return &requirements.Metadata{
-			HashCheckingModeValues: md.GetPythonRequirementsMetadata().GetHashCheckingModeValues(),
-			VersionComparator:      md.GetPythonRequirementsMetadata().GetVersionComparator(),
-			Requirement:            md.GetPythonRequirementsMetadata().GetRequirement(),
-		}
-	case *spb.Package_ChromeExtensionsMetadata:
-		return &chromeextensions.Metadata{
-			Name:                 md.GetChromeExtensionsMetadata().GetName(),
-			Description:          md.GetChromeExtensionsMetadata().GetDescription(),
-			AuthorEmail:          md.GetChromeExtensionsMetadata().GetAuthorEmail(),
-			HostPermissions:      md.GetChromeExtensionsMetadata().GetHostPermissions(),
-			ManifestVersion:      int(md.GetChromeExtensionsMetadata().GetManifestVersion()),
-			MinimumChromeVersion: md.GetChromeExtensionsMetadata().GetMinimumChromeVersion(),
-			Permissions:          md.GetChromeExtensionsMetadata().GetPermissions(),
-			UpdateURL:            md.GetChromeExtensionsMetadata().GetUpdateUrl(),
-		}
-	case *spb.Package_PodmanMetadata:
-		exposedPorts := map[uint16][]string{}
-		for p, protocol := range md.GetPodmanMetadata().GetExposedPorts() {
-			for _, name := range protocol.GetNames() {
-				exposedPorts[uint16(p)] = append(exposedPorts[uint16(p)], name)
-			}
-		}
-		return &podman.Metadata{
-			ExposedPorts: exposedPorts,
-			PID:          int(md.GetPodmanMetadata().GetPid()),
-			NameSpace:    md.GetPodmanMetadata().GetNamespaceName(),
-			StartedTime:  md.GetPodmanMetadata().GetStartedTime().AsTime(),
-			FinishedTime: md.GetPodmanMetadata().GetFinishedTime().AsTime(),
-			Status:       md.GetPodmanMetadata().GetStatus(),
-			ExitCode:     md.GetPodmanMetadata().GetExitCode(),
-			Exited:       md.GetPodmanMetadata().GetExited(),
-		}
-	case *spb.Package_DockerContainersMetadata:
-		var ports []container.Port
-		for _, p := range md.GetDockerContainersMetadata().GetPorts() {
-			ports = append(ports, container.Port{
-				IP:          p.GetIp(),
-				PrivatePort: uint16(p.GetPrivatePort()),
-				PublicPort:  uint16(p.GetPublicPort()),
-				Type:        p.GetType(),
-			})
-		}
-		return &docker.Metadata{
-			ImageName:   md.GetDockerContainersMetadata().GetImageName(),
-			ImageDigest: md.GetDockerContainersMetadata().GetImageDigest(),
-			ID:          md.GetDockerContainersMetadata().GetId(),
-			Ports:       ports,
-		}
-	}
+	log.Errorf("Failed to convert metadata of type %T to struct: %+v", t, t)
 
 	return nil
 }
