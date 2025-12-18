@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
@@ -155,6 +156,9 @@ var (
 		reflect.TypeFor[*spb.Package_PodmanMetadata](): func(p *spb.Package) any {
 			return podman.ToStruct(p.GetPodmanMetadata())
 		},
+		reflect.TypeFor[*spb.Package_JavaLockfileMetadata](): func(p *spb.Package) any {
+			return javalockfile.ToStruct(p.GetJavaLockfileMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -191,5 +195,6 @@ var (
 		(*cdxmeta.Metadata)(nil),
 		(*chromeextensions.Metadata)(nil),
 		(*podman.Metadata)(nil),
+		(*javalockfile.Metadata)(nil),
 	}
 )

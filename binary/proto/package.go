@@ -23,7 +23,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
 	"github.com/google/uuid"
@@ -111,18 +110,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 		return
 	}
 
-	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
-	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
-	if m, ok := meta.(*javalockfile.Metadata); ok {
-		p.Metadata = &spb.Package_JavaLockfileMetadata{
-			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
-				ArtifactId:   m.ArtifactID,
-				GroupId:      m.GroupID,
-				IsTransitive: m.IsTransitive,
-			},
-		}
-		return
-	}
+	log.Errorf("Failed to convert metadata of type %T to proto: %+v", meta, meta)
 }
 
 // --- Proto to Struct
@@ -186,14 +174,6 @@ func metadataToStruct(md *spb.Package) any {
 		return converter(md)
 	}
 
-	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
-	if _, ok := md.GetMetadata().(*spb.Package_JavaLockfileMetadata); ok {
-		return &javalockfile.Metadata{
-			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
-			GroupID:      md.GetJavaLockfileMetadata().GetGroupId(),
-			IsTransitive: md.GetJavaLockfileMetadata().GetIsTransitive(),
-		}
-	}
-
+	log.Errorf("Failed to convert metadata of type %T to struct: %+v", md.GetMetadata(), md.GetMetadata())
 	return nil
 }
