@@ -27,6 +27,7 @@ import (
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	macportsmeta "github.com/google/osv-scalibr/extractor/filesystem/os/macports/metadata"
@@ -74,6 +75,9 @@ var (
 		},
 		reflect.TypeFor[*spb.Package_CosMetadata](): func(p *spb.Package) any {
 			return cosmeta.ToStruct(p.GetCosMetadata())
+		},
+		reflect.TypeFor[*spb.Package_KernelModuleMetadata](): func(p *spb.Package) any {
+			return modulemeta.ToStruct(p.GetKernelModuleMetadata())
 		},
 		reflect.TypeFor[*spb.Package_PacmanMetadata](): func(p *spb.Package) any {
 			return pacmanmeta.ToStruct(p.GetPacmanMetadata())
@@ -135,6 +139,7 @@ var (
 		(*snapmeta.Metadata)(nil),
 		(*rpmmeta.Metadata)(nil),
 		(*cosmeta.Metadata)(nil),
+		(*modulemeta.Metadata)(nil),
 		(*pacmanmeta.Metadata)(nil),
 		(*portagemeta.Metadata)(nil),
 		(*flatpakmeta.Metadata)(nil),

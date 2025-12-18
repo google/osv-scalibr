@@ -29,7 +29,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
-	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
@@ -124,18 +123,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch m := meta.(type) {
-	case *modulemeta.Metadata:
-		p.Metadata = &spb.Package_KernelModuleMetadata{
-			KernelModuleMetadata: &spb.KernelModuleMetadata{
-				PackageName:                    m.PackageName,
-				PackageVersion:                 m.PackageVersion,
-				PackageVermagic:                m.PackageVermagic,
-				PackageSourceVersionIdentifier: m.PackageSourceVersionIdentifier,
-				OsId:                           m.OSID,
-				OsVersionCodename:              m.OSVersionCodename,
-				OsVersionId:                    m.OSVersionID,
-				PackageAuthor:                  m.PackageAuthor},
-		}
 	case *spdxmeta.Metadata:
 		p.Metadata = &spb.Package_SpdxMetadata{
 			SpdxMetadata: &spb.SPDXPackageMetadata{
@@ -322,17 +309,6 @@ func metadataToStruct(md *spb.Package) any {
 
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch md.GetMetadata().(type) {
-	case *spb.Package_KernelModuleMetadata:
-		return &modulemeta.Metadata{
-			PackageName:                    md.GetKernelModuleMetadata().GetPackageName(),
-			PackageVersion:                 md.GetKernelModuleMetadata().GetPackageVersion(),
-			PackageVermagic:                md.GetKernelModuleMetadata().GetPackageVermagic(),
-			PackageSourceVersionIdentifier: md.GetKernelModuleMetadata().GetPackageSourceVersionIdentifier(),
-			OSID:                           md.GetKernelModuleMetadata().GetOsId(),
-			OSVersionCodename:              md.GetKernelModuleMetadata().GetOsVersionCodename(),
-			OSVersionID:                    md.GetKernelModuleMetadata().GetOsVersionId(),
-			PackageAuthor:                  md.GetKernelModuleMetadata().GetPackageAuthor(),
-		}
 	case *spb.Package_SpdxMetadata:
 		return &spdxmeta.Metadata{
 			PURL: purlToStruct(md.GetSpdxMetadata().GetPurl()),
