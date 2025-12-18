@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
@@ -30,7 +29,6 @@ import (
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
-	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 
@@ -181,24 +179,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				Exited:        m.Exited,
 			},
 		}
-	case *docker.Metadata:
-		ports := make([]*spb.DockerPort, 0, len(m.Ports))
-		for _, p := range m.Ports {
-			ports = append(ports, &spb.DockerPort{
-				Ip:          p.IP,
-				PrivatePort: uint32(p.PrivatePort),
-				PublicPort:  uint32(p.PublicPort),
-				Type:        p.Type,
-			})
-		}
-		p.Metadata = &spb.Package_DockerContainersMetadata{
-			DockerContainersMetadata: &spb.DockerContainersMetadata{
-				ImageName:   m.ImageName,
-				ImageDigest: m.ImageDigest,
-				Id:          m.ID,
-				Ports:       ports,
-			},
-		}
 	}
 }
 
@@ -337,22 +317,6 @@ func metadataToStruct(md *spb.Package) any {
 			Status:       md.GetPodmanMetadata().GetStatus(),
 			ExitCode:     md.GetPodmanMetadata().GetExitCode(),
 			Exited:       md.GetPodmanMetadata().GetExited(),
-		}
-	case *spb.Package_DockerContainersMetadata:
-		var ports []container.Port
-		for _, p := range md.GetDockerContainersMetadata().GetPorts() {
-			ports = append(ports, container.Port{
-				IP:          p.GetIp(),
-				PrivatePort: uint16(p.GetPrivatePort()),
-				PublicPort:  uint16(p.GetPublicPort()),
-				Type:        p.GetType(),
-			})
-		}
-		return &docker.Metadata{
-			ImageName:   md.GetDockerContainersMetadata().GetImageName(),
-			ImageDigest: md.GetDockerContainersMetadata().GetImageDigest(),
-			ID:          md.GetDockerContainersMetadata().GetId(),
-			Ports:       ports,
 		}
 	}
 

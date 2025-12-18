@@ -42,6 +42,7 @@ import (
 	nodeversionmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 
@@ -131,6 +132,9 @@ var (
 		reflect.TypeFor[*spb.Package_VscodeExtensionsMetadata](): func(p *spb.Package) any {
 			return vscodeextensions.ToStruct(p.GetVscodeExtensionsMetadata())
 		},
+		reflect.TypeFor[*spb.Package_DockerContainersMetadata](): func(p *spb.Package) any {
+			return docker.ToStruct(p.GetDockerContainersMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -161,5 +165,6 @@ var (
 		(*setup.Metadata)(nil),
 		(*winmetadata.OSVersion)(nil),
 		(*vscodeextensions.Metadata)(nil),
+		(*docker.Metadata)(nil),
 	}
 )
