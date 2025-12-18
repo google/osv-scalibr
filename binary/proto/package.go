@@ -28,7 +28,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
-	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
@@ -163,18 +162,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				MinimumChromeVersion: m.MinimumChromeVersion,
 				Permissions:          m.Permissions,
 				UpdateUrl:            m.UpdateURL,
-			},
-		}
-	case *vscodeextensions.Metadata:
-		p.Metadata = &spb.Package_VscodeExtensionsMetadata{
-			VscodeExtensionsMetadata: &spb.VSCodeExtensionsMetadata{
-				Id:                   m.ID,
-				PublisherId:          m.PublisherID,
-				PublisherDisplayName: m.PublisherDisplayName,
-				TargetPlatform:       m.TargetPlatform,
-				Updated:              m.Updated,
-				IsPreReleaseVersion:  m.IsPreReleaseVersion,
-				InstalledTimestamp:   m.InstalledTimestamp,
 			},
 		}
 	case *podman.Metadata:
@@ -333,16 +320,6 @@ func metadataToStruct(md *spb.Package) any {
 			MinimumChromeVersion: md.GetChromeExtensionsMetadata().GetMinimumChromeVersion(),
 			Permissions:          md.GetChromeExtensionsMetadata().GetPermissions(),
 			UpdateURL:            md.GetChromeExtensionsMetadata().GetUpdateUrl(),
-		}
-	case *spb.Package_VscodeExtensionsMetadata:
-		return &vscodeextensions.Metadata{
-			ID:                   md.GetVscodeExtensionsMetadata().GetId(),
-			PublisherID:          md.GetVscodeExtensionsMetadata().GetPublisherId(),
-			PublisherDisplayName: md.GetVscodeExtensionsMetadata().GetPublisherDisplayName(),
-			TargetPlatform:       md.GetVscodeExtensionsMetadata().GetTargetPlatform(),
-			Updated:              md.GetVscodeExtensionsMetadata().GetUpdated(),
-			IsPreReleaseVersion:  md.GetVscodeExtensionsMetadata().GetIsPreReleaseVersion(),
-			InstalledTimestamp:   md.GetVscodeExtensionsMetadata().GetInstalledTimestamp(),
 		}
 	case *spb.Package_PodmanMetadata:
 		exposedPorts := map[uint16][]string{}

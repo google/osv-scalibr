@@ -23,6 +23,7 @@ import (
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
@@ -127,6 +128,9 @@ var (
 		reflect.TypeFor[*spb.Package_WindowsOsVersionMetadata](): func(p *spb.Package) any {
 			return winmetadata.ToStruct(p.GetWindowsOsVersionMetadata())
 		},
+		reflect.TypeFor[*spb.Package_VscodeExtensionsMetadata](): func(p *spb.Package) any {
+			return vscodeextensions.ToStruct(p.GetVscodeExtensionsMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -156,5 +160,6 @@ var (
 		(*archivemeta.Metadata)(nil),
 		(*setup.Metadata)(nil),
 		(*winmetadata.OSVersion)(nil),
+		(*vscodeextensions.Metadata)(nil),
 	}
 )
