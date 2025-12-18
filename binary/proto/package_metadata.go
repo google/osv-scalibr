@@ -42,6 +42,8 @@ import (
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	nodeversionmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
@@ -139,6 +141,12 @@ var (
 		reflect.TypeFor[*spb.Package_PythonRequirementsMetadata](): func(p *spb.Package) any {
 			return requirements.ToStruct(p.GetPythonRequirementsMetadata())
 		},
+		reflect.TypeFor[*spb.Package_SpdxMetadata](): func(p *spb.Package) any {
+			return spdxmeta.ToStruct(p.GetSpdxMetadata())
+		},
+		reflect.TypeFor[*spb.Package_CdxMetadata](): func(p *spb.Package) any {
+			return cdxmeta.ToStruct(p.GetCdxMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -171,5 +179,7 @@ var (
 		(*vscodeextensions.Metadata)(nil),
 		(*docker.Metadata)(nil),
 		(*requirements.Metadata)(nil),
+		(*spdxmeta.Metadata)(nil),
+		(*cdxmeta.Metadata)(nil),
 	}
 )

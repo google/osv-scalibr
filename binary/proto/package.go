@@ -26,9 +26,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
-	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
-	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/purl/purlproto"
 	"github.com/google/uuid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -79,7 +78,7 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		Name:                          pkg.Name,
 		Version:                       pkg.Version,
 		SourceCode:                    sourceCodeIdentifierToProto(pkg.SourceCode),
-		Purl:                          purlToProto(p),
+		Purl:                          purlproto.ToProto(p),
 		Ecosystem:                     pkg.Ecosystem().String(),
 		Locations:                     pkg.Locations,
 		Plugins:                       pkg.Plugins,
@@ -118,20 +117,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch m := meta.(type) {
-	case *spdxmeta.Metadata:
-		p.Metadata = &spb.Package_SpdxMetadata{
-			SpdxMetadata: &spb.SPDXPackageMetadata{
-				Purl: purlToProto(m.PURL),
-				Cpes: m.CPEs,
-			},
-		}
-	case *cdxmeta.Metadata:
-		p.Metadata = &spb.Package_CdxMetadata{
-			CdxMetadata: &spb.CDXPackageMetadata{
-				Purl: purlToProto(m.PURL),
-				Cpes: m.CPEs,
-			},
-		}
 	case *javalockfile.Metadata:
 		p.Metadata = &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
@@ -171,29 +156,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 			},
 		}
 	}
-}
-
-func purlToProto(p *purl.PackageURL) *spb.Purl {
-	if p == nil {
-		return nil
-	}
-	return &spb.Purl{
-		Purl:       p.String(),
-		Type:       p.Type,
-		Namespace:  p.Namespace,
-		Name:       p.Name,
-		Version:    p.Version,
-		Qualifiers: qualifiersToProto(p.Qualifiers),
-		Subpath:    p.Subpath,
-	}
-}
-
-func qualifiersToProto(qs purl.Qualifiers) []*spb.Qualifier {
-	result := make([]*spb.Qualifier, 0, len(qs))
-	for _, q := range qs {
-		result = append(result, &spb.Qualifier{Key: q.Key, Value: q.Value})
-	}
-	return result
 }
 
 // --- Proto to Struct
@@ -259,16 +221,6 @@ func metadataToStruct(md *spb.Package) any {
 
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
 	switch md.GetMetadata().(type) {
-	case *spb.Package_SpdxMetadata:
-		return &spdxmeta.Metadata{
-			PURL: purlToStruct(md.GetSpdxMetadata().GetPurl()),
-			CPEs: md.GetSpdxMetadata().GetCpes(),
-		}
-	case *spb.Package_CdxMetadata:
-		return &cdxmeta.Metadata{
-			PURL: purlToStruct(md.GetCdxMetadata().GetPurl()),
-			CPEs: md.GetCdxMetadata().GetCpes(),
-		}
 	case *spb.Package_JavaLockfileMetadata:
 		return &javalockfile.Metadata{
 			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
@@ -306,92 +258,4 @@ func metadataToStruct(md *spb.Package) any {
 	}
 
 	return nil
-}
-
-func purlToStruct(p *spb.Purl) *purl.PackageURL {
-	if p == nil {
-		return nil
-	}
-
-	// There's no guarantee that the PURL fields will match the PURL string.
-	// Use the fields if the string is blank or invalid.
-	// Elese, compare the string and fields, prioritizing the fields.
-	pfs := purlFromString(p.GetPurl())
-	if pfs == nil {
-		return &purl.PackageURL{
-			Type:       p.GetType(),
-			Namespace:  p.GetNamespace(),
-			Name:       p.GetName(),
-			Version:    p.GetVersion(),
-			Qualifiers: qualifiersToStruct(p.GetQualifiers()),
-			Subpath:    p.GetSubpath(),
-		}
-	}
-
-	// Prioritize fields from the PURL proto over the PURL string.
-	ptype := pfs.Type
-	if p.GetType() != "" {
-		ptype = p.GetType()
-	}
-	namespace := pfs.Namespace
-	if p.GetNamespace() != "" {
-		namespace = p.GetNamespace()
-	}
-	name := pfs.Name
-	if p.GetName() != "" {
-		name = p.GetName()
-	}
-	version := pfs.Version
-	if p.GetVersion() != "" {
-		version = p.GetVersion()
-	}
-	qualifiers := pfs.Qualifiers
-	if len(p.GetQualifiers()) > 0 {
-		qualifiers = qualifiersToStruct(p.GetQualifiers())
-	}
-	subpath := pfs.Subpath
-	if p.GetSubpath() != "" {
-		subpath = p.GetSubpath()
-	}
-
-	// TODO - b/421463494: Remove this once windows PURLs are corrected.
-	if ptype == purl.TypeGeneric && namespace == "microsoft" {
-		ptype = "windows"
-		namespace = ""
-	}
-
-	return &purl.PackageURL{
-		Type:       ptype,
-		Namespace:  namespace,
-		Name:       name,
-		Version:    version,
-		Qualifiers: qualifiers,
-		Subpath:    subpath,
-	}
-}
-
-func purlFromString(s string) *purl.PackageURL {
-	if s == "" {
-		return nil
-	}
-	p, err := purl.FromString(s)
-	if err != nil {
-		log.Errorf("failed to parse PURL string %q: %v", s, err)
-		return nil
-	}
-	if len(p.Qualifiers) == 0 {
-		p.Qualifiers = nil
-	}
-	return &p
-}
-
-func qualifiersToStruct(qs []*spb.Qualifier) purl.Qualifiers {
-	if len(qs) == 0 {
-		return nil
-	}
-	qsmap := map[string]string{}
-	for _, q := range qs {
-		qsmap[q.GetKey()] = q.GetValue()
-	}
-	return purl.QualifiersFromMap(qsmap)
 }
