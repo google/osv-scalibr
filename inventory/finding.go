@@ -120,7 +120,7 @@ func PackageToAffected(pkg *extractor.Package, fixed string, severity *osvpb.Sev
 		Severity: []*osvpb.Severity{severity},
 		Ranges: []*osvpb.Range{{
 			Type:   osvpb.Range_ECOSYSTEM,
-			Events: []*osvpb.Event{{Fixed: fixed}},
+			Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: fixed}},
 		}},
 	}}
 }
