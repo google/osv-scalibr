@@ -23,14 +23,12 @@ import (
 	"github.com/google/osv-scalibr/log"
 
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
 	"github.com/google/uuid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MetadataProtoSetter is an interface for metadata structs that can set themselves on a Package proto.
@@ -115,8 +113,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 
 	// Fallback to switch statement for types not yet implementing MetadataProtoSetter
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
-	switch m := meta.(type) {
-	case *javalockfile.Metadata:
+	if m, ok := meta.(*javalockfile.Metadata); ok {
 		p.Metadata = &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId:   m.ArtifactID,
@@ -124,23 +121,7 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				IsTransitive: m.IsTransitive,
 			},
 		}
-	case *podman.Metadata:
-		exposedPorts := map[uint32]*spb.Protocol{}
-		for p, protocols := range m.ExposedPorts {
-			exposedPorts[uint32(p)] = &spb.Protocol{Names: protocols}
-		}
-		p.Metadata = &spb.Package_PodmanMetadata{
-			PodmanMetadata: &spb.PodmanMetadata{
-				ExposedPorts:  exposedPorts,
-				Pid:           int32(m.PID),
-				NamespaceName: m.NameSpace,
-				StartedTime:   timestamppb.New(m.StartedTime),
-				FinishedTime:  timestamppb.New(m.FinishedTime),
-				Status:        m.Status,
-				ExitCode:      m.ExitCode,
-				Exited:        m.Exited,
-			},
-		}
+		return
 	}
 }
 
@@ -206,29 +187,11 @@ func metadataToStruct(md *spb.Package) any {
 	}
 
 	// TODO: b/421456154 - Remove this switch statement once all metadata types implement MetadataProtoSetter.
-	switch md.GetMetadata().(type) {
-	case *spb.Package_JavaLockfileMetadata:
+	if _, ok := md.GetMetadata().(*spb.Package_JavaLockfileMetadata); ok {
 		return &javalockfile.Metadata{
 			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
 			GroupID:      md.GetJavaLockfileMetadata().GetGroupId(),
 			IsTransitive: md.GetJavaLockfileMetadata().GetIsTransitive(),
-		}
-	case *spb.Package_PodmanMetadata:
-		exposedPorts := map[uint16][]string{}
-		for p, protocol := range md.GetPodmanMetadata().GetExposedPorts() {
-			for _, name := range protocol.GetNames() {
-				exposedPorts[uint16(p)] = append(exposedPorts[uint16(p)], name)
-			}
-		}
-		return &podman.Metadata{
-			ExposedPorts: exposedPorts,
-			PID:          int(md.GetPodmanMetadata().GetPid()),
-			NameSpace:    md.GetPodmanMetadata().GetNamespaceName(),
-			StartedTime:  md.GetPodmanMetadata().GetStartedTime().AsTime(),
-			FinishedTime: md.GetPodmanMetadata().GetFinishedTime().AsTime(),
-			Status:       md.GetPodmanMetadata().GetStatus(),
-			ExitCode:     md.GetPodmanMetadata().GetExitCode(),
-			Exited:       md.GetPodmanMetadata().GetExited(),
 		}
 	}
 

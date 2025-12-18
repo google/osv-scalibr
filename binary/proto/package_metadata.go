@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
@@ -151,6 +152,9 @@ var (
 		reflect.TypeFor[*spb.Package_ChromeExtensionsMetadata](): func(p *spb.Package) any {
 			return chromeextensions.ToStruct(p.GetChromeExtensionsMetadata())
 		},
+		reflect.TypeFor[*spb.Package_PodmanMetadata](): func(p *spb.Package) any {
+			return podman.ToStruct(p.GetPodmanMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -186,5 +190,6 @@ var (
 		(*spdxmeta.Metadata)(nil),
 		(*cdxmeta.Metadata)(nil),
 		(*chromeextensions.Metadata)(nil),
+		(*podman.Metadata)(nil),
 	}
 )
