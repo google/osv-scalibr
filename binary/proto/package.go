@@ -25,7 +25,6 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
-	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
@@ -150,14 +149,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: purlToProto(m.PURL),
 				Cpes: m.CPEs,
-			},
-		}
-	case *archivemeta.Metadata:
-		p.Metadata = &spb.Package_JavaArchiveMetadata{
-			JavaArchiveMetadata: &spb.JavaArchiveMetadata{
-				ArtifactId: m.ArtifactID,
-				GroupId:    m.GroupID,
-				Sha1:       m.SHA1,
 			},
 		}
 	case *javalockfile.Metadata:
@@ -358,12 +349,6 @@ func metadataToStruct(md *spb.Package) any {
 		return &cdxmeta.Metadata{
 			PURL: purlToStruct(md.GetCdxMetadata().GetPurl()),
 			CPEs: md.GetCdxMetadata().GetCpes(),
-		}
-	case *spb.Package_JavaArchiveMetadata:
-		return &archivemeta.Metadata{
-			ArtifactID: md.GetJavaArchiveMetadata().GetArtifactId(),
-			GroupID:    md.GetJavaArchiveMetadata().GetGroupId(),
-			SHA1:       md.GetJavaArchiveMetadata().GetSha1(),
 		}
 	case *spb.Package_JavaLockfileMetadata:
 		return &javalockfile.Metadata{

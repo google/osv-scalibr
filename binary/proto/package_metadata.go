@@ -19,6 +19,7 @@ import (
 
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
+	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
@@ -115,6 +116,9 @@ var (
 		reflect.TypeFor[*spb.Package_OsvMetadata](): func(p *spb.Package) any {
 			return osv.ToStruct(p.GetOsvMetadata())
 		},
+		reflect.TypeFor[*spb.Package_JavaArchiveMetadata](): func(p *spb.Package) any {
+			return archivemeta.ToStruct(p.GetJavaArchiveMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -141,5 +145,6 @@ var (
 		(*vmlinuzmeta.Metadata)(nil),
 		(*ctrdruntime.Metadata)(nil),
 		(*osv.Metadata)(nil),
+		(*archivemeta.Metadata)(nil),
 	}
 )
