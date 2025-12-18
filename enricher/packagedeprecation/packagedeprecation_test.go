@@ -19,6 +19,7 @@ import (
 
 	grpcpb "deps.dev/api/v3alpha"
 	"github.com/google/go-cmp/cmp"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/extractor"
@@ -151,7 +152,7 @@ func TestEnrich(t *testing.T) {
 
 func mustNew(t *testing.T, client packagedeprecation.Client) enricher.Enricher {
 	t.Helper()
-	e := packagedeprecation.New().(*packagedeprecation.Enricher)
+	e := packagedeprecation.New(&cpb.PluginConfig{}).(*packagedeprecation.Enricher)
 	e.SetClient(client)
 	return e
 }

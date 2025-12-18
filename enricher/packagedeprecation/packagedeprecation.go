@@ -20,6 +20,7 @@ import (
 	"maps"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"github.com/google/osv-scalibr/depsdev/depsdevalpha"
 	"github.com/google/osv-scalibr/enricher"
@@ -66,7 +67,7 @@ func (e *Enricher) SetClient(client Client) {
 }
 
 // New returns a new package deprecation enricher.
-func New() enricher.Enricher {
+func New(_ *cpb.PluginConfig) enricher.Enricher {
 	grpcConfig := grpcclient.DefaultConfig()
 	grpcclient, err := grpcclient.New(grpcConfig)
 	if err != nil {

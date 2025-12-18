@@ -153,7 +153,7 @@ var (
 
 	// PackageDeprecation enricher.
 	PackageDeprecation = InitMap{
-		packagedeprecation.Name: {noCFG(packagedeprecation.New)},
+		packagedeprecation.Name: {packagedeprecation.New},
 	}
 
 	// Default enrichers.
