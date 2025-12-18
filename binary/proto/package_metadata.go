@@ -27,7 +27,6 @@ import (
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
-	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	macportsmeta "github.com/google/osv-scalibr/extractor/filesystem/os/macports/metadata"
@@ -43,6 +42,7 @@ import (
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	ctrdruntime "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
+	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -75,9 +75,6 @@ var (
 		},
 		reflect.TypeFor[*spb.Package_CosMetadata](): func(p *spb.Package) any {
 			return cosmeta.ToStruct(p.GetCosMetadata())
-		},
-		reflect.TypeFor[*spb.Package_KernelModuleMetadata](): func(p *spb.Package) any {
-			return modulemeta.ToStruct(p.GetKernelModuleMetadata())
 		},
 		reflect.TypeFor[*spb.Package_PacmanMetadata](): func(p *spb.Package) any {
 			return pacmanmeta.ToStruct(p.GetPacmanMetadata())
@@ -127,6 +124,9 @@ var (
 		reflect.TypeFor[*spb.Package_PythonSetupMetadata](): func(p *spb.Package) any {
 			return setup.ToStruct(p.GetPythonSetupMetadata())
 		},
+		reflect.TypeFor[*spb.Package_WindowsOsVersionMetadata](): func(p *spb.Package) any {
+			return winmetadata.ToStruct(p.GetWindowsOsVersionMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -139,7 +139,6 @@ var (
 		(*snapmeta.Metadata)(nil),
 		(*rpmmeta.Metadata)(nil),
 		(*cosmeta.Metadata)(nil),
-		(*modulemeta.Metadata)(nil),
 		(*pacmanmeta.Metadata)(nil),
 		(*portagemeta.Metadata)(nil),
 		(*flatpakmeta.Metadata)(nil),
@@ -156,5 +155,6 @@ var (
 		(*osv.Metadata)(nil),
 		(*archivemeta.Metadata)(nil),
 		(*setup.Metadata)(nil),
+		(*winmetadata.OSVersion)(nil),
 	}
 )

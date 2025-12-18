@@ -32,7 +32,6 @@ import (
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
-	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 
@@ -151,13 +150,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				HashCheckingModeValues: m.HashCheckingModeValues,
 				VersionComparator:      m.VersionComparator,
 				Requirement:            m.Requirement,
-			},
-		}
-	case *winmetadata.OSVersion:
-		p.Metadata = &spb.Package_WindowsOsVersionMetadata{
-			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
-				Product:     m.Product,
-				FullVersion: m.FullVersion,
 			},
 		}
 	case *chromeextensions.Metadata:
@@ -330,11 +322,6 @@ func metadataToStruct(md *spb.Package) any {
 			HashCheckingModeValues: md.GetPythonRequirementsMetadata().GetHashCheckingModeValues(),
 			VersionComparator:      md.GetPythonRequirementsMetadata().GetVersionComparator(),
 			Requirement:            md.GetPythonRequirementsMetadata().GetRequirement(),
-		}
-	case *spb.Package_WindowsOsVersionMetadata:
-		return &winmetadata.OSVersion{
-			Product:     md.GetWindowsOsVersionMetadata().GetProduct(),
-			FullVersion: md.GetWindowsOsVersionMetadata().GetFullVersion(),
 		}
 	case *spb.Package_ChromeExtensionsMetadata:
 		return &chromeextensions.Metadata{
