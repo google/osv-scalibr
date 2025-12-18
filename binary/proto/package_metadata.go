@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
@@ -135,6 +136,9 @@ var (
 		reflect.TypeFor[*spb.Package_DockerContainersMetadata](): func(p *spb.Package) any {
 			return docker.ToStruct(p.GetDockerContainersMetadata())
 		},
+		reflect.TypeFor[*spb.Package_PythonRequirementsMetadata](): func(p *spb.Package) any {
+			return requirements.ToStruct(p.GetPythonRequirementsMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -166,5 +170,6 @@ var (
 		(*winmetadata.OSVersion)(nil),
 		(*vscodeextensions.Metadata)(nil),
 		(*docker.Metadata)(nil),
+		(*requirements.Metadata)(nil),
 	}
 )

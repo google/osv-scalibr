@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
@@ -139,14 +138,6 @@ func setProtoMetadata(meta any, p *spb.Package) {
 				ArtifactId:   m.ArtifactID,
 				GroupId:      m.GroupID,
 				IsTransitive: m.IsTransitive,
-			},
-		}
-	case *requirements.Metadata:
-		p.Metadata = &spb.Package_PythonRequirementsMetadata{
-			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
-				HashCheckingModeValues: m.HashCheckingModeValues,
-				VersionComparator:      m.VersionComparator,
-				Requirement:            m.Requirement,
 			},
 		}
 	case *chromeextensions.Metadata:
@@ -283,12 +274,6 @@ func metadataToStruct(md *spb.Package) any {
 			ArtifactID:   md.GetJavaLockfileMetadata().GetArtifactId(),
 			GroupID:      md.GetJavaLockfileMetadata().GetGroupId(),
 			IsTransitive: md.GetJavaLockfileMetadata().GetIsTransitive(),
-		}
-	case *spb.Package_PythonRequirementsMetadata:
-		return &requirements.Metadata{
-			HashCheckingModeValues: md.GetPythonRequirementsMetadata().GetHashCheckingModeValues(),
-			VersionComparator:      md.GetPythonRequirementsMetadata().GetVersionComparator(),
-			Requirement:            md.GetPythonRequirementsMetadata().GetRequirement(),
 		}
 	case *spb.Package_ChromeExtensionsMetadata:
 		return &chromeextensions.Metadata{
