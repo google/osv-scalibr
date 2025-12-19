@@ -340,7 +340,10 @@ func TestExtractor_Extract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
-			extr := pomxmlnet.New(&cpb.PluginConfig{})
+			extr, err := pomxmlnet.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("pomxmlnet.New(): %v", err)
+			}
 			extr.(*pomxmlnet.Extractor).DepClient = resolutionClient
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
@@ -483,7 +486,10 @@ func TestExtractor_Extract_WithMockServer(t *testing.T) {
 	}
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
-	extr := pomxmlnet.New(&cpb.PluginConfig{})
+	extr, err := pomxmlnet.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pomxmlnet.New: %v", err)
+	}
 	extr.(*pomxmlnet.Extractor).DepClient = resolutionClient
 	extr.(*pomxmlnet.Extractor).MavenClient = apiClient
 

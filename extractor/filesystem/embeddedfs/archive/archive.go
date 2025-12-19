@@ -45,13 +45,13 @@ type Extractor struct {
 }
 
 // New returns a new archive extractor.
-func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	maxSize := cfg.MaxFileSizeBytes
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.ArchiveConfig { return c.GetArchive() })
 	if specific.GetMaxFileSizeBytes() > 0 {
 		maxSize = specific.GetMaxFileSizeBytes()
 	}
-	return &Extractor{maxFileSizeBytes: maxSize}
+	return &Extractor{maxFileSizeBytes: maxSize}, nil
 }
 
 // Name returns the name of the extractor.

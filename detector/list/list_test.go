@@ -31,9 +31,12 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range dl.All {
 		for _, initer := range initers {
-			name := initer(&cpb.PluginConfig{}).Name()
-			if !reValidName.MatchString(name) {
-				t.Errorf("Invalid plugin name %q", name)
+			p, err := initer(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("initer(): %v", err)
+			}
+			if !reValidName.MatchString(p.Name()) {
+				t.Errorf("Invalid plugin name %q", p.Name())
 			}
 		}
 	}
