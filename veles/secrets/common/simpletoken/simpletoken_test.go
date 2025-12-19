@@ -176,3 +176,44 @@ func TestDetect_trueNegatives(t *testing.T) {
 		})
 	}
 }
+
+func TestToBase64Regexp(t *testing.T) {
+	cases := []struct {
+		name     string
+		re       string
+		wantRe64 string
+	}{{
+		name:     "aligns_to_6_bits",
+		re:       "123456.*",
+		wantRe64: "MTIzNDU2[0-9a-zA-Z+/=]+",
+	}, {
+		name: "doesnt_align_to_6_bits",
+		re:   "1234.*",
+		// Incomplete base64 bytes should be clipped
+		wantRe64: "MTIzN[0-9a-zA-Z+/=]+",
+	}, {
+		name:     "escaped_special_char",
+		re:       "12345\\..*",
+		wantRe64: "MTIzNDUu[0-9a-zA-Z+/=]+",
+	}, {
+		name:     "escaped_backslash",
+		re:       "12345\\\\.*",
+		wantRe64: "MTIzNDVc[0-9a-zA-Z+/=]+",
+	}, {
+		name:     "github_classic_pat",
+		re:       "ghp_[A-Za-z0-9]{36}",
+		wantRe64: "Z2hwX[0-9a-zA-Z+/=]+",
+	}, {
+		name:     "gcp_express_mode",
+		re:       "AQ\\.Ab8R[a-zA-Z0-9_-]{46}",
+		wantRe64: "QVEuQWI4U[0-9a-zA-Z+/=]+",
+	}}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			re64 := simpletoken.ToBase64Regexp(tc.re)
+			if re64 != tc.wantRe64 {
+				t.Errorf("ToBase64Regexp(%q): want %q, got %q", tc.re, tc.wantRe64, re64)
+			}
+		})
+	}
+}
