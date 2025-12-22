@@ -29,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	_ "modernc.org/sqlite"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -64,7 +66,7 @@ func TestFileRequired(t *testing.T) {
 		},
 	}
 
-	wingetExtractor := NewDefault()
+	wingetExtractor := New(&cpb.PluginConfig{})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			api := simplefileapi.New(tt.path, fakefs.FakeFileInfo{
@@ -179,7 +181,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Failed to setup test database: %v", err)
 			}
 
-			wingetExtractor := NewDefault()
+			wingetExtractor := New(&cpb.PluginConfig{})
 
 			// Create a custom Extract method that bypasses GetRealPath for testing
 			got, err := func() ([]*extractor.Package, error) {
@@ -241,7 +243,7 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtractorInterface(t *testing.T) {
-	wingetExtractor := NewDefault()
+	wingetExtractor := New(&cpb.PluginConfig{})
 
 	if wingetExtractor.Name() != Name {
 		t.Errorf("Name() = %v, want %v", wingetExtractor.Name(), Name)

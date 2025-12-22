@@ -34,20 +34,17 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	bolt "go.etcd.io/bbolt"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "containers/containerd"
-
-	// defaultMaxFileSize is the maximum file size.
-	// If Extract gets a bigger file, it will return an error.
-	defaultMaxFileSize = 500 * units.MiB
 
 	// Prefix of the path for container's grpc container status file, used to collect pid for a container.
 	criPluginStatusFilePrefix = "var/lib/containerd/io.containerd.grpc.v1.cri/containers/"
@@ -63,39 +60,15 @@ const (
 	runhcsStateFilePrefix = "ProgramData/containerd/state/io.containerd.runtime.v2.task/"
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// MaxMetaDBFileSize is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
-	MaxMetaDBFileSize int64
-}
-
-// DefaultConfig returns the default configuration for the containerd extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxMetaDBFileSize: defaultMaxFileSize,
-	}
-}
-
 // Extractor extracts containers from the containerd metadb file.
 type Extractor struct {
 	maxMetaDBFileSize int64
 }
 
 // New returns a containerd container package extractor.
-func New(cfg Config) *Extractor {
+func New(cfg *cpb.PluginConfig) filesystem.Extractor {
 	return &Extractor{
-		maxMetaDBFileSize: cfg.MaxMetaDBFileSize,
-	}
-}
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
-
-// Config returns the configuration of the extractor.
-func (e Extractor) Config() Config {
-	return Config{
-		MaxMetaDBFileSize: e.maxMetaDBFileSize,
+		maxMetaDBFileSize: cfg.GetMaxFileSizeBytes(),
 	}
 }
 
@@ -435,11 +408,6 @@ func runcInitPid(scanRoot string, id string) int {
 	statusPath := filepath.Join(scanRoot, criPluginStatusFilePrefix, id, "status")
 	if _, err := os.Stat(statusPath); err != nil {
 		log.Info("File status does not exists for container %v, error: %v", id, err)
-		return -1
-	}
-
-	err := fileSizeCheck(statusPath, defaultMaxFileSize)
-	if err != nil {
 		return -1
 	}
 

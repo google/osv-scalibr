@@ -59,7 +59,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	pkgs := make([]*extractor.Package, 0, len(ctrs))
 	for _, ctr := range ctrs {
-		if !e.cfg.IncludeStopped && ctr.state.Exited {
+		if !e.IncludeStopped && ctr.state.Exited {
 			continue
 		}
 
