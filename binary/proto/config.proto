@@ -53,6 +53,8 @@ message PluginSpecificConfig {
     HashiCorpVaultValidatorConfig hashicorp_vault_validator = 7;
     SDPInspectConfig sdp_inspect = 8;
     POMXMLNetConfig pom_xml_net = 9;
+    DpkgConfig dpkg = 10;
+    RpmConfig rpm = 11;
   }
 }
 
@@ -110,4 +112,15 @@ message SDPInspectConfig {
 message POMXMLNetConfig {
   // The URL of the upstream Maven registry.
   string upstream_registry = 1;
+}
+
+message DpkgConfig {
+  // IncludeNotInstalled includes packages that are not installed
+  // (e.g. `deinstall`, `purge`, and those missing a status field).
+  bool include_not_installed = 1;
+}
+
+message RpmConfig {
+  // Timeout in seconds for parsing the RPM database.
+  int64 timeout_seconds = 1;
 }
