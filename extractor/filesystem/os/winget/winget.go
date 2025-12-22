@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	_ "modernc.org/sqlite" // Import sqlite driver
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -42,13 +44,8 @@ const (
 type Extractor struct{}
 
 // New creates a new Winget extractor instance.
-func New() filesystem.Extractor {
+func New(_ *cpb.PluginConfig) filesystem.Extractor {
 	return &Extractor{}
-}
-
-// NewDefault creates a new Winget extractor with default configuration.
-func NewDefault() filesystem.Extractor {
-	return New()
 }
 
 // Name returns the unique identifier for this extractor.
