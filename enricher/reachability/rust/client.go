@@ -233,4 +233,3 @@ func readDWARF(readAt io.ReaderAt) (*dwarf.Data, error) {
 		return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
 }
-

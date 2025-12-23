@@ -102,14 +102,11 @@ func Test_Enrich(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// TEMP: commenting this out to run tests on real client instead of mock client
-			// mockCli, err := newMockClient(binaryPathsFile, extractedSymbolsFile, tc.rustAvailable)
-			// if err != nil {
-			// 	t.Fatalf("failed to create mock client: %v", err)
-			// }
-			// e := rust.NewWithClient(mockCli, &cpb.PluginConfig{})
-
-			e := rust.New(&cpb.PluginConfig{})
+			mockCli, err := newMockClient(binaryPathsFile, extractedSymbolsFile, tc.rustAvailable)
+			if err != nil {
+				t.Fatalf("failed to create mock client: %v", err)
+			}
+			e := rust.NewWithClient(mockCli, &cpb.PluginConfig{})
 
 			var inv *inventory.Inventory
 			if tc.vulnFile != "" {
