@@ -41,7 +41,7 @@ type realClient struct{}
 const (
 	// rustFlagsEnv defines the flags that are required for effective source analysis:
 	// - opt-level=3 (Use the highest optimisation level (default with --release))
-	// - debuginfo=2 (Include DWARF debug info which is extracted to find which funcs are called)
+	// - debuginfo=1 (Include DWARF debug info which is extracted to find which funcs are called)
 	// - embed-bitcode=yes (Required to enable LTO)
 	// - lto (Enable full link time optimisation, this allows unused dynamic dispatch calls to be optimised out)
 	// - codegen-units=1 (Build everything in one codegen unit, increases build time but enables more optimisations
