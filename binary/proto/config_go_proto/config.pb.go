@@ -123,6 +123,8 @@ type PluginSpecificConfig struct {
 	//	*PluginSpecificConfig_HashicorpVaultValidator
 	//	*PluginSpecificConfig_SdpInspect
 	//	*PluginSpecificConfig_PomXmlNet
+	//	*PluginSpecificConfig_Dpkg
+	//	*PluginSpecificConfig_Rpm
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -246,6 +248,24 @@ func (x *PluginSpecificConfig) GetPomXmlNet() *POMXMLNetConfig {
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetDpkg() *DpkgConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Dpkg); ok {
+			return x.Dpkg
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetRpm() *RpmConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Rpm); ok {
+			return x.Rpm
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -286,6 +306,14 @@ type PluginSpecificConfig_PomXmlNet struct {
 	PomXmlNet *POMXMLNetConfig `protobuf:"bytes,9,opt,name=pom_xml_net,json=pomXmlNet,proto3,oneof"`
 }
 
+type PluginSpecificConfig_Dpkg struct {
+	Dpkg *DpkgConfig `protobuf:"bytes,10,opt,name=dpkg,proto3,oneof"`
+}
+
+type PluginSpecificConfig_Rpm struct {
+	Rpm *RpmConfig `protobuf:"bytes,11,opt,name=rpm,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
@@ -303,6 +331,10 @@ func (*PluginSpecificConfig_HashicorpVaultValidator) isPluginSpecificConfig_Conf
 func (*PluginSpecificConfig_SdpInspect) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_PomXmlNet) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Dpkg) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Rpm) isPluginSpecificConfig_Config() {}
 
 type GoBinaryConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -720,6 +752,97 @@ func (x *POMXMLNetConfig) GetUpstreamRegistry() string {
 	return ""
 }
 
+type DpkgConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// IncludeNotInstalled includes packages that are not installed
+	// (e.g. `deinstall`, `purge`, and those missing a status field).
+	IncludeNotInstalled bool `protobuf:"varint,1,opt,name=include_not_installed,json=includeNotInstalled,proto3" json:"include_not_installed,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *DpkgConfig) Reset() {
+	*x = DpkgConfig{}
+	mi := &file_proto_config_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DpkgConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DpkgConfig) ProtoMessage() {}
+
+func (x *DpkgConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DpkgConfig.ProtoReflect.Descriptor instead.
+func (*DpkgConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DpkgConfig) GetIncludeNotInstalled() bool {
+	if x != nil {
+		return x.IncludeNotInstalled
+	}
+	return false
+}
+
+type RpmConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Timeout in seconds for parsing the RPM database.
+	TimeoutSeconds int64 `protobuf:"varint,1,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RpmConfig) Reset() {
+	*x = RpmConfig{}
+	mi := &file_proto_config_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RpmConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RpmConfig) ProtoMessage() {}
+
+func (x *RpmConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RpmConfig.ProtoReflect.Descriptor instead.
+func (*RpmConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RpmConfig) GetTimeoutSeconds() int64 {
+	if x != nil {
+		return x.TimeoutSeconds
+	}
+	return 0
+}
+
 var File_proto_config_proto protoreflect.FileDescriptor
 
 const file_proto_config_proto_rawDesc = "" +
@@ -729,7 +852,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12%\n" +
 	"\x0elocal_registry\x18\x03 \x01(\tR\rlocalRegistry\x12.\n" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xa7\x04\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xfa\x04\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -740,7 +863,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x19hashicorp_vault_validator\x18\a \x01(\v2&.scalibr.HashiCorpVaultValidatorConfigH\x00R\x17hashicorpVaultValidator\x12<\n" +
 	"\vsdp_inspect\x18\b \x01(\v2\x19.scalibr.SDPInspectConfigH\x00R\n" +
 	"sdpInspect\x12:\n" +
-	"\vpom_xml_net\x18\t \x01(\v2\x18.scalibr.POMXMLNetConfigH\x00R\tpomXmlNetB\b\n" +
+	"\vpom_xml_net\x18\t \x01(\v2\x18.scalibr.POMXMLNetConfigH\x00R\tpomXmlNet\x12)\n" +
+	"\x04dpkg\x18\n" +
+	" \x01(\v2\x13.scalibr.DpkgConfigH\x00R\x04dpkg\x12&\n" +
+	"\x03rpm\x18\v \x01(\v2\x12.scalibr.RpmConfigH\x00R\x03rpmB\b\n" +
 	"\x06config\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
@@ -761,7 +887,12 @@ const file_proto_config_proto_rawDesc = "" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\">\n" +
 	"\x0fPOMXMLNetConfig\x12+\n" +
-	"\x11upstream_registry\x18\x01 \x01(\tR\x10upstreamRegistryBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
+	"\x11upstream_registry\x18\x01 \x01(\tR\x10upstreamRegistry\"@\n" +
+	"\n" +
+	"DpkgConfig\x122\n" +
+	"\x15include_not_installed\x18\x01 \x01(\bR\x13includeNotInstalled\"4\n" +
+	"\tRpmConfig\x12'\n" +
+	"\x0ftimeout_seconds\x18\x01 \x01(\x03R\x0etimeoutSecondsBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
@@ -775,7 +906,7 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_proto_config_proto_goTypes = []any{
 	(*PluginConfig)(nil),                  // 0: scalibr.PluginConfig
 	(*PluginSpecificConfig)(nil),          // 1: scalibr.PluginSpecificConfig
@@ -788,6 +919,8 @@ var file_proto_config_proto_goTypes = []any{
 	(*HashiCorpVaultValidatorConfig)(nil), // 8: scalibr.HashiCorpVaultValidatorConfig
 	(*SDPInspectConfig)(nil),              // 9: scalibr.SDPInspectConfig
 	(*POMXMLNetConfig)(nil),               // 10: scalibr.POMXMLNetConfig
+	(*DpkgConfig)(nil),                    // 11: scalibr.DpkgConfig
+	(*RpmConfig)(nil),                     // 12: scalibr.RpmConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1,  // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
@@ -800,11 +933,13 @@ var file_proto_config_proto_depIdxs = []int32{
 	8,  // 7: scalibr.PluginSpecificConfig.hashicorp_vault_validator:type_name -> scalibr.HashiCorpVaultValidatorConfig
 	9,  // 8: scalibr.PluginSpecificConfig.sdp_inspect:type_name -> scalibr.SDPInspectConfig
 	10, // 9: scalibr.PluginSpecificConfig.pom_xml_net:type_name -> scalibr.POMXMLNetConfig
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	11, // 10: scalibr.PluginSpecificConfig.dpkg:type_name -> scalibr.DpkgConfig
+	12, // 11: scalibr.PluginSpecificConfig.rpm:type_name -> scalibr.RpmConfig
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -822,6 +957,8 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_HashicorpVaultValidator)(nil),
 		(*PluginSpecificConfig_SdpInspect)(nil),
 		(*PluginSpecificConfig_PomXmlNet)(nil),
+		(*PluginSpecificConfig_Dpkg)(nil),
+		(*PluginSpecificConfig_Rpm)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -829,7 +966,7 @@ func file_proto_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
