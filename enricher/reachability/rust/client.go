@@ -19,6 +19,8 @@ import (
 	"context"
 	"debug/dwarf"
 	"debug/elf"
+	"debug/macho"
+	"debug/pe"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +28,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/google/osv-scalibr/enricher/reachability/rust/ar"
@@ -34,6 +37,18 @@ import (
 )
 
 type realClient struct{}
+
+const (
+	// rustFlagsEnv defines the flags that are required for effective source analysis:
+	// - opt-level=3 (Use the highest optimisation level (default with --release))
+	// - debuginfo=1 (Include DWARF debug info which is extracted to find which funcs are called)
+	// - embed-bitcode=yes (Required to enable LTO)
+	// - lto (Enable full link time optimisation, this allows unused dynamic dispatch calls to be optimised out)
+	// - codegen-units=1 (Build everything in one codegen unit, increases build time but enables more optimisations
+	//                  and make libraries only generate one object file)
+	rustFlagsEnv     = "RUSTFLAGS=-C opt-level=3 -C debuginfo=1 -C embed-bitcode=yes -C lto -C codegen-units=1 -C strip=none"
+	rustLibExtension = ".rcgu.o/"
+)
 
 // BuildSource builds the rust project and returns a list filepaths containing the binary files
 func (*realClient) BuildSource(ctx context.Context, path string, targetDir string) ([]string, error) {
@@ -136,11 +151,7 @@ func (*realClient) ExtractRlibArchive(rlibPath string) (*bytes.Buffer, error) {
 // FunctionsFromDWARF extracts function symbols from file provided
 func (*realClient) FunctionsFromDWARF(readAt io.ReaderAt) (map[string]struct{}, error) {
 	output := map[string]struct{}{}
-	file, err := elf.NewFile(readAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read binary: %w", err)
-	}
-	dwarfData, err := file.DWARF()
+	dwarfData, err := readDWARF(readAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract debug symbols from binary: %w", err)
 	}
@@ -207,4 +218,30 @@ func (*realClient) RustToolchainAvailable(ctx context.Context) bool {
 	_, err := cmd.Output()
 
 	return err == nil
+}
+
+// readDWARF reads DWARF data from input binary file based on the OS.
+func readDWARF(readAt io.ReaderAt) (*dwarf.Data, error) {
+	switch runtime.GOOS {
+	case "linux":
+		file, err := elf.NewFile(readAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read binary, elf.NewFile: %w", err)
+		}
+		return file.DWARF()
+	case "darwin":
+		file, err := macho.NewFile(readAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read binary, macho.NewFile: %w", err)
+		}
+		return file.DWARF()
+	case "windows":
+		file, err := pe.NewFile(readAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read binary, pe.NewFile: %w", err)
+		}
+		return file.DWARF()
+	default:
+		return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
 }
