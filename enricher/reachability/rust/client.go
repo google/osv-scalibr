@@ -19,6 +19,8 @@ import (
 	"context"
 	"debug/dwarf"
 	"debug/elf"
+	"debug/macho"
+	"debug/pe"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +28,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/google/osv-scalibr/enricher/reachability/rust/ar"
@@ -136,11 +139,7 @@ func (*realClient) ExtractRlibArchive(rlibPath string) (*bytes.Buffer, error) {
 // FunctionsFromDWARF extracts function symbols from file provided
 func (*realClient) FunctionsFromDWARF(readAt io.ReaderAt) (map[string]struct{}, error) {
 	output := map[string]struct{}{}
-	file, err := elf.NewFile(readAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read binary: %w", err)
-	}
-	dwarfData, err := file.DWARF()
+	dwarfData, err := readDWARF(readAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract debug symbols from binary: %w", err)
 	}
@@ -208,3 +207,30 @@ func (*realClient) RustToolchainAvailable(ctx context.Context) bool {
 
 	return err == nil
 }
+
+// readDWARF reads DWARF data from input binary file based on the OS.
+func readDWARF(readAt io.ReaderAt) (*dwarf.Data, error) {
+	switch runtime.GOOS {
+	case "linux":
+		file, err := elf.NewFile(readAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read binary, elf.NewFile: %w", err)
+		}
+		return file.DWARF()
+	case "darwin":
+		file, err := macho.NewFile(readAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read binary, macho.NewFile: %w", err)
+		}
+		return file.DWARF()
+	case "windows":
+		file, err := pe.NewFile(readAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read binary, pe.NewFile: %w", err)
+		}
+		return file.DWARF()
+	default:
+		return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
+}
+

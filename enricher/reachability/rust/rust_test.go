@@ -17,10 +17,10 @@ package rust_test
 import (
 	"errors"
 	"os"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/extractor"
@@ -37,10 +37,6 @@ var extractedSymbolsFile = "testdata/mock_data/mock_extractedsymbols.json"
 var testProjPath = "testdata/real-rust-project"
 
 func Test_Enrich(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name          string
 		vulnFile      string
@@ -106,11 +102,14 @@ func Test_Enrich(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mockCli, err := newMockClient(binaryPathsFile, extractedSymbolsFile, tc.rustAvailable)
-			if err != nil {
-				t.Fatalf("failed to create mock client: %v", err)
-			}
-			e := rust.NewWithClient(mockCli)
+			// TEMP: commenting this out to run tests on real client instead of mock client
+			// mockCli, err := newMockClient(binaryPathsFile, extractedSymbolsFile, tc.rustAvailable)
+			// if err != nil {
+			// 	t.Fatalf("failed to create mock client: %v", err)
+			// }
+			// e := rust.NewWithClient(mockCli, &cpb.PluginConfig{})
+
+			e := rust.New(&cpb.PluginConfig{})
 
 			var inv *inventory.Inventory
 			if tc.vulnFile != "" {
@@ -120,11 +119,11 @@ func Test_Enrich(t *testing.T) {
 				inv = &inventory.Inventory{}
 			}
 
-			err = e.Enrich(t.Context(), input, inv)
+			enrichErr := e.Enrich(t.Context(), input, inv)
 
-			if err != nil {
-				if !errors.Is(err, tc.wantErr) {
-					t.Errorf("Enrich() error = %v, wantErr %v", err, tc.wantErr)
+			if enrichErr != nil {
+				if !errors.Is(enrichErr, tc.wantErr) {
+					t.Errorf("Enrich() error = %v, wantErr %v", enrichErr, tc.wantErr)
 				}
 				return
 			}
