@@ -602,7 +602,11 @@ message WindowsOSVersion {
 }
 
 // The additional data found in Homebrew packages.
-message HomebrewPackageMetadata {}
+message HomebrewPackageMetadata {
+  string url = 1;
+  string head = 2;
+  repeated string mirrors = 3;
+}
 
 // The additional data found in Chrome extensions.
 message ChromeExtensionsMetadata {
