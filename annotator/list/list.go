@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
+	"github.com/google/osv-scalibr/annotator/misc/brewsource"
 	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
 	"github.com/google/osv-scalibr/annotator/misc/npmsource"
 	noexecutabledpkg "github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
@@ -52,6 +53,7 @@ var VEX = InitMap{
 
 // Misc annotators.
 var Misc = InitMap{
+	brewsource.Name: {noCFG(brewsource.New)},
 	npmsource.Name:  {noCFG(npmsource.New)},
 	dpkgsource.Name: {noCFG(dpkgsource.New)},
 }
