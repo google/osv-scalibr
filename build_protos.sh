@@ -21,7 +21,7 @@ REGEN_RESULT=$?
 REGEN_CONFIG=$?
 
 # Install and prepare osv-schema protos.
-if (( REGEN_RESULT == 0 )) || (( REGEN_CONFIG == 0 )); then
+if [ "$REGEN_RESULT" -eq 0 ] || [ "$REGEN_CONFIG" -eq 0 ]; then
   OSV_SCHEMA_VERSION="1.7.4"
   wget --no-verbose https://github.com/ossf/osv-schema/archive/refs/tags/v$OSV_SCHEMA_VERSION.tar.gz
   tar -xf v$OSV_SCHEMA_VERSION.tar.gz
@@ -30,14 +30,14 @@ if (( REGEN_RESULT == 0 )) || (( REGEN_CONFIG == 0 )); then
 fi
 
 # Compile scan_result.proto if it changed.
-if (( REGEN_RESULT == 0 )); then
+if [ "$REGEN_RESULT" -eq 0 ]; then
   rm -rf binary/proto/scan_result_go_proto
   protoc -I=binary --go_out=binary/proto binary/proto/scan_result.proto
   mv binary/proto/github.com/google/osv-scalibr/binary/proto/scan_result_go_proto binary/proto/
 fi
 
 # Compile config.proto if it changed.
-if (( REGEN_CONFIG == 0 )); then
+if [ "$REGEN_CONFIG" -eq 0 ]; then
   rm -rf binary/proto/config_go_proto
   protoc -I=binary --go_out=binary/proto binary/proto/config.proto
   mv binary/proto/github.com/google/osv-scalibr/binary/proto/config_go_proto binary/proto/
