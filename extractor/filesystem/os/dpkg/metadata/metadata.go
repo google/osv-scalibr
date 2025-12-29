@@ -87,7 +87,7 @@ func (m *Metadata) SetProto(p *pb.Package) {
 	}
 }
 
-// ToStruct converts the NetportsMetadata proto to a Metadata struct.
+// ToStruct converts the DPKGPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.DPKGPackageMetadata) *Metadata {
 	if m == nil {
 		return nil
