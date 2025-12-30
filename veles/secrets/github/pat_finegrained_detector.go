@@ -23,13 +23,16 @@ import (
 
 const fineGrainedPATMaxLen = 80
 
-var fineGrainedPATPattern = regexp.MustCompile(`github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}`)
+var fineGrainedPATString = `github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}`
+var fineGrainedPATPattern = regexp.MustCompile(fineGrainedPATString)
+var fineGrainedPATBase64Pattern = regexp.MustCompile(simpletoken.ToBase64Regexp(fineGrainedPATString))
 
 // NewFineGrainedPATDetector returns a new Veles Detector that finds Github fine-grained personal access tokens
 func NewFineGrainedPATDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: fineGrainedPATMaxLen,
-		Re:     fineGrainedPATPattern,
+		MaxLen:   simpletoken.ToBase64Len(fineGrainedPATMaxLen),
+		Re:       fineGrainedPATPattern,
+		ReBase64: fineGrainedPATBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			return FineGrainedPersonalAccessToken{Token: string(match)}, true
 		},

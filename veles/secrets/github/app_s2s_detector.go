@@ -24,13 +24,16 @@ import (
 
 const s2sTokenMaxLen = 40
 
-var s2sTokenPattern = regexp.MustCompile(`ghs_[A-Za-z0-9]{36}`)
+var s2sTokenString = `ghs_[A-Za-z0-9]{36}`
+var s2sTokenPattern = regexp.MustCompile(s2sTokenString)
+var s2sTokenBase64Pattern = regexp.MustCompile(simpletoken.ToBase64Regexp(s2sTokenString))
 
 // NewAppS2STokenDetector returns a new Veles Detector that finds Github app server to server tokens
 func NewAppS2STokenDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: s2sTokenMaxLen,
-		Re:     s2sTokenPattern,
+		MaxLen:   simpletoken.ToBase64Len(s2sTokenMaxLen),
+		Re:       s2sTokenPattern,
+		ReBase64: s2sTokenBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false
