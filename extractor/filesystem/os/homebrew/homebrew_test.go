@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
+	metadata "github.com/google/osv-scalibr/extractor/filesystem/os/homebrew/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -125,6 +126,14 @@ func TestExtract(t *testing.T) {
 					Version:   "1.67.0",
 					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json"},
+					Metadata: &metadata.Metadata{
+						URL:  "https://github.com/rclone/rclone/archive/refs/tags/v1.67.0.tar.gz",
+						Head: "https://github.com/rclone/rclone.git",
+						Mirrors: []string{
+							"https://github.com/rclone/rclone/archive/refs/tags/v1.67.0.tar.gz",
+							"https://github.com/rclone/rclone/archive/refs/tags/v1.67.0.tar.gz",
+						},
+					},
 				},
 			},
 		},
@@ -187,10 +196,11 @@ func TestSplitPath(t *testing.T) {
 			name: "cellar_path",
 			path: "testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json",
 			want: &homebrew.BrewPath{
-				AppName:    "rclone",
-				AppVersion: "1.67.0",
-				AppFile:    "install_receipt.json",
-				AppExt:     "install_receipt.json",
+				AppName:        "rclone",
+				AppVersion:     "1.67.0",
+				AppFile:        "install_receipt.json",
+				AppExt:         "install_receipt.json",
+				AppFormulaPath: "testdata/Cellar/rclone/1.67.0/.brew/rclone.rb",
 			},
 		},
 		{
