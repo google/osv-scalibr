@@ -258,30 +258,30 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:         {noCFG(containerd.NewDefault)},
-		k8simage.Name:           {noCFG(k8simage.NewDefault)},
-		podman.Name:             {noCFG(podman.NewDefault)},
-		dockerbaseimage.Name:    {noCFG(dockerbaseimage.NewDefault)},
-		dockercomposeimage.Name: {noCFG(dockercomposeimage.NewDefault)},
+		containerd.Name:         {containerd.New},
+		k8simage.Name:           {k8simage.New},
+		podman.Name:             {podman.New},
+		dockerbaseimage.Name:    {dockerbaseimage.New},
+		dockercomposeimage.Name: {dockercomposeimage.New},
 	}
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {noCFG(dpkg.NewDefault)},
-		apk.Name:      {noCFG(apk.NewDefault)},
-		rpm.Name:      {noCFG(rpm.NewDefault)},
-		cos.Name:      {noCFG(cos.NewDefault)},
-		snap.Name:     {noCFG(snap.NewDefault)},
-		nix.Name:      {noCFG(nix.New)},
-		module.Name:   {noCFG(module.NewDefault)},
-		vmlinuz.Name:  {noCFG(vmlinuz.NewDefault)},
-		pacman.Name:   {noCFG(pacman.NewDefault)},
-		portage.Name:  {noCFG(portage.NewDefault)},
-		flatpak.Name:  {noCFG(flatpak.NewDefault)},
-		homebrew.Name: {noCFG(homebrew.New)},
-		macapps.Name:  {noCFG(macapps.NewDefault)},
-		macports.Name: {noCFG(macports.New)},
-		winget.Name:   {noCFG(winget.NewDefault)},
+		dpkg.Name:     {dpkg.New},
+		apk.Name:      {apk.New},
+		rpm.Name:      {rpm.New},
+		cos.Name:      {cos.New},
+		snap.Name:     {snap.New},
+		nix.Name:      {nix.New},
+		module.Name:   {module.New},
+		vmlinuz.Name:  {vmlinuz.New},
+		pacman.Name:   {pacman.New},
+		portage.Name:  {portage.New},
+		flatpak.Name:  {flatpak.New},
+		homebrew.Name: {homebrew.New},
+		macapps.Name:  {macapps.New},
+		macports.Name: {macports.New},
+		winget.Name:   {winget.New},
 	}
 
 	// SecretExtractors for Extractor interface.
@@ -494,7 +494,7 @@ func noCFG(f func() filesystem.Extractor) InitFn {
 // ExtractorsFromName returns a list of extractors from a name.
 func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]filesystem.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
-		result := []filesystem.Extractor{}
+		var result []filesystem.Extractor
 		for _, initer := range initers {
 			result = append(result, initer(cfg))
 		}

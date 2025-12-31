@@ -34,44 +34,24 @@ import (
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"gopkg.in/yaml.v3"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "containers/dockercomposeimage"
-
-	// DefaultMaxFileSizeBytes is the default maximum file size the extractor will
-	// attempt to extract. If a file is encountered that is larger than this
-	// limit, the file is ignored by `FileRequired`.
-	DefaultMaxFileSizeBytes = 1 * units.MiB
 )
-
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false.
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes: DefaultMaxFileSizeBytes,
-	}
-}
 
 // Extractor extracts image URLs from Docker Compose files.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
@@ -79,17 +59,13 @@ type Extractor struct {
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
+func New(cfg *cpb.PluginConfig) filesystem.Extractor {
 	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+		maxFileSizeBytes: cfg.GetMaxFileSizeBytes(),
 	}
 }
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }

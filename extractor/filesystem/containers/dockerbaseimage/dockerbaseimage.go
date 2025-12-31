@@ -26,7 +26,6 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -34,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/moby/buildkit/frontend/dockerfile/linter"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	mbi "github.com/moby/buildkit/frontend/dockerfile/instructions"
 	mbp "github.com/moby/buildkit/frontend/dockerfile/parser"
 )
@@ -41,11 +41,6 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "containers/dockerbaseimage"
-
-	// DefaultMaxFileSizeBytes is the default maximum file size the extractor will
-	// attempt to extract. If a file is encountered that is larger than this
-	// limit, the file is ignored by `FileRequired`.
-	DefaultMaxFileSizeBytes = 1 * units.MiB
 )
 
 var (
@@ -54,25 +49,9 @@ var (
 	dockerBaseContainers = []string{"scratch"}
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes: DefaultMaxFileSizeBytes,
-	}
-}
-
 // Extractor extracts repository URLs from Dockerfiles.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
@@ -80,17 +59,13 @@ type Extractor struct {
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
+func New(cfg *cpb.PluginConfig) filesystem.Extractor {
 	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+		maxFileSizeBytes: cfg.GetMaxFileSizeBytes(),
 	}
 }
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -111,7 +86,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if input.Info == nil {
 		return inventory.Inventory{}, errors.New("input.Info is nil")
 	}
-	if input.Info.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > 0 && input.Info.Size() > e.maxFileSizeBytes {
 		// Skipping too large file.
 		log.Infof("Skipping too large file: %s", input.Path)
 		return inventory.Inventory{}, nil
