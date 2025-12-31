@@ -46,7 +46,7 @@ const (
 	// - lto (Enable full link time optimisation, this allows unused dynamic dispatch calls to be optimised out)
 	// - codegen-units=1 (Build everything in one codegen unit, increases build time but enables more optimisations
 	//                  and make libraries only generate one object file)
-	rustFlagsEnv     = "RUSTFLAGS=-C opt-level=3 -C debuginfo=2 -C embed-bitcode=yes -C lto -C codegen-units=1 -C strip=none"
+	rustFlagsEnv     = "RUSTFLAGS=-C opt-level=3 -C debuginfo=2 -C embed-bitcode=yes -C lto -C codegen-units=1 -C strip=none -C split-debuginfo=off"
 	rustLibExtension = ".rcgu.o/"
 )
 
