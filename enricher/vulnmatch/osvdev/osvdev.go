@@ -86,7 +86,7 @@ func (Enricher) Version() int {
 }
 
 // Requirements of the Enricher.
-// Needs network access so it can validate Secrets.
+// Needs network access so it can query the osv.dev api
 func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network: plugin.NetworkOnline,
