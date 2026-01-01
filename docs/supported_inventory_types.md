@@ -186,6 +186,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Wordpress plugins | `wordpress/plugins` |
 | VSCode extensions | `vscode/extensions` |
 | Chrome extensions | `chrome/extensions` |
+| NetScaler         | `netscaler`         |
 
 ### EmbeddedFS
 
@@ -213,6 +214,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
 | Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |
 | Checks for weak passwords for local Windows accounts.                | `weakcredentials/winlocal`               |
+| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway       | `cve/cve-2025-7775`               |
 
 ## Annotators
 
