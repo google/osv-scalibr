@@ -19,17 +19,22 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/peversion"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/semantic"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // Precompiled regex pattern for matching WinRAR product names with word boundaries
@@ -71,12 +76,12 @@ func (d Detector) DetectedFinding() inventory.Finding {
 	return d.findingForPackage(nil)
 }
 
-func (d Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
+func (d Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding {
 	pkg := &extractor.Package{
 		Name:     "winrar",
 		PURLType: "generic",
 	}
-	vuln := d.makePackageVulnWithDb(pkg, "7.13", "WinRAR path traversal vulnerability (<7.13)",
+	vuln := d.makePackageVuln(pkg, "WinRAR path traversal vulnerability (<7.13)",
 		"WinRAR versions before 7.13 are vulnerable to a path traversal attack that allows attackers to extract files to arbitrary locations outside the intended extraction directory.",
 		dbSpecific)
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{vuln}}
@@ -86,17 +91,22 @@ func (d Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	var findings []*inventory.PackageVuln
 
-	// === Phase 1: Installed packages via package index ===
 	if px == nil {
 		log.Infof("cve20258088: PackageIndex is nil, no packages to scan")
 		return inventory.Finding{}, nil
 	}
 
-	allPackages := px.GetAll()
-	log.Infof("cve20258088: Scanning %d packages from PackageIndex", len(allPackages))
+	// Get generic packages which includes output from PE version extractor.
+	allPackages := px.GetAllOfType("generic")
+	log.Infof("cve20258088: Scanning %d generic packages from PackageIndex", len(allPackages))
 
 	for _, pkg := range allPackages {
 		log.Debugf("cve20258088: Checking package %q version %q", pkg.Name, pkg.Version)
+
+		// Only consider packages extracted by the peversion extractor.
+		if !slices.Contains(pkg.Plugins, peversion.Name) {
+			continue
+		}
 
 		// Use word boundary regex to avoid false positives like "Libraries", "Hardware", etc.
 		if !winrarNameRegex.MatchString(pkg.Name) {
@@ -110,13 +120,15 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 			continue
 		}
 
-		if sv, err := semantic.Parse(normalizedVersion, "Maven"); err == nil {
+		if sv, err := semantic.Parse(normalizedVersion, string(osvconstants.EcosystemMaven)); err == nil {
 			if cmp, err := sv.CompareStr("7.13"); err == nil && cmp < 0 {
 				log.Infof("cve20258088: Vulnerable WinRAR package found: Package %q, Version: %q",
 					pkg.Name, normalizedVersion)
 
-				dbSpecific := map[string]any{
-					"extra": fmt.Sprintf("%s %s %s", pkg.Name, normalizedVersion, strings.Join(pkg.Locations, ", ")),
+				dbSpecific := &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, normalizedVersion, strings.Join(pkg.Locations, ", "))}},
+					},
 				}
 				finding := d.findingForPackage(dbSpecific)
 				findings = append(findings, finding.PackageVulns...)
@@ -130,23 +142,25 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	return inventory.Finding{PackageVulns: findings}, nil
 }
 
-// makePackageVulnWithDb constructs a PackageVuln for CVE-2025-8088 with custom DatabaseSpecific.
-func (Detector) makePackageVulnWithDb(pkg *extractor.Package, normalizedVersion, summary, details string, dbSpecific map[string]any) *inventory.PackageVuln {
-	vuln := &inventory.PackageVuln{
+// makePackageVuln constructs a PackageVuln for CVE-2025-8088.
+func (Detector) makePackageVuln(pkg *extractor.Package, summary, details string, dbSpecific *structpb.Struct) *inventory.PackageVuln {
+	winrarPkg := &extractor.Package{
+		Name:     "winrar",
+		PURLType: "generic",
+	}
+	return &inventory.PackageVuln{
 		Package: pkg,
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2025-8088",
+		Vulnerability: &osvpb.Vulnerability{
+			Id:      "CVE-2025-8088",
 			Summary: summary,
 			Details: details,
-			Affected: inventory.PackageToAffected(pkg, "7.13", &osvschema.Severity{
-				Type:  osvschema.SeverityCVSSV3,
+			Affected: inventory.PackageToAffected(winrarPkg, "7.13", &osvpb.Severity{
+				Type:  osvpb.Severity_CVSS_V3,
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
 			}),
 			DatabaseSpecific: dbSpecific,
 		},
 	}
-
-	return vuln
 }
 
 // normalizeVersion tries to standardize version strings

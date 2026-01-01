@@ -48,8 +48,8 @@ func TestInstalledWinRARAffected(t *testing.T) {
 		t.Fatalf("Expected a finding for vulnerable WinRAR package")
 	}
 	v := finding.PackageVulns[0]
-	if v.Vulnerability.ID != "CVE-2025-8088" {
-		t.Errorf("Unexpected vuln ID: %s", v.Vulnerability.ID)
+	if v.Vulnerability.Id != "CVE-2025-8088" {
+		t.Errorf("Unexpected vuln ID: %s", v.Vulnerability.Id)
 	}
 }
 

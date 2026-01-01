@@ -20,7 +20,6 @@ package peversion
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -288,17 +287,13 @@ func extractVersionFromFilename(exePath string) (version, prodName string) {
 	clean = strings.TrimSuffix(clean, ".dll")
 
 	// Try to find a version number pattern.
+	// Only extract versions that have clear delimiters (dots, underscores, hyphens).
 	verMatch := verRegex.FindStringSubmatch(clean)
 	if verMatch != nil {
 		verStr := verMatch[1]
-		// Normalize version formats: 610 -> 6.10, 6_10 -> 6.10, etc.
-		if len(verStr) == 3 && !strings.ContainsAny(verStr, "._-") {
-			// Format: 610 -> 6.10
-			version = fmt.Sprintf("%s.%s", verStr[:1], verStr[1:])
-		} else if len(verStr) == 4 && !strings.ContainsAny(verStr, "._-") {
-			// Format: 6210 -> 62.10
-			version = fmt.Sprintf("%s.%s", verStr[:2], verStr[2:])
-		} else {
+		// Only use version if it contains a delimiter, making it unambiguous.
+		// e.g., "6.10", "6_10", "6-10" are valid; "610" is ambiguous and skipped.
+		if strings.ContainsAny(verStr, "._-") {
 			// Replace underscores and hyphens with dots.
 			version = strings.ReplaceAll(verStr, "_", ".")
 			version = strings.ReplaceAll(version, "-", ".")
@@ -325,6 +320,3 @@ func normalizeVersion(ver string) string {
 
 // Ensure Extractor implements the filesystem.Extractor interface.
 var _ filesystem.Extractor = (*Extractor)(nil)
-
-// Ensure io.Reader is used (for potential future use).
-var _ io.Reader
