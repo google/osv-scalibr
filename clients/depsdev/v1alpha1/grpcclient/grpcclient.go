@@ -20,11 +20,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 
 	pb "deps.dev/api/v3alpha"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
+
+var connections = make(map[string]*grpc.ClientConn, 0)
+var connectionsMu sync.Mutex
 
 const (
 	address = "api.deps.dev:443"
@@ -56,6 +60,12 @@ func New(cfg *Config) (pb.InsightsClient, error) {
 		return nil, fmt.Errorf("address is empty: %w", ErrMalformedConfig)
 	}
 
+	connectionsMu.Lock()
+	defer connectionsMu.Unlock()
+	if conn, ok := connections[cfg.Address]; ok {
+		return pb.NewInsightsClient(conn), nil
+	}
+
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
 		log.Fatalf("Getting system cert pool: %v", err)
@@ -66,6 +76,8 @@ func New(cfg *Config) (pb.InsightsClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	connections[cfg.Address] = conn
 
 	client := pb.NewInsightsClient(conn)
 	return client, nil
