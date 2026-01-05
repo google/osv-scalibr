@@ -68,6 +68,7 @@ func New(cfg *Config) (pb.InsightsClient, error) {
 
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
+		//nolint:gocritic // No need to unlock before exiting, as we are exiting immediately.
 		log.Fatalf("Getting system cert pool: %v", err)
 	}
 	creds := credentials.NewClientTLSFromCert(certPool, "")

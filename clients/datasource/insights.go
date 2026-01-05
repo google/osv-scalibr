@@ -74,7 +74,7 @@ func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClie
 	connectionsMu.Lock()
 	defer connectionsMu.Unlock()
 
-	key := addr+"|"+userAgent
+	key := addr + "|" + userAgent
 	if conn, ok := connections[key]; ok {
 		return &CachedInsightsClient{
 			InsightsClient:    pb.NewInsightsClient(conn),
