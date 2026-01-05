@@ -73,7 +73,9 @@ func makeVersionKey(k *pb.VersionKey) versionKey {
 func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClient, error) {
 	connectionsMu.Lock()
 	defer connectionsMu.Unlock()
-	if conn, ok := connections[addr]; ok {
+
+	key := addr+"|"+userAgent
+	if conn, ok := connections[key]; ok {
 		return &CachedInsightsClient{
 			InsightsClient:    pb.NewInsightsClient(conn),
 			packageCache:      NewRequestCache[packageKey, *pb.Package](),
@@ -98,7 +100,7 @@ func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClie
 		return nil, fmt.Errorf("dialling %q: %w", addr, err)
 	}
 
-	connections[addr] = conn
+	connections[key] = conn
 
 	return &CachedInsightsClient{
 		InsightsClient:    pb.NewInsightsClient(conn),
