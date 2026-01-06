@@ -152,7 +152,11 @@ func TestEnrich(t *testing.T) {
 
 func mustNew(t *testing.T, client packagedeprecation.Client) enricher.Enricher {
 	t.Helper()
-	e := packagedeprecation.New(&cpb.PluginConfig{}).(*packagedeprecation.Enricher)
-	e.SetClient(client)
-	return e
+	e, err := packagedeprecation.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("packagedeprecation.New: %v", err)
+	}
+	pe := e.(*packagedeprecation.Enricher)
+	pe.SetClient(client)
+	return pe
 }

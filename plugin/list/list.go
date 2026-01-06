@@ -36,8 +36,12 @@ import (
 // FromCapabilities returns all plugins that can run under the specified
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
-func FromCapabilities(capabs *plugin.Capabilities, cfg *cpb.PluginConfig) []plugin.Plugin {
-	return plugin.FilterByCapabilities(All(cfg), capabs)
+func FromCapabilities(capabs *plugin.Capabilities, cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
+	all, err := All(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return plugin.FilterByCapabilities(all, capabs), nil
 }
 
 // FromNames returns a deduplicated list of plugins from a list of names.
@@ -99,7 +103,7 @@ func FromName(name string, cfg *cpb.PluginConfig) (plugin.Plugin, error) {
 // Note that these plugins have different capability Requirements and can't all
 // be run on the same host (e.g. some are Linux-only while others are Windows-only)
 // Prefer using FromCapabilities instead.
-func All(cfg *cpb.PluginConfig) []plugin.Plugin {
+func All(cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
 	if cfg == nil {
 		// Do the nil check here instead of in individual plugin initers.
 		cfg = &cpb.PluginConfig{}
@@ -107,30 +111,50 @@ func All(cfg *cpb.PluginConfig) []plugin.Plugin {
 	all := []plugin.Plugin{}
 	for _, initers := range fl.All {
 		for _, initer := range initers {
-			all = append(all, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range sl.All {
 		for _, initer := range initers {
-			all = append(all, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range dl.All {
 		for _, initer := range initers {
-			all = append(all, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range al.All {
 		for _, initer := range initers {
-			all = append(all, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			all = append(all, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
-	return all
+	return all, nil
 }
 
 // FilesystemExtractors returns the plugins from a list which are filesystem Extractors.

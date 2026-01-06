@@ -25,7 +25,10 @@ import (
 )
 
 func TestExtractorNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, e := range pl.FilesystemExtractors(all) {
 		if prev, ok := names[e.Name()]; ok {
@@ -44,7 +47,10 @@ func TestExtractorNamesUnique(t *testing.T) {
 }
 
 func TestDetectorNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, d := range pl.Detectors(all) {
 		if prev, ok := names[d.Name()]; ok {
@@ -56,7 +62,10 @@ func TestDetectorNamesUnique(t *testing.T) {
 }
 
 func TestAnnotatorNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, a := range pl.Annotators(all) {
 		if prev, ok := names[a.Name()]; ok {
@@ -68,7 +77,10 @@ func TestAnnotatorNamesUnique(t *testing.T) {
 }
 
 func TestEnricherNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, e := range pl.Enrichers(all) {
 		if prev, ok := names[e.Name()]; ok {
@@ -83,7 +95,10 @@ func TestFromCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
 	want := []string{"os/snap", "weakcredentials/etcshadow"} // Available for Linux
 	dontWant := []string{"os/homebrew", "windows/dismpatch"} // Not available for Linux
-	plugins := pl.FromCapabilities(capab, &cpb.PluginConfig{})
+	plugins, err := pl.FromCapabilities(capab, &cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.FromCapabilities(%v): %v", capab, err)
+	}
 
 	for _, w := range want {
 		found := false

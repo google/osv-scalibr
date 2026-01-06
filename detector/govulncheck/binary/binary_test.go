@@ -45,13 +45,16 @@ func TestScan(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		wd = "/" + wd
 	}
-	det := binary.New(&cpb.PluginConfig{
+	det, err := binary.New(&cpb.PluginConfig{
 		PluginSpecific: []*cpb.PluginSpecificConfig{
 			{Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
 				OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 			}}},
 		},
 	})
+	if err != nil {
+		t.Fatalf("binary.New(): %v", err)
+	}
 	px := setupPackageIndex([]string{binaryName})
 	findings, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err != nil {
@@ -119,13 +122,16 @@ func TestScanErrorInGovulncheck(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		wd = "/" + wd
 	}
-	det := binary.New(&cpb.PluginConfig{
+	det, err := binary.New(&cpb.PluginConfig{
 		PluginSpecific: []*cpb.PluginSpecificConfig{
 			{Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
 				OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 			}}},
 		},
 	})
+	if err != nil {
+		t.Fatalf("binary.New: %v", err)
+	}
 	px := setupPackageIndex([]string{"nonexistent", binaryName})
 	result, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err == nil {

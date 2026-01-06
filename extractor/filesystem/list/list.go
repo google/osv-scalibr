@@ -143,7 +143,7 @@ import (
 )
 
 // InitFn is the extractor initializer function.
-type InitFn func(cfg *cpb.PluginConfig) filesystem.Extractor
+type InitFn func(cfg *cpb.PluginConfig) (filesystem.Extractor, error)
 
 // InitMap is a map of extractor names to their initers.
 type InitMap map[string][]InitFn
@@ -488,7 +488,7 @@ func vals(initMap InitMap) []InitFn {
 // Wraps initer functions that don't take any config value to initer functions that do.
 // TODO(b/400910349): Remove once all plugins take config values.
 func noCFG(f func() filesystem.Extractor) InitFn {
-	return func(_ *cpb.PluginConfig) filesystem.Extractor { return f() }
+	return func(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return f(), nil }
 }
 
 // ExtractorsFromName returns a list of extractors from a name.
@@ -496,7 +496,11 @@ func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]filesystem.Extrac
 	if initers, ok := extractorNames[name]; ok {
 		result := []filesystem.Extractor{}
 		for _, initer := range initers {
-			result = append(result, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}

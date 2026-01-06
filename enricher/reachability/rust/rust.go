@@ -82,8 +82,8 @@ func (*Enricher) RequiredPlugins() []string {
 }
 
 // New returns a new rust reachability enricher.
-func New(cfg *cpb.PluginConfig) enricher.Enricher {
-	return &Enricher{client: &realClient{}}
+func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	return &Enricher{client: &realClient{}}, nil
 }
 
 // NewWithClient returns a new rust reachability enricher with custom client.

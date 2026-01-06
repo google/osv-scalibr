@@ -92,12 +92,15 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			e := archive.New(&cpb.PluginConfig{
+			e, err := archive.New(&cpb.PluginConfig{
 				MaxFileSizeBytes: tt.maxFileSize,
 				PluginSpecific: []*cpb.PluginSpecificConfig{
 					{Config: &cpb.PluginSpecificConfig_Archive{Archive: &cpb.ArchiveConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
 				},
 			})
+			if err != nil {
+				t.Fatalf("archive.New(): %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileSize: tt.fileSize,
 			})); got != tt.want {
@@ -139,7 +142,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := archive.New(&cpb.PluginConfig{})
+			e, err := archive.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("archive.New(): %v", err)
+			}
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
 

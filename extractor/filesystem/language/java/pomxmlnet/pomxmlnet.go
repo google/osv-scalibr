@@ -51,7 +51,7 @@ type Extractor struct {
 }
 
 // New makes a new pom.xml transitive extractor with the given config.
-func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	upstreamRegistry := ""
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
 	if specific != nil {
@@ -68,7 +68,7 @@ func New(cfg *cpb.PluginConfig) filesystem.Extractor {
 	return &Extractor{
 		DepClient:   depClient,
 		MavenClient: mavenClient,
-	}
+	}, nil
 }
 
 // Name of the extractor.

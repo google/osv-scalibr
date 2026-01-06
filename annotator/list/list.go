@@ -35,7 +35,7 @@ import (
 )
 
 // InitFn is the annotator initializer function.
-type InitFn func(cfg *cpb.PluginConfig) annotator.Annotator
+type InitFn func(cfg *cpb.PluginConfig) (annotator.Annotator, error)
 
 // InitMap is a map of annotator names to their initers.
 type InitMap map[string][]InitFn
@@ -94,7 +94,7 @@ func vals(initMap InitMap) []InitFn {
 // Wraps initer functions that don't take any config value to initer functions that do.
 // TODO(b/400910349): Remove once all plugins take config values.
 func noCFG(f func() annotator.Annotator) InitFn {
-	return func(_ *cpb.PluginConfig) annotator.Annotator { return f() }
+	return func(_ *cpb.PluginConfig) (annotator.Annotator, error) { return f(), nil }
 }
 
 // AnnotatorsFromName returns a list of annotators from a name.
@@ -102,7 +102,11 @@ func AnnotatorsFromName(name string, cfg *cpb.PluginConfig) ([]annotator.Annotat
 	if initers, ok := annotatorNames[name]; ok {
 		result := []annotator.Annotator{}
 		for _, initer := range initers {
-			result = append(result, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}
