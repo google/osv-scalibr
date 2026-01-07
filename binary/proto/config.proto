@@ -37,6 +37,8 @@ message PluginConfig {
   // If true, do not try to create google.DefaultClient for Artifact Registry
   // during dependency resolution.
   bool disable_google_auth = 4;
+  // The user agent to use when making requests.
+  string user_agent = 5;
 
   // Config values that only apply to a single plugin.
   repeated PluginSpecificConfig plugin_specific = 2;
@@ -110,4 +112,6 @@ message SDPInspectConfig {
 message POMXMLNetConfig {
   // The URL of the upstream Maven registry.
   string upstream_registry = 1;
+  // If true, use deps.dev requirements API for dependency resolution.
+  bool deps_dev_requirements = 2;
 }
