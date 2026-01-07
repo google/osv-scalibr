@@ -28,6 +28,7 @@ import (
 	mavenresolve "deps.dev/util/resolve/maven"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/clients/resolution"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -63,7 +64,17 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		URL:             upstreamRegistry,
 		ReleasesEnabled: true,
 	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
-	depClient := resolution.NewMavenRegistryClientWithAPI(mavenClient)
+
+	var depClient resolve.Client
+	var err error
+	if specific.DepsDevRequirements {
+		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+		}
+	} else {
+		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
+	}
 
 	return &Extractor{
 		DepClient:   depClient,

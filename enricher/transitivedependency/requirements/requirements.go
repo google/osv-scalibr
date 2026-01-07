@@ -69,9 +69,10 @@ func (Enricher) RequiredPlugins() []string {
 
 // New creates a new Enricher.
 func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
-	client := resolution.NewPyPIRegistryClient("", "")
-	client.SetLocalRegistry(cfg.LocalRegistry)
-	return &Enricher{Client: client}, nil
+	return &Enricher{
+		// Empty remote registry indicates using the default PyPI registry.
+		Client: resolution.NewPyPIRegistryClient("", cfg.LocalRegistry),
+	}, nil
 }
 
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
