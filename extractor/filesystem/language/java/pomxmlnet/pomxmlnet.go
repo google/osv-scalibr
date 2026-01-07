@@ -54,9 +54,11 @@ type Extractor struct {
 // New makes a new pom.xml transitive extractor with the given config.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	upstreamRegistry := ""
+	depsdevRequirements := false
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
 	if specific != nil {
 		upstreamRegistry = specific.UpstreamRegistry
+		depsdevRequirements = specific.DepsDevRequirements
 	}
 
 	// No need to check errors since we are using the default Maven Central URL.
@@ -67,7 +69,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 
 	var depClient resolve.Client
 	var err error
-	if specific.DepsDevRequirements {
+	if depsdevRequirements {
 		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
 		if err != nil {
 			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
