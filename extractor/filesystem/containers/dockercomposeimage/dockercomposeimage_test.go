@@ -25,10 +25,12 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
-	extr := dockercomposeimage.New(dockercomposeimage.DefaultConfig())
+	extr := dockercomposeimage.New(&cpb.PluginConfig{})
 
 	tests := []struct {
 		name string
@@ -69,15 +71,14 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name         string
-		path         string
-		cfg          dockercomposeimage.Config
-		wantPackages []*extractor.Package
+		name             string
+		path             string
+		maxFileSizeBytes int64
+		wantPackages     []*extractor.Package
 	}{
 		{
 			name: "single_stage_docker_compose_file",
 			path: "testdata/docker-compose-extending.yaml",
-			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "ghcr.io/acme/api",
@@ -90,7 +91,6 @@ func TestExtract(t *testing.T) {
 		{
 			name: "multi_stage_docker_compose_file",
 			path: "testdata/docker-compose-1.yml",
-			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				// "image3" and "image6" are not expected because
 				// the version values are set(partially) via environment variables,
@@ -126,7 +126,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := dockercomposeimage.New(tc.cfg)
+			extr := dockercomposeimage.New(&cpb.PluginConfig{MaxFileSizeBytes: tc.maxFileSizeBytes})
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,
@@ -159,7 +159,7 @@ func TestExtract_failures(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := dockercomposeimage.New(dockercomposeimage.DefaultConfig())
+			extr := dockercomposeimage.New(&cpb.PluginConfig{})
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,
