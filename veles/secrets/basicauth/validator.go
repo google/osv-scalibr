@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/basicauth/validators"
@@ -48,7 +49,8 @@ func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.Val
 		return veles.ValidationFailed, fmt.Errorf("error parsing the url: %w", err)
 	}
 	var validator ProtocolValidator
-	switch u.Scheme {
+	scheme := strings.ToLower(u.Scheme)
+	switch scheme {
 	case "http", "https":
 		validator = &validators.HTTPValidator{Client: v.Client}
 	case "ftp":
@@ -56,7 +58,7 @@ func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.Val
 	case "sftp":
 		validator = &validators.SFTPValidator{}
 	default:
-		return veles.ValidationFailed, fmt.Errorf("scheme %q not supported", u.Scheme)
+		return veles.ValidationFailed, fmt.Errorf("scheme %q not supported", scheme)
 	}
 
 	return validator.Validate(ctx, u)

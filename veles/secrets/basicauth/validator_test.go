@@ -16,13 +16,16 @@ package basicauth_test
 
 import (
 	"bufio"
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -34,7 +37,8 @@ import (
 )
 
 func TestValidator(t *testing.T) {
-	httpSvr := mockHTTPServer(t, "admin", "pass")
+	basicAuthHTTPSvr := mockBasicAuthHTTPServer(t, "admin", "pass")
+	digestHTTPSvr := mockDigestHTTPServer(t, "admin", "pass")
 	ftpAddr := mockFTPServer(t, "user", "pass")
 	sftpAddr := mockSSHServer(t, "sshuser", "sshpass")
 
@@ -47,12 +51,22 @@ func TestValidator(t *testing.T) {
 		// HTTP Tests
 		{
 			name: "http_valid",
-			url:  fmt.Sprintf("http://admin:pass@%s/resource", httpSvr.Listener.Addr().String()),
+			url:  fmt.Sprintf("http://admin:pass@%s/resource", basicAuthHTTPSvr.Listener.Addr().String()),
 			want: veles.ValidationValid,
 		},
 		{
 			name: "http_invalid",
-			url:  fmt.Sprintf("http://admin:wrong@%s/resource", httpSvr.Listener.Addr().String()),
+			url:  fmt.Sprintf("http://admin:wrong@%s/resource", basicAuthHTTPSvr.Listener.Addr().String()),
+			want: veles.ValidationInvalid,
+		},
+		{
+			name: "http_valid_digest",
+			url:  fmt.Sprintf("http://admin:pass@%s/resource", digestHTTPSvr.Listener.Addr().String()),
+			want: veles.ValidationValid,
+		},
+		{
+			name: "http_invalid_digest",
+			url:  fmt.Sprintf("http://admin:wrong@%s/resource", digestHTTPSvr.Listener.Addr().String()),
 			want: veles.ValidationInvalid,
 		},
 		// FTP Tests
@@ -74,7 +88,7 @@ func TestValidator(t *testing.T) {
 		},
 		{
 			name: "sftp_invalid",
-			url:  "sftp://sshuser:wrong@%s" + sftpAddr,
+			url:  "sftp://sshuser:wrong@" + sftpAddr,
 			want: veles.ValidationInvalid,
 		},
 	}
@@ -117,7 +131,6 @@ func mockFTPServer(t *testing.T, validUser, validPass string) string {
 				var user string
 
 				for scanner.Scan() {
-					// 2. Use SplitN to handle passwords with spaces and commands without args
 					parts := strings.SplitN(strings.TrimSpace(scanner.Text()), " ", 2)
 					cmd := strings.ToUpper(parts[0])
 					arg := ""
@@ -139,7 +152,6 @@ func mockFTPServer(t *testing.T, validUser, validPass string) string {
 						fmt.Fprint(c, "221 Goodbye\r\n")
 						return
 					default:
-						// 3. Prevent client hangs on commands like SYST or FEAT
 						fmt.Fprint(c, "502 Command not implemented\r\n")
 					}
 				}
@@ -194,7 +206,7 @@ func mockSSHServer(t *testing.T, validUser, validPass string) string {
 	return l.Addr().String()
 }
 
-func mockHTTPServer(t *testing.T, validUser, validPass string) *httptest.Server {
+func mockBasicAuthHTTPServer(t *testing.T, validUser, validPass string) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, p, ok := r.BasicAuth()
@@ -206,4 +218,81 @@ func mockHTTPServer(t *testing.T, validUser, validPass string) *httptest.Server 
 	}))
 	t.Cleanup(func() { server.Close() })
 	return server
+}
+
+// mockDigestHTTPServer creates a test server that enforces Digest Authentication.
+func mockDigestHTTPServer(t *testing.T, validUser, validPass string) *httptest.Server {
+	t.Helper()
+
+	const (
+		realm     = "test-realm"
+		nonce     = "test-nonce"
+		qop       = "auth"
+		algorithm = "MD5"
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+
+		// If no Authorization header, send the Challenge (401)
+		if authHeader == "" {
+			w.Header().Set("WWW-Authenticate",
+				fmt.Sprintf(`Digest realm="%s", nonce="%s", algorithm=%s, qop="%s"`,
+					realm, nonce, algorithm, qop))
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// Parse the Client's Authorization Header
+		if !strings.HasPrefix(authHeader, "Digest ") {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Regex to parse key="value" or key=value
+		re := regexp.MustCompile(`([\w-]+)=(?:"([^"]*)"|([^,]*))`)
+		matches := re.FindAllStringSubmatch(authHeader[7:], -1) // Skip "Digest "
+
+		params := make(map[string]string)
+		for _, m := range matches {
+			val := m[2]
+			if val == "" {
+				val = m[3]
+			}
+			params[m[1]] = val
+		}
+
+		// handle login
+		if params["username"] != validUser {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if params["realm"] != realm || params["nonce"] != nonce {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		ha1 := md5Sum(fmt.Sprintf("%s:%s:%s", validUser, realm, validPass))
+		ha2 := md5Sum(fmt.Sprintf("%s:%s", r.Method, params["uri"]))
+
+		respRaw := fmt.Sprintf("%s:%s:%s:%s:%s:%s",
+			ha1, nonce, params["nc"], params["cnonce"], params["qop"], ha2)
+		expectedResponse := md5Sum(respRaw)
+
+		// Compare
+		if params["response"] != expectedResponse {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	t.Cleanup(server.Close)
+	return server
+}
+
+// md5Sum is a local helper for the test server
+func md5Sum(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
 }
