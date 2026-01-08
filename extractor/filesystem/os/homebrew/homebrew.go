@@ -16,11 +16,15 @@
 package homebrew
 
 import (
+	"bufio"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -42,10 +46,11 @@ const (
 // ../${appClass}/${appName}/${version}/${appFile}
 // e.g. ../Caskroom/firefox/1.1/firefox.wrapper.sh or ../Cellar/tree/1.1/INSTALL_RECEIPT.json
 type BrewPath struct {
-	AppName    string
-	AppVersion string
-	AppFile    string
-	AppExt     string
+	AppName        string
+	AppVersion     string
+	AppFile        string
+	AppExt         string
+	AppFormulaPath string
 }
 
 // Extractor extracts software details from a OSX Homebrew package path.
@@ -99,30 +104,81 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if p == nil {
 		return inventory.Inventory{}, nil
 	}
-	return inventory.Inventory{Packages: []*extractor.Package{
-		{
-			Name:      p.AppName,
-			Version:   p.AppVersion,
-			PURLType:  purl.TypeBrew,
-			Locations: []string{input.Path},
-		},
-	}}, nil
+	pkg := &extractor.Package{
+		Name:      p.AppName,
+		Version:   p.AppVersion,
+		PURLType:  purl.TypeBrew,
+		Locations: []string{input.Path},
+	}
+
+	// If we found a formula file path, parse it and attach the metadata to the package.
+	if p.AppFormulaPath != "" {
+		pkg.Metadata = parseFormula(filepath.Join(input.Root, p.AppFormulaPath))
+	}
+
+	return inventory.Inventory{Packages: []*extractor.Package{pkg}}, nil
 }
 
 // SplitPath takes the package path and splits it into its recognised struct components
-func SplitPath(path string) *BrewPath {
-	path = strings.ToLower(path)
+func SplitPath(origPath string) *BrewPath {
+	path := strings.ToLower(origPath)
 	pathParts := strings.Split(path, "/")
 	for i, pathPart := range pathParts {
 		// Check if the path is a homebrew path and if the path is of a valid length.
 		if (pathPart == cellarPath || pathPart == caskPath) && len(pathParts) > (i+3) {
-			return &BrewPath{
+			brewPackage := BrewPath{
 				AppName:    pathParts[i+1],
 				AppVersion: pathParts[i+2],
 				AppFile:    pathParts[i+3],
 				AppExt:     pathParts[len(pathParts)-1],
 			}
+			// For Cellar packages, attempt to extract the formula file path.
+			if pathPart == cellarPath {
+				origPathParts := strings.Split(origPath, "/")
+				formulaFilePath := filepath.Join(strings.Join(origPathParts[:i+3], "/"), ".brew", brewPackage.AppName+".rb")
+				brewPackage.AppFormulaPath = formulaFilePath
+			}
+			return &brewPackage
 		}
 	}
 	return nil
+}
+
+// Function parses Cellar/*/*/.brew/*.rb files to extract URL, Head, and Mirrors if possible.
+func parseFormula(formulaFilePath string) *metadata.Metadata {
+	metadata := &metadata.Metadata{}
+	file, err := os.Open(formulaFilePath)
+	if err != nil {
+		return metadata
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		s := scanner.Text()
+
+		switch {
+		case strings.HasPrefix(s, "  url "):
+			metadata.URL = extractField(s)
+		case strings.HasPrefix(s, "  head "):
+			metadata.Head = extractField(s)
+		case strings.HasPrefix(s, "  mirror "):
+			mirror := extractField(s)
+			if mirror != "" {
+				metadata.Mirrors = append(metadata.Mirrors, mirror)
+			}
+		}
+	}
+
+	return metadata
+}
+
+func extractField(line string) string {
+	parsed := strings.SplitN(line, "\"", 3)
+	if len(parsed) < 2 {
+		return ""
+	}
+
+	return parsed[1]
 }
