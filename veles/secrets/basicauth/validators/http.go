@@ -64,10 +64,16 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("error building authenticated request: %w", err)
 	}
+	// Add probe response cookies
+	// This was needed when testing against flask_httpauth.HTTPDigestAuth.
+	for _, c := range resp.Cookies() {
+		req.AddCookie(c)
+	}
 
 	// Check the WWW-Authenticate header.
-	switch authHeader := strings.ToLower(resp.Header.Get("WWW-Authenticate")); authHeader {
-	case "digest":
+	authHeader := strings.ToLower(resp.Header.Get("WWW-Authenticate"))
+	switch {
+	case strings.HasPrefix(authHeader, "digest"):
 		digest, err := buildDigest(u, authHeader)
 		if err != nil {
 			return veles.ValidationFailed, err

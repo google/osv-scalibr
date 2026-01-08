@@ -15,7 +15,6 @@
 package basicauth_test
 
 import (
-	"bufio"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
@@ -25,7 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
+	"net/textproto"
 	"strings"
 	"testing"
 
@@ -38,7 +37,8 @@ import (
 
 func TestValidator(t *testing.T) {
 	basicAuthHTTPSvr := mockBasicAuthHTTPServer(t, "admin", "pass")
-	digestHTTPSvr := mockDigestHTTPServer(t, "admin", "pass")
+	digestHTTPSvr := mockDigestHTTPServer(t, "admin", "pass", false)
+	digestHTTPSvrWithCookies := mockDigestHTTPServer(t, "admin", "pass", true)
 	ftpAddr := mockFTPServer(t, "user", "pass")
 	sftpAddr := mockSSHServer(t, "sshuser", "sshpass")
 
@@ -67,6 +67,16 @@ func TestValidator(t *testing.T) {
 		{
 			name: "http_invalid_digest",
 			url:  fmt.Sprintf("http://admin:wrong@%s/resource", digestHTTPSvr.Listener.Addr().String()),
+			want: veles.ValidationInvalid,
+		},
+		{
+			name: "http_valid_digest_with_set_cookie",
+			url:  fmt.Sprintf("http://admin:pass@%s/resource", digestHTTPSvrWithCookies.Listener.Addr().String()),
+			want: veles.ValidationValid,
+		},
+		{
+			name: "http_invalid_digest_with_set_cookie",
+			url:  fmt.Sprintf("http://admin:wrong@%s/resource", digestHTTPSvrWithCookies.Listener.Addr().String()),
 			want: veles.ValidationInvalid,
 		},
 		// FTP Tests
@@ -124,14 +134,20 @@ func mockFTPServer(t *testing.T, validUser, validPass string) string {
 				return // Listener closed by t.Cleanup
 			}
 			go func(c net.Conn) {
-				defer c.Close()
-				fmt.Fprint(c, "220 Welcome\r\n")
+				tc := textproto.NewConn(c)
+				defer tc.Close()
 
-				scanner := bufio.NewScanner(c)
+				tc.PrintfLine("220 Welcome")
+
 				var user string
 
-				for scanner.Scan() {
-					parts := strings.SplitN(strings.TrimSpace(scanner.Text()), " ", 2)
+				for {
+					line, err := tc.ReadLine()
+					if err != nil {
+						return
+					}
+
+					parts := strings.SplitN(strings.TrimSpace(line), " ", 2)
 					cmd := strings.ToUpper(parts[0])
 					arg := ""
 					if len(parts) > 1 {
@@ -141,18 +157,18 @@ func mockFTPServer(t *testing.T, validUser, validPass string) string {
 					switch cmd {
 					case "USER":
 						user = arg
-						fmt.Fprint(c, "331 Password required\r\n")
+						tc.PrintfLine("331 Password required")
 					case "PASS":
 						if user == validUser && arg == validPass {
-							fmt.Fprint(c, "230 Logged in\r\n")
+							tc.PrintfLine("230 Logged in")
 						} else {
-							fmt.Fprint(c, "530 Login incorrect\r\n")
+							tc.PrintfLine("530 Login incorrect")
 						}
 					case "QUIT":
-						fmt.Fprint(c, "221 Goodbye\r\n")
+						tc.PrintfLine("221 Goodbye")
 						return
 					default:
-						fmt.Fprint(c, "502 Command not implemented\r\n")
+						tc.PrintfLine("502 Command not implemented")
 					}
 				}
 			}(conn)
@@ -221,8 +237,13 @@ func mockBasicAuthHTTPServer(t *testing.T, validUser, validPass string) *httptes
 }
 
 // mockDigestHTTPServer creates a test server that enforces Digest Authentication.
-func mockDigestHTTPServer(t *testing.T, validUser, validPass string) *httptest.Server {
+func mockDigestHTTPServer(t *testing.T, validUser, validPass string, testCookies bool) *httptest.Server {
 	t.Helper()
+
+	md5Sum := func(text string) string {
+		hash := md5.Sum([]byte(text))
+		return hex.EncodeToString(hash[:])
+	}
 
 	const (
 		realm     = "test-realm"
@@ -231,43 +252,57 @@ func mockDigestHTTPServer(t *testing.T, validUser, validPass string) *httptest.S
 		algorithm = "MD5"
 	)
 
+	const (
+		cookieName  = "test-cookie"
+		cookieValue = "test-cookie-value"
+	)
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 
 		// If no Authorization header, send the Challenge (401)
 		if authHeader == "" {
-			w.Header().Set("WWW-Authenticate",
-				fmt.Sprintf(`Digest realm="%s", nonce="%s", algorithm=%s, qop="%s"`,
-					realm, nonce, algorithm, qop))
+			w.Header().Set(
+				"WWW-Authenticate", fmt.Sprintf(
+					`Digest realm="%s", nonce="%s", algorithm=%s, qop="%s"`,
+					realm, nonce, algorithm, qop,
+				),
+			)
+			if testCookies {
+				http.SetCookie(w, &http.Cookie{
+					Name:  cookieName,
+					Value: cookieValue,
+					Path:  "/",
+				})
+			}
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		// Parse the Client's Authorization Header
-		if !strings.HasPrefix(authHeader, "Digest ") {
+		// If  enabled check that the client uses the given cookies
+		if testCookies {
+			c, err := r.Cookie(cookieName)
+			if err != nil || c.Value != cookieValue {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+		}
+
+		// Parse the parameter
+		content, ok := strings.CutPrefix(authHeader, "Digest ")
+		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-
-		// Regex to parse key="value" or key=value
-		re := regexp.MustCompile(`([\w-]+)=(?:"([^"]*)"|([^,]*))`)
-		matches := re.FindAllStringSubmatch(authHeader[7:], -1) // Skip "Digest "
-
 		params := make(map[string]string)
-		for _, m := range matches {
-			val := m[2]
-			if val == "" {
-				val = m[3]
+		for pair := range strings.SplitSeq(content, ",") {
+			if k, v, ok := strings.Cut(strings.TrimSpace(pair), "="); ok {
+				params[k] = strings.Trim(v, `"`)
 			}
-			params[m[1]] = val
 		}
 
-		// handle login
-		if params["username"] != validUser {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		if params["realm"] != realm || params["nonce"] != nonce {
+		// Handle login
+		if params["username"] != validUser || params["realm"] != realm || params["nonce"] != nonce {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -275,11 +310,9 @@ func mockDigestHTTPServer(t *testing.T, validUser, validPass string) *httptest.S
 		ha1 := md5Sum(fmt.Sprintf("%s:%s:%s", validUser, realm, validPass))
 		ha2 := md5Sum(fmt.Sprintf("%s:%s", r.Method, params["uri"]))
 
-		respRaw := fmt.Sprintf("%s:%s:%s:%s:%s:%s",
-			ha1, nonce, params["nc"], params["cnonce"], params["qop"], ha2)
-		expectedResponse := md5Sum(respRaw)
+		expectedResponse := md5Sum(fmt.Sprintf("%s:%s:%s:%s:%s:%s",
+			ha1, nonce, params["nc"], params["cnonce"], params["qop"], ha2))
 
-		// Compare
 		if params["response"] != expectedResponse {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -289,10 +322,4 @@ func mockDigestHTTPServer(t *testing.T, validUser, validPass string) *httptest.S
 
 	t.Cleanup(server.Close)
 	return server
-}
-
-// md5Sum is a local helper for the test server
-func md5Sum(text string) string {
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
 }
