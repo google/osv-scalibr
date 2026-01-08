@@ -1347,7 +1347,7 @@ type Package_NodeversionMetadata struct {
 }
 
 type Package_DepGroupMetadata struct {
-	DepGroupMetadata *DepGroupMetadata `protobuf:"bytes,59,opt,name=dep_group_metadata,json=depGroupMetadata,proto3,oneof"`
+	DepGroupMetadata *DepGroupMetadata `protobuf:"bytes,61,opt,name=dep_group_metadata,json=depGroupMetadata,proto3,oneof"`
 }
 
 func (*Package_PythonMetadata) isPackage_Metadata() {}
@@ -9931,7 +9931,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\rasdf_metadata\x187 \x01(\v2\x15.scalibr.AsdfMetadataH\x00R\fasdfMetadata\x129\n" +
 	"\fnvm_metadata\x188 \x01(\v2\x14.scalibr.NvmMetadataH\x00R\vnvmMetadata\x12Q\n" +
 	"\x14nodeversion_metadata\x18: \x01(\v2\x1c.scalibr.NodeVersionMetadataH\x00R\x13nodeversionMetadata\x12I\n" +
-	"\x12dep_group_metadata\x18; \x01(\v2\x19.scalibr.DepGroupMetadataH\x00R\x10depGroupMetadata\x12[\n" +
+	"\x12dep_group_metadata\x18= \x01(\v2\x19.scalibr.DepGroupMetadataH\x00R\x10depGroupMetadata\x12[\n" +
 	"\x16exploitability_signals\x183 \x03(\v2$.scalibr.PackageExploitabilitySignalR\x15exploitabilitySignals\x12\x1a\n" +
 	"\blicenses\x184 \x03(\tR\blicenses\x12|\n" +
 	" container_image_metadata_indexes\x189 \x01(\v2..scalibr.Package.ContainerImageMetadataIndexesH\x01R\x1dcontainerImageMetadataIndexes\x88\x01\x01\x1at\n" +

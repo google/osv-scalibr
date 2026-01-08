@@ -137,7 +137,7 @@ message Package {
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
     NodeVersionMetadata nodeversion_metadata = 58;
-    DepGroupMetadata dep_group_metadata = 59;
+    DepGroupMetadata dep_group_metadata = 61;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
