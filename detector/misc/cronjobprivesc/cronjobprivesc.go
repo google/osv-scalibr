@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cronjobs implements a detector for misconfigured cron jobs and scheduled tasks that could lead to privilege escalation.
-package cronjobs
+// Package cronjobprivesc implements a detector for misconfigured cron jobs and scheduled tasks that could lead to privilege escalation.
+package cronjobprivesc
 
 import (
 	"bufio"
@@ -37,7 +37,7 @@ import (
 
 const (
 	// Name of the detector.
-	Name = "cronjobs"
+	Name = "cronjobprivesc"
 )
 
 // Detector is a SCALIBR Detector for cron job and scheduled task privilege escalation vulnerabilities.
@@ -58,7 +58,7 @@ func (Detector) Version() int { return 0 }
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Requirements of the Detector.
-func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSAny} }
+func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
@@ -142,7 +142,7 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 		return inventory.Finding{}, nil
 	}
 
-	target := &inventory.GenericFindingTargetDetails{Extra: strings.Join(issues, "; ")}
+	target := &inventory.GenericFindingTargetDetails{Extra: strings.Join(issues, "\n")}
 	return d.findingForTarget(target), nil
 }
 

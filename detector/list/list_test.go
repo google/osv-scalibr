@@ -60,6 +60,7 @@ func TestDetectorsFromName(t *testing.T) {
 			desc: "Find_misc_detectors",
 			name: "misc",
 			wantDets: []string{
+				"cronjobprivesc",
 				"dockersocket",
 			},
 		},

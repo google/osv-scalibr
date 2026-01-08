@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cronjobs
+package cronjobprivesc
 
 import (
 	"context"
@@ -296,7 +296,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			if len(finding.GenericFindings) > 0 {
 				extra := finding.GenericFindings[0].Target.Extra
 				if extra != "" {
-					actualIssues = strings.Split(extra, "; ")
+					actualIssues = strings.Split(extra, "\n")
 				}
 			}
 
@@ -393,7 +393,7 @@ func TestLinuxCronJobsFilePermissions(t *testing.T) {
 			if len(finding.GenericFindings) > 0 {
 				extra := finding.GenericFindings[0].Target.Extra
 				if extra != "" {
-					actualIssues = strings.Split(extra, "; ")
+					actualIssues = strings.Split(extra, "\n")
 				}
 			}
 
@@ -528,7 +528,7 @@ func TestWindowsScheduledTasks(t *testing.T) {
 			if len(finding.GenericFindings) > 0 {
 				extra := finding.GenericFindings[0].Target.Extra
 				if extra != "" {
-					actualIssues = strings.Split(extra, "; ")
+					actualIssues = strings.Split(extra, "\n")
 				}
 			}
 
@@ -655,7 +655,7 @@ func TestMacOSLaunchd(t *testing.T) {
 			if len(finding.GenericFindings) > 0 {
 				extra := finding.GenericFindings[0].Target.Extra
 				if extra != "" {
-					actualIssues = strings.Split(extra, "; ")
+					actualIssues = strings.Split(extra, "\n")
 				}
 			}
 
@@ -891,7 +891,7 @@ func TestCronPeriodicDirectories(t *testing.T) {
 			if len(finding.GenericFindings) > 0 {
 				extra := finding.GenericFindings[0].Target.Extra
 				if extra != "" {
-					actualIssues = strings.Split(extra, "; ")
+					actualIssues = strings.Split(extra, "\n")
 				}
 			}
 
