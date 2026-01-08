@@ -25,7 +25,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 )
 
-// FTPValidator validates a Basic Auth URL with an ftp schema.
+// FTPValidator validates an URL credential with an ftp schema.
 type FTPValidator struct{}
 
 // Validate attempts to connect and authenticate to the FTP server.

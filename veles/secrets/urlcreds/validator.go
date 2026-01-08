@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauth
+package urlcreds
 
 import (
 	"context"
@@ -22,27 +22,27 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/basicauth/validators"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds/validators"
 )
 
-// ProtocolValidator is the interface that groups basic auth validators.
+// ProtocolValidator is the interface that groups URL credentials validators.
 type ProtocolValidator interface {
 	Validate(ctx context.Context, u *url.URL) (veles.ValidationStatus, error)
 }
 
-// Validator is a basic auth URL validator.
+// Validator is a URL credentials validator.
 type Validator struct {
 	Client *http.Client
 }
 
-// NewValidator returns a basic auth URL validator.
+// NewValidator returns an URL credentials validator.
 func NewValidator() veles.Validator[Credentials] {
 	return &Validator{
 		Client: http.DefaultClient,
 	}
 }
 
-// Validate checks whether a Basic Auth URL is valid by making one or more requests to the target service.
+// Validate checks whether an URL credential is valid by making one or more requests to the target service.
 func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.ValidationStatus, error) {
 	u, err := url.Parse(secret.FullURL)
 	if err != nil {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauth
+package urlcreds
 
 import (
 	"net/url"
@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	// urlPattern matches URLs containing basic authentication credentials.
+	// urlPattern matches URLs containing credentials.
 	// ref: https://www.rfc-editor.org/rfc/rfc3986
 	urlPattern = regexp.MustCompile(`\b[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s@\/]+@[^\s\/:]+(?::\d+)?(?:\/[^\s]*)?\b`)
 )

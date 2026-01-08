@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauth_test
+package urlcreds_test
 
 import (
 	"crypto/md5"
@@ -31,7 +31,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/basicauth"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -105,8 +105,8 @@ func TestValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			v := basicauth.NewValidator()
-			got, err := v.Validate(t.Context(), basicauth.Credentials{FullURL: tt.url})
+			v := urlcreds.NewValidator()
+			got, err := v.Validate(t.Context(), urlcreds.Credentials{FullURL: tt.url})
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)

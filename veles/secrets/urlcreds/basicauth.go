@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package basicauth contains the logic to extract URLs with basic auth credentials.
-package basicauth
+// Package urlcreds contains the logic to extract URLs with credentials.
+package urlcreds
 
-// Credentials contains an URL with basic auth credentials.
+// Credentials contains an URL with credentials.
 type Credentials struct {
 	FullURL string
 }

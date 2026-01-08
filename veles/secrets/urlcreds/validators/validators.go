@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package validators implements schema-specific validation logic for Basic Auth URLs.
+// Package validators implements schema-specific validation logic for credentials contained in URLs.
 package validators

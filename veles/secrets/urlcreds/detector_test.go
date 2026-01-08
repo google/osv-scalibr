@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauth_test
+package urlcreds_test
 
 import (
 	"strings"
@@ -21,11 +21,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/basicauth"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 )
 
 func TestDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{basicauth.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{urlcreds.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,42 +39,42 @@ func TestDetector_truePositives(t *testing.T) {
 			name:  "simple_matching_string",
 			input: "http://user:password@example.com",
 			want: []veles.Secret{
-				basicauth.Credentials{FullURL: "http://user:password@example.com"},
+				urlcreds.Credentials{FullURL: "http://user:password@example.com"},
 			},
 		},
 		{
 			name:  "user_no_password",
 			input: "http://user:@example.com",
 			want: []veles.Secret{
-				basicauth.Credentials{FullURL: "http://user:@example.com"},
+				urlcreds.Credentials{FullURL: "http://user:@example.com"},
 			},
 		},
 		{
 			name:  "password_no_user",
 			input: "http://:password@example.com",
 			want: []veles.Secret{
-				basicauth.Credentials{FullURL: "http://:password@example.com"},
+				urlcreds.Credentials{FullURL: "http://:password@example.com"},
 			},
 		},
 		{
 			name:  "encoded_user_and_password",
 			input: "http://user%40name:pass%3Aword@example.com",
 			want: []veles.Secret{
-				basicauth.Credentials{FullURL: "http://user%40name:pass%3Aword@example.com"},
+				urlcreds.Credentials{FullURL: "http://user%40name:pass%3Aword@example.com"},
 			},
 		},
 		{
 			name:  "encoded_user_no_password",
 			input: "http://user%40name:@example.com",
 			want: []veles.Secret{
-				basicauth.Credentials{FullURL: "http://user%40name:@example.com"},
+				urlcreds.Credentials{FullURL: "http://user%40name:@example.com"},
 			},
 		},
 		{
 			name:  "encoded_password_no_user",
 			input: "http://:pass%3Aword@example.com",
 			want: []veles.Secret{
-				basicauth.Credentials{FullURL: "http://:pass%3Aword@example.com"},
+				urlcreds.Credentials{FullURL: "http://:pass%3Aword@example.com"},
 			},
 		},
 	}
@@ -93,7 +93,7 @@ func TestDetector_truePositives(t *testing.T) {
 }
 
 func TestDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{basicauth.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{urlcreds.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}

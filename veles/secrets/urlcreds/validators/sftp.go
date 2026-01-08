@@ -25,10 +25,10 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// SFTPValidator validates a Basic Auth URL with sftp schema.
+// SFTPValidator validates sftp URL credentials.
 type SFTPValidator struct{}
 
-// Validate validates a Basic Auth URL with sftp schema.
+// Validate validates sftp URL credentials.
 func (s *SFTPValidator) Validate(ctx context.Context, u *url.URL) (veles.ValidationStatus, error) {
 	pass, _ := u.User.Password()
 	config := &ssh.ClientConfig{
