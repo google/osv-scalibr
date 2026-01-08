@@ -137,6 +137,7 @@ message Package {
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
     NodeVersionMetadata nodeversion_metadata = 58;
+    ChocolateyPackageMetadata chocolatey_metadata = 59;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -631,6 +632,17 @@ message PodmanMetadata {
   int32 exit_code = 7;
   bool exited = 8;
 }
+
+// The additional data found in Chocolatey packages.
+message ChocolateyPackageMetadata {
+  string name = 1;
+  string version = 2;
+  string authors = 3;
+  string licenseurl = 4;
+  string projecturl = 5;
+  string tags = 6;
+}
+
 
 message Protocol {
   repeated string names = 1;

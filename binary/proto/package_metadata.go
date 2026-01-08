@@ -29,6 +29,7 @@ import (
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	chocolateymeta "github.com/google/osv-scalibr/extractor/filesystem/os/chocolatey/metadata"
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
@@ -114,6 +115,9 @@ var (
 		reflect.TypeFor[*spb.Package_WingetMetadata](): func(p *spb.Package) any {
 			return wingetmeta.ToStruct(p.GetWingetMetadata())
 		},
+		reflect.TypeFor[*spb.Package_ChocolateyMetadata](): func(p *spb.Package) any {
+			return chocolateymeta.ToStruct(p.GetChocolateyMetadata())
+		},
 		reflect.TypeFor[*spb.Package_ContainerdContainerMetadata](): func(md *spb.Package) any {
 			return ctrdfs.ToStruct(md.GetContainerdContainerMetadata())
 		},
@@ -196,5 +200,6 @@ var (
 		(*chromeextensions.Metadata)(nil),
 		(*podman.Metadata)(nil),
 		(*javalockfile.Metadata)(nil),
+		(*chocolateymeta.Metadata)(nil),
 	}
 )
