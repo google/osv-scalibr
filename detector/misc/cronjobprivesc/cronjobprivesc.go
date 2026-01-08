@@ -40,6 +40,11 @@ const (
 	Name = "cronjobprivesc"
 )
 
+var (
+	// windowsAbsolutePathRegex matches Windows absolute paths like C:\ or D:\
+	windowsAbsolutePathRegex = regexp.MustCompile(`^[A-Z]:\\`)
+)
+
 // Detector is a SCALIBR Detector for cron job and scheduled task privilege escalation vulnerabilities.
 type Detector struct{}
 
@@ -349,11 +354,14 @@ func (d Detector) analyzeCommand(fsys fs.FS, filePath string, lineNum int, comma
 		return issues
 	}
 
-	// Check for execution in world-writable directories
-	dangerousPaths := []string{"/tmp/", "/var/tmp/", "/dev/shm/"}
-	for _, dangerousPath := range dangerousPaths {
-		if strings.HasPrefix(executable, dangerousPath) {
-			issues = append(issues, fmt.Sprintf("%s:%d: execution from world-writable directory '%s'", filePath, lineNum, executable))
+	// Check if the executable's parent directory is world-writable
+	parentDir := executable[:strings.LastIndex(executable, "/")]
+	if parentDir == "" {
+		parentDir = "/"
+	}
+	if dirIssues := d.checkDirectoryPermissions(fsys, parentDir, executable); len(dirIssues) > 0 {
+		for _, issue := range dirIssues {
+			issues = append(issues, fmt.Sprintf("%s:%d: %s", filePath, lineNum, issue))
 		}
 	}
 
@@ -407,26 +415,36 @@ func (d Detector) checkExecutablePermissions(fsys fs.FS, path string) []string {
 	return issues
 }
 
+// checkDirectoryPermissions checks if a directory is world-writable.
+func (d Detector) checkDirectoryPermissions(fsys fs.FS, dirPath, executablePath string) []string {
+	var issues []string
+
+	f, err := fsys.Open(dirPath)
+	if err != nil {
+		// If we can't access the directory, we can't check its permissions
+		return issues
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return issues
+	}
+
+	perms := info.Mode().Perm()
+
+	// Check for world-writable permissions on the directory
+	if perms&0002 != 0 {
+		issues = append(issues, fmt.Sprintf("execution from world-writable directory '%s' (permissions: %03o)", executablePath, perms))
+	}
+
+	return issues
+}
+
 // WindowsTaskDefinition represents the structure of a Windows scheduled task XML.
 type WindowsTaskDefinition struct {
-	XMLName    xml.Name              `xml:"Task"`
-	Triggers   WindowsTaskTriggers   `xml:"Triggers"`
 	Principals WindowsTaskPrincipals `xml:"Principals"`
 	Actions    WindowsTaskActions    `xml:"Actions"`
-}
-
-// WindowsTaskTriggers represents task trigger configurations in Windows Task Scheduler XML.
-type WindowsTaskTriggers struct {
-	BootTrigger     []WindowsTaskTrigger `xml:"BootTrigger"`
-	CalendarTrigger []WindowsTaskTrigger `xml:"CalendarTrigger"`
-	IdleTrigger     []WindowsTaskTrigger `xml:"IdleTrigger"`
-	LogonTrigger    []WindowsTaskTrigger `xml:"LogonTrigger"`
-	TimeTrigger     []WindowsTaskTrigger `xml:"TimeTrigger"`
-}
-
-// WindowsTaskTrigger represents a single task trigger in Windows Task Scheduler XML.
-type WindowsTaskTrigger struct {
-	Enabled string `xml:"Enabled"`
 }
 
 // WindowsTaskPrincipals represents task security principals in Windows Task Scheduler XML.
@@ -447,8 +465,7 @@ type WindowsTaskActions struct {
 
 // WindowsTaskExec represents an executable action in Windows Task Scheduler XML.
 type WindowsTaskExec struct {
-	Command   string `xml:"Command"`
-	Arguments string `xml:"Arguments"`
+	Command string `xml:"Command"`
 }
 
 // checkWindowsTaskScheduler checks Windows scheduled tasks for security issues.
@@ -525,9 +542,10 @@ func (d Detector) checkWindowsTaskFile(ctx context.Context, fsys fs.FS, path str
 		if principal.RunLevel == "HighestAvailable" || principal.RunLevel == "RequireAdministrator" {
 			isElevated = true
 		}
-		if strings.ToUpper(principal.UserID) == "SYSTEM" ||
-			strings.ToUpper(principal.UserID) == "NT AUTHORITY\\SYSTEM" ||
-			strings.Contains(strings.ToUpper(principal.UserID), "ADMINISTRATOR") {
+		upperUserID := strings.ToUpper(principal.UserID)
+		if upperUserID == "SYSTEM" ||
+			upperUserID == "NT AUTHORITY\\SYSTEM" ||
+			strings.Contains(upperUserID, "ADMINISTRATOR") {
 			isSystemUser = true
 		}
 	}
@@ -567,8 +585,8 @@ func (d Detector) analyzeWindowsCommand(fsys fs.FS, taskPath, command string) []
 		}
 	}
 
-	// Check for relative paths
-	if !strings.Contains(command, ":\\") && !strings.HasPrefix(command, "%") {
+	// Check for relative paths - must start with drive letter (e.g., C:\) or environment variable
+	if !windowsAbsolutePathRegex.MatchString(strings.ToUpper(command)) && !strings.HasPrefix(command, "%") {
 		issues = append(issues, fmt.Sprintf("%s: relative path '%s' in privileged scheduled task", taskPath, command))
 	}
 
@@ -589,20 +607,6 @@ func (d Detector) analyzeWindowsCommand(fsys fs.FS, taskPath, command string) []
 	}
 
 	return issues
-}
-
-// MacOSLaunchd represents a macOS launchd plist structure.
-type MacOSLaunchd struct {
-	Label                string            `plist:"Label"`
-	ProgramArguments     []string          `plist:"ProgramArguments"`
-	Program              string            `plist:"Program"`
-	UserName             string            `plist:"UserName"`
-	GroupName            string            `plist:"GroupName"`
-	RunAtLoad            bool              `plist:"RunAtLoad"`
-	KeepAlive            bool              `plist:"KeepAlive"`
-	StartOnMount         bool              `plist:"StartOnMount"`
-	LaunchOnlyOnce       bool              `plist:"LaunchOnlyOnce"`
-	EnvironmentVariables map[string]string `plist:"EnvironmentVariables"`
 }
 
 // checkMacOSLaunchd checks macOS launchd plist files for security issues.

@@ -38,8 +38,8 @@ func expectRelativePath(file string, line int, path string) string {
 	return fmt.Sprintf("%s:%d: relative path '%s' in privileged cron job", file, line, path)
 }
 
-func expectWorldWritableDir(file string, line int, path string) string {
-	return fmt.Sprintf("%s:%d: execution from world-writable directory '%s'", file, line, path)
+func expectWorldWritableDir(file string, line int, path string, perms fs.FileMode) string {
+	return fmt.Sprintf("%s:%d: execution from world-writable directory '%s' (permissions: %03o)", file, line, path, perms.Perm())
 }
 
 func expectWorldWritableFile(file string, line int, path string) string {
@@ -198,6 +198,7 @@ func TestLinuxCronJobs(t *testing.T) {
 	tests := []struct {
 		name       string
 		files      map[string]string
+		dirs       map[string]fs.FileMode // directories with their permissions
 		wantIssues []string
 	}{
 		{
@@ -209,6 +210,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 0 0 * * * root /usr/bin/backup.sh
 30 2 * * * root /usr/local/bin/cleanup.pl`,
 			},
+			dirs:       nil,
 			wantIssues: nil,
 		},
 		{
@@ -217,6 +219,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 				"etc/crontab": `# System crontab
 0 0 * * * root backup.sh`,
 			},
+			dirs:       nil,
 			wantIssues: []string{expectRelativePath("etc/crontab", 2, "backup.sh")},
 		},
 		{
@@ -225,7 +228,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 				"etc/crontab": `# System crontab
 0 0 * * * root /tmp/malicious_script.sh`,
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/tmp/malicious_script.sh")},
+			dirs: map[string]fs.FileMode{
+				"tmp": 0777, // world-writable
+			},
+			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/tmp/malicious_script.sh", 0777)},
 		},
 		{
 			name: "insecure crontab - execution from /var/tmp",
@@ -233,7 +239,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 				"etc/crontab": `# System crontab
 0 0 * * * root /var/tmp/dangerous.py`,
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/var/tmp/dangerous.py")},
+			dirs: map[string]fs.FileMode{
+				"var/tmp": 0777, // world-writable
+			},
+			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/var/tmp/dangerous.py", 0777)},
 		},
 		{
 			name: "mixed secure and insecure entries",
@@ -243,9 +252,12 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 30 1 * * * root bad_script.sh
 0 2 * * * root /tmp/worse_script.sh`,
 			},
+			dirs: map[string]fs.FileMode{
+				"tmp": 0777, // world-writable
+			},
 			wantIssues: []string{
 				expectRelativePath("etc/crontab", 3, "bad_script.sh"),
-				expectWorldWritableDir("etc/crontab", 4, "/tmp/worse_script.sh"),
+				expectWorldWritableDir("etc/crontab", 4, "/tmp/worse_script.sh", 0777),
 			},
 		},
 		{
@@ -255,6 +267,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 0 0 * * * /usr/bin/backup.sh
 30 1 * * * relative_script.sh`,
 			},
+			dirs:       nil,
 			wantIssues: []string{expectRelativePath("var/spool/cron/root", 3, "relative_script.sh")},
 		},
 		{
@@ -263,7 +276,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 				"etc/cron.d/backup":    `0 0 * * * root /usr/bin/backup.sh`,
 				"etc/cron.d/malicious": `0 0 * * * root /dev/shm/exploit.sh`,
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/cron.d/malicious", 1, "/dev/shm/exploit.sh")},
+			dirs: map[string]fs.FileMode{
+				"dev/shm": 0777, // world-writable
+			},
+			wantIssues: []string{expectWorldWritableDir("etc/cron.d/malicious", 1, "/dev/shm/exploit.sh", 0777)},
 		},
 		{
 			name: "comments and empty lines should be ignored",
@@ -274,19 +290,36 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # Empty line above
 0 0 * * * root /usr/bin/safe_script.sh`,
 			},
+			dirs:       nil,
 			wantIssues: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fsys := fstest.MapFS{}
+			testFS := &testFS{
+				MapFS:       fstest.MapFS{},
+				customFiles: make(map[string]fakeFile),
+			}
+
+			// Add files
 			for path, content := range tt.files {
-				fsys[path] = &fstest.MapFile{Data: []byte(content)}
+				testFS.MapFS[path] = &fstest.MapFile{Data: []byte(content)}
+			}
+
+			// Add directories with custom permissions
+			for path, mode := range tt.dirs {
+				testFS.customFiles[path] = fakeFile{
+					info: fakeFileInfo{
+						name:  path,
+						mode:  fs.ModeDir | mode,
+						isDir: true,
+					},
+				}
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(context.Background(), testFS, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -692,12 +725,13 @@ func TestScanFS_Integration(t *testing.T) {
 		{
 			name: "comprehensive security issues across platforms",
 			setupFS: func() fs.FS {
-				return fstest.MapFS{
-					// Linux cron issues
-					"etc/crontab": &fstest.MapFile{Data: []byte(`0 0 * * * root /tmp/bad_script.sh
+				testFS := &testFS{
+					MapFS: fstest.MapFS{
+						// Linux cron issues
+						"etc/crontab": &fstest.MapFile{Data: []byte(`0 0 * * * root /tmp/bad_script.sh
 30 1 * * * root relative_script.sh`)},
-					// Windows task issues
-					"Windows/System32/Tasks/BadTask": &fstest.MapFile{Data: []byte(`<?xml version="1.0"?>
+						// Windows task issues
+						"Windows/System32/Tasks/BadTask": &fstest.MapFile{Data: []byte(`<?xml version="1.0"?>
 <Task version="1.2">
   <Principals>
     <Principal><RunLevel>HighestAvailable</RunLevel><UserId>SYSTEM</UserId></Principal>
@@ -706,15 +740,33 @@ func TestScanFS_Integration(t *testing.T) {
     <Exec><Command>C:\Temp\malicious.exe</Command></Exec>
   </Actions>
 </Task>`)},
-					// macOS launchd issues
-					"System/Library/LaunchDaemons/com.example.bad.plist": &fstest.MapFile{Data: []byte(`<?xml version="1.0"?>
+						// macOS launchd issues
+						"System/Library/LaunchDaemons/com.example.bad.plist": &fstest.MapFile{Data: []byte(`<?xml version="1.0"?>
 <plist version="1.0">
 <dict>
     <key>ProgramArguments</key>
     <array><string>/var/tmp/suspicious</string></array>
 </dict>
 </plist>`)},
+					},
+					customFiles: map[string]fakeFile{
+						"tmp": {
+							info: fakeFileInfo{
+								name:  "tmp",
+								mode:  fs.ModeDir | 0777,
+								isDir: true,
+							},
+						},
+						"var/tmp": {
+							info: fakeFileInfo{
+								name:  "var/tmp",
+								mode:  fs.ModeDir | 0777,
+								isDir: true,
+							},
+						},
+					},
 				}
+				return testFS
 			},
 			wantFindingCount: 1,
 			wantSeverity:     inventory.SeverityHigh,
