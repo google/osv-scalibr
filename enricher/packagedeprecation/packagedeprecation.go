@@ -17,6 +17,7 @@ package packagedeprecation
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"slices"
 
@@ -71,7 +72,7 @@ func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
 	grpcConfig := grpcclient.DefaultConfig()
 	grpcclient, err := grpcclient.New(grpcConfig)
 	if err != nil {
-		log.Errorf("Failed to create deps.dev gRPC client: %v", err)
+		return nil, fmt.Errorf("failed to create deps.dev gRPC client: %w", err)
 	}
 
 	c := NewClient(grpcclient)
