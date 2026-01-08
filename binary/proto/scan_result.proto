@@ -137,6 +137,7 @@ message Package {
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
     NodeVersionMetadata nodeversion_metadata = 58;
+    DepGroupMetadata dep_group_metadata = 59;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -544,6 +545,11 @@ message OSVPackageMetadata {
   string commit = 2;
   string ecosystem = 3;
   string compare_as = 4;
+}
+
+// The additional data for dependency groups.
+message DepGroupMetadata {
+  repeated string dep_group_vals = 1;
 }
 
 message PythonRequirementsMetadata {
