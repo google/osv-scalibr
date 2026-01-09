@@ -49,8 +49,7 @@ func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.Val
 		return veles.ValidationFailed, fmt.Errorf("error parsing the url: %w", err)
 	}
 	var validator ProtocolValidator
-	scheme := strings.ToLower(u.Scheme)
-	switch scheme {
+	switch scheme := strings.ToLower(u.Scheme); scheme {
 	case "http", "https":
 		validator = &validators.HTTPValidator{Client: v.Client}
 	case "ftp":

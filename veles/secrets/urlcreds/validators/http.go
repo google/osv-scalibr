@@ -74,11 +74,11 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	authHeader := strings.ToLower(resp.Header.Get("WWW-Authenticate"))
 	switch {
 	case strings.HasPrefix(authHeader, "digest"):
-		digest, err := buildDigest(u, authHeader)
+		digestHeader, err := buildDigestHeader(u, authHeader)
 		if err != nil {
 			return veles.ValidationFailed, err
 		}
-		req.Header.Set("Authorization", digest)
+		req.Header.Set("Authorization", digestHeader)
 	default:
 		// Use Basic Auth as default
 		password, _ := u.User.Password()
@@ -101,8 +101,8 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	}
 }
 
-// buildDigest returns a new request with a Digest header
-func buildDigest(u *url.URL, challenge string) (string, error) {
+// buildDigestHeader given an URL with credentials and a server challenge returns a Digest header
+func buildDigestHeader(u *url.URL, challenge string) (string, error) {
 	params := parseAuthHeader(challenge)
 
 	// Verify Digest Algorithm (only MD5 is supported).
