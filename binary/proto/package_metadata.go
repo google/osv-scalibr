@@ -163,6 +163,9 @@ var (
 		reflect.TypeFor[*spb.Package_JavaLockfileMetadata](): func(p *spb.Package) any {
 			return javalockfile.ToStruct(p.GetJavaLockfileMetadata())
 		},
+		reflect.TypeFor[*spb.Package_DepGroupMetadata](): func(p *spb.Package) any {
+			return osv.DepGroupToStruct(p.GetDepGroupMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -201,5 +204,6 @@ var (
 		(*podman.Metadata)(nil),
 		(*javalockfile.Metadata)(nil),
 		(*chocolateymeta.Metadata)(nil),
+		(*osv.DepGroupMetadata)(nil),
 	}
 )
