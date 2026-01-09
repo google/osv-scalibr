@@ -41,6 +41,13 @@ func buildCases(t *testing.T) []testCase {
 			},
 		},
 		{
+			string: "GIT",
+			parsed: osvecosystem.Parsed{
+				Ecosystem: "GIT",
+				Suffix:    "",
+			},
+		},
+		{
 			string: "npm",
 			parsed: osvecosystem.Parsed{
 				Ecosystem: osvconstants.EcosystemNPM,
