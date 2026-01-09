@@ -37,8 +37,8 @@ func expectRelativePath(file string, line int, path string) string {
 	return fmt.Sprintf("%s:%d: relative path '%s' in privileged cron job", file, line, path)
 }
 
-func expectWorldWritableDir(file string, line int, path string, perms fs.FileMode) string {
-	return fmt.Sprintf("%s:%d: execution from world-writable directory '%s' (permissions: %03o)", file, line, path, perms.Perm())
+func expectWorldWritableDir(file string, line int, path string) string {
+	return fmt.Sprintf("%s:%d: execution from world-writable directory '%s' (permissions: 777)", file, line, path)
 }
 
 func expectWorldWritableFile(file string, line int, path string) string {
@@ -137,8 +137,7 @@ func (t *testFS) Open(name string) (fs.File, error) {
 	}
 
 	// Try without leading slash for custom files
-	if strings.HasPrefix(name, "/") {
-		nameWithoutSlash := strings.TrimPrefix(name, "/")
+	if nameWithoutSlash, ok := strings.CutPrefix(name, "/"); ok {
 		if customFile, exists := t.customFiles[nameWithoutSlash]; exists {
 			// Reset the offset for each read
 			customFile.offset = 0
@@ -241,7 +240,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			dirs: map[string]fs.FileMode{
 				"tmp": 0777, // world-writable
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/tmp/malicious_script.sh", 0777)},
+			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/tmp/malicious_script.sh")},
 		},
 		{
 			name: "insecure crontab - execution from /var/tmp",
@@ -252,7 +251,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			dirs: map[string]fs.FileMode{
 				"var/tmp": 0777, // world-writable
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/var/tmp/dangerous.py", 0777)},
+			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/var/tmp/dangerous.py")},
 		},
 		{
 			name: "mixed secure and insecure entries",
@@ -267,7 +266,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			},
 			wantIssues: []string{
 				expectRelativePath("etc/crontab", 3, "bad_script.sh"),
-				expectWorldWritableDir("etc/crontab", 4, "/tmp/worse_script.sh", 0777),
+				expectWorldWritableDir("etc/crontab", 4, "/tmp/worse_script.sh"),
 			},
 		},
 		{
@@ -289,7 +288,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			dirs: map[string]fs.FileMode{
 				"dev/shm": 0777, // world-writable
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/cron.d/malicious", 1, "/dev/shm/exploit.sh", 0777)},
+			wantIssues: []string{expectWorldWritableDir("etc/cron.d/malicious", 1, "/dev/shm/exploit.sh")},
 		},
 		{
 			name: "comments and empty lines should be ignored",
@@ -810,7 +809,15 @@ func TestScanFS_Integration(t *testing.T) {
 
 func TestDetectorInterface(t *testing.T) {
 	d := New()
-	_ = d
+
+	if d.Name() != Name {
+		t.Errorf("Name() = %q, want %q", d.Name(), Name)
+	}
+
+	finding := d.DetectedFinding()
+	if len(finding.GenericFindings) != 1 {
+		t.Errorf("DetectedFinding() expected 1 finding, got %d", len(finding.GenericFindings))
+	}
 }
 
 func TestCronPeriodicDirectories(t *testing.T) {
