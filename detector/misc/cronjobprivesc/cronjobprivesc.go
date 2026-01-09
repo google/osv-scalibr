@@ -24,6 +24,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"syscall"
@@ -355,10 +356,7 @@ func (d Detector) analyzeCommand(fsys fs.FS, filePath string, lineNum int, comma
 	}
 
 	// Check if the executable's parent directory is world-writable
-	parentDir := executable[:strings.LastIndex(executable, "/")]
-	if parentDir == "" {
-		parentDir = "/"
-	}
+	parentDir := path.Dir(executable)
 	if dirIssues := d.checkDirectoryPermissions(fsys, parentDir, executable); len(dirIssues) > 0 {
 		for _, issue := range dirIssues {
 			issues = append(issues, fmt.Sprintf("%s:%d: %s", filePath, lineNum, issue))
@@ -542,10 +540,10 @@ func (d Detector) checkWindowsTaskFile(ctx context.Context, fsys fs.FS, path str
 		if principal.RunLevel == "HighestAvailable" || principal.RunLevel == "RequireAdministrator" {
 			isElevated = true
 		}
-		upperUserID := strings.ToUpper(principal.UserID)
-		if upperUserID == "SYSTEM" ||
-			upperUserID == "NT AUTHORITY\\SYSTEM" ||
-			strings.Contains(upperUserID, "ADMINISTRATOR") {
+		userID := strings.ToUpper(principal.UserID)
+		if userID == "SYSTEM" ||
+			userID == "NT AUTHORITY\\SYSTEM" ||
+			strings.Contains(userID, "ADMINISTRATOR") {
 			isSystemUser = true
 		}
 	}

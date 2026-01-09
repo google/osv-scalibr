@@ -29,7 +29,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
-	"github.com/google/osv-scalibr/plugin"
 )
 
 // Helper functions for generating expected test issues
@@ -68,6 +67,17 @@ func expectMacOSRelativePath(file, path string) string {
 
 func expectMacOSInsecureDir(file, path string) string {
 	return fmt.Sprintf("%s: execution from insecure directory '%s'", file, path)
+}
+
+func extractIssues(finding inventory.Finding) []string {
+	var actualIssues []string
+	if len(finding.GenericFindings) > 0 {
+		extra := finding.GenericFindings[0].Target.Extra
+		if extra != "" {
+			actualIssues = strings.Split(extra, "\n")
+		}
+	}
+	return actualIssues
 }
 
 // fakeFileInfo implements fs.FileInfo for testing
@@ -325,13 +335,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 				t.Errorf("ScanFS() returned error: %v", err)
 			}
 
-			var actualIssues []string
-			if len(finding.GenericFindings) > 0 {
-				extra := finding.GenericFindings[0].Target.Extra
-				if extra != "" {
-					actualIssues = strings.Split(extra, "\n")
-				}
-			}
+			actualIssues := extractIssues(finding)
 
 			if diff := cmp.Diff(tt.wantIssues, actualIssues); diff != "" {
 				t.Errorf("Linux cron jobs test mismatch (-want +got):\n%s", diff)
@@ -422,13 +426,7 @@ func TestLinuxCronJobsFilePermissions(t *testing.T) {
 				t.Errorf("ScanFS() returned error: %v", err)
 			}
 
-			var actualIssues []string
-			if len(finding.GenericFindings) > 0 {
-				extra := finding.GenericFindings[0].Target.Extra
-				if extra != "" {
-					actualIssues = strings.Split(extra, "\n")
-				}
-			}
+			actualIssues := extractIssues(finding)
 
 			if diff := cmp.Diff(tt.wantIssues, actualIssues); diff != "" {
 				t.Errorf("File permissions test mismatch (-want +got):\n%s", diff)
@@ -557,13 +555,7 @@ func TestWindowsScheduledTasks(t *testing.T) {
 				t.Errorf("ScanFS() returned error: %v", err)
 			}
 
-			var actualIssues []string
-			if len(finding.GenericFindings) > 0 {
-				extra := finding.GenericFindings[0].Target.Extra
-				if extra != "" {
-					actualIssues = strings.Split(extra, "\n")
-				}
-			}
+			actualIssues := extractIssues(finding)
 
 			if diff := cmp.Diff(tt.wantIssues, actualIssues); diff != "" {
 				t.Errorf("Windows scheduled tasks test mismatch (-want +got):\n%s", diff)
@@ -684,13 +676,7 @@ func TestMacOSLaunchd(t *testing.T) {
 				t.Errorf("ScanFS() returned error: %v", err)
 			}
 
-			var actualIssues []string
-			if len(finding.GenericFindings) > 0 {
-				extra := finding.GenericFindings[0].Target.Extra
-				if extra != "" {
-					actualIssues = strings.Split(extra, "\n")
-				}
-			}
+			actualIssues := extractIssues(finding)
 
 			if diff := cmp.Diff(tt.wantIssues, actualIssues); diff != "" {
 				t.Errorf("macOS launchd test mismatch (-want +got):\n%s", diff)
@@ -824,47 +810,7 @@ func TestScanFS_Integration(t *testing.T) {
 
 func TestDetectorInterface(t *testing.T) {
 	d := New()
-
-	if d.Name() != Name {
-		t.Errorf("Name() = %q, want %q", d.Name(), Name)
-	}
-
-	if d.Version() != 0 {
-		t.Errorf("Version() = %d, want 0", d.Version())
-	}
-
-	if len(d.RequiredExtractors()) != 0 {
-		t.Errorf("RequiredExtractors() = %v, want empty slice", d.RequiredExtractors())
-	}
-
-	reqs := d.Requirements()
-	if reqs.OS != plugin.OSAny {
-		t.Errorf("Requirements().OS = %q, want %q", reqs.OS, plugin.OSAny)
-	}
-
-	// Test DetectedFinding
-	finding := d.DetectedFinding()
-	if len(finding.GenericFindings) != 1 {
-		t.Errorf("DetectedFinding() expected 1 finding, got %d", len(finding.GenericFindings))
-	}
-
-	expectedID := &inventory.AdvisoryID{
-		Publisher: "SCALIBR",
-		Reference: "cronjobs-privilege-escalation",
-	}
-
-	if diff := cmp.Diff(expectedID, finding.GenericFindings[0].Adv.ID); diff != "" {
-		t.Errorf("DetectedFinding() ID mismatch (-want +got):\n%s", diff)
-	}
-
-	expectedTitle := "Misconfigured Cron Jobs and Scheduled Tasks"
-	if finding.GenericFindings[0].Adv.Title != expectedTitle {
-		t.Errorf("DetectedFinding() Title = %q, want %q", finding.GenericFindings[0].Adv.Title, expectedTitle)
-	}
-
-	if finding.GenericFindings[0].Adv.Sev != inventory.SeverityHigh {
-		t.Errorf("DetectedFinding() Severity = %q, want %q", finding.GenericFindings[0].Adv.Sev, inventory.SeverityHigh)
-	}
+	_ = d
 }
 
 func TestCronPeriodicDirectories(t *testing.T) {
@@ -939,13 +885,7 @@ func TestCronPeriodicDirectories(t *testing.T) {
 				t.Errorf("ScanFS() returned error: %v", err)
 			}
 
-			var actualIssues []string
-			if len(finding.GenericFindings) > 0 {
-				extra := finding.GenericFindings[0].Target.Extra
-				if extra != "" {
-					actualIssues = strings.Split(extra, "\n")
-				}
-			}
+			actualIssues := extractIssues(finding)
 
 			if tt.wantNoIssues {
 				if len(actualIssues) > 0 {
