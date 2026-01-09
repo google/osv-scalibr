@@ -161,6 +161,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Generic JWT tokens                          | `secrets/jwttoken`                   |
 | pyx user key v1                             | `secrets/pyxkeyv1`                   |
 | pyx user key v2                             | `secrets/pyxkeyv2`                   |
+| Generic URL with credentials                | `secrets/urlcreds`                   |
 
 ### Container inventory
 
