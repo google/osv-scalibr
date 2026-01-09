@@ -56,6 +56,10 @@ message PluginSpecificConfig {
     SDPInspectConfig sdp_inspect = 8;
     POMXMLNetConfig pom_xml_net = 9;
     ChocolateyConfig chocolatey = 10;
+    DpkgConfig dpkg = 11;
+    RpmConfig rpm = 12;
+    ApkConfig apk = 13;
+    CosConfig cos = 14;
   }
 }
 
@@ -122,4 +126,37 @@ message POMXMLNetConfig {
   string upstream_registry = 1;
   // If true, use deps.dev requirements API for dependency resolution.
   bool deps_dev_requirements = 2;
+}
+
+message DpkgConfig {
+  // IncludeNotInstalled includes packages that are not installed
+  // (e.g. `deinstall`, `purge`, and those missing a status field).
+  bool include_not_installed = 1;
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 2;
+}
+
+message RpmConfig {
+  // Timeout in seconds for parsing the RPM database.
+  int64 timeout_seconds = 1;
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 2;
+}
+
+message ApkConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message CosConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
 }

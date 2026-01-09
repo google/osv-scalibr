@@ -20,7 +20,6 @@ import (
 	golog "log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -40,44 +39,9 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     dpkg.Config
-		wantCfg dpkg.Config
-	}{
-		{
-			name: "default",
-			cfg:  dpkg.DefaultConfig(),
-			wantCfg: dpkg.Config{
-				MaxFileSizeBytes:    100 * units.MiB,
-				IncludeNotInstalled: false,
-			},
-		},
-		{
-			name: "custom",
-			cfg: dpkg.Config{
-				MaxFileSizeBytes:    10,
-				IncludeNotInstalled: true,
-			},
-			wantCfg: dpkg.Config{
-				MaxFileSizeBytes:    10,
-				IncludeNotInstalled: true,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := dpkg.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -159,10 +123,11 @@ func TestFileRequired(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = dpkg.New(dpkg.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := dpkg.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("dpkg.New: %v", err)
+			}
+			e.(*dpkg.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -207,7 +172,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		cfg              dpkg.Config
+		cfg              *cpb.PluginConfig
 		isOPKG           bool
 		wantPackages     []*extractor.Package
 		wantErr          error
@@ -469,8 +434,16 @@ func TestExtract(t *testing.T) {
 			name:      "statusfield including not installed",
 			path:      "testdata/dpkg/statusfield",
 			osrelease: DebianBookworm,
-			cfg: dpkg.Config{
-				IncludeNotInstalled: true,
+			cfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_Dpkg{
+							Dpkg: &cpb.DpkgConfig{
+								IncludeNotInstalled: true,
+							},
+						},
+					},
+				},
 			},
 			wantPackages: []*extractor.Package{
 				{
@@ -1010,8 +983,16 @@ func TestExtract(t *testing.T) {
 			path:      "testdata/opkg/statusfield", // Path to your OPKG status file in the test data
 			osrelease: OpkgRelease,                 // You can mock the os-release data as needed
 			isOPKG:    true,
-			cfg: dpkg.Config{
-				IncludeNotInstalled: true,
+			cfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_Dpkg{
+							Dpkg: &cpb.DpkgConfig{
+								IncludeNotInstalled: true,
+							},
+						},
+					},
+				},
 			},
 			wantPackages: []*extractor.Package{
 				{
@@ -1249,7 +1230,6 @@ func TestExtract(t *testing.T) {
 			scalibrlog.SetLogger(logger)
 
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
@@ -1282,7 +1262,15 @@ func TestExtract(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
 			}
 
-			e := dpkg.New(defaultConfigWith(tt.cfg))
+			cfg := tt.cfg
+			if cfg == nil {
+				cfg = &cpb.PluginConfig{}
+			}
+			e, err := dpkg.New(cfg)
+			if err != nil {
+				t.Fatalf("dpkg.New: %v", err)
+			}
+			e.(*dpkg.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
@@ -1410,7 +1398,10 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 	// Note that we didn't create any OS release file.
 	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
 
-	e := dpkg.New(dpkg.DefaultConfig())
+	e, err := dpkg.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("dpkg.New: %v", err)
+	}
 	got, err := e.Extract(t.Context(), input)
 	if err != nil {
 		t.Fatalf("Extract(%s) error: %v", path, err)
@@ -1427,23 +1418,4 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
-func defaultConfigWith(cfg dpkg.Config) dpkg.Config {
-	newCfg := dpkg.DefaultConfig()
-
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-
-	if cfg.IncludeNotInstalled {
-		newCfg.IncludeNotInstalled = cfg.IncludeNotInstalled
-	}
-
-	return newCfg
 }
