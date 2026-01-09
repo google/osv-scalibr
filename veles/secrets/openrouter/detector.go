@@ -25,9 +25,9 @@ import (
 const maxTokenLength = 100
 
 // keyRe is a regular expression that matches OpenRouter API keys.
-// OpenRouter API keys typically start with "sk-or-" followed by alphanumeric characters,
-// underscores, and hyphens. The regex is designed to be specific enough to avoid false positives.
-var keyRe = regexp.MustCompile(`sk-or-v1-[A-Za-z0-9_-]{20,}`)
+// OpenRouter API keys typically start with "sk-or-v" followed by a version number,
+// then alphanumeric characters, underscores, and hyphens. The regex is designed to be specific enough to avoid false positives.
+var keyRe = regexp.MustCompile(`sk-or-v[0-9]+-[A-Za-z0-9_-]{20,}`)
 
 // NewDetector returns a new simpletoken.Detector that matches OpenRouter API keys.
 func NewDetector() veles.Detector {
