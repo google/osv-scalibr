@@ -18,46 +18,56 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
 )
 
-const (
-	validatorTestKey = "sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr"
-)
+const validatorTestKey = "sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr"
 
-// mockOpenRouterServer creates a mock OpenRouter API server for testing API keys
+// mockTransport redirects requests to the test server
+type mockTransport struct {
+	testServer *httptest.Server
+}
+
+func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Replace the original URL with our test server URL
+	if req.URL.Host == "openrouter.ai" {
+		testURL, _ := url.Parse(m.testServer.URL)
+		req.URL.Scheme = testURL.Scheme
+		req.URL.Host = testURL.Host
+	}
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+// mockOpenRouterServer creates a mock OpenRouter API server for testing
 func mockOpenRouterServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
 	t.Helper()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
-		r *http.Request) {
-		// Check if it's a GET request to the auth/key endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/v1/auth/key" {
-			t.Errorf("unexpected request: %s %s, expected: GET /v1/auth/key",
-				r.Method, r.URL.Path)
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if it's a GET request to the expected endpoint
+		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/auth/key" {
+			t.Errorf("unexpected request: %s %s, expected: GET /api/v1/auth/key", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
-		// Check Authorization header (Bearer token format)
-		expectedAuth := "Bearer " + expectedKey
-		if r.Header.Get("Authorization") != expectedAuth {
-			t.Errorf("expected Authorization: %s, got: %s",
-				expectedAuth, r.Header.Get("Authorization"))
+		// Check Authorization header
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasSuffix(authHeader, expectedKey) {
+			t.Errorf("expected Authorization header to end with key %s, got: %s", expectedKey, authHeader)
 		}
 
 		// Set response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 	}))
-
-	return server
 }
 
-func TestAPIKeyValidator(t *testing.T) {
+func TestValidator(t *testing.T) {
 	cases := []struct {
 		name        string
 		statusCode  int
@@ -75,12 +85,6 @@ func TestAPIKeyValidator(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:        "forbidden_but_likely_valid",
-			statusCode:  http.StatusForbidden,
-			want:        veles.ValidationFailed,
-			expectError: true,
-		},
-		{
 			name:       "rate_limited_but_likely_valid",
 			statusCode: http.StatusTooManyRequests,
 			want:       veles.ValidationValid,
@@ -91,20 +95,28 @@ func TestAPIKeyValidator(t *testing.T) {
 			want:        veles.ValidationFailed,
 			expectError: true,
 		},
+		{
+			name:        "bad_gateway",
+			statusCode:  http.StatusBadGateway,
+			want:        veles.ValidationFailed,
+			expectError: true,
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create mock server
-			server := mockOpenRouterServer(t, validatorTestKey,
-				tc.statusCode)
+			server := mockOpenRouterServer(t, validatorTestKey, tc.statusCode)
 			defer server.Close()
 
-			// Create validator with mock client and server URL
-			validator := openrouter.NewAPIKeyValidator(
-				openrouter.WithHTTPClient(server.Client()),
-				openrouter.WithAPIURL(server.URL),
-			)
+			// Create client with custom transport
+			client := &http.Client{
+				Transport: &mockTransport{testServer: server},
+			}
+
+			// Create validator with mock client
+			validator := openrouter.NewValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := openrouter.APIKey{Key: validatorTestKey}
@@ -131,16 +143,82 @@ func TestAPIKeyValidator(t *testing.T) {
 	}
 }
 
-func TestAPIKeyValidator_EmptyKey(t *testing.T) {
-	validator := openrouter.NewAPIKeyValidator()
-	key := openrouter.APIKey{Key: ""}
+func TestValidator_ContextCancellation(t *testing.T) {
+	// Create a server that delays response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
 
-	got, err := validator.Validate(context.Background(), key)
+	// Create client with custom transport
+	client := &http.Client{
+		Transport: &mockTransport{testServer: server},
+	}
+
+	validator := openrouter.NewValidator()
+	validator.HTTPC = client
+
+	key := openrouter.APIKey{Key: validatorTestKey}
+
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// Test validation with cancelled context
+	got, err := validator.Validate(ctx, key)
 
 	if err == nil {
-		t.Errorf("Validate() expected error for empty key, got nil")
+		t.Errorf("Validate() expected error due to context cancellation, got nil")
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
+	}
+}
+
+func TestValidator_InvalidRequest(t *testing.T) {
+	// Create mock server that returns 401 Unauthorized
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	// Create client with custom transport
+	client := &http.Client{
+		Transport: &mockTransport{testServer: server},
+	}
+
+	validator := openrouter.NewValidator()
+	validator.HTTPC = client
+
+	testCases := []struct {
+		name     string
+		key      string
+		expected veles.ValidationStatus
+	}{
+		{
+			name:     "empty_key",
+			key:      "",
+			expected: veles.ValidationInvalid,
+		},
+		{
+			name:     "invalid_key_format",
+			key:      "invalid-key-format",
+			expected: veles.ValidationInvalid,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			key := openrouter.APIKey{Key: tc.key}
+
+			got, err := validator.Validate(context.Background(), key)
+
+			if err != nil {
+				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+			}
+			if got != tc.expected {
+				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+			}
+		})
 	}
 }

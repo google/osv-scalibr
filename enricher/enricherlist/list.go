@@ -112,7 +112,7 @@ var (
 		fromVeles(hcp.NewAccessTokenValidator(), "secrets/hcpaccesstokenvalidate", 0),
 		fromVeles(huggingfaceapikey.NewValidator(), "secrets/huggingfaceapikeyvalidate", 0),
 		fromVeles(openai.NewProjectValidator(), "secrets/openaivalidate", 0),
-		fromVeles(openrouter.NewAPIKeyValidator(), "secrets/openroutervalidate", 0),
+		fromVeles(openrouter.NewValidator(), "secrets/openroutervalidate", 0),
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewAPIValidator(), "secrets/postmanapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewCollectionValidator(), "secrets/postmancollectiontokenvalidate", 0),
