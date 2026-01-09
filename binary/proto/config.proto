@@ -55,6 +55,7 @@ message PluginSpecificConfig {
     HashiCorpVaultValidatorConfig hashicorp_vault_validator = 7;
     SDPInspectConfig sdp_inspect = 8;
     POMXMLNetConfig pom_xml_net = 9;
+    ChocolateyConfig chocolatey = 10;
   }
 }
 
@@ -91,6 +92,13 @@ message VDIConfig {
 }
 
 message VMDKConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message ChocolateyConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
