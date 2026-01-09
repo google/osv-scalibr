@@ -37,6 +37,8 @@ message PluginConfig {
   // If true, do not try to create google.DefaultClient for Artifact Registry
   // during dependency resolution.
   bool disable_google_auth = 4;
+  // The user agent to use when making requests.
+  string user_agent = 5;
 
   // Config values that only apply to a single plugin.
   repeated PluginSpecificConfig plugin_specific = 2;
@@ -53,6 +55,7 @@ message PluginSpecificConfig {
     HashiCorpVaultValidatorConfig hashicorp_vault_validator = 7;
     SDPInspectConfig sdp_inspect = 8;
     POMXMLNetConfig pom_xml_net = 9;
+    ChocolateyConfig chocolatey = 10;
   }
 }
 
@@ -95,6 +98,13 @@ message VMDKConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message ChocolateyConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
 message HashiCorpVaultValidatorConfig {
   // The URL of the Vault server to connect to.
   // https://developer.hashicorp.com/vault
@@ -110,4 +120,6 @@ message SDPInspectConfig {
 message POMXMLNetConfig {
   // The URL of the upstream Maven registry.
   string upstream_registry = 1;
+  // If true, use deps.dev requirements API for dependency resolution.
+  bool deps_dev_requirements = 2;
 }

@@ -137,6 +137,8 @@ message Package {
     AsdfMetadata asdf_metadata = 55;
     NvmMetadata nvm_metadata = 56;
     NodeVersionMetadata nodeversion_metadata = 58;
+    DepGroupMetadata dep_group_metadata = 61;
+    ChocolateyPackageMetadata chocolatey_metadata = 62;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -546,6 +548,11 @@ message OSVPackageMetadata {
   string compare_as = 4;
 }
 
+// The additional data for dependency groups.
+message DepGroupMetadata {
+  repeated string dep_group_vals = 1;
+}
+
 message PythonRequirementsMetadata {
   repeated string hash_checking_mode_values = 1;
   string version_comparator = 2;
@@ -630,6 +637,16 @@ message PodmanMetadata {
   string status = 6;
   int32 exit_code = 7;
   bool exited = 8;
+}
+
+// The additional data found in Chocolatey packages.
+message ChocolateyPackageMetadata {
+  string name = 1;
+  string version = 2;
+  string authors = 3;
+  string licenseurl = 4;
+  string projecturl = 5;
+  string tags = 6;
 }
 
 message Protocol {

@@ -132,7 +132,9 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemSUSE,
 		osvconstants.EcosystemSwiftURL,
 		osvconstants.EcosystemUbuntu,
-		osvconstants.EcosystemWolfi:
+		osvconstants.EcosystemWolfi,
+		// GIT is a pseudo ecosystem that can be used in queries, so should be considered valid.
+		"GIT":
 
 	default:
 		return fmt.Errorf("base ecosystem does not exist in osvschema: %q", p.Ecosystem)

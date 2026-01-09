@@ -28,6 +28,7 @@ import (
 	mavenresolve "deps.dev/util/resolve/maven"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/clients/resolution"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -53,9 +54,11 @@ type Extractor struct {
 // New makes a new pom.xml transitive extractor with the given config.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	upstreamRegistry := ""
+	depsdevRequirements := false
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
 	if specific != nil {
 		upstreamRegistry = specific.UpstreamRegistry
+		depsdevRequirements = specific.DepsDevRequirements
 	}
 
 	// No need to check errors since we are using the default Maven Central URL.
@@ -63,7 +66,17 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		URL:             upstreamRegistry,
 		ReleasesEnabled: true,
 	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
-	depClient := resolution.NewMavenRegistryClientWithAPI(mavenClient)
+
+	var depClient resolve.Client
+	var err error
+	if depsdevRequirements {
+		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+		}
+	} else {
+		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
+	}
 
 	return &Extractor{
 		DepClient:   depClient,
