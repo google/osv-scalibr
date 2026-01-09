@@ -86,6 +86,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macports"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/peversion"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
@@ -267,21 +268,22 @@ var (
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {noCFG(dpkg.NewDefault)},
-		apk.Name:      {noCFG(apk.NewDefault)},
-		rpm.Name:      {noCFG(rpm.NewDefault)},
-		cos.Name:      {noCFG(cos.NewDefault)},
-		snap.Name:     {noCFG(snap.NewDefault)},
-		nix.Name:      {noCFG(nix.New)},
-		module.Name:   {noCFG(module.NewDefault)},
-		vmlinuz.Name:  {noCFG(vmlinuz.NewDefault)},
-		pacman.Name:   {noCFG(pacman.NewDefault)},
-		portage.Name:  {noCFG(portage.NewDefault)},
-		flatpak.Name:  {noCFG(flatpak.NewDefault)},
-		homebrew.Name: {noCFG(homebrew.New)},
-		macapps.Name:  {noCFG(macapps.NewDefault)},
-		macports.Name: {noCFG(macports.New)},
-		winget.Name:   {noCFG(winget.NewDefault)},
+		dpkg.Name:      {noCFG(dpkg.NewDefault)},
+		apk.Name:       {noCFG(apk.NewDefault)},
+		rpm.Name:       {noCFG(rpm.NewDefault)},
+		cos.Name:       {noCFG(cos.NewDefault)},
+		snap.Name:      {noCFG(snap.NewDefault)},
+		nix.Name:       {noCFG(nix.New)},
+		module.Name:    {noCFG(module.NewDefault)},
+		vmlinuz.Name:   {noCFG(vmlinuz.NewDefault)},
+		pacman.Name:    {noCFG(pacman.NewDefault)},
+		peversion.Name: {noCFG(peversion.NewDefault)},
+		portage.Name:   {noCFG(portage.NewDefault)},
+		flatpak.Name:   {noCFG(flatpak.NewDefault)},
+		homebrew.Name:  {noCFG(homebrew.New)},
+		macapps.Name:   {noCFG(macapps.NewDefault)},
+		macports.Name:  {noCFG(macports.New)},
+		winget.Name:    {noCFG(winget.NewDefault)},
 	}
 
 	// SecretExtractors for Extractor interface.

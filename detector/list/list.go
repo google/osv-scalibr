@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
+	"github.com/google/osv-scalibr/detector/cve/cve20258088"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
@@ -74,6 +75,12 @@ var Untested = InitMap{
 	cve20242912.Name: {noCFG(cve20242912.New)},
 }
 
+// CVE Detectors for vulnerabilities
+var CVEDetectors = InitMap{
+	// CVE-2025-8088 WinRAR RCE detector
+	cve20258088.Name: {noCFG(cve20258088.New)},
+}
+
 // Weakcredentials detectors for weak credentials.
 var Weakcredentials = InitMap{
 	codeserver.Name:  {noCFG(codeserver.NewDefault)},
@@ -98,6 +105,7 @@ var All = concat(
 	Misc,
 	Weakcredentials,
 	Untested,
+	CVEDetectors,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -111,6 +119,7 @@ var detectorNames = concat(All, InitMap{
 	"default":           vals(Default),
 	"detectors/all":     vals(All),
 	"all":               vals(All),
+	"cvedetectors":      vals(CVEDetectors),
 })
 
 func concat(initMaps ...InitMap) InitMap {
