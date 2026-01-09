@@ -16,16 +16,13 @@ package validators
 
 import (
 	"context"
-	"crypto/md5"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds/validators/httpauth"
 )
 
 // HTTPValidator validates a URL using Basic or Digest authentication.
@@ -41,19 +38,14 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, probeURL.String(), nil)
 	if err != nil {
-		return veles.ValidationFailed, err
+		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}
 
 	resp, err := h.Client.Do(req)
 	if err != nil {
-		return veles.ValidationFailed, err
+		return veles.ValidationFailed, fmt.Errorf("error doing the first request: %w", err)
 	}
 	resp.Body.Close()
-
-	// If the resource is open (200 OK) without credentials, validation is impossible.
-	if resp.StatusCode == http.StatusOK {
-		return veles.ValidationFailed, fmt.Errorf("resource is public; cannot validate credentials")
-	}
 
 	// A 401 status is expected to proceed with validation.
 	if resp.StatusCode != http.StatusUnauthorized {
@@ -62,7 +54,7 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, probeURL.String(), nil)
 	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("error building authenticated request: %w", err)
+		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}
 	// Add probe response cookies
 	// This was needed when testing against flask_httpauth.HTTPDigestAuth.
@@ -71,14 +63,12 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	}
 
 	// Check the WWW-Authenticate header.
-	authHeader := strings.ToLower(resp.Header.Get("WWW-Authenticate"))
+	authHeader := resp.Header.Get("WWW-Authenticate")
 	switch {
-	case strings.HasPrefix(authHeader, "digest"):
-		digestHeader, err := buildDigestHeader(u, authHeader)
-		if err != nil {
-			return veles.ValidationFailed, err
+	case strings.HasPrefix(authHeader, "Digest "):
+		if err := httpauth.SetDigestAuth(req, u.User, authHeader); err != nil {
+			return veles.ValidationFailed, fmt.Errorf("error adding Digest header: %w", err)
 		}
-		req.Header.Set("Authorization", digestHeader)
 	default:
 		// Use Basic Auth as default
 		password, _ := u.User.Password()
@@ -87,7 +77,7 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 
 	resp, err = h.Client.Do(req)
 	if err != nil {
-		return veles.ValidationFailed, err
+		return veles.ValidationFailed, fmt.Errorf("error doing the authenticated request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -99,79 +89,4 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	default:
 		return veles.ValidationFailed, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
-}
-
-// buildDigestHeader given an URL with credentials and a server challenge returns a Digest header
-func buildDigestHeader(u *url.URL, challenge string) (string, error) {
-	params := parseAuthHeader(challenge)
-
-	// Verify Digest Algorithm (only MD5 is supported).
-	if alg := params["algorithm"]; alg != "" && strings.ToUpper(alg) != "MD5" {
-		return "", fmt.Errorf("unsupported digest algorithm: %s", alg)
-	}
-
-	// Gather parameters.
-	var (
-		realm       = params["realm"]
-		nonce       = params["nonce"]
-		qop         = params["qop"]
-		opaque      = params["opaque"]
-		username    = u.User.Username()
-		password, _ = u.User.Password()
-		uri         = u.RequestURI()
-	)
-
-	clientNonceBytes := make([]byte, 8)
-	if _, err := io.ReadFull(rand.Reader, clientNonceBytes); err != nil {
-		return "", fmt.Errorf("failed to generate cnonce: %w", err)
-	}
-	clientNonce := hex.EncodeToString(clientNonceBytes)
-	nonceCount := "00000001"
-	ha1 := md5Hash(fmt.Sprintf("%s:%s:%s", username, realm, password))
-	ha2 := md5Hash(fmt.Sprintf("%s:%s", http.MethodGet, uri))
-
-	// Calculate Response.
-	// Standard: MD5(HA1:nonce:nc:cnonce:qop:HA2).
-	// Legacy:   MD5(HA1:nonce:HA2).
-	var response string
-	if qop == "auth" || qop == "auth-int" {
-		response = md5Hash(fmt.Sprintf("%s:%s:%s:%s:%s:%s", ha1, nonce, nonceCount, clientNonce, qop, ha2))
-	} else {
-		response = md5Hash(fmt.Sprintf("%s:%s:%s", ha1, nonce, ha2))
-	}
-
-	headerVal := fmt.Sprintf(`Digest username="%s", realm="%s", nonce="%s", uri="%s", response="%s"`,
-		username, realm, nonce, uri, response)
-	if opaque != "" {
-		headerVal += fmt.Sprintf(`, opaque="%s"`, opaque)
-	}
-	if qop != "" {
-		headerVal += fmt.Sprintf(`, qop=%s, nc=%s, cnonce="%s"`, qop, nonceCount, clientNonce)
-	}
-	return headerVal, nil
-}
-
-func md5Hash(text string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
-}
-
-// parseAuthHeader parses keys and values from the WWW-Authenticate header.
-func parseAuthHeader(header string) map[string]string {
-	params := make(map[string]string)
-
-	// Skip the scheme (ignore it if not present)
-	_, header, _ = strings.Cut(header, " ")
-
-	// Note: commas inside quoted strings are not handled.
-	for part := range strings.SplitSeq(header, ",") {
-		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
-		if len(kv) != 2 {
-			continue
-		}
-		params[strings.TrimSpace(kv[0])] = strings.Trim(strings.TrimSpace(kv[1]), `"`)
-	}
-
-	return params
 }

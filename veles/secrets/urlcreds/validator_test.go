@@ -137,7 +137,7 @@ func mockFTPServer(t *testing.T, validUser, validPass string) string {
 				tc := textproto.NewConn(c)
 				defer tc.Close()
 
-				tc.PrintfLine("220 Welcome")
+				_ = tc.PrintfLine("220 Welcome")
 
 				var user string
 
@@ -157,18 +157,18 @@ func mockFTPServer(t *testing.T, validUser, validPass string) string {
 					switch cmd {
 					case "USER":
 						user = arg
-						tc.PrintfLine("331 Password required")
+						_ = tc.PrintfLine("331 Password required")
 					case "PASS":
 						if user == validUser && arg == validPass {
-							tc.PrintfLine("230 Logged in")
+							_ = tc.PrintfLine("230 Logged in")
 						} else {
-							tc.PrintfLine("530 Login incorrect")
+							_ = tc.PrintfLine("530 Login incorrect")
 						}
 					case "QUIT":
-						tc.PrintfLine("221 Goodbye")
+						_ = tc.PrintfLine("221 Goodbye")
 						return
 					default:
-						tc.PrintfLine("502 Command not implemented")
+						_ = tc.PrintfLine("502 Command not implemented")
 					}
 				}
 			}(conn)
