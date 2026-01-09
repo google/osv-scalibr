@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -157,20 +156,17 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 			// Check ns.conf using pkg.Metadata (scalibrfs.FS)
 			fsys, ok := pkg.Metadata.(scalibrfs.FS)
 			if !ok {
-				log.Infof("Package metadata is not a scalibrfs.FS for location %s", location)
 				continue
 			}
 
 			f, err := fsys.Open("nsconfig/ns.conf")
 			if err != nil {
-				log.Infof("Failed to open /nsconfig/ns.conf for package at %s: %v", location, err)
 				continue
 			}
 			defer f.Close()
 
 			content, err := io.ReadAll(f)
 			if err != nil {
-				log.Infof("Failed to read /nsconfig/ns.conf for package at %s: %v", location, err)
 				continue
 			}
 			contentStr := string(content)
@@ -230,6 +226,5 @@ func isVulnerable(version string) bool {
 			return false
 		}
 	}
-	log.Infof("Failed to parse build number %s", build)
 	return false
 }
