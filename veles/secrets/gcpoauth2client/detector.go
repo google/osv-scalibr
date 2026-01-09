@@ -16,13 +16,10 @@ package gcpoauth2client
 
 import (
 	"regexp"
-	"slices"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
-
-// Enforce detector interface.
-var _ veles.Detector = (*detector)(nil)
 
 const (
 	// maxIDLength is the maximum length of a valid client ID.
@@ -38,10 +35,6 @@ const (
 	// maxDistance is the maximum distance between client IDs and secrets to be considered for pairing.
 	// 10 KiB is a good upper bound as we don't expect files containing credentials to be larger than this.
 	maxDistance = 10 * 1 << 10 // 10 KiB
-
-	// maxSecretLen is the maximum length of secrets this detector can find.
-	// Veles uses this to set the chunk size. Client ID and secrets should be contained within this chunk.
-	maxSecretLen = maxIDLength + maxSecretLength + maxDistance
 )
 
 var (
@@ -62,158 +55,17 @@ var (
 	// References:
 	// - https://gofastmcp.com/integrations/google
 	// - https://web.archive.org/web/20250418010928/https://docs.gitguardian.com/secrets-detection/secrets-detection-engine/detectors/specifics/google_oauth2_keys
-	clientSecretRe = regexp.MustCompile(`GOCSPX-[a-zA-Z0-9_-]{10,40}`)
+	clientSecretRe = regexp.MustCompile(`\bGOCSPX-[a-zA-Z0-9_-]{28}`)
 )
-
-// detector implements OAuth2 client credentials detection.
-type detector struct {
-	maxSecretLen int
-}
 
 // NewDetector returns a detector that matches GCP OAuth2 client credentials.
 func NewDetector() veles.Detector {
-	return &detector{
-		maxSecretLen: maxSecretLen,
+	return &pair.Detector{
+		MaxElementLen: max(maxIDLength, maxSecretLength), MaxDistance: maxDistance,
+		FindA: pair.FindAllMatches(clientIDRe),
+		FindB: pair.FindAllMatches(clientSecretRe),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return Credentials{ID: string(p.A.Value), Secret: string(p.B.Value)}, true
+		},
 	}
-}
-
-// MaxSecretLen returns the maximum length of secrets this detector can find.
-func (d *detector) MaxSecretLen() uint32 {
-	return uint32(d.maxSecretLen)
-}
-
-// Detect implements simple regex-based OAuth2 client credentials detection with proximity grouping.
-func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
-	clientIDs := findAllMatches(data, clientIDRe)
-	clientSecrets := findAllMatches(data, clientSecretRe)
-
-	pairs := findOptimalPairs(clientIDs, clientSecrets, d.maxSecretLen)
-	secrets, positions := buildResults(clientIDs, clientSecrets, pairs)
-
-	return secrets, positions
-}
-
-// match represents a regex match with its value and position.
-type match struct {
-	value    string
-	position int
-}
-
-// findAllMatches finds all matches of a given regex in the given data.
-func findAllMatches(data []byte, re *regexp.Regexp) []match {
-	matches := re.FindAllSubmatchIndex(data, -1)
-	var results []match
-	for _, m := range matches {
-		results = append(results, match{
-			value:    string(data[m[0]:m[1]]),
-			position: m[0],
-		})
-	}
-	return results
-}
-
-// credentialPair represents a potential pairing between a client ID and client secret.
-type credentialPair struct {
-	clientIDIndex     int
-	clientSecretIndex int
-	distance          int
-}
-
-// findOptimalPairs finds the best pairing between client IDs and secrets using a greedy algorithm.
-// It returns pairs that should be combined into ClientCredentials.
-func findOptimalPairs(clientIDs, clientSecrets []match, maxDistance int) []credentialPair {
-	// Find all possible pairings within maxContextLen distance
-	possiblePairs := findPossiblePairs(clientIDs, clientSecrets, maxDistance)
-
-	// Sort by distance (closest first)
-	slices.SortFunc(possiblePairs, func(a, b credentialPair) int {
-		return a.distance - b.distance
-	})
-
-	// Greedily select non-overlapping pairs
-	var selectedPairs []credentialPair
-	usedClientIDs := make(map[int]bool)
-	usedClientSecrets := make(map[int]bool)
-
-	for _, pair := range possiblePairs {
-		if !usedClientIDs[pair.clientIDIndex] && !usedClientSecrets[pair.clientSecretIndex] {
-			selectedPairs = append(selectedPairs, pair)
-			usedClientIDs[pair.clientIDIndex] = true
-			usedClientSecrets[pair.clientSecretIndex] = true
-		}
-	}
-
-	return selectedPairs
-}
-
-// findPossiblePairs finds all client ID/secret pairs within the maximum context length.
-func findPossiblePairs(clientIDs, clientSecrets []match, maxDistance int) []credentialPair {
-	var possiblePairs []credentialPair
-	for i, clientID := range clientIDs {
-		for j, clientSecret := range clientSecrets {
-			distance := abs(clientID.position - clientSecret.position)
-			if distance <= maxDistance {
-				possiblePairs = append(possiblePairs, credentialPair{
-					clientIDIndex:     i,
-					clientSecretIndex: j,
-					distance:          distance,
-				})
-			}
-		}
-	}
-	return possiblePairs
-}
-
-// buildResults constructs the final secrets and positions arrays from the pairing results.
-func buildResults(clientIDs, clientSecrets []match, pairs []credentialPair) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var positions []int
-
-	// Track which IDs and secrets have been used in pairs
-	usedClientIDs := make(map[int]bool)
-	usedClientSecrets := make(map[int]bool)
-
-	// Add paired credentials
-	for _, pair := range pairs {
-		clientID := clientIDs[pair.clientIDIndex]
-		clientSecret := clientSecrets[pair.clientSecretIndex]
-
-		secrets = append(secrets, Credentials{
-			ID:     clientID.value,
-			Secret: clientSecret.value,
-		})
-		positions = append(positions, min(clientID.position, clientSecret.position))
-
-		usedClientIDs[pair.clientIDIndex] = true
-		usedClientSecrets[pair.clientSecretIndex] = true
-	}
-
-	// Add unpaired client IDs
-	for i, clientID := range clientIDs {
-		if !usedClientIDs[i] {
-			secrets = append(secrets, Credentials{
-				ID: clientID.value,
-			})
-			positions = append(positions, clientID.position)
-		}
-	}
-
-	// Add unpaired client secrets
-	for i, clientSecret := range clientSecrets {
-		if !usedClientSecrets[i] {
-			secrets = append(secrets, Credentials{
-				Secret: clientSecret.value,
-			})
-			positions = append(positions, clientSecret.position)
-		}
-	}
-
-	return secrets, positions
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
 }

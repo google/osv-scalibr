@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package fakeenricher provides an Enricher implementation to be used in tests.
+//
+//nolint:plugger // This package contains test only mocks
 package fakeenricher
 
 import (

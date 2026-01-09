@@ -20,9 +20,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/binary/proto"
-	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
 // --- Struct to Proto
@@ -40,7 +41,7 @@ func TestPackageVEXToProto(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "matches specific vulns",
+			desc: "matches_specific_vulns",
 			v: &vex.PackageExploitabilitySignal{
 				Plugin:        "some-plugin",
 				Justification: vex.ComponentNotPresent,
@@ -63,7 +64,7 @@ func TestPackageVEXToProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "matches all vulns",
+			desc: "matches_all_vulns",
 			v: &vex.PackageExploitabilitySignal{
 				Plugin:          "some-plugin",
 				Justification:   vex.ComponentNotPresent,
@@ -78,7 +79,7 @@ func TestPackageVEXToProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "both vuln identifiers and matches all vulns set",
+			desc: "both_vuln_identifiers_and_matches_all_vulns_set",
 			v: &vex.PackageExploitabilitySignal{
 				Plugin:          "some-plugin",
 				Justification:   vex.ComponentNotPresent,
@@ -171,7 +172,7 @@ func TestPackageVEXToStruct(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "matches specific vulns",
+			desc: "matches_specific_vulns",
 			v: &spb.PackageExploitabilitySignal{
 				Plugin:        "some-plugin",
 				Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
@@ -194,7 +195,7 @@ func TestPackageVEXToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "matches all vulns",
+			desc: "matches_all_vulns",
 			v: &spb.PackageExploitabilitySignal{
 				Plugin:        "some-plugin",
 				Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,

@@ -15,7 +15,6 @@
 package apk_test
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -56,6 +55,12 @@ func TestFileRequired(t *testing.T) {
 		{
 			name:             "installed file in /usr",
 			path:             "usr/lib/apk/db/installed",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "installed file in /var",
+			path:             "var/lib/apk/db/installed",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
@@ -196,7 +201,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "osrelease openwrt",
+			name: "osrelease_openwrt",
 			path: "testdata/single",
 			osrelease: `ID=openwrt
 			VERSION_ID=1.2.3`,
@@ -267,7 +272,7 @@ func TestExtract(t *testing.T) {
 				Info:   info,
 			}
 
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}

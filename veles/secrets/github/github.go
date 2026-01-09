@@ -15,6 +15,29 @@
 // Package github implements the logic to detect Github tokens
 package github
 
+import "time"
+
+const (
+	// githubAPIBaseURL is the base URL for Github API.
+	githubAPIBaseURL = "https://api.github.com"
+	// validationTimeout is timeout for API validation requests.
+	validationTimeout = 10 * time.Second
+
+	// S2SValidationEndpoint is endpoint for app s2s token validation.
+	S2SValidationEndpoint = "/installation/repositories"
+	// UserValidationEndpoint is endpoint for user token validation.
+	UserValidationEndpoint = "/user"
+)
+
+// apiHeaders returns the HTTP headers required by GitHub API for validating tokens.
+func apiHeaders(token string) map[string]string {
+	return map[string]string{
+		"Authorization":        "Bearer " + token,
+		"Accept":               "application/vnd.github+json",
+		"X-GitHub-Api-Version": "2022-11-28",
+	}
+}
+
 // AppRefreshToken contains a Github App refresh token
 type AppRefreshToken struct {
 	Token string

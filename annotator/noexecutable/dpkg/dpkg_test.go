@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
-	"github.com/google/osv-scalibr/annotator/testing/dpkgutil"
+	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -150,7 +150,7 @@ func TestAnnotate(t *testing.T) {
 				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, true)
 			}
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
+				tt.ctx = t.Context()
 			}
 			input := &annotator.ScanInput{
 				ScanRoot: scalibrfs.RealFSScanRoot(root),

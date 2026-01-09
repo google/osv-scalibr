@@ -69,7 +69,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusUnauthorized},
 		},
 		{
-			name: "basic auth",
+			name: "basic_auth",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBasic},
 				AlwaysAuth:       true,
@@ -81,7 +81,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "basic auth from token",
+			name: "basic_auth_from_token",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBasic},
 				AlwaysAuth:       true,
@@ -94,7 +94,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "basic auth missing username",
+			name: "basic_auth_missing_username",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBasic},
 				AlwaysAuth:       true,
@@ -106,7 +106,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "basic auth missing password",
+			name: "basic_auth_missing_password",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBasic},
 				AlwaysAuth:       true,
@@ -118,7 +118,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "basic auth not always",
+			name: "basic_auth_not_always",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBasic},
 				AlwaysAuth:       false,
@@ -130,7 +130,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "bearer auth",
+			name: "bearer_auth",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBearer},
 				AlwaysAuth:       true,
@@ -141,7 +141,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "bearer auth not always",
+			name: "bearer_auth_not_always",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBearer},
 				AlwaysAuth:       false,
@@ -153,7 +153,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "always auth priority",
+			name: "always_auth_priority",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBasic, datasource.AuthBearer},
 				AlwaysAuth:       true,
@@ -165,7 +165,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "not always auth priority",
+			name: "not_always_auth_priority",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthBearer, datasource.AuthDigest, datasource.AuthBasic},
 				AlwaysAuth:       false,
@@ -179,7 +179,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "digest auth",
+			name: "digest_auth",
 			// Example from https://en.wikipedia.org/wiki/Digest_access_authentication#Example_with_explanation
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
@@ -211,7 +211,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "digest auth rfc2069", // old spec, without qop header
+			name: "digest_auth_rfc2069", // old spec, without qop header
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
 				AlwaysAuth:       false,
@@ -237,7 +237,7 @@ func TestHTTPAuthentication(t *testing.T) {
 			expectedResponseCodes: []int{http.StatusOK},
 		},
 		{
-			name: "digest auth mvn",
+			name: "digest_auth_mvn",
 			// From what mvn sends.
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest},
@@ -273,7 +273,7 @@ func TestHTTPAuthentication(t *testing.T) {
 		},
 
 		{
-			name: "basic auth reuse on subsequent",
+			name: "basic_auth_reuse_on_subsequent",
 			httpAuth: &datasource.HTTPAuthentication{
 				SupportedMethods: []datasource.HTTPAuthMethod{datasource.AuthDigest, datasource.AuthBasic},
 				AlwaysAuth:       false,

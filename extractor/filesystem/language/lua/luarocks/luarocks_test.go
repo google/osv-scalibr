@@ -15,7 +15,6 @@
 package luarocks_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -88,7 +87,7 @@ func TestExtract(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			name: "valid .rockspec file path for the latest version",
+			name: "valid_.rockspec_file_path_for_the_latest_version",
 			path: "testdata/rocks-5.4/aesfileencrypt/0.1.3-1/aesfileencrypt-0.1.3-1.rockspec",
 			wantPackages: []*extractor.Package{
 				{
@@ -100,7 +99,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid .rockspec file path for an old version",
+			name: "valid_.rockspec_file_path_for_an_old_version",
 			path: "testdata/rocks-5.2/lua-resty-jwt/0.2.3-0/lua-resty-jwt-0.2.3-0.rockspec",
 			wantPackages: []*extractor.Package{
 				{
@@ -112,7 +111,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid .rockspec file path with string version",
+			name: "valid_.rockspec_file_path_with_string_version",
 			path: "testdata/rocks-5.4/gversion/dev-0/gversion-dev-0.rockspec",
 			wantPackages: []*extractor.Package{
 				{
@@ -134,7 +133,7 @@ func TestExtract(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var e filesystem.Extractor = luarocks.Extractor{}
 			input := &filesystem.ScanInput{Path: tt.path, Reader: nil}
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)
 			}

@@ -31,12 +31,12 @@ package osvdev
 import (
 	"context"
 
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"osv.dev/bindings/go/osvdevexperimental"
 )
 
 // Client is an interface that provides an abstraction on top of the OSV.dev client.
 type Client interface {
 	osvdevexperimental.OSVClientInterface
-	GetVulnByID(ctx context.Context, id string) (*osvschema.Vulnerability, error)
+	GetVulnByID(ctx context.Context, id string) (*osvpb.Vulnerability, error)
 }

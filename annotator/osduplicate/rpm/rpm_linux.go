@@ -59,7 +59,7 @@ var (
 
 // Annotate adds annotations to language packages that have already been found in RPM OS packages.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
-	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results)
+	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results, input.ScanRoot)
 
 	errs := []error{}
 	for _, dir := range rpmDirectories {

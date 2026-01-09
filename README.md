@@ -111,13 +111,13 @@ A collection of all built-in plugin modules can be found in the definition files
 [detectors](/detector/list/list.go),
 [annotators](/annotator/list/list.go),
 [enrichers](/enricher/enricherlist/list.go)).
-To enable them, just import plugins/list and add the appropriate plugin names
+To enable them, just import plugin/list and add the appropriate plugin names
 to the scan config, e.g.
 ```
 import (
   "context"
   scalibr "github.com/google/osv-scalibr"
-  pl "github.com/google/osv-scalibr/plugins/list"
+  pl "github.com/google/osv-scalibr/plugin/list"
   scalibrfs "github.com/google/osv-scalibr/fs"
 )
 plugins, _ := pl.FromNames([]string{"os", "cis", "vex"})

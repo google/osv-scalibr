@@ -182,14 +182,14 @@ func TestMetricCollector(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "invalid package-lock.json",
+			name: "invalid_package-lock.json",
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-json.txt",
 			},
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "valid package-lock.json",
+			name: "valid_package-lock.json",
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v1.json",
 			},

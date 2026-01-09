@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -185,9 +186,7 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 		if envVars, err := dotenv.Parse(f); err != nil {
 			log.Warnf("dotenv.Parse(%q): %v", envPath, err)
 		} else {
-			for k, v := range envVars {
-				environment[k] = v
-			}
+			maps.Copy(environment, envVars)
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		log.Warnf("input.FS.Open(%q): %v", envPath, err)

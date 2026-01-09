@@ -271,7 +271,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "missing osrelease",
+			name: "missing_osrelease",
 			path: "testdata/valid",
 			wantPackages: []*extractor.Package{
 				{

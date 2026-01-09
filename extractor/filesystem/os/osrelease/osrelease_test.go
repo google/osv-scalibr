@@ -66,7 +66,7 @@ func TestGetOSRelease(t *testing.T) {
 			skipOnWindows: true,
 		},
 		{
-			name: "ignore comments",
+			name: "ignore_comments",
 			path: "etc/os-release",
 			content: `#ID=foo
 			ID=ubuntu`,
@@ -74,7 +74,7 @@ func TestGetOSRelease(t *testing.T) {
 			want: map[string]string{"ID": "ubuntu"},
 		},
 		{
-			name: "ignore random stuff",
+			name: "ignore_random_stuff",
 			path: "etc/os-release",
 			content: `random stuff
 			ID=ubuntu`,

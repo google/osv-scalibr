@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -110,11 +111,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			},
 			Metadata: osv.DepGroupMetadata{},
 		}
-		for _, str := range strings.Split(pkg.Dependency, " ") {
-			if str == "dev" {
-				pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
-				break
-			}
+		if slices.Contains(strings.Split(pkg.Dependency, " "), "dev") {
+			pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
 		}
 		packages = append(packages, pkgDetails)
 	}

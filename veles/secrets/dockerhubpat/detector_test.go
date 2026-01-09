@@ -92,7 +92,7 @@ func TestDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name: "larger input containing key",
+			name: "larger_input_containing_key",
 			input: fmt.Sprintf(`
 		:test_api_key: pat-test
 		:dockerhub_pat: %s

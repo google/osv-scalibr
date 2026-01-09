@@ -16,7 +16,6 @@ package archive_test
 
 import (
 	"archive/zip"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -188,7 +187,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "Empty jar file should not return anything",
+			name: "Empty_jar_file_should_not_return_anything",
 			path: filepath.FromSlash("testdata/empty.jar"),
 		},
 		{
@@ -214,7 +213,7 @@ func TestExtract(t *testing.T) {
 			want:        []*extractor.Package{},
 		},
 		{
-			name: "Jar file with pom.properties",
+			name: "Jar_file_with_pom.properties",
 			path: filepath.FromSlash("testdata/simple.jar"),
 			want: []*extractor.Package{{
 				Name:     "com.some.package:package-name",
@@ -350,7 +349,7 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
-			name: "Nested jars with pom.properties at depth 10",
+			name: "Nested_jars_with_pom.properties_at_depth_10",
 			path: filepath.FromSlash("testdata/nested_at_10.jar"),
 			cfg:  archive.Config{HashJars: true},
 			want: []*extractor.Package{{
@@ -434,7 +433,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorMemoryLimitExceeded,
 		},
 		{
-			name: "Realistic jar file with pom.properties",
+			name: "Realistic_jar_file_with_pom.properties",
 			path: filepath.FromSlash("testdata/guava-31.1-jre.jar"),
 			cfg:  archive.Config{HashJars: true},
 			want: []*extractor.Package{
@@ -456,7 +455,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "Test MANIFEST.MF with no valid ArtifactID",
+			name: "Test_MANIFEST.MF_with_no_valid_ArtifactID",
 			path: filepath.FromSlash("testdata/com.google.src.yolo-0.1.2.jar"),
 			want: []*extractor.Package{},
 		},
@@ -605,7 +604,7 @@ func TestExtract(t *testing.T) {
 
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
 			e := archive.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			got, err := e.Extract(t.Context(), input)
 			if err != nil && errors.Is(tt.wantErr, errAny) {
 				err = errAny
 			}
