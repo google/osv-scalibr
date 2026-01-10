@@ -27,6 +27,7 @@ import (
 
 const (
 	fineGrainedPATTestKey        = `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`
+	fineGrainedPATTestKeyBase64  = `Z2l0aHViX3BhdF8xMUFMSkZFSUkwWmlRMTlERWVCV1NlX2FwTVZsVG5waTlVZ3FESExBa01MaDdpVng2M3RpbzlEY2tWOVJqcWFzNkg0SzVXNDVPUVpLNlN1b2c1`
 	anotherFinegrainedPATTestKey = `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`
 )
 
@@ -92,6 +93,12 @@ func TestFineGrainedPATDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: fineGrainedPATTestKey + `extra`,
+		want: []veles.Secret{
+			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: fineGrainedPATTestKeyBase64,
 		want: []veles.Secret{
 			github.FineGrainedPersonalAccessToken{Token: fineGrainedPATTestKey},
 		},
