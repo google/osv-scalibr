@@ -79,12 +79,15 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			extractor := vdi.New(&cpb.PluginConfig{
+			extractor, err := vdi.New(&cpb.PluginConfig{
 				MaxFileSizeBytes: tt.maxFileSize,
 				PluginSpecific: []*cpb.PluginSpecificConfig{
 					{Config: &cpb.PluginSpecificConfig_Vdi{Vdi: &cpb.VDIConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
 				},
 			})
+			if err != nil {
+				t.Fatalf("vdi.New(): %v", err)
+			}
 			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileSize: tt.fileSize,
 			})); got != tt.want {
@@ -95,7 +98,10 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtractValidVDI(t *testing.T) {
-	extractor := vdi.New(&cpb.PluginConfig{})
+	extractor, err := vdi.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vdi.New(): %v", err)
+	}
 
 	tests := []struct {
 		name string
@@ -210,7 +216,10 @@ func TestExtractValidVDI(t *testing.T) {
 }
 
 func TestExtractInvalidVDI(t *testing.T) {
-	extractor := vdi.New(&cpb.PluginConfig{})
+	extractor, err := vdi.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vdi.New(): %v", err)
+	}
 	path := filepath.FromSlash("testdata/invalid.vdi")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -239,7 +248,10 @@ func TestExtractInvalidVDI(t *testing.T) {
 }
 
 func TestExtractNonExistentVDI(t *testing.T) {
-	extractor := vdi.New(&cpb.PluginConfig{})
+	extractor, err := vdi.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vdi.New: %v", err)
+	}
 	path := filepath.FromSlash("testdata/nonexistent.vdi")
 	input := &filesystem.ScanInput{
 		Path:   path,
@@ -250,7 +262,7 @@ func TestExtractNonExistentVDI(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	_, err := extractor.Extract(ctx, input)
+	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
 	}

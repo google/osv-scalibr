@@ -62,7 +62,7 @@ import (
 )
 
 // InitFn is the enricher initializer function.
-type InitFn func(cfg *cpb.PluginConfig) enricher.Enricher
+type InitFn func(cfg *cpb.PluginConfig) (enricher.Enricher, error)
 
 // InitMap is a map of names to enricher initializer functions.
 type InitMap map[string][]InitFn
@@ -206,7 +206,7 @@ func vals(initMap InitMap) []InitFn {
 // Wraps initer functions that don't take any config value to initer functions that do.
 // TODO(b/400910349): Remove once all plugins take config values.
 func noCFG(f func() enricher.Enricher) InitFn {
-	return func(_ *cpb.PluginConfig) enricher.Enricher { return f() }
+	return func(_ *cpb.PluginConfig) (enricher.Enricher, error) { return f(), nil }
 }
 
 // EnricherFromName returns a single enricher based on its exact name.
@@ -218,7 +218,10 @@ func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, er
 	if len(initers) != 1 {
 		return nil, fmt.Errorf("not an exact name for an enricher: %s", name)
 	}
-	e := initers[0](cfg)
+	e, err := initers[0](cfg)
+	if err != nil {
+		return nil, err
+	}
 	if e.Name() != name {
 		return nil, fmt.Errorf("not an exact name for an enricher: %s", name)
 	}
@@ -230,7 +233,11 @@ func EnrichersFromName(name string, cfg *cpb.PluginConfig) ([]enricher.Enricher,
 	if initers, ok := enricherNames[name]; ok {
 		var result []enricher.Enricher
 		for _, initer := range initers {
-			result = append(result, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}

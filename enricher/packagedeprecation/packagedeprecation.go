@@ -17,6 +17,7 @@ package packagedeprecation
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"slices"
 
@@ -67,16 +68,16 @@ func (e *Enricher) SetClient(client Client) {
 }
 
 // New returns a new package deprecation enricher.
-func New(_ *cpb.PluginConfig) enricher.Enricher {
+func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
 	grpcConfig := grpcclient.DefaultConfig()
 	grpcclient, err := grpcclient.New(grpcConfig)
 	if err != nil {
-		log.Errorf("Failed to create deps.dev gRPC client: %v", err)
+		return nil, fmt.Errorf("failed to create deps.dev gRPC client: %w", err)
 	}
 
 	c := NewClient(grpcclient)
 
-	return &Enricher{client: c}
+	return &Enricher{client: c}, nil
 }
 
 // Enrich enriches the inventory with package version deprecation status from deps.dev.

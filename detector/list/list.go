@@ -41,7 +41,7 @@ import (
 )
 
 // InitFn is the detector initializer function.
-type InitFn func(cfg *cpb.PluginConfig) detector.Detector
+type InitFn func(cfg *cpb.PluginConfig) (detector.Detector, error)
 
 // InitMap is a map of detector names to their initers.
 type InitMap map[string][]InitFn
@@ -137,7 +137,7 @@ func vals(initMap InitMap) []InitFn {
 // Wraps initer functions that don't take any config value to initer functions that do.
 // TODO(b/400910349): Remove once all plugins take config values.
 func noCFG(f func() detector.Detector) InitFn {
-	return func(_ *cpb.PluginConfig) detector.Detector { return f() }
+	return func(_ *cpb.PluginConfig) (detector.Detector, error) { return f(), nil }
 }
 
 // DetectorsFromName returns a list of detectors from a name.
@@ -145,7 +145,11 @@ func DetectorsFromName(name string, cfg *cpb.PluginConfig) ([]detector.Detector,
 	if initers, ok := detectorNames[name]; ok {
 		result := []detector.Detector{}
 		for _, initer := range initers {
-			result = append(result, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}

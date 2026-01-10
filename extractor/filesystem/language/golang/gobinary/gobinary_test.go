@@ -116,9 +116,12 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := gobinary.New(&cpb.PluginConfig{
+			e, err := gobinary.New(&cpb.PluginConfig{
 				MaxFileSizeBytes: tt.maxFileSizeBytes,
 			})
+			if err != nil {
+				t.Fatalf("gobinary.New(): %v", err)
+			}
 			e.(*gobinary.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
@@ -276,7 +279,10 @@ func TestExtract(t *testing.T) {
 				tt.cfg = &cpb.PluginConfig{}
 			}
 
-			e := gobinary.New(tt.cfg)
+			e, err := gobinary.New(tt.cfg)
+			if err != nil {
+				t.Fatalf("gobinary.New(): %v", err)
+			}
 			e.(*gobinary.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !errors.Is(err, tt.wantErr) {

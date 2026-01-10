@@ -77,6 +77,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/chocolatey"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
@@ -144,7 +145,7 @@ import (
 )
 
 // InitFn is the extractor initializer function.
-type InitFn func(cfg *cpb.PluginConfig) filesystem.Extractor
+type InitFn func(cfg *cpb.PluginConfig) (filesystem.Extractor, error)
 
 // InitMap is a map of extractor names to their initers.
 type InitMap map[string][]InitFn
@@ -268,21 +269,22 @@ var (
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {noCFG(dpkg.NewDefault)},
-		apk.Name:      {noCFG(apk.NewDefault)},
-		rpm.Name:      {noCFG(rpm.NewDefault)},
-		cos.Name:      {noCFG(cos.NewDefault)},
-		snap.Name:     {noCFG(snap.NewDefault)},
-		nix.Name:      {noCFG(nix.New)},
-		module.Name:   {noCFG(module.NewDefault)},
-		vmlinuz.Name:  {noCFG(vmlinuz.NewDefault)},
-		pacman.Name:   {noCFG(pacman.NewDefault)},
-		portage.Name:  {noCFG(portage.NewDefault)},
-		flatpak.Name:  {noCFG(flatpak.NewDefault)},
-		homebrew.Name: {noCFG(homebrew.New)},
-		macapps.Name:  {noCFG(macapps.NewDefault)},
-		macports.Name: {noCFG(macports.New)},
-		winget.Name:   {noCFG(winget.NewDefault)},
+		dpkg.Name:       {noCFG(dpkg.NewDefault)},
+		apk.Name:        {noCFG(apk.NewDefault)},
+		rpm.Name:        {noCFG(rpm.NewDefault)},
+		cos.Name:        {noCFG(cos.NewDefault)},
+		snap.Name:       {noCFG(snap.NewDefault)},
+		nix.Name:        {noCFG(nix.New)},
+		module.Name:     {noCFG(module.NewDefault)},
+		vmlinuz.Name:    {noCFG(vmlinuz.NewDefault)},
+		pacman.Name:     {noCFG(pacman.NewDefault)},
+		portage.Name:    {noCFG(portage.NewDefault)},
+		flatpak.Name:    {noCFG(flatpak.NewDefault)},
+		homebrew.Name:   {noCFG(homebrew.New)},
+		macapps.Name:    {noCFG(macapps.NewDefault)},
+		macports.Name:   {noCFG(macports.New)},
+		winget.Name:     {noCFG(winget.NewDefault)},
+		chocolatey.Name: {chocolatey.New},
 	}
 
 	// SecretExtractors for Extractor interface.
@@ -490,7 +492,7 @@ func vals(initMap InitMap) []InitFn {
 // Wraps initer functions that don't take any config value to initer functions that do.
 // TODO(b/400910349): Remove once all plugins take config values.
 func noCFG(f func() filesystem.Extractor) InitFn {
-	return func(_ *cpb.PluginConfig) filesystem.Extractor { return f() }
+	return func(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return f(), nil }
 }
 
 // ExtractorsFromName returns a list of extractors from a name.
@@ -498,7 +500,11 @@ func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]filesystem.Extrac
 	if initers, ok := extractorNames[name]; ok {
 		result := []filesystem.Extractor{}
 		for _, initer := range initers {
-			result = append(result, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}
