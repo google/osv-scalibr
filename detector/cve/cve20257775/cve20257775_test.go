@@ -26,7 +26,6 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
-	"github.com/google/osv-scalibr/purl"
 )
 
 func TestScan(t *testing.T) {
@@ -36,56 +35,50 @@ func TestScan(t *testing.T) {
 	}
 
 	pkgs := []*extractor.Package{{
-		Name:     "NetScaler",
-		Version:  "14.1-47.47", // Vulnerable version
-		PURLType: purl.TypeNetScaler,
+		Name:    "NetScaler",
+		Version: "14.1-47.47", // Vulnerable version
 		Locations: []string{
-			filepath.Join(dir, "testdata", "valid.vmdk:1:", "flash", "boot", "loader.conf"),
+			filepath.Join(dir, "testdata/valid.vmdk:1:/flash/boot/loader.conf"),
 		},
 		Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 	},
 		{
-			Name:     "NetScaler",
-			Version:  "14.1-47.48", // Benign Version
-			PURLType: purl.TypeNetScaler,
+			Name:    "NetScaler",
+			Version: "14.1-47.48", // Benign Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:2:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata/valid.vmdk:2:/flash/boot/loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:     "NetScaler",
-			Version:  "13.1-59.21", // Vulnerable version
-			PURLType: purl.TypeNetScaler,
+			Name:    "NetScaler",
+			Version: "13.1-59.21", // Vulnerable version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:3:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata/valid.vmdk:3:/flash/boot/loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:     "NetScaler",
-			Version:  "13.1-59.22", // Benign Version
-			PURLType: purl.TypeNetScaler,
+			Name:    "NetScaler",
+			Version: "13.1-59.22", // Benign Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:4:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata/valid.vmdk:4:/flash/boot/loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:     "NetScaler",
-			Version:  "12.1-55.329", // Vulnerable version
-			PURLType: purl.TypeNetScaler,
+			Name:    "NetScaler",
+			Version: "12.1-55.329", // Vulnerable version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:5:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata/valid.vmdk:5:/flash/boot/loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:     "NetScaler",
-			Version:  "12.1-55.330", // Benign Version
-			PURLType: purl.TypeNetScaler,
+			Name:    "NetScaler",
+			Version: "12.1-55.330", // Benign Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:6:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata/valid.vmdk:6:/flash/boot/loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
@@ -94,20 +87,18 @@ func TestScan(t *testing.T) {
 		// find the version strings but we don't need to report all the version
 		// strings as unique findings.
 		{
-			Name:     "NetScaler",
-			Version:  "12.1-55.123", // Vulnerable Version
-			PURLType: purl.TypeNetScaler,
+			Name:    "NetScaler",
+			Version: "12.1-55.123", // Vulnerable Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata/flash/boot/loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:     "NetScaler",
-			Version:  "12.1-55.123", // Vulnerable Version
-			PURLType: purl.TypeNetScaler,
+			Name:    "NetScaler",
+			Version: "12.1-55.123", // Vulnerable Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "flash", "boot", "ns-12.1-55.123.gz"),
+				filepath.Join(dir, "testdata/flash/boot/ns-12.1-55.123.gz"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		}}

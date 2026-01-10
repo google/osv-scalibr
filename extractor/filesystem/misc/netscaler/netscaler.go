@@ -16,9 +16,8 @@
 package netscaler
 
 import (
+	"bufio"
 	"context"
-	"fmt"
-	"io"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,7 +26,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 )
 
 var (
@@ -75,71 +73,67 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return true
 	}
 
-	// Check against the version file regex
-	return versionFileRegex.MatchString(baseName)
+	// Check if the filename starts with "ns-"
+	return strings.HasPrefix(baseName, "ns-")
 }
 
 // Extract returns an Inventory with a package containing NetScaler version, locations where we found them, and the associated filesystem.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var Version string
-	var versionLocations []string
-
-	content, err := io.ReadAll(input.Reader)
-	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to read %s: %w", input.Path, err)
-	}
-	contentStr := string(content)
+	var versionLocation string
 
 	baseName := filepath.Base(input.Path)
 
-	// Check filename for version
+	// Check for netscaler version in filename. For example, ns-12.1-44.15.gz
 	if versionFileRegex.MatchString(baseName) {
 		matches := versionFileRegex.FindStringSubmatch(baseName)
 		if len(matches) == 3 {
 			ver, build := matches[1], matches[2]
 			Version = ver + "-" + build
-			versionLocations = append(versionLocations, input.Path)
+			versionLocation = input.Path
 		}
-	}
+	} else {
+		scanner := bufio.NewScanner(input.Reader)
 
-	switch strings.ToLower(baseName) {
-	case "loader.conf":
-		lines := strings.Split(contentStr, "\n")
-		for _, line := range lines {
-			if versionLoaderRegex.MatchString(line) {
-				matches := versionLoaderRegex.FindStringSubmatch(line)
-				if len(matches) == 3 {
-					ver, build := matches[1], matches[2]
-					Version = ver + "-" + build
-					versionLocations = append(versionLocations, input.Path)
-				}
-			}
+		// Select the appropriate regex once based on the file name.
+		// This avoids repeating switch logic or evaluating multiple regexes during scanning.
+		var re *regexp.Regexp
+
+		switch strings.ToLower(baseName) {
+		case "loader.conf", "ns.conf":
+			re = versionLoaderRegex
+		case "nsversion":
+			re = versionNsRegex
+		default:
+			// Unknown file type; nothing to extract.
+			// For example, ns-12.1.1-45.6.gz
+			return inventory.Inventory{}, nil
 		}
-	case "nsversion":
-		if versionNsRegex.MatchString(contentStr) {
-			matches := versionNsRegex.FindStringSubmatch(contentStr)
+
+		// Scan the file line-by-line.
+		// Scanner.Scan() reads one line per iteration without loading the entire file into memory.
+		for scanner.Scan() {
+			if ctx.Err() != nil {
+				return inventory.Inventory{}, ctx.Err()
+			}
+
+			// Fetch the line
+			line := scanner.Text()
+
+			// Try to extract version information using the selected regex.
+			matches := re.FindStringSubmatch(line)
 			if len(matches) == 3 {
 				ver, build := matches[1], matches[2]
 				Version = ver + "-" + build
-				versionLocations = append(versionLocations, input.Path)
-			}
-		}
-	case "ns.conf":
-		lines := strings.Split(contentStr, "\n")
-		for _, line := range lines {
-			if versionLoaderRegex.MatchString(line) {
-				matches := versionLoaderRegex.FindStringSubmatch(line)
-				if len(matches) == 3 {
-					ver, build := matches[1], matches[2]
-					Version = ver + "-" + build
-					versionLocations = append(versionLocations, input.Path)
-				}
+				versionLocation = input.Path
+				// Found the version; stop scanning further lines.
+				break
 			}
 		}
 	}
 
 	// In case of no findings, return empty inventory.
-	if len(versionLocations) == 0 {
+	if versionLocation == "" {
 		return inventory.Inventory{}, nil
 	}
 
@@ -149,8 +143,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	inv.Packages = append(inv.Packages, &extractor.Package{
 		Name:      "NetScaler",
 		Version:   Version,
-		PURLType:  purl.TypeNetScaler,
-		Locations: versionLocations,
+		Locations: []string{versionLocation},
 		// This is required because the filesystem passed to the detectors
 		// is different from the filesystem where we found the artifacts
 		// in case of embeddedfs extractors.

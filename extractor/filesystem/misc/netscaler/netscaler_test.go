@@ -16,22 +16,19 @@ package netscaler_test
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
-func TestFileRequired(t *testing.T) {
+func TestExtractor_FileRequired(t *testing.T) {
 	extractor := netscaler.New()
 	tests := []struct {
 		path string
@@ -40,6 +37,10 @@ func TestFileRequired(t *testing.T) {
 		{"testdata/ns.conf", true},
 		{"testdata/loader.conf", true},
 		{"testdata/nsversion", true},
+		{"testdata/NS.CONF", true},
+		{"testdata/LOADER.CONF", true},
+		{"testdata/NSVERSION", true},
+		{"testdata/ns-12.1-44.50.gz", true},
 		{"testdata/document.txt", false},
 		{"testdata/noextension", false},
 	}
@@ -53,93 +54,95 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-func TestExtract(t *testing.T) {
-	var e = netscaler.New()
+func TestExtractor_Extract(t *testing.T) {
+	wdir, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Failed to get current working directory")
+	}
 
-	tests := []struct {
-		name         string
-		path         string
-		wantErr      error
-		wantPackages []*extractor.Package
-	}{
+	tests := []extracttest.TestTableEntry{
 		{
-			name: "NetScaler",
-			path: filepath.Join("testdata", "valid", "loader.conf"),
-			wantPackages: []*extractor.Package{
+			Name: "NetScaler valid loader.conf",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid/loader.conf",
+			},
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "NetScaler",
-					PURLType:  purl.TypeNetScaler,
 					Version:   "14.1-36.5",
-					Locations: []string{filepath.Join("testdata", "valid", "loader.conf")},
-					Metadata:  os.DirFS(".").(scalibrfs.FS),
+					Locations: []string{"testdata/valid/loader.conf"},
+					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
 				},
 			},
 		},
 		{
-			name: "NetScaler",
-			path: filepath.Join("testdata", "valid", "nsversion"),
-			wantPackages: []*extractor.Package{
+			Name: "NetScaler valid nsversion",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid/nsversion",
+			},
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "NetScaler",
-					PURLType:  purl.TypeNetScaler,
 					Version:   "13.1-59.21",
-					Locations: []string{filepath.Join("testdata", "valid", "nsversion")},
-					Metadata:  os.DirFS(".").(scalibrfs.FS),
+					Locations: []string{"testdata/valid/nsversion"},
+					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
 				},
 			},
 		},
 		{
-			name: "NetScaler",
-			path: filepath.Join("testdata", "valid", "ns.conf"),
-			wantPackages: []*extractor.Package{
+			Name: "NetScaler valid ns.conf",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid/ns.conf",
+			},
+			WantPackages: []*extractor.Package{
 				{
 					Name:      "NetScaler",
-					PURLType:  purl.TypeNetScaler,
 					Version:   "12.1-55.329",
-					Locations: []string{filepath.Join("testdata", "valid", "ns.conf")},
-					Metadata:  os.DirFS(".").(scalibrfs.FS),
+					Locations: []string{"testdata/valid/ns.conf"},
+					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
 				},
 			},
 		},
 		{
-			name:         "NetScaler",
-			path:         filepath.Join("testdata", "invalid", "loader.conf"),
-			wantPackages: nil,
+			Name: "NetScaler invalid loader.conf",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid/loader.conf",
+			},
+			WantPackages: nil,
 		},
 		{
-			name:         "NetScaler",
-			path:         filepath.Join("testdata", "invalid", "nsversion"),
-			wantPackages: nil,
+			Name: "NetScaler invalid nsversion",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid/nsversion",
+			},
+			WantPackages: nil,
 		},
 		{
-			name:         "NetScaler",
-			path:         filepath.Join("testdata", "invalid", "ns.conf"),
-			wantPackages: nil,
+			Name: "NetScaler invalid ns.conf",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid/ns.conf",
+			},
+			WantPackages: nil,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r, err := os.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
+		t.Run(tt.Name, func(t *testing.T) {
+			extr := netscaler.New()
+
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(t.Context(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+				return
 			}
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Reader: r}
-			got, err := e.Extract(t.Context(), input)
-			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)
-			}
-
-			want := inventory.Inventory{Packages: tt.wantPackages}
-
-			if diff := cmp.Diff(want, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
-				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}

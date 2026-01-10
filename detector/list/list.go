@@ -88,8 +88,8 @@ var Misc = InitMap{
 	dockersocket.Name: {noCFG(dockersocket.New)},
 }
 
-// CVEDetectors for vulnerabilities
-var CVEDetectors = InitMap{
+// CVE for vulnerabilities that have a CVE associated
+var CVE = InitMap{
 	// CVE-2025-7775 detector
 	cve20257775.Name: {noCFG(cve20257775.New)},
 }
@@ -105,7 +105,7 @@ var All = concat(
 	Misc,
 	Weakcredentials,
 	Untested,
-	CVEDetectors,
+	CVE,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -115,7 +115,7 @@ var detectorNames = concat(All, InitMap{
 	"misc":              vals(Misc),
 	"weakcredentials":   vals(Weakcredentials),
 	"untested":          vals(Untested),
-	"cvedetectors":      vals(CVEDetectors),
+	"cve":               vals(CVE),
 	"detectors/default": vals(Default),
 	"default":           vals(Default),
 	"detectors/all":     vals(All),

@@ -16,9 +16,9 @@
 package cve20257775
 
 import (
+	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"regexp"
 	"strings"
 
@@ -29,7 +29,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/semantic"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -39,7 +38,7 @@ import (
 var (
 	// Matches version strings like 14.1-47.48
 	versionRegex = regexp.MustCompile(`(\d+\.\d+)-(\d+\.\d+)`)
-	// Matches suspicious ns.conf patterns
+	// Matches vulnerable ns.conf patterns
 	// https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX694938
 	configRegexes = []*regexp.Regexp{
 		regexp.MustCompile(`add\s+authentication\s+vserver.*`),
@@ -97,7 +96,7 @@ func (d Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Findi
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
 		Vulnerability: &osvpb.Vulnerability{
 			Id:      "CVE-2025-7775",
-			Summary: "Memory overflow vulnerability leading to Remote Code Execution and/or Denial of Service",
+			Summary: "Memory overflow vulnerability leading to Remote Code Execution and/or Denial of Service in NetScaler ADC and NetScaler Gateway",
 			Details: "Memory overflow vulnerability leading to Remote Code Execution and/or Denial of Service in NetScaler ADC and NetScaler Gateway",
 			Affected: inventory.PackageToAffected(pkg, "12.1-55.330, 13.1-59.22, 14.1-47.48", &osvpb.Severity{
 				Type:  osvpb.Severity_CVSS_V3,
@@ -117,81 +116,85 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	var findings []*inventory.PackageVuln
 	seen := make(map[string]struct{})
 
-	for _, pkg := range px.GetAllOfType(purl.TypeNetScaler) {
-		// Check if package version is vulnerable
-		if !isVulnerable(pkg.Version) {
-			continue
-		}
+	for _, pkg := range px.GetAll() {
+		if pkg.Name == "NetScaler" {
+			// Check if package version is vulnerable
+			if !isVulnerable(pkg.Version) {
+				continue
+			}
 
-		for _, location := range pkg.Locations {
-			var key string
-			parts := strings.Split(location, ":")
-			if len(parts) >= 2 {
-				// Form: /path/to/valid.vmdk:1:netscaler/...
-				key = strings.Join(parts[:2], ":")
-			} else {
-				// If we're here, then that means it's a package parsed from host filesystem.
-				// Form: /nsconfig/nsversion, /flash/boot/loader.conf, etc.
-				key = location
-				// If any existing entry in seen also has no ":", skip to avoid duplicate security findings
-				// from the same host filesystem.
-				skip := false
-				for existing := range seen {
-					if !strings.Contains(existing, ":") {
-						// Another non-colon key already exists
-						skip = true
-						break
-					}
+			for _, location := range pkg.Locations {
+				// fs represents the filesystem where the vulnerable package was found.
+				// It's required to prevent duplicate security findings originating from
+				// the same filesystem.
+				var fs string
+
+				// NetScaler instance might be inside embedded filesystems denoted by ":".
+				// So we need to differentiate whether it's an embedded filesystem or host filesystem.
+				parts := strings.Split(location, ":")
+				if len(parts) >= 2 {
+					// Form: /path/to/valid.vmdk:1:netscaler/...
+					fs = strings.Join(parts[:2], ":")
+				} else {
+					// If we're here, then that means it's a package parsed from host filesystem.
+					// Form: /nsconfig/nsversion, /flash/boot/loader.conf, etc.
+
+					// "HostFS" is a special identifier representing the host filesystem.
+					// If an entry for "HostFS" already exists in the `seen` map, skip processing it
+					// to prevent duplicate security findings originating from the same host filesystem.
+					fs = "HostFS"
 				}
-				if skip {
+
+				if _, exists := seen[fs]; exists {
 					continue
 				}
-			}
+				seen[fs] = struct{}{}
 
-			if _, exists := seen[key]; exists {
-				continue
-			}
-			seen[key] = struct{}{}
-
-			// Check ns.conf using pkg.Metadata (scalibrfs.FS)
-			fsys, ok := pkg.Metadata.(scalibrfs.FS)
-			if !ok {
-				continue
-			}
-
-			f, err := fsys.Open("nsconfig/ns.conf")
-			if err != nil {
-				continue
-			}
-			defer f.Close()
-
-			content, err := io.ReadAll(f)
-			if err != nil {
-				continue
-			}
-			contentStr := string(content)
-
-			// Check for suspicious config patterns
-			hasSuspiciousConfig := false
-			for _, re := range configRegexes {
-				if re.MatchString(contentStr) {
-					hasSuspiciousConfig = true
-					break
+				// Check ns.conf using pkg.Metadata (scalibrfs.FS)
+				fsys, ok := pkg.Metadata.(scalibrfs.FS)
+				if !ok {
+					continue
 				}
-			}
 
-			if hasSuspiciousConfig {
-				// Add locations and ns.conf to dbSpecific
-				locations := pkg.Locations
-				locations = append(locations, "/nsconfig/ns.conf")
-				dbSpecific := &structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("Vulnerable version: %s; Locations: %s; Config file: /nsconfig/ns.conf", pkg.Version, strings.Join(locations, ", "))}},
-					},
+				f, err := fsys.Open("nsconfig/ns.conf")
+				if err != nil {
+					continue
 				}
-				finding := d.findingForPackage(dbSpecific).PackageVulns[0]
-				finding.Package = pkg // Include the package details
-				findings = append(findings, finding)
+				defer f.Close()
+
+				hasVulnerableConfig := false
+
+				scanner := bufio.NewScanner(f)
+				for scanner.Scan() {
+					if ctx.Err() != nil {
+						break
+					}
+
+					// Fetch the line
+					line := scanner.Text()
+
+					// Check for vulnerable config patterns
+					for _, re := range configRegexes {
+						if re.MatchString(line) {
+							hasVulnerableConfig = true
+							break
+						}
+					}
+				}
+
+				if hasVulnerableConfig {
+					// Add locations and ns.conf to dbSpecific
+					locations := pkg.Locations
+					locations = append(locations, "/nsconfig/ns.conf")
+					dbSpecific := &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("Vulnerable version: %s; Locations: %s; Config file: /nsconfig/ns.conf", pkg.Version, strings.Join(locations, ", "))}},
+						},
+					}
+					finding := d.findingForPackage(dbSpecific).PackageVulns[0]
+					finding.Package = pkg // Include the package details
+					findings = append(findings, finding)
+				}
 			}
 		}
 	}
