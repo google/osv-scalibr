@@ -757,6 +757,7 @@ message SecretData {
     JWTToken jwt_token = 55;
     CodeCommitCredentials code_commit_credentials = 56;
     BitBucketCredentials bitbucket_credentials = 57;
+    TelegramBotToken telegram_bot_api_token = 58;
   }
 
   message GCPSAK {
@@ -1054,6 +1055,10 @@ message SecretData {
 
   message BitBucketCredentials{
     string url = 1;
+  }
+
+  message TelegramBotToken{
+    string token = 1;
   }
 }
 

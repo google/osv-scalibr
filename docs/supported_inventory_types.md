@@ -112,7 +112,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Secrets
 
 | Type                                        | Extractor Plugin                     |
-| ------------------------------------------- | ------------------------------------ |
+|---------------------------------------------|--------------------------------------|
 | AWS access key                              | `secrets/awsaccesskey`               |
 | Amazon CodeCommit credentials               | `secrets/codecommitcredentials`      |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`    |
@@ -162,6 +162,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Generic JWT tokens                          | `secrets/jwttoken`                   |
 | pyx user key v1                             | `secrets/pyxkeyv1`                   |
 | pyx user key v2                             | `secrets/pyxkeyv2`                   |
+| Telegram Bot API Token                      | `secrets/telegrambottoken`           |
 
 ### Container inventory
 
