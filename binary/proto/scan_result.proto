@@ -758,6 +758,7 @@ message SecretData {
     JWTToken jwt_token = 55;
     CodeCommitCredentials code_commit_credentials = 56;
     BitBucketCredentials bitbucket_credentials = 57;
+    ElasticCloudAPIKey elastic_cloud_api_key = 58;
   }
 
   message GCPSAK {
@@ -1060,6 +1061,11 @@ message SecretData {
   message BitBucketCredentials{
     string url = 1;
   }
+
+  message ElasticCloudAPIKey {
+    string key = 1;
+  }
+  
 }
 
 message SecretStatus {
