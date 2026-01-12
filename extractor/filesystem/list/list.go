@@ -135,6 +135,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -327,6 +328,7 @@ var (
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
 		{privatekey.NewDetector(), "secrets/privatekey", 0},
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
+		{sendgrid.NewDetector(), "secrets/sendgrid", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
 		{github.NewAppS2STokenDetector(), "secrets/githubapps2stoken", 0},
