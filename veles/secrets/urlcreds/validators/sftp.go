@@ -29,26 +29,30 @@ import (
 type SFTPValidator struct{}
 
 // Validate validates sftp URL credentials.
+//
+// Note: ssh.NewClientConn is used instead of ssh.Dial because ssh.Dial does not accept a context.
 func (s *SFTPValidator) Validate(ctx context.Context, u *url.URL) (veles.ValidationStatus, error) {
-	pass, _ := u.User.Password()
-	config := &ssh.ClientConfig{
-		User:            u.User.Username(),
-		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         5 * time.Second,
-	}
-
-	rawConn, err := (&net.Dialer{}).DialContext(ctx, "tcp", u.Host)
+	timeout := 10 * time.Second
+	// Add a timeout otherwise the tcp dial may take a long time (minutes)
+	dialer := &net.Dialer{Timeout: timeout}
+	rawConn, err := dialer.DialContext(ctx, "tcp", u.Host)
 	if err != nil {
 		return veles.ValidationFailed, err
 	}
 	defer rawConn.Close()
 
-	// set an hard timeout on the connection, using ssh.Dial results in long hangs
-	if err := rawConn.SetDeadline(time.Now().Add(config.Timeout)); err != nil {
+	// Set a deadline otherwise the SSH handshake may stall indefinitely
+	if err := rawConn.SetDeadline(time.Now().Add(timeout)); err != nil {
 		return veles.ValidationFailed, errors.New("error setting connection deadline")
 	}
 
+	pass, _ := u.User.Password()
+	config := &ssh.ClientConfig{
+		User:            u.User.Username(),
+		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		// Timeout:      Ignored when using NewClientConn
+	}
 	sshConn, _, _, err := ssh.NewClientConn(rawConn, u.Host, config)
 	if err != nil {
 		return veles.ValidationInvalid, nil
