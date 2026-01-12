@@ -73,8 +73,12 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return true
 	}
 
-	// Check if the filename starts with "ns-"
-	return strings.HasPrefix(baseName, "ns-")
+	// Check if the filename starts with "ns-" and contains version string
+	if strings.HasPrefix(baseName, "ns-") && versionFileRegex.MatchString(baseName) {
+		return true
+	}
+
+	return false
 }
 
 // Extract returns an Inventory with a package containing NetScaler version, locations where we found them, and the associated filesystem.
