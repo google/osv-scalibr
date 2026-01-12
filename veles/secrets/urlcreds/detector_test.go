@@ -111,6 +111,10 @@ func TestDetector_trueNegatives(t *testing.T) {
 			name:  "no_userinfo",
 			input: "http://example.com",
 		},
+		{
+			name:  "no_userinfo_strange",
+			input: "https://example.com?email=user@gmail.com",
+		},
 	}
 
 	for _, tc := range cases {
