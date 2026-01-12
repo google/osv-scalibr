@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -156,7 +157,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 					continue
 				}
 
-				f, err := fsys.Open("nsconfig/ns.conf")
+				f, err := fsys.Open(filepath.Join("nsconfig", "ns.conf"))
 				if err != nil {
 					continue
 				}
@@ -185,10 +186,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 				if hasVulnerableConfig {
 					// Add locations and ns.conf to dbSpecific
 					locations := pkg.Locations
-					locations = append(locations, "/nsconfig/ns.conf")
 					dbSpecific := &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("Vulnerable version: %s; Locations: %s; Config file: /nsconfig/ns.conf", pkg.Version, strings.Join(locations, ", "))}},
+							"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("Vulnerable version: %s; Locations: %s", pkg.Version, strings.Join(locations, ", "))}},
 						},
 					}
 					finding := d.findingForPackage(dbSpecific).PackageVulns[0]
