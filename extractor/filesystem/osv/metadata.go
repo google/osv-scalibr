@@ -27,25 +27,6 @@ type Metadata struct {
 	CompareAs string
 }
 
-// DepGroups provides access to the list of dependency groups a package item belongs to.
-// Dependency groups are used by many language package managers as a way to organize
-// dependencies (e.g. development dependencies will be in the "dev" group)
-type DepGroups interface {
-	DepGroups() []string
-}
-
-// DepGroupMetadata is a metadata struct that only supports DepGroups
-type DepGroupMetadata struct {
-	DepGroupVals []string
-}
-
-var _ DepGroups = DepGroupMetadata{}
-
-// DepGroups return the dependency groups property in the metadata
-func (dgm DepGroupMetadata) DepGroups() []string {
-	return dgm.DepGroupVals
-}
-
 // SetProto sets the OSVPackageMetadata field in the Package proto.
 func (m *Metadata) SetProto(p *pb.Package) {
 	if m == nil {
@@ -76,5 +57,46 @@ func ToStruct(m *pb.OSVPackageMetadata) *Metadata {
 		Commit:    m.GetCommit(),
 		Ecosystem: m.GetEcosystem(),
 		CompareAs: m.GetCompareAs(),
+	}
+}
+
+// DepGroups provides access to the list of dependency groups a package item belongs to.
+// Dependency groups are used by many language package managers as a way to organize
+// dependencies (e.g. development dependencies will be in the "dev" group)
+type DepGroups interface {
+	DepGroups() []string
+}
+
+// DepGroupMetadata is a metadata struct that only supports DepGroups
+type DepGroupMetadata struct {
+	DepGroupVals []string
+}
+
+var _ DepGroups = DepGroupMetadata{}
+
+// DepGroups return the dependency groups property in the metadata
+func (dgm DepGroupMetadata) DepGroups() []string {
+	return dgm.DepGroupVals
+}
+
+// SetProto sets the DepGroupMetadata field in the Package proto.
+func (dgm DepGroupMetadata) SetProto(p *pb.Package) {
+	if len(dgm.DepGroupVals) == 0 {
+		return
+	}
+	p.Metadata = &pb.Package_DepGroupMetadata{
+		DepGroupMetadata: &pb.DepGroupMetadata{
+			DepGroupVals: dgm.DepGroupVals,
+		},
+	}
+}
+
+// DepGroupToStruct converts the DepGroupMetadata proto to a DepGroupMetadata struct.
+func DepGroupToStruct(m *pb.DepGroupMetadata) *DepGroupMetadata {
+	if m == nil {
+		return nil
+	}
+	return &DepGroupMetadata{
+		DepGroupVals: m.GetDepGroupVals(),
 	}
 }

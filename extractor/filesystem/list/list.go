@@ -76,6 +76,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/chocolatey"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
@@ -267,21 +268,22 @@ var (
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:     {noCFG(dpkg.NewDefault)},
-		apk.Name:      {noCFG(apk.NewDefault)},
-		rpm.Name:      {noCFG(rpm.NewDefault)},
-		cos.Name:      {noCFG(cos.NewDefault)},
-		snap.Name:     {noCFG(snap.NewDefault)},
-		nix.Name:      {noCFG(nix.New)},
-		module.Name:   {noCFG(module.NewDefault)},
-		vmlinuz.Name:  {noCFG(vmlinuz.NewDefault)},
-		pacman.Name:   {noCFG(pacman.NewDefault)},
-		portage.Name:  {noCFG(portage.NewDefault)},
-		flatpak.Name:  {noCFG(flatpak.NewDefault)},
-		homebrew.Name: {noCFG(homebrew.New)},
-		macapps.Name:  {noCFG(macapps.NewDefault)},
-		macports.Name: {noCFG(macports.New)},
-		winget.Name:   {noCFG(winget.NewDefault)},
+		dpkg.Name:       {noCFG(dpkg.NewDefault)},
+		apk.Name:        {noCFG(apk.NewDefault)},
+		rpm.Name:        {noCFG(rpm.NewDefault)},
+		cos.Name:        {noCFG(cos.NewDefault)},
+		snap.Name:       {noCFG(snap.NewDefault)},
+		nix.Name:        {noCFG(nix.New)},
+		module.Name:     {noCFG(module.NewDefault)},
+		vmlinuz.Name:    {noCFG(vmlinuz.NewDefault)},
+		pacman.Name:     {noCFG(pacman.NewDefault)},
+		portage.Name:    {noCFG(portage.NewDefault)},
+		flatpak.Name:    {noCFG(flatpak.NewDefault)},
+		homebrew.Name:   {noCFG(homebrew.New)},
+		macapps.Name:    {noCFG(macapps.NewDefault)},
+		macports.Name:   {noCFG(macports.New)},
+		winget.Name:     {noCFG(winget.NewDefault)},
+		chocolatey.Name: {chocolatey.New},
 	}
 
 	// SecretExtractors for Extractor interface.
