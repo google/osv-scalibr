@@ -19,7 +19,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"path/filepath"
+	"os"
 	"regexp"
 	"strings"
 
@@ -134,8 +134,19 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 				// So we need to differentiate whether it's an embedded filesystem or host filesystem.
 				parts := strings.Split(location, ":")
 				if len(parts) >= 2 {
-					// Form: /path/to/valid.vmdk:1:netscaler/...
-					fs = strings.Join(parts[:2], ":")
+					// Windows paths contain ":" as part of the drive letter (e.g., "D:\path\file.vmdk"),
+					// which interferes with splitting logic based on ":" delimiters.
+					// Therefore, when running on Windows, we must skip the drive letter and only use
+					// its path.
+					//
+					// Example formats:
+					//   Linux/macOS: /path/to/valid.vmdk:1:netscaler/...
+					//   Windows:     D:\path\to\valid.vmdk:1:netscaler\...
+					if os.PathSeparator == '\\' {
+						fs = strings.Join(parts[1:3], ":")
+					} else {
+						fs = strings.Join(parts[:2], ":")
+					}
 				} else {
 					// If we're here, then that means it's a package parsed from host filesystem.
 					// Form: /nsconfig/nsversion, /flash/boot/loader.conf, etc.
@@ -157,7 +168,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 					continue
 				}
 
-				f, err := fsys.Open(filepath.Join("nsconfig", "ns.conf"))
+				f, err := fsys.Open("nsconfig/ns.conf")
 				if err != nil {
 					continue
 				}

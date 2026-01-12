@@ -18,7 +18,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"testing/fstest"
 
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
 	"github.com/google/osv-scalibr/extractor"
@@ -38,7 +37,7 @@ func TestScan(t *testing.T) {
 			Name:    "NetScaler",
 			Version: "14.1-47.47", // Vulnerable version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:1:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata", "valid.vmdk:1:flash", "boot", "loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
@@ -46,7 +45,7 @@ func TestScan(t *testing.T) {
 			Name:    "NetScaler",
 			Version: "14.1-47.48", // Benign Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:2:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata", "valid.vmdk:2:flash", "boot", "loader.conf"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
@@ -54,7 +53,7 @@ func TestScan(t *testing.T) {
 			Name:    "NetScaler",
 			Version: "13.1-59.21", // Vulnerable version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:3:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata", "valid.vmdk:3:ns-13.1-59.21.gz"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
@@ -62,7 +61,7 @@ func TestScan(t *testing.T) {
 			Name:    "NetScaler",
 			Version: "13.1-59.22", // Benign Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:4:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata", "valid.vmdk:4:ns-13.1-59.22.gz"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
@@ -70,7 +69,7 @@ func TestScan(t *testing.T) {
 			Name:    "NetScaler",
 			Version: "12.1-55.329", // Vulnerable version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:5:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata", "valid.vmdk:5:nsversion"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
@@ -78,13 +77,13 @@ func TestScan(t *testing.T) {
 			Name:    "NetScaler",
 			Version: "12.1-55.330", // Benign Version
 			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:6:", "flash", "boot", "loader.conf"),
+				filepath.Join(dir, "testdata", "valid.vmdk:6:nsversion"),
 			},
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 	}
 
-	finding := runScan(t, fstest.MapFS{}, pkgs)
+	finding := runScan(t, filepath.Join(dir, "testdata"), pkgs)
 
 	if len(finding.PackageVulns) != 3 {
 		t.Fatalf("Expected 3 finding got %d", len(finding.PackageVulns))
@@ -96,18 +95,14 @@ func TestScan(t *testing.T) {
 	}
 }
 
-func runScan(t *testing.T, fs scalibrfs.FS, pkgs []*extractor.Package) inventory.Finding {
+func runScan(t *testing.T, dir string, pkgs []*extractor.Package) inventory.Finding {
 	t.Helper()
 	px, err := packageindex.New(pkgs)
 	if err != nil {
 		t.Fatalf("packageindex.New() returned error: %v", err)
 	}
-	scanRoot := &scalibrfs.ScanRoot{
-		FS:   fs,
-		Path: ".",
-	}
 	detector := cve20257775.New()
-	findings, err := detector.Scan(t.Context(), scanRoot, px)
+	findings, err := detector.Scan(t.Context(), scalibrfs.RealFSScanRoot(dir), px)
 	if err != nil {
 		t.Fatalf("Scan() returned error: %v", err)
 	}
