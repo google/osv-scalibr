@@ -174,7 +174,7 @@ func TestMakePackageURLFlatpak(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "Both VERSION_ID and BUILD_ID is set",
+			desc: "Both_VERSION_ID_and_BUILD_ID_is_set",
 			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
@@ -197,7 +197,7 @@ func TestMakePackageURLFlatpak(t *testing.T) {
 			},
 		},
 		{
-			desc: "only BUILD_ID set",
+			desc: "only_BUILD_ID_set",
 			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
@@ -219,7 +219,7 @@ func TestMakePackageURLFlatpak(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS_ID not set",
+			desc: "OS_ID_not_set",
 			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
@@ -258,7 +258,7 @@ func TestMakePackageURLAPK(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
@@ -274,7 +274,7 @@ func TestMakePackageURLAPK(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS ID missing",
+			desc: "OS_ID_missing",
 			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
@@ -289,7 +289,7 @@ func TestMakePackageURLAPK(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS version ID missing",
+			desc: "OS_version_ID_missing",
 			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
@@ -321,7 +321,7 @@ func TestMakePackageURLCOS(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "both versions present",
+			desc: "both_versions_present",
 			metadata: &cosmeta.Metadata{
 				OSVersionID: "101",
 				OSVersion:   "97",
@@ -334,7 +334,7 @@ func TestMakePackageURLCOS(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION set",
+			desc: "only_VERSION_set",
 			metadata: &cosmeta.Metadata{
 				OSVersion: "97",
 			},
@@ -346,7 +346,7 @@ func TestMakePackageURLCOS(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &cosmeta.Metadata{
 				OSVersionID: "101",
 			},
@@ -389,7 +389,7 @@ func TestMakePackageURLRPM(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "version ID and build ID present",
+			desc: "version_ID_and_build_ID_present",
 			metadata: &rpmmeta.Metadata{
 				PackageName: pkgname,
 				SourceRPM:   source,
@@ -411,7 +411,7 @@ func TestMakePackageURLRPM(t *testing.T) {
 			},
 		},
 		{
-			desc: "only build ID present",
+			desc: "only_build_ID_present",
 			metadata: &rpmmeta.Metadata{
 				PackageName: pkgname,
 				SourceRPM:   source,
@@ -432,7 +432,7 @@ func TestMakePackageURLRPM(t *testing.T) {
 			},
 		},
 		{
-			desc: "ID missing",
+			desc: "ID_missing",
 			metadata: &rpmmeta.Metadata{
 				PackageName: pkgname,
 				SourceRPM:   source,
@@ -479,7 +479,7 @@ func TestMakePackageURLSnap(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "Both VERSION_CODENAME and VERSION_ID are set",
+			desc: "Both_VERSION_CODENAME_and_VERSION_ID_are_set",
 			metadata: &snapmeta.Metadata{
 				Name:              snapName,
 				Version:           snapVersion,
@@ -501,7 +501,7 @@ func TestMakePackageURLSnap(t *testing.T) {
 			},
 		},
 		{
-			desc: "Only VERSION_ID is set",
+			desc: "Only_VERSION_ID_is_set",
 			metadata: &snapmeta.Metadata{
 				Name:          snapName,
 				Version:       snapVersion,
@@ -522,7 +522,7 @@ func TestMakePackageURLSnap(t *testing.T) {
 			},
 		},
 		{
-			desc: "OSID, VERSION_CODENAME and VERSION_ID all are not set",
+			desc: "OSID,_VERSION_CODENAME_and_VERSION_ID_all_are_not_set",
 			metadata: &snapmeta.Metadata{
 				Name:          snapName,
 				Version:       snapVersion,
@@ -560,7 +560,7 @@ func TestMakePackageURLPacman(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
@@ -580,7 +580,7 @@ func TestMakePackageURLPacman(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
@@ -600,7 +600,7 @@ func TestMakePackageURLPacman(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS ID not set, fallback to Linux",
+			desc: "OS_ID_not_set,_fallback_to_Linux",
 			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
@@ -639,7 +639,7 @@ func TestMakePackageURLPortage(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -657,7 +657,7 @@ func TestMakePackageURLPortage(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -675,7 +675,7 @@ func TestMakePackageURLPortage(t *testing.T) {
 			},
 		},
 		{
-			desc: "ID not set, fallback to linux",
+			desc: "ID_not_set,_fallback_to_linux",
 			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -714,7 +714,7 @@ func TestMakePackageURLNix(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &nixmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
@@ -734,7 +734,7 @@ func TestMakePackageURLNix(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &nixmeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -753,7 +753,7 @@ func TestMakePackageURLNix(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS ID not set, fallback to Nixos",
+			desc: "OS_ID_not_set,_fallback_to_Nixos",
 			metadata: &nixmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,

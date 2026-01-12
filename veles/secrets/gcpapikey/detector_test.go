@@ -26,8 +26,11 @@ import (
 )
 
 const (
-	testKey          = `AIzatestestestestestestestestestesttest`
-	testKeyMixedCase = `AIzaTESTesTESTesTESTesTESTesTESTestTEST`
+	testKeyA = `AIzaSyAtestTESTt3s7te-_testtesttesttest`
+	testKeyB = `AIzaSyBtestTESTt3s7te-_testtesttesttest`
+	testKeyC = `AIzaSyCtestTESTt3s7te-_testtesttesttest`
+	testKeyD = `AIzaSyDtestTESTt3s7te-_testtesttesttest`
+	testKey  = testKeyA
 )
 
 // TestDetector_truePositives tests for cases where we know the Detector
@@ -41,62 +44,85 @@ func TestDetector_truePositives(t *testing.T) {
 		name  string
 		input string
 		want  []veles.Secret
-	}{{
-		name:  "simple matching string",
-		input: testKey,
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKey},
+	}{
+		{
+			name:  "simple matching string with A prefix",
+			input: testKeyA,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKeyA},
+			},
 		},
-	}, {
-		name:  "match at end of string",
-		input: `API_KEY=` + testKey,
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKey},
+		{
+			name:  "simple matching string with B prefix",
+			input: testKeyB,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKeyB},
+			},
 		},
-	}, {
-		name:  "match in middle of string",
-		input: `API_KEY="` + testKey + `"`,
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKey},
+		{
+			name:  "simple matching string with C prefix",
+			input: testKeyC,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKeyC},
+			},
 		},
-	}, {
-		name:  "matching string with mixed case",
-		input: testKeyMixedCase,
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKeyMixedCase},
+		{
+			name:  "simple matching string with D prefix",
+			input: testKeyD,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKeyD},
+			},
 		},
-	}, {
-		name:  "multiple matches",
-		input: testKey + testKey + testKey,
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKey},
-			gcpapikey.GCPAPIKey{Key: testKey},
-			gcpapikey.GCPAPIKey{Key: testKey},
+		{
+			name:  "match at end of string",
+			input: `API_KEY=` + testKey,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKey},
+			},
 		},
-	}, {
-		name:  "multiple distinct matches",
-		input: testKey + "\n" + testKey[:len(testKey)-1] + "1\n",
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKey},
-			gcpapikey.GCPAPIKey{Key: testKey[:len(testKey)-1] + "1"},
+		{
+			name:  "match in middle of string",
+			input: `API_KEY="` + testKey + `"`,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKey},
+			},
 		},
-	}, {
-		name: "larger input containing key",
-		input: fmt.Sprintf(`
+		{
+			name:  "multiple matches",
+			input: testKey + testKey + testKey,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKey},
+				gcpapikey.GCPAPIKey{Key: testKey},
+				gcpapikey.GCPAPIKey{Key: testKey},
+			},
+		},
+		{
+			name:  "multiple distinct matches",
+			input: testKey + "\n" + testKey[:len(testKey)-1] + "1\n",
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKey},
+				gcpapikey.GCPAPIKey{Key: testKey[:len(testKey)-1] + "1"},
+			},
+		},
+		{
+			name: "larger_input_containing_key",
+			input: fmt.Sprintf(`
 CONFIG_FILE=config.txt
 API_KEY=%s
 CLOUD_PROJECT=my-project
 		`, testKey),
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKey},
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKey},
+			},
 		},
-	}, {
-		name:  "potential match longer than max key length",
-		input: testKey + `test`,
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: testKey},
+		{
+			name:  "potential match longer than max key length",
+			input: testKey + `test`,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: testKey},
+			},
 		},
-	}}
+	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
@@ -121,33 +147,45 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name  string
 		input string
 		want  []veles.Secret
-	}{{
-		name:  "empty input",
-		input: "",
-	}, {
-		name:  "short key should not match",
-		input: testKey[:len(testKey)-1],
-	}, {
-		name:  "incorrect casing of prefix should not match",
-		input: `aizatestestestestestestestestestesttest`,
-	}, {
-		name:  "special character in key should not match",
-		input: `AIzatestestestestestestestestestesttes.`,
-	}, {
-		name:  "special character in prefix should not match",
-		input: `AI.zatestestestestestestestestestesttes`,
-	}, {
-		name:  "special character after prefix should not match",
-		input: `AIza.testestestestestestestestestesttes`,
-	}, {
-		// See https://pkg.go.dev/regexp and
-		// https://github.com/google/re2/wiki/syntax.
-		name:  "overlapping matches are not supported",
-		input: `AIza` + testKey,
-		want: []veles.Secret{
-			gcpapikey.GCPAPIKey{Key: `AIza` + testKey[:len(testKey)-4]},
+	}{
+		{
+			name:  "empty input",
+			input: "",
 		},
-	}}
+		{
+			name:  "wrong prefix",
+			input: "AIzaSyEtestTESTt3s7te-_testtesttesttest",
+		},
+		{
+			name:  "short key",
+			input: testKey[:len(testKey)-1],
+		},
+		{
+			name:  "incorrect casing of prefix",
+			input: `aizaSyAtestTESTt3s7te-_testtesttesttest`,
+		},
+		{
+			name:  "special character in key",
+			input: `AIzaSyAtest.TESTt3s7te-_testtesttesttes`,
+		},
+		{
+			name:  "special character in prefix",
+			input: `AI.zaSyAtestTESTt3s7te-_testtesttesttes`,
+		},
+		{
+			name:  "special character after prefix",
+			input: `AIzaSyA.testTESTt3s7te-_testtesttesttes`,
+		},
+		{
+			// See https://pkg.go.dev/regexp and
+			// https://github.com/google/re2/wiki/syntax.
+			name:  "overlapping matches not supported",
+			input: `AIzaSyA` + testKey,
+			want: []veles.Secret{
+				gcpapikey.GCPAPIKey{Key: `AIzaSyA` + testKey[:len(testKey)-7]},
+			},
+		},
+	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))

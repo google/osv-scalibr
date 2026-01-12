@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
-	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 )
 
 const validatorTestKey = "pplx-test123456789012345678901234567890123456789012345678"
@@ -110,9 +110,8 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create validator with mock client
-			validator := perplexityapikey.NewValidator(
-				perplexityapikey.WithClient(client),
-			)
+			validator := perplexityapikey.NewValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := perplexityapikey.PerplexityAPIKey{Key: validatorTestKey}
@@ -151,9 +150,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := perplexityapikey.NewValidator(
-		perplexityapikey.WithClient(client),
-	)
+	validator := perplexityapikey.NewValidator()
+	validator.HTTPC = client
 
 	key := perplexityapikey.PerplexityAPIKey{Key: validatorTestKey}
 
@@ -184,9 +182,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := perplexityapikey.NewValidator(
-		perplexityapikey.WithClient(client),
-	)
+	validator := perplexityapikey.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string

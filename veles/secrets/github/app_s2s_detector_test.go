@@ -85,7 +85,7 @@ func TestAppS2SDetector_truePositives(t *testing.T) {
 			github.AppServerToServerToken{Token: s2sAnotherTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s

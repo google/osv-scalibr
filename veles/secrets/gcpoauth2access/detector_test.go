@@ -68,7 +68,7 @@ func TestDetector_Detect(t *testing.T) {
 			want:  []veles.Secret{gcpoauth2access.Token{Token: shortToken}},
 		},
 		{
-			name: "token in json",
+			name: "token_in_json",
 			input: fmt.Sprintf(`{
 				"some_key": "some_value",
 				"access_token": %q,

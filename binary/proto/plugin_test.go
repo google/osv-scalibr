@@ -53,7 +53,32 @@ func TestPluginStatusToProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "nil status",
+			desc: "converts_file_errors",
+			s: &plugin.Status{
+				Name:    "test-plugin-with-file-errors",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status: plugin.ScanStatusPartiallySucceeded,
+					FileErrors: []*plugin.FileError{
+						{FilePath: "file1", ErrorMessage: "error1"},
+						{FilePath: "file2", ErrorMessage: "error2"},
+					},
+				},
+			},
+			want: &spb.PluginStatus{
+				Name:    "test-plugin-with-file-errors",
+				Version: 1,
+				Status: &spb.ScanStatus{
+					Status: spb.ScanStatus_PARTIALLY_SUCCEEDED,
+					FileErrors: []*spb.FileError{
+						{FilePath: "file1", ErrorMessage: "error1"},
+						{FilePath: "file2", ErrorMessage: "error2"},
+					},
+				},
+			},
+		},
+		{
+			desc: "nil_status",
 			s: &plugin.Status{
 				Name:    "test-plugin",
 				Version: 1,

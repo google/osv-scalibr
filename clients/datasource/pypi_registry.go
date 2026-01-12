@@ -64,14 +64,6 @@ func NewPyPIRegistryAPIClient(registry string, localRegistry string) *PyPIRegist
 	}
 }
 
-// SetLocalRegistry sets the local directory that stores the downloaded PyPI manifests.
-func (p *PyPIRegistryAPIClient) SetLocalRegistry(localRegistry string) {
-	if localRegistry != "" {
-		localRegistry = filepath.Join(localRegistry, "pypi")
-	}
-	p.localRegistry = localRegistry
-}
-
 // GetIndex queries the simple API index for a given project.
 func (p *PyPIRegistryAPIClient) GetIndex(ctx context.Context, project string) (pypi.IndexResponse, error) {
 	reqPath, err := url.JoinPath(p.registry, project)

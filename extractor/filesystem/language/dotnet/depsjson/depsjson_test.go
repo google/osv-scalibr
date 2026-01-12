@@ -170,7 +170,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "valid application1.deps.json file",
+			name: "valid_application1.deps.json_file",
 			path: "testdata/valid",
 			wantPackages: []*extractor.Package{
 				{
@@ -222,7 +222,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "valid application1.deps.json file with an invalid package",
+			name: "valid_application1.deps.json_file_with_an_invalid_package",
 			path: "testdata/nopackagename",
 			wantPackages: []*extractor.Package{
 				{

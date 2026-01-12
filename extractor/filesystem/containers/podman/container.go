@@ -53,8 +53,8 @@ type containerNetworkConfig struct {
 // containerState contains info about podman's containers state
 type containerState struct {
 	State        containerStatus `json:"state"`
-	StartedTime  time.Time       `json:"startedTime,omitempty"`
-	FinishedTime time.Time       `json:"finishedTime,omitempty"`
+	StartedTime  time.Time       `json:"startedTime"`
+	FinishedTime time.Time       `json:"finishedTime"`
 	ExitCode     int32           `json:"exitCode,omitempty"`
 	Exited       bool            `json:"exited,omitempty"`
 	PID          int             `json:"pid,omitempty"`

@@ -89,7 +89,7 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 	}
 
 	cursor := &rootNode.Node
-	for _, segment := range strings.Split(path, divider) {
+	for segment := range strings.SplitSeq(path, divider) {
 		next, ok := cursor.children[segment]
 		// Create the segment if it doesn't exist
 		if !ok {

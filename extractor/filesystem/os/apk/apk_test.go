@@ -59,6 +59,12 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             "installed file in /var",
+			path:             "var/lib/apk/db/installed",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:         "sub file",
 			path:         "lib/apk/db/installed/test",
 			wantRequired: false,
@@ -195,7 +201,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "osrelease openwrt",
+			name: "osrelease_openwrt",
 			path: "testdata/single",
 			osrelease: `ID=openwrt
 			VERSION_ID=1.2.3`,

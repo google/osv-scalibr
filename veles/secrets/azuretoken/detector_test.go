@@ -91,6 +91,13 @@ func TestDetector_truePositives(t *testing.T) {
 				azuretoken.AzureIdentityToken{Token: testIDTokenWindowsIssuer},
 			},
 		},
+		{
+			name:  "access token in long buffer",
+			input: strings.Repeat("a", 64*veles.KiB) + " " + testAccessTokenMicrosoftIssuer + " " + strings.Repeat("a", 64*veles.KiB),
+			want: []veles.Secret{
+				azuretoken.AzureAccessToken{Token: testAccessTokenMicrosoftIssuer},
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

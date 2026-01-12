@@ -93,7 +93,7 @@ func TestSecretKeyDetector_TruePositives(t *testing.T) {
 			onepasswordkeys.OnePasswordSecretKey{Key: testSecretKeyAlt},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_secret_key: A3-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z1234
 :onepassword_secret_key: %s 
@@ -218,7 +218,7 @@ func TestServiceTokenDetector_TruePositives(t *testing.T) {
 			onepasswordkeys.OnePasswordServiceToken{Key: testServiceTokenAlt},
 		},
 	}, {
-		name: "larger input containing token",
+		name: "larger_input_containing_token",
 		input: fmt.Sprintf(`
 :test_service_token: ops_eyJtest
 :onepassword_service_token: %s 
@@ -340,7 +340,7 @@ func TestRecoveryKeyDetector_TruePositives(t *testing.T) {
 			onepasswordkeys.OnePasswordRecoveryCode{Key: testRecoveryKeyAlt},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_recovery_key: 1PRK-ABCD-EFGH-IJKL
 :onepassword_recovery_key: %s 

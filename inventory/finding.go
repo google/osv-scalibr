@@ -17,7 +17,8 @@ package inventory
 import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory/vex"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // LINT.IfChange
@@ -36,7 +37,8 @@ type Finding struct {
 // PackageVuln is a vulnerability (e.g. a CVE) related to a package.
 // It follows the OSV Schema format: https://ossf.github.io/osv-schema
 type PackageVuln struct {
-	osvschema.Vulnerability
+	// The OSV vulnerability information.
+	Vulnerability *osvpb.Vulnerability
 
 	// The extracted package associated with this vuln.
 	Package *extractor.Package
@@ -107,18 +109,18 @@ type GenericFindingTargetDetails struct {
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)
 
-// PackageToAffected creates an osvschema.Affected struct from the given
+// PackageToAffected creates an osvpb.Affected struct from the given
 // Package, fixed ecosystem version, and severity.
-func PackageToAffected(pkg *extractor.Package, fixed string, severity *osvschema.Severity) []osvschema.Affected {
-	return []osvschema.Affected{{
-		Package: osvschema.Package{
+func PackageToAffected(pkg *extractor.Package, fixed string, severity *osvpb.Severity) []*osvpb.Affected {
+	return []*osvpb.Affected{{
+		Package: &osvpb.Package{
 			Ecosystem: pkg.Ecosystem().String(),
 			Name:      pkg.Name,
 		},
-		Severity: []osvschema.Severity{*severity},
-		Ranges: []osvschema.Range{{
-			Type:   osvschema.RangeEcosystem,
-			Events: []osvschema.Event{{Fixed: fixed}},
+		Severity: []*osvpb.Severity{severity},
+		Ranges: []*osvpb.Range{{
+			Type:   osvpb.Range_ECOSYSTEM,
+			Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: fixed}},
 		}},
 	}}
 }

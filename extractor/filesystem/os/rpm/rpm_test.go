@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -44,7 +43,7 @@ import (
 
 func TestFileRequired(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -172,7 +171,7 @@ VARIANT="Container Image"`
 
 func TestExtract(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -189,7 +188,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "opensuse/leap:15.5 Packages.db file (NDB)",
+			name: "opensuse/leap:15.5_Packages.db_file_(NDB)",
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:             "testdata/Packages.db",
 			osrelease:        fedora38,
@@ -207,6 +206,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -221,6 +221,7 @@ func TestExtract(t *testing.T) {
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
 						OSID:         "fedora",
 						OSVersionID:  "38",
@@ -241,6 +242,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -250,7 +252,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 137,
 		},
 		{
-			name: "CentOS 7.9.2009 Packages file (Berkley DB)",
+			name: "CentOS_7.9.2009_Packages_file_(Berkley_DB)",
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:             "testdata/Packages",
 			osrelease:        fedora38,
@@ -268,6 +270,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -285,6 +288,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -302,6 +306,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "noarch",
 					},
@@ -344,7 +349,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "RockyLinux 9.2.20230513 rpmdb.sqlite file (sqlite3)",
+			name: "RockyLinux_9.2.20230513_rpmdb.sqlite_file_(sqlite3)",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:             "testdata/rpmdb.sqlite",
 			osrelease:        fedora38,
@@ -362,6 +367,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -379,6 +385,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -396,6 +403,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
 					},
@@ -405,7 +413,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "osrelease: no version_id",
+			name: "osrelease:_no_version_id",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path: "testdata/rpmdb.sqlite",
 			osrelease: `ID=fedora
@@ -464,7 +472,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "custom rpm",
+			name: "custom_rpm",
 			// https://www.redhat.com/sysadmin/create-rpm-package
 			path: "testdata/Packages_epoch",
 			osrelease: `NAME=Fedora
@@ -488,6 +496,7 @@ func TestExtract(t *testing.T) {
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
 						OSID:         "fedora",
 						OSName:       "Fedora",
+						OSPrettyName: "Fedora 32 (Container Image)",
 						OSVersionID:  "32",
 						Architecture: "x86_64",
 					},
@@ -566,7 +575,7 @@ func TestExtract(t *testing.T) {
 
 func TestExtract_VirtualFilesystem(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -582,7 +591,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 		wantErr     error
 	}{
 		{
-			name: "opensuse/leap:15.5 Packages.db file (NDB)",
+			name: "opensuse/leap:15.5_Packages.db_file_(NDB)",
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:      "testdata/Packages.db",
 			osrelease: fedora38,
@@ -599,6 +608,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -613,6 +623,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
 						OSID:         "fedora",
 						OSVersionID:  "38",
@@ -633,6 +644,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -642,7 +654,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 137,
 		},
 		{
-			name: "CentOS 7.9.2009 Packages file (Berkley DB)",
+			name: "CentOS_7.9.2009_Packages_file_(Berkley_DB)",
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:      "testdata/Packages",
 			osrelease: fedora38,
@@ -659,6 +671,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -676,6 +689,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
@@ -693,6 +707,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "noarch",
 					},
@@ -702,7 +717,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 148,
 		},
 		{
-			name: "RockyLinux 9.2.20230513 rpmdb.sqlite file (sqlite3)",
+			name: "RockyLinux_9.2.20230513_rpmdb.sqlite_file_(sqlite3)",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:      "testdata/rpmdb.sqlite",
 			osrelease: fedora38,
@@ -719,6 +734,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -736,6 +752,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
@@ -753,6 +770,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
 					},
@@ -762,7 +780,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "custom rpm",
+			name: "custom_rpm",
 			// https://www.redhat.com/sysadmin/create-rpm-package
 			path: "testdata/Packages_epoch",
 			osrelease: `NAME=Fedora
@@ -786,6 +804,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
 						OSID:         "fedora",
 						OSName:       "Fedora",
+						OSPrettyName: "Fedora 32 (Container Image)",
 						OSVersionID:  "32",
 						Architecture: "x86_64",
 					},

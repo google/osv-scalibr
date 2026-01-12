@@ -139,7 +139,7 @@ type readWriter struct{}
 
 // GetReadWriter returns a ReadWriter for package.json manifest files.
 // registry is unused.
-func GetReadWriter(registry string) (manifest.ReadWriter, error) {
+func GetReadWriter() (manifest.ReadWriter, error) {
 	return readWriter{}, nil
 }
 

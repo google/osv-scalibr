@@ -38,7 +38,7 @@ func TestWhiteout(t *testing.T) {
 			want:  map[string]struct{}{},
 		},
 		{
-			desc: "Single regular file",
+			desc: "Single_regular_file",
 			paths: []string{
 				"hello_world.txt",
 			},
@@ -46,7 +46,7 @@ func TestWhiteout(t *testing.T) {
 			want: map[string]struct{}{},
 		},
 		{
-			desc: "Single whiteout file",
+			desc: "Single_whiteout_file",
 			paths: []string{
 				".wh.hello_world.txt",
 			},
@@ -56,7 +56,7 @@ func TestWhiteout(t *testing.T) {
 			},
 		},
 		{
-			desc: "Mix of regular and whiteout files",
+			desc: "Mix_of_regular_and_whiteout_files",
 			paths: []string{
 				"hello_world.txt",
 				".wh.foo.txt",
@@ -69,7 +69,7 @@ func TestWhiteout(t *testing.T) {
 			},
 		},
 		{
-			desc: "Mix of regular and whiteout files in different directories",
+			desc: "Mix_of_regular_and_whiteout_files_in_different_directories",
 			paths: []string{
 				"hello_world.txt",
 				"/dir1/.wh.foo.txt",
@@ -85,7 +85,7 @@ func TestWhiteout(t *testing.T) {
 			},
 		},
 		{
-			desc: "Single whiteout directory",
+			desc: "Single_whiteout_directory",
 			paths: []string{
 				".wh..wh..opa.dir1",
 			},
@@ -97,7 +97,7 @@ func TestWhiteout(t *testing.T) {
 			},
 		},
 		{
-			desc: "Mix of regular and whiteout files / directory",
+			desc: "Mix_of_regular_and_whiteout_files_/_directory",
 			paths: []string{
 				".wh..wh..opa.dir1",
 				".wh..wh..opa.dir2",
@@ -155,27 +155,27 @@ func TestIsWhiteout(t *testing.T) {
 		want bool
 	}{
 		{
-			desc: "Empty path",
+			desc: "Empty_path",
 			path: "",
 			want: false,
 		},
 		{
-			desc: "Simple file path",
+			desc: "Simple_file_path",
 			path: "file.txt",
 			want: false,
 		},
 		{
-			desc: "Path with directories",
+			desc: "Path_with_directories",
 			path: "dir1/dir2/foo.txt",
 			want: false,
 		},
 		{
-			desc: "Simple whiteout path",
+			desc: "Simple_whiteout_path",
 			path: ".wh.file.txt",
 			want: true,
 		},
 		{
-			desc: "Whiteout path with directories",
+			desc: "Whiteout_path_with_directories",
 			path: "dir1/dir2/.wh.foo.txt",
 			want: true,
 		},
@@ -197,17 +197,17 @@ func TestToWhiteout(t *testing.T) {
 		want string
 	}{
 		{
-			desc: "Empty path",
+			desc: "Empty_path",
 			path: "",
 			want: ".wh.",
 		},
 		{
-			desc: "Simple file path",
+			desc: "Simple_file_path",
 			path: "file.txt",
 			want: ".wh.file.txt",
 		},
 		{
-			desc: "Path with directories",
+			desc: "Path_with_directories",
 			path: "dir1/dir2/foo.txt",
 			want: "dir1/dir2/.wh.foo.txt",
 		},
@@ -229,27 +229,27 @@ func TestToPath(t *testing.T) {
 		want string
 	}{
 		{
-			desc: "Empty path",
+			desc: "Empty_path",
 			path: "",
 			want: "",
 		},
 		{
-			desc: "Simple file path",
+			desc: "Simple_file_path",
 			path: "file.txt",
 			want: "file.txt",
 		},
 		{
-			desc: "Path with directories",
+			desc: "Path_with_directories",
 			path: "dir1/dir2/foo.txt",
 			want: "dir1/dir2/foo.txt",
 		},
 		{
-			desc: "Simple whiteout path",
+			desc: "Simple_whiteout_path",
 			path: ".wh.file.txt",
 			want: "file.txt",
 		},
 		{
-			desc: "Whiteout path with directories",
+			desc: "Whiteout_path_with_directories",
 			path: "dir1/dir2/.wh.foo.txt",
 			want: "dir1/dir2/foo.txt",
 		},

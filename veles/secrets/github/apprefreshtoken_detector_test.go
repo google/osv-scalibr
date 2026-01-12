@@ -85,7 +85,7 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 			github.AppRefreshToken{Token: refreshAnotherTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s

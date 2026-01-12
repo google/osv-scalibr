@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -85,12 +86,8 @@ func resolveGroups(pkg poetryLockPackage) []string {
 		return []string{}
 	}
 
-	for _, group := range pkg.Groups {
-		// the "main" group is the default group used for "production" dependencies,
-		// which we represent by an empty slice aka no groups
-		if group == "main" {
-			return []string{}
-		}
+	if slices.Contains(pkg.Groups, "main") {
+		return []string{}
 	}
 
 	return pkg.Groups
