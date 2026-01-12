@@ -15,77 +15,26 @@
 package paystacksecretkey
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-var (
-	// Ensure constructors satisfy the interface at compile time.
-	_ veles.Validator[PaystackSecret] = &SecretKeyValidator{}
-)
+type pak = PaystackSecret
 
-// Endpoint used for validation.
-const (
-	paystackAPIEndpoint = "https://api.paystack.co/customer"
-)
-
-// --- PayStack Secret Key Validator ---
-
-// SecretKeyValidator validates PayStack Secret Keys (sk_...) using /customer.
-type SecretKeyValidator struct {
-	httpC *http.Client
-}
-
-// ValidatorOptionSecretKey configures a SecretKeyValidator when creating it via New.
-type ValidatorOptionSecretKey func(*SecretKeyValidator)
-
-// WithClientSecretKey configures the http.Client used by SecretKeyValidator.
-//
-// By default it uses http.DefaultClient.
-func WithClientSecretKey(c *http.Client) ValidatorOptionSecretKey {
-	return func(v *SecretKeyValidator) {
-		v.httpC = c
-	}
-}
-
-// NewSecretKeyValidator creates a new SecretKeyValidator with the given options.
-func NewSecretKeyValidator(opts ...ValidatorOptionSecretKey) *SecretKeyValidator {
-	v := &SecretKeyValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given PaystackSecret is valid.
+// NewValidator checks whether the given PaystackSecret is valid.
 //
 // It calls GET https://api.paystack.co/customer with Bearer token.
 // - 200 OK  -> authenticated and valid.
 // - other   -> invalid.
-func (v *SecretKeyValidator) Validate(ctx context.Context, key PaystackSecret) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, paystackAPIEndpoint, nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+key.Key)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to GET %q: %w", paystackAPIEndpoint, err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		// 200 OK => the key is valid and authenticated.
-		return veles.ValidationValid, nil
-	default:
-		// Any other status code => invalid key.
-		return veles.ValidationInvalid, nil
+func NewValidator() *sv.Validator[pak] {
+	return &sv.Validator[pak]{
+		Endpoint:   "https://api.paystack.co/customer",
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s pak) map[string]string {
+			return map[string]string{"Authorization": "Bearer " + s.Key}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }

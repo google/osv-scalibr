@@ -49,8 +49,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
-	velespaystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
+	velespaystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -218,8 +218,6 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpCloudPlatformCredentialsToProto(t), nil
 	case veleshashicorpcloudplatform.AccessToken:
 		return hashicorpCloudPlatformTokenToProto(t), nil
-	case velespaystacksecretkey.PaystackSecret:
-		return paystackSecretKeyToProto(t), nil
 	case mariadb.Credentials:
 		return mariadbCredentialsToProto(t), nil
 	case awsaccesskey.Credentials:
@@ -240,6 +238,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return codeCommitCredentialsToProto(t), nil
 	case bitbucket.Credentials:
 		return bitbucketCredentialsToProto(t), nil
+	case velespaystacksecretkey.PaystackSecret:
+		return paystackSecretKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -787,10 +787,6 @@ func onepasswordRecoveryCodeToProto(s velesonepasswordkeys.OnePasswordRecoveryCo
 	}
 }
 
-func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.SecretData {
-	return &spb.SecretData{
-		Secret: &spb.SecretData_PaystackSecretKey_{
-			PaystackSecretKey: &spb.SecretData_PaystackSecretKey{
 func pyxKeyV1ToProto(s pyxkeyv1.PyxKeyV1) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PyxKeyV1_{
@@ -805,6 +801,16 @@ func pyxKeyV2ToProto(s pyxkeyv2.PyxKeyV2) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PyxKeyV2_{
 			PyxKeyV2: &spb.SecretData_PyxKeyV2{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PaystackSecretKey_{
+			PaystackSecretKey: &spb.SecretData_PaystackSecretKey{
 				Key: s.Key,
 			},
 		},
@@ -1013,9 +1019,6 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			UserID:         t.GetUserId(),
 			UserEmail:      t.GetUserEmail(),
 		}, nil
-	case *spb.SecretData_PaystackSecretKey_:
-		return velespaystacksecretkey.PaystackSecret{
-			Key: s.GetPaystackSecretKey().GetKey(),
 	case *spb.SecretData_GcsHmacKey:
 		t := s.GetGcsHmacKey()
 		return gcshmackey.HMACKey{AccessID: t.GetAccessId(), Secret: t.GetSecret()}, nil
@@ -1060,6 +1063,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_BitbucketCredentials:
 		return bitbucket.Credentials{
 			FullURL: s.GetBitbucketCredentials().GetUrl(),
+		}, nil
+	case *spb.SecretData_PaystackSecretKey_:
+		return velespaystacksecretkey.PaystackSecret{
+			Key: s.GetPaystackSecretKey().GetKey(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

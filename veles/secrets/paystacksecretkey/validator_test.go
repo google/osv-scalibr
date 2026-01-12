@@ -22,23 +22,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	paystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 )
 
 const (
-	validatorTestSK = "sk_live_51PvZzqABcD1234EfGhIjKlMnOpQrStUvWxYz0123456789abcdefghijklmnopQRSTuvWXYZabcd12345678"
+	validatorTestSK = "sk_live_51PvZzqA"
 )
 
-// mockTransport redirects requests to the test server for the configured hosts.
+// mockTransport redirects requests to the test server
 type mockTransport struct {
 	testServer *httptest.Server
 }
 
 func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL for Paystack API hosts.
+	// Replace the original URL with our test server URL
 	if req.URL.Host == "api.paystack.co" {
 		testURL, _ := url.Parse(m.testServer.URL)
 		req.URL.Scheme = testURL.Scheme
@@ -47,12 +45,12 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-// mockPaystackAPIServer creates a mock Paystack /customer endpoint for testing validators.
-func mockPaystackAPIServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
+// mockPaystackServer creates a mock PayStack API server for testing
+func mockPaystackServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Expect a GET to /customer
+		// Check if it's a GET request to the expected endpoint
 		if r.Method != http.MethodGet || r.URL.Path != "/customer" {
 			t.Errorf("unexpected request: %s %s, expected: GET /customer", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
@@ -69,12 +67,12 @@ func mockPaystackAPIServer(t *testing.T, expectedKey string, statusCode int) *ht
 	}))
 }
 
-func TestValidatorSecretKey(t *testing.T) {
+func TestValidator(t *testing.T) {
 	cases := []struct {
-		name       string
-		statusCode int
-		want       veles.ValidationStatus
-		wantErr    error
+		name        string
+		statusCode  int
+		want        veles.ValidationStatus
+		expectError bool
 	}{
 		{
 			name:       "valid_key",
@@ -87,21 +85,23 @@ func TestValidatorSecretKey(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:       "server_error",
-			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationInvalid,
+			name:        "server_error",
+			statusCode:  http.StatusInternalServerError,
+			want:        veles.ValidationFailed,
+			expectError: true,
 		},
 		{
-			name:       "forbidden_error",
-			statusCode: http.StatusForbidden,
-			want:       veles.ValidationInvalid,
+			name:        "bad_gateway",
+			statusCode:  http.StatusBadGateway,
+			want:        veles.ValidationFailed,
+			expectError: true,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create mock server
-			server := mockPaystackAPIServer(t, validatorTestSK, tc.statusCode)
+			server := mockPaystackServer(t, validatorTestSK, tc.statusCode)
 			defer server.Close()
 
 			// Create client with custom transport
@@ -110,9 +110,8 @@ func TestValidatorSecretKey(t *testing.T) {
 			}
 
 			// Create validator with mock client
-			validator := paystacksecretkey.NewSecretKeyValidator(
-				paystacksecretkey.WithClientSecretKey(client),
-			)
+			validator := paystacksecretkey.NewValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := paystacksecretkey.PaystackSecret{Key: validatorTestSK}
@@ -120,8 +119,15 @@ func TestValidatorSecretKey(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+			// Check error expectation
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Validate() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error: %v", err)
+				}
 			}
 
 			// Check validation status
@@ -132,34 +138,82 @@ func TestValidatorSecretKey(t *testing.T) {
 	}
 }
 
-func TestValidatorSecretKey_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
+func TestValidator_ContextCancellation(t *testing.T) {
+	// Create a server that delays response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
 
 	// Create client with custom transport
 	client := &http.Client{
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := paystacksecretkey.NewSecretKeyValidator(
-		paystacksecretkey.WithClientSecretKey(client),
-	)
+	validator := paystacksecretkey.NewValidator()
+	validator.HTTPC = client
 
 	key := paystacksecretkey.PaystackSecret{Key: validatorTestSK}
 
-	// Create context that is immediately cancelled
+	// Create a cancelled context
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)
 
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+	if err == nil {
+		t.Errorf("Validate() expected error due to context cancellation, got nil")
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
+	}
+}
+
+func TestValidator_InvalidRequest(t *testing.T) {
+	// Create mock server that returns 401 Unauthorized
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	// Create client with custom transport
+	client := &http.Client{
+		Transport: &mockTransport{testServer: server},
+	}
+
+	validator := paystacksecretkey.NewValidator()
+	validator.HTTPC = client
+
+	testCases := []struct {
+		name     string
+		key      string
+		expected veles.ValidationStatus
+	}{
+		{
+			name:     "empty_key",
+			key:      "",
+			expected: veles.ValidationInvalid,
+		},
+		{
+			name:     "invalid_key_format",
+			key:      "invalid-key-format",
+			expected: veles.ValidationInvalid,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			key := paystacksecretkey.PaystackSecret{Key: tc.key}
+
+			got, err := validator.Validate(t.Context(), key)
+
+			if err != nil {
+				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+			}
+			if got != tc.expected {
+				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+			}
+		})
 	}
 }

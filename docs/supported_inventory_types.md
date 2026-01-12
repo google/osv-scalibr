@@ -160,7 +160,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
 | Paystack Secret Key                         | `secrets/paystacksecretkey`          |
-
 | Vapid keys                                  | `secrets/vapidkey`                   |
 | reCAPTCHA secret keys                       | `secrets/recaptchakey`               |
 | Generic JWT tokens                          | `secrets/jwttoken`                   |
