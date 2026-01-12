@@ -30,11 +30,12 @@ const (
 
 var (
 	// urlPattern matches URLs containing credentials.
-	// ref: https://www.rfc-editor.org/rfc/rfc3986
-	urlPattern = regexp.MustCompile(`\b[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s@\/]+@[^\s\/:]+(?::\d+)?(?:\/[^\s]*)?\b`)
+	// Format (per RFC 3986):
+	//   scheme://username[:password]@host[/path][?query][#fragment]
+	urlPattern = regexp.MustCompile(`\b[a-zA-Z0-9+.-]+:\/\/[^\s\?@#\/]+@[^\s]+\b`)
 )
 
-// NewDetector creates and returns a new instance of the Bitbucket secret detector.
+// NewDetector creates and returns a new instance of the URL with credentials detector.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxURLLength,
