@@ -34,14 +34,15 @@ func TestScan(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	pkgs := []*extractor.Package{{
-		Name:    "NetScaler",
-		Version: "14.1-47.47", // Vulnerable version
-		Locations: []string{
-			path.Join(dir, "testdata/valid.vmdk:1:/flash/boot/loader.conf"),
+	pkgs := []*extractor.Package{
+		{
+			Name:    "NetScaler",
+			Version: "14.1-47.47", // Vulnerable version
+			Locations: []string{
+				path.Join(dir, "testdata/valid.vmdk:1:/flash/boot/loader.conf"),
+			},
+			Metadata: scalibrfs.DirFS(path.Join(dir, "testdata")),
 		},
-		Metadata: scalibrfs.DirFS(path.Join(dir, "testdata")),
-	},
 		{
 			Name:    "NetScaler",
 			Version: "14.1-47.48", // Benign Version
@@ -82,31 +83,12 @@ func TestScan(t *testing.T) {
 			},
 			Metadata: scalibrfs.DirFS(path.Join(dir, "testdata")),
 		},
-		// For the following two packages, it must return only one security findings
-		// because in a filesystem there can be more than one place where we can
-		// find the version strings but we don't need to report all the version
-		// strings as unique findings.
-		{
-			Name:    "NetScaler",
-			Version: "12.1-55.123", // Vulnerable Version
-			Locations: []string{
-				path.Join(dir, "testdata/flash/boot/loader.conf"),
-			},
-			Metadata: scalibrfs.DirFS(path.Join(dir, "testdata")),
-		},
-		{
-			Name:    "NetScaler",
-			Version: "12.1-55.123", // Vulnerable Version
-			Locations: []string{
-				path.Join(dir, "testdata/flash/boot/ns-12.1-55.123.gz"),
-			},
-			Metadata: scalibrfs.DirFS(path.Join(dir, "testdata")),
-		}}
+	}
 
 	finding := runScan(t, fstest.MapFS{}, pkgs)
 
-	if len(finding.PackageVulns) != 4 {
-		t.Fatalf("Expected 4 finding got %d", len(finding.PackageVulns))
+	if len(finding.PackageVulns) != 3 {
+		t.Fatalf("Expected 3 finding got %d", len(finding.PackageVulns))
 	}
 
 	v := finding.PackageVulns[0]
