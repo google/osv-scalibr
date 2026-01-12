@@ -15,7 +15,6 @@
 package cve20257775_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -108,7 +107,7 @@ func runScan(t *testing.T, fs scalibrfs.FS, pkgs []*extractor.Package) inventory
 		Path: ".",
 	}
 	detector := cve20257775.New()
-	findings, err := detector.Scan(context.Background(), scanRoot, px)
+	findings, err := detector.Scan(t.Context(), scanRoot, px)
 	if err != nil {
 		t.Fatalf("Scan() returned error: %v", err)
 	}
