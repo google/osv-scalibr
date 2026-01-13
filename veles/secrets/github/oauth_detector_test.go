@@ -27,6 +27,7 @@ import (
 
 const (
 	oauthTestKey        = `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`
+	oauthTestKeyBase64  = `Z2hvX3BrNWMyblQxZks2Y2hVWEpYMWpPR3M4cmJ1elgwcjM0QlhJdQ==`
 	oauthAnotherTestKey = `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`
 )
 
@@ -85,7 +86,7 @@ func TestOAuthDetector_truePositives(t *testing.T) {
 			github.OAuthToken{Token: oauthAnotherTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
@@ -96,6 +97,12 @@ func TestOAuthDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: oauthTestKey + `extra`,
+		want: []veles.Secret{
+			github.OAuthToken{Token: oauthTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: oauthTestKeyBase64,
 		want: []veles.Secret{
 			github.OAuthToken{Token: oauthTestKey},
 		},

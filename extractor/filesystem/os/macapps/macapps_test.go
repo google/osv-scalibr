@@ -137,7 +137,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "Valid_XML_Info.plist_data ",
+			name: "Valid_XML_Info.plist_data_",
 			path: "testdata/ValidXML.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
@@ -162,7 +162,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "Valid_Binary_Info.plist_data ",
+			name: "Valid_Binary_Info.plist_data_",
 			path: "testdata/BinaryApp.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
@@ -199,7 +199,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "Missing_Info.plist_data ",
+			name: "Missing_Info.plist_data_",
 			path: "testdata/MissingData.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{

@@ -32,6 +32,7 @@ import (
 	"deps.dev/util/resolve"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
 	npmlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
 	pythonlock "github.com/google/osv-scalibr/guidedremediation/internal/lockfile/python"
@@ -50,7 +51,6 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/tui/components"
 	"github.com/google/osv-scalibr/guidedremediation/internal/tui/model"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
-	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
@@ -70,6 +70,9 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	)
 	if !hasManifest && !hasLockfile {
 		return result.Result{}, errors.New("no manifest or lockfile provided")
+	}
+	if opts.VulnEnricher == nil || !strings.HasPrefix(opts.VulnEnricher.Name(), "vulnmatch/") {
+		return result.Result{}, errors.New("vulnmatch/ enricher is required for guided remediation")
 	}
 
 	if hasManifest {
@@ -125,6 +128,9 @@ type VulnDetailsRenderer components.DetailsRenderer
 // FixVulnsInteractive launches the guided remediation interactive TUI.
 // detailsRenderer is used to render the markdown details of vulnerabilities, if nil, a fallback renderer is used.
 func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetailsRenderer) error {
+	if opts.VulnEnricher == nil || !strings.HasPrefix(opts.VulnEnricher.Name(), "vulnmatch/") {
+		return errors.New("vulnmatch/ enricher is required for guided remediation")
+	}
 	// Explicitly specifying vulns by cli flag doesn't really make sense in interactive mode.
 	opts.ExplicitVulns = []string{}
 	var manifestRW manifest.ReadWriter
@@ -215,7 +221,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 }
 
 func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.ReadWriter, opts options.FixVulnsOptions) (result.Result, error) {
-	var computePatches func(context.Context, resolve.Client, matcher.VulnerabilityMatcher, *remediation.ResolvedManifest, *options.RemediationOptions) (common.PatchResult, error)
+	var computePatches func(context.Context, resolve.Client, enricher.Enricher, *remediation.ResolvedManifest, *options.RemediationOptions) (common.PatchResult, error)
 	switch s {
 	case strategy.StrategyOverride:
 		computePatches = override.ComputePatches
@@ -241,7 +247,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		opts.DepCachePopulator.PopulateCache(ctx, opts.ResolveClient, m.Requirements(), opts.Manifest)
 	}
 
-	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
+	resolved, err := remediation.ResolveManifest(ctx, opts.ResolveClient, opts.VulnEnricher, m, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed resolving manifest: %w", err)
 	}
@@ -262,7 +268,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 		}
 	}
 
-	allPatchResults, err := computePatches(ctx, opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
+	allPatchResults, err := computePatches(ctx, opts.ResolveClient, opts.VulnEnricher, resolved, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed computing patches: %w", err)
 	}
@@ -302,7 +308,7 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 		Ecosystem: util.DepsDevToOSVEcosystem(rw.System()),
 	}
 
-	resolved, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.MatcherClient, g, nil, &opts.RemediationOptions)
+	resolved, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.VulnEnricher, g, nil, &opts.RemediationOptions)
 	if err != nil {
 		return result.Result{}, fmt.Errorf("failed resolving lockfile vulnerabilities: %w", err)
 	}
@@ -328,9 +334,9 @@ func computeVulnsResult(resolved *remediation.ResolvedManifest, allPatches []res
 	}
 	vulns := make([]result.Vuln, 0, len(resolved.Vulns))
 	for _, v := range resolved.Vulns {
-		_, fixable := fixableVulns[v.OSV.ID]
+		_, fixable := fixableVulns[v.OSV.Id]
 		vuln := result.Vuln{
-			ID:           v.OSV.ID,
+			ID:           v.OSV.Id,
 			Unactionable: !fixable,
 			Packages:     make([]result.Package, 0, len(v.Subgraphs)),
 		}
@@ -388,9 +394,9 @@ func computeVulnsResultsLockfile(resolved remediation.ResolvedGraph, allPatches 
 			}
 		}
 		for vk := range vks {
-			_, fixable := fixableVulns[vuln{v.OSV.ID, vk.Name, vk.Version}]
+			_, fixable := fixableVulns[vuln{v.OSV.Id, vk.Name, vk.Version}]
 			vulns = append(vulns, result.Vuln{
-				ID:           v.OSV.ID,
+				ID:           v.OSV.Id,
 				Unactionable: !fixable,
 				Packages: []result.Package{{
 					Name:    vk.Name,
@@ -529,20 +535,20 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 	if err != nil {
 		return err
 	}
-	resolvedLockf, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.MatcherClient, g, nil, &opts.RemediationOptions)
+	resolvedLockf, err := remediation.ResolveGraphVulns(ctx, opts.ResolveClient, opts.VulnEnricher, g, nil, &opts.RemediationOptions)
 	if err != nil {
 		return err
 	}
 
 	manifestVulns := make(map[string]struct{})
 	for _, v := range resolvedManif.Vulns {
-		manifestVulns[v.OSV.ID] = struct{}{}
+		manifestVulns[v.OSV.Id] = struct{}{}
 	}
 
 	var vulns []result.Vuln
 	for _, v := range resolvedLockf.Vulns {
-		if _, ok := manifestVulns[v.OSV.ID]; !ok {
-			vuln := result.Vuln{ID: v.OSV.ID, Unactionable: false}
+		if _, ok := manifestVulns[v.OSV.Id]; !ok {
+			vuln := result.Vuln{ID: v.OSV.Id, Unactionable: false}
 			for _, sg := range v.Subgraphs {
 				n := resolvedLockf.Graph.Nodes[sg.Dependency]
 				vuln.Packages = append(vuln.Packages, result.Package{Name: n.Version.Name, Version: n.Version.Version})
@@ -564,9 +570,11 @@ func writeLockfileFromManifest(ctx context.Context, manifestPath string) error {
 	case "package.json":
 		return writeNpmLockfile(ctx, manifestPath)
 	case "requirements.in":
-		return writeRequirementsLockfile(ctx, manifestPath)
+		return writePythonLockfile(ctx, manifestPath, "pip-compile", "requirements.txt", "--generate-hashes", "requirements.in")
 	case "pyproject.toml":
-		return writePoetryLockfile(ctx, manifestPath)
+		return writePythonLockfile(ctx, manifestPath, "poetry", "poetry.lock", "lock")
+	case "Pipfile":
+		return writePythonLockfile(ctx, manifestPath, "pipenv", "Pipfile.lock", "lock")
 	default:
 		return fmt.Errorf("unsupported manifest type: %s", base)
 	}
@@ -589,7 +597,7 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 		return fmt.Errorf("failed removing old node_modules/: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, npmPath, "install", "--package-lock-only")
+	cmd := exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--ignore-scripts")
 	cmd.Dir = dir
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
@@ -601,7 +609,7 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 	// Guided remediation does not currently support peer dependencies.
 	// Try with `--legacy-peer-deps` in case the previous install errored from peer dependencies.
 	log.Warnf("npm install failed. Trying again with `--legacy-peer-deps`")
-	cmd = exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--legacy-peer-deps")
+	cmd = exec.CommandContext(ctx, npmPath, "install", "--package-lock-only", "--legacy-peer-deps", "--ignore-scripts")
 	cmd.Dir = dir
 	cmdOut := &strings.Builder{}
 	cmd.Stdout = cmdOut
@@ -614,30 +622,16 @@ func writeNpmLockfile(ctx context.Context, path string) error {
 	return nil
 }
 
-func writeRequirementsLockfile(ctx context.Context, path string) error {
+// writePythonLockfile executes a command-line tool to generate or update a lockfile.
+func writePythonLockfile(ctx context.Context, path, executable, lockfileName string, args ...string) error {
 	dir := filepath.Dir(path)
-	pipCompilePath, err := exec.LookPath("pip-compile")
+	execPath, err := exec.LookPath(executable)
 	if err != nil {
-		return fmt.Errorf("cannot find pip-compile executable: %w", err)
+		return fmt.Errorf("cannot find %s executable: %w", executable, err)
 	}
 
-	log.Infof("Running pip-compile to regenerate requirements.txt")
-	cmd := exec.CommandContext(ctx, pipCompilePath, "--generate-hashes", "requirements.in")
-	cmd.Dir = dir
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	return cmd.Run()
-}
-
-func writePoetryLockfile(ctx context.Context, path string) error {
-	dir := filepath.Dir(path)
-	poetryPath, err := exec.LookPath("poetry")
-	if err != nil {
-		return fmt.Errorf("cannot find poetry executable: %w", err)
-	}
-
-	log.Infof("Running poetry to regenerate poetry.lock")
-	cmd := exec.CommandContext(ctx, poetryPath, "lock")
+	log.Infof("Running %s to regenerate %s", executable, lockfileName)
+	cmd := exec.CommandContext(ctx, execPath, args...)
 	cmd.Dir = dir
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
@@ -660,6 +654,8 @@ func readWriterForManifest(manifestPath string, mavenClient *datasource.MavenReg
 		return python.GetRequirementsReadWriter()
 	case "pyproject.toml":
 		return python.GetPoetryReadWriter()
+	case "pipfile":
+		return python.GetPipfileReadWriter()
 	}
 	return nil, fmt.Errorf("unsupported manifest: %q", baseName)
 }
@@ -692,6 +688,9 @@ func isLockfileForManifest(manifestPath, lockfilePath string) bool {
 	}
 	if manifestBaseName == "pyproject.toml" {
 		return lockfileBaseName == "poetry.lock"
+	}
+	if manifestBaseName == "Pipfile" {
+		return lockfileBaseName == "Pipfile.lock"
 	}
 	return manifestBaseName == "package.json" && lockfileBaseName == "package-lock.json"
 }

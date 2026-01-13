@@ -52,19 +52,64 @@ func TestMakePackageURL(t *testing.T) {
 			},
 		},
 		{
-			desc:    "from_npm_repository_qualifier_set",
+			desc:    "source_public_registry_qualifier_set",
 			name:    "Name",
 			version: "version",
 			metadata: &metadata.JavascriptPackageJSONMetadata{
-				FromNPMRepository: true,
+				Source: metadata.PublicRegistry,
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeNPM,
 				Name:    "Name",
 				Version: "version",
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
-					"from-npm-repository": "true",
+					"source": "PUBLIC_REGISTRY",
 				}),
+			},
+		},
+		{
+			desc:    "source_other_qualifier_set",
+			name:    "Name",
+			version: "version",
+			metadata: &metadata.JavascriptPackageJSONMetadata{
+				Source: metadata.Other,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "Name",
+				Version: "version",
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					"source": "OTHER",
+				}),
+			},
+		},
+		{
+			desc:    "source_local_qualifier_set",
+			name:    "Name",
+			version: "version",
+			metadata: &metadata.JavascriptPackageJSONMetadata{
+				Source: metadata.Local,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "Name",
+				Version: "version",
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					"source": "LOCAL",
+				}),
+			},
+		},
+		{
+			desc:    "source_unknown_returns_no_qualifier_set",
+			name:    "Name",
+			version: "version",
+			metadata: &metadata.JavascriptPackageJSONMetadata{
+				Source: metadata.Unknown,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "Name",
+				Version: "version",
 			},
 		},
 	}

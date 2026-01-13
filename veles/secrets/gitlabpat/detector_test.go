@@ -99,7 +99,7 @@ func TestDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name: "larger input containing versioned key",
+			name: "larger_input_containing_versioned_key",
 			input: fmt.Sprintf(`
 		:test_api_key: pat-test
 		:gitlab_pat: %s

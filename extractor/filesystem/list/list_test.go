@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
 )
 
@@ -30,9 +31,12 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			name := initer().Name()
-			if !reValidName.MatchString(name) {
-				t.Errorf("Invalid plugin name %q", name)
+			p, err := initer(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("initer(): %v", err)
+			}
+			if !reValidName.MatchString(p.Name()) {
+				t.Errorf("Invalid plugin name %q", p.Name())
 			}
 		}
 	}
@@ -46,12 +50,12 @@ func TestExtractorsFromName(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			desc:     "Find all extractors of a type",
+			desc:     "Find_all_extractors_of_a_type",
 			name:     "python",
 			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
-			desc:     "Nonexistent plugin",
+			desc:     "Nonexistent_plugin",
 			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,
 			wantExts: []string{},
@@ -60,7 +64,7 @@ func TestExtractorsFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := el.ExtractorsFromName(tc.name)
+			got, err := el.ExtractorsFromName(tc.name, &cpb.PluginConfig{})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("el.ExtractorsFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}

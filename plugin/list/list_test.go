@@ -19,12 +19,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
 )
 
 func TestExtractorNamesUnique(t *testing.T) {
-	all := pl.All()
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, e := range pl.FilesystemExtractors(all) {
 		if prev, ok := names[e.Name()]; ok {
@@ -43,7 +47,10 @@ func TestExtractorNamesUnique(t *testing.T) {
 }
 
 func TestDetectorNamesUnique(t *testing.T) {
-	all := pl.All()
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, d := range pl.Detectors(all) {
 		if prev, ok := names[d.Name()]; ok {
@@ -55,7 +62,10 @@ func TestDetectorNamesUnique(t *testing.T) {
 }
 
 func TestAnnotatorNamesUnique(t *testing.T) {
-	all := pl.All()
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, a := range pl.Annotators(all) {
 		if prev, ok := names[a.Name()]; ok {
@@ -67,7 +77,10 @@ func TestAnnotatorNamesUnique(t *testing.T) {
 }
 
 func TestEnricherNamesUnique(t *testing.T) {
-	all := pl.All()
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, e := range pl.Enrichers(all) {
 		if prev, ok := names[e.Name()]; ok {
@@ -82,7 +95,10 @@ func TestFromCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
 	want := []string{"os/snap", "weakcredentials/etcshadow"} // Available for Linux
 	dontWant := []string{"os/homebrew", "windows/dismpatch"} // Not available for Linux
-	plugins := pl.FromCapabilities(capab)
+	plugins, err := pl.FromCapabilities(capab, &cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.FromCapabilities(%v): %v", capab, err)
+	}
 
 	for _, w := range want {
 		found := false
@@ -132,7 +148,7 @@ func TestFromNames(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := pl.FromNames(tc.names)
+			got, err := pl.FromNames(tc.names, &cpb.PluginConfig{})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("pl.FromNames(%v) error got diff (-want +got):\n%s", tc.names, diff)
 			}
@@ -174,7 +190,7 @@ func TestFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := pl.FromName(tc.name)
+			got, err := pl.FromName(tc.name, &cpb.PluginConfig{})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("pl.FromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}

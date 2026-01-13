@@ -112,9 +112,8 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := huggingfaceapikey.NewValidator(
-				huggingfaceapikey.WithClient(client),
-			)
+			validator := huggingfaceapikey.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test key
 			key := huggingfaceapikey.HuggingfaceAPIKey{Key: validatorTestKey}
@@ -146,9 +145,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := huggingfaceapikey.NewValidator(
-		huggingfaceapikey.WithClient(client),
-	)
+	validator := huggingfaceapikey.NewValidator()
+	validator.HTTPC = client
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
@@ -177,9 +175,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := huggingfaceapikey.NewValidator(
-		huggingfaceapikey.WithClient(client),
-	)
+	validator := huggingfaceapikey.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string

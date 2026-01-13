@@ -103,7 +103,7 @@ func TestDetector_truePositives(t *testing.T) {
 			},
 		},
 	}, {
-		name: "larger input containing key - app level token",
+		name: "larger_input_containing_key_-_app_level_token",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :SL_TOKEN: %s
@@ -204,7 +204,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name:  "short app config access token should not match",
 		input: testAppConfigAccessToken[:len(testAppConfigAccessToken)-1],
 	}, {
-		name: "invalid character in app config access token should not match",
+		name: "invalid_character_in_app_config_access_token_should_not_match",
 		input: testAppConfigAccessToken[:len(testAppConfigAccessToken)-2] +
 			"@" +
 			testAppConfigAccessToken[len(testAppConfigAccessToken)-1:],
@@ -212,7 +212,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 		name:  "short app config refresh token should not match",
 		input: testAppConfigRefreshToken[:len(testAppConfigRefreshToken)-1],
 	}, {
-		name: "invalid character in app config refresh token should not match",
+		name: "invalid_character_in_app_config_refresh_token_should_not_match",
 		input: testAppConfigRefreshToken[:len(testAppConfigRefreshToken)-2] +
 			"!" +
 			testAppConfigRefreshToken[len(testAppConfigRefreshToken)-1:],

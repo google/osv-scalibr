@@ -103,7 +103,7 @@ func TestChainLayerFS(t *testing.T) {
 		wantPaths  []string
 	}{
 		{
-			name: "empty chain layer",
+			name: "empty_chain_layer",
 			chainLayer: &chainLayer{
 				index:        0,
 				fileNodeTree: emptyTree,
@@ -113,7 +113,7 @@ func TestChainLayerFS(t *testing.T) {
 			},
 		},
 		{
-			name: "chain layer with single file",
+			name: "chain_layer_with_single_file",
 			chainLayer: &chainLayer{
 				index:        0,
 				fileNodeTree: nonEmptyTree,
@@ -155,7 +155,7 @@ func TestChainFSOpen(t *testing.T) {
 		wantErr         error
 	}{
 		{
-			name: "nonexistent tree",
+			name: "nonexistent_tree",
 			chainfs: FS{
 				tree: nil,
 			},
@@ -323,7 +323,7 @@ func TestChainFSOpen(t *testing.T) {
 			wantErr: fs.ErrNotExist,
 		},
 		{
-			name: "error opening symlink due to depth exceeded",
+			name: "error_opening_symlink_due_to_depth_exceeded",
 			chainfs: func() FS {
 				chainfs := setUpChainFS(t, 3)
 				return chainfs
@@ -375,7 +375,7 @@ func TestChainFSStat(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			name: "nonexistent tree",
+			name: "nonexistent_tree",
 			chainfs: FS{
 				tree: nil,
 			},
@@ -467,7 +467,7 @@ func TestChainFSReadDir(t *testing.T) {
 		wantErr          error
 	}{
 		{
-			name: "read directory from nonexistent tree",
+			name: "read_directory_from_nonexistent_tree",
 			chainfs: FS{
 				tree: nil,
 			},

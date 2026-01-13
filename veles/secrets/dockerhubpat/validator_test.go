@@ -20,7 +20,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -31,21 +30,6 @@ import (
 
 const validatorTestPat = "dckr_oat_7awgM4jG5SQvxcvmNzhKj8PQjxo"
 const validatorTestUsername = "User123"
-
-// mockTransport redirects requests to the test server
-type mockTransport struct {
-	testServer *httptest.Server
-}
-
-func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL
-	if req.URL.Host == "hub.docker.com" {
-		testURL, _ := url.Parse(m.testServer.URL)
-		req.URL.Scheme = testURL.Scheme
-		req.URL.Host = testURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
-}
 
 // mockDockerHubServer creates a mock Docker Hub API server for testing
 func mockDockerHubServer(t *testing.T, expectedKey string, expectedUser string) *httptest.Server {
@@ -73,6 +57,7 @@ func mockDockerHubServer(t *testing.T, expectedKey string, expectedUser string) 
 		expectedBody := fmt.Sprintf("{\"identifier\": \"%s\",\"secret\": \"%s\"}", expectedUser, expectedKey)
 		if expectedBody != bodyString {
 			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -105,15 +90,10 @@ func TestValidator(t *testing.T) {
 			server := mockDockerHubServer(t, validatorTestPat, validatorTestUsername)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
-
 			// Create a validator with a mock client
-			validator := dockerhubpat.NewValidator(
-				dockerhubpat.WithClient(client),
-			)
+			validator := dockerhubpat.NewValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + "/v2/auth/token/"
 
 			// Create a test username and pat
 			usernamePat := dockerhubpat.DockerHubPAT{Pat: tc.Pat, Username: tc.Username}
@@ -139,14 +119,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := dockerhubpat.NewValidator(
-		dockerhubpat.WithClient(client),
-	)
+	validator := dockerhubpat.NewValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/v2/auth/token/"
 
 	// Create a test username and pat
 	usernamePat := dockerhubpat.DockerHubPAT{Pat: validatorTestPat, Username: validatorTestUsername}
@@ -173,20 +148,16 @@ func TestValidator_InvalidRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := dockerhubpat.NewValidator(
-		dockerhubpat.WithClient(client),
-	)
+	validator := dockerhubpat.NewValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/v2/auth/token/"
 
 	testCases := []struct {
 		name     string
 		Pat      string
 		Username string
 		expected veles.ValidationStatus
+		wantErr  bool
 	}{
 		{
 			name:     "empty_key",
@@ -204,7 +175,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 			name:     "empty_username",
 			Pat:      validatorTestPat,
 			Username: "",
-			expected: veles.ValidationUnsupported,
+			expected: veles.ValidationInvalid,
+			wantErr:  true,
 		},
 	}
 
@@ -214,11 +186,17 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), usernamePat)
 
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-			}
-			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("Validate() expected error for %s, got nil", tc.name)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+				}
+				if got != tc.expected {
+					t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+				}
 			}
 		})
 	}

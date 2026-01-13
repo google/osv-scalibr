@@ -39,6 +39,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -121,10 +123,11 @@ func TestFileRequired(t *testing.T) {
 
 		t.Run(desc, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = rpm.New(rpm.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := rpm.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			e.(*rpm.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -188,7 +191,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "opensuse/leap:15.5 Packages.db file (NDB)",
+			name: "opensuse/leap:15.5_Packages.db_file_(NDB)",
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:             "testdata/Packages.db",
 			osrelease:        fedora38,
@@ -252,7 +255,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 137,
 		},
 		{
-			name: "CentOS 7.9.2009 Packages file (Berkley DB)",
+			name: "CentOS_7.9.2009_Packages_file_(Berkley_DB)",
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:             "testdata/Packages",
 			osrelease:        fedora38,
@@ -349,7 +352,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "RockyLinux 9.2.20230513 rpmdb.sqlite file (sqlite3)",
+			name: "RockyLinux_9.2.20230513_rpmdb.sqlite_file_(sqlite3)",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:             "testdata/rpmdb.sqlite",
 			osrelease:        fedora38,
@@ -413,7 +416,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "osrelease: no version_id",
+			name: "osrelease:_no_version_id",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path: "testdata/rpmdb.sqlite",
 			osrelease: `ID=fedora
@@ -472,7 +475,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "custom rpm",
+			name: "custom_rpm",
 			// https://www.redhat.com/sysadmin/create-rpm-package
 			path: "testdata/Packages_epoch",
 			osrelease: `NAME=Fedora
@@ -524,10 +527,21 @@ func TestExtract(t *testing.T) {
 			}
 
 			collector := testcollector.New()
-			var e filesystem.Extractor = rpm.New(rpm.Config{
-				Stats:   collector,
-				Timeout: tt.timeoutval,
+			e, err := rpm.New(&cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_Rpm{
+							Rpm: &cpb.RpmConfig{
+								TimeoutSeconds: int64(tt.timeoutval.Seconds()),
+							},
+						},
+					},
+				},
 			})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			e.(*rpm.Extractor).Stats = collector
 
 			input := &filesystem.ScanInput{
 				FS:   scalibrfs.DirFS(filepath.Dir(tmpPath)),
@@ -591,7 +605,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 		wantErr     error
 	}{
 		{
-			name: "opensuse/leap:15.5 Packages.db file (NDB)",
+			name: "opensuse/leap:15.5_Packages.db_file_(NDB)",
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:      "testdata/Packages.db",
 			osrelease: fedora38,
@@ -654,7 +668,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 137,
 		},
 		{
-			name: "CentOS 7.9.2009 Packages file (Berkley DB)",
+			name: "CentOS_7.9.2009_Packages_file_(Berkley_DB)",
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:      "testdata/Packages",
 			osrelease: fedora38,
@@ -717,7 +731,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 148,
 		},
 		{
-			name: "RockyLinux 9.2.20230513 rpmdb.sqlite file (sqlite3)",
+			name: "RockyLinux_9.2.20230513_rpmdb.sqlite_file_(sqlite3)",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:      "testdata/rpmdb.sqlite",
 			osrelease: fedora38,
@@ -780,7 +794,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "custom rpm",
+			name: "custom_rpm",
 			// https://www.redhat.com/sysadmin/create-rpm-package
 			path: "testdata/Packages_epoch",
 			osrelease: `NAME=Fedora
@@ -857,7 +871,11 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Info: info,
 			}
 
-			got, err := rpm.New(rpm.Config{}).Extract(t.Context(), input)
+			e, err := rpm.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}
@@ -916,7 +934,7 @@ func createOsRelease(t *testing.T, root string, content string) {
 func scalibrFilesInTmp(t *testing.T) []string {
 	t.Helper()
 
-	filenames := []string{}
+	var filenames []string
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
 		t.Fatalf("os.ReadDir('%q') error: %v", os.TempDir(), err)

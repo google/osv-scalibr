@@ -38,6 +38,9 @@ var (
 	EnricherOrder = []string{
 		"reachability/java",
 		"vulnmatch/osvdev",
+		// Reachability enrichers need to run after vulnmatch enrichers (in certain configurations).
+		"reachability/go/source",
+		"reachability/rust",
 		"vex/filter",
 	}
 )
@@ -97,7 +100,7 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 	for _, e := range config.Enrichers {
 		err := e.Enrich(ctx, input, inventory)
 		// TODO - b/410630503: Support partial success.
-		statuses = append(statuses, plugin.StatusFromErr(e, false, err))
+		statuses = append(statuses, plugin.StatusFromErr(e, false, err, nil))
 	}
 	return statuses, nil
 }

@@ -71,12 +71,12 @@ func ParseDirForGitignore(fs scalibrfs.FS, dirPath string) (GitignorePattern, er
 // ParseParentGitignores parses all .gitignore patterns between the current dir
 // and the scan root, excluding the current directory.
 func ParseParentGitignores(fs scalibrfs.FS, dirPath string) ([]GitignorePattern, error) {
-	filePath := ""
+	var filePath strings.Builder
 	result := []GitignorePattern{}
 	components := strings.Split(dirPath, "/")
 	for _, dir := range components[:len(components)-1] {
-		filePath += dir + "/"
-		gitignores, err := ParseDirForGitignore(fs, filePath)
+		filePath.WriteString(dir + "/")
+		gitignores, err := ParseDirForGitignore(fs, filePath.String())
 		if err != nil {
 			return nil, err
 		}
