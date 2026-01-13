@@ -73,6 +73,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -365,6 +366,7 @@ var (
 		vscodeextensions.Name: {noCFG(vscodeextensions.New)},
 		wordpressplugins.Name: {noCFG(wordpressplugins.NewDefault)},
 		chromeextensions.Name: {noCFG(chromeextensions.New)},
+		netscaler.Name:        {noCFG(netscaler.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
