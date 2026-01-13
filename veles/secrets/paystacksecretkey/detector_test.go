@@ -27,7 +27,7 @@ import (
 
 var (
 	// Example valid PayStack API keys.
-	detectorSK = "sk_test_r3m3mb3r2pu70nasm1l3"
+	detectorSK = "sk_test_abcd1234efgh5678ijkl9012mnop3456qrstuvff"
 )
 
 // TestSecretKeyDetector_truePositives tests SK detection.
@@ -44,32 +44,32 @@ func TestSecretKeyDetector_truePositives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "simple matching string",
+		name:  "simple_matching_string",
 		input: detectorSK,
 		want: []veles.Secret{
 			paystacksecretkey.PaystackSecret{Key: detectorSK},
 		},
 	}, {
-		name:  "match at end of string",
+		name:  "match_at_end_of_string",
 		input: `PAYSTACK_KEY=` + detectorSK,
 		want: []veles.Secret{
 			paystacksecretkey.PaystackSecret{Key: detectorSK},
 		},
 	}, {
-		name:  "match in quotes",
+		name:  "match_in_quotes",
 		input: `key="` + detectorSK + `"`,
 		want: []veles.Secret{
 			paystacksecretkey.PaystackSecret{Key: detectorSK},
 		},
 	}, {
-		name:  "multiple matches",
+		name:  "multiple_matches",
 		input: detectorSK + "\n" + detectorSK,
 		want: []veles.Secret{
 			paystacksecretkey.PaystackSecret{Key: detectorSK},
 			paystacksecretkey.PaystackSecret{Key: detectorSK},
 		},
 	}, {
-		name: "multiple lined input containing key",
+		name: "multiple_lined_input_containing_key",
 		input: fmt.Sprintf("config:\n\n\n  api_key: %s\n",
 			detectorSK),
 		want: []veles.Secret{
@@ -107,19 +107,19 @@ func TestSecretKeyDetector_trueNegatives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "empty input",
+		name:  "empty_input",
 		input: "",
 	}, {
-		name:  "short key should not match",
+		name:  "short_key_should_not_match",
 		input: "sk_test_",
 	}, {
-		name:  "invalid character in key should not match",
+		name:  "invalid_character_in_key_should_not_match",
 		input: "sk_te!st_r3m3mb3r2pu70nasm1l",
 	}, {
-		name:  "incorrect prefix should not match",
+		name:  "incorrect_prefix_should_not_match",
 		input: "pk_live_r3m3mb3r2pu70nasm",
 	}, {
-		name:  "prefix missing underscore should not match",
+		name:  "prefix_missing_underscore_should_not_match",
 		input: "sk-live_r3m3mb3r2pu70nasm", // removes the underscore
 	}}
 
@@ -132,8 +132,7 @@ func TestSecretKeyDetector_trueNegatives(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.want, got,
 				cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() diff (-want +got):\n%s",
-					diff)
+				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
 		})
 	}

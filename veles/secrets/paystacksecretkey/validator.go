@@ -25,8 +25,8 @@ type pak = PaystackSecret
 // NewValidator checks whether the given PaystackSecret is valid.
 //
 // It calls GET https://api.paystack.co/customer with Bearer token.
-// - 200 OK  -> authenticated and valid.
-// - other   -> invalid.
+// - 200 OK -> authenticated and valid.
+// - 401 Unauthorized -> invalid.
 func NewValidator() *sv.Validator[pak] {
 	return &sv.Validator[pak]{
 		Endpoint:   "https://api.paystack.co/customer",

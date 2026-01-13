@@ -35,8 +35,8 @@ var (
 // around this size.
 const skMaxLen = 58
 
-// Secret Keys can be found with this regex: sk_[a-z]{1,15}_[a-z0-9]{,40}, ex: sk_test_r3m3mb3r2pu70nasm1l3
-var skRe = regexp.MustCompile(`\bsk_[a-z]{1,15}_[a-z0-9]{1,40}\b`)
+// Secret Keys can be found with this regex, ex: sk_test_abcd1234efgh5678ijkl9012mnop3456qrstuvff
+var skRe = regexp.MustCompile(`\bsk_[a-z]{1,15}_[a-z0-9]{40}\b`)
 
 // NewSecretKeyDetector returns a detector for PayStack Secret Keys (sk_...).
 func NewSecretKeyDetector() veles.Detector {
