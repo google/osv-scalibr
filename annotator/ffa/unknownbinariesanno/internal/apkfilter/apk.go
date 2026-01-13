@@ -17,6 +17,8 @@ package apkfilter
 
 import (
 	"context"
+	"errors"
+	iofs "io/fs"
 	"path"
 	"strings"
 
@@ -50,6 +52,11 @@ func (ApkFilter) Name() string {
 func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]*extractor.Package) error {
 	reader, err := fs.Open(apkDBPath)
 	if err != nil {
+		// If apk db doesn't exist, apk is not installed or has no package info.
+		// Skip this filter without error.
+		if errors.Is(err, iofs.ErrNotExist) {
+			return nil
+		}
 		return err
 	}
 	defer reader.Close()

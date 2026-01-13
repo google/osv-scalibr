@@ -32,7 +32,7 @@ import (
 )
 
 // Name of the plugin
-const Name = "ffa/unknownbinaries"
+const Name = "ffa/unknownbinariesanno"
 
 // List of filters to apply to exclude known binaries
 var filters = []filter.Filter{
