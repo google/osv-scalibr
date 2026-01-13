@@ -19,6 +19,7 @@ import (
 	"context"
 
 	//nolint:gosec //md5 used to identify files, not for security purposes
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
@@ -27,7 +28,7 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "ffa/unknownbinaries"
+	Name = "ffa/unknownbinariesextr"
 )
 
 // Extractor finds unknown binaries on the filesystem
@@ -47,6 +48,11 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
+// New returns a new unknown binaries extractor.
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
+}
+
 // FileRequired returns true for likely directories to contain vendored c/c++ code
 func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 	return filesystem.IsInterestingExecutable(fapi)
@@ -62,5 +68,3 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 			},
 		}}, nil
 }
-
-var _ filesystem.Extractor = &Extractor{}

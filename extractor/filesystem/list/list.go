@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -392,6 +393,11 @@ var (
 		ova.Name:     {ova.New},
 	}
 
+	// FFA extractor.
+	FFA = InitMap{
+		unknownbinariesextr.Name: {unknownbinariesextr.New},
+	}
+
 	// Collections of extractors.
 
 	// SourceCode extractors find packages in source code contexts (e.g. lockfiles).
@@ -432,6 +438,7 @@ var (
 		EmbeddedFS,
 		Containers,
 		Secrets,
+		FFA,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -476,6 +483,7 @@ var (
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
 		"miscsource": vals(MiscSource),
+		"ffa":        vals(FFA),
 
 		// Collections.
 		"artifact":           vals(Artifact),
