@@ -41,12 +41,12 @@ func TestDetector_Detect(t *testing.T) {
 			want:  nil,
 		},
 		{
-			name:  "invalid_token_format_-_wrong prefix",
+			name:  "invalid_token_format_wrong_prefix",
 			input: "tgram://483957481A:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcE",
 			want:  nil,
 		},
 		{
-			name:  "invalid_token_format_-_too short",
+			name:  "invalid_token_format_too_short",
 			input: "tgram://839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac6",
 			want:  nil,
 		},
