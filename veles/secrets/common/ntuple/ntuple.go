@@ -215,11 +215,20 @@ func collectAllTuples(all [][]Match, maxDistance int) []Tuple {
 	return generateTuples(all, 0, nil, maxDistance)
 }
 
-// generateTuples recursively creates the Cartesian product of match lists,
-// building tuples one Finder at a time. Only tuples meeting the MaxDistance
-// threshold are returned.
+// generateTuples recursively builds all combinations of matches,
+// picking exactly one match from each Finder's results (i.e., one
+// element for each position in the tuple).
+//
+// Parameters:
+//   - all: a slice where each element is the list of matches from one Finder
+//   - idx: the current finder index we're selecting from
+//   - current: the partial tuple being built
+//   - maxDist: maximum allowed distance between tuple elements
+//
+// Returns all valid Tuple objects extending the "current" prefix.
 func generateTuples(all [][]Match, idx int, current []Match, maxDist int) []Tuple {
 	if idx == len(all) {
+		// We have picked one match from each finder, build a tuple.
 		t := buildTuple(append([]Match(nil), current...))
 		if t.Dist <= maxDist {
 			return []Tuple{t}
@@ -229,9 +238,15 @@ func generateTuples(all [][]Match, idx int, current []Match, maxDist int) []Tupl
 
 	var out []Tuple
 	for _, m := range all[idx] {
-		next := append(current, m)
-		out = append(out, generateTuples(all, idx+1, next, maxDist)...)
+		// Copy current to avoid modifying shared backing arrays.
+		tmp := make([]Match, len(current)+1)
+		copy(tmp, current)
+		tmp[len(current)] = m
+
+		// Recurse with one more selected match.
+		out = append(out, generateTuples(all, idx+1, tmp, maxDist)...)
 	}
+
 	return out
 }
 
