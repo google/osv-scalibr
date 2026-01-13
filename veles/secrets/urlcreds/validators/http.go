@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/urlcreds/validators/httpauth"
+	"github.com/icholy/digest"
 )
 
 // HTTPValidator validates a URL using Basic or Digest authentication.
@@ -66,7 +66,7 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	authHeader := resp.Header.Get("WWW-Authenticate")
 	switch {
 	case strings.HasPrefix(authHeader, "Digest "):
-		if err := httpauth.SetDigestAuth(req, u.User, authHeader); err != nil {
+		if err := setDigestAuth(req, u.User, authHeader); err != nil {
 			return veles.ValidationFailed, fmt.Errorf("error adding Digest header: %w", err)
 		}
 	default:
@@ -89,4 +89,22 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	default:
 		return veles.ValidationFailed, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
+}
+
+func setDigestAuth(req *http.Request, userInfo *url.Userinfo, authHeader string) error {
+	challenge, err := digest.ParseChallenge(authHeader)
+	if err != nil {
+		return fmt.Errorf("error pasing the server challenge: %w", err)
+	}
+	pass, _ := userInfo.Password()
+	cred, _ := digest.Digest(challenge, digest.Options{
+		Username: userInfo.Username(),
+		Password: pass,
+		Method:   req.Method,
+		URI:      req.URL.RequestURI(),
+		GetBody:  req.GetBody,
+		Count:    1,
+	})
+	req.Header.Set("Authorization", cred.String())
+	return nil
 }
