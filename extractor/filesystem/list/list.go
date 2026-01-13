@@ -270,10 +270,10 @@ var (
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:       {noCFG(dpkg.NewDefault)},
-		apk.Name:        {noCFG(apk.NewDefault)},
-		rpm.Name:        {noCFG(rpm.NewDefault)},
-		cos.Name:        {noCFG(cos.NewDefault)},
+		dpkg.Name:       {dpkg.New},
+		apk.Name:        {apk.New},
+		rpm.Name:        {rpm.New},
+		cos.Name:        {cos.New},
 		snap.Name:       {noCFG(snap.NewDefault)},
 		nix.Name:        {noCFG(nix.New)},
 		module.Name:     {noCFG(module.NewDefault)},
@@ -500,7 +500,7 @@ func noCFG(f func() filesystem.Extractor) InitFn {
 // ExtractorsFromName returns a list of extractors from a name.
 func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]filesystem.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
-		result := []filesystem.Extractor{}
+		var result []filesystem.Extractor
 		for _, initer := range initers {
 			p, err := initer(cfg)
 			if err != nil {
