@@ -114,13 +114,13 @@ func TestSecretKeyDetector_trueNegatives(t *testing.T) {
 		input: "sk_test_",
 	}, {
 		name:  "invalid_character_in_key_should_not_match",
-		input: "sk_te!st_r3m3mb3r2pu70nasm1l",
+		input: "sk_te!st_abcd1234efgh5678ijkl9012mnop3456qrstuvff",
 	}, {
 		name:  "incorrect_prefix_should_not_match",
-		input: "pk_live_r3m3mb3r2pu70nasm",
+		input: "pk_live_abcd1234efgh5678ijkl9012mnop3456qrstuvff",
 	}, {
 		name:  "prefix_missing_underscore_should_not_match",
-		input: "sk-live_r3m3mb3r2pu70nasm", // removes the underscore
+		input: "sk-live_abcd1234efgh5678ijkl9012mnop3456qrstuvff", // removes the underscore
 	}}
 
 	for _, tc := range cases {
