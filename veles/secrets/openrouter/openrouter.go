@@ -12,8 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+// Package openrouter contains Veles Secret types and Detectors for
+// OpenRouter API keys.
+package openrouter
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.4.2"
+// APIKey is a Veles Secret that holds relevant information for an
+// OpenRouter API key.
+type APIKey struct {
+	Key string
+}

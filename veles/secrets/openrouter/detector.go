@@ -12,33 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+package openrouter
 
 import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
-	checksum "github.com/google/osv-scalibr/veles/secrets/github/checksum"
 )
 
-const oauthTokenBase64MaxLen = 56 // 40 bytes, base64 encoded
+// maxTokenLength is the maximum size of an OpenRouter API key.
+const maxTokenLength = 100
 
-// base64(gho_) -> Z2hvX (minus the last incomplete byte)
-var oauthTokenPattern = regexp.MustCompile(`gho_[A-Za-z0-9]{36}`)
-var oauthTokenBase64Pattern = regexp.MustCompile(`Z2hvX[0-9a-zA-Z+/=]{0,51}`)
+// keyRe is a regular expression that matches OpenRouter API keys.
+// OpenRouter API keys typically start with "sk-or-v" followed by a version number,
+// then alphanumeric characters, underscores, and hyphens. The regex is designed to be specific enough to avoid false positives.
+var keyRe = regexp.MustCompile(`sk-or-v[0-9]+-[A-Za-z0-9_-]{20,}`)
 
-// NewOAuthTokenDetector returns a new Veles Detector that finds Github oauth tokens.
-func NewOAuthTokenDetector() veles.Detector {
+// NewDetector returns a new simpletoken.Detector that matches OpenRouter API keys.
+func NewDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen:   oauthTokenBase64MaxLen,
-		Re:       oauthTokenPattern,
-		ReBase64: oauthTokenBase64Pattern,
-		FromMatch: func(match []byte) (veles.Secret, bool) {
-			if !checksum.Validate(match) {
-				return nil, false
-			}
-			return OAuthToken{Token: string(match)}, true
+		MaxLen: maxTokenLength,
+		Re:     keyRe,
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return APIKey{Key: string(b)}, true
 		},
 	}
 }
