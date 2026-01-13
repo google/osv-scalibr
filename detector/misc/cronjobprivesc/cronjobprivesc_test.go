@@ -34,11 +34,11 @@ import (
 // Helper functions for generating expected test issues
 
 func expectRelativePath(file string, line int, path string) string {
-	return fmt.Sprintf("%s:%d: relative path '%s' in privileged cron job", file, line, path)
+	return fmt.Sprintf("%s:%d: relative path '%s' in privileged cron job - vulnerable to PATH manipulation attack where attacker places malicious executable earlier in PATH", file, line, path)
 }
 
-func expectWorldWritableDir(file string, line int, path string) string {
-	return fmt.Sprintf("%s:%d: execution from world-writable directory '%s' (permissions: 777)", file, line, path)
+func expectWorldWritableParentDir(file string, line int, parentDir, executablePath string) string {
+	return fmt.Sprintf("%s:%d: parent directory '%s' of '%s' is world-writable with execute permission (permissions: 777) - attackers can manipulate path", file, line, parentDir, executablePath)
 }
 
 func expectWorldWritableFile(file string, line int, path string) string {
@@ -58,11 +58,11 @@ func expectWindowsWritableDir(file, path string) string {
 }
 
 func expectWindowsRelativePath(file, path string) string {
-	return fmt.Sprintf("%s: relative path '%s' in privileged scheduled task", file, path)
+	return fmt.Sprintf("%s: relative path '%s' in privileged scheduled task - vulnerable to PATH manipulation or DLL hijacking attack", file, path)
 }
 
 func expectMacOSRelativePath(file, path string) string {
-	return fmt.Sprintf("%s: relative path '%s' in privileged launchd job", file, path)
+	return fmt.Sprintf("%s: relative path '%s' in privileged launchd job - vulnerable to PATH manipulation attack", file, path)
 }
 
 func expectMacOSInsecureDir(file, path string) string {
@@ -240,7 +240,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			dirs: map[string]fs.FileMode{
 				"tmp": 0777, // world-writable
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/tmp/malicious_script.sh")},
+			wantIssues: []string{expectWorldWritableParentDir("etc/crontab", 2, "tmp", "/tmp/malicious_script.sh")},
 		},
 		{
 			name: "insecure crontab - execution from /var/tmp",
@@ -251,7 +251,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			dirs: map[string]fs.FileMode{
 				"var/tmp": 0777, // world-writable
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/crontab", 2, "/var/tmp/dangerous.py")},
+			wantIssues: []string{expectWorldWritableParentDir("etc/crontab", 2, "var/tmp", "/var/tmp/dangerous.py")},
 		},
 		{
 			name: "mixed secure and insecure entries",
@@ -266,7 +266,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			},
 			wantIssues: []string{
 				expectRelativePath("etc/crontab", 3, "bad_script.sh"),
-				expectWorldWritableDir("etc/crontab", 4, "/tmp/worse_script.sh"),
+				expectWorldWritableParentDir("etc/crontab", 4, "tmp", "/tmp/worse_script.sh"),
 			},
 		},
 		{
@@ -288,7 +288,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 			dirs: map[string]fs.FileMode{
 				"dev/shm": 0777, // world-writable
 			},
-			wantIssues: []string{expectWorldWritableDir("etc/cron.d/malicious", 1, "/dev/shm/exploit.sh")},
+			wantIssues: []string{expectWorldWritableParentDir("etc/cron.d/malicious", 1, "dev/shm", "/dev/shm/exploit.sh")},
 		},
 		{
 			name: "comments and empty lines should be ignored",
@@ -756,7 +756,7 @@ func TestScanFS_Integration(t *testing.T) {
 			wantFindingCount: 1,
 			wantSeverity:     inventory.SeverityHigh,
 			wantIssuesContain: []string{
-				"world-writable directory",
+				"world-writable",
 				"relative path",
 				"writable directory",
 				"insecure directory",
