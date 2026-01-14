@@ -253,62 +253,75 @@ func analyzeCommand(fsys fs.FS, filePath string, lineNum int, command string) []
 }
 
 // checkPathHierarchyPermissions checks all parent directories in a path for world-writable permissions.
-// A world-writable directory with execute permission allows any user to add/remove/rename files,
-// which could be exploited to hijack executables run by privileged cron jobs.
+// A world-writable directory is only exploitable if ALL its parent directories are world-executable.
+// Per Unix permissions: to access a directory, all parent directories must have execute permission.
 func checkPathHierarchyPermissions(fsys fs.FS, executablePath string) []string {
 	var issues []string
 
-	// Start from the executable's parent directory and check all the way up to root
+	// Build list of all parent directories from executable up to root
+	var parentDirs []string
 	currentPath := executablePath
 	for {
 		parentDir := path.Dir(currentPath)
 		if parentDir == currentPath || parentDir == "." || parentDir == "/" {
-			// Reached the root or can't go further
 			break
 		}
 
-		// Remove leading slash for fs.FS compatibility
 		fsPath := strings.TrimPrefix(parentDir, "/")
 		if fsPath == "" {
 			break
 		}
 
-		if dirIssue := checkSingleDirectoryPermissions(fsys, fsPath, executablePath); dirIssue != "" {
-			issues = append(issues, dirIssue)
+		parentDirs = append(parentDirs, fsPath)
+		currentPath = parentDir
+	}
+
+	// Check each directory: if it's world-writable, verify all parents are world-executable
+	for i, dirPath := range parentDirs {
+		perms, err := getDirectoryPermissions(fsys, dirPath)
+		if err != nil {
+			continue
 		}
 
-		currentPath = parentDir
+		// Check if this directory is world-writable
+		if perms&0002 != 0 {
+			// Check if all parent directories (those after current in the list) are world-executable
+			allParentsExecutable := true
+			for j := i + 1; j < len(parentDirs); j++ {
+				parentPerms, err := getDirectoryPermissions(fsys, parentDirs[j])
+				if err != nil {
+					allParentsExecutable = false
+					break
+				}
+				// Check for world-executable (o+x)
+				if parentPerms&0001 == 0 {
+					allParentsExecutable = false
+					break
+				}
+			}
+
+			// Only flag as vulnerable if all parents are world-executable
+			if allParentsExecutable {
+				issues = append(issues, fmt.Sprintf("parent directory '%s' of '%s' is world-writable (permissions: %03o) and all parent directories are world-executable - attackers can manipulate path", dirPath, executablePath, perms))
+			}
+		}
 	}
 
 	return issues
 }
 
-// checkSingleDirectoryPermissions checks if a single directory is world-writable.
-func checkSingleDirectoryPermissions(fsys fs.FS, dirPath, executablePath string) string {
+// getDirectoryPermissions returns the permissions of a directory.
+func getDirectoryPermissions(fsys fs.FS, dirPath string) (fs.FileMode, error) {
 	f, err := fsys.Open(dirPath)
 	if err != nil {
-		// If we can't access the directory, we can't check its permissions
-		return ""
+		return 0, err
 	}
 	defer f.Close()
 
 	info, err := f.Stat()
 	if err != nil {
-		return ""
+		return 0, err
 	}
 
-	perms := info.Mode().Perm()
-
-	// Check for world-writable with execute permission (o+wx)
-	// Both write (0002) and execute (0001) permissions for others are needed for exploitation
-	if perms&0002 != 0 && perms&0001 != 0 {
-		return fmt.Sprintf("parent directory '%s' of '%s' is world-writable with execute permission (permissions: %03o) - attackers can manipulate path", dirPath, executablePath, perms)
-	}
-
-	// Also flag world-writable without execute as a warning (less severe but still concerning)
-	if perms&0002 != 0 {
-		return fmt.Sprintf("parent directory '%s' of '%s' is world-writable (permissions: %03o)", dirPath, executablePath, perms)
-	}
-
-	return ""
+	return info.Mode().Perm(), nil
 }

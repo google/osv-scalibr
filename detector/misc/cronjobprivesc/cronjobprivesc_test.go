@@ -38,7 +38,7 @@ func expectRelativePath(file string, line int, path string) string {
 }
 
 func expectWorldWritableParentDir(file string, line int, parentDir, executablePath string) string {
-	return fmt.Sprintf("%s:%d: parent directory '%s' of '%s' is world-writable with execute permission (permissions: 777) - attackers can manipulate path", file, line, parentDir, executablePath)
+	return fmt.Sprintf("%s:%d: parent directory '%s' of '%s' is world-writable (permissions: 777) and all parent directories are world-executable - attackers can manipulate path", file, line, parentDir, executablePath)
 }
 
 func expectWorldWritableFile(file string, line int, path string) string {
@@ -238,7 +238,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 0 0 * * * root /tmp/malicious_script.sh`,
 			},
 			dirs: map[string]fs.FileMode{
-				"tmp": 0777, // world-writable
+				"tmp": 0777, // world-writable with execute (rwxrwxrwx)
+				// Root directory is implicitly world-executable in real systems
 			},
 			wantIssues: []string{expectWorldWritableParentDir("etc/crontab", 2, "tmp", "/tmp/malicious_script.sh")},
 		},
@@ -249,7 +250,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 0 0 * * * root /var/tmp/dangerous.py`,
 			},
 			dirs: map[string]fs.FileMode{
-				"var/tmp": 0777, // world-writable
+				"var":     0755, // world-executable (rwxr-xr-x)
+				"var/tmp": 0777, // world-writable with execute (rwxrwxrwx)
 			},
 			wantIssues: []string{expectWorldWritableParentDir("etc/crontab", 2, "var/tmp", "/var/tmp/dangerous.py")},
 		},
@@ -286,7 +288,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 				"etc/cron.d/malicious": `0 0 * * * root /dev/shm/exploit.sh`,
 			},
 			dirs: map[string]fs.FileMode{
-				"dev/shm": 0777, // world-writable
+				"dev":     0755, // world-executable (rwxr-xr-x)
+				"dev/shm": 0777, // world-writable with execute (rwxrwxrwx)
 			},
 			wantIssues: []string{expectWorldWritableParentDir("etc/cron.d/malicious", 1, "dev/shm", "/dev/shm/exploit.sh")},
 		},
