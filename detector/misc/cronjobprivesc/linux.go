@@ -26,16 +26,16 @@ import (
 )
 
 // checkLinuxCronJobs checks Linux cron job configurations for security issues.
-func (d Detector) checkLinuxCronJobs(ctx context.Context, fsys fs.FS) []string {
+func checkLinuxCronJobs(ctx context.Context, fsys fs.FS) []string {
 	var issues []string
 
 	// Check /etc/crontab
-	if cronIssues := d.checkCronFile(ctx, fsys, "etc/crontab"); len(cronIssues) > 0 {
+	if cronIssues := checkCronFile(ctx, fsys, "etc/crontab"); len(cronIssues) > 0 {
 		issues = append(issues, cronIssues...)
 	}
 
 	// Check /etc/cron.d/*
-	if cronDirIssues := d.checkCronDirectory(ctx, fsys, "etc/cron.d"); len(cronDirIssues) > 0 {
+	if cronDirIssues := checkCronDirectory(ctx, fsys, "etc/cron.d"); len(cronDirIssues) > 0 {
 		issues = append(issues, cronDirIssues...)
 	}
 
@@ -45,13 +45,13 @@ func (d Detector) checkLinuxCronJobs(ctx context.Context, fsys fs.FS) []string {
 		if ctx.Err() != nil {
 			break
 		}
-		if cronDirIssues := d.checkCronScriptDirectory(ctx, fsys, dir); len(cronDirIssues) > 0 {
+		if cronDirIssues := checkCronScriptDirectory(ctx, fsys, dir); len(cronDirIssues) > 0 {
 			issues = append(issues, cronDirIssues...)
 		}
 	}
 
 	// Check user crontabs
-	if userCronIssues := d.checkUserCrontabs(ctx, fsys, "var/spool/cron"); len(userCronIssues) > 0 {
+	if userCronIssues := checkUserCrontabs(ctx, fsys, "var/spool/cron"); len(userCronIssues) > 0 {
 		issues = append(issues, userCronIssues...)
 	}
 
@@ -59,7 +59,7 @@ func (d Detector) checkLinuxCronJobs(ctx context.Context, fsys fs.FS) []string {
 }
 
 // checkCronFile checks a specific cron file for security issues.
-func (d Detector) checkCronFile(ctx context.Context, fsys fs.FS, filePath string) []string {
+func checkCronFile(ctx context.Context, fsys fs.FS, filePath string) []string {
 	var issues []string
 
 	f, err := fsys.Open(filePath)
@@ -85,7 +85,7 @@ func (d Detector) checkCronFile(ctx context.Context, fsys fs.FS, filePath string
 			continue
 		}
 
-		if cronIssues := d.analyzeCronLine(fsys, filePath, lineNum, line); len(cronIssues) > 0 {
+		if cronIssues := analyzeCronLine(fsys, filePath, lineNum, line); len(cronIssues) > 0 {
 			issues = append(issues, cronIssues...)
 		}
 	}
@@ -94,7 +94,7 @@ func (d Detector) checkCronFile(ctx context.Context, fsys fs.FS, filePath string
 }
 
 // checkCronDirectory checks all files in a cron directory.
-func (d Detector) checkCronDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
+func checkCronDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
 	var issues []string
 
 	entries, err := fs.ReadDir(fsys, dir)
@@ -111,7 +111,7 @@ func (d Detector) checkCronDirectory(ctx context.Context, fsys fs.FS, dir string
 		}
 		if !entry.IsDir() {
 			filePath := dir + "/" + entry.Name()
-			if cronIssues := d.checkCronFile(ctx, fsys, filePath); len(cronIssues) > 0 {
+			if cronIssues := checkCronFile(ctx, fsys, filePath); len(cronIssues) > 0 {
 				issues = append(issues, cronIssues...)
 			}
 		}
@@ -121,7 +121,7 @@ func (d Detector) checkCronDirectory(ctx context.Context, fsys fs.FS, dir string
 }
 
 // checkCronScriptDirectory checks executable scripts in cron periodic directories.
-func (d Detector) checkCronScriptDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
+func checkCronScriptDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
 	var issues []string
 
 	entries, err := fs.ReadDir(fsys, dir)
@@ -138,7 +138,7 @@ func (d Detector) checkCronScriptDirectory(ctx context.Context, fsys fs.FS, dir 
 		}
 		if !entry.IsDir() {
 			scriptPath := dir + "/" + entry.Name()
-			if scriptIssues := d.checkExecutablePermissions(fsys, scriptPath); len(scriptIssues) > 0 {
+			if scriptIssues := checkExecutablePermissions(fsys, scriptPath); len(scriptIssues) > 0 {
 				issues = append(issues, scriptIssues...)
 			}
 		}
@@ -148,7 +148,7 @@ func (d Detector) checkCronScriptDirectory(ctx context.Context, fsys fs.FS, dir 
 }
 
 // checkUserCrontabs checks user crontab files in /var/spool/cron.
-func (d Detector) checkUserCrontabs(ctx context.Context, fsys fs.FS, dir string) []string {
+func checkUserCrontabs(ctx context.Context, fsys fs.FS, dir string) []string {
 	var issues []string
 
 	entries, err := fs.ReadDir(fsys, dir)
@@ -167,7 +167,7 @@ func (d Detector) checkUserCrontabs(ctx context.Context, fsys fs.FS, dir string)
 			filePath := dir + "/" + entry.Name()
 			if entry.Name() == "root" {
 				// This is root's crontab, check it
-				if cronIssues := d.checkCronFile(ctx, fsys, filePath); len(cronIssues) > 0 {
+				if cronIssues := checkCronFile(ctx, fsys, filePath); len(cronIssues) > 0 {
 					issues = append(issues, cronIssues...)
 				}
 			}
@@ -178,7 +178,7 @@ func (d Detector) checkUserCrontabs(ctx context.Context, fsys fs.FS, dir string)
 }
 
 // analyzeCronLine analyzes a single cron line for security issues.
-func (d Detector) analyzeCronLine(fsys fs.FS, filePath string, lineNum int, line string) []string {
+func analyzeCronLine(fsys fs.FS, filePath string, lineNum int, line string) []string {
 	var issues []string
 
 	// Parse cron line format: minute hour day month weekday [user] command
@@ -202,7 +202,7 @@ func (d Detector) analyzeCronLine(fsys fs.FS, filePath string, lineNum int, line
 
 	// Only check jobs running as root or privileged users
 	if user == "root" || user == "0" {
-		if cmdIssues := d.analyzeCommand(fsys, filePath, lineNum, command); len(cmdIssues) > 0 {
+		if cmdIssues := analyzeCommand(fsys, filePath, lineNum, command); len(cmdIssues) > 0 {
 			issues = append(issues, cmdIssues...)
 		}
 	}
@@ -211,7 +211,7 @@ func (d Detector) analyzeCronLine(fsys fs.FS, filePath string, lineNum int, line
 }
 
 // analyzeCommand analyzes a command for security issues.
-func (d Detector) analyzeCommand(fsys fs.FS, filePath string, lineNum int, command string) []string {
+func analyzeCommand(fsys fs.FS, filePath string, lineNum int, command string) []string {
 	var issues []string
 
 	// Extract the first part of the command (the executable)
@@ -236,14 +236,14 @@ func (d Detector) analyzeCommand(fsys fs.FS, filePath string, lineNum int, comma
 	// Per Unix permissions: to access a file, all parent directories must have execute permission.
 	// If any parent directory is world-writable AND has execute permission for others,
 	// an attacker could potentially manipulate the path (e.g., via symlinks or directory replacement).
-	if dirIssues := d.checkPathHierarchyPermissions(fsys, executable); len(dirIssues) > 0 {
+	if dirIssues := checkPathHierarchyPermissions(fsys, executable); len(dirIssues) > 0 {
 		for _, issue := range dirIssues {
 			issues = append(issues, fmt.Sprintf("%s:%d: %s", filePath, lineNum, issue))
 		}
 	}
 
 	// Check file permissions of the executable
-	if permIssues := d.checkExecutablePermissions(fsys, executable); len(permIssues) > 0 {
+	if permIssues := checkExecutablePermissions(fsys, executable); len(permIssues) > 0 {
 		for _, issue := range permIssues {
 			issues = append(issues, fmt.Sprintf("%s:%d: %s", filePath, lineNum, issue))
 		}
@@ -255,7 +255,7 @@ func (d Detector) analyzeCommand(fsys fs.FS, filePath string, lineNum int, comma
 // checkPathHierarchyPermissions checks all parent directories in a path for world-writable permissions.
 // A world-writable directory with execute permission allows any user to add/remove/rename files,
 // which could be exploited to hijack executables run by privileged cron jobs.
-func (d Detector) checkPathHierarchyPermissions(fsys fs.FS, executablePath string) []string {
+func checkPathHierarchyPermissions(fsys fs.FS, executablePath string) []string {
 	var issues []string
 
 	// Start from the executable's parent directory and check all the way up to root
@@ -273,7 +273,7 @@ func (d Detector) checkPathHierarchyPermissions(fsys fs.FS, executablePath strin
 			break
 		}
 
-		if dirIssue := d.checkSingleDirectoryPermissions(fsys, fsPath, executablePath); dirIssue != "" {
+		if dirIssue := checkSingleDirectoryPermissions(fsys, fsPath, executablePath); dirIssue != "" {
 			issues = append(issues, dirIssue)
 		}
 
@@ -284,7 +284,7 @@ func (d Detector) checkPathHierarchyPermissions(fsys fs.FS, executablePath strin
 }
 
 // checkSingleDirectoryPermissions checks if a single directory is world-writable.
-func (d Detector) checkSingleDirectoryPermissions(fsys fs.FS, dirPath, executablePath string) string {
+func checkSingleDirectoryPermissions(fsys fs.FS, dirPath, executablePath string) string {
 	f, err := fsys.Open(dirPath)
 	if err != nil {
 		// If we can't access the directory, we can't check its permissions

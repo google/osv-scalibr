@@ -26,7 +26,7 @@ import (
 )
 
 // checkMacOSLaunchd checks macOS launchd plist files for security issues.
-func (d Detector) checkMacOSLaunchd(ctx context.Context, fsys fs.FS) []string {
+func checkMacOSLaunchd(ctx context.Context, fsys fs.FS) []string {
 	var issues []string
 
 	// Check system-wide launch daemons and agents
@@ -40,7 +40,7 @@ func (d Detector) checkMacOSLaunchd(ctx context.Context, fsys fs.FS) []string {
 		if ctx.Err() != nil {
 			break
 		}
-		if launchdIssues := d.checkMacOSLaunchdDirectory(ctx, fsys, dir); len(launchdIssues) > 0 {
+		if launchdIssues := checkMacOSLaunchdDirectory(ctx, fsys, dir); len(launchdIssues) > 0 {
 			issues = append(issues, launchdIssues...)
 		}
 	}
@@ -49,7 +49,7 @@ func (d Detector) checkMacOSLaunchd(ctx context.Context, fsys fs.FS) []string {
 }
 
 // checkMacOSLaunchdDirectory checks a directory containing launchd plist files.
-func (d Detector) checkMacOSLaunchdDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
+func checkMacOSLaunchdDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
 	var issues []string
 
 	entries, err := fs.ReadDir(fsys, dir)
@@ -66,7 +66,7 @@ func (d Detector) checkMacOSLaunchdDirectory(ctx context.Context, fsys fs.FS, di
 		}
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".plist") {
 			plistPath := dir + "/" + entry.Name()
-			if plistIssues := d.checkMacOSLaunchdFile(fsys, plistPath); len(plistIssues) > 0 {
+			if plistIssues := checkMacOSLaunchdFile(fsys, plistPath); len(plistIssues) > 0 {
 				issues = append(issues, plistIssues...)
 			}
 		}
@@ -76,7 +76,7 @@ func (d Detector) checkMacOSLaunchdDirectory(ctx context.Context, fsys fs.FS, di
 }
 
 // checkMacOSLaunchdFile checks a single launchd plist file.
-func (d Detector) checkMacOSLaunchdFile(fsys fs.FS, filePath string) []string {
+func checkMacOSLaunchdFile(fsys fs.FS, filePath string) []string {
 	var issues []string
 
 	f, err := fsys.Open(filePath)
@@ -100,7 +100,7 @@ func (d Detector) checkMacOSLaunchdFile(fsys fs.FS, filePath string) []string {
 
 	if isPrivileged {
 		// Extract executable paths from ProgramArguments or Program
-		if execIssues := d.analyzeMacOSLaunchdExecutables(fsys, filePath, contentStr); len(execIssues) > 0 {
+		if execIssues := analyzeMacOSLaunchdExecutables(fsys, filePath, contentStr); len(execIssues) > 0 {
 			issues = append(issues, execIssues...)
 		}
 	}
@@ -109,7 +109,7 @@ func (d Detector) checkMacOSLaunchdFile(fsys fs.FS, filePath string) []string {
 }
 
 // analyzeMacOSLaunchdExecutables analyzes executable paths in a macOS launchd plist.
-func (d Detector) analyzeMacOSLaunchdExecutables(fsys fs.FS, plistPath, content string) []string {
+func analyzeMacOSLaunchdExecutables(fsys fs.FS, plistPath, content string) []string {
 	var issues []string
 
 	// Use regex to find string values after ProgramArguments or Program keys
@@ -136,14 +136,14 @@ func (d Detector) analyzeMacOSLaunchdExecutables(fsys fs.FS, plistPath, content 
 			}
 
 			// Check all parent directories for world-writable permissions
-			if dirIssues := d.checkPathHierarchyPermissions(fsys, executable); len(dirIssues) > 0 {
+			if dirIssues := checkPathHierarchyPermissions(fsys, executable); len(dirIssues) > 0 {
 				for _, issue := range dirIssues {
 					issues = append(issues, fmt.Sprintf("%s: %s", plistPath, issue))
 				}
 			}
 
 			// Check file permissions
-			if permIssues := d.checkExecutablePermissions(fsys, executable); len(permIssues) > 0 {
+			if permIssues := checkExecutablePermissions(fsys, executable); len(permIssues) > 0 {
 				for _, issue := range permIssues {
 					issues = append(issues, fmt.Sprintf("%s: %s", plistPath, issue))
 				}
@@ -155,7 +155,7 @@ func (d Detector) analyzeMacOSLaunchdExecutables(fsys fs.FS, plistPath, content 
 }
 
 // checkMacOSLegacyCron checks legacy cron configuration on macOS.
-func (d Detector) checkMacOSLegacyCron(ctx context.Context, fsys fs.FS) []string {
+func checkMacOSLegacyCron(ctx context.Context, fsys fs.FS) []string {
 	var issues []string
 
 	// Check legacy crontab files
@@ -168,7 +168,7 @@ func (d Detector) checkMacOSLegacyCron(ctx context.Context, fsys fs.FS) []string
 		if ctx.Err() != nil {
 			break
 		}
-		if cronIssues := d.checkCronFile(ctx, fsys, cronPath); len(cronIssues) > 0 {
+		if cronIssues := checkCronFile(ctx, fsys, cronPath); len(cronIssues) > 0 {
 			issues = append(issues, cronIssues...)
 		}
 	}

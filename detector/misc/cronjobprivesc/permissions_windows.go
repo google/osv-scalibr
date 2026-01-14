@@ -25,7 +25,7 @@ import (
 
 // checkExecutablePermissions checks if an executable has secure permissions.
 // On Windows, we can only check basic file permissions, not Unix-style ownership.
-func (d Detector) checkExecutablePermissions(fsys fs.FS, filePath string) []string {
+func checkExecutablePermissions(fsys fs.FS, filePath string) []string {
 	var issues []string
 
 	f, err := fsys.Open(filePath)

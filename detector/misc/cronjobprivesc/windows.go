@@ -59,11 +59,11 @@ type WindowsTaskExec struct {
 }
 
 // checkWindowsTaskScheduler checks Windows scheduled tasks for security issues.
-func (d Detector) checkWindowsTaskScheduler(ctx context.Context, fsys fs.FS) []string {
+func checkWindowsTaskScheduler(ctx context.Context, fsys fs.FS) []string {
 	var issues []string
 
 	// Check tasks in the system tasks directory
-	if taskIssues := d.checkWindowsTaskDirectory(ctx, fsys, "Windows/System32/Tasks"); len(taskIssues) > 0 {
+	if taskIssues := checkWindowsTaskDirectory(ctx, fsys, "Windows/System32/Tasks"); len(taskIssues) > 0 {
 		issues = append(issues, taskIssues...)
 	}
 
@@ -71,7 +71,7 @@ func (d Detector) checkWindowsTaskScheduler(ctx context.Context, fsys fs.FS) []s
 }
 
 // checkWindowsTaskDirectory recursively checks Windows task directories.
-func (d Detector) checkWindowsTaskDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
+func checkWindowsTaskDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
 	var issues []string
 
 	entries, err := fs.ReadDir(fsys, dir)
@@ -90,12 +90,12 @@ func (d Detector) checkWindowsTaskDirectory(ctx context.Context, fsys fs.FS, dir
 		entryPath := dir + "/" + entry.Name()
 		if entry.IsDir() {
 			// Recursively check subdirectories
-			if subdirIssues := d.checkWindowsTaskDirectory(ctx, fsys, entryPath); len(subdirIssues) > 0 {
+			if subdirIssues := checkWindowsTaskDirectory(ctx, fsys, entryPath); len(subdirIssues) > 0 {
 				issues = append(issues, subdirIssues...)
 			}
 		} else {
 			// Check individual task files
-			if taskIssues := d.checkWindowsTaskFile(ctx, fsys, entryPath); len(taskIssues) > 0 {
+			if taskIssues := checkWindowsTaskFile(ctx, fsys, entryPath); len(taskIssues) > 0 {
 				issues = append(issues, taskIssues...)
 			}
 		}
@@ -105,7 +105,7 @@ func (d Detector) checkWindowsTaskDirectory(ctx context.Context, fsys fs.FS, dir
 }
 
 // checkWindowsTaskFile checks a Windows task XML file.
-func (d Detector) checkWindowsTaskFile(ctx context.Context, fsys fs.FS, filePath string) []string {
+func checkWindowsTaskFile(ctx context.Context, fsys fs.FS, filePath string) []string {
 	var issues []string
 
 	f, err := fsys.Open(filePath)
@@ -146,7 +146,7 @@ func (d Detector) checkWindowsTaskFile(ctx context.Context, fsys fs.FS, filePath
 			if ctx.Err() != nil {
 				break
 			}
-			if execIssues := d.analyzeWindowsCommand(fsys, filePath, exec.Command); len(execIssues) > 0 {
+			if execIssues := analyzeWindowsCommand(fsys, filePath, exec.Command); len(execIssues) > 0 {
 				issues = append(issues, execIssues...)
 			}
 		}
@@ -156,7 +156,7 @@ func (d Detector) checkWindowsTaskFile(ctx context.Context, fsys fs.FS, filePath
 }
 
 // analyzeWindowsCommand analyzes a Windows scheduled task command.
-func (d Detector) analyzeWindowsCommand(fsys fs.FS, taskPath, command string) []string {
+func analyzeWindowsCommand(fsys fs.FS, taskPath, command string) []string {
 	var issues []string
 
 	// Check for execution from writable system directories
@@ -192,7 +192,7 @@ func (d Detector) analyzeWindowsCommand(fsys fs.FS, taskPath, command string) []
 	}
 	cleanPath = strings.ReplaceAll(cleanPath, "\\", "/")
 
-	if permIssues := d.checkExecutablePermissions(fsys, cleanPath); len(permIssues) > 0 {
+	if permIssues := checkExecutablePermissions(fsys, cleanPath); len(permIssues) > 0 {
 		for _, issue := range permIssues {
 			issues = append(issues, fmt.Sprintf("%s: %s", taskPath, issue))
 		}

@@ -96,7 +96,7 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 
 	// Check all platform types regardless of runtime OS since we're working with abstract filesystems
 	// Check Linux cron jobs
-	if linuxIssues := d.checkLinuxCronJobs(ctx, fsys); len(linuxIssues) > 0 {
+	if linuxIssues := checkLinuxCronJobs(ctx, fsys); len(linuxIssues) > 0 {
 		issues = append(issues, linuxIssues...)
 	}
 
@@ -106,7 +106,7 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 	}
 
 	// Check Windows scheduled tasks
-	if windowsIssues := d.checkWindowsTaskScheduler(ctx, fsys); len(windowsIssues) > 0 {
+	if windowsIssues := checkWindowsTaskScheduler(ctx, fsys); len(windowsIssues) > 0 {
 		issues = append(issues, windowsIssues...)
 	}
 
@@ -116,7 +116,7 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 	}
 
 	// Check macOS launchd
-	if macIssues := d.checkMacOSLaunchd(ctx, fsys); len(macIssues) > 0 {
+	if macIssues := checkMacOSLaunchd(ctx, fsys); len(macIssues) > 0 {
 		issues = append(issues, macIssues...)
 	}
 
@@ -126,7 +126,7 @@ func (d Detector) ScanFS(ctx context.Context, fsys fs.FS, px *packageindex.Packa
 	}
 
 	// Check legacy macOS cron
-	if legacyIssues := d.checkMacOSLegacyCron(ctx, fsys); len(legacyIssues) > 0 {
+	if legacyIssues := checkMacOSLegacyCron(ctx, fsys); len(legacyIssues) > 0 {
 		issues = append(issues, legacyIssues...)
 	}
 
