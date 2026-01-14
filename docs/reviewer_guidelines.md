@@ -1,4 +1,4 @@
-# Scalibr Plugin Review Process
+# OSV-SCALIBR Reviewer Guidelines
 
 This guide explains the standards and expectations for the Scalibr project. Before a pull request (PR) is merged, it should meet all the requirements outlined in the checklists below.
 
