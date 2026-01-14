@@ -50,6 +50,7 @@ import (
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
+	velespaystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -237,6 +238,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return codeCommitCredentialsToProto(t), nil
 	case bitbucket.Credentials:
 		return bitbucketCredentialsToProto(t), nil
+	case velespaystacksecretkey.PaystackSecret:
+		return paystackSecretKeyToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -804,6 +807,16 @@ func pyxKeyV2ToProto(s pyxkeyv2.PyxKeyV2) *spb.SecretData {
 	}
 }
 
+func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PaystackSecretKey_{
+			PaystackSecretKey: &spb.SecretData_PaystackSecretKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1050,6 +1063,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_BitbucketCredentials:
 		return bitbucket.Credentials{
 			FullURL: s.GetBitbucketCredentials().GetUrl(),
+		}, nil
+	case *spb.SecretData_PaystackSecretKey_:
+		return velespaystacksecretkey.PaystackSecret{
+			Key: s.GetPaystackSecretKey().GetKey(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

@@ -124,7 +124,7 @@ message Package {
     FlatpakPackageMetadata flatpak_metadata = 24;
     MacAppsMetadata mac_apps_metadata = 34;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-        25;
+      25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
@@ -729,7 +729,7 @@ message SecretData {
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
     GithubFineGrainedPersonalAccessToken
-        github_fine_grained_personal_access_token = 29;
+      github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
     OpenRouterAPIKey openrouter_api_key = 32;
@@ -758,6 +758,7 @@ message SecretData {
     JWTToken jwt_token = 55;
     CodeCommitCredentials code_commit_credentials = 56;
     BitBucketCredentials bitbucket_credentials = 57;
+    PaystackSecretKey paystack_secret_key = 58;
   }
 
   message GCPSAK {
@@ -926,7 +927,7 @@ message SecretData {
     string role_id = 1;
     string secret_id = 2;
     string id =
-        3;  // General ID field for uncertain UUID types when context is unclear
+      3;  // General ID field for uncertain UUID types when context is unclear
   }
 
   message GCPAPIKey {
@@ -1059,6 +1060,10 @@ message SecretData {
 
   message BitBucketCredentials{
     string url = 1;
+  }
+
+  message PaystackSecretKey {
+    string key = 1;
   }
 }
 
