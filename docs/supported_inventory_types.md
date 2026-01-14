@@ -142,6 +142,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
+| npmjs Registry Access Tokens                | `secrets/npmjsaccesstoken`           |
 | OpenAI API key                              | `secrets/openai`                     |
 | Perplexity API key                          | `secrets/perplexityapikey`           |
 | PyPI API Token                              | `secrets/pypiapitoken`               |

@@ -51,6 +51,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
@@ -98,6 +99,7 @@ var (
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
 		fromVeles(pypiapitoken.NewValidator(), "secrets/pypiapitokenvalidate", 0),
 		fromVeles(cratesioapitoken.NewValidator(), "secrets/cratesioapitokenvalidate", 0),
+		fromVeles(npmjsaccesstoken.NewValidator(), "secrets/npmjsaccesstoken", 0),
 		fromVeles(slacktoken.NewAppLevelTokenValidator(), "secrets/slackappleveltokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigRefreshTokenValidator(), "secrets/slackconfigrefreshtokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigAccessTokenValidator(), "secrets/slackconfigaccesstokenvalidate", 0),

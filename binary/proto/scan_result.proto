@@ -758,6 +758,7 @@ message SecretData {
     JWTToken jwt_token = 55;
     CodeCommitCredentials code_commit_credentials = 56;
     BitBucketCredentials bitbucket_credentials = 57;
+    NpmJSAccessToken npmjs_access_token = 58;
   }
 
   message GCPSAK {
@@ -884,6 +885,10 @@ message SecretData {
 
   message CratesIOAPIToken {
     string token = 1;
+  }
+
+  message NpmJSAccessToken {
+    string Token = 1;
   }
 
   message GithubAppRefreshToken {
