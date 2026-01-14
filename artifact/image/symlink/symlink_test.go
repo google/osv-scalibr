@@ -53,7 +53,7 @@ func TestTargetOutsideRoot(t *testing.T) {
 		target: "../../t.txt",
 		want:   true,
 	}, {
-		name: "absolute target outside root",
+		name: "absolute_target_outside_root",
 		path: "a/f.txt",
 		target: func() string {
 			if runtime.GOOS == "windows" {

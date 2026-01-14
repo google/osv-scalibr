@@ -40,9 +40,13 @@ const (
 
 // Regex expressions used for extracting gemspec package name and version.
 var (
-	reSpec = regexp.MustCompile(`^Gem::Specification\.new`)
-	reName = regexp.MustCompile(`\s*\w+\.name\s*=\s*["']([^"']+)["']`)
-	reVer  = regexp.MustCompile(`\s*\w+\.version\s*=\s*["']([^"']+)["']`)
+	reSpec            = regexp.MustCompile(`^Gem::Specification\.new`)
+	reName            = regexp.MustCompile(`\s*\w+\.name\s*=\s*["']([^"']+)["']`)
+	reVerLiteral      = regexp.MustCompile(`\s*\w+\.version\s*=\s*["']([^"']+)["']`)
+	reVerConst        = regexp.MustCompile(`\s*\w+\.version\s*=\s*([A-Za-z0-9_:]+)`)
+	reRequireRel      = regexp.MustCompile(`^\s*require_relative\s+["']([^"']+)["']`)
+	reRequireLiteral  = regexp.MustCompile(`^\s*require\s+["']([^"']+)["']`)
+	reConstAssignment = regexp.MustCompile(`\b([A-Z][A-Za-z0-9_]*)\s*=\s*(?:'([^']+)'|"([^"]+)")(?:\s*\.freeze)?`)
 )
 
 // Config is the configuration for the Extractor.
@@ -127,7 +131,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from the .gemspec file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	p, err := extract(input.Path, input.Reader)
+	p, err := extract(input.Path, input.FS, input.Reader)
 	e.reportFileExtracted(input.Path, input.Info, filesystem.ExtractorErrorToFileExtractedResult(err))
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("gemspec.parse: %w", err)
@@ -156,15 +160,30 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, result
 }
 
 // extract searches for the required name and version lines in the gemspec
-// file using regex.
+// file using regex. It handles version strings defined either inline or via a
+// constant populated through require_relative.
 // Based on: https://guides.rubygems.org/specification-reference/
-func extract(path string, r io.Reader) (*extractor.Package, error) {
+func extract(path string, fsys fs.FS, r io.Reader) (*extractor.Package, error) {
 	buf := bufio.NewScanner(r)
 	gemName, gemVer := "", ""
 	foundStart := false
+	var (
+		requirePaths    []string
+		versionConst    string
+		inlineConstants = make(map[string]string)
+	)
+	reqAccum := &requireAccumulator{}
 
 	for buf.Scan() {
 		line := buf.Text()
+
+		requirePaths = appendUnique(requirePaths, reqAccum.Add(line)...)
+
+		if matches := reConstAssignment.FindStringSubmatch(line); len(matches) > 1 {
+			if val := constantValueFromMatch(matches); val != "" {
+				inlineConstants[matches[1]] = val
+			}
+		}
 
 		if !foundStart {
 			start := reSpec.FindString(line)
@@ -184,10 +203,14 @@ func extract(path string, r io.Reader) (*extractor.Package, error) {
 			}
 		}
 		if gemVer == "" {
-			verArr := reVer.FindStringSubmatch(line)
-			if len(verArr) > 1 {
+			if verArr := reVerLiteral.FindStringSubmatch(line); len(verArr) > 1 {
 				gemVer = verArr[1]
 				continue
+			}
+			if versionConst == "" {
+				if constMatch := reVerConst.FindStringSubmatch(line); len(constMatch) > 1 {
+					versionConst = constMatch[1]
+				}
 			}
 		}
 	}
@@ -195,11 +218,24 @@ func extract(path string, r io.Reader) (*extractor.Package, error) {
 	if err := buf.Err(); err != nil {
 		log.Warnf("error scanning gemspec file %s: %v", path, err)
 	}
+	requirePaths = appendUnique(requirePaths, reqAccum.Flush()...)
 
 	// This was likely a marshalled gemspec. Not a readable text file.
 	if !foundStart {
 		log.Warnf("error scanning gemspec (%s) could not find start of spec definition", path)
 		return nil, nil
+	}
+
+	if gemVer == "" && versionConst != "" {
+		if constName, ok := versionConstantName(versionConst); ok {
+			if v, ok := inlineConstants[constName]; ok {
+				gemVer = v
+			} else if resolved, err := resolveVersionFromRequires(fsys, path, requirePaths, constName); err == nil {
+				gemVer = resolved
+			} else {
+				log.Debugf("unable to resolve version constant %q in gemspec %s: %v", versionConst, path, err)
+			}
+		}
 	}
 
 	if gemName == "" || gemVer == "" {

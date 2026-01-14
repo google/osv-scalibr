@@ -22,7 +22,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/mohae/deepcopy"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestEnrich(t *testing.T) {
@@ -32,29 +33,29 @@ func TestEnrich(t *testing.T) {
 		want *inventory.Inventory
 	}{
 		{
-			desc: "no vulns",
+			desc: "no_vulns",
 			inv:  &inventory.Inventory{},
 			want: &inventory.Inventory{},
 		},
 		{
-			desc: "PackageVuln with VEX",
+			desc: "PackageVuln_with_VEX",
 			inv: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
-				Vulnerability:         osvschema.Vulnerability{ID: "CVE-123"},
+				Vulnerability:         &osvpb.Vulnerability{Id: "CVE-123"},
 				ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Justification: vex.ComponentNotPresent}},
 			}}},
 			want: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{}},
 		},
 		{
-			desc: "PackageVuln with no VEX",
+			desc: "PackageVuln_with_no_VEX",
 			inv: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
-				Vulnerability: osvschema.Vulnerability{ID: "CVE-123"},
+				Vulnerability: &osvpb.Vulnerability{Id: "CVE-123"},
 			}}},
 			want: &inventory.Inventory{PackageVulns: []*inventory.PackageVuln{{
-				Vulnerability: osvschema.Vulnerability{ID: "CVE-123"},
+				Vulnerability: &osvpb.Vulnerability{Id: "CVE-123"},
 			}}},
 		},
 		{
-			desc: "GenericFinding with VEX",
+			desc: "GenericFinding_with_VEX",
 			inv: &inventory.Inventory{GenericFindings: []*inventory.GenericFinding{{
 				Adv:                   &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Reference: "CVE-123"}},
 				ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{Justification: vex.ComponentNotPresent}},
@@ -62,7 +63,7 @@ func TestEnrich(t *testing.T) {
 			want: &inventory.Inventory{GenericFindings: []*inventory.GenericFinding{}},
 		},
 		{
-			desc: "GenericFinding with no VEX",
+			desc: "GenericFinding_with_no_VEX",
 			inv: &inventory.Inventory{GenericFindings: []*inventory.GenericFinding{{
 				Adv: &inventory.GenericFindingAdvisory{ID: &inventory.AdvisoryID{Reference: "CVE-123"}},
 			}}},
@@ -78,7 +79,7 @@ func TestEnrich(t *testing.T) {
 			if err := filter.New().Enrich(t.Context(), nil, inv); err != nil {
 				t.Errorf("Enrich(%v) returned error: %v", tc.inv, err)
 			}
-			if diff := cmp.Diff(tc.want, inv); diff != "" {
+			if diff := cmp.Diff(tc.want, inv, protocmp.Transform()); diff != "" {
 				t.Errorf("Enrich(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})

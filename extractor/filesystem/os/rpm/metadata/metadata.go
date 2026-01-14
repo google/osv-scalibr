@@ -17,10 +17,20 @@ package metadata
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/log"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+var (
+	// pattern to match: openEuler version (qualifier)
+	// where (qualifier) is optional. Those without qualifier are considered innovation versions.
+	// version: YY.MM format. e.g. 24.03
+	// qualifier: currently supported are LTS, LTS SPd. e.g. LTS, LTS-SP1, LTS-SP2
+	openEulerPrettyNameRegexp = regexp.MustCompile(`^openEuler\s+([0-9]{2}\.[0-9]{2})(?:\s*\((LTS(?:[- ]SP\d+)?)\))?$`)
 )
 
 // Metadata holds parsing information for an rpm package.
@@ -29,6 +39,8 @@ type Metadata struct {
 	SourceRPM    string
 	Epoch        int
 	OSName       string
+	OSCPEName    string
+	OSPrettyName string
 	OSID         string
 	OSVersionID  string
 	OSBuildID    string
@@ -80,6 +92,8 @@ func (m *Metadata) SetProto(p *pb.Package) {
 			SourceRpm:    m.SourceRPM,
 			Epoch:        int32(m.Epoch),
 			OsName:       m.OSName,
+			OsCpeName:    m.OSCPEName,
+			OsPrettyName: m.OSPrettyName,
 			OsId:         m.OSID,
 			OsVersionId:  m.OSVersionID,
 			OsBuildId:    m.OSBuildID,
@@ -100,10 +114,42 @@ func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
 		SourceRPM:    m.GetSourceRpm(),
 		Epoch:        int(m.GetEpoch()),
 		OSName:       m.GetOsName(),
+		OSCPEName:    m.GetOsCpeName(),
+		OSPrettyName: m.GetOsPrettyName(),
 		OSID:         m.GetOsId(),
 		OSVersionID:  m.GetOsVersionId(),
 		OSBuildID:    m.GetOsBuildId(),
 		Vendor:       m.GetVendor(),
 		Architecture: m.GetArchitecture(),
 	}
+}
+
+// OpenEulerEcosystemSuffix returns the normalized ecosystem suffix for openEuler RPMs with uses of pretty name.
+// e.g. openEuler 24.03 (LTS) -> 24.03-LTS
+func (m *Metadata) OpenEulerEcosystemSuffix() string {
+	if m == nil {
+		return ""
+	}
+
+	prettyName := strings.TrimSpace(m.OSPrettyName)
+	if prettyName != "" {
+		if matches := openEulerPrettyNameRegexp.FindStringSubmatch(prettyName); len(matches) > 0 {
+			version := matches[1]
+			qualifier := strings.TrimSpace(matches[2])
+			if qualifier == "" {
+				return version
+			}
+
+			qualifier = strings.ReplaceAll(qualifier, " ", "-")
+			qualifier = strings.Trim(qualifier, "-")
+			if qualifier == "" {
+				return version
+			}
+
+			return version + "-" + qualifier
+		}
+	}
+
+	versionID := strings.TrimSpace(m.OSVersionID)
+	return versionID
 }

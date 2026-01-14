@@ -217,7 +217,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "malformed PKG-INFO",
+			name: "malformed_PKG-INFO",
 			path: "testdata/malformed_pkginfo",
 			wantPackages: []*extractor.Package{{
 				Name:      "passlib",
@@ -412,7 +412,7 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "invalid zip file",
+			name: "invalid_zip_file",
 			path: "testdata/does_not_exist.egg",
 			fakeFileInfo: fakefs.FakeFileInfo{
 				FileName: "does_not_exist.egg",

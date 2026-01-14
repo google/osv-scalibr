@@ -30,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 	"github.com/google/osv-scalibr/log"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // ComputePatches attempts to resolve each vulnerability found in the graph,
@@ -46,7 +46,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 	requiredVersions := computeAllVersionConstraints(graph.Vulns, sys)
 	type patch struct {
 		vk    resolve.VersionKey
-		vulns []*osvschema.Vulnerability
+		vulns []*osvpb.Vulnerability
 	}
 	vkPatches := make(map[resolve.VersionKey][]patch)
 	for _, v := range graph.Vulns {
@@ -76,15 +76,15 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 			// Found a patch
 			newPatch := patch{
 				vk:    ver,
-				vulns: []*osvschema.Vulnerability{v.OSV},
+				vulns: []*osvpb.Vulnerability{v.OSV},
 			}
 			// Check the vulns of other patches if this patch also fixes them.
 			seenVulns := make(map[string]struct{})
-			seenVulns[v.OSV.ID] = struct{}{}
+			seenVulns[v.OSV.Id] = struct{}{}
 			for _, p := range vkPatches[vk] {
 				for _, vuln := range p.vulns {
-					if _, ok := seenVulns[vuln.ID]; !ok {
-						seenVulns[vuln.ID] = struct{}{}
+					if _, ok := seenVulns[vuln.Id]; !ok {
+						seenVulns[vuln.Id] = struct{}{}
 						if !vulns.IsAffected(vuln, vulns.VKToPackage(ver)) {
 							newPatch.vulns = append(newPatch.vulns, vuln)
 						}
@@ -111,7 +111,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 			}
 			for _, vuln := range p.vulns {
 				resultPatch.Fixed = append(resultPatch.Fixed, result.Vuln{
-					ID: vuln.ID,
+					ID: vuln.Id,
 					Packages: []result.Package{
 						result.Package{
 							Name:    vk.Name,
@@ -215,7 +215,7 @@ func requirementsSatisfied(reqs []resolve.RequirementVersion, graph *resolve.Gra
 }
 
 func findLatestMatching(ctx context.Context, cl resolve.Client, graph remediation.ResolvedGraph,
-	sg *resolution.DependencySubgraph, v *osvschema.Vulnerability,
+	sg *resolution.DependencySubgraph, v *osvpb.Vulnerability,
 	requiredVersions map[resolve.VersionKey]semver.Set,
 	opts *options.RemediationOptions) (bool, resolve.VersionKey) {
 	vk := sg.Nodes[sg.Dependency].Version

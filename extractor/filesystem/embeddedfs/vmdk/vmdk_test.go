@@ -24,27 +24,88 @@ import (
 	"strings"
 	"testing"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
-	extractor := vmdk.New()
 	tests := []struct {
-		path string
-		want bool
+		desc                  string
+		path                  string
+		fileSize              int64
+		maxFileSize           int64
+		pluginSpecificMaxSize int64
+		want                  bool
 	}{
-		{"testdata/valid.vmdk", true},
-		{"testdata/VALID.VMDK", true},
-		{"testdata/invalid.vmdk", true},
-		{"testdata/document.txt", false},
-		{"testdata/noextension", false},
+		{
+			desc: "vmdk_lowercase",
+			path: "testdata/disk.vmdk",
+			want: true,
+		},
+		{
+			desc: "vmdk_uppercase",
+			path: "testdata/DISK.VMDK",
+			want: true,
+		},
+		{
+			desc: "not_vmdk",
+			path: "testdata/document.txt",
+			want: false,
+		},
+		{
+			desc: "no_extension",
+			path: "testdata/noextension",
+			want: false,
+		},
+		{
+			desc:        "file_size_below_limit",
+			path:        "disk.vmdk",
+			fileSize:    1000,
+			maxFileSize: 1000,
+			want:        true,
+		},
+		{
+			desc:        "file_size_above_limit",
+			path:        "disk.vmdk",
+			fileSize:    1001,
+			maxFileSize: 1000,
+			want:        false,
+		},
+		{
+			desc:                  "override_global_size_below_limit",
+			path:                  "disk.vmdk",
+			fileSize:              1001,
+			maxFileSize:           1000,
+			pluginSpecificMaxSize: 1001,
+			want:                  true,
+		},
+		{
+			desc:                  "override_global_size_above_limit",
+			path:                  "disk.vmdk",
+			fileSize:              1001,
+			maxFileSize:           1001,
+			pluginSpecificMaxSize: 1000,
+			want:                  false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			if got := extractor.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.want {
+			extractor, err := vmdk.New(&cpb.PluginConfig{
+				MaxFileSizeBytes: tt.maxFileSize,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Vmdk{Vmdk: &cpb.VMDKConfig{MaxFileSizeBytes: tt.pluginSpecificMaxSize}}},
+				},
+			})
+			if err != nil {
+				t.Fatalf("vmdk.New: %v", err)
+			}
+			if got := extractor.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileSize: tt.fileSize,
+			})); got != tt.want {
 				t.Errorf("FileRequired(%q) = %v, want %v", tt.path, got, tt.want)
 			}
 		})
@@ -52,7 +113,10 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtractValidVMDK(t *testing.T) {
-	extractor := vmdk.New()
+	extractor, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
 	path := filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.vmdk")
 	info, err := os.Stat(path)
 	if err != nil {
@@ -142,7 +206,10 @@ func TestExtractValidVMDK(t *testing.T) {
 }
 
 func TestExtractInvalidVMDK(t *testing.T) {
-	extractor := vmdk.New()
+	extractor, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
 	path := "testdata/invalid.vmdk"
 	info, err := os.Stat(path)
 	if err != nil {
@@ -164,7 +231,10 @@ func TestExtractInvalidVMDK(t *testing.T) {
 }
 
 func TestExtractNonExistentVMDK(t *testing.T) {
-	extractor := vmdk.New()
+	extractor, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
 	path := "testdata/nonexistent.vmdk"
 	input := &filesystem.ScanInput{
 		Path:   path,
@@ -175,7 +245,7 @@ func TestExtractNonExistentVMDK(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := extractor.Extract(ctx, input)
+	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
 	}

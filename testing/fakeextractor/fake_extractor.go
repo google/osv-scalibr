@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package fakeextractor provides a Extractor implementation to be used in tests.
+//
+//nolint:plugger // This package contains test only mocks
 package fakeextractor
 
 import (

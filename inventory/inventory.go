@@ -33,11 +33,26 @@ type Inventory struct {
 	EmbeddedFSs            []*EmbeddedFS
 }
 
-// EmbeddedFS stores artifacts containing embedded filesystems.
+// EmbeddedFS represents a mountable filesystem extracted from
+// within another file (e.g., a disk image, partition, or archive).
 // This is not proto serialized since it's only used as temporary
 // storage to traverse embedded filesystems during extraction.
 type EmbeddedFS struct {
-	Path          string
+	// Path is a unique identifier for the embedded filesystem.
+	// It is typically formed by concatenating the path to the source file
+	// with the partition index from which the filesystem was extracted.
+	Path string
+
+	// TempPaths holds temporary files or directories created during extraction.
+	// These should be cleaned up once all extractors, annotators, and detectors
+	// have completed their operations.
+	// TempPaths will be set when there are temporary directories to clean up.
+	TempPaths []string
+
+	// GetEmbeddedFS is a function that mounts or initializes the underlying
+	// embedded filesystem and returns a scalibrfs.FS interface for accessing it.
+	// The returned filesystem should be closed or cleaned up by the caller
+	// when no longer needed.
 	GetEmbeddedFS func(context.Context) (scalibrfs.FS, error)
 }
 

@@ -39,14 +39,14 @@ func TestMakeEcosystemAPK(t *testing.T) {
 		want     string
 	}{
 		{
-			desc: "OS version trimmed",
+			desc: "OS_version_trimmed",
 			metadata: &apkmeta.Metadata{
 				OSVersionID: "4.5.6",
 			},
 			want: "Alpine:v4.5",
 		},
 		{
-			desc: "short OS version not trimmed",
+			desc: "short_OS_version_not_trimmed",
 			metadata: &apkmeta.Metadata{
 				OSVersionID: "4",
 			},
@@ -56,6 +56,38 @@ func TestMakeEcosystemAPK(t *testing.T) {
 			desc:     "no OS version",
 			metadata: &apkmeta.Metadata{},
 			want:     "Alpine",
+		},
+		{
+			desc: "BellSoft 1st case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "alpaquita",
+				OSVersionID: "23",
+			},
+			want: "Alpaquita:23",
+		},
+		{
+			desc: "BellSoft 2nd case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "alpaquita",
+				OSVersionID: "stream",
+			},
+			want: "Alpaquita:stream",
+		},
+		{
+			desc: "BellSoft 3rd case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "bellsoft-hardened-containers",
+				OSVersionID: "23",
+			},
+			want: "BellSoft Hardened Containers:23",
+		},
+		{
+			desc: "BellSoft 4th case",
+			metadata: &apkmeta.Metadata{
+				OSID:        "bellsoft-hardened-containers",
+				OSVersionID: "stream",
+			},
+			want: "BellSoft Hardened Containers:stream",
 		},
 	}
 	for _, tt := range tests {
@@ -75,7 +107,7 @@ func TestMakeEcosystemDebian(t *testing.T) {
 		want     string
 	}{
 		{
-			desc: "OS ID present",
+			desc: "OS_ID_present",
 			metadata: &dpkgmeta.Metadata{
 				OSID: "debian",
 			},
@@ -87,7 +119,7 @@ func TestMakeEcosystemDebian(t *testing.T) {
 			want:     "Linux",
 		},
 		{
-			desc: "OS version present",
+			desc: "OS_version_present",
 			metadata: &dpkgmeta.Metadata{
 				OSID:        "debian",
 				OSVersionID: "12",
@@ -95,14 +127,14 @@ func TestMakeEcosystemDebian(t *testing.T) {
 			want: "Debian:12",
 		},
 		{
-			desc: "OS ID present (OpenWrt), not valid ecosystem, so ecosystem should be empty",
+			desc: "OS_ID_present_(OpenWrt),_not_valid_ecosystem,_so_ecosystem_should_be_empty",
 			metadata: &dpkgmeta.Metadata{
 				OSID: "openwrt",
 			},
 			want: "",
 		},
 		{
-			desc: "OS version present (OpenWrt), not valid ecosystem, ecosystem should be empty",
+			desc: "OS_version_present_(OpenWrt),_not_valid_ecosystem,_ecosystem_should_be_empty",
 			metadata: &dpkgmeta.Metadata{
 				OSID:        "openwrt",
 				OSVersionID: "22.03.5",
@@ -110,7 +142,7 @@ func TestMakeEcosystemDebian(t *testing.T) {
 			want: "",
 		},
 		{
-			desc: "OS version present (Generic Linux), not valid ecosystem, ecosystem should be empty",
+			desc: "OS_version_present_(Generic_Linux),_not_valid_ecosystem,_ecosystem_should_be_empty",
 			metadata: &dpkgmeta.Metadata{
 				OSID:        "linux",
 				OSVersionID: "5",
@@ -135,7 +167,7 @@ func TestEcosystemPacman(t *testing.T) {
 		want     string
 	}{
 		{
-			desc: "OS ID present",
+			desc: "OS_ID_present",
 			metadata: &pacmanmeta.Metadata{
 				OSID: "arch",
 			},
@@ -147,7 +179,7 @@ func TestEcosystemPacman(t *testing.T) {
 			want:     "Linux",
 		},
 		{
-			desc: "OS version present",
+			desc: "OS_version_present",
 			metadata: &pacmanmeta.Metadata{
 				OSID:        "arch",
 				OSVersionID: "20241201.0.284684",
@@ -172,7 +204,7 @@ func TestEcosystemPortage(t *testing.T) {
 		want     string
 	}{
 		{
-			desc: "OS ID present",
+			desc: "OS_ID_present",
 			metadata: &portagemeta.Metadata{
 				OSID: "gentoo",
 			},
@@ -184,7 +216,7 @@ func TestEcosystemPortage(t *testing.T) {
 			want:     "Linux",
 		},
 		{
-			desc: "OS version present",
+			desc: "OS_version_present",
 			metadata: &portagemeta.Metadata{
 				OSID:        "gentoo",
 				OSVersionID: "2.17",
@@ -216,6 +248,14 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Red Hat",
 		},
 		{
+			desc: "RHEL_with_CPE_name",
+			metadata: &rpmmeta.Metadata{
+				OSID:      "rhel",
+				OSCPEName: "cpe:/o:redhat:enterprise_linux:9::baseos",
+			},
+			want: "Red Hat:enterprise_linux:9::baseos",
+		},
+		{
 			desc: "rocky",
 			metadata: &rpmmeta.Metadata{
 				OSID: "rocky",
@@ -223,7 +263,39 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Rocky Linux",
 		},
 		{
-			desc: "openEuler",
+			desc: "openEuler_base_version_from_pretty_name",
+			metadata: &rpmmeta.Metadata{
+				OSID:         "openEuler",
+				OSPrettyName: "openEuler 24.03",
+			},
+			want: "openEuler:24.03",
+		},
+		{
+			desc: "openEuler_LTS_qualifier",
+			metadata: &rpmmeta.Metadata{
+				OSID:         "openEuler",
+				OSPrettyName: "openEuler 24.03 (LTS)",
+			},
+			want: "openEuler:24.03-LTS",
+		},
+		{
+			desc: "openEuler_LTS_service_pack_qualifier",
+			metadata: &rpmmeta.Metadata{
+				OSID:         "openEuler",
+				OSPrettyName: "openEuler 24.03 (LTS-SP1)",
+			},
+			want: "openEuler:24.03-LTS-SP1",
+		},
+		{
+			desc: "openEuler_fallback_to_version_ID",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "openEuler",
+				OSVersionID: "24.03",
+			},
+			want: "openEuler:24.03",
+		},
+		{
+			desc: "openEuler_no_version_details",
 			metadata: &rpmmeta.Metadata{
 				OSID: "openEuler",
 			},
@@ -252,7 +324,7 @@ func TestEcosystemSnap(t *testing.T) {
 		want     string
 	}{
 		{
-			desc: "OS ID present",
+			desc: "OS_ID_present",
 			metadata: &snapmeta.Metadata{
 				OSID: "ubuntu",
 			},
@@ -290,7 +362,7 @@ func TestMakePackageURLFlatpak(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "Both VERSION_ID and BUILD_ID is set",
+			desc: "Both_VERSION_ID_and_BUILD_ID_is_set",
 			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
@@ -313,7 +385,7 @@ func TestMakePackageURLFlatpak(t *testing.T) {
 			},
 		},
 		{
-			desc: "only BUILD_ID set",
+			desc: "only_BUILD_ID_set",
 			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
@@ -335,7 +407,7 @@ func TestMakePackageURLFlatpak(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS_ID not set",
+			desc: "OS_ID_not_set",
 			metadata: &flatpakmeta.Metadata{
 				PackageName:    pkgname,
 				PackageID:      pkgid,
@@ -374,7 +446,7 @@ func TestMakePackageURLAPK(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
@@ -390,7 +462,7 @@ func TestMakePackageURLAPK(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS ID missing",
+			desc: "OS_ID_missing",
 			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
@@ -405,7 +477,7 @@ func TestMakePackageURLAPK(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS version ID missing",
+			desc: "OS_version_ID_missing",
 			metadata: &apkmeta.Metadata{
 				PackageName: "Name",
 				OriginName:  "originName",
@@ -437,7 +509,7 @@ func TestMakePackageURLCOS(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "both versions present",
+			desc: "both_versions_present",
 			metadata: &cosmeta.Metadata{
 				OSVersionID: "101",
 				OSVersion:   "97",
@@ -450,7 +522,7 @@ func TestMakePackageURLCOS(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION set",
+			desc: "only_VERSION_set",
 			metadata: &cosmeta.Metadata{
 				OSVersion: "97",
 			},
@@ -462,7 +534,7 @@ func TestMakePackageURLCOS(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &cosmeta.Metadata{
 				OSVersionID: "101",
 			},
@@ -505,7 +577,7 @@ func TestMakePackageURLRPM(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "version ID and build ID present",
+			desc: "version_ID_and_build_ID_present",
 			metadata: &rpmmeta.Metadata{
 				PackageName: pkgname,
 				SourceRPM:   source,
@@ -527,7 +599,7 @@ func TestMakePackageURLRPM(t *testing.T) {
 			},
 		},
 		{
-			desc: "only build ID present",
+			desc: "only_build_ID_present",
 			metadata: &rpmmeta.Metadata{
 				PackageName: pkgname,
 				SourceRPM:   source,
@@ -548,7 +620,7 @@ func TestMakePackageURLRPM(t *testing.T) {
 			},
 		},
 		{
-			desc: "ID missing",
+			desc: "ID_missing",
 			metadata: &rpmmeta.Metadata{
 				PackageName: pkgname,
 				SourceRPM:   source,
@@ -595,7 +667,7 @@ func TestMakePackageURLSnap(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "Both VERSION_CODENAME and VERSION_ID are set",
+			desc: "Both_VERSION_CODENAME_and_VERSION_ID_are_set",
 			metadata: &snapmeta.Metadata{
 				Name:              snapName,
 				Version:           snapVersion,
@@ -617,7 +689,7 @@ func TestMakePackageURLSnap(t *testing.T) {
 			},
 		},
 		{
-			desc: "Only VERSION_ID is set",
+			desc: "Only_VERSION_ID_is_set",
 			metadata: &snapmeta.Metadata{
 				Name:          snapName,
 				Version:       snapVersion,
@@ -638,7 +710,7 @@ func TestMakePackageURLSnap(t *testing.T) {
 			},
 		},
 		{
-			desc: "OSID, VERSION_CODENAME and VERSION_ID all are not set",
+			desc: "OSID,_VERSION_CODENAME_and_VERSION_ID_all_are_not_set",
 			metadata: &snapmeta.Metadata{
 				Name:          snapName,
 				Version:       snapVersion,
@@ -676,7 +748,7 @@ func TestMakePackageURLPacman(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
@@ -696,7 +768,7 @@ func TestMakePackageURLPacman(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
@@ -716,7 +788,7 @@ func TestMakePackageURLPacman(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS ID not set, fallback to Linux",
+			desc: "OS_ID_not_set,_fallback_to_Linux",
 			metadata: &pacmanmeta.Metadata{
 				PackageName:         pkgName,
 				PackageVersion:      pkgVersion,
@@ -755,7 +827,7 @@ func TestMakePackageURLPortage(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -773,7 +845,7 @@ func TestMakePackageURLPortage(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -791,7 +863,7 @@ func TestMakePackageURLPortage(t *testing.T) {
 			},
 		},
 		{
-			desc: "ID not set, fallback to linux",
+			desc: "ID_not_set,_fallback_to_linux",
 			metadata: &portagemeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -830,7 +902,7 @@ func TestMakePackageURLNix(t *testing.T) {
 		want     *purl.PackageURL
 	}{
 		{
-			desc: "all fields present",
+			desc: "all_fields_present",
 			metadata: &nixmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,
@@ -850,7 +922,7 @@ func TestMakePackageURLNix(t *testing.T) {
 			},
 		},
 		{
-			desc: "only VERSION_ID set",
+			desc: "only_VERSION_ID_set",
 			metadata: &nixmeta.Metadata{
 				PackageName:    pkgName,
 				PackageVersion: pkgVersion,
@@ -869,7 +941,7 @@ func TestMakePackageURLNix(t *testing.T) {
 			},
 		},
 		{
-			desc: "OS ID not set, fallback to Nixos",
+			desc: "OS_ID_not_set,_fallback_to_Nixos",
 			metadata: &nixmeta.Metadata{
 				PackageName:       pkgName,
 				PackageVersion:    pkgVersion,

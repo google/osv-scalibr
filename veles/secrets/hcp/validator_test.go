@@ -95,8 +95,8 @@ func TestClientCredentialsValidator(t *testing.T) {
 	}{
 		{name: "valid_pair", id: validatorTestClientID, secret: validatorTestClientSecret, ok: true, want: veles.ValidationValid},
 		{name: "invalid_pair", id: validatorTestClientID, secret: "wrong_secret", ok: false, want: veles.ValidationInvalid},
-		{name: "missing_id", id: "", secret: validatorTestClientSecret, ok: true, want: veles.ValidationUnsupported},
-		{name: "missing_secret", id: validatorTestClientID, secret: "", ok: true, want: veles.ValidationUnsupported},
+		{name: "missing_id", id: "", secret: validatorTestClientSecret, ok: true, want: veles.ValidationInvalid},
+		{name: "missing_secret", id: validatorTestClientID, secret: "", ok: true, want: veles.ValidationInvalid},
 	}
 
 	for _, tc := range cases {
@@ -104,10 +104,7 @@ func TestClientCredentialsValidator(t *testing.T) {
 			srv := mockTokenServer(t, validatorTestClientID, validatorTestClientSecret, tc.ok)
 			defer srv.Close()
 
-			v := hcp.NewClientCredentialsValidator(
-				hcp.WithHTTPClient(http.DefaultClient),
-				hcp.WithTokenURL(srv.URL+"/oauth2/token"),
-			)
+			v := hcp.NewClientCredentialsValidator(hcp.WithTokenURL(srv.URL + "/oauth2/token"))
 
 			got, err := v.Validate(context.Background(), hcp.ClientCredentials{ClientID: tc.id, ClientSecret: tc.secret})
 			if err != nil && (tc.want == veles.ValidationValid || tc.want == veles.ValidationInvalid || tc.want == veles.ValidationUnsupported) {
@@ -127,10 +124,7 @@ func TestClientCredentialsValidator_Errors(t *testing.T) {
 		base := srv.URL
 		srv.Close()
 
-		v := hcp.NewClientCredentialsValidator(
-			hcp.WithHTTPClient(http.DefaultClient),
-			hcp.WithTokenURL(base+"/oauth2/token"),
-		)
+		v := hcp.NewClientCredentialsValidator(hcp.WithTokenURL(base + "/oauth2/token"))
 
 		got, err := v.Validate(context.Background(), hcp.ClientCredentials{ClientID: validatorTestClientID, ClientSecret: validatorTestClientSecret})
 		if err == nil {
@@ -153,10 +147,7 @@ func TestClientCredentialsValidator_Errors(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		v := hcp.NewClientCredentialsValidator(
-			hcp.WithHTTPClient(http.DefaultClient),
-			hcp.WithTokenURL(srv.URL+"/oauth2/token"),
-		)
+		v := hcp.NewClientCredentialsValidator(hcp.WithTokenURL(srv.URL + "/oauth2/token"))
 
 		got, err := v.Validate(context.Background(), hcp.ClientCredentials{ClientID: validatorTestClientID, ClientSecret: validatorTestClientSecret})
 		if err == nil {
@@ -199,10 +190,7 @@ func TestAccessTokenValidator(t *testing.T) {
 			srv := mockAPIBaseServer(t, tc.httpS)
 			defer srv.Close()
 
-			v := hcp.NewAccessTokenValidator(
-				hcp.WithAccessHTTPClient(http.DefaultClient),
-				hcp.WithAPIBase(srv.URL),
-			)
+			v := hcp.NewAccessTokenValidator(hcp.WithAPIBase(srv.URL))
 
 			got, err := v.Validate(context.Background(), hcp.AccessToken{Token: validatorTestAccessToken})
 			if !cmp.Equal(err, nil, cmpopts.EquateErrors()) {
@@ -222,10 +210,7 @@ func TestAccessTokenValidator_Errors(t *testing.T) {
 		base := srv.URL
 		srv.Close()
 
-		v := hcp.NewAccessTokenValidator(
-			hcp.WithAccessHTTPClient(http.DefaultClient),
-			hcp.WithAPIBase(base),
-		)
+		v := hcp.NewAccessTokenValidator(hcp.WithAPIBase(base))
 		got, err := v.Validate(context.Background(), hcp.AccessToken{Token: validatorTestAccessToken})
 		if err == nil {
 			t.Fatalf("expected error due to connection failure, got nil")
@@ -239,10 +224,7 @@ func TestAccessTokenValidator_Errors(t *testing.T) {
 		srv := mockAPIBaseServer(t, http.StatusInternalServerError)
 		defer srv.Close()
 
-		v := hcp.NewAccessTokenValidator(
-			hcp.WithAccessHTTPClient(http.DefaultClient),
-			hcp.WithAPIBase(srv.URL),
-		)
+		v := hcp.NewAccessTokenValidator(hcp.WithAPIBase(srv.URL))
 		got, err := v.Validate(context.Background(), hcp.AccessToken{Token: validatorTestAccessToken})
 		if err == nil {
 			t.Fatalf("expected error for 500 response, got nil")

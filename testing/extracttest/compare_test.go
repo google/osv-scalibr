@@ -31,7 +31,7 @@ func TestPackageCmpLess(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "Location difference",
+			name: "Location_difference",
 			args: args{
 				a: &extractor.Package{
 					Name:      "a",
@@ -47,7 +47,7 @@ func TestPackageCmpLess(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "Version difference",
+			name: "Version_difference",
 			args: args{
 				a: &extractor.Package{
 					Name:      "a",

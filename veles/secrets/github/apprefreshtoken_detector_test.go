@@ -27,6 +27,7 @@ import (
 
 const (
 	refreshTestKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
+	refreshTestKeyBase64  = `Z2hyX09XT0NQenFLdXkzSjR3NTNRcGtMZmZmakJVSlNoNXlMbkZIajd3aXlSME5EYWRWT2N5a05rb3Fob1lZWE0xeXkyc09wQXUwbEc4Znc=`
 	refreshAnotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
 )
 
@@ -85,7 +86,7 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 			github.AppRefreshToken{Token: refreshAnotherTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
@@ -96,6 +97,12 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: refreshTestKey + `extra`,
+		want: []veles.Secret{
+			github.AppRefreshToken{Token: refreshTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: refreshTestKeyBase64,
 		want: []veles.Secret{
 			github.AppRefreshToken{Token: refreshTestKey},
 		},

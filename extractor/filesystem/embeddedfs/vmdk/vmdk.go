@@ -28,10 +28,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/diskfs/go-diskfs"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 )
@@ -81,16 +80,21 @@ type gdgtInfo struct {
 }
 
 // Extractor implements the filesystem.Extractor interface for vmdk.
-type Extractor struct{}
-
-// New returns a new VMDK extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+type Extractor struct {
+	// maxFileSizeBytes is the maximum size of an archive file that can be traversed.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored.
+	maxFileSizeBytes int64
 }
 
-// NewDefault returns a New()
-func NewDefault() filesystem.Extractor {
-	return New()
+// New returns a new VMDK extractor.
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxSize := cfg.MaxFileSizeBytes
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.VMDKConfig { return c.GetVmdk() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxSize = specific.GetMaxFileSizeBytes()
+	}
+	return &Extractor{maxFileSizeBytes: maxSize}, nil
 }
 
 // Name returns the name of the extractor.
@@ -111,7 +115,20 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 // FileRequired checks if the file is a .vmdk file based on its extension.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	return strings.HasSuffix(strings.ToLower(path), ".vmdk")
+	if !strings.HasSuffix(strings.ToLower(path), ".vmdk") {
+		return false
+	}
+
+	fileinfo, err := api.Stat()
+	if err != nil {
+		return false
+	}
+
+	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+		return false
+	}
+
+	return true
 }
 
 // Extract returns an Inventory with embedded filesystems which contains mount functions for each filesystem in the .vmdk file.
@@ -143,25 +160,12 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", vmdkPath, err)
 	}
 
-	// Open the raw disk image with go-diskfs
-	disk, err := diskfs.Open(tmpRawPath, diskfs.WithOpenMode(diskfs.ReadOnly))
-	if err != nil {
-		os.Remove(tmpRawPath)
-		return inventory.Inventory{}, fmt.Errorf("failed to open raw disk image %s: %w", tmpRawPath, err)
-	}
-
-	// Get the partition table
-	partitions, err := disk.GetPartitionTable()
+	// Retrieve all partitions and the associated disk handle from the raw disk image.
+	partitionList, disk, err := common.GetDiskPartitions(tmpRawPath)
 	if err != nil {
 		disk.Close()
 		os.Remove(tmpRawPath)
-		return inventory.Inventory{}, fmt.Errorf("failed to get partition table: %w", err)
-	}
-	partitionList := partitions.GetPartitions()
-	if len(partitionList) == 0 {
-		disk.Close()
-		os.Remove(tmpRawPath)
-		return inventory.Inventory{}, errors.New("no partitions found in raw disk image")
+		return inventory.Inventory{}, err
 	}
 
 	// Create a reference counter for the temporary file
@@ -172,61 +176,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var embeddedFSs []*inventory.EmbeddedFS
 	for i, p := range partitionList {
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
-		getEmbeddedFS := func(ctx context.Context) (scalibrfs.FS, error) {
-			// Open raw image for filesystem parsers
-			f, err := os.Open(tmpRawPath)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open raw image %s: %w", tmpRawPath, err)
-			}
-
-			// Get partition offset and size (already multiplied by sector size)
-			offset := p.GetStart()
-			size := p.GetSize()
-			section := io.NewSectionReader(f, offset, size)
-			fsType := common.DetectFilesystem(section, 0)
-
-			// Create a temporary directory for extracted files
-			tempDir, err := os.MkdirTemp("", fmt.Sprintf("scalibr-vmdk-%s-%d-", fsType, partitionIndex))
-			if err != nil {
-				f.Close()
-				return nil, fmt.Errorf("failed to create temporary directory for %s partition %d: %w", fsType, partitionIndex, err)
-			}
-
-			params := common.GenerateFSParams{
-				File:           f,
-				Disk:           disk,
-				Section:        section,
-				PartitionIndex: partitionIndex,
-				TempDir:        tempDir,
-				TmpRawPath:     tmpRawPath,
-				RefMu:          &refMu,
-				RefCount:       &refCount,
-			}
-
-			var fsys scalibrfs.FS
-			switch fsType {
-			case "ext4":
-				fsys, err = common.GenerateEXTFS(params)
-			case "FAT32":
-				fsys, err = common.GenerateFAT32FS(params)
-			case "exFAT":
-				fsys, err = common.GenerateEXFATFS(params)
-			case "NTFS":
-				fsys, err = common.GenerateNTFSFS(params)
-			default:
-				fsys, err = nil, fmt.Errorf("unsupported filesystem type %s for partition %d", fsType, partitionIndex)
-			}
-			if err != nil {
-				// common.GenerateFAT32FS is responsible for opening the file itself + closing on error.
-				if fsType != "FAT32" {
-					f.Close()
-				}
-				os.RemoveAll(tempDir)
-				return nil, err
-			}
-			return fsys, nil
-		}
-
+		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, tmpRawPath, &refMu, &refCount)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
 			Path:          fmt.Sprintf("%s:%d", vmdkPath, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,

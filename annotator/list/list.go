@@ -23,38 +23,44 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
-	"github.com/google/osv-scalibr/annotator/misc/fromnpm"
+	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
+	"github.com/google/osv-scalibr/annotator/misc/npmsource"
 	noexecutabledpkg "github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/apk"
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/rpm"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the annotator initializer function.
-type InitFn func() annotator.Annotator
+type InitFn func(cfg *cpb.PluginConfig) (annotator.Annotator, error)
 
 // InitMap is a map of annotator names to their initers.
 type InitMap map[string][]InitFn
 
 // VEX generation related annotators.
 var VEX = InitMap{
-	apk.Name:              {apk.New},
-	cachedir.Name:         {cachedir.New},
-	cos.Name:              {cos.New},
-	dpkg.Name:             {dpkg.New},
-	rpm.Name:              {rpm.NewDefault},
-	noexecutabledpkg.Name: {noexecutabledpkg.New},
+	apk.Name:              {noCFG(apk.New)},
+	cachedir.Name:         {noCFG(cachedir.New)},
+	cos.Name:              {noCFG(cos.New)},
+	dpkg.Name:             {noCFG(dpkg.New)},
+	rpm.Name:              {noCFG(rpm.NewDefault)},
+	noexecutabledpkg.Name: {noCFG(noexecutabledpkg.New)},
 }
 
 // Misc annotators.
-var Misc = InitMap{fromnpm.Name: {fromnpm.New}}
+var Misc = InitMap{
+	npmsource.Name:  {noCFG(npmsource.New)},
+	dpkgsource.Name: {noCFG(dpkgsource.New)},
+}
 
 // FFA (Full Filesystem Accountability) related annotators.
-var FFA = InitMap{unknownbinariesanno.Name: {unknownbinariesanno.New}}
+var FFA = InitMap{unknownbinariesanno.Name: {noCFG(unknownbinariesanno.New)}}
 
 // Default detectors that are recommended to be enabled.
-var Default = InitMap{cachedir.Name: {cachedir.New}}
+var Default = InitMap{cachedir.Name: {noCFG(cachedir.New)}}
 
 // All annotators.
 var All = concat(
@@ -85,12 +91,22 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
+// Wraps initer functions that don't take any config value to initer functions that do.
+// TODO(b/400910349): Remove once all plugins take config values.
+func noCFG(f func() annotator.Annotator) InitFn {
+	return func(_ *cpb.PluginConfig) (annotator.Annotator, error) { return f(), nil }
+}
+
 // AnnotatorsFromName returns a list of annotators from a name.
-func AnnotatorsFromName(name string) ([]annotator.Annotator, error) {
+func AnnotatorsFromName(name string, cfg *cpb.PluginConfig) ([]annotator.Annotator, error) {
 	if initers, ok := annotatorNames[name]; ok {
 		result := []annotator.Annotator{}
 		for _, initer := range initers {
-			result = append(result, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}

@@ -17,7 +17,10 @@ package plugin
 
 import (
 	"fmt"
+	"slices"
 	"strings"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // OS is the OS the scanner is running on, or a specific OS type a Plugin needs to be run on.
@@ -102,6 +105,13 @@ type Status struct {
 type ScanStatus struct {
 	Status        ScanStatusEnum
 	FailureReason string
+	FileErrors    []*FileError
+}
+
+// FileError contains the errors that occurred while scanning a specific file.
+type FileError struct {
+	FilePath     string
+	ErrorMessage string
 }
 
 // ScanStatusEnum is the enum for the scan status.
@@ -163,10 +173,22 @@ func FilterByCapabilities(pls []Plugin, capabs *Capabilities) []Plugin {
 	return result
 }
 
+// FindConfig finds a plugin-specific config in the oveall config proto
+// using the specified getter function.
+func FindConfig[T any](cfg *cpb.PluginConfig, getter func(c *cpb.PluginSpecificConfig) *T) *T {
+	for _, specific := range cfg.PluginSpecific {
+		got := getter(specific)
+		if got != nil {
+			return got
+		}
+	}
+	return nil
+}
+
 // StatusFromErr returns a successful or failed plugin scan status for a given plugin based on an error.
-func StatusFromErr(p Plugin, partial bool, err error) *Status {
+func StatusFromErr(p Plugin, partial bool, overallErr error, fileErrors []*FileError) *Status {
 	status := &ScanStatus{}
-	if err == nil {
+	if overallErr == nil {
 		status.Status = ScanStatusSucceeded
 	} else {
 		if partial {
@@ -174,13 +196,84 @@ func StatusFromErr(p Plugin, partial bool, err error) *Status {
 		} else {
 			status.Status = ScanStatusFailed
 		}
-		status.FailureReason = err.Error()
+		status.FileErrors = fileErrors
+		status.FailureReason = overallErr.Error()
 	}
 	return &Status{
 		Name:    p.Name(),
 		Version: p.Version(),
 		Status:  status,
 	}
+}
+
+// OverallErrFromFileErrs returns an error to set as the scan status overall failure
+// reason based on the plugin's per-file errors.
+func OverallErrFromFileErrs(fileErrors []*FileError) error {
+	if len(fileErrors) == 0 {
+		return nil
+	}
+	return fmt.Errorf("encountered %d error(s) while running plugin; check file-specific errors for details", len(fileErrors))
+}
+
+// DedupeStatuses combines the status of multiple instances of the same plugins
+// in a list, making sure there's only one entry per plugin.
+func DedupeStatuses(statuses []*Status) []*Status {
+	// Plugin name to status map
+	resultMap := map[string]*Status{}
+
+	for _, s := range statuses {
+		if old, ok := resultMap[s.Name]; ok {
+			resultMap[s.Name] = mergeStatus(old, s)
+		} else {
+			resultMap[s.Name] = s
+		}
+	}
+
+	result := make([]*Status, 0, len(resultMap))
+	for _, v := range resultMap {
+		result = append(result, v)
+	}
+	return result
+}
+
+func mergeStatus(s1 *Status, s2 *Status) *Status {
+	result := &Status{
+		Name:    s1.Name,
+		Version: s1.Version,
+		Status: &ScanStatus{
+			Status: mergeScanStatus(s1.Status.Status, s2.Status.Status),
+		},
+	}
+
+	if len(s1.Status.FailureReason) > 0 && len(s2.Status.FailureReason) > 0 {
+		result.Status.FailureReason = s1.Status.FailureReason + "\n" + s2.Status.FailureReason
+	} else if len(s1.Status.FailureReason) > 0 {
+		result.Status.FailureReason = s1.Status.FailureReason
+	} else {
+		result.Status.FailureReason = s2.Status.FailureReason
+	}
+
+	result.Status.FileErrors = slices.Concat(s1.Status.FileErrors, s2.Status.FileErrors)
+	if len(result.Status.FileErrors) > 0 {
+		// Instead of concating two generic "check file errors" message we create a new one.
+		result.Status.FailureReason = OverallErrFromFileErrs(result.Status.FileErrors).Error()
+	}
+
+	return result
+}
+
+func mergeScanStatus(e1 ScanStatusEnum, e2 ScanStatusEnum) ScanStatusEnum {
+	// Failures take precedence over successes.
+	if e1 == ScanStatusFailed || e2 == ScanStatusFailed {
+		return ScanStatusFailed
+	}
+	if e1 == ScanStatusPartiallySucceeded || e2 == ScanStatusPartiallySucceeded {
+		return ScanStatusPartiallySucceeded
+	}
+	if e1 == ScanStatusSucceeded || e2 == ScanStatusSucceeded {
+		return ScanStatusSucceeded
+	}
+	return ScanStatusUnspecified
 }
 
 // String returns a string representation of the scan status.

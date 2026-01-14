@@ -145,7 +145,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "top level package.json",
+			name: "top_level_package.json",
 			path: "testdata/package.json",
 			wantPackages: []*extractor.Package{
 				{
@@ -189,7 +189,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "no person name",
+			name: "no_person_name",
 			path: "testdata/deps/no-person-name/package.json",
 			wantPackages: []*extractor.Package{
 				{
@@ -210,7 +210,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "nested acorn",
+			name: "nested_acorn",
 			path: "testdata/deps/with/deps/acorn/package.json",
 			wantPackages: []*extractor.Package{
 				{
@@ -264,7 +264,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{},
 		},
 		{
-			name: "Undici package with nonstandard contributors parsed correctly",
+			name: "Undici_package_with_nonstandard_contributors_parsed_correctly",
 			path: "testdata/undici-package.json",
 			wantPackages: []*extractor.Package{
 				{
@@ -293,7 +293,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "npm package with engine field set",
+			name: "npm_package_with_engine_field_set",
 			path: "testdata/not-vscode.json",
 			wantPackages: []*extractor.Package{
 				{
@@ -311,7 +311,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "package with dependencies",
+			name: "package_with_dependencies",
 			path: "testdata/package-with-deps.json",
 			cfg:  packagejson.Config{IncludeDependencies: true},
 			wantPackages: []*extractor.Package{
