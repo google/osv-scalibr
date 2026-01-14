@@ -132,7 +132,7 @@ var (
 		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
 		fromVeles(codecommit.NewValidator(), "secrets/codecommitcredentialsvalidate", 0),
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
-		fromVeles(telegrambotapitoken.NewSecretTokenValidator(), "secrets/telegrombotapitokenvalidate", 0),
+		fromVeles(telegrambotapitoken.NewValidator(), "secrets/telegrombotapitokenvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.

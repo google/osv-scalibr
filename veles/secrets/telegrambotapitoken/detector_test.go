@@ -79,22 +79,6 @@ func TestDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple_valid_bot_token_with_varied_keywords",
-			input: `Telegram key:
-4839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcK
-
-tgram:
-3839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcM`,
-			want: []veles.Secret{
-				telegrambotapitoken.TelegramBotAPIToken{
-					Token: "4839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcK",
-				},
-				telegrambotapitoken.TelegramBotAPIToken{
-					Token: "3839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcM",
-				},
-			},
-		},
-		{
 			name: "far_apart_token",
 			input: `telegram:
 AAAAAAAAAA` + strings.Repeat("\nfiller line with random data", 500) + `

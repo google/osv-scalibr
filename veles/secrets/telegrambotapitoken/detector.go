@@ -28,8 +28,8 @@ const (
 	maxTokenLength = 46
 
 	// maxDistance is the maximum distance between Telegram Bot API token and Telegram keywords to be considered for pairing (repurposed for finding close keywords that might show it is a Telegram Bot API token).
-	// 10 KiB is a good upper bound as we don't expect files containing credentials to be larger than this.
-	maxDistance = 10 * 1 << 10 // 10 KiB
+	// 20 is a good upper bound as we want to search for near keywords.
+	maxDistance = 20
 )
 
 var (
@@ -46,7 +46,7 @@ var (
 	keywordRe = regexp.MustCompile(`(?i)\b(telegram|tgram)\b`)
 )
 
-// NewDetector returns a detector that matches GCP OAuth2 client credentials.
+// NewDetector returns a detector that matches Telegram keyword, and a Telegram Bot API secret.
 func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: maxTokenLength, MaxDistance: maxDistance,

@@ -239,10 +239,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return codeCommitCredentialsToProto(t), nil
 	case bitbucket.Credentials:
 		return bitbucketCredentialsToProto(t), nil
-	case velestelegrambotapitoken.TelegramBotAPIToken:
-		return telegramBotAPITokenToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
+	case velestelegrambotapitoken.TelegramBotAPIToken:
+		return telegramBotAPITokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -263,16 +263,6 @@ func bitbucketCredentialsToProto(s bitbucket.Credentials) *spb.SecretData {
 		Secret: &spb.SecretData_BitbucketCredentials{
 			BitbucketCredentials: &spb.SecretData_BitBucketCredentials{
 				Url: s.FullURL,
-			},
-		},
-	}
-}
-
-func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) *spb.SecretData {
-	return &spb.SecretData{
-		Secret: &spb.SecretData_TelegramBotApiToken{
-			TelegramBotApiToken: &spb.SecretData_TelegramBotToken{
-				Token: s.Token,
 			},
 		},
 	}
@@ -830,6 +820,16 @@ func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.Secr
 	}
 }
 
+func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_TelegramBotApiToken{
+			TelegramBotApiToken: &spb.SecretData_TelegramBotToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1069,10 +1069,6 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return codecatalyst.Credentials{
 			FullURL: s.GetCodeCatalystCredentials().GetUrl(),
 		}, nil
-	case *spb.SecretData_TelegramBotApiToken:
-		return velestelegrambotapitoken.TelegramBotAPIToken{
-			Token: s.GetTelegramBotApiToken().GetToken(),
-		}, nil
 	case *spb.SecretData_CodeCommitCredentials_:
 		return codecommit.Credentials{
 			FullURL: s.GetCodeCommitCredentials().GetUrl(),
@@ -1084,6 +1080,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_PaystackSecretKey_:
 		return velespaystacksecretkey.PaystackSecret{
 			Key: s.GetPaystackSecretKey().GetKey(),
+		}, nil
+	case *spb.SecretData_TelegramBotApiToken:
+		return velestelegrambotapitoken.TelegramBotAPIToken{
+			Token: s.GetTelegramBotApiToken().GetToken(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

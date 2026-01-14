@@ -1063,12 +1063,12 @@ message SecretData {
     string url = 1;
   }
 
-  message TelegramBotToken{
-    string token = 1;
-  }
-  
   message PaystackSecretKey {
     string key = 1;
+  }
+
+  message TelegramBotToken{
+    string token = 1;
   }
 }
 

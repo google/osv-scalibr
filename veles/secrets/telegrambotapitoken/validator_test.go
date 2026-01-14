@@ -23,17 +23,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	telegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 )
 
 const (
 	validatorTestToken = "4839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcK"
 )
 
-// mockTransport redirects requests to the test server for the configured hosts.
+// mockTransport redirects requests to the test server
 type mockTransport struct {
 	testServer *httptest.Server
 }
@@ -59,6 +57,7 @@ func mockTelegramAPIServer(t *testing.T, expectedToken string, statusCode int) *
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
+
 		correctPath := fmt.Sprintf("/bot%s/getMe", expectedToken)
 		if !strings.Contains(r.URL.Path, correctPath) {
 			t.Errorf("expected Endpoint URL is  %s, got: %s", correctPath, r.URL.Path)
@@ -68,32 +67,34 @@ func mockTelegramAPIServer(t *testing.T, expectedToken string, statusCode int) *
 	}))
 }
 
-func TestValidatorToken(t *testing.T) {
+func TestValidator(t *testing.T) {
 	cases := []struct {
-		name       string
-		statusCode int
-		want       veles.ValidationStatus
-		wantErr    error
+		name        string
+		statusCode  int
+		want        veles.ValidationStatus
+		expectError bool
 	}{
 		{
-			name:       "valid_token",
+			name:       "valid_key",
 			statusCode: http.StatusOK,
 			want:       veles.ValidationValid,
 		},
 		{
-			name:       "invalid_token_unauthorized",
+			name:       "invalid_key_unauthorized",
 			statusCode: http.StatusUnauthorized,
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:       "server_error",
-			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationInvalid,
+			name:        "server_error",
+			statusCode:  http.StatusInternalServerError,
+			want:        veles.ValidationFailed,
+			expectError: true,
 		},
 		{
-			name:       "forbidden_error",
-			statusCode: http.StatusForbidden,
-			want:       veles.ValidationInvalid,
+			name:        "bad_gateway",
+			statusCode:  http.StatusBadGateway,
+			want:        veles.ValidationFailed,
+			expectError: true,
 		},
 	}
 
@@ -109,9 +110,8 @@ func TestValidatorToken(t *testing.T) {
 			}
 
 			// Create validator with mock client
-			validator := telegrambotapitoken.NewSecretTokenValidator(
-				telegrambotapitoken.WithClientSecretToken(client),
-			)
+			validator := telegrambotapitoken.NewValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := telegrambotapitoken.TelegramBotAPIToken{Token: validatorTestToken}
@@ -119,8 +119,15 @@ func TestValidatorToken(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+			// Check error expectation
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Validate() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error: %v", err)
+				}
 			}
 
 			// Check validation status
@@ -131,32 +138,32 @@ func TestValidatorToken(t *testing.T) {
 	}
 }
 
-func TestValidatorToken_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
+func TestValidator_ContextCancellation(t *testing.T) {
+	// Create a server that delays response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
 
 	// Create client with custom transport
 	client := &http.Client{
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := telegrambotapitoken.NewSecretTokenValidator(
-		telegrambotapitoken.WithClientSecretToken(client),
-	)
+	validator := telegrambotapitoken.NewValidator()
+	validator.HTTPC = client
 
 	key := telegrambotapitoken.TelegramBotAPIToken{Token: validatorTestToken}
 
-	// Create context that is immediately cancelled
+	// Create a cancelled context
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)
 
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+	if err == nil {
+		t.Errorf("Validate() expected error due to context cancellation, got nil")
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)

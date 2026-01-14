@@ -15,11 +15,11 @@
 package telegrambotapitoken
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
 const (
@@ -29,58 +29,22 @@ const (
 	telegramBotAPIEndpoint = "/bot%s/getMe"
 )
 
-// SecretTokenValidator validates Telegram Bot API Tokens using /bot{token}/getMe endpoint.
-type SecretTokenValidator struct {
-	httpC *http.Client
-}
-
-// ValidatorOptionSecretToken configures a SecretTokenValidator when creating it via New.
-type ValidatorOptionSecretToken func(*SecretTokenValidator)
-
-// WithClientSecretToken configures the http.Client used by SecretTokenValidator.
-//
-// By default it uses http.DefaultClient.
-func WithClientSecretToken(c *http.Client) ValidatorOptionSecretToken {
-	return func(v *SecretTokenValidator) {
-		v.httpC = c
-	}
-}
-
-// NewSecretTokenValidator creates a new SecretTokenValidator with the given options.
-func NewSecretTokenValidator(opts ...ValidatorOptionSecretToken) *SecretTokenValidator {
-	v := &SecretTokenValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate creates a new Validator that validates the TelegramBotAPIToken via
+// NewValidator creates a new Validator that validates the TelegramBotAPIToken via
 // the getMe API endpoint.
 //
 // It performs a POST request to the Telegram Bot API endpoint to test bot's auth token.
 // It requires no parameters. Returns basic information about the bot in form of a User object.
 // Valid tokens return 200 Success, while invalid tokens return 401 Unauthorized.
-func (v *SecretTokenValidator) Validate(ctx context.Context, token TelegramBotAPIToken) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, telegramBotAPIBaseURL+fmt.Sprintf(telegramBotAPIEndpoint, token.Token), nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to POST %q: %w", telegramBotAPIEndpoint, err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		// 200 OK => the token is valid and authenticated.
-		return veles.ValidationValid, nil
-	default:
-		// Any other status code => invalid token.
-		return veles.ValidationInvalid, nil
+func NewValidator() *sv.Validator[TelegramBotAPIToken] {
+	return &sv.Validator[TelegramBotAPIToken]{
+		EndpointFunc: func(t TelegramBotAPIToken) (string, error) {
+			if t.Token == "" {
+				return "", errors.New("telegram bot token is empty")
+			}
+			return telegramBotAPIBaseURL + fmt.Sprintf(telegramBotAPIEndpoint, t.Token), nil
+		},
+		HTTPMethod:           http.MethodPost,
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }
