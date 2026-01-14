@@ -157,6 +157,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
 | Tink keyset                                 | `secrets/tinkkeyset`                 |
+| Paystack Secret Key                         | `secrets/paystacksecretkey`          |
 | Vapid keys                                  | `secrets/vapidkey`                   |
 | reCAPTCHA secret keys                       | `secrets/recaptchakey`               |
 | Generic JWT tokens                          | `secrets/jwttoken`                   |
@@ -183,11 +184,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type              | Extractor Plugin    |
-| ----------------- | ------------------- |
-| Wordpress plugins | `wordpress/plugins` |
-| VSCode extensions | `vscode/extensions` |
-| Chrome extensions | `chrome/extensions` |
+| Type                    | Extractor Plugin    |
+| ----------------------- | ------------------- |
+| Wordpress plugins       | `wordpress/plugins` |
+| VSCode extensions       | `vscode/extensions` |
+| Chrome extensions       | `chrome/extensions` |
+| NetScaler installations | `netscaler`         |
 
 ### EmbeddedFS
 
@@ -211,6 +213,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Detects vulnerability CVE-2023-6019 in Ray Dashboard.                | `cve/cve-2023-6019`                      |
 | Detects vulnerability CVE-2020-11978 in Apache Airflow.              | `cve/cve-2020-11978`                     |
 | Detects vulnerability CVE-2024-2912 in BentoML.                      | `cve/cve-2024-2912`                      |
+| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway       | `cve/cve-2025-7775`               |
 | Checks for whether code-server has authentication enabled.           | `weakcredentials/codeserver`             |
 | Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
 | Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |

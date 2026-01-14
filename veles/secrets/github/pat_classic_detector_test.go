@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	classicPATTestKey    = `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`
-	anotherClassicPATKey = `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`
+	classicPATTestKey       = `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`
+	classicPATTestKeyBase64 = `Z2hwX2xiU0g0Q1dxSEtXU0pDdGY2SmRRS25Ja002SWtWMDBOelZheA==`
+	anotherClassicPATKey    = `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`
 )
 
 // TestClassicPATDetector_truePositives tests for cases where we know the Detector
@@ -96,6 +97,12 @@ func TestClassicPATDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: classicPATTestKey + `extra`,
+		want: []veles.Secret{
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: classicPATTestKeyBase64,
 		want: []veles.Secret{
 			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},

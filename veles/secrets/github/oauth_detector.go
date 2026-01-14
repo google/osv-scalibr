@@ -22,15 +22,18 @@ import (
 	checksum "github.com/google/osv-scalibr/veles/secrets/github/checksum"
 )
 
-const oauthTokenMaxLen = 40
+const oauthTokenBase64MaxLen = 56 // 40 bytes, base64 encoded
 
+// base64(gho_) -> Z2hvX (minus the last incomplete byte)
 var oauthTokenPattern = regexp.MustCompile(`gho_[A-Za-z0-9]{36}`)
+var oauthTokenBase64Pattern = regexp.MustCompile(`Z2hvX[0-9a-zA-Z+/=]{0,51}`)
 
 // NewOAuthTokenDetector returns a new Veles Detector that finds Github oauth tokens.
 func NewOAuthTokenDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: oauthTokenMaxLen,
-		Re:     oauthTokenPattern,
+		MaxLen:   oauthTokenBase64MaxLen,
+		Re:       oauthTokenPattern,
+		ReBase64: oauthTokenBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false
