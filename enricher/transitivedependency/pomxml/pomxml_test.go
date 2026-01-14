@@ -139,7 +139,12 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 
-	enrichy := pomxml.New(&cpb.PluginConfig{})
+	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+
+	if err != nil {
+		t.Fatalf("failed to create enricher: %v", err)
+	}
+
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
 
