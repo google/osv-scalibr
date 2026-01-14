@@ -29,6 +29,7 @@ This section describes requirements that are specific to developing plugins.
 - [ ] **Registration**: New plugins must be registered in the respective `list.go` file (e.g., [annotator/list/list.go](https://github.com/google/osv-scalibr/blob/main/annotator/list/list.go)).
 - [ ] **Protobuf Definition**: Plugin results must be added to the [scan_result.proto](https://github.com/google/osv-scalibr/tree/main/binary/proto/scan_result.proto) file.
 - [ ] **Data Conversion**: Conversion logic between Go structs and `.proto` definitions (and vice versa) is required.
+- [ ] **Documentation**: New inventory types must be added to the [supported_inventory_types.md](https://github.com/google/osv-scalibr/tree/main/docs/supported_inventory_types.md) file.
 
 ### Specific Plugin Guidelines
 
@@ -39,7 +40,6 @@ _No specific additional requirements._
 #### Detectors
 
 - [ ] **Return the same finding every time**: The returned findings (either GenericFinding or PackageVulns) should be the same every time, with the exception of the [Target](https://github.com/google/osv-scalibr/blob/4f04caa1e9b8c547520759ecf14596877df0d07b/inventory/finding.go#L59) / [DatabaseSpecific](https://github.com/google/osv-scalibr/blob/4f04caa1e9b8c547520759ecf14596877df0d07b/inventory/finding.go#L59) fields where instance-specific data can go (e.g. the specific config setting found that was vulnerable)
-- [ ] **Documentation**: The detected vulnerability type must be added to [supported_inventory_types.md](https://github.com/google/osv-scalibr/tree/main/docs/supported_inventory_types.md) file.
 
 #### Enrichers
 
@@ -47,10 +47,9 @@ _No specific additional requirements._
 
 #### Extractors
 
-- [ ] **Performance Optimization**: The `FileRequired` method is a "hot path" called on every scanned file and must be highly optimized. For example: strings.HasPrefix/HasSuffix/Contains matches are okay, regexps are not.
+- [ ] **Performance Optimization**: The `FileRequired` method is a "hot path" called on every scanned file and must be highly optimized. For example: strings.HasPrefix/HasSuffix/Contains matches are okay, regexps should only be run after other pre-filters have run.
 - [ ] **Memory Footprint**: The `Extract` method must use memory efficiently. Loading entire files into memory is to be avoided; buffering is preferred (e.g., avoid `io.ReadAll` if possible).
 - [ ] **Use helper library in tests**: Tests should use the [simplefileapi](https://github.com/google/osv-scalibr/blob/4f04caa1e9b8c547520759ecf14596877df0d07b/extractor/filesystem/language/golang/gomod/gomod_test.go#L64) and [extracttest](https://github.com/google/osv-scalibr/blob/4f04caa1e9b8c547520759ecf14596877df0d07b/extractor/filesystem/language/golang/gomod/gomod_test.go#L404) helper libs whenever possible.
-- [ ] **Documentation**: The extracted inventory type must be added to the [supported_inventory_types.md](https://github.com/google/osv-scalibr/tree/main/docs/supported_inventory_types.md) file.
 
 ---
 
@@ -60,12 +59,10 @@ The `veles` package is a standalone library. Scalibr utilizes it by wrapping sec
 
 - [ ] **Package Isolation**: The `veles` package is standalone. Detectors within this package **must not** import packages from outside the `veles` folder.
 
-- [ ] **Zero False Positives**: Most secrets should be detectable with a near-zero false positive rate. Use bounded queries (e.g., `\b[a-Z]\b`) by default. If a specific secret type requires logic that allows false positives, justification must be provided in the PR.
+- [ ] **Zero False Positives**: Most secrets should be detectable with a near-zero false positive rate. Use bounded queries (e.g., `\b[a-Z]\b`) if the query would otherwise be too generic. If a specific secret type requires logic that allows false positives, justification must be provided in the PR.
 
 - [ ] **Validate when possible**: Detectors must be accompanied by a validator whenever secret validation is feasible.
 
 - [ ] **Side-Effect Free Validation**: Validators must be as **side-effect-free** as possible.
-
-- [ ] **Documentation**: The detected secret type must be added to the [supported_inventory_types.md](https://github.com/google/osv-scalibr/tree/main/docs/supported_inventory_types.md) file.
 
 - [ ] **Common utilities**: When possible use common utilities like [simpletoken.Detector](https://github.com/doyensec/osv-scalibr/blob/cf20290d76242f45365a0285e09dd6023b634bc5/veles/secrets/openai/detector.go#L41) for detectors and [simplevalidate.Validator](https://github.com/doyensec/osv-scalibr/blob/cf20290d76242f45365a0285e09dd6023b634bc5/veles/secrets/github/oauth_validator.go#L26C10-L26C24)
