@@ -26,8 +26,8 @@ import (
 const maxTokenLength = 97
 
 // keyRe matches an Elastic Cloud API key.
-// Keys start with "essu_" followed by a 92-character base64 segment.
-// The last two characters may include 0â€“2 '=' padding characters.
+// Keys start with "essu_" followed by a 92-character Base64 segment.
+// The last two characters may include 0–2 '=' padding characters.
 var keyRe = regexp.MustCompile(`essu_(?:[A-Za-z0-9+/]{92}|[A-Za-z0-9+/]{91}=|[A-Za-z0-9+/]{90}==)`)
 
 // NewDetector returns a new simpletoken.Detector that matches
