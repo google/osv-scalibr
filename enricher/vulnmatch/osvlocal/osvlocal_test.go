@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
@@ -38,16 +39,29 @@ import (
 
 func TestRequirements(t *testing.T) {
 	var e enricher.Enricher
+	var err error
 
 	// we should be online by default
-	e = NewDefault()
+	e, err = New(&cpb.PluginConfig{})
+
+	if err != nil {
+		t.Errorf("New() = %v, want nil", err)
+	}
 
 	if e.Requirements().Network != plugin.NetworkOnline {
 		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkOnline)
 	}
 
 	// we should not be online
-	e = NewOffline()
+	e, err = New(&cpb.PluginConfig{PluginSpecific: []*cpb.PluginSpecificConfig{
+		{Config: &cpb.PluginSpecificConfig_Osvlocal{
+			Osvlocal: &cpb.OSVLocalConfig{Download: false},
+		}},
+	}})
+
+	if err != nil {
+		t.Errorf("New() = %v, want nil", err)
+	}
 
 	if e.Requirements().Network != plugin.NetworkOffline {
 		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkOffline)

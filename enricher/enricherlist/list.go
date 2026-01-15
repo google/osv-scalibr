@@ -87,7 +87,7 @@ var (
 	// VulnMatching enrichers.
 	VulnMatching = InitMap{
 		osvdev.Name:   {noCFG(osvdev.NewDefault)},
-		osvlocal.Name: {noCFG(osvlocal.NewDefault)},
+		osvlocal.Name: {osvlocal.New},
 	}
 
 	// VEX related enrichers.

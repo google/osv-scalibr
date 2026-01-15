@@ -67,6 +67,7 @@ message PluginSpecificConfig {
     PortageConfig portage = 19;
     FlatpakConfig flatpak = 20;
     MacAppsConfig macapps = 21;
+    OSVLocalConfig osvlocal = 22;
   }
 }
 
@@ -215,4 +216,9 @@ message MacAppsConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message OSVLocalConfig {
+  // If true, OSV databases will be downloaded as needed for enriching
+  bool download = 1;
 }
