@@ -41,9 +41,7 @@ var (
 	tokenRe = regexp.MustCompile(`\b([0-9]{8,10}:[a-zA-Z0-9_-]{35})\b`)
 
 	// keywordRe is a regular expression that matches Telegram related keywords.
-	// According to Erik's suggestion, we can use the Pair library more accurately to find Secrets.
-	// Our goal here is to use the following regex to look for Telegram-related keywords in the file near the secret found by tokenRe regexp.
-	keywordRe = regexp.MustCompile(`(?i)\b(telegram|tgram)\b`)
+	keywordRe = regexp.MustCompile(`(?i)(telegram|tgram)`)
 )
 
 // NewDetector returns a detector that matches Telegram keyword, and a Telegram Bot API secret.
