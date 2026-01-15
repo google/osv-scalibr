@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	_ "modernc.org/sqlite" // Import sqlite driver
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -42,13 +44,8 @@ const (
 type Extractor struct{}
 
 // New creates a new Winget extractor instance.
-func New() filesystem.Extractor {
-	return &Extractor{}
-}
-
-// NewDefault creates a new Winget extractor with default configuration.
-func NewDefault() filesystem.Extractor {
-	return New()
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
 }
 
 // Name returns the unique identifier for this extractor.
@@ -168,7 +165,7 @@ func (e *Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
 
 func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package, error) {
 	query := `
-	SELECT 
+	SELECT
 		i.id as package_id,
 		n.name as package_name,
 		v.version as package_version,
@@ -178,7 +175,7 @@ func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package
 		GROUP_CONCAT(DISTINCT cmd.command) as commands
 	FROM manifest man
 	JOIN ids i ON man.id = i.rowid
-	JOIN names n ON man.name = n.rowid  
+	JOIN names n ON man.name = n.rowid
 	JOIN versions v ON man.version = v.rowid
 	JOIN monikers m ON man.moniker = m.rowid
 	JOIN channels c ON man.channel = c.rowid

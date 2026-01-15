@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package velestest contains tools to support testing Veles Detectors and Validator.
-// There are fakes that can be used to test parts of Veles as well as integrations.
-//
-// There are also acceptance tests that should be run for every new implementation.
-//
-//nolint:plugger // This package contains test only helpers
-package velestest
+package velestest_test
+
+import (
+	"testing"
+
+	"github.com/google/osv-scalibr/veles/velestest"
+)
+
+func TestAcceptDetector(t *testing.T) {
+	velestest.AcceptDetector(t, velestest.NewFakeDetector("foo"), "foo", velestest.NewFakeStringSecret("foo"))
+}

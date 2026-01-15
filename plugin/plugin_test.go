@@ -22,6 +22,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 type fakePlugin struct {
@@ -108,7 +110,16 @@ func TestValidateRequirements(t *testing.T) {
 
 func TestFilterByCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
-	pls := []plugin.Plugin{snap.NewDefault(), homebrew.New()}
+	cfg := &cpb.PluginConfig{}
+	snap, err := snap.New(cfg)
+	if err != nil {
+		t.Fatalf("snap.New(%v) failed: %v", cfg, err)
+	}
+	homebrew, err := homebrew.New(cfg)
+	if err != nil {
+		t.Fatalf("homebrew.New(%v) failed: %v", cfg, err)
+	}
+	pls := []plugin.Plugin{snap, homebrew}
 	got := plugin.FilterByCapabilities(pls, capab)
 	if len(got) != 1 {
 		t.Fatalf("plugin.FilterCapabilities(%v, %v): want 1 plugin, got %d", pls, capab, len(got))

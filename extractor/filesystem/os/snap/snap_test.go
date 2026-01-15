@@ -37,6 +37,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const DebianBookworm = `PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
@@ -115,10 +117,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = snap.New(snap.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := snap.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("snap.New: %v", err)
+			}
+			e.(*snap.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -231,9 +234,11 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = snap.New(snap.Config{
-				Stats: collector,
-			})
+			e, err := snap.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("snap.New: %v", err)
+			}
+			e.(*snap.Extractor).Stats = collector
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)

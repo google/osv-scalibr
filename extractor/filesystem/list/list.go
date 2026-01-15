@@ -140,6 +140,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
@@ -275,17 +276,17 @@ var (
 		apk.Name:        {apk.New},
 		rpm.Name:        {rpm.New},
 		cos.Name:        {cos.New},
-		snap.Name:       {noCFG(snap.NewDefault)},
-		nix.Name:        {noCFG(nix.New)},
-		module.Name:     {noCFG(module.NewDefault)},
-		vmlinuz.Name:    {noCFG(vmlinuz.NewDefault)},
-		pacman.Name:     {noCFG(pacman.NewDefault)},
-		portage.Name:    {noCFG(portage.NewDefault)},
-		flatpak.Name:    {noCFG(flatpak.NewDefault)},
-		homebrew.Name:   {noCFG(homebrew.New)},
-		macapps.Name:    {noCFG(macapps.NewDefault)},
-		macports.Name:   {noCFG(macports.New)},
-		winget.Name:     {noCFG(winget.NewDefault)},
+		snap.Name:       {snap.New},
+		nix.Name:        {nix.New},
+		module.Name:     {module.New},
+		vmlinuz.Name:    {vmlinuz.New},
+		pacman.Name:     {pacman.New},
+		portage.Name:    {portage.New},
+		flatpak.Name:    {flatpak.New},
+		homebrew.Name:   {homebrew.New},
+		macapps.Name:    {macapps.New},
+		macports.Name:   {macports.New},
+		winget.Name:     {winget.New},
 		chocolatey.Name: {chocolatey.New},
 	}
 
@@ -353,6 +354,7 @@ var (
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
+		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

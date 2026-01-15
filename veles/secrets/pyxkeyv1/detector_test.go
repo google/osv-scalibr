@@ -23,12 +23,42 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	testKey          = `sk-pyx-testestestestestestestestestestestestestestestestestestestestest`
 	testKeyMixedCase = `sk-pyx-testestestestestesTESTestestestesTESTestestestestestestestesTEST`
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := pyxkeyv1.NewDetector()
+	cases := []struct {
+		name string
+		key  string
+	}{
+		{
+			name: "lowercase",
+			key:  testKey,
+		},
+		{
+			name: "mixed-case",
+			key:  testKeyMixedCase,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(
+				t,
+				d,
+				tc.key,
+				pyxkeyv1.PyxKeyV1{Key: tc.key},
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			)
+		})
+	}
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a pyx v1 user key.

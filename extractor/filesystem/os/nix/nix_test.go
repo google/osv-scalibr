@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -70,7 +72,10 @@ func TestFileRequired(t *testing.T) {
 		},
 	}
 
-	var e = nix.New()
+	e, err := nix.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("nix.New: %v", err)
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -199,7 +204,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e = nix.New()
+			e, err := nix.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("nix.New: %v", err)
+			}
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)

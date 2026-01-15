@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
@@ -240,6 +241,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return bitbucketCredentialsToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
+	case velestelegrambotapitoken.TelegramBotAPIToken:
+		return telegramBotAPITokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -817,6 +820,16 @@ func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.Secr
 	}
 }
 
+func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_TelegramBotApiToken{
+			TelegramBotApiToken: &spb.SecretData_TelegramBotToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1067,6 +1080,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_PaystackSecretKey_:
 		return velespaystacksecretkey.PaystackSecret{
 			Key: s.GetPaystackSecretKey().GetKey(),
+		}, nil
+	case *spb.SecretData_TelegramBotApiToken:
+		return velestelegrambotapitoken.TelegramBotAPIToken{
+			Token: s.GetTelegramBotApiToken().GetToken(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

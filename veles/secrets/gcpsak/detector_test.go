@@ -22,7 +22,57 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := gcpsak.NewDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+		opts   []velestest.AcceptDetectorOption
+	}{
+		{
+			name: "json",
+			input: `{
+			"type": "service_account",
+			"project_id": "some-project-id",
+			"private_key_id": "123456789abcdef0123456789abcdef012345678",
+			"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsQfQ524jSCtAi\n0RbzWuo3S6jJjTydYeSO/cKouEOmhKLoUxWVEXGC70MFL/ed5XqpR82amJZwzxLN\ntWQABwLGLkfD4aD4MAWprSjRAv9YSUI5s+NjiqgpzNulysgQmKDy3zgq4cAQtKzn\njWgZjMrXVQz1UhRZAiO/xDb/x6sw/4DMJptw2zHvxxMnRR/o93UM+fyJ6L99UNhC\nzLIp9IT8JQEhQu68Pbgrhu04syrUOYPrWLtpCDc80hPW9A/UJiWYkZcxhHSEXtsN\ndNGlB5S+jIEZDqyLaHRJ2vaud5CEd8CTRPhIM1ASnj36+FyQA2YRaFvJofw76N1W\nJ9BMrJadAgMBAAECggEACv1GLG7CAsxnzODT+wCA0rhD81/MTyoQn8K2qXbf8f6i\nOfoa9WCggj7rYqhVvsAGHEiVaFh1uIqtY2xADfRki+ol7+w0DcFaiyGd6f+r9KDv\n1aiRSCdvZQNJvAD81Ho4QmZVOf8e9rHgGgGec4rU4fnuErSC0c7eIvzMmXLOjBiV\n3ch9CHO7iKp0krLfsSnAHnK3ove5kGBA6A3sYwR+/7680i/aoC7l3gtXh0MW2E9h\nkkLKc9VqZenrMlXoMQngI6c0Ii/AntQbb3akomnqlajIa0OibBLYTJbv26ChUlsN\nA6SGQHIXemM+HuiAh/U6AAvlXkTSGQsO78fEtwvC7QKBgQDnlNIT3CkqTmev+p+o\nR34RmT/c+8NLCUv8rdBtUNErY4/y/Lagg0oq6nPu/p+KLnS73ycGhsSBUbAc8+wy\noEgy4B4e92jzm0NxFv8i3cY29O4qxtn99kfKrfscsMcqycpxbdoTpPgRyhFGsITu\nZ8lBqFDUUlcowENuJmDnNbQw4wKBgQC+a8g0AaMHi3QBz22KfLWe9HDy8DawY/zx\nHajoo+/a5c8BOl2ZWT+YdnQRWsvr370yPcSNWkg6NwmmSx1DF3PTpRTiIUFa6azB\nm7aExYHXSumVUsDqmu2TDMRVBwb6lCQSTY0QySwvf23kPT+adYNvtLdvVN6sLpww\nnr4f1xQyfwKBgQCk5EpQ6cpF3V3m58UWxRD25u+aIYmEvDHm0Lw/mfPVuSaeFWLU\nF6ePtzClU5e1hC6KNvJKq1rv2YJUmznrMkU2NG4+DlwkWMFEnOM9qDuilfOfccd2\nFQ45Ong6jYTC6rvC2D0XD7eysvZqJvX/6tZaccZb5+U3lu5sV9dXyd1rkQKBgB5h\nY9eoSzJw9Vk0lu15aCCsLzkTSiZqTXjKmqBDR4lNEPHJNhW5P4Q7odkC+3XuhGj3\nodxLgyqGjWuSoGCL5VbnB6XsWFkA3yckiMI2ILkQoqPISC8l+LF1X/2Q2XQxHnAt\nH0yGTB5n3kiD3RnvlcDEvF9u0vf1l8XKDdtWnUpRAoGAPeRvBGsTXD0c62FAQ7Ct\nH7e7IlqS0iKfRV5/cmUDeuFD8RBK4iZFTlCAVqakdmjUlfJPb60D3xwlJpCoZSKi\n2lY9Rj7ypRiTUoT35nVVHw8ejwYBMawo4Gkaqd198mYxUogJvOuTcGJ509DdTack\nRsacStLCR1jUc6EzaCaj61w=\n-----END PRIVATE KEY-----\n",
+			"client_email": "some-service-account@some-project-id.iam.gserviceaccount.com",
+			"client_id": "some-client-id",
+			"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+			"token_uri": "https://oauth2.googleapis.com/token",
+			"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+			"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/some-service-account%40some-project-id.iam.gserviceaccount.com"
+		}`,
+			secret: gcpsak.GCPSAK{
+				PrivateKeyID:   exampleKeyID,
+				ServiceAccount: exampleServiceAccount,
+				Signature:      exampleSignature,
+			},
+			opts: []velestest.AcceptDetectorOption{
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			},
+		},
+		{
+			name:  "base64",
+			input: "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAic29tZS1wcm9qZWN0LWlkIiwKICAicHJpdmF0ZV9rZXlfaWQiOiAiMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3OCIsCiAgInByaXZhdGVfa2V5IjogIi0tLS0tQkVHSU4gUFJJVkFURSBLRVktLS0tLVxuTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDc1FmUTUyNGpTQ3RBaVxuMFJield1bzNTNmpKalR5ZFllU08vY0tvdUVPbWhLTG9VeFdWRVhHQzcwTUZML2VkNVhxcFI4MmFtSlp3enhMTlxudFdRQUJ3TEdMa2ZENGFENE1BV3ByU2pSQXY5WVNVSTVzK05qaXFncHpOdWx5c2dRbUtEeTN6Z3E0Y0FRdEt6blxualdnWmpNclhWUXoxVWhSWkFpTy94RGIveDZzdy80RE1KcHR3MnpIdnh4TW5SUi9vOTNVTStmeUo2TDk5VU5oQ1xuekxJcDlJVDhKUUVoUXU2OFBiZ3JodTA0c3lyVU9ZUHJXTHRwQ0RjODBoUFc5QS9VSmlXWWtaY3hoSFNFWHRzTlxuZE5HbEI1UytqSUVaRHF5TGFIUkoydmF1ZDVDRWQ4Q1RSUGhJTTFBU25qMzYrRnlRQTJZUmFGdkpvZnc3Nk4xV1xuSjlCTXJKYWRBZ01CQUFFQ2dnRUFDdjFHTEc3Q0FzeG56T0RUK3dDQTByaEQ4MS9NVHlvUW44SzJxWGJmOGY2aVxuT2ZvYTlXQ2dnajdyWXFoVnZzQUdIRWlWYUZoMXVJcXRZMnhBRGZSa2krb2w3K3cwRGNGYWl5R2Q2ZityOUtEdlxuMWFpUlNDZHZaUU5KdkFEODFIbzRRbVpWT2Y4ZTlySGdHZ0dlYzRyVTRmbnVFclNDMGM3ZUl2ek1tWExPakJpVlxuM2NoOUNITzdpS3Awa3JMZnNTbkFIbkszb3ZlNWtHQkE2QTNzWXdSKy83NjgwaS9hb0M3bDNndFhoME1XMkU5aFxua2tMS2M5VnFaZW5yTWxYb01RbmdJNmMwSWkvQW50UWJiM2Frb21ucWxhaklhME9pYkJMWVRKYnYyNkNoVWxzTlxuQTZTR1FISVhlbU0rSHVpQWgvVTZBQXZsWGtUU0dRc083OGZFdHd2QzdRS0JnUURubE5JVDNDa3FUbWV2K3Arb1xuUjM0Um1UL2MrOE5MQ1V2OHJkQnRVTkVyWTQveS9MYWdnMG9xNm5QdS9wK0tMblM3M3ljR2hzU0JVYkFjOCt3eVxub0VneTRCNGU5Mmp6bTBOeEZ2OGkzY1kyOU80cXh0bjk5a2ZLcmZzY3NNY3F5Y3B4YmRvVHBQZ1J5aEZHc0lUdVxuWjhsQnFGRFVVbGNvd0VOdUptRG5OYlF3NHdLQmdRQythOGcwQWFNSGkzUUJ6MjJLZkxXZTlIRHk4RGF3WS96eFxuSGFqb28rL2E1YzhCT2wyWldUK1lkblFSV3N2cjM3MHlQY1NOV2tnNk53bW1TeDFERjNQVHBSVGlJVUZhNmF6QlxubTdhRXhZSFhTdW1WVXNEcW11MlRETVJWQndiNmxDUVNUWTBReVN3dmYyM2tQVCthZFlOdnRMZHZWTjZzTHB3d1xubnI0ZjF4UXlmd0tCZ1FDazVFcFE2Y3BGM1YzbTU4VVd4UkQyNXUrYUlZbUV2REhtMEx3L21mUFZ1U2FlRldMVVxuRjZlUHR6Q2xVNWUxaEM2S052SktxMXJ2MllKVW16bnJNa1UyTkc0K0Rsd2tXTUZFbk9NOXFEdWlsZk9mY2NkMlxuRlE0NU9uZzZqWVRDNnJ2QzJEMFhEN2V5c3ZacUp2WC82dFphY2NaYjUrVTNsdTVzVjlkWHlkMXJrUUtCZ0I1aFxuWTllb1N6Snc5VmswbHUxNWFDQ3NMemtUU2lacVRYakttcUJEUjRsTkVQSEpOaFc1UDRRN29ka0MrM1h1aEdqM1xub2R4TGd5cUdqV3VTb0dDTDVWYm5CNlhzV0ZrQTN5Y2tpTUkySUxrUW9xUElTQzhsK0xGMVgvMlEyWFF4SG5BdFxuSDB5R1RCNW4za2lEM1JudmxjREV2Rjl1MHZmMWw4WEtEZHRXblVwUkFvR0FQZVJ2QkdzVFhEMGM2MkZBUTdDdFxuSDdlN0lscVMwaUtmUlY1L2NtVURldUZEOFJCSzRpWkZUbENBVnFha2RtalVsZkpQYjYwRDN4d2xKcENvWlNLaVxuMmxZOVJqN3lwUmlUVW9UMzVuVlZIdzhlandZQk1hd280R2thcWQxOThtWXhVb2dKdk91VGNHSjUwOURkVGFja1xuUnNhY1N0TENSMWpVYzZFemFDYWo2MXc9XG4tLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tXG4iLAogICJjbGllbnRfZW1haWwiOiAic29tZS1zZXJ2aWNlLWFjY291bnRAc29tZS1wcm9qZWN0LWlkLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogInNvbWUtY2xpZW50LWlkIiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9zb21lLXNlcnZpY2UtYWNjb3VudCU0MHNvbWUtcHJvamVjdC1pZC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIKfQ",
+			secret: gcpsak.GCPSAK{
+				PrivateKeyID:   exampleKeyID,
+				ServiceAccount: exampleServiceAccount,
+				Signature:      exampleSignature,
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, tc.opts...)
+		})
+	}
+}
 
 // TestDetector_truePositives tests the detector's ability to find GCP SAK
 // in specific scenarios where the original key material has been altered e.g.
