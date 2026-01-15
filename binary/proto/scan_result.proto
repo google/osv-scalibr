@@ -760,6 +760,8 @@ message SecretData {
     BitBucketCredentials bitbucket_credentials = 57;
     PaystackSecretKey paystack_secret_key = 58;
     TelegramBotToken telegram_bot_api_token = 59;
+    SquarePersonalAccessToken square_personal_access_token = 60;
+    SquareOAuthApplicationSecret square_oauth_application_secret = 61;
   }
 
   message GCPSAK {
@@ -1070,6 +1072,15 @@ message SecretData {
   message TelegramBotToken{
     string token = 1;
   }
+
+  message SquarePersonalAccessToken {
+    string key = 1;
+  }
+
+  message SquareOAuthApplicationSecret {
+    string key = 1;
+  }
+
 }
 
 message SecretStatus {
