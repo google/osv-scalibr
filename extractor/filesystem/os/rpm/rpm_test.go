@@ -39,6 +39,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -121,10 +123,11 @@ func TestFileRequired(t *testing.T) {
 
 		t.Run(desc, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = rpm.New(rpm.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := rpm.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			e.(*rpm.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -524,10 +527,21 @@ func TestExtract(t *testing.T) {
 			}
 
 			collector := testcollector.New()
-			var e filesystem.Extractor = rpm.New(rpm.Config{
-				Stats:   collector,
-				Timeout: tt.timeoutval,
+			e, err := rpm.New(&cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_Rpm{
+							Rpm: &cpb.RpmConfig{
+								TimeoutSeconds: int64(tt.timeoutval.Seconds()),
+							},
+						},
+					},
+				},
 			})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			e.(*rpm.Extractor).Stats = collector
 
 			input := &filesystem.ScanInput{
 				FS:   scalibrfs.DirFS(filepath.Dir(tmpPath)),
@@ -857,7 +871,11 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Info: info,
 			}
 
-			got, err := rpm.New(rpm.Config{}).Extract(t.Context(), input)
+			e, err := rpm.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}
@@ -916,7 +934,7 @@ func createOsRelease(t *testing.T, root string, content string) {
 func scalibrFilesInTmp(t *testing.T) []string {
 	t.Helper()
 
-	filenames := []string{}
+	var filenames []string
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
 		t.Fatalf("os.ReadDir('%q') error: %v", os.TempDir(), err)

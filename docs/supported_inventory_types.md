@@ -51,7 +51,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Homebrew          | OS X                           | `os/homebrew`                                |
 | MacPorts          | OS X                           | `os/macports`                                |
 | OS X Applications | OS X                           | `os/macapps`                                 |
-| Chocolatey        | Windows software               | `os/chocolatey`                              |s
+| Chocolatey        | Windows software               | `os/chocolatey`                              |
 | Windows           | Build number                   | `windows/regosversion`                       |
 | Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
 | Windows           | Installed software             | `windows/ospackages`                         |
@@ -111,58 +111,62 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                                        | Extractor Plugin                     |
-| ------------------------------------------- | ------------------------------------ |
-| AWS access key                              | `secrets/awsaccesskey`               |
-| Amazon CodeCommit credentials               | `secrets/codecommitcredentials`      |
-| Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`    |
-| Anthropic API key                           | `secrets/anthropicapikey`            |
-| Azure Token                                 | `secrets/azuretoken`                 |
-| Bitbucket                                   | `secrets/bitbucketcredentials`       |
-| Crates.io API Token                         | `secrets/cratesioapitoken`           |
-| DigitalOcean API key                        | `secrets/digitaloceanapikey`         |
-| Docker hub PAT                              | `secrets/dockerhubpat`               |
-| GCP API key                                 | `secrets/gcpapikey`                  |
-| GCP Express Mode API key                    | `secrets/gcpexpressmode`             |
-| GCP service account key                     | `secrets/gcpsak`                     |
-| GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`            |
-| GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`            |
-| Google Cloud storage HMAC keys              | `secrets/gcshmackey`                 |
-| Gitlab PAT                                  | `secrets/gitlabpat`                  |
-| Grok xAI API key                            | `secrets/grokxaiapikey`              |
-| Grok xAI Management key                     | `secrets/grokxaimanagementkey`       |
-| Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`       |
-| Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`             |
-| Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`        |
-| Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`      |
-| Hugging Face API key                        | `secrets/huggingfaceapikey`          |
-| MariaDB Credentials                         | `secrets/mariadb`                    |
-| Mysql Mylogin                               | `secrets/mysqlmylogin`               |
-| 1Password Secret Key                        | `secrets/onepasswordsecretkey`       |
-| 1Password Service Token                     | `secrets/onepasswordservicetoken`    |
-| 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`    |
-| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`    |
-| OpenAI API key                              | `secrets/openai`                     |
-| Perplexity API key                          | `secrets/perplexityapikey`           |
-| PyPI API Token                              | `secrets/pypiapitoken`               |
-| Postgres pgpass file                        | `secrets/pgpass`                     |
-| Postman API key                             | `secrets/postmanapikey`              |
-| Postman Collection token                    | `secrets/postmancollectiontoken`     |
-| PEM/OpenSSH Private key                     | `secrets/privatekey`                 |
-| RubyGems API key                            | `secrets/rubygemsapikey`             |
-| Slack Application Level Token               | `secrets/slackappleveltoken`         |
-| Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`  |
-| Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken` |
-| Stripe Secret Key                           | `secrets/stripesecretkey`            |
-| Stripe Restricted Key                       | `secrets/striperestrictedkey`        |
-| Stripe Webhook Secret                       | `secrets/stripewebhooksecret`        |
-| Tink keyset                                 | `secrets/tinkkeyset`                 |
-| Vapid keys                                  | `secrets/vapidkey`                   |
-| reCAPTCHA secret keys                       | `secrets/recaptchakey`               |
-| Generic JWT tokens                          | `secrets/jwttoken`                   |
-| pyx user key v1                             | `secrets/pyxkeyv1`                   |
-| pyx user key v2                             | `secrets/pyxkeyv2`                   |
-| Generic URL with credentials                | `secrets/urlcreds`                   |
+| Type                                        | Extractor Plugin                       |
+| ------------------------------------------- | -------------------------------------- |
+| AWS access key                              | `secrets/awsaccesskey`                 |
+| Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
+| Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
+| Anthropic API key                           | `secrets/anthropicapikey`              |
+| Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
+| Azure Token                                 | `secrets/azuretoken`                   |
+| Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Crates.io API Token                         | `secrets/cratesioapitoken`             |
+| DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
+| Docker hub PAT                              | `secrets/dockerhubpat`                 |
+| GCP API key                                 | `secrets/gcpapikey`                    |
+| GCP Express Mode API key                    | `secrets/gcpexpressmode`               |
+| GCP service account key                     | `secrets/gcpsak`                       |
+| GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`              |
+| GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`              |
+| Google Cloud storage HMAC keys              | `secrets/gcshmackey`                   |
+| Gitlab PAT                                  | `secrets/gitlabpat`                    |
+| Grok xAI API key                            | `secrets/grokxaiapikey`                |
+| Grok xAI Management key                     | `secrets/grokxaimanagementkey`         |
+| Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`         |
+| Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`               |
+| Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`          |
+| Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`        |
+| Hugging Face API key                        | `secrets/huggingfaceapikey`            |
+| MariaDB Credentials                         | `secrets/mariadb`                      |
+| Mysql Mylogin                               | `secrets/mysqlmylogin`                 |
+| 1Password Secret Key                        | `secrets/onepasswordsecretkey`         |
+| 1Password Service Token                     | `secrets/onepasswordservicetoken`      |
+| 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`      |
+| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`      |
+| OpenAI API key                              | `secrets/openai`                       |
+| OpenRouter API key                          | `secrets/openrouter`                   |
+| Perplexity API key                          | `secrets/perplexityapikey`             |
+| PyPI API Token                              | `secrets/pypiapitoken`                 |
+| Postgres pgpass file                        | `secrets/pgpass`                       |
+| Postman API key                             | `secrets/postmanapikey`                |
+| Postman Collection token                    | `secrets/postmancollectiontoken`       |
+| PEM/OpenSSH Private key                     | `secrets/privatekey`                   |
+| RubyGems API key                            | `secrets/rubygemsapikey`               |
+| Slack Application Level Token               | `secrets/slackappleveltoken`           |
+| Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`    |
+| Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken`   |
+| Stripe Secret Key                           | `secrets/stripesecretkey`              |
+| Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
+| Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
+| Tink keyset                                 | `secrets/tinkkeyset`                   |
+| Paystack Secret Key                         | `secrets/paystacksecretkey`            |
+| Vapid keys                                  | `secrets/vapidkey`                     |
+| reCAPTCHA secret keys                       | `secrets/recaptchakey`                 |
+| Generic JWT tokens                          | `secrets/jwttoken`                     |
+| pyx user key v1                             | `secrets/pyxkeyv1`                     |
+| pyx user key v2                             | `secrets/pyxkeyv2`                     |
+| Telegram Bot API Token                      | `secrets/telegrambottoken`             |
+| Generic URL with credentials                | `secrets/urlcreds`                     |
 
 ### Container inventory
 
@@ -183,11 +187,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type              | Extractor Plugin    |
-| ----------------- | ------------------- |
-| Wordpress plugins | `wordpress/plugins` |
-| VSCode extensions | `vscode/extensions` |
-| Chrome extensions | `chrome/extensions` |
+| Type                    | Extractor Plugin    |
+| ----------------------- | ------------------- |
+| Wordpress plugins       | `wordpress/plugins` |
+| VSCode extensions       | `vscode/extensions` |
+| Chrome extensions       | `chrome/extensions` |
+| NetScaler installations | `netscaler`         |
 
 ### EmbeddedFS
 
@@ -211,6 +216,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Detects vulnerability CVE-2023-6019 in Ray Dashboard.                | `cve/cve-2023-6019`                      |
 | Detects vulnerability CVE-2020-11978 in Apache Airflow.              | `cve/cve-2020-11978`                     |
 | Detects vulnerability CVE-2024-2912 in BentoML.                      | `cve/cve-2024-2912`                      |
+| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway       | `cve/cve-2025-7775`                      |
 | Checks for whether code-server has authentication enabled.           | `weakcredentials/codeserver`             |
 | Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
 | Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |
@@ -218,16 +224,16 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ## Annotators
 
-| Description                                                                       | Plugin Name                                                                      |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------- |
-| Adds VEX statements for packages from cached directories                          | `vex/cachedir`                                                                   |
-| Adds VEX statements for language packages already found by the APK OS extractor.  | `vex/os-duplicate/apk`                                                           |
-| Adds VEX statements for language packages already found by the COS OS extractor.  | `vex/os-duplicate/cos`                                                           |
-| Adds VEX statements for language packages already found by the DPKG OS extractor. | `vex/os-duplicate/dpkg`                                                          |
-| pp                                                                                | Adds VEX statements for language packages already found by the RPM OS extractor. | `vex/os-duplicate/rpm` |
-| Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg`                                                         |
-| Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`                                                                  |
-| Annotates DPKG packages with installation source                                  | `misc/dpkg-source`                                                               |
+| Description                                                                       | Plugin Name                 |
+| --------------------------------------------------------------------------------- | --------------------------- |
+| Adds VEX statements for packages from cached directories                          | `vex/cachedir`              |
+| Adds VEX statements for language packages already found by the APK OS extractor.  | `vex/os-duplicate/apk`      |
+| Adds VEX statements for language packages already found by the COS OS extractor.  | `vex/os-duplicate/cos`      |
+| Adds VEX statements for language packages already found by the DPKG OS extractor. | `vex/os-duplicate/dpkg`     |
+| Adds VEX statements for language packages already found by the RPM OS extractor.  | `vex/os-duplicate/rpm`      |
+| Adds VEX statements for DPKG findings where no executable is present              | `vex/no-executable/dpkg`    |
+| Annotates NPM packages that were installed from NPM repositories                  | `misc/from-npm`             |
+| Annotates DPKG packages with installation source                                  | `misc/dpkg-source`          |
 
 ## Enrichers
 
