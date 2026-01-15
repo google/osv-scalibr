@@ -20,6 +20,7 @@ import (
 	"maps"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -44,24 +45,21 @@ type Enricher struct {
 	download  bool
 }
 
-// NewDefault creates a new Enricher with the default configuration
-func NewDefault() enricher.Enricher {
+// New makes a new osvlocal.Enricher with the given config.
+func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	download := true
+
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OSVLocalConfig { return c.GetOsvlocal() })
+	if specific != nil {
+		download = specific.Download
+	}
+
 	return &Enricher{
 		zippedDBRemoteHost: "https://osv-vulnerabilities.storage.googleapis.com",
 
 		localPath: "",
-		download:  true,
-	}
-}
-
-// NewOffline creates a new Enricher configured to only use databases that are locally available
-func NewOffline() enricher.Enricher {
-	return &Enricher{
-		zippedDBRemoteHost: "https://osv-vulnerabilities.storage.googleapis.com",
-
-		localPath: "",
-		download:  false,
-	}
+		download:  download,
+	}, nil
 }
 
 func newForTesting(zippedDBRemoteHost string) enricher.Enricher {
