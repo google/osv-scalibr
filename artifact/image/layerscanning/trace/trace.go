@@ -19,9 +19,11 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"slices"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -164,10 +166,14 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 
 			foundPackage := false
 			for _, oldPKG := range oldPackages {
-				// PURLs are being used as a package key, so if they are different, skip this package.
-				oldPKGPURL := oldPKG.PURL()
-				if oldPKGPURL == nil || oldPKGPURL.String() != pkgPURL {
-					continue
+				// If the package is from unknown binaries extractor, only Locations will be filled
+				// We should skip the purl check
+				if !slices.Contains(pkg.Plugins, unknownbinariesextr.Name) {
+					// PURLs are being used as a package key, so if they are different, skip this package.
+					oldPKGPURL := oldPKG.PURL()
+					if oldPKGPURL == nil || oldPKGPURL.String() != pkgPURL {
+						continue
+					}
 				}
 
 				if !areLocationsEqual(oldPKG.Locations, pkg.Locations) {
