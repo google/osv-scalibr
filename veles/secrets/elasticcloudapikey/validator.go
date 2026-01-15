@@ -25,8 +25,9 @@ type ecak = ElasticCloudAPIKey
 // NewValidator creates a new Elastic Cloud API key Validator.
 // It performs a GET request to the Elastic Cloud account endpoint
 // using the API key in the Authorization header. If the request returns
-// HTTP 200, the key is considered valid. If 401 Unauthorized, the key
-// is invalid. Other errors return ValidationFailed.
+// HTTP 200 or 403, the key is considered valid (403 means the key is
+// authenticated but lacks permissions for the resource). If 401 Unauthorized,
+// the key is invalid. Other errors return ValidationFailed.
 func NewValidator() *sv.Validator[ecak] {
 	return &sv.Validator[ecak]{
 		Endpoint:   "https://api.elastic-cloud.com/api/v1/account",
@@ -34,7 +35,7 @@ func NewValidator() *sv.Validator[ecak] {
 		HTTPHeaders: func(s ecak) map[string]string {
 			return map[string]string{"Authorization": "ApiKey " + s.Key}
 		},
-		ValidResponseCodes:   []int{http.StatusOK},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }

@@ -113,12 +113,11 @@ func TestValidator(t *testing.T) {
 			expectError:        true,
 		},
 		{
-			name:               "forbidden",
+			name:               "forbidden_valid_key_no_permissions",
 			key:                validatorTestKey,
 			serverExpectedKey:  validatorTestKey,
 			serverResponseCode: http.StatusForbidden,
-			want:               veles.ValidationFailed,
-			expectError:        true,
+			want:               veles.ValidationValid,
 		},
 	}
 

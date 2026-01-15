@@ -5487,6 +5487,8 @@ type SecretData struct {
 	//	*SecretData_JwtToken
 	//	*SecretData_CodeCommitCredentials_
 	//	*SecretData_BitbucketCredentials
+	//	*SecretData_PaystackSecretKey_
+	//	*SecretData_TelegramBotApiToken
 	//	*SecretData_ElasticCloudApiKey
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
@@ -6043,6 +6045,24 @@ func (x *SecretData) GetBitbucketCredentials() *SecretData_BitBucketCredentials 
 	return nil
 }
 
+func (x *SecretData) GetPaystackSecretKey() *SecretData_PaystackSecretKey {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PaystackSecretKey_); ok {
+			return x.PaystackSecretKey
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetTelegramBotApiToken() *SecretData_TelegramBotToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_TelegramBotApiToken); ok {
+			return x.TelegramBotApiToken
+		}
+	}
+	return nil
+}
+
 func (x *SecretData) GetElasticCloudApiKey() *SecretData_ElasticCloudAPIKey {
 	if x != nil {
 		if x, ok := x.Secret.(*SecretData_ElasticCloudApiKey); ok {
@@ -6284,8 +6304,16 @@ type SecretData_BitbucketCredentials struct {
 	BitbucketCredentials *SecretData_BitBucketCredentials `protobuf:"bytes,57,opt,name=bitbucket_credentials,json=bitbucketCredentials,proto3,oneof"`
 }
 
+type SecretData_PaystackSecretKey_ struct {
+	PaystackSecretKey *SecretData_PaystackSecretKey `protobuf:"bytes,58,opt,name=paystack_secret_key,json=paystackSecretKey,proto3,oneof"`
+}
+
+type SecretData_TelegramBotApiToken struct {
+	TelegramBotApiToken *SecretData_TelegramBotToken `protobuf:"bytes,59,opt,name=telegram_bot_api_token,json=telegramBotApiToken,proto3,oneof"`
+}
+
 type SecretData_ElasticCloudApiKey struct {
-	ElasticCloudApiKey *SecretData_ElasticCloudAPIKey `protobuf:"bytes,58,opt,name=elastic_cloud_api_key,json=elasticCloudApiKey,proto3,oneof"`
+	ElasticCloudApiKey *SecretData_ElasticCloudAPIKey `protobuf:"bytes,60,opt,name=elastic_cloud_api_key,json=elasticCloudApiKey,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -6401,6 +6429,10 @@ func (*SecretData_JwtToken) isSecretData_Secret() {}
 func (*SecretData_CodeCommitCredentials_) isSecretData_Secret() {}
 
 func (*SecretData_BitbucketCredentials) isSecretData_Secret() {}
+
+func (*SecretData_PaystackSecretKey_) isSecretData_Secret() {}
+
+func (*SecretData_TelegramBotApiToken) isSecretData_Secret() {}
 
 func (*SecretData_ElasticCloudApiKey) isSecretData_Secret() {}
 
@@ -10067,6 +10099,94 @@ func (x *SecretData_ElasticCloudAPIKey) GetKey() string {
 	return ""
 }
 
+type SecretData_PaystackSecretKey struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PaystackSecretKey) Reset() {
+	*x = SecretData_PaystackSecretKey{}
+	mi := &file_proto_scan_result_proto_msgTypes[130]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PaystackSecretKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PaystackSecretKey) ProtoMessage() {}
+
+func (x *SecretData_PaystackSecretKey) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[130]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PaystackSecretKey.ProtoReflect.Descriptor instead.
+func (*SecretData_PaystackSecretKey) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{59, 58}
+}
+
+func (x *SecretData_PaystackSecretKey) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type SecretData_TelegramBotToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_TelegramBotToken) Reset() {
+	*x = SecretData_TelegramBotToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[131]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_TelegramBotToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_TelegramBotToken) ProtoMessage() {}
+
+func (x *SecretData_TelegramBotToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[131]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_TelegramBotToken.ProtoReflect.Descriptor instead.
+func (*SecretData_TelegramBotToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{59, 59}
+}
+
+func (x *SecretData_TelegramBotToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -10506,7 +10626,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\x8eJ\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\x95L\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -10576,8 +10696,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x19code_catalyst_credentials\x186 \x01(\v2+.scalibr.SecretData.CodeCatalystCredentialsH\x00R\x17codeCatalystCredentials\x12;\n" +
 	"\tjwt_token\x187 \x01(\v2\x1c.scalibr.SecretData.JWTTokenH\x00R\bjwtToken\x12c\n" +
 	"\x17code_commit_credentials\x188 \x01(\v2).scalibr.SecretData.CodeCommitCredentialsH\x00R\x15codeCommitCredentials\x12_\n" +
-	"\x15bitbucket_credentials\x189 \x01(\v2(.scalibr.SecretData.BitBucketCredentialsH\x00R\x14bitbucketCredentials\x12[\n" +
-	"\x15elastic_cloud_api_key\x18: \x01(\v2&.scalibr.SecretData.ElasticCloudAPIKeyH\x00R\x12elasticCloudApiKey\x1a\xb0\x03\n" +
+	"\x15bitbucket_credentials\x189 \x01(\v2(.scalibr.SecretData.BitBucketCredentialsH\x00R\x14bitbucketCredentials\x12W\n" +
+	"\x13paystack_secret_key\x18: \x01(\v2%.scalibr.SecretData.PaystackSecretKeyH\x00R\x11paystackSecretKey\x12[\n" +
+	"\x16telegram_bot_api_token\x18; \x01(\v2$.scalibr.SecretData.TelegramBotTokenH\x00R\x13telegramBotApiToken\x12[\n" +
+	"\x15elastic_cloud_api_key\x18< \x01(\v2&.scalibr.SecretData.ElasticCloudAPIKeyH\x00R\x12elasticCloudApiKey\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -10754,7 +10876,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x14BitBucketCredentials\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x1a&\n" +
 	"\x12ElasticCloudAPIKey\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03keyB\b\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a%\n" +
+	"\x11PaystackSecretKey\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a(\n" +
+	"\x10TelegramBotToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05tokenB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
@@ -10842,7 +10968,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 131)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 133)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                         // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                             // 1: scalibr.SeverityEnum
@@ -10979,13 +11105,15 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_CodeCommitCredentials)(nil),                // 132: scalibr.SecretData.CodeCommitCredentials
 	(*SecretData_BitBucketCredentials)(nil),                 // 133: scalibr.SecretData.BitBucketCredentials
 	(*SecretData_ElasticCloudAPIKey)(nil),                   // 134: scalibr.SecretData.ElasticCloudAPIKey
-	nil,                                                     // 135: scalibr.ContainerImageMetadata.OsInfoEntry
-	(*timestamppb.Timestamp)(nil),                           // 136: google.protobuf.Timestamp
-	(*osvschema.Vulnerability)(nil),                         // 137: osv.Vulnerability
+	(*SecretData_PaystackSecretKey)(nil),                    // 135: scalibr.SecretData.PaystackSecretKey
+	(*SecretData_TelegramBotToken)(nil),                     // 136: scalibr.SecretData.TelegramBotToken
+	nil,                                                     // 137: scalibr.ContainerImageMetadata.OsInfoEntry
+	(*timestamppb.Timestamp)(nil),                           // 138: google.protobuf.Timestamp
+	(*osvschema.Vulnerability)(nil),                         // 139: osv.Vulnerability
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	136, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	136, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	138, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	138, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	6,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
@@ -11043,7 +11171,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	14,  // 56: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
 	0,   // 57: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
 	17,  // 58: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	137, // 59: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
+	139, // 59: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
 	15,  // 60: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
 	20,  // 61: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
 	22,  // 62: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
@@ -11054,8 +11182,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	16,  // 67: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	16,  // 68: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	76,  // 69: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	136, // 70: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	136, // 71: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	138, // 70: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	138, // 71: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	61,  // 72: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	64,  // 73: scalibr.Secret.secret:type_name -> scalibr.SecretData
 	65,  // 74: scalibr.Secret.status:type_name -> scalibr.SecretStatus
@@ -11117,24 +11245,26 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	78,  // 130: scalibr.SecretData.jwt_token:type_name -> scalibr.SecretData.JWTToken
 	132, // 131: scalibr.SecretData.code_commit_credentials:type_name -> scalibr.SecretData.CodeCommitCredentials
 	133, // 132: scalibr.SecretData.bitbucket_credentials:type_name -> scalibr.SecretData.BitBucketCredentials
-	134, // 133: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
-	4,   // 134: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	136, // 135: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	67,  // 136: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	68,  // 137: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	69,  // 138: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	70,  // 139: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	12,  // 140: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	74,  // 141: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	72,  // 142: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	135, // 143: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	73,  // 144: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	56,  // 145: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	146, // [146:146] is the sub-list for method output_type
-	146, // [146:146] is the sub-list for method input_type
-	146, // [146:146] is the sub-list for extension type_name
-	146, // [146:146] is the sub-list for extension extendee
-	0,   // [0:146] is the sub-list for field type_name
+	135, // 133: scalibr.SecretData.paystack_secret_key:type_name -> scalibr.SecretData.PaystackSecretKey
+	136, // 134: scalibr.SecretData.telegram_bot_api_token:type_name -> scalibr.SecretData.TelegramBotToken
+	134, // 135: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
+	4,   // 136: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	138, // 137: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	67,  // 138: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	68,  // 139: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	69,  // 140: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	70,  // 141: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	12,  // 142: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	74,  // 143: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	72,  // 144: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	137, // 145: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	73,  // 146: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	56,  // 147: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	148, // [148:148] is the sub-list for method output_type
+	148, // [148:148] is the sub-list for method input_type
+	148, // [148:148] is the sub-list for extension type_name
+	148, // [148:148] is the sub-list for extension extendee
+	0,   // [0:148] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -11244,6 +11374,8 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_JwtToken)(nil),
 		(*SecretData_CodeCommitCredentials_)(nil),
 		(*SecretData_BitbucketCredentials)(nil),
+		(*SecretData_PaystackSecretKey_)(nil),
+		(*SecretData_TelegramBotApiToken)(nil),
 		(*SecretData_ElasticCloudApiKey)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[61].OneofWrappers = []any{
@@ -11258,7 +11390,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   131,
+			NumMessages:   133,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

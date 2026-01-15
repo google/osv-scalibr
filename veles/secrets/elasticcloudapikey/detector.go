@@ -22,13 +22,13 @@ import (
 )
 
 // maxTokenLength is the maximum size of an Elastic Cloud API key.
-// Pattern: "essu_" + (91 or 92 base64 characters).
+// Pattern: "essu_" + a 92-character base64 segment (may include 0â€“2 '=' padding).
 const maxTokenLength = 97
 
-// keyRe is a regular expression that matches an Elastic Cloud API key.
-// Elastic Cloud API keys have the form: `essu_` followed by 91 base64
-// characters with = padding, or 92 base64 characters without padding.
-var keyRe = regexp.MustCompile(`essu_([A-Za-z0-9+/]{91}=|[A-Za-z0-9+/]{92})`)
+// keyRe matches an Elastic Cloud API key.
+// Keys start with "essu_" followed by a 92-character base64 segment.
+// The last two characters may include 0â€“2 '=' padding characters.
+var keyRe = regexp.MustCompile(`essu_(?:[A-Za-z0-9+/]{92}|[A-Za-z0-9+/]{91}=|[A-Za-z0-9+/]{90}==)`)
 
 // NewDetector returns a new simpletoken.Detector that matches
 // Elastic Cloud API keys.

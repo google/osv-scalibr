@@ -23,9 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = "essu_VWtSQlNXNWFjMEpWWVZsbFVUZDBORmRQTldJNmNuWnVYMU5yY1ZGdlJ6aHVlRE5rWmxGelIyUk9kdz09AAAAANx5Zs4="
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		elasticcloudapikey.NewDetector(),
+		testKey,
+		elasticcloudapikey.ElasticCloudAPIKey{Key: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find an Elastic Cloud API key/s.
@@ -63,6 +75,12 @@ func TestDetector_truePositives(t *testing.T) {
 			elasticcloudapikey.ElasticCloudAPIKey{Key: testKey},
 			elasticcloudapikey.ElasticCloudAPIKey{Key: testKey},
 			elasticcloudapikey.ElasticCloudAPIKey{Key: testKey},
+		},
+	}, {
+		name:  "valid_key_with_single_padding",
+		input: "essu_VWtSQlNXNWFjMEpWWVZsbFVUZDBORmRQTldJNmNuWnVYMU5yY1ZGdlJ6aHVlRE5rWmxGelIyUk9kdz09AAAAAN5Zs4A=",
+		want: []veles.Secret{
+			elasticcloudapikey.ElasticCloudAPIKey{Key: "essu_VWtSQlNXNWFjMEpWWVZsbFVUZDBORmRQTldJNmNuWnVYMU5yY1ZGdlJ6aHVlRE5rWmxGelIyUk9kdz09AAAAAN5Zs4A="},
 		},
 	}, {
 		name:  "valid_key_92_chars_no_padding",

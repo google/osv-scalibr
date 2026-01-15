@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -31,6 +32,39 @@ const (
 	testKeyRoutable              = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.0r03gxo7s"
 	testKeyLegacy                = "glpat-vzDNJu3Lvh4YCCekKsnx"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := gitlabpat.NewDetector()
+	cases := []struct {
+		name string
+		key  string
+	}{
+		{
+			name: "versioned",
+			key:  testKeyVersioned,
+		},
+		{
+			name: "routable",
+			key:  testKeyRoutable,
+		},
+		{
+			name: "legacy",
+			key:  testKeyLegacy,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(
+				t,
+				d,
+				tc.key,
+				gitlabpat.GitlabPAT{Pat: tc.key},
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			)
+		})
+	}
+}
 
 // TestDetector_truePositives tests cases where the Detector should find a GitLab PAT.
 func TestDetector_truePositives(t *testing.T) {

@@ -23,11 +23,45 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testAppLevelToken = `xapp-1-A09GDGLM2BE-9538001315143-31fd9c18d0c0c3e9638a7634d01d1ab001d3453ad209e168d5d49b589f0421af`
 const testAppConfigAccessToken = `xoxe.xoxp-1-Mi0yLTk1NTI2NjcxMzI3ODYtOTU1MjY2NzEzMzI1MC05NTUyODA2ODE4OTk0LTk1NTI4MDY4MzYxOTQtNWI4NzRmYjU0MTdhZGM3MjYyZmQ5MzNjNGQwMWJhZjhmY2VhMzIyMmQ4NGY4MDZlNjkyYjM5NTMwMjFiZTgwNA`
 const testAppConfigRefreshToken = `xoxe-1-My0xLTk1NTI2NjcxMzI3ODYtOTU1MjgwNjgxODk5NC05NTUyODA2ODcxNTU0LTk3Y2UxYWRlYWRlZjhhOWY5ZDRlZTVlOTI4MTRjNWZmYWZlZDU4MTU2OGZhNTIyNmVlYzY5MDE1ZmZmY2FkNTY`
+
+func TestAppLevelTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		slacktoken.NewAppLevelTokenDetector(),
+		testAppLevelToken,
+		slacktoken.SlackAppLevelToken{Token: testAppLevelToken},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestAppConfigAccessTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		slacktoken.NewAppConfigAccessTokenDetector(),
+		testAppConfigAccessToken,
+		slacktoken.SlackAppConfigAccessToken{Token: testAppConfigAccessToken},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestAppConfigRefreshTokenDetector(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		slacktoken.NewAppConfigRefreshTokenDetector(),
+		testAppConfigRefreshToken,
+		slacktoken.SlackAppConfigRefreshToken{Token: testAppConfigRefreshToken},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find Slack tokens (App Level Tokens, App Configuration Access Tokens,

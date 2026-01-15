@@ -58,6 +58,11 @@ func TestFileRequired(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "accept_INI",
+			path: "config.ini",
+			want: true,
+		},
+		{
 			name: "accept_textproto",
 			path: "hello.textproto",
 			want: true,
