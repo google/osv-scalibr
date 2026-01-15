@@ -140,6 +140,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
@@ -353,6 +354,7 @@ var (
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
+		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
