@@ -93,6 +93,7 @@ message PluginSpecificConfig {
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
+    OSVLocalConfig osvlocal = 48;
   }
 }
 
@@ -438,4 +439,9 @@ message MariadbConfig {
   int64 max_file_size_bytes = 1;
   // Tells the extractor to follow the include or not.
   optional bool follow_include = 2;
+}
+
+message OSVLocalConfig {
+  // If true, OSV databases will be downloaded as needed for enriching
+  bool download = 1;
 }
