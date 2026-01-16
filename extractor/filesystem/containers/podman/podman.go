@@ -18,6 +18,8 @@ package podman
 import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -25,33 +27,20 @@ const (
 	Name = "containers/podman"
 )
 
-// Config defines the configuration options for the Extractor.
-type Config struct {
-	// IncludeStopped specifies whether to list all containers, including those that are not currently running.
+// Extractor extracts containers from the podman db file.
+type Extractor struct {
 	IncludeStopped bool
 }
 
-// DefaultConfig returns the default configuration for the podman extractor.
-func DefaultConfig() Config {
-	return Config{}
-}
-
-// Extractor extracts containers from the podman db file.
-type Extractor struct {
-	cfg Config
-}
-
 // New returns a podman container inventory extractor.
-func New(cfg Config) *Extractor {
-	return &Extractor{cfg: cfg}
-}
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	includeStopped := false
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.PodmanConfig { return c.GetPodman() })
+	if specific != nil {
+		includeStopped = specific.GetIncludeStopped()
+	}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
-
-// Config returns the configuration of the extractor.
-func (e Extractor) Config() Config {
-	return Config{}
+	return &Extractor{IncludeStopped: includeStopped}, nil
 }
 
 // Name of the extractor.
