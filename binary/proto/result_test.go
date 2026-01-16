@@ -31,7 +31,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
@@ -685,39 +684,6 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Plugins: []string{"windows/dismpatch"},
-	}
-	mavenPackage := &extractor.Package{
-		Name:      "abc:xyz",
-		Version:   "1.0.0",
-		PURLType:  purl.TypeMaven,
-		Locations: []string{"/pom.xml"},
-		Plugins:   []string{pomxmlnet.Name},
-		Metadata: &javalockfile.Metadata{
-			GroupID:      "abc",
-			ArtifactID:   "xyz",
-			IsTransitive: true,
-		},
-	}
-	mavenPackageProto := &spb.Package{
-		Name:      "abc:xyz",
-		Version:   "1.0.0",
-		Ecosystem: "Maven",
-		Purl: &spb.Purl{
-			Purl:      "pkg:maven/abc/xyz@1.0.0",
-			Type:      purl.TypeMaven,
-			Name:      "xyz",
-			Namespace: "abc",
-			Version:   "1.0.0",
-		},
-		Locations: []string{"/pom.xml"},
-		Plugins:   []string{"java/pomxmlnet"},
-		Metadata: &spb.Package_JavaLockfileMetadata{
-			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
-				ArtifactId:   "xyz",
-				GroupId:      "abc",
-				IsTransitive: true,
-			},
-		},
 	}
 
 	podmanPackage := &extractor.Package{
