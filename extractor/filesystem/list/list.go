@@ -46,7 +46,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
@@ -165,7 +164,6 @@ var (
 		gradleverificationmetadataxml.Name: {noCFG(gradleverificationmetadataxml.New)},
 		// pom.xml extraction for environments with and without network access.
 		pomxml.Name:    {noCFG(pomxml.New)},
-		pomxmlnet.Name: {pomxmlnet.New},
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
