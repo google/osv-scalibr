@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
@@ -134,6 +135,7 @@ var (
 		fromVeles(codecommit.NewValidator(), "secrets/codecommitcredentialsvalidate", 0),
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
 		fromVeles(telegrambotapitoken.NewValidator(), "secrets/telegrombotapitokenvalidate", 0),
+		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
