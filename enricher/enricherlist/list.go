@@ -59,8 +59,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
-	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )

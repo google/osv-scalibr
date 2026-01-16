@@ -48,8 +48,9 @@ func (s *SFTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 
 	pass, _ := u.User.Password()
 	config := &ssh.ClientConfig{
-		User:            u.User.Username(),
-		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
+		User: u.User.Username(),
+		Auth: []ssh.AuthMethod{ssh.Password(pass)},
+		// codeql[go/insecure-host-key-callback] -- Scanner targets arbitrary hosts by design
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		// Timeout:      Ignored when using NewClientConn
 	}
