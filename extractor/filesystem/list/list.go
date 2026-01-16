@@ -48,7 +48,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
@@ -187,9 +186,7 @@ var (
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
-		// pom.xml extraction for environments with and without network access.
-		pomxml.Name:    {pomxml.New},
-		pomxmlnet.Name: {pomxmlnet.New},
+		pomxml.Name:                        {pomxml.New},
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{

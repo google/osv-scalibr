@@ -26,12 +26,13 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
+	transitivedependencypomxml "github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
@@ -691,7 +692,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Version:   "1.0.0",
 		PURLType:  purl.TypeMaven,
 		Locations: []string{"/pom.xml"},
-		Plugins:   []string{pomxmlnet.Name},
+		Plugins:   []string{pomxml.Name, transitivedependencypomxml.Name},
 		Metadata: &javalockfile.Metadata{
 			GroupID:      "abc",
 			ArtifactID:   "xyz",
@@ -710,7 +711,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Version:   "1.0.0",
 		},
 		Locations: []string{"/pom.xml"},
-		Plugins:   []string{"java/pomxmlnet"},
+		Plugins:   []string{pomxml.Name, transitivedependencypomxml.Name},
 		Metadata: &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId:   "xyz",
