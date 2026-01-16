@@ -29,10 +29,12 @@ import (
 // Match describes a single regex match for one element of a tuple.
 // Start and End indicate absolute byte offsets into the input buffer, and
 // Value holds the matched bytes.
+// FinderIndex identifies which Finder produced this match.
 type Match struct {
-	Start int
-	End   int
-	Value []byte
+	Start       int
+	End         int
+	Value       []byte
+	FinderIndex int
 }
 
 // Tuple represents a completed grouping of individual matches that together
@@ -66,9 +68,8 @@ var _ veles.Detector = &Detector{}
 // The greedy selection logic prefers tuples with minimal Dist (tightest grouping)
 // and avoids reusing overlapping matches across different tuple results.
 type Detector struct {
-	// MaxDistance defines the maximum allowed distance between tuple components.
-	// Distance is computed as: max(startPositions) - min(endPositions).
-	// Smaller values prefer tightly grouped matches.
+	// MaxElementLen is used to estimate MaxSecretLen(). It does not constrain
+	// actual regex match sizes; it only contributes to a safe upper bound.
 	MaxElementLen uint32
 
 	// MaxDistance defines the maximum allowed distance between tuple components.
@@ -113,34 +114,54 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 		return nil, nil
 	}
 
-	// Step 1: collect matches from all finders
 	all := make([][]Match, len(d.Finders))
 	for i, f := range d.Finders {
-		all[i] = f(b)
+		matches := f(b)
+		if len(matches) == 0 && d.FromPartial == nil {
+			return nil, nil
+		}
+		for j := range matches {
+			matches[j].FinderIndex = i
+		}
+		all[i] = matches
 	}
 
-	// Step 2: attempt full tuple resolution
 	tuples := collectAllTuples(all, int(d.MaxDistance))
+
+	if len(tuples) == 0 && d.FromPartial == nil {
+		return nil, nil
+	}
+
 	if len(tuples) > 0 {
-		// Sort by distance: prefer the most tightly clustered tuple
 		sort.Slice(tuples, func(i, j int) bool {
 			return tuples[i].Dist < tuples[j].Dist
 		})
 
-		used := make(map[int]bool) // positions already used by chosen tuples
-		var out []veles.Secret     // final secrets
-		var pos []int              // starting offsets
+		usedRanges := make([][2]int, 0)
+		var out []veles.Secret
+		var pos []int
 
 		for _, t := range tuples {
-			// Avoid reusing matches from overlapping tuples
-			ok := true
-			for _, m := range t.Matches {
-				if used[m.Start] {
-					ok = false
+			// This only accounts for overlap between the tuples not the tuples themselves
+			minS := t.Matches[0].Start
+			maxE := t.Matches[0].End
+			for _, m := range t.Matches[1:] {
+				if m.Start < minS {
+					minS = m.Start
+				}
+				if m.End > maxE {
+					maxE = m.End
+				}
+			}
+
+			overlap := false
+			for _, r := range usedRanges {
+				if minS < r[1] && r[0] < maxE {
+					overlap = true
 					break
 				}
 			}
-			if !ok {
+			if overlap {
 				continue
 			}
 
@@ -149,12 +170,9 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 				continue
 			}
 
-			for _, m := range t.Matches {
-				used[m.Start] = true
-			}
-
+			usedRanges = append(usedRanges, [2]int{minS, maxE})
 			out = append(out, secret)
-			pos = append(pos, t.Start)
+			pos = append(pos, t.Start) // usually min start
 		}
 
 		if len(out) > 0 {
@@ -162,7 +180,7 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 		}
 	}
 
-	// Step 3: partial fallback logic
+	// partial fallback logic
 	if d.FromPartial != nil {
 		var out []veles.Secret
 		var pos []int
@@ -181,11 +199,21 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	return nil, nil
 }
 
-// MaxSecretLen implements veles.Detector. It provides an upper bound on the
-// total secret length based on element lengths and distance limits. This value
-// is not exact—it is a safe maximum used for buffer sizing in other components.
+// MaxSecretLen returns an upper bound on the total byte-span of a tuple.
+// Each tuple consists of exactly one element from each Finder. We assume
+// each element may be up to MaxElementLen bytes long, so the total possible
+// payload size is MaxElementLen * len(d.Finders).
+//
+// In addition, tuple construction allows the elements to be separated by
+// up to MaxDistance bytes, where MaxDistance is defined as the difference
+// between the latest start position and the earliest end position of the
+// matched elements. This represents a single contiguous gap spanning from
+// the first match to the last match, not one gap per element.
+//
+// Therefore, the maximum total span of a tuple is:
+// MaxElementLen * len(d.Finders) + MaxDistance.
 func (d *Detector) MaxSecretLen() uint32 {
-	return d.MaxElementLen*2 + d.MaxDistance
+	return d.MaxElementLen*uint32(len(d.Finders)) + d.MaxDistance
 }
 
 // FindAllMatches returns a Finder that extracts all non-overlapping regex
@@ -215,54 +243,57 @@ func collectAllTuples(all [][]Match, maxDistance int) []Tuple {
 	return generateTuples(all, 0, nil, maxDistance)
 }
 
-// generateTuples recursively builds all combinations of matches,
-// picking exactly one match from each Finder's results (i.e., one
-// element for each position in the tuple).
-//
-// Parameters:
-//   - all: a slice where each element is the list of matches from one Finder
-//   - idx: the current finder index we're selecting from
-//   - current: the partial tuple being built
-//   - maxDist: maximum allowed distance between tuple elements
-//
-// Returns all valid Tuple objects extending the "current" prefix.
+// Standard interval overlap check.
+func rangesOverlap(a1, a2, b1, b2 int) bool {
+	return a1 < b2 && b1 < a2
+}
+
+// generateTuples recursively builds valid combinations only
 func generateTuples(all [][]Match, idx int, current []Match, maxDist int) []Tuple {
 	if idx == len(all) {
-		// We have picked one match from each finder, build a tuple.
 		t := buildTuple(append([]Match(nil), current...))
-		if t.Dist <= maxDist {
-			return []Tuple{t}
+		// Only return the tuple if it's valid (Dist >= 0 and not discarded)
+		if t.Dist > 0 && len(t.Matches) == len(all) { // extra safety
+			if t.Dist <= maxDist {
+				return []Tuple{t}
+			}
 		}
 		return nil
 	}
 
 	var out []Tuple
 	for _, m := range all[idx] {
-		// Copy current to avoid modifying shared backing arrays.
 		tmp := make([]Match, len(current)+1)
 		copy(tmp, current)
 		tmp[len(current)] = m
 
-		// Recurse with one more selected match.
-		out = append(out, generateTuples(all, idx+1, tmp, maxDist)...)
+		sub := generateTuples(all, idx+1, tmp, maxDist)
+		out = append(out, sub...)
 	}
-
 	return out
 }
 
-// buildTuple sorts matches by starting position and computes:
-//   - minStart: earliest start index
-//   - maxStart: latest start index
-//   - minEnd:   smallest end index
-//   - Dist:     maxStart - minEnd
-//
-// This distance metric ensures that overlapping or extremely distant matches
-// are deprioritized or discarded.
+// buildTuple builds a Tuple from a set of matches
 func buildTuple(matches []Match) Tuple {
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].Start < matches[j].Start
-	})
+	if len(matches) == 0 {
+		return Tuple{}
+	}
 
+	// Overlap detection: reject tuple if any two matches overlap
+	for i := range matches {
+		for j := range matches {
+			if j <= i {
+				continue
+			}
+			m1 := matches[i]
+			m2 := matches[j]
+			if rangesOverlap(m1.Start, m1.End, m2.Start, m2.End) {
+				return Tuple{Dist: -1} // mark invalid
+			}
+		}
+	}
+
+	// Compute min/max for distance
 	minStart := matches[0].Start
 	maxStart := matches[0].Start
 	minEnd := matches[0].End
@@ -279,11 +310,10 @@ func buildTuple(matches []Match) Tuple {
 		}
 	}
 
-	dist := maxStart - minEnd
 	return Tuple{
 		Matches: matches,
 		Start:   minStart,
 		End:     maxStart,
-		Dist:    dist,
+		Dist:    maxStart - minEnd,
 	}
 }

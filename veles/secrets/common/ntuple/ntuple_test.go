@@ -18,9 +18,23 @@ func (m mockSecret) ValueBytes() []byte { return []byte(m.Value) }
 
 // full tuple converter
 func mockSecretFromTuple(ms []ntuple.Match) (veles.Secret, bool) {
+	var a ntuple.Match
+	var b ntuple.Match
+	var c ntuple.Match
+
+	for j := range ms {
+		if ms[j].FinderIndex == 0 {
+			a = ms[j]
+		} else if ms[j].FinderIndex == 1 {
+			b = ms[j]
+		} else {
+			c = ms[j]
+		}
+	}
+
 	if len(ms) == 3 {
 		return mockSecret{
-			Value: string(ms[0].Value) + "-" + string(ms[1].Value) + "-" + string(ms[2].Value),
+			Value: string(a.Value) + "-" + string(b.Value) + "-" + string(c.Value),
 		}, true
 	}
 	return nil, false
@@ -87,9 +101,9 @@ func TestNTupleDetection(t *testing.T) {
 			maxDistance: 1000,
 			fromPartial: mockSecretFromPartial,
 			want: []veles.Secret{
-				mockSecret{Value: "ab1-b1-c1"},
+				mockSecret{Value: "ab1-b2-c1"},
 			},
-			wantPos: []int{4},
+			wantPos: []int{1},
 		},
 	}
 
