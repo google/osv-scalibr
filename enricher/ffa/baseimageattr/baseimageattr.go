@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -47,23 +46,30 @@ func (*Enricher) RequiredPlugins() []string {
 
 // Enrich filters packages from unknown binaries extractor that can be attributed to a base image.
 func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	inv.Packages = slices.DeleteFunc(inv.Packages, isAttributedToBaseImage)
-	return nil
-}
+	for _, pkg := range inv.Packages {
+		// Packages that are not extracted by unknown binaries extractor should be excluded
+		if !slices.Contains(pkg.Plugins, unknownbinariesextr.Name) {
+			continue
+		}
+		// Packages that does not have layer metadata cannot be attributed
+		if pkg.LayerMetadata == nil {
+			continue
+		}
 
-// isAttributedToBaseImage returns true if the package is accounted for in a base image.
-func isAttributedToBaseImage(pkg *extractor.Package) bool {
-	// Packages that are not extracted by unknown binaries extractor should be kept
-	if !slices.Contains(pkg.Plugins, unknownbinariesextr.Name) {
-		return false
+		lmd := pkg.LayerMetadata
+
+		// Package does not have a base image match
+		if lmd.BaseImageIndex == 0 {
+			continue
+		}
+
+		md, ok := pkg.Metadata.(*unknownbinariesextr.UnknownBinaryMetadata)
+		// Should not happen as all packges from unknown binaries extractor should have this metadata
+		if !ok {
+			continue
+		}
+		md.Attribution.BaseImage = true
 	}
-	// Packages that does not have layer metadata cannot be attributed and should be kept
-	if pkg.LayerMetadata == nil {
-		return false
-	}
-	// Packages that does not have a match for base image from base image enricher should be kept
-	if pkg.LayerMetadata.BaseImageIndex == 0 {
-		return false
-	}
-	return true
+
+	return nil
 }

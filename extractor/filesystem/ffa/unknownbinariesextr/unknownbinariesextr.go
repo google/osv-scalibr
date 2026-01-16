@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/opencontainers/go-digest"
 )
 
 const (
@@ -61,10 +62,19 @@ func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 // Extract determines the most likely package version from the directory and returns them as
 // package entries with "Location" filled in.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	// Compute file hash
+	fileHash, err := digest.SHA256.FromReader(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+
 	return inventory.Inventory{
 		Packages: []*extractor.Package{
 			{
 				Locations: []string{input.Path},
+				Metadata: &UnknownBinaryMetadata{
+					FileHash: fileHash,
+				},
 			},
 		}}, nil
 }
