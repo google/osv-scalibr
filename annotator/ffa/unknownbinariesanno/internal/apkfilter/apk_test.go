@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
 	"github.com/google/osv-scalibr/extractor"
+	ubextr "github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
@@ -115,13 +116,57 @@ R:binary2
 `,
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1":  {Name: "binary1"},
-				"usr/lib/library1": {Name: "library1"},
-				"bin/binary2":      {Name: "binary2"},
-				"usr/bin/unknown1": {Name: "unknown1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"usr/lib/library1": {Name: "library1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"bin/binary2": {Name: "binary2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"usr/bin/unknown1": {Name: "unknown1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/unknown1": {Name: "unknown1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					},
+				},
+				"usr/lib/library1": {Name: "library1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"bin/binary2": {Name: "binary2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"usr/bin/unknown1": {Name: "unknown1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 		},
 		{
@@ -167,14 +212,68 @@ R:symlink
 				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/symlink1":        {Name: "symlink1"},
-				"usr/bin/actual_binary":   {Name: "actual_binary"},
-				"path/to/another/symlink": {Name: "symlink"},
-				"path/to/another/actual":  {Name: "another_actual"},
-				"usr/bin/not_in_db":       {Name: "not_in_db"},
+				"usr/bin/symlink1": {Name: "symlink1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"usr/bin/actual_binary": {Name: "actual_binary",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"path/to/another/symlink": {Name: "symlink",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"path/to/another/actual": {Name: "another_actual",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"usr/bin/not_in_db": {Name: "not_in_db",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/not_in_db": {Name: "not_in_db"},
+				"usr/bin/symlink1": {Name: "symlink1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"usr/bin/actual_binary": {Name: "actual_binary",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"path/to/another/symlink": {Name: "symlink",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"path/to/another/actual": {Name: "another_actual",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"usr/bin/not_in_db": {Name: "not_in_db",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 		},
 		{
@@ -194,11 +293,32 @@ R:symlink2
 				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/symlink2": {Name: "symlink2"},
-				"usr/bin/unknown2": {Name: "unknown2"},
+				"usr/bin/symlink2": {Name: "symlink2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"usr/bin/unknown2": {Name: "unknown2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/unknown2": {Name: "unknown2"},
+				"usr/bin/symlink2": {Name: "symlink2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"usr/bin/unknown2": {Name: "unknown2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 		},
 		{
@@ -210,10 +330,20 @@ V:1.0
 `,
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 		},
 		{
@@ -222,14 +352,68 @@ V:1.0
 				"lib/apk/db/installed": string(installed),
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"etc/motd":           {Name: "motd"},
-				"usr/bin/scanelf":    {Name: "scanelf"},
-				"usr/bin/ssl_client": {Name: "ssl_client"},
-				"lib/libz.so.1":      {Name: "libz.so.1"},
-				"unknown/binary":     {Name: "unknown"},
+				"etc/motd": {Name: "motd",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"usr/bin/scanelf": {Name: "scanelf",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"usr/bin/ssl_client": {Name: "ssl_client",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"lib/libz.so.1": {Name: "libz.so.1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"unknown/binary": {Name: "unknown",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"unknown/binary": {Name: "unknown"},
+				"etc/motd": {Name: "motd",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"usr/bin/scanelf": {Name: "scanelf",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"usr/bin/ssl_client": {Name: "ssl_client",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"lib/libz.so.1": {Name: "libz.so.1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"unknown/binary": {Name: "unknown",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 		},
 		{
@@ -238,11 +422,32 @@ V:1.0
 				"lib/apk/db/installed": string(single),
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"etc/fstab":      {Name: "fstab"},
-				"unknown/binary": {Name: "unknown"},
+				"etc/fstab": {Name: "fstab",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
+				"unknown/binary": {Name: "unknown",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"unknown/binary": {Name: "unknown"},
+				"etc/fstab": {Name: "fstab",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: true,
+						},
+					}},
+				"unknown/binary": {Name: "unknown",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 		},
 		{
@@ -251,10 +456,20 @@ V:1.0
 				"lib/apk/db/installed": string(invalid),
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							BaseImage: false,
+						},
+					}},
 			},
 			wantErr: true,
 		},
