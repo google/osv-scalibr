@@ -41,6 +41,7 @@ var (
 		".cfg":       true,
 		".env":       true,
 		".html":      true,
+		".ini":       true,
 		".ipynb":     true,
 		".json":      true,
 		".log":       true,

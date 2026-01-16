@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -78,7 +80,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = macports.Extractor{}
+			e, err := macports.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("macports.New: %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
@@ -191,7 +196,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = macports.Extractor{}
+			e, err := macports.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("macports.New: %v", err)
+			}
 			input := &filesystem.ScanInput{Path: tt.path, Reader: nil}
 			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {

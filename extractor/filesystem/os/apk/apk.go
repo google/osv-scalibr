@@ -59,10 +59,12 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	if cfg.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
+
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.ApkConfig { return c.GetApk() })
 	if specific.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
+
 	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
 }
 
@@ -89,7 +91,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if err != nil {
 		return false
 	}
-	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(api.Path(), fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}

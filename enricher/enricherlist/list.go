@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/secrets/hashicorp"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
@@ -53,11 +54,13 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -124,11 +127,13 @@ var (
 		fromVeles(stripeapikeys.NewSecretKeyValidator(), "secrets/stripesecretkeyvalidate", 0),
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
+		fromVeles(paystacksecretkey.NewValidator(), "secrets/paystacksecretkeyvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
 		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
 		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
 		fromVeles(codecommit.NewValidator(), "secrets/codecommitcredentialsvalidate", 0),
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
+		fromVeles(telegrambotapitoken.NewValidator(), "secrets/telegrombotapitokenvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
@@ -151,6 +156,7 @@ var (
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
 		requirements.Name: {requirements.New},
+		pomxml.Name:       {pomxml.New},
 	}
 
 	// PackageDeprecation enricher.
