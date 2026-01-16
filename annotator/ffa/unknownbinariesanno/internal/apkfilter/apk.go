@@ -17,8 +17,6 @@ package apkfilter
 
 import (
 	"context"
-	"errors"
-	iofs "io/fs"
 	"path"
 	"strings"
 
@@ -53,11 +51,6 @@ func (ApkFilter) Name() string {
 func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBinariesSet map[string]*extractor.Package) error {
 	reader, err := fs.Open(apkDBPath)
 	if err != nil {
-		// If apk db doesn't exist, apk is not installed or has no package info.
-		// Skip this filter without error.
-		if errors.Is(err, iofs.ErrNotExist) {
-			return nil
-		}
 		return err
 	}
 	defer reader.Close()
@@ -88,7 +81,6 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					continue
 				}
 				filePath := path.Join(currentDir, kv.Value)
-				// delete(unknownBinariesSet, filePath)
 				attributeBaseImage(filePath)
 
 				if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
@@ -97,7 +89,6 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					if err != nil {
 						continue
 					}
-					// delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 					attributeBaseImage(strings.TrimPrefix(evalPath, "/"))
 				}
 			}

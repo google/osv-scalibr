@@ -89,7 +89,6 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 
 		// Remove leading '/' since SCALIBR fs paths don't include that.
 		// noop if filePath doesn't exist
-		// delete(unknownBinariesSet, strings.TrimPrefix(filePath, "/"))
 		attributeBaseImage(strings.TrimPrefix(filePath, "/"))
 
 		if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
@@ -97,7 +96,6 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 			if err != nil {
 				continue
 			}
-			// delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 			attributeBaseImage(strings.TrimPrefix(evalPath, "/"))
 		}
 	}
