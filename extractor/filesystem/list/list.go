@@ -263,11 +263,11 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:         {noCFG(containerd.NewDefault)},
-		k8simage.Name:           {noCFG(k8simage.NewDefault)},
-		podman.Name:             {noCFG(podman.NewDefault)},
-		dockerbaseimage.Name:    {noCFG(dockerbaseimage.NewDefault)},
-		dockercomposeimage.Name: {noCFG(dockercomposeimage.NewDefault)},
+		containerd.Name:         {containerd.New},
+		k8simage.Name:           {k8simage.New},
+		podman.Name:             {podman.New},
+		dockerbaseimage.Name:    {dockerbaseimage.New},
+		dockercomposeimage.Name: {dockercomposeimage.New},
 	}
 
 	// OS extractors.
