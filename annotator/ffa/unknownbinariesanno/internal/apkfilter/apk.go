@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk/apkutil"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
@@ -61,6 +62,20 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 	}
 	defer reader.Close()
 
+	attributeBaseImage := func(path string) {
+		pkg, ok := unknownBinariesSet[strings.TrimPrefix(path, "/")]
+		if !ok {
+			return
+		}
+
+		md, ok := pkg.Metadata.(*unknownbinariesextr.UnknownBinaryMetadata)
+		if !ok {
+			return
+		}
+
+		md.Attribution.BaseImage = true
+	}
+
 	s := apkutil.NewScanner(reader)
 	for s.Scan() {
 		var currentDir string
@@ -73,7 +88,8 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					continue
 				}
 				filePath := path.Join(currentDir, kv.Value)
-				delete(unknownBinariesSet, filePath)
+				// delete(unknownBinariesSet, filePath)
+				attributeBaseImage(filePath)
 
 				if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
 					// EvalSymlink expects an absolute path from the root of the image.
@@ -81,7 +97,8 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					if err != nil {
 						continue
 					}
-					delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
+					// delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
+					attributeBaseImage(strings.TrimPrefix(evalPath, "/"))
 				}
 			}
 		}
