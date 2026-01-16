@@ -73,6 +73,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -127,6 +128,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
+	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -137,6 +140,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
@@ -259,30 +263,30 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:         {noCFG(containerd.NewDefault)},
-		k8simage.Name:           {noCFG(k8simage.NewDefault)},
-		podman.Name:             {noCFG(podman.NewDefault)},
-		dockerbaseimage.Name:    {noCFG(dockerbaseimage.NewDefault)},
-		dockercomposeimage.Name: {noCFG(dockercomposeimage.NewDefault)},
+		containerd.Name:         {containerd.New},
+		k8simage.Name:           {k8simage.New},
+		podman.Name:             {podman.New},
+		dockerbaseimage.Name:    {dockerbaseimage.New},
+		dockercomposeimage.Name: {dockercomposeimage.New},
 	}
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:       {noCFG(dpkg.NewDefault)},
-		apk.Name:        {noCFG(apk.NewDefault)},
-		rpm.Name:        {noCFG(rpm.NewDefault)},
-		cos.Name:        {noCFG(cos.NewDefault)},
-		snap.Name:       {noCFG(snap.NewDefault)},
-		nix.Name:        {noCFG(nix.New)},
-		module.Name:     {noCFG(module.NewDefault)},
-		vmlinuz.Name:    {noCFG(vmlinuz.NewDefault)},
-		pacman.Name:     {noCFG(pacman.NewDefault)},
-		portage.Name:    {noCFG(portage.NewDefault)},
-		flatpak.Name:    {noCFG(flatpak.NewDefault)},
-		homebrew.Name:   {noCFG(homebrew.New)},
-		macapps.Name:    {noCFG(macapps.NewDefault)},
-		macports.Name:   {noCFG(macports.New)},
-		winget.Name:     {noCFG(winget.NewDefault)},
+		dpkg.Name:       {dpkg.New},
+		apk.Name:        {apk.New},
+		rpm.Name:        {rpm.New},
+		cos.Name:        {cos.New},
+		snap.Name:       {snap.New},
+		nix.Name:        {nix.New},
+		module.Name:     {module.New},
+		vmlinuz.Name:    {vmlinuz.New},
+		pacman.Name:     {pacman.New},
+		portage.Name:    {portage.New},
+		flatpak.Name:    {flatpak.New},
+		homebrew.Name:   {homebrew.New},
+		macapps.Name:    {macapps.New},
+		macports.Name:   {macports.New},
+		winget.Name:     {winget.New},
 		chocolatey.Name: {chocolatey.New},
 	}
 
@@ -322,6 +326,7 @@ var (
 		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
+		{openrouter.NewDetector(), "secrets/openrouter", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
@@ -342,12 +347,14 @@ var (
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
 		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
+		{paystacksecretkey.NewSecretKeyDetector(), "secrets/paystacksecretkey", 0},
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
 		{recaptchakey.NewDetector(), "secrets/recaptchakey", 0},
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
+		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
@@ -361,6 +368,7 @@ var (
 		vscodeextensions.Name: {noCFG(vscodeextensions.New)},
 		wordpressplugins.Name: {noCFG(wordpressplugins.NewDefault)},
 		chromeextensions.Name: {noCFG(chromeextensions.New)},
+		netscaler.Name:        {noCFG(netscaler.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
@@ -496,7 +504,7 @@ func noCFG(f func() filesystem.Extractor) InitFn {
 // ExtractorsFromName returns a list of extractors from a name.
 func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]filesystem.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
-		result := []filesystem.Extractor{}
+		var result []filesystem.Extractor
 		for _, initer := range initers {
 			p, err := initer(cfg)
 			if err != nil {

@@ -20,7 +20,17 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		NewTokenDetector(),
+		"hvs.CAESIB8KI2QJk0ePUYdOQXaxl0",
+		Token{Token: "hvs.CAESIB8KI2QJk0ePUYdOQXaxl0"},
+	)
+}
 
 func TestNewTokenDetector_Detect(t *testing.T) {
 	tests := []struct {

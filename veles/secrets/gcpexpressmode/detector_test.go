@@ -22,11 +22,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	testKey = "AQ.Ab8Rthat-is-1-very-nice-KeyYouGotThere_ShameIfLost"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t, gcpexpressmode.NewDetector(),
+		testKey,
+		gcpexpressmode.APIKey{Key: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 func TestDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gcpexpressmode.NewDetector()})
