@@ -36,14 +36,20 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+
 	// SQLite driver needed for parsing rpmdb.sqlite files.
 	_ "modernc.org/sqlite"
 )
 
-// Name is the name for the RPM extractor
-const Name = "os/rpm"
+const (
+	// Name is the name for the RPM extractor
+	Name           = "os/rpm"
+	defaultTimeout = 5 * time.Minute
 
-const defaultTimeout = 5 * time.Minute
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
+)
 
 var (
 	requiredDirectory = []string{
@@ -62,29 +68,9 @@ var (
 	}
 )
 
-// Config contains RPM specific configuration values
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
-	MaxFileSizeBytes int64
-	// Timeout is the timeout duration for parsing the RPM database.
-	Timeout time.Duration
-}
-
-// DefaultConfig returns the default configuration values for the RPM extractor.
-func DefaultConfig() Config {
-	return Config{
-		Stats:            nil,
-		MaxFileSizeBytes: 0,
-		Timeout:          defaultTimeout,
-	}
-}
-
 // Extractor extracts rpm packages from rpm database.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 	Timeout          time.Duration
 }
@@ -93,18 +79,26 @@ type Extractor struct {
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
-		Timeout:          cfg.Timeout,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.RpmConfig { return c.GetRpm() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	timeout := defaultTimeout
+	if specific.GetTimeoutSeconds() > 0 {
+		timeout = time.Duration(specific.GetTimeoutSeconds()) * time.Second
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes, Timeout: timeout}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -129,7 +123,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if err != nil {
 		return false
 	}
-	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
@@ -139,10 +133,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -152,12 +146,12 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 // Extract extracts packages from rpm status files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs, err := e.extractFromInput(ctx, input)
-	if e.stats != nil {
+	if e.Stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
 			fileSizeBytes = input.Info.Size()
 		}
-		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 			Path:          input.Path,
 			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 			FileSizeBytes: fileSizeBytes,
@@ -190,7 +184,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		log.Errorf("osrelease.ParseOsRelease(): %v", err)
 	}
 
-	pkgs := []*extractor.Package{}
+	var pkgs []*extractor.Package
 	for _, p := range rpmPkgs {
 		metadata := &rpmmeta.Metadata{
 			PackageName:  p.Name,

@@ -25,10 +25,15 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
-	extr := dockerbaseimage.New(dockerbaseimage.DefaultConfig())
+	extr, err := dockerbaseimage.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("dockerbaseimage.New failed: %v", err)
+	}
 
 	tests := []struct {
 		name string
@@ -74,15 +79,14 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name         string
-		path         string
-		cfg          dockerbaseimage.Config
-		wantPackages []*extractor.Package
+		name             string
+		path             string
+		maxFileSizeBytes int64
+		wantPackages     []*extractor.Package
 	}{
 		{
 			name: "single_stage_dockerfile",
 			path: "testdata/dockerfile.single-stage",
-			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "nginx",
@@ -95,7 +99,6 @@ func TestExtract(t *testing.T) {
 		{
 			name: "multi_stage_dockerfile",
 			path: "testdata/dockerfile.multi-stage",
-			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "nginx",
@@ -114,7 +117,6 @@ func TestExtract(t *testing.T) {
 		{
 			name: "parameterized_dockerfile",
 			path: "testdata/dockerfile.parameterized",
-			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "nginx",
@@ -133,7 +135,6 @@ func TestExtract(t *testing.T) {
 		{
 			name: "versionless_dockerfile",
 			path: "testdata/dockerfile.no-version",
-			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "nginx",
@@ -146,7 +147,6 @@ func TestExtract(t *testing.T) {
 		{
 			name: "sha256_version",
 			path: "testdata/dockerfile.hash",
-			cfg:  dockerbaseimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "nginx",
@@ -159,20 +159,22 @@ func TestExtract(t *testing.T) {
 		{
 			name:         "scratch layer",
 			path:         "testdata/dockerfile.scratch",
-			cfg:          dockerbaseimage.DefaultConfig(),
 			wantPackages: nil,
 		},
 		{
-			name:         "larger than size limit",
-			path:         "testdata/dockerfile.multi-stage",
-			cfg:          dockerbaseimage.Config{MaxFileSizeBytes: 1},
-			wantPackages: nil,
+			name:             "larger than size limit",
+			path:             "testdata/dockerfile.multi-stage",
+			maxFileSizeBytes: 1,
+			wantPackages:     nil,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := dockerbaseimage.New(tc.cfg)
+			extr, err := dockerbaseimage.New(&cpb.PluginConfig{MaxFileSizeBytes: tc.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("dockerbaseimage.New failed: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,
@@ -209,14 +211,17 @@ func TestExtract_failures(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := dockerbaseimage.New(dockerbaseimage.DefaultConfig())
+			extr, err := dockerbaseimage.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("dockerbaseimage.New failed: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,
 			})
 			defer extracttest.CloseTestScanInput(t, input)
 
-			_, err := extr.Extract(t.Context(), &input)
+			_, err = extr.Extract(t.Context(), &input)
 			if err == nil {
 				t.Fatalf("Extract(): got nil, want err")
 			}

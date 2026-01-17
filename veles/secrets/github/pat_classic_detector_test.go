@@ -23,12 +23,39 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
-	classicPATTestKey    = `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`
-	anotherClassicPATKey = `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`
+	classicPATTestKey       = `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`
+	classicPATTestKeyBase64 = `Z2hwX2xiU0g0Q1dxSEtXU0pDdGY2SmRRS25Ja002SWtWMDBOelZheA==`
+	anotherClassicPATKey    = `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`
 )
+
+func TestClassicPATDetectorAcceptance(t *testing.T) {
+	d := github.NewClassicPATDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+	}{
+		{
+			name:   "raw",
+			input:  classicPATTestKey,
+			secret: github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+		},
+		{
+			name:   "base64",
+			input:  classicPATTestKeyBase64,
+			secret: github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, velestest.WithBackToBack(), velestest.WithPad('a'))
+		})
+	}
+}
 
 // TestClassicPATDetector_truePositives tests for cases where we know the Detector
 // will find a Github classic personal access tokens.
@@ -96,6 +123,12 @@ func TestClassicPATDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: classicPATTestKey + `extra`,
+		want: []veles.Secret{
+			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: classicPATTestKeyBase64,
 		want: []veles.Secret{
 			github.ClassicPersonalAccessToken{Token: classicPATTestKey},
 		},

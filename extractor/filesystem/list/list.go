@@ -73,6 +73,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -127,6 +128,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
+	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
@@ -138,6 +141,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
@@ -155,13 +159,13 @@ var (
 	// Language extractors.
 
 	// CppSource extractors for C++.
-	CppSource = InitMap{conanlock.Name: {noCFG(conanlock.New)}}
+	CppSource = InitMap{conanlock.Name: {conanlock.New}}
 	// JavaSource extractors for Java.
 	JavaSource = InitMap{
-		gradlelockfile.Name:                {noCFG(gradlelockfile.New)},
-		gradleverificationmetadataxml.Name: {noCFG(gradleverificationmetadataxml.New)},
+		gradlelockfile.Name:                {gradlelockfile.New},
+		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
 		// pom.xml extraction for environments with and without network access.
-		pomxml.Name:    {noCFG(pomxml.New)},
+		pomxml.Name:    {pomxml.New},
 		pomxmlnet.Name: {pomxmlnet.New},
 	}
 	// JavaArtifact extractors for Java.
@@ -172,9 +176,9 @@ var (
 	JavascriptSource = InitMap{
 		packagejson.Name:     {noCFG(packagejson.NewDefault)},
 		packagelockjson.Name: {noCFG(packagelockjson.NewDefault)},
-		pnpmlock.Name:        {noCFG(pnpmlock.New)},
-		yarnlock.Name:        {noCFG(yarnlock.New)},
-		bunlock.Name:         {noCFG(bunlock.New)},
+		pnpmlock.Name:        {pnpmlock.New},
+		yarnlock.Name:        {yarnlock.New},
+		bunlock.Name:         {bunlock.New},
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
@@ -185,12 +189,12 @@ var (
 		// requirements extraction for environments with and without network access.
 		requirements.Name: {noCFG(requirements.NewDefault)},
 		setup.Name:        {noCFG(setup.NewDefault)},
-		pipfilelock.Name:  {noCFG(pipfilelock.New)},
-		pdmlock.Name:      {noCFG(pdmlock.New)},
-		poetrylock.Name:   {noCFG(poetrylock.New)},
-		pylock.Name:       {noCFG(pylock.New)},
+		pipfilelock.Name:  {pipfilelock.New},
+		pdmlock.Name:      {pdmlock.New},
+		poetrylock.Name:   {poetrylock.New},
+		pylock.Name:       {pylock.New},
 		condameta.Name:    {noCFG(condameta.NewDefault)},
-		uvlock.Name:       {noCFG(uvlock.New)},
+		uvlock.Name:       {uvlock.New},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
@@ -205,13 +209,13 @@ var (
 		gobinary.Name: {gobinary.New},
 	}
 	// DartSource extractors for Dart.
-	DartSource = InitMap{pubspec.Name: {noCFG(pubspec.New)}}
+	DartSource = InitMap{pubspec.Name: {pubspec.New}}
 	// ErlangSource extractors for Erlang.
-	ErlangSource = InitMap{mixlock.Name: {noCFG(mixlock.New)}}
+	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
 	// NimSource extractors for Nim.
-	NimSource = InitMap{nimble.Name: {noCFG(nimble.New)}}
+	NimSource = InitMap{nimble.Name: {nimble.New}}
 	// LuaSource extractors for Lua.
-	LuaSource = InitMap{luarocks.Name: {noCFG(luarocks.New)}}
+	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
 	// ElixirSource extractors for Elixir.
 	ElixirSource = InitMap{elixir.Name: {noCFG(elixir.NewDefault)}}
 	// HaskellSource extractors for Haskell.
@@ -220,16 +224,16 @@ var (
 		cabal.Name:     {noCFG(cabal.NewDefault)},
 	}
 	// RSource extractors for R source extractors
-	RSource = InitMap{renvlock.Name: {noCFG(renvlock.New)}}
+	RSource = InitMap{renvlock.Name: {renvlock.New}}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {noCFG(gemspec.NewDefault)},
-		gemfilelock.Name: {noCFG(gemfilelock.New)},
+		gemfilelock.Name: {gemfilelock.New},
 	}
 	// RustSource extractors for Rust.
 	RustSource = InitMap{
-		cargolock.Name: {noCFG(cargolock.New)},
-		cargotoml.Name: {noCFG(cargotoml.New)},
+		cargolock.Name: {cargolock.New},
+		cargotoml.Name: {cargotoml.New},
 	}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
@@ -251,7 +255,7 @@ var (
 		dotnetpe.Name: {noCFG(dotnetpe.NewDefault)},
 	}
 	// PHPSource extractors for PHP Source extractors.
-	PHPSource = InitMap{composerlock.Name: {noCFG(composerlock.New)}}
+	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
 		packageresolved.Name: {noCFG(packageresolved.NewDefault)},
@@ -260,30 +264,30 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:         {noCFG(containerd.NewDefault)},
-		k8simage.Name:           {noCFG(k8simage.NewDefault)},
-		podman.Name:             {noCFG(podman.NewDefault)},
-		dockerbaseimage.Name:    {noCFG(dockerbaseimage.NewDefault)},
-		dockercomposeimage.Name: {noCFG(dockercomposeimage.NewDefault)},
+		containerd.Name:         {containerd.New},
+		k8simage.Name:           {k8simage.New},
+		podman.Name:             {podman.New},
+		dockerbaseimage.Name:    {dockerbaseimage.New},
+		dockercomposeimage.Name: {dockercomposeimage.New},
 	}
 
 	// OS extractors.
 	OS = InitMap{
-		dpkg.Name:       {noCFG(dpkg.NewDefault)},
-		apk.Name:        {noCFG(apk.NewDefault)},
-		rpm.Name:        {noCFG(rpm.NewDefault)},
-		cos.Name:        {noCFG(cos.NewDefault)},
-		snap.Name:       {noCFG(snap.NewDefault)},
-		nix.Name:        {noCFG(nix.New)},
-		module.Name:     {noCFG(module.NewDefault)},
-		vmlinuz.Name:    {noCFG(vmlinuz.NewDefault)},
-		pacman.Name:     {noCFG(pacman.NewDefault)},
-		portage.Name:    {noCFG(portage.NewDefault)},
-		flatpak.Name:    {noCFG(flatpak.NewDefault)},
-		homebrew.Name:   {noCFG(homebrew.New)},
-		macapps.Name:    {noCFG(macapps.NewDefault)},
-		macports.Name:   {noCFG(macports.New)},
-		winget.Name:     {noCFG(winget.NewDefault)},
+		dpkg.Name:       {dpkg.New},
+		apk.Name:        {apk.New},
+		rpm.Name:        {rpm.New},
+		cos.Name:        {cos.New},
+		snap.Name:       {snap.New},
+		nix.Name:        {nix.New},
+		module.Name:     {module.New},
+		vmlinuz.Name:    {vmlinuz.New},
+		pacman.Name:     {pacman.New},
+		portage.Name:    {portage.New},
+		flatpak.Name:    {flatpak.New},
+		homebrew.Name:   {homebrew.New},
+		macapps.Name:    {macapps.New},
+		macports.Name:   {macports.New},
+		winget.Name:     {winget.New},
 		chocolatey.Name: {chocolatey.New},
 	}
 
@@ -323,6 +327,7 @@ var (
 		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
+		{openrouter.NewDetector(), "secrets/openrouter", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
@@ -344,12 +349,14 @@ var (
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
 		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
+		{paystacksecretkey.NewSecretKeyDetector(), "secrets/paystacksecretkey", 0},
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
 		{recaptchakey.NewDetector(), "secrets/recaptchakey", 0},
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
+		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
@@ -363,6 +370,7 @@ var (
 		vscodeextensions.Name: {noCFG(vscodeextensions.New)},
 		wordpressplugins.Name: {noCFG(wordpressplugins.NewDefault)},
 		chromeextensions.Name: {noCFG(chromeextensions.New)},
+		netscaler.Name:        {noCFG(netscaler.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
@@ -498,7 +506,7 @@ func noCFG(f func() filesystem.Extractor) InitFn {
 // ExtractorsFromName returns a list of extractors from a name.
 func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]filesystem.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
-		result := []filesystem.Extractor{}
+		var result []filesystem.Extractor
 		for _, initer := range initers {
 			p, err := initer(cfg)
 			if err != nil {

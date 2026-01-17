@@ -16,6 +16,7 @@ package proto
 
 import (
 	"fmt"
+	"io/fs"
 	"reflect"
 
 	"github.com/google/osv-scalibr/converter"
@@ -107,6 +108,15 @@ func setProtoMetadata(meta any, p *spb.Package) {
 
 	if m, ok := meta.(MetadataProtoSetter); ok {
 		m.SetProto(p)
+		return
+	}
+
+	// input.FS is passed from Extractors to Detectors, but it represents a
+	// runtime filesystem interface rather than a serializable data structure.
+	// Attempting to serialize it would be invalid and unsafe.
+	// This check explicitly excludes it from metadata serialization to prevent
+	// type assertion and proto conversion errors.
+	if _, ok := meta.(fs.FS); ok {
 		return
 	}
 
