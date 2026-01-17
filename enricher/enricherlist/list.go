@@ -20,6 +20,7 @@ import (
 	"maps"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
@@ -58,11 +59,10 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the enricher initializer function.
@@ -134,6 +134,7 @@ var (
 		fromVeles(codecommit.NewValidator(), "secrets/codecommitcredentialsvalidate", 0),
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
 		fromVeles(telegrambotapitoken.NewValidator(), "secrets/telegrombotapitokenvalidate", 0),
+		fromVeles(salesforceoauth2client.NewValidator(), "secrets/salesforceoauth2client", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.

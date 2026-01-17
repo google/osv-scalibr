@@ -138,6 +138,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
@@ -355,6 +356,7 @@ var (
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
+		{salesforceoauth2client.NewDetector(), "secrets/salesforceoauth2client", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
