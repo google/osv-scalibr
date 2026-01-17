@@ -34,7 +34,8 @@ func alwaysFailedStatus(body io.Reader) (veles.ValidationStatus, error) {
 
 // NewValidator creates a validator for SendGrid API keys.
 // It calls GET /v3/user/account with Bearer auth.
-// 200 OK or 403 Forbidden -> valid key
+// 200 OK -> valid key
+// 403 Forbidden -> valid key (restricted scopes, but key exists and is active)
 // 401 Unauthorized -> invalid key
 func NewValidator() *simplevalidate.Validator[APIKey] {
 	return &simplevalidate.Validator[APIKey]{

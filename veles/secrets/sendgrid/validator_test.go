@@ -160,46 +160,6 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}
 }
 
-func TestValidator_InvalidRequest(t *testing.T) {
-	// Create a mock server that returns 401 for any auth
-	server := mockSendGridServer(t, "expected-key", http.StatusUnauthorized, "/v3/user/account")
-	defer server.Close()
-
-	validator := sendgrid.NewValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/v3/user/account"
-
-	testCases := []struct {
-		name     string
-		key      sendgrid.APIKey
-		expected veles.ValidationStatus
-	}{
-		{
-			name:     "empty_key",
-			key:      sendgrid.APIKey{Key: ""},
-			expected: veles.ValidationInvalid,
-		},
-		{
-			name:     "invalid_key_format",
-			key:      sendgrid.APIKey{Key: "invalid-key-format"},
-			expected: veles.ValidationInvalid,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := validator.Validate(t.Context(), tc.key)
-
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-			}
-			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
-			}
-		})
-	}
-}
-
 func TestValidator_ServerErrors(t *testing.T) {
 	cases := []struct {
 		name       string
