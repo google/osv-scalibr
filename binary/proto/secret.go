@@ -63,6 +63,7 @@ import (
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -243,6 +244,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
+	case salesforceoauth2access.Token:
+		return salesforceOAuth2AccessTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -830,6 +833,16 @@ func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) 
 	}
 }
 
+func salesforceOAuth2AccessTokenToProto(s salesforceoauth2access.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SalesforceOauth2AccessToken{
+			SalesforceOauth2AccessToken: &spb.SecretData_SalesforceOAuth2AccessToken{
+				Token:     s.Token,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1085,6 +1098,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
 		}, nil
+	case *spb.SecretData_SalesforceOauth2AccessToken:
+		return salesforceOAuth2AccessTokenToStruct(s.GetSalesforceOauth2AccessToken()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1281,6 +1296,12 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
 		ID:       credsPB.GetId(),
+	}
+}
+
+func salesforceOAuth2AccessTokenToStruct(tPB *spb.SecretData_SalesforceOAuth2AccessToken) salesforceoauth2access.Token {
+	return salesforceoauth2access.Token{
+		Token:     tPB.GetToken(),
 	}
 }
 
