@@ -296,7 +296,7 @@ func TestExtractor(t *testing.T) {
 				},
 				{
 					// This is not valid JSON. The extractor can still parse it, however.
-					name: "multiline trailing comma",
+					name: "multiline_trailing_comma",
 					input: `{
 	"baz": "12345",
 	"bar": "world",
@@ -349,7 +349,7 @@ func TestExtractor(t *testing.T) {
 					},
 				},
 				{
-					name: "different whitespace after colon",
+					name: "different_whitespace_after_colon",
 					input: `{
 	"baz":  "12345",
 	"bar":	"world",

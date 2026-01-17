@@ -22,7 +22,57 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := gcpsak.NewDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+		opts   []velestest.AcceptDetectorOption
+	}{
+		{
+			name: "json",
+			input: `{
+			"type": "service_account",
+			"project_id": "some-project-id",
+			"private_key_id": "123456789abcdef0123456789abcdef012345678",
+			"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsQfQ524jSCtAi\n0RbzWuo3S6jJjTydYeSO/cKouEOmhKLoUxWVEXGC70MFL/ed5XqpR82amJZwzxLN\ntWQABwLGLkfD4aD4MAWprSjRAv9YSUI5s+NjiqgpzNulysgQmKDy3zgq4cAQtKzn\njWgZjMrXVQz1UhRZAiO/xDb/x6sw/4DMJptw2zHvxxMnRR/o93UM+fyJ6L99UNhC\nzLIp9IT8JQEhQu68Pbgrhu04syrUOYPrWLtpCDc80hPW9A/UJiWYkZcxhHSEXtsN\ndNGlB5S+jIEZDqyLaHRJ2vaud5CEd8CTRPhIM1ASnj36+FyQA2YRaFvJofw76N1W\nJ9BMrJadAgMBAAECggEACv1GLG7CAsxnzODT+wCA0rhD81/MTyoQn8K2qXbf8f6i\nOfoa9WCggj7rYqhVvsAGHEiVaFh1uIqtY2xADfRki+ol7+w0DcFaiyGd6f+r9KDv\n1aiRSCdvZQNJvAD81Ho4QmZVOf8e9rHgGgGec4rU4fnuErSC0c7eIvzMmXLOjBiV\n3ch9CHO7iKp0krLfsSnAHnK3ove5kGBA6A3sYwR+/7680i/aoC7l3gtXh0MW2E9h\nkkLKc9VqZenrMlXoMQngI6c0Ii/AntQbb3akomnqlajIa0OibBLYTJbv26ChUlsN\nA6SGQHIXemM+HuiAh/U6AAvlXkTSGQsO78fEtwvC7QKBgQDnlNIT3CkqTmev+p+o\nR34RmT/c+8NLCUv8rdBtUNErY4/y/Lagg0oq6nPu/p+KLnS73ycGhsSBUbAc8+wy\noEgy4B4e92jzm0NxFv8i3cY29O4qxtn99kfKrfscsMcqycpxbdoTpPgRyhFGsITu\nZ8lBqFDUUlcowENuJmDnNbQw4wKBgQC+a8g0AaMHi3QBz22KfLWe9HDy8DawY/zx\nHajoo+/a5c8BOl2ZWT+YdnQRWsvr370yPcSNWkg6NwmmSx1DF3PTpRTiIUFa6azB\nm7aExYHXSumVUsDqmu2TDMRVBwb6lCQSTY0QySwvf23kPT+adYNvtLdvVN6sLpww\nnr4f1xQyfwKBgQCk5EpQ6cpF3V3m58UWxRD25u+aIYmEvDHm0Lw/mfPVuSaeFWLU\nF6ePtzClU5e1hC6KNvJKq1rv2YJUmznrMkU2NG4+DlwkWMFEnOM9qDuilfOfccd2\nFQ45Ong6jYTC6rvC2D0XD7eysvZqJvX/6tZaccZb5+U3lu5sV9dXyd1rkQKBgB5h\nY9eoSzJw9Vk0lu15aCCsLzkTSiZqTXjKmqBDR4lNEPHJNhW5P4Q7odkC+3XuhGj3\nodxLgyqGjWuSoGCL5VbnB6XsWFkA3yckiMI2ILkQoqPISC8l+LF1X/2Q2XQxHnAt\nH0yGTB5n3kiD3RnvlcDEvF9u0vf1l8XKDdtWnUpRAoGAPeRvBGsTXD0c62FAQ7Ct\nH7e7IlqS0iKfRV5/cmUDeuFD8RBK4iZFTlCAVqakdmjUlfJPb60D3xwlJpCoZSKi\n2lY9Rj7ypRiTUoT35nVVHw8ejwYBMawo4Gkaqd198mYxUogJvOuTcGJ509DdTack\nRsacStLCR1jUc6EzaCaj61w=\n-----END PRIVATE KEY-----\n",
+			"client_email": "some-service-account@some-project-id.iam.gserviceaccount.com",
+			"client_id": "some-client-id",
+			"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+			"token_uri": "https://oauth2.googleapis.com/token",
+			"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+			"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/some-service-account%40some-project-id.iam.gserviceaccount.com"
+		}`,
+			secret: gcpsak.GCPSAK{
+				PrivateKeyID:   exampleKeyID,
+				ServiceAccount: exampleServiceAccount,
+				Signature:      exampleSignature,
+			},
+			opts: []velestest.AcceptDetectorOption{
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			},
+		},
+		{
+			name:  "base64",
+			input: "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAic29tZS1wcm9qZWN0LWlkIiwKICAicHJpdmF0ZV9rZXlfaWQiOiAiMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3OCIsCiAgInByaXZhdGVfa2V5IjogIi0tLS0tQkVHSU4gUFJJVkFURSBLRVktLS0tLVxuTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDc1FmUTUyNGpTQ3RBaVxuMFJield1bzNTNmpKalR5ZFllU08vY0tvdUVPbWhLTG9VeFdWRVhHQzcwTUZML2VkNVhxcFI4MmFtSlp3enhMTlxudFdRQUJ3TEdMa2ZENGFENE1BV3ByU2pSQXY5WVNVSTVzK05qaXFncHpOdWx5c2dRbUtEeTN6Z3E0Y0FRdEt6blxualdnWmpNclhWUXoxVWhSWkFpTy94RGIveDZzdy80RE1KcHR3MnpIdnh4TW5SUi9vOTNVTStmeUo2TDk5VU5oQ1xuekxJcDlJVDhKUUVoUXU2OFBiZ3JodTA0c3lyVU9ZUHJXTHRwQ0RjODBoUFc5QS9VSmlXWWtaY3hoSFNFWHRzTlxuZE5HbEI1UytqSUVaRHF5TGFIUkoydmF1ZDVDRWQ4Q1RSUGhJTTFBU25qMzYrRnlRQTJZUmFGdkpvZnc3Nk4xV1xuSjlCTXJKYWRBZ01CQUFFQ2dnRUFDdjFHTEc3Q0FzeG56T0RUK3dDQTByaEQ4MS9NVHlvUW44SzJxWGJmOGY2aVxuT2ZvYTlXQ2dnajdyWXFoVnZzQUdIRWlWYUZoMXVJcXRZMnhBRGZSa2krb2w3K3cwRGNGYWl5R2Q2ZityOUtEdlxuMWFpUlNDZHZaUU5KdkFEODFIbzRRbVpWT2Y4ZTlySGdHZ0dlYzRyVTRmbnVFclNDMGM3ZUl2ek1tWExPakJpVlxuM2NoOUNITzdpS3Awa3JMZnNTbkFIbkszb3ZlNWtHQkE2QTNzWXdSKy83NjgwaS9hb0M3bDNndFhoME1XMkU5aFxua2tMS2M5VnFaZW5yTWxYb01RbmdJNmMwSWkvQW50UWJiM2Frb21ucWxhaklhME9pYkJMWVRKYnYyNkNoVWxzTlxuQTZTR1FISVhlbU0rSHVpQWgvVTZBQXZsWGtUU0dRc083OGZFdHd2QzdRS0JnUURubE5JVDNDa3FUbWV2K3Arb1xuUjM0Um1UL2MrOE5MQ1V2OHJkQnRVTkVyWTQveS9MYWdnMG9xNm5QdS9wK0tMblM3M3ljR2hzU0JVYkFjOCt3eVxub0VneTRCNGU5Mmp6bTBOeEZ2OGkzY1kyOU80cXh0bjk5a2ZLcmZzY3NNY3F5Y3B4YmRvVHBQZ1J5aEZHc0lUdVxuWjhsQnFGRFVVbGNvd0VOdUptRG5OYlF3NHdLQmdRQythOGcwQWFNSGkzUUJ6MjJLZkxXZTlIRHk4RGF3WS96eFxuSGFqb28rL2E1YzhCT2wyWldUK1lkblFSV3N2cjM3MHlQY1NOV2tnNk53bW1TeDFERjNQVHBSVGlJVUZhNmF6QlxubTdhRXhZSFhTdW1WVXNEcW11MlRETVJWQndiNmxDUVNUWTBReVN3dmYyM2tQVCthZFlOdnRMZHZWTjZzTHB3d1xubnI0ZjF4UXlmd0tCZ1FDazVFcFE2Y3BGM1YzbTU4VVd4UkQyNXUrYUlZbUV2REhtMEx3L21mUFZ1U2FlRldMVVxuRjZlUHR6Q2xVNWUxaEM2S052SktxMXJ2MllKVW16bnJNa1UyTkc0K0Rsd2tXTUZFbk9NOXFEdWlsZk9mY2NkMlxuRlE0NU9uZzZqWVRDNnJ2QzJEMFhEN2V5c3ZacUp2WC82dFphY2NaYjUrVTNsdTVzVjlkWHlkMXJrUUtCZ0I1aFxuWTllb1N6Snc5VmswbHUxNWFDQ3NMemtUU2lacVRYakttcUJEUjRsTkVQSEpOaFc1UDRRN29ka0MrM1h1aEdqM1xub2R4TGd5cUdqV3VTb0dDTDVWYm5CNlhzV0ZrQTN5Y2tpTUkySUxrUW9xUElTQzhsK0xGMVgvMlEyWFF4SG5BdFxuSDB5R1RCNW4za2lEM1JudmxjREV2Rjl1MHZmMWw4WEtEZHRXblVwUkFvR0FQZVJ2QkdzVFhEMGM2MkZBUTdDdFxuSDdlN0lscVMwaUtmUlY1L2NtVURldUZEOFJCSzRpWkZUbENBVnFha2RtalVsZkpQYjYwRDN4d2xKcENvWlNLaVxuMmxZOVJqN3lwUmlUVW9UMzVuVlZIdzhlandZQk1hd280R2thcWQxOThtWXhVb2dKdk91VGNHSjUwOURkVGFja1xuUnNhY1N0TENSMWpVYzZFemFDYWo2MXc9XG4tLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tXG4iLAogICJjbGllbnRfZW1haWwiOiAic29tZS1zZXJ2aWNlLWFjY291bnRAc29tZS1wcm9qZWN0LWlkLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogInNvbWUtY2xpZW50LWlkIiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9zb21lLXNlcnZpY2UtYWNjb3VudCU0MHNvbWUtcHJvamVjdC1pZC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIKfQ",
+			secret: gcpsak.GCPSAK{
+				PrivateKeyID:   exampleKeyID,
+				ServiceAccount: exampleServiceAccount,
+				Signature:      exampleSignature,
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, tc.opts...)
+		})
+	}
+}
 
 // TestDetector_truePositives tests the detector's ability to find GCP SAK
 // in specific scenarios where the original key material has been altered e.g.
@@ -96,7 +146,7 @@ func TestDetector_truePositives(t *testing.T) {
 		input string
 	}{
 		{
-			name: "JSON (pretty)",
+			name: "JSON_(pretty)",
 			input: `{
 			"type": "service_account",
 			"project_id": "some-project-id",
@@ -115,7 +165,7 @@ func TestDetector_truePositives(t *testing.T) {
 			input: `{"type":"service_account","project_id":"some-project-id","private_key_id":"123456789abcdef0123456789abcdef012345678","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsQfQ524jSCtAi\n0RbzWuo3S6jJjTydYeSO/cKouEOmhKLoUxWVEXGC70MFL/ed5XqpR82amJZwzxLN\ntWQABwLGLkfD4aD4MAWprSjRAv9YSUI5s+NjiqgpzNulysgQmKDy3zgq4cAQtKzn\njWgZjMrXVQz1UhRZAiO/xDb/x6sw/4DMJptw2zHvxxMnRR/o93UM+fyJ6L99UNhC\nzLIp9IT8JQEhQu68Pbgrhu04syrUOYPrWLtpCDc80hPW9A/UJiWYkZcxhHSEXtsN\ndNGlB5S+jIEZDqyLaHRJ2vaud5CEd8CTRPhIM1ASnj36+FyQA2YRaFvJofw76N1W\nJ9BMrJadAgMBAAECggEACv1GLG7CAsxnzODT+wCA0rhD81/MTyoQn8K2qXbf8f6i\nOfoa9WCggj7rYqhVvsAGHEiVaFh1uIqtY2xADfRki+ol7+w0DcFaiyGd6f+r9KDv\n1aiRSCdvZQNJvAD81Ho4QmZVOf8e9rHgGgGec4rU4fnuErSC0c7eIvzMmXLOjBiV\n3ch9CHO7iKp0krLfsSnAHnK3ove5kGBA6A3sYwR+/7680i/aoC7l3gtXh0MW2E9h\nkkLKc9VqZenrMlXoMQngI6c0Ii/AntQbb3akomnqlajIa0OibBLYTJbv26ChUlsN\nA6SGQHIXemM+HuiAh/U6AAvlXkTSGQsO78fEtwvC7QKBgQDnlNIT3CkqTmev+p+o\nR34RmT/c+8NLCUv8rdBtUNErY4/y/Lagg0oq6nPu/p+KLnS73ycGhsSBUbAc8+wy\noEgy4B4e92jzm0NxFv8i3cY29O4qxtn99kfKrfscsMcqycpxbdoTpPgRyhFGsITu\nZ8lBqFDUUlcowENuJmDnNbQw4wKBgQC+a8g0AaMHi3QBz22KfLWe9HDy8DawY/zx\nHajoo+/a5c8BOl2ZWT+YdnQRWsvr370yPcSNWkg6NwmmSx1DF3PTpRTiIUFa6azB\nm7aExYHXSumVUsDqmu2TDMRVBwb6lCQSTY0QySwvf23kPT+adYNvtLdvVN6sLpww\nnr4f1xQyfwKBgQCk5EpQ6cpF3V3m58UWxRD25u+aIYmEvDHm0Lw/mfPVuSaeFWLU\nF6ePtzClU5e1hC6KNvJKq1rv2YJUmznrMkU2NG4+DlwkWMFEnOM9qDuilfOfccd2\nFQ45Ong6jYTC6rvC2D0XD7eysvZqJvX/6tZaccZb5+U3lu5sV9dXyd1rkQKBgB5h\nY9eoSzJw9Vk0lu15aCCsLzkTSiZqTXjKmqBDR4lNEPHJNhW5P4Q7odkC+3XuhGj3\nodxLgyqGjWuSoGCL5VbnB6XsWFkA3yckiMI2ILkQoqPISC8l+LF1X/2Q2XQxHnAt\nH0yGTB5n3kiD3RnvlcDEvF9u0vf1l8XKDdtWnUpRAoGAPeRvBGsTXD0c62FAQ7Ct\nH7e7IlqS0iKfRV5/cmUDeuFD8RBK4iZFTlCAVqakdmjUlfJPb60D3xwlJpCoZSKi\n2lY9Rj7ypRiTUoT35nVVHw8ejwYBMawo4Gkaqd198mYxUogJvOuTcGJ509DdTack\nRsacStLCR1jUc6EzaCaj61w=\n-----END PRIVATE KEY-----\n","client_email":"some-service-account@some-project-id.iam.gserviceaccount.com","client_id":"some-client-id","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/some-service-account%40some-project-id.iam.gserviceaccount.com"}`,
 		},
 		{
-			name: "Sorted JSON (pretty)",
+			name: "Sorted_JSON_(pretty)",
 			input: `{
 			"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
 			"auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -162,7 +212,7 @@ func TestDetector_truePositives(t *testing.T) {
 			input: `"\"\\\"\\\\\\\"{\\\\\\\\\\\\\\\"type\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"service_account\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"project_id\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"some-project-id\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"private_key_id\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"123456789abcdef0123456789abcdef012345678\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"private_key\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"-----BEGIN PRIVATE KEY-----\\\\\\\\\\\\\\\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsQfQ524jSCtAi\\\\\\\\\\\\\\\\n0RbzWuo3S6jJjTydYeSO/cKouEOmhKLoUxWVEXGC70MFL/ed5XqpR82amJZwzxLN\\\\\\\\\\\\\\\\ntWQABwLGLkfD4aD4MAWprSjRAv9YSUI5s+NjiqgpzNulysgQmKDy3zgq4cAQtKzn\\\\\\\\\\\\\\\\njWgZjMrXVQz1UhRZAiO/xDb/x6sw/4DMJptw2zHvxxMnRR/o93UM+fyJ6L99UNhC\\\\\\\\\\\\\\\\nzLIp9IT8JQEhQu68Pbgrhu04syrUOYPrWLtpCDc80hPW9A/UJiWYkZcxhHSEXtsN\\\\\\\\\\\\\\\\ndNGlB5S+jIEZDqyLaHRJ2vaud5CEd8CTRPhIM1ASnj36+FyQA2YRaFvJofw76N1W\\\\\\\\\\\\\\\\nJ9BMrJadAgMBAAECggEACv1GLG7CAsxnzODT+wCA0rhD81/MTyoQn8K2qXbf8f6i\\\\\\\\\\\\\\\\nOfoa9WCggj7rYqhVvsAGHEiVaFh1uIqtY2xADfRki+ol7+w0DcFaiyGd6f+r9KDv\\\\\\\\\\\\\\\\n1aiRSCdvZQNJvAD81Ho4QmZVOf8e9rHgGgGec4rU4fnuErSC0c7eIvzMmXLOjBiV\\\\\\\\\\\\\\\\n3ch9CHO7iKp0krLfsSnAHnK3ove5kGBA6A3sYwR+/7680i/aoC7l3gtXh0MW2E9h\\\\\\\\\\\\\\\\nkkLKc9VqZenrMlXoMQngI6c0Ii/AntQbb3akomnqlajIa0OibBLYTJbv26ChUlsN\\\\\\\\\\\\\\\\nA6SGQHIXemM+HuiAh/U6AAvlXkTSGQsO78fEtwvC7QKBgQDnlNIT3CkqTmev+p+o\\\\\\\\\\\\\\\\nR34RmT/c+8NLCUv8rdBtUNErY4/y/Lagg0oq6nPu/p+KLnS73ycGhsSBUbAc8+wy\\\\\\\\\\\\\\\\noEgy4B4e92jzm0NxFv8i3cY29O4qxtn99kfKrfscsMcqycpxbdoTpPgRyhFGsITu\\\\\\\\\\\\\\\\nZ8lBqFDUUlcowENuJmDnNbQw4wKBgQC+a8g0AaMHi3QBz22KfLWe9HDy8DawY/zx\\\\\\\\\\\\\\\\nHajoo+/a5c8BOl2ZWT+YdnQRWsvr370yPcSNWkg6NwmmSx1DF3PTpRTiIUFa6azB\\\\\\\\\\\\\\\\nm7aExYHXSumVUsDqmu2TDMRVBwb6lCQSTY0QySwvf23kPT+adYNvtLdvVN6sLpww\\\\\\\\\\\\\\\\nnr4f1xQyfwKBgQCk5EpQ6cpF3V3m58UWxRD25u+aIYmEvDHm0Lw/mfPVuSaeFWLU\\\\\\\\\\\\\\\\nF6ePtzClU5e1hC6KNvJKq1rv2YJUmznrMkU2NG4+DlwkWMFEnOM9qDuilfOfccd2\\\\\\\\\\\\\\\\nFQ45Ong6jYTC6rvC2D0XD7eysvZqJvX/6tZaccZb5+U3lu5sV9dXyd1rkQKBgB5h\\\\\\\\\\\\\\\\nY9eoSzJw9Vk0lu15aCCsLzkTSiZqTXjKmqBDR4lNEPHJNhW5P4Q7odkC+3XuhGj3\\\\\\\\\\\\\\\\nodxLgyqGjWuSoGCL5VbnB6XsWFkA3yckiMI2ILkQoqPISC8l+LF1X/2Q2XQxHnAt\\\\\\\\\\\\\\\\nH0yGTB5n3kiD3RnvlcDEvF9u0vf1l8XKDdtWnUpRAoGAPeRvBGsTXD0c62FAQ7Ct\\\\\\\\\\\\\\\\nH7e7IlqS0iKfRV5/cmUDeuFD8RBK4iZFTlCAVqakdmjUlfJPb60D3xwlJpCoZSKi\\\\\\\\\\\\\\\\n2lY9Rj7ypRiTUoT35nVVHw8ejwYBMawo4Gkaqd198mYxUogJvOuTcGJ509DdTack\\\\\\\\\\\\\\\\nRsacStLCR1jUc6EzaCaj61w=\\\\\\\\\\\\\\\\n-----END PRIVATE KEY-----\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"client_email\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"some-service-account@some-project-id.iam.gserviceaccount.com\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"client_id\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"some-client-id\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"auth_uri\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"https://accounts.google.com/o/oauth2/auth\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"token_uri\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"https://oauth2.googleapis.com/token\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"auth_provider_x509_cert_url\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"https://www.googleapis.com/oauth2/v1/certs\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"client_x509_cert_url\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"https://www.googleapis.com/robot/v1/metadata/x509/some-service-account%40some-project-id.iam.gserviceaccount.com\\\\\\\\\\\\\\\"}\\\\\\\"\\\"\""`,
 		},
 		{
-			name: "C++ multiline string",
+			name: "C++_multiline_string",
 			input: `constexpr char kKey[] = R"""({
 			"type": "service_account",
 			"project_id": "some-project-id",
@@ -177,7 +227,7 @@ func TestDetector_truePositives(t *testing.T) {
 		})""";`,
 		},
 		{
-			name: "Go raw string",
+			name: "Go_raw_string",
 			input: "`" + `{
 			"type": "service_account",
 			"project_id": "some-project-id",
@@ -192,7 +242,7 @@ func TestDetector_truePositives(t *testing.T) {
 	}` + "`",
 		},
 		{
-			name: "Go map of raw strings",
+			name: "Go_map_of_raw_strings",
 			input: `
 var foo = map[string]string{
 "foo": ` + "`" + `{
@@ -211,7 +261,7 @@ var foo = map[string]string{
 `,
 		},
 		{
-			name: "YAML (multiline)",
+			name: "YAML_(multiline)",
 			input: `  content: |
 				{
 					"type": "service_account",
@@ -227,7 +277,7 @@ var foo = map[string]string{
 				}`,
 		},
 		{
-			name: "Commented out JSON (dashes)",
+			name: "Commented_out_JSON_(dashes)",
 			input: `-- {
 		--   "type": "service_account",
 		--   "project_id": "some-project-id",
@@ -242,7 +292,7 @@ var foo = map[string]string{
 		-- }`,
 		},
 		{
-			name: "Commented out JSON (hashes)",
+			name: "Commented_out_JSON_(hashes)",
 			input: `# {
 		#   "type": "service_account",
 		#   "project_id": "some-project-id",
@@ -257,7 +307,7 @@ var foo = map[string]string{
 		# }`,
 		},
 		{
-			name: "Commented out JSON (slashes)",
+			name: "Commented_out_JSON_(slashes)",
 			input: `// {
 		//   "type": "service_account",
 		//   "project_id": "some-project-id",
@@ -280,7 +330,7 @@ var foo = map[string]string{
 			input: `{"Key":"ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAic29tZS1wcm9qZWN0LWlkIiwKICAicHJpdmF0ZV9rZXlfaWQiOiAiMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3OCIsCiAgInByaXZhdGVfa2V5IjogIi0tLS0tQkVHSU4gUFJJVkFURSBLRVktLS0tLVxuTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDc1FmUTUyNGpTQ3RBaVxuMFJield1bzNTNmpKalR5ZFllU08vY0tvdUVPbWhLTG9VeFdWRVhHQzcwTUZML2VkNVhxcFI4MmFtSlp3enhMTlxudFdRQUJ3TEdMa2ZENGFENE1BV3ByU2pSQXY5WVNVSTVzK05qaXFncHpOdWx5c2dRbUtEeTN6Z3E0Y0FRdEt6blxualdnWmpNclhWUXoxVWhSWkFpTy94RGIveDZzdy80RE1KcHR3MnpIdnh4TW5SUi9vOTNVTStmeUo2TDk5VU5oQ1xuekxJcDlJVDhKUUVoUXU2OFBiZ3JodTA0c3lyVU9ZUHJXTHRwQ0RjODBoUFc5QS9VSmlXWWtaY3hoSFNFWHRzTlxuZE5HbEI1UytqSUVaRHF5TGFIUkoydmF1ZDVDRWQ4Q1RSUGhJTTFBU25qMzYrRnlRQTJZUmFGdkpvZnc3Nk4xV1xuSjlCTXJKYWRBZ01CQUFFQ2dnRUFDdjFHTEc3Q0FzeG56T0RUK3dDQTByaEQ4MS9NVHlvUW44SzJxWGJmOGY2aVxuT2ZvYTlXQ2dnajdyWXFoVnZzQUdIRWlWYUZoMXVJcXRZMnhBRGZSa2krb2w3K3cwRGNGYWl5R2Q2ZityOUtEdlxuMWFpUlNDZHZaUU5KdkFEODFIbzRRbVpWT2Y4ZTlySGdHZ0dlYzRyVTRmbnVFclNDMGM3ZUl2ek1tWExPakJpVlxuM2NoOUNITzdpS3Awa3JMZnNTbkFIbkszb3ZlNWtHQkE2QTNzWXdSKy83NjgwaS9hb0M3bDNndFhoME1XMkU5aFxua2tMS2M5VnFaZW5yTWxYb01RbmdJNmMwSWkvQW50UWJiM2Frb21ucWxhaklhME9pYkJMWVRKYnYyNkNoVWxzTlxuQTZTR1FISVhlbU0rSHVpQWgvVTZBQXZsWGtUU0dRc083OGZFdHd2QzdRS0JnUURubE5JVDNDa3FUbWV2K3Arb1xuUjM0Um1UL2MrOE5MQ1V2OHJkQnRVTkVyWTQveS9MYWdnMG9xNm5QdS9wK0tMblM3M3ljR2hzU0JVYkFjOCt3eVxub0VneTRCNGU5Mmp6bTBOeEZ2OGkzY1kyOU80cXh0bjk5a2ZLcmZzY3NNY3F5Y3B4YmRvVHBQZ1J5aEZHc0lUdVxuWjhsQnFGRFVVbGNvd0VOdUptRG5OYlF3NHdLQmdRQythOGcwQWFNSGkzUUJ6MjJLZkxXZTlIRHk4RGF3WS96eFxuSGFqb28rL2E1YzhCT2wyWldUK1lkblFSV3N2cjM3MHlQY1NOV2tnNk53bW1TeDFERjNQVHBSVGlJVUZhNmF6QlxubTdhRXhZSFhTdW1WVXNEcW11MlRETVJWQndiNmxDUVNUWTBReVN3dmYyM2tQVCthZFlOdnRMZHZWTjZzTHB3d1xubnI0ZjF4UXlmd0tCZ1FDazVFcFE2Y3BGM1YzbTU4VVd4UkQyNXUrYUlZbUV2REhtMEx3L21mUFZ1U2FlRldMVVxuRjZlUHR6Q2xVNWUxaEM2S052SktxMXJ2MllKVW16bnJNa1UyTkc0K0Rsd2tXTUZFbk9NOXFEdWlsZk9mY2NkMlxuRlE0NU9uZzZqWVRDNnJ2QzJEMFhEN2V5c3ZacUp2WC82dFphY2NaYjUrVTNsdTVzVjlkWHlkMXJrUUtCZ0I1aFxuWTllb1N6Snc5VmswbHUxNWFDQ3NMemtUU2lacVRYakttcUJEUjRsTkVQSEpOaFc1UDRRN29ka0MrM1h1aEdqM1xub2R4TGd5cUdqV3VTb0dDTDVWYm5CNlhzV0ZrQTN5Y2tpTUkySUxrUW9xUElTQzhsK0xGMVgvMlEyWFF4SG5BdFxuSDB5R1RCNW4za2lEM1JudmxjREV2Rjl1MHZmMWw4WEtEZHRXblVwUkFvR0FQZVJ2QkdzVFhEMGM2MkZBUTdDdFxuSDdlN0lscVMwaUtmUlY1L2NtVURldUZEOFJCSzRpWkZUbENBVnFha2RtalVsZkpQYjYwRDN4d2xKcENvWlNLaVxuMmxZOVJqN3lwUmlUVW9UMzVuVlZIdzhlandZQk1hd280R2thcWQxOThtWXhVb2dKdk91VGNHSjUwOURkVGFja1xuUnNhY1N0TENSMWpVYzZFemFDYWo2MXc9XG4tLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tXG4iLAogICJjbGllbnRfZW1haWwiOiAic29tZS1zZXJ2aWNlLWFjY291bnRAc29tZS1wcm9qZWN0LWlkLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogInNvbWUtY2xpZW50LWlkIiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9zb21lLXNlcnZpY2UtYWNjb3VudCU0MHNvbWUtcHJvamVjdC1pZC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIKfQ=="}`,
 		},
 		{
-			name: "Python dict (double quotes)",
+			name: "Python_dict_(double_quotes)",
 			input: `{
 			"type": "service_account",
 			"project_id": "some-project-id",
@@ -312,7 +362,7 @@ var foo = map[string]string{
 		],`,
 		},
 		{
-			name: "C-style multiline string",
+			name: "C-style_multiline_string",
 			input: `const char *key = 
 			"{"
 			"  \"type\": \"service_account\","
@@ -328,7 +378,7 @@ var foo = map[string]string{
 			"}";`,
 		},
 		{
-			name: "Alternative Python multiline string",
+			name: "Alternative_Python_multiline_string",
 			input: `key = '' \
 				'{\n' \
 				'  "type": "service_account",\n' \
@@ -387,7 +437,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 			// If a scanner were to use "auth_provider_x509_cert_url" as a hotword and
 			// then rely on Go's permissive JSON parsing to extract the key, it could
 			// surface this as a false positive.
-			name: "OAuth2 token",
+			name: "OAuth2_token",
 			input: `{
 				"installed": {
 					"client_id": "this-should-not-be-a-real-app.apps.googleusercontent.com",
@@ -440,7 +490,7 @@ func TestDetector_falseNegatives(t *testing.T) {
 			input: `ewoJInR5cGUiOiAic2VydmljZV9hY2NvdW50IiwKCSJwcm9qZWN0X2lkIjogInNvbWUtcHJvamVjdC1pZCIsCgkicHJpdmF0ZV9rZXlfaWQiOiAiMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3OCIsCgkicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNzUWZRNTI0alNDdEFpXG4wUmJ6V3VvM1M2akpqVHlkWWVTTy9jS291RU9taEtMb1V4V1ZFWEdDNzBNRkwvZWQ1WHFwUjgyYW1KWnd6eExOXG50V1FBQndMR0xrZkQ0YUQ0TUFXcHJTalJBdjlZU1VJNXMrTmppcWdwek51bHlzZ1FtS0R5M3pncTRjQVF0S3puXG5qV2daak1yWFZRejFVaFJaQWlPL3hEYi94NnN3LzRETUpwdHcyekh2eHhNblJSL285M1VNK2Z5SjZMOTlVTmhDXG56TElwOUlUOEpRRWhRdTY4UGJncmh1MDRzeXJVT1lQcldMdHBDRGM4MGhQVzlBL1VKaVdZa1pjeGhIU0VYdHNOXG5kTkdsQjVTK2pJRVpEcXlMYUhSSjJ2YXVkNUNFZDhDVFJQaElNMUFTbmozNitGeVFBMllSYUZ2Sm9mdzc2TjFXXG5KOUJNckphZEFnTUJBQUVDZ2dFQUN2MUdMRzdDQXN4bnpPRFQrd0NBMHJoRDgxL01UeW9RbjhLMnFYYmY4ZjZpXG5PZm9hOVdDZ2dqN3JZcWhWdnNBR0hFaVZhRmgxdUlxdFkyeEFEZlJraStvbDcrdzBEY0ZhaXlHZDZmK3I5S0R2XG4xYWlSU0NkdlpRTkp2QUQ4MUhvNFFtWlZPZjhlOXJIZ0dnR2VjNHJVNGZudUVyU0MwYzdlSXZ6TW1YTE9qQmlWXG4zY2g5Q0hPN2lLcDBrckxmc1NuQUhuSzNvdmU1a0dCQTZBM3NZd1IrLzc2ODBpL2FvQzdsM2d0WGgwTVcyRTloXG5ra0xLYzlWcVplbnJNbFhvTVFuZ0k2YzBJaS9BbnRRYmIzYWtvbW5xbGFqSWEwT2liQkxZVEpidjI2Q2hVbHNOXG5BNlNHUUhJWGVtTStIdWlBaC9VNkFBdmxYa1RTR1FzTzc4ZkV0d3ZDN1FLQmdRRG5sTklUM0NrcVRtZXYrcCtvXG5SMzRSbVQvYys4TkxDVXY4cmRCdFVORXJZNC95L0xhZ2cwb3E2blB1L3ArS0xuUzczeWNHaHNTQlViQWM4K3d5XG5vRWd5NEI0ZTkyanptME54RnY4aTNjWTI5TzRxeHRuOTlrZktyZnNjc01jcXljcHhiZG9UcFBnUnloRkdzSVR1XG5aOGxCcUZEVVVsY293RU51Sm1Ebk5iUXc0d0tCZ1FDK2E4ZzBBYU1IaTNRQnoyMktmTFdlOUhEeThEYXdZL3p4XG5IYWpvbysvYTVjOEJPbDJaV1QrWWRuUVJXc3ZyMzcweVBjU05Xa2c2TndtbVN4MURGM1BUcFJUaUlVRmE2YXpCXG5tN2FFeFlIWFN1bVZVc0RxbXUyVERNUlZCd2I2bENRU1RZMFF5U3d2ZjIza1BUK2FkWU52dExkdlZONnNMcHd3XG5ucjRmMXhReWZ3S0JnUUNrNUVwUTZjcEYzVjNtNThVV3hSRDI1dSthSVltRXZESG0wTHcvbWZQVnVTYWVGV0xVXG5GNmVQdHpDbFU1ZTFoQzZLTnZKS3ExcnYyWUpVbXpuck1rVTJORzQrRGx3a1dNRkVuT005cUR1aWxmT2ZjY2QyXG5GUTQ1T25nNmpZVEM2cnZDMkQwWEQ3ZXlzdlpxSnZYLzZ0WmFjY1piNStVM2x1NXNWOWRYeWQxcmtRS0JnQjVoXG5ZOWVvU3pKdzlWazBsdTE1YUNDc0x6a1RTaVpxVFhqS21xQkRSNGxORVBISk5oVzVQNFE3b2RrQyszWHVoR2ozXG5vZHhMZ3lxR2pXdVNvR0NMNVZibkI2WHNXRmtBM3lja2lNSTJJTGtRb3FQSVNDOGwrTEYxWC8yUTJYUXhIbkF0XG5IMHlHVEI1bjNraUQzUm52bGNERXZGOXUwdmYxbDhYS0RkdFduVXBSQW9HQVBlUnZCR3NUWEQwYzYyRkFRN0N0XG5IN2U3SWxxUzBpS2ZSVjUvY21VRGV1RkQ4UkJLNGlaRlRsQ0FWcWFrZG1qVWxmSlBiNjBEM3h3bEpwQ29aU0tpXG4ybFk5Umo3eXBSaVRVb1QzNW5WVkh3OGVqd1lCTWF3bzRHa2FxZDE5OG1ZeFVvZ0p2T3VUY0dKNTA5RGRUYWNrXG5Sc2FjU3RMQ1IxalVjNkV6YUNhajYxdz1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCgkiY2xpZW50X2VtYWlsIjogInNvbWUtc2VydmljZS1hY2NvdW50QHNvbWUtcHJvamVjdC1pZC5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCgkiY2xpZW50X2lkIjogInNvbWUtY2xpZW50LWlkIiwKCSJhdXRoX3VyaSI6ICJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20vby9vYXV0aDIvYXV0aCIsCgkidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKCSJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKCSJjbGllbnRfeDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9yb2JvdC92MS9tZXRhZGF0YS94NTA5L3NvbWUtc2VydmljZS1hY2NvdW50JTQwc29tZS1wcm9qZWN0LWlkLmlhbS5nc2VydmljZWFjY291bnQuY29tIgp9`,
 		},
 		{
-			name: "Python dict (single quotes)",
+			name: "Python_dict_(single_quotes)",
 			input: `{
 			'type': 'service_account',
 			'project_id': 'some-project-id',

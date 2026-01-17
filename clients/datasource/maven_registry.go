@@ -51,7 +51,9 @@ type MavenRegistryAPIClient struct {
 	registries      []MavenRegistry                // Additional registries specified to fetch projects
 	registryAuths   map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
 	localRegistry   string                         // The local directory that holds Maven manifests
-	googleClient    *http.Client                   // A client for authenticating with Google services, used for Artifact Registry.
+
+	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
+	disableGoogleAuth bool         // If true, do not try to create google.DefaultClient for Artifact Registry.
 
 	// Cache fields
 	mu             *sync.Mutex
@@ -76,7 +78,7 @@ type MavenRegistry struct {
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
-func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string) (*MavenRegistryAPIClient, error) {
+func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string, disableGoogleClient bool) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
@@ -91,17 +93,22 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 	}
 	registry.Parsed = u
 
+	if localRegistry != "" {
+		localRegistry = filepath.Join(localRegistry, "maven")
+	}
+
 	// TODO: allow for manual specification of settings files
 	globalSettings := ParseMavenSettings(globalMavenSettingsFile())
 	userSettings := ParseMavenSettings(userMavenSettingsFile())
 
 	client := &MavenRegistryAPIClient{
 		// We assume only downloading releases is allowed on the default registry.
-		defaultRegistry: registry,
-		localRegistry:   localRegistry,
-		mu:              &sync.Mutex{},
-		responses:       NewRequestCache[string, response](),
-		registryAuths:   MakeMavenAuth(globalSettings, userSettings),
+		defaultRegistry:   registry,
+		localRegistry:     localRegistry,
+		mu:                &sync.Mutex{},
+		responses:         NewRequestCache[string, response](),
+		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
+		disableGoogleAuth: disableGoogleClient,
 	}
 	if registry.Parsed.Scheme == artifactRegistryScheme {
 		client.createGoogleClient(ctx)
@@ -109,21 +116,23 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 	return client, nil
 }
 
-// SetLocalRegistry sets the local directory that stores the downloaded Maven manifests.
-func (m *MavenRegistryAPIClient) SetLocalRegistry(localRegistry string) {
-	m.localRegistry = localRegistry
+// NewDefaultMavenRegistryAPIClient creates a new MavenRegistryAPIClient with default settings,
+// using the provided registry URL.
+func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*MavenRegistryAPIClient, error) {
+	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false)
 }
 
 // WithoutRegistries makes MavenRegistryAPIClient including its cache but not registries.
 func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 	return &MavenRegistryAPIClient{
-		defaultRegistry: m.defaultRegistry,
-		localRegistry:   m.localRegistry,
-		mu:              m.mu,
-		cacheTimestamp:  m.cacheTimestamp,
-		responses:       m.responses,
-		registryAuths:   m.registryAuths,
-		googleClient:    m.googleClient,
+		defaultRegistry:   m.defaultRegistry,
+		localRegistry:     m.localRegistry,
+		mu:                m.mu,
+		cacheTimestamp:    m.cacheTimestamp,
+		responses:         m.responses,
+		registryAuths:     m.registryAuths,
+		googleClient:      m.googleClient,
+		disableGoogleAuth: m.disableGoogleAuth,
 	}
 }
 
@@ -168,7 +177,7 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 
 // createGoogleClient creates a client for authenticating with Google services.
 func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) {
-	if m.googleClient != nil {
+	if m.googleClient != nil || m.disableGoogleAuth {
 		return
 	}
 	// This is the scope that artifact-registry-go-tools uses.
@@ -180,6 +189,11 @@ func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) {
 		return
 	}
 	m.googleClient = client
+}
+
+// DisableGoogleAuth prevents the creation of a Google client for authentication purpose.
+func (m *MavenRegistryAPIClient) DisableGoogleAuth() {
+	m.disableGoogleAuth = true
 }
 
 // GetRegistries returns the registries added to this client.

@@ -29,7 +29,7 @@ func TestDefaultConfig(t *testing.T) {
 		want *grpcclient.Config
 	}{
 		{
-			name: "default config",
+			name: "default_config",
 			want: &grpcclient.Config{
 				Address: "api.deps.dev:443",
 			},

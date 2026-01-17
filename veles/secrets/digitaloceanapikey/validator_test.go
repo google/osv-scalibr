@@ -57,9 +57,10 @@ func mockDigitaloceanServer(t *testing.T, expectedKey string, serverResponseCode
 
 		// Check Authorization header
 		authHeader := r.Header.Get("Authorization")
-		if !strings.Contains(authHeader, expectedKey) {
+		if len(expectedKey) > 0 && !strings.Contains(authHeader, expectedKey) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 
 		// Set response
@@ -102,11 +103,13 @@ func TestValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 	}
 
@@ -122,15 +125,14 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := digitaloceanapikey.NewValidator(
-				digitaloceanapikey.WithClient(client),
-			)
+			validator := digitaloceanapikey.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test key
 			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -163,9 +165,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := digitaloceanapikey.NewValidator(
-		digitaloceanapikey.WithClient(client),
-	)
+	validator := digitaloceanapikey.NewValidator()
+	validator.HTTPC = client
 
 	key := digitaloceanapikey.DigitaloceanAPIToken{Key: validatorTestKey}
 
@@ -196,9 +197,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := digitaloceanapikey.NewValidator(
-		digitaloceanapikey.WithClient(client),
-	)
+	validator := digitaloceanapikey.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string
@@ -221,7 +221,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

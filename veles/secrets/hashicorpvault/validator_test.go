@@ -80,13 +80,12 @@ func TestTokenValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewTokenValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			serverURL := server.URL
+			validator := NewTokenValidator(serverURL)
+			validator.HTTPC = server.Client()
 
 			token := Token{Token: "hvs.test-token"}
-			status, err := validator.Validate(context.Background(), token)
+			status, err := validator.Validate(t.Context(), token)
 
 			if test.expectError && err == nil {
 				t.Fatal("Expected error, got nil")
@@ -111,7 +110,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 		expectError    bool
 	}{
 		{
-			name: "valid credentials",
+			name: "valid_credentials",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -121,7 +120,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "invalid credentials - unauthorized",
+			name: "invalid_credentials_-_unauthorized",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "invalid-secret",
@@ -131,7 +130,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "invalid credentials - bad request",
+			name: "invalid_credentials_-_bad_request",
 			credentials: AppRoleCredentials{
 				RoleID:   "invalid-role-id",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -141,7 +140,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "server error",
+			name: "server_error",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -151,7 +150,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    true,
 		},
 		{
-			name: "missing role_id",
+			name: "missing_role_id",
 			credentials: AppRoleCredentials{
 				RoleID:   "",
 				SecretID: "87654321-4321-4321-4321-210987654321",
@@ -161,7 +160,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			expectError:    true,
 		},
 		{
-			name: "missing secret_id",
+			name: "missing_secret_id",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "",
@@ -190,12 +189,11 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewAppRoleValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			serverURL := server.URL
+			validator := NewAppRoleValidator(serverURL)
+			validator.HTTPC = server.Client()
 
-			status, err := validator.Validate(context.Background(), test.credentials)
+			status, err := validator.Validate(t.Context(), test.credentials)
 
 			if test.expectError && err == nil {
 				t.Fatal("Expected error, got nil")
@@ -212,9 +210,9 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 }
 
 func TestValidator_InvalidVaultURL(t *testing.T) {
-	validator := NewTokenValidator(WithVaultURL("://invalid-url"))
+	validator := NewTokenValidator("://invalid-url")
 	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(context.Background(), token)
+	status, err := validator.Validate(t.Context(), token)
 
 	if err == nil {
 		t.Fatal("Expected error for invalid URL, got nil")
@@ -226,9 +224,9 @@ func TestValidator_InvalidVaultURL(t *testing.T) {
 
 func TestValidator_NetworkError(t *testing.T) {
 	// Use a URL that will cause a network error
-	validator := NewTokenValidator(WithVaultURL("http://localhost:1"))
+	validator := NewTokenValidator("http://localhost:1")
 	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(context.Background(), token)
+	status, err := validator.Validate(t.Context(), token)
 
 	if err == nil {
 		t.Fatal("Expected network error, got nil")
@@ -245,12 +243,11 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	validator := NewTokenValidator(
-		WithClient(server.Client()),
-		WithVaultURL(server.URL),
-	)
+	serverURL := server.URL
+	validator := NewTokenValidator(serverURL)
+	validator.HTTPC = server.Client()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // Cancel immediately
 
 	token := Token{Token: "hvs.test-token"}

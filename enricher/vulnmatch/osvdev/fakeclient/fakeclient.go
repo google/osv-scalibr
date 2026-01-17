@@ -20,27 +20,27 @@ import (
 	"fmt"
 
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	bindings "osv.dev/bindings/go/osvdev"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvapipb "osv.dev/bindings/go/api"
 )
 
 type client struct {
-	data map[string][]osvschema.Vulnerability
+	data map[string][]*osvpb.Vulnerability
 }
 
 // New returns an OSV.dev fakeclient
-func New(data map[string][]osvschema.Vulnerability) osvdev.Client {
+func New(data map[string][]*osvpb.Vulnerability) osvdev.Client {
 	return &client{
 		data: data,
 	}
 }
 
 // GetVulnByID implements osvdev.Client.
-func (c *client) GetVulnByID(_ context.Context, id string) (*osvschema.Vulnerability, error) {
+func (c *client) GetVulnByID(_ context.Context, id string) (*osvpb.Vulnerability, error) {
 	for _, vulns := range c.data {
 		for _, vv := range vulns {
-			if vv.ID == id {
-				return &vv, nil
+			if vv.Id == id {
+				return vv, nil
 			}
 		}
 	}
@@ -48,16 +48,16 @@ func (c *client) GetVulnByID(_ context.Context, id string) (*osvschema.Vulnerabi
 }
 
 // Query implements osvdev.Client.
-func (c *client) Query(_ context.Context, query *bindings.Query) (*bindings.Response, error) {
-	key := fmt.Sprintf("%s:%s:%s", query.Package.Name, query.Version, query.Commit)
-	return &bindings.Response{
+func (c *client) Query(_ context.Context, query *osvapipb.Query) (*osvapipb.VulnerabilityList, error) {
+	key := fmt.Sprintf("%s:%s:%s", query.Package.Name, query.GetVersion(), query.GetCommit())
+	return &osvapipb.VulnerabilityList{
 		Vulns: c.data[key],
 	}, nil
 }
 
 // QueryBatch implements osvdev.Client.
-func (c *client) QueryBatch(ctx context.Context, queries []*bindings.Query) (*bindings.BatchedResponse, error) {
-	res := &bindings.BatchedResponse{}
+func (c *client) QueryBatch(ctx context.Context, queries []*osvapipb.Query) (*osvapipb.BatchVulnerabilityList, error) {
+	res := &osvapipb.BatchVulnerabilityList{}
 
 	for _, qq := range queries {
 		if err := ctx.Err(); err != nil {
@@ -69,11 +69,11 @@ func (c *client) QueryBatch(ctx context.Context, queries []*bindings.Query) (*bi
 			return res, err
 		}
 
-		vulns := []bindings.MinimalVulnerability{}
+		var vulns []*osvpb.Vulnerability
 		for _, vv := range rsp.Vulns {
-			vulns = append(vulns, bindings.MinimalVulnerability{ID: vv.ID})
+			vulns = append(vulns, &osvpb.Vulnerability{Id: vv.Id})
 		}
-		res.Results = append(res.Results, bindings.MinimalResponse{Vulns: vulns})
+		res.Results = append(res.Results, &osvapipb.VulnerabilityList{Vulns: vulns})
 	}
 
 	return res, nil

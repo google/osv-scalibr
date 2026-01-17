@@ -138,7 +138,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "no version",
+			name: "no_version",
 			path: "testdata/no_version.txt",
 			wantPackages: []*extractor.Package{
 				{
@@ -164,7 +164,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "with version",
+			name: "with_version",
 			path: "testdata/with_versions.txt",
 			wantPackages: []*extractor.Package{
 				{
@@ -261,7 +261,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "pip example",
+			name: "pip_example",
 			path: "testdata/example.txt",
 			wantPackages: []*extractor.Package{
 				{
@@ -309,11 +309,11 @@ func TestExtract(t *testing.T) {
 					Metadata: &requirements.Metadata{VersionComparator: "~=", Requirement: "Mopidy-Dirble ~= 1.1"},
 				},
 				{
-					Name:      "transitive-req",
-					Version:   "1",
+					Name:      "pandas",
+					Version:   "2.2.3",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/example.txt", "testdata/other-requirements.txt"},
-					Metadata:  &requirements.Metadata{Requirement: "transitive-req==1"},
+					Metadata:  &requirements.Metadata{Requirement: "pandas==2.2.3"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -338,7 +338,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "env variable",
+			name: "env_variable",
 			path: "testdata/env_var.txt",
 			wantPackages: []*extractor.Package{
 				{
@@ -361,7 +361,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "per requirement options",
+			name: "per_requirement_options",
 			path: "testdata/per_req_options.txt",
 			wantPackages: []*extractor.Package{
 				{

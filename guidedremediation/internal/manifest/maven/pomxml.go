@@ -190,11 +190,7 @@ type readWriter struct {
 }
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
-func GetReadWriter(remote, local string) (manifest.ReadWriter, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
-	if err != nil {
-		return nil, err
-	}
+func GetReadWriter(client *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
 	return readWriter{MavenRegistryAPIClient: client}, nil
 }
 
@@ -247,8 +243,14 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 		return nil, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 
-	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
+	// Interpolate the project in case there are properties in any repository.
+	if err := project.InterpolateRepositories(); err != nil {
+		return nil, fmt.Errorf("failed to interpolate project: %w", err)
+	}
 	for _, repo := range project.Repositories {
+		if repo.URL.ContainsProperty() {
+			continue
+		}
 		if err := r.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),

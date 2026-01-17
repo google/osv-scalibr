@@ -27,7 +27,7 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
 
 	// Create original client with multiple registries
-	client, _ := NewMavenRegistryAPIClient(t.Context(), MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
+	client, _ := NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
 	testRegistry1 := MavenRegistry{
 		URL:             "https://test1.maven.org/maven2/",
 		ID:              "test1",

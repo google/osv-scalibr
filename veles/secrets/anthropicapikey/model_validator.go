@@ -15,57 +15,31 @@
 package anthropicapikey
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-var _ veles.Validator[ModelAPIKey] = &ModelValidator{}
+// AnthropicModelsEndpoint is the Anthropic API models endpoint
+const AnthropicModelsEndpoint = "/v1/models"
 
-// ModelValidator is a Veles Validator for Anthropic Model API keys.
-// It validates model API keys by making a test request to the Anthropic API.
-type ModelValidator struct {
-	config *ValidationConfig
-}
-
-// ModelValidatorOption configures a ModelValidator when creating it via NewModelValidator.
-type ModelValidatorOption func(*ModelValidator)
-
-// WithModelHTTPClient configures the http.Client that the ModelValidator uses.
-//
-// By default it uses http.DefaultClient with a timeout.
-func WithModelHTTPClient(c *http.Client) ModelValidatorOption {
-	return func(v *ModelValidator) {
-		v.config.WithHTTPClient(c)
+// NewModelValidator creates a new Validator for the Anthropic model API keys.
+func NewModelValidator() *simplevalidate.Validator[ModelAPIKey] {
+	return &simplevalidate.Validator[ModelAPIKey]{
+		Endpoint:   anthropicAPIBaseURL + AnthropicModelsEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k ModelAPIKey) map[string]string {
+			return map[string]string{
+				"X-Api-Key":         k.Key,
+				"Anthropic-Version": anthropicAPIVersion,
+			}
+		},
+		// StatusTooManyRequests indicates that the key successfully authenticates
+		// against the Anthropic API and that this account is rate limited.
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusTooManyRequests},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC: &http.Client{
+			Timeout: validationTimeout,
+		},
 	}
-}
-
-// WithModelAPIURL configures the Anthropic API URL that the ModelValidator uses.
-//
-// By default it uses the production Anthropic API URL.
-// This is useful for testing with mock servers.
-func WithModelAPIURL(url string) ModelValidatorOption {
-	return func(v *ModelValidator) {
-		v.config.WithAPIURL(url)
-	}
-}
-
-// NewModelValidator creates a new ModelValidator with the given ModelValidatorOptions.
-func NewModelValidator(opts ...ModelValidatorOption) *ModelValidator {
-	v := &ModelValidator{
-		config: NewValidationConfig(),
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given ModelAPIKey is valid.
-//
-// It makes a request to the /v1/models endpoint which is specific to model keys.
-// This endpoint doesn't consume tokens and is used for validation purposes.
-func (v *ModelValidator) Validate(ctx context.Context, key ModelAPIKey) (veles.ValidationStatus, error) {
-	return validateAPIKey(ctx, v.config, key.Key, "/v1/models")
 }

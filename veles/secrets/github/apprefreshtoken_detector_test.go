@@ -23,12 +23,44 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	refreshTestKey        = `ghr_OWOCPzqKuy3J4w53QpkLfffjBUJSh5yLnFHj7wiyR0NDadVOcykNkoqhoYYXM1yy2sOpAu0lG8fw`
+	refreshTestKeyBase64  = `Z2hyX09XT0NQenFLdXkzSjR3NTNRcGtMZmZmakJVSlNoNXlMbkZIajd3aXlSME5EYWRWT2N5a05rb3Fob1lZWE0xeXkyc09wQXUwbEc4Znc=`
 	refreshAnotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
 )
+
+func TestAppRefreshTokenDetectorAcceptance(t *testing.T) {
+	d := github.NewAppRefreshTokenDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+		opts   []velestest.AcceptDetectorOption
+	}{
+		{
+			name:   "raw",
+			input:  refreshTestKey,
+			secret: github.AppRefreshToken{Token: refreshTestKey},
+			opts: []velestest.AcceptDetectorOption{
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			},
+		},
+		{
+			name:   "base64",
+			input:  refreshTestKeyBase64,
+			secret: github.AppRefreshToken{Token: refreshTestKey},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, tc.opts...)
+		})
+	}
+}
 
 // TestAppRefreshTokenDetector_truePositives tests for cases where we know the Detector
 // will find a Github app refresh tokens.
@@ -85,7 +117,7 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 			github.AppRefreshToken{Token: refreshAnotherTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
@@ -96,6 +128,12 @@ func TestAppRefreshTokenDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: refreshTestKey + `extra`,
+		want: []veles.Secret{
+			github.AppRefreshToken{Token: refreshTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: refreshTestKeyBase64,
 		want: []veles.Secret{
 			github.AppRefreshToken{Token: refreshTestKey},
 		},

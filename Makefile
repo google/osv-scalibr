@@ -6,7 +6,14 @@ scalibr:
 	CGO_ENABLED=1 go build binary/scalibr/scalibr.go
 
 lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0 run ./...
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.1 run ./...
+
+lint-plugger:
+	go run linter/plugger/main.go \
+	  -interface github.com/google/osv-scalibr/plugin.Plugin \
+		-interface github.com/google/osv-scalibr/veles.Validator \
+		-interface github.com/google/osv-scalibr/veles.Detector \
+		./...
 
 test:
 	CGO_ENABLED=1 go test ./...
@@ -20,6 +27,7 @@ endif
 
 scalibr-static:
 	CGO_ENABLED=1 go build -ldflags="-extldflags=-static" binary/scalibr/scalibr.go
+
 
 clean:
 	rm -f scalibr

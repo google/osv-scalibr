@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
-	"github.com/google/osv-scalibr/annotator/testing/dpkgutil"
+	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -57,7 +57,6 @@ func TestAnnotate(t *testing.T) {
 		{
 			desc:         "missing_info_dir",
 			infoContents: nil,
-			wantErr:      cmpopts.AnyError,
 		},
 		{
 			desc:         "empty_info_dir",
@@ -159,12 +158,14 @@ func TestAnnotate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			root := ""
+			var root string
 			if tt.infoContents != nil {
 				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, false)
+			} else {
+				root = t.TempDir()
 			}
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
+				tt.ctx = t.Context()
 			}
 			input := &annotator.ScanInput{
 				ScanRoot: scalibrfs.RealFSScanRoot(root),

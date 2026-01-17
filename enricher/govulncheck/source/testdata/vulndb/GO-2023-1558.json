@@ -1,0 +1,67 @@
+{
+  "id": "GO-2023-1558",
+  "summary": "Denial of service via malformed size parameters in github.com/ipfs/go-bitfield",
+  "details": "When feeding untrusted user input into the size parameter of NewBitfield and FromBytes functions, an attacker can trigger panics.\n\nThis happens when the size is a not a multiple of 8 or is negative.\n\nA workaround is to ensure size%8 == 0 && size \u003E= 0 yourself before calling NewBitfield or FromBytes.",
+  "aliases": [
+    "CVE-2023-23626",
+    "GHSA-2h6c-j3gf-xp9r"
+  ],
+  "modified": "2024-05-20T16:03:47Z",
+  "published": "2023-02-14T19:41:21Z",
+  "database_specific": {
+    "url": "https://pkg.go.dev/vuln/GO-2023-1558",
+    "review_status": "REVIEWED"
+  },
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/ipfs/go-bitfield/security/advisories/GHSA-2h6c-j3gf-xp9r"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/ipfs/go-bitfield/commit/5e1d256fe043fc4163343ccca83862c69c52e579"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "name": "github.com/ipfs/go-bitfield",
+        "ecosystem": "Go",
+        "purl": "pkg:golang/github.com/ipfs/go-bitfield"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "1.1.0"
+            }
+          ]
+        }
+      ],
+      "ecosystem_specific": {
+        "imports": [
+          {
+            "symbols": [
+              "FromBytes",
+              "NewBitfield"
+            ],
+            "path": "github.com/ipfs/go-bitfield"
+          }
+        ]
+      },
+      "database_specific": {
+        "source": "https://vuln.go.dev/ID/GO-2023-1558.json"
+      }
+    }
+  ],
+  "schema_version": "1.7.3",
+  "credits": [
+    {
+      "name": "Jorropo"
+    }
+  ]
+}

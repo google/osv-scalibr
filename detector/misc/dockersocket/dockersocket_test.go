@@ -17,7 +17,6 @@
 package dockersocket
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -162,7 +161,7 @@ func TestDockerSocketPermissions(t *testing.T) {
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), customFS, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), customFS, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -253,7 +252,7 @@ func TestDockerDaemonConfig(t *testing.T) {
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -290,7 +289,7 @@ func TestSystemdServiceConfig(t *testing.T) {
 		wantIssues  []string
 	}{
 		{
-			name: "secure service - unix socket only",
+			name: "secure_service_-_unix_socket_only",
 			serviceFile: `[Unit]
 Description=Docker Application Container Engine
 
@@ -302,7 +301,7 @@ WantedBy=multi-user.target`,
 			wantIssues: nil,
 		},
 		{
-			name: "insecure service - tcp without tls",
+			name: "insecure_service_-_tcp_without_tls",
 			serviceFile: `[Unit]
 Description=Docker Application Container Engine
 
@@ -314,7 +313,7 @@ WantedBy=multi-user.target`,
 			wantIssues: []string{expectInsecureSystemdBinding("etc/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375")},
 		},
 		{
-			name: "secure service - tcp with tls",
+			name: "secure_service_-_tcp_with_tls",
 			serviceFile: `[Unit]
 Description=Docker Application Container Engine
 
@@ -326,7 +325,7 @@ WantedBy=multi-user.target`,
 			wantIssues: nil,
 		},
 		{
-			name: "multiple ExecStart lines - some insecure",
+			name: "multiple_ExecStart_lines_-_some_insecure",
 			serviceFile: `[Unit]
 Description=Docker Application Container Engine
 
@@ -349,7 +348,7 @@ WantedBy=multi-user.target`,
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -396,14 +395,14 @@ WantedBy=multi-user.target`
 		wantIssues []string
 	}{
 		{
-			name: "service in /etc/systemd/system",
+			name: "service_in_/etc/systemd/system",
 			files: map[string]string{
 				"etc/systemd/system/docker.service": insecureService,
 			},
 			wantIssues: []string{expectInsecureSystemdBinding("etc/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375")},
 		},
 		{
-			name: "service in /lib/systemd/system",
+			name: "service_in_/lib/systemd/system",
 			files: map[string]string{
 				"lib/systemd/system/docker.service": `[Service]
 ExecStart=/usr/bin/dockerd -H tcp://127.0.0.1:2376`,
@@ -411,7 +410,7 @@ ExecStart=/usr/bin/dockerd -H tcp://127.0.0.1:2376`,
 			wantIssues: []string{expectInsecureSystemdBinding("lib/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://127.0.0.1:2376")},
 		},
 		{
-			name: "service in /usr/lib/systemd/system",
+			name: "service_in_/usr/lib/systemd/system",
 			files: map[string]string{
 				"usr/lib/systemd/system/docker.service": `[Service]
 ExecStart=/usr/bin/dockerd -H tcp://192.168.1.1:2377`,
@@ -419,7 +418,7 @@ ExecStart=/usr/bin/dockerd -H tcp://192.168.1.1:2377`,
 			wantIssues: []string{expectInsecureSystemdBinding("usr/lib/systemd/system/docker.service", "ExecStart=/usr/bin/dockerd -H tcp://192.168.1.1:2377")},
 		},
 		{
-			name: "multiple service files with issues",
+			name: "multiple_service_files_with_issues",
 			files: map[string]string{
 				"etc/systemd/system/docker.service": insecureService,
 				"lib/systemd/system/docker.service": `[Service]
@@ -440,7 +439,7 @@ ExecStart=/usr/bin/dockerd -H tcp://10.0.0.1:2378`,
 			}
 
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)
@@ -475,7 +474,7 @@ func TestScanFS_NoDocker(t *testing.T) {
 	fsys := fstest.MapFS{}
 
 	d := &Detector{}
-	finding, err := d.ScanFS(context.Background(), fsys, &packageindex.PackageIndex{})
+	finding, err := d.ScanFS(t.Context(), fsys, &packageindex.PackageIndex{})
 
 	if err != nil {
 		t.Errorf("ScanFS() returned error: %v", err)
@@ -495,7 +494,7 @@ func TestScanFS_Integration(t *testing.T) {
 		wantIssuesContain []string
 	}{
 		{
-			name: "socket with world-readable and insecure daemon config",
+			name: "socket_with_world-readable_and_insecure_daemon_config",
 			setupFS: func() fs.FS {
 				stat := &syscall.Stat_t{Uid: 0, Gid: 999}
 				fsys := fstest.MapFS{
@@ -524,7 +523,7 @@ func TestScanFS_Integration(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple insecure systemd services",
+			name: "multiple_insecure_systemd_services",
 			setupFS: func() fs.FS {
 				insecureService := `[Service]
 ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375`
@@ -541,7 +540,7 @@ ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2375`
 			},
 		},
 		{
-			name: "comprehensive security issues",
+			name: "comprehensive_security_issues",
 			setupFS: func() fs.FS {
 				stat := &syscall.Stat_t{Uid: 1000, Gid: 999} // non-root owner
 				fsys := fstest.MapFS{
@@ -582,7 +581,7 @@ ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2377`),
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Detector{}
-			finding, err := d.ScanFS(context.Background(), tt.setupFS(), &packageindex.PackageIndex{})
+			finding, err := d.ScanFS(t.Context(), tt.setupFS(), &packageindex.PackageIndex{})
 
 			if err != nil {
 				t.Errorf("ScanFS() returned error: %v", err)

@@ -29,113 +29,48 @@
 package stripeapikeys
 
 import (
-	"context"
-	"fmt"
+	"encoding/base64"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-var (
-	// Ensure constructors satisfy the interface at compile time.
-	_ veles.Validator[StripeSecretKey]     = &SecretKeyValidator{}
-	_ veles.Validator[StripeRestrictedKey] = &RestrictedKeyValidator{}
-)
-
-// Endpoints used for validation.
 const (
+	httpClientTimeout = 10 * time.Second
 	stripeAPIEndpoint = "https://api.stripe.com/v1/accounts"
 )
 
-// --- Stripe Secret Key Validator (SK) ---
-
-// SecretKeyValidator validates Stripe Secret Keys (sk_live_...) using /v1/accounts.
-type SecretKeyValidator struct {
-	httpC *http.Client
+func authHeader(key string) map[string]string {
+	return map[string]string{
+		"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(key+":")),
+	}
 }
 
-// ValidatorOptionSecretKey configures a SecretKeyValidator when creating it via New.
-type ValidatorOptionSecretKey func(*SecretKeyValidator)
+func alwaysInvalidStatus(body io.Reader) (veles.ValidationStatus, error) {
+	return veles.ValidationInvalid, nil
+}
 
-// WithClientSecretKey configures the http.Client used by SecretKeyValidator.
+// NewSecretKeyValidator validates Stripe Secret Keys (sk_live_...) using /v1/accounts.
 //
-// By default it uses http.DefaultClient.
-func WithClientSecretKey(c *http.Client) ValidatorOptionSecretKey {
-	return func(v *SecretKeyValidator) {
-		v.httpC = c
+// It calls GET https://api.stripe.com/v1/accounts with Basic Auth. If the response
+// is 200 OK, the key is considered valid. Otherwise, it is considered invalid.
+func NewSecretKeyValidator() *simplevalidate.Validator[StripeSecretKey] {
+	return &simplevalidate.Validator[StripeSecretKey]{
+		Endpoint:   stripeAPIEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k StripeSecretKey) map[string]string {
+			return authHeader(k.Key)
+		},
+		ValidResponseCodes:     []int{http.StatusOK},
+		StatusFromResponseBody: alwaysInvalidStatus,
+		HTTPC:                  &http.Client{Timeout: httpClientTimeout},
 	}
 }
 
-// NewSecretKeyValidator creates a new SecretKeyValidator with the given options.
-func NewSecretKeyValidator(opts ...ValidatorOptionSecretKey) *SecretKeyValidator {
-	v := &SecretKeyValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given StripeSecretKey is valid.
-//
-// It calls GET https://api.stripe.com/v1/accounts with Basic Auth.
-// - 200 OK  -> authenticated and valid.
-// - other   -> invalid.
-func (v *SecretKeyValidator) Validate(ctx context.Context, key StripeSecretKey) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stripeAPIEndpoint, nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.SetBasicAuth(key.Key, "")
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to GET %q: %w", stripeAPIEndpoint, err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		// 200 OK => the key is valid and authenticated.
-		return veles.ValidationValid, nil
-	default:
-		// Any other status code => invalid key.
-		return veles.ValidationInvalid, nil
-	}
-}
-
-// --- Stripe Restricted Key Validator (RK) ---
-
-// RestrictedKeyValidator validates Stripe Restricted Keys (rk_live_...) using /v1/accounts.
-type RestrictedKeyValidator struct {
-	httpC *http.Client
-}
-
-// ValidatorOptionRestrictedKey configures a RestrictedKeyValidator when creating it via New.
-type ValidatorOptionRestrictedKey func(*RestrictedKeyValidator)
-
-// WithClientRestrictedKey configures the http.Client used by RestrictedKeyValidator.
-//
-// By default it uses http.DefaultClient.
-func WithClientRestrictedKey(c *http.Client) ValidatorOptionRestrictedKey {
-	return func(v *RestrictedKeyValidator) {
-		v.httpC = c
-	}
-}
-
-// NewRestrictedKeyValidator creates a new RestrictedKeyValidator with the given options.
-func NewRestrictedKeyValidator(opts ...ValidatorOptionRestrictedKey) *RestrictedKeyValidator {
-	v := &RestrictedKeyValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given StripeRestrictedKey is valid.
+// NewRestrictedKeyValidator creates a validator for Stripe Restricted Keys.
 //
 // It calls GET https://api.stripe.com/v1/accounts with Basic Auth.
 // Restricted Keys are scoped to specific endpoints and permissions, so a 403
@@ -145,28 +80,15 @@ func NewRestrictedKeyValidator(opts ...ValidatorOptionRestrictedKey) *Restricted
 //   - 403 Forbidden -> key is valid but lacks permission for this endpoint;
 //     it may still work for other allowed endpoints.
 //   - other         -> key is invalid.
-func (v *RestrictedKeyValidator) Validate(ctx context.Context, key StripeRestrictedKey) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stripeAPIEndpoint, nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.SetBasicAuth(key.Key, "")
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to GET %q: %w", stripeAPIEndpoint, err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		// 200 OK => the key is valid and authenticated.
-		return veles.ValidationValid, nil
-	case http.StatusForbidden:
-		// 403 Forbidden => considered valid (authenticated but not authorized for full access).
-		return veles.ValidationValid, nil
-	default:
-		// Any other status code => invalid key.
-		return veles.ValidationInvalid, nil
+func NewRestrictedKeyValidator() *simplevalidate.Validator[StripeRestrictedKey] {
+	return &simplevalidate.Validator[StripeRestrictedKey]{
+		Endpoint:   stripeAPIEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k StripeRestrictedKey) map[string]string {
+			return authHeader(k.Key)
+		},
+		ValidResponseCodes:     []int{http.StatusOK, http.StatusForbidden},
+		StatusFromResponseBody: alwaysInvalidStatus,
+		HTTPC:                  &http.Client{Timeout: httpClientTimeout},
 	}
 }

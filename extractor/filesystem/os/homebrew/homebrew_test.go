@@ -25,6 +25,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -97,7 +99,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = homebrew.Extractor{}
+			e, err := homebrew.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("homebrew.New: %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantIsRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantIsRequired)
 			}
@@ -125,7 +130,6 @@ func TestExtract(t *testing.T) {
 					Version:   "1.67.0",
 					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json"},
-					Metadata:  &homebrew.Metadata{},
 				},
 			},
 		},
@@ -138,7 +142,6 @@ func TestExtract(t *testing.T) {
 					Version:   "1.1.1",
 					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh"},
-					Metadata:  &homebrew.Metadata{},
 				},
 			},
 		},
@@ -156,7 +159,6 @@ func TestExtract(t *testing.T) {
 					Version:   "35.0.2",
 					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties"},
-					Metadata:  &homebrew.Metadata{},
 				},
 			},
 		},
@@ -164,7 +166,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = homebrew.Extractor{}
+			e, err := homebrew.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("homebrew.New: %v", err)
+			}
 			input := &filesystem.ScanInput{Path: tt.path, Reader: nil}
 			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {

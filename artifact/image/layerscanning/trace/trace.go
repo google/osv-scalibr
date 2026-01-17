@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 
@@ -66,6 +67,11 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 	}
 	inv.ContainerImageMetadata = append(inv.ContainerImageMetadata, cim)
 	fillLayerMetadataFromChainLayers(cim, chainLayers)
+
+	osInfo, err := osrelease.GetOSRelease(chainLayers[len(chainLayers)-1].FS())
+	if err == nil {
+		cim.OSInfo = osInfo
+	}
 
 	// Helper function to update the extractor config.
 	updateExtractorConfig := func(pathsToExtract []string, extractor filesystem.Extractor, chainFS scalibrfs.FS) {
