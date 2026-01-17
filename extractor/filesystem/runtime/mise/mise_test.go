@@ -15,8 +15,6 @@
 package mise_test
 
 import (
-	"io/fs"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
-	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -58,11 +55,7 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var e filesystem.Extractor = mise.Extractor{}
-			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
-				FileName: filepath.Base(tt.path),
-				FileMode: fs.ModePerm,
-				FileSize: 30 * 1024,
-			})); got != tt.wantRequired {
+			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 		})
@@ -94,6 +87,16 @@ func TestExtract(t *testing.T) {
 					Metadata: &misemeta.Metadata{
 						ToolName:    "aws-cli",
 						ToolVersion: "2",
+					},
+					Locations: []string{"testdata/valid-mise.toml"},
+				},
+				{
+					Name:     "node",
+					Version:  "22",
+					PURLType: purl.TypeMise,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "node",
+						ToolVersion: "22",
 					},
 					Locations: []string{"testdata/valid-mise.toml"},
 				},

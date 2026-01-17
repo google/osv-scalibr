@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -51,14 +52,65 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
-// FileRequired returns true if the file name is 'mise.toml'.
+// FileRequired returns true if the file matches any of the mise config file paths.
+// Supported paths (in order of precedence):
+//   - mise.local.toml (local config, should not be committed)
+//   - .config/mise.toml
+//   - mise.toml
+//   - mise/config.toml
+//   - .mise/config.toml
+//   - .config/mise/config.toml
+//   - .config/mise/conf.d/*.toml
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	return path.Base(api.Path()) == "mise.toml"
+	base := path.Base(api.Path())
+	dir := path.Dir(api.Path())
+
+	// Check for mise.local.toml in any directory
+	if base == "mise.local.toml" {
+		return true
+	}
+
+	// Check for .config/mise.toml
+	if base == "mise.toml" && path.Base(dir) == ".config" {
+		return true
+	}
+
+	// Check for mise.toml in any directory (except .config, which is handled above)
+	if base == "mise.toml" {
+		return true
+	}
+
+	// Check for mise/config.toml
+	if base == "config.toml" && path.Base(dir) == "mise" {
+		return true
+	}
+
+	// Check for .mise/config.toml
+	if base == "config.toml" && path.Base(dir) == ".mise" {
+		return true
+	}
+
+	// Check for .config/mise/config.toml
+	if base == "config.toml" && strings.HasSuffix(dir, ".config/mise") {
+		return true
+	}
+
+	// Check for .config/mise/conf.d/*.toml
+	if path.Ext(base) == ".toml" && strings.HasSuffix(dir, ".config/mise/conf.d") {
+		return true
+	}
+
+	return false
 }
 
 // miseTomlFile represents the structure of a mise.toml file.
 type miseTomlFile struct {
-	Tools map[string]string `toml:"tools"`
+	Tools map[string]interface{} `toml:"tools"`
+}
+
+// toolOptions represents the options for a tool when specified as an object.
+type toolOptions struct {
+	Version string `toml:"version"`
 }
 
 // Extract extracts packages from the mise.toml file.
@@ -72,9 +124,26 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	var pkgs []*extractor.Package
-	for tool, version := range parsedTomlFile.Tools {
+	for tool, value := range parsedTomlFile.Tools {
 		if err := ctx.Err(); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+		}
+
+		var version string
+		switch v := value.(type) {
+		case string:
+			// Simple string version: terraform = "1"
+			version = v
+		case map[string]interface{}:
+			// Object with options like: ToolName = { version = "22", ...}
+			if ver, ok := v["version"].(string); ok {
+				version = ver
+			}
+		}
+
+		// Skip if no version was found
+		if version == "" {
+			continue
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
