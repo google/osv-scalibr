@@ -23,14 +23,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 // Fake SendGrid API keys for testing purposes.
 // These are NOT real keys and will not work with the SendGrid API.
 // They follow the correct format: SG.<22 chars>.<43 chars> = 69 total characters.
-const testSendGridAPIKey = "SG.abcdefghij1234567890AB.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk123456"
-const testSendGridAPIKey2 = "SG.XXXXXXXXXXXXXXXXXXXX22.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXab"
+const testSendGridAPIKey = "SG.aaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+const testSendGridAPIKey2 = "SG.XXXXXXXXXXXXXXXXXXXXXX.YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
 const testSendGridAPIKeyWithSpecialChars = "SG.abc_def-ghij12345678ab.ABC_DEF-GHIJKLMNOPQRSTUVWXYZabcdefghijk1234"
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		sendgrid.NewDetector(),
+		testSendGridAPIKey,
+		sendgrid.APIKey{Key: testSendGridAPIKey},
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find SendGrid API keys.
@@ -172,48 +182,6 @@ func TestDetector_trueNegatives(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestAPIKey_SecretType(t *testing.T) {
-	key := sendgrid.APIKey{Key: testSendGridAPIKey}
-	if got := key.SecretType(); got != "SendGrid API Key" {
-		t.Errorf("SecretType() = %q, want %q", got, "SendGrid API Key")
-	}
-}
-
-func TestAPIKey_Provider(t *testing.T) {
-	key := sendgrid.APIKey{Key: testSendGridAPIKey}
-	if got := key.Provider(); got != "Twilio SendGrid" {
-		t.Errorf("Provider() = %q, want %q", got, "Twilio SendGrid")
-	}
-}
-
-func TestAPIKey_String(t *testing.T) {
-	tests := []struct {
-		name string
-		key  string
-		want string
-	}{
-		{
-			name: "normal key is masked",
-			key:  testSendGridAPIKey,
-			want: testSendGridAPIKey[:10] + "..." + testSendGridAPIKey[len(testSendGridAPIKey)-4:],
-		},
-		{
-			name: "short key returns placeholder",
-			key:  "SG.short",
-			want: "SG.***",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			key := sendgrid.APIKey{Key: tt.key}
-			if got := key.String(); got != tt.want {
-				t.Errorf("String() = %q, want %q", got, tt.want)
 			}
 		})
 	}

@@ -21,21 +21,3 @@ package sendgrid
 type APIKey struct {
 	Key string
 }
-
-// SecretType returns a human-readable description of the secret type.
-func (k APIKey) SecretType() string {
-	return "SendGrid API Key"
-}
-
-// Provider returns the provider/service name.
-func (k APIKey) Provider() string {
-	return "Twilio SendGrid"
-}
-
-// String returns a masked representation of the key for logging purposes.
-func (k APIKey) String() string {
-	if len(k.Key) > 10 {
-		return k.Key[:10] + "..." + k.Key[len(k.Key)-4:]
-	}
-	return "SG.***"
-}
