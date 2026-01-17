@@ -245,6 +245,20 @@ func rangesOverlap(a1, a2, b1, b2 int) bool {
 
 // generateTuples recursively builds valid combinations only
 func generateTuples(all [][]Match, idx int, current []Match, maxDist int) []Tuple {
+	// SPECIAL CASE: only one finder. Thus, each match is a tuple
+	if len(all) == 1 {
+		out := make([]Tuple, 0, len(all[0]))
+		for _, m := range all[0] {
+			out = append(out, Tuple{
+				Matches: []Match{m},
+				Start:   m.Start,
+				End:     m.End,
+				Dist:    0,
+			})
+		}
+		return out
+	}
+
 	if idx == len(all) {
 		t := buildTuple(append([]Match(nil), current...))
 		// Only return the tuple if it's valid (Dist >= 0 and not discarded)
@@ -270,8 +284,20 @@ func generateTuples(all [][]Match, idx int, current []Match, maxDist int) []Tupl
 
 // buildTuple builds a Tuple from a set of matches
 func buildTuple(matches []Match) Tuple {
-	if len(matches) == 0 {
+	n := len(matches)
+	if n == 0 {
 		return Tuple{}
+	}
+
+	// SPECIAL CASE: Only one element. Thus, always valid
+	if n == 1 {
+		m := matches[0]
+		return Tuple{
+			Matches: matches,
+			Start:   m.Start,
+			End:     m.End,
+			Dist:    0, // no distance constraint
+		}
 	}
 
 	// Overlap detection: reject tuple if any two matches overlap
