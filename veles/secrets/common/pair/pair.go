@@ -17,9 +17,9 @@ package pair
 
 import (
 	"regexp"
-	"slices"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/ntuple"
 )
 
 // Match contains information about a match
@@ -62,16 +62,78 @@ type Detector struct {
 	FromPartialPair func(Pair) (veles.Secret, bool)
 }
 
-// Detect implements veles.Detector.
+// Detect implements veles.Detector by delegating to the ntuple engine.
 func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
-	as := d.FindA(data)
-	// if FromPartialPair is not provided and no match was found for FindA early exit
-	if d.FromPartialPair == nil && len(as) == 0 {
-		return nil, nil
+	// ntuple finders return ntuple.Match with FinderIndex preserved
+	findA := func(b []byte) []ntuple.Match {
+		as := d.FindA(b)
+		out := make([]ntuple.Match, len(as))
+		for i, m := range as {
+			out[i] = ntuple.Match{
+				Start:       m.Start,
+				End:         m.end(),
+				Value:       m.Value,
+				FinderIndex: 0,
+			}
+		}
+		return out
 	}
-	bs := d.FindB(data)
-	bs = filterOverlapping(as, bs)
-	return findOptimalPairs(as, bs, int(d.MaxDistance), d.FromPair, d.FromPartialPair)
+
+	findB := func(b []byte) []ntuple.Match {
+		bs := d.FindB(b)
+		out := make([]ntuple.Match, len(bs))
+		for i, m := range bs {
+			out[i] = ntuple.Match{
+				Start:       m.Start,
+				End:         m.end(),
+				Value:       m.Value,
+				FinderIndex: 1,
+			}
+		}
+		return out
+	}
+
+	nd := &ntuple.Detector{
+		MaxElementLen: d.MaxElementLen,
+		MaxDistance:   d.MaxDistance,
+		Finders:       []ntuple.Finder{findA, findB},
+
+		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
+			var a, b ntuple.Match
+
+			for _, m := range ms {
+				if m.FinderIndex == 0 {
+					a = m
+				} else {
+					b = m
+				}
+			}
+
+			p := Pair{
+				A:        &Match{Start: a.Start, Value: a.Value},
+				B:        &Match{Start: b.Start, Value: b.Value},
+				distance: b.Start - (a.Start + len(a.Value)),
+			}
+
+			return d.FromPair(p)
+		},
+	}
+
+	// Partial match support
+	if d.FromPartialPair != nil {
+		nd.FromPartial = func(m ntuple.Match) (veles.Secret, bool) {
+			if m.FinderIndex == 0 {
+				return d.FromPartialPair(Pair{
+					A: &Match{Start: m.Start, Value: m.Value},
+				})
+			}
+			return d.FromPartialPair(Pair{
+				B: &Match{Start: m.Start, Value: m.Value},
+			})
+		}
+	}
+
+	return nd.Detect(data)
 }
 
 // MaxSecretLen implements veles.Detector.
@@ -92,113 +154,4 @@ func FindAllMatches(re *regexp.Regexp) func(data []byte) []*Match {
 		}
 		return results
 	}
-}
-
-// filterOverlapping filters overlapping matches, it expects both slices to be ordered
-// and considers the first to be more important
-//
-// usage:
-//
-//	filtered_bs = filterOverlapping(as,bs)
-func filterOverlapping(as, bs []*Match) []*Match {
-	var filtered []*Match
-	aIdx := 0
-
-	for _, b := range bs {
-		// Skip all A matches that end before B starts
-		for aIdx < len(as) && as[aIdx].end() <= b.Start {
-			aIdx++
-		}
-		// If B does not overlap the current A, keep it
-		if aIdx >= len(as) || b.Start < as[aIdx].Start {
-			filtered = append(filtered, b)
-		}
-	}
-	return filtered
-}
-
-// findOptimalPairs finds the best pairing between two sets of matches using a greedy algorithm.
-func findOptimalPairs(as, bs []*Match, maxDistance int, fromPair, fromPartialPair func(Pair) (veles.Secret, bool)) ([]veles.Secret, []int) {
-	// Find all possible pairings within maxContextLen distance
-	possiblePairs := findPossiblePairs(as, bs, maxDistance)
-
-	// Sort by distance (closest first)
-	slices.SortFunc(possiblePairs, func(a, b Pair) int {
-		return a.distance - b.distance
-	})
-
-	// Greedily select non-overlapping pairs
-	usedA := make(map[*Match]bool)
-	usedB := make(map[*Match]bool)
-	var secrets []veles.Secret
-	var positions []int
-
-	// select best match
-	for _, pair := range possiblePairs {
-		if !usedA[pair.A] && !usedB[pair.B] {
-			secret, ok := fromPair(pair)
-			if !ok {
-				continue
-			}
-			secrets = append(secrets, secret)
-			positions = append(positions, min(pair.A.Start, pair.B.Start))
-			usedA[pair.A] = true
-			usedB[pair.B] = true
-		}
-	}
-
-	if fromPartialPair == nil {
-		return secrets, positions
-	}
-
-	// leftover handling
-	for _, a := range as {
-		if !usedA[a] {
-			secret, ok := fromPartialPair(Pair{A: a})
-			if !ok {
-				continue
-			}
-			secrets = append(secrets, secret)
-			positions = append(positions, a.Start)
-		}
-	}
-
-	for _, b := range bs {
-		if !usedB[b] {
-			secret, ok := fromPartialPair(Pair{B: b})
-			if !ok {
-				continue
-			}
-			secrets = append(secrets, secret)
-			positions = append(positions, b.Start)
-		}
-	}
-
-	return secrets, positions
-}
-
-// findPossiblePairs finds all pairs within the maximum context length.
-func findPossiblePairs(as, bs []*Match, maxDistance int) []Pair {
-	var possiblePairs []Pair
-	for _, a := range as {
-		for _, b := range bs {
-			distance := b.Start - (a.end())
-			if a.Start > b.Start {
-				distance = a.Start - (b.end())
-			}
-
-			// Skip overlapping matches
-			// - hard check to prevent errors
-			// - overlapping should be handled before reaching this point
-			if distance < 0 {
-				continue
-			}
-
-			// Include pair if within maxDistance
-			if distance <= maxDistance {
-				possiblePairs = append(possiblePairs, Pair{A: a, B: b, distance: distance})
-			}
-		}
-	}
-	return possiblePairs
 }
