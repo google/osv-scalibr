@@ -32,7 +32,7 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "os/asdf"
+	Name = "runtime/asdf"
 )
 
 // Extractor extracts asdf tools.

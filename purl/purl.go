@@ -105,6 +105,8 @@ const (
 	TypeWordpress = "wordpress"
 	// TypeAsdf is pkg:asdf purl
 	TypeAsdf = "asdf"
+	// TypeMise is pkg:mise purl
+	TypeMise = "mise"
 	// TypeMacports is pkg:macports purl
 	TypeMacports = "macports"
 	// TypeWinget is pkg:winget purl
@@ -223,6 +225,7 @@ func validType(t string) bool {
 		TypeMacports:   true,
 		TypeWinget:     true,
 		TypeChocolatey: true,
+		TypeMise:       true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
