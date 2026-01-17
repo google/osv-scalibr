@@ -21,7 +21,6 @@ package ntuple
 
 import (
 	"regexp"
-	"sort"
 
 	"github.com/google/osv-scalibr/veles"
 )
@@ -133,10 +132,6 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	}
 
 	if len(tuples) > 0 {
-		sort.Slice(tuples, func(i, j int) bool {
-			return tuples[i].Dist < tuples[j].Dist
-		})
-
 		usedRanges := make([][2]int, 0)
 		var out []veles.Secret
 		var pos []int
