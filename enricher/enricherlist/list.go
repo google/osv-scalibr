@@ -61,6 +61,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -134,6 +135,7 @@ var (
 		fromVeles(codecommit.NewValidator(), "secrets/codecommitcredentialsvalidate", 0),
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
 		fromVeles(telegrambotapitoken.NewValidator(), "secrets/telegrombotapitokenvalidate", 0),
+		fromVeles(salesforceoauth2access.NewValidator(), "secrets/salesforceoauth2access", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
