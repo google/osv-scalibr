@@ -143,6 +143,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -355,6 +356,7 @@ var (
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
+		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
