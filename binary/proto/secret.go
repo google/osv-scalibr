@@ -59,6 +59,7 @@ import (
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	velessquareapikey "github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -243,6 +244,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
+	case velessquareapikey.SquarePersonalAccessToken:
+		return squarePersonalAccessTokenToProto(t), nil
+	case velessquareapikey.SquareOAuthApplicationSecret:
+		return squareOAuthApplicationSecretToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -263,6 +268,26 @@ func bitbucketCredentialsToProto(s bitbucket.Credentials) *spb.SecretData {
 		Secret: &spb.SecretData_BitbucketCredentials{
 			BitbucketCredentials: &spb.SecretData_BitBucketCredentials{
 				Url: s.FullURL,
+			},
+		},
+	}
+}
+
+func squarePersonalAccessTokenToProto(s velessquareapikey.SquarePersonalAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SquarePersonalAccessToken_{
+			SquarePersonalAccessToken: &spb.SecretData_SquarePersonalAccessToken{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func squareOAuthApplicationSecretToProto(s velessquareapikey.SquareOAuthApplicationSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SquareOauthApplicationSecret{
+			SquareOauthApplicationSecret: &spb.SecretData_SquareOAuthApplicationSecret{
+				Key: s.Key,
 			},
 		},
 	}
@@ -1084,6 +1109,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
+		}, nil
+	case *spb.SecretData_SquarePersonalAccessToken_:
+		return velessquareapikey.SquarePersonalAccessToken{
+			Key: s.GetSquarePersonalAccessToken().GetKey(),
+		}, nil
+	case *spb.SecretData_SquareOauthApplicationSecret:
+		return velessquareapikey.SquareOAuthApplicationSecret{
+			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
