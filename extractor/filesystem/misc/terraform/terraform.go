@@ -120,7 +120,8 @@ func extractModule(block *hclsyntax.Block, location string) *extractor.Package {
 	}
 
 	// Only extract modules with versions and non-local sources
-	if version == "" || source == "" || strings.HasPrefix(source, ".") || strings.HasPrefix(source, "/") {
+	if version == "" || source == "" || filepath.IsAbs(source) ||
+		strings.HasPrefix(source, ".") || strings.HasPrefix(source, "/") {
 		return nil
 	}
 

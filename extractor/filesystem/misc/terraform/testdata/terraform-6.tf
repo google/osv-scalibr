@@ -1,5 +1,5 @@
 module "servers" {
-  source = "/app-cluster"
+  source = "C:\\pp-cluster"
 
   servers = 5
 }

@@ -15,8 +15,6 @@
 package terraform_test
 
 import (
-	"io/fs"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,7 +26,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
-	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -62,11 +59,7 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var e filesystem.Extractor = terraform.Extractor{}
-			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
-				FileName: filepath.Base(tt.path),
-				FileMode: fs.ModePerm,
-				FileSize: 30 * 1024,
-			})); got != tt.wantRequired {
+			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 		})
@@ -75,15 +68,13 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name            string
-		wantPackages    []*extractor.Package
-		inputConfigFile extracttest.ScanInputMockConfig
+		name                string
+		wantPackages        []*extractor.Package
+		inputConfigFilePath string
 	}{
 		{
-			name: "module with version",
-			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/terraform-1.tf",
-			},
+			name:                "module with version",
+			inputConfigFilePath: "testdata/terraform-1.tf",
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "terraform-aws-modules/vpc/aws",
@@ -94,47 +85,51 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "local module without version",
-			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/terraform-2.tf",
-			},
-			wantPackages: nil,
+			name:                "local module without version with relative path",
+			inputConfigFilePath: "testdata/terraform-2.tf",
+			wantPackages:        nil,
 		},
 		{
-			name: "provider with version",
-			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/terraform-3.tf",
-			},
+			name:                "local module without version with absolute path",
+			inputConfigFilePath: "testdata/terraform-3.tf",
+			wantPackages:        nil,
+		},
+		{
+			name:                "provider with version",
+			inputConfigFilePath: "testdata/terraform-4.tf",
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "hashicorp/aws",
 					Version:   "~> 5.92",
 					PURLType:  purl.TypeTerraform,
-					Locations: []string{"testdata/terraform-3.tf"},
+					Locations: []string{"testdata/terraform-4.tf"},
 				},
 			},
 		},
 		{
-			name: "provider without version",
-			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/terraform-4.tf",
-			},
-			wantPackages: nil,
+			name:                "provider without version",
+			inputConfigFilePath: "testdata/terraform-5.tf",
+			wantPackages:        nil,
 		},
 		{
-			name: "empty terraform file",
-			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/empty.tf",
-			},
-			wantPackages: nil,
+			name:                "provider without version",
+			inputConfigFilePath: "testdata/terraform-6.tf",
+			wantPackages:        nil,
+		},
+		{
+			name:                "empty terraform file",
+			inputConfigFilePath: "testdata/empty.tf",
+			wantPackages:        nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			extr := terraform.Extractor{}
-
-			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
+			inputConfigFile := extracttest.ScanInputMockConfig{
+				Path: tt.inputConfigFilePath,
+			}
+			scanInput := extracttest.GenerateScanInputMock(t, inputConfigFile)
 			defer extracttest.CloseTestScanInput(t, scanInput)
 
 			got, err := extr.Extract(t.Context(), &scanInput)
@@ -144,38 +139,24 @@ func TestExtract(t *testing.T) {
 
 			wantInv := inventory.Inventory{Packages: tt.wantPackages}
 			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
-				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.inputConfigFile.Path, diff)
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), inputConfigFile.Path, diff)
 			}
 		})
 	}
 }
 
 func TestExtractErrors(t *testing.T) {
-	tests := []struct {
-		name            string
-		inputConfigFile extracttest.ScanInputMockConfig
-		wantErr         bool
-	}{
-		{
-			name: "invalid terraform file",
-			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/invalid.tf",
-			},
-			wantErr: true,
-		},
-	}
+	t.Run("invalid terraform file", func(t *testing.T) {
+		extr := terraform.Extractor{}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			extr := terraform.Extractor{}
-
-			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
-			defer extracttest.CloseTestScanInput(t, scanInput)
-
-			_, err := extr.Extract(t.Context(), &scanInput)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Extract() error = %v, wantErr %v", err, tt.wantErr)
-			}
+		scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+			Path: "testdata/invalid.tf",
 		})
-	}
+		defer extracttest.CloseTestScanInput(t, scanInput)
+
+		_, err := extr.Extract(t.Context(), &scanInput)
+		if err == nil {
+			t.Errorf("expected Error from Extract() but got = %v", err)
+		}
+	})
 }

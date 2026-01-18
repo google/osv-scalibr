@@ -15,8 +15,6 @@
 package terraformlock_test
 
 import (
-	"io/fs"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,7 +26,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
-	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -57,11 +54,7 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var e filesystem.Extractor = terraformlock.Extractor{}
-			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
-				FileName: filepath.Base(tt.path),
-				FileMode: fs.ModePerm,
-				FileSize: 30 * 1024,
-			})); got != tt.wantRequired {
+			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
 		})
@@ -125,31 +118,18 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtractErrors(t *testing.T) {
-	tests := []struct {
-		name            string
-		inputConfigFile extracttest.ScanInputMockConfig
-		wantErr         bool
-	}{
-		{
-			name: "invalid HCL syntax",
-			inputConfigFile: extracttest.ScanInputMockConfig{
-				Path: "testdata/invalid.terraform.lock.hcl",
-			},
-			wantErr: true,
-		},
-	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			extr := terraformlock.Extractor{}
+	t.Run("invalid HCL syntax", func(t *testing.T) {
+		extr := terraformlock.Extractor{}
 
-			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
-			defer extracttest.CloseTestScanInput(t, scanInput)
-
-			_, err := extr.Extract(t.Context(), &scanInput)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Extract() error = %v, wantErr %v", err, tt.wantErr)
-			}
+		scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+			Path: "testdata/invalid.terraform.lock.hcl",
 		})
-	}
+		defer extracttest.CloseTestScanInput(t, scanInput)
+
+		_, err := extr.Extract(t.Context(), &scanInput)
+		if err == nil {
+			t.Errorf("expected Error from Extract() but got = %v", err)
+		}
+	})
 }
