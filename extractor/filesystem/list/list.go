@@ -242,8 +242,11 @@ var (
 	}
 	// JuliaSource extractors for Julia.
 	JuliaSource = InitMap{
-		manifesttoml.Name: {manifesttoml.New},
-		projecttoml.Name:  {projecttoml.New},
+		projecttoml.Name: {noCFG(projecttoml.New)},
+	}
+	// JuliaArtifact extractors for Julia.
+	JuliaArtifact = InitMap{
+		manifesttoml.Name: {noCFG(manifesttoml.New)},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
@@ -434,6 +437,7 @@ var (
 		EmbeddedFS,
 		Containers,
 		Secrets,
+		JuliaArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -469,7 +473,7 @@ var (
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
-		"julia":      vals(concat(JuliaSource)),
+		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
 
 		"sbom":       vals(SBOM),
