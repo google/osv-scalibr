@@ -14,6 +14,10 @@
 
 package vscodeextensions
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata for VS Code extensions.
 type Metadata struct {
 	ID                   string `json:"id"`
@@ -23,4 +27,43 @@ type Metadata struct {
 	Updated              bool   `json:"updated"`
 	IsPreReleaseVersion  bool   `json:"isPreReleaseVersion"`
 	InstalledTimestamp   int64  `json:"installedTimestamp"`
+}
+
+// SetProto sets the VSCodeExtensionsMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_VscodeExtensionsMetadata{
+		VscodeExtensionsMetadata: &pb.VSCodeExtensionsMetadata{
+			Id:                   m.ID,
+			PublisherId:          m.PublisherID,
+			PublisherDisplayName: m.PublisherDisplayName,
+			TargetPlatform:       m.TargetPlatform,
+			Updated:              m.Updated,
+			IsPreReleaseVersion:  m.IsPreReleaseVersion,
+			InstalledTimestamp:   m.InstalledTimestamp,
+		},
+	}
+}
+
+// ToStruct converts the VSCodeExtensionsMetadata proto to a Metadata struct.
+func ToStruct(m *pb.VSCodeExtensionsMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		ID:                   m.GetId(),
+		PublisherID:          m.GetPublisherId(),
+		PublisherDisplayName: m.GetPublisherDisplayName(),
+		TargetPlatform:       m.GetTargetPlatform(),
+		Updated:              m.GetUpdated(),
+		IsPreReleaseVersion:  m.GetIsPreReleaseVersion(),
+		InstalledTimestamp:   m.GetInstalledTimestamp(),
+	}
 }

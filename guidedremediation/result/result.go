@@ -21,17 +21,17 @@ import (
 	"deps.dev/util/resolve/dep"
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 // Result is a description of changes made by guided remediation to a manifest/lockfile.
 type Result struct {
-	Path            string              `json:"path"`             // path to the manifest/lockfile.
-	Ecosystem       osvschema.Ecosystem `json:"ecosystem"`        // the OSV ecosystem of the file (npm, Maven)
-	Strategy        strategy.Strategy   `json:"strategy"`         // the remediation strategy that was used.
-	Vulnerabilities []Vuln              `json:"vulnerabilities"`  // vulns detected in the initial manifest/lockfile.
-	Patches         []Patch             `json:"patches"`          // list of dependency patches that were applied.
-	Errors          []ResolveError      `json:"errors,omitempty"` // non-fatal errors encountered in initial resolution.
+	Path            string                 `json:"path"`             // path to the manifest/lockfile.
+	Ecosystem       osvconstants.Ecosystem `json:"ecosystem"`        // the OSV ecosystem of the file (npm, Maven)
+	Strategy        strategy.Strategy      `json:"strategy"`         // the remediation strategy that was used.
+	Vulnerabilities []Vuln                 `json:"vulnerabilities"`  // vulns detected in the initial manifest/lockfile.
+	Patches         []Patch                `json:"patches"`          // list of dependency patches that were applied.
+	Errors          []ResolveError         `json:"errors,omitempty"` // non-fatal errors encountered in initial resolution.
 }
 
 // Vuln represents a vulnerability that was found in a project.

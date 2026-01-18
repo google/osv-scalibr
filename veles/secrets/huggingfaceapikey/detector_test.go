@@ -23,9 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `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`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		huggingfaceapikey.NewDetector(),
+		testKey,
+		huggingfaceapikey.HuggingfaceAPIKey{Key: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Huggingface API key/s.
@@ -72,7 +84,7 @@ func TestDetector_truePositives(t *testing.T) {
 			huggingfaceapikey.HuggingfaceAPIKey{Key: testKey[:len(testKey)-1] + "a"},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: hf-test
 :huggingface_api_key: %s

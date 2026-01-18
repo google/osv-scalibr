@@ -72,7 +72,7 @@ func TestDetector_truePositives(t *testing.T) {
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 CONFIG_FILE=config.txt
 storage_access_KEY="%s"
@@ -88,7 +88,7 @@ CLOUD_PROJECT=my-project
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 		},
 	}, {
-		name: "match with command line",
+		name: "match_with_command_line",
 		input: fmt.Sprintf(`az storage container create
 			--account-name sample_username
 			--name sample-container
@@ -100,7 +100,7 @@ CLOUD_PROJECT=my-project
 	}, {
 		// the equal sign in the result is present according to Ms Documentation
 		// See comment at row 51
-		name: "match with connection string",
+		name: "match_with_connection_string",
 		input: fmt.Sprintf(`
 			DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;
 AccountKey=%s;

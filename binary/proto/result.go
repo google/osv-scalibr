@@ -15,6 +15,7 @@
 package proto
 
 import (
+	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/result"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -41,12 +42,27 @@ func ScanResultToProto(r *result.ScanResult) (*spb.ScanResult, error) {
 		EndTime:      timestamppb.New(r.EndTime),
 		Status:       scanStatusToProto(r.Status),
 		PluginStatus: pluginStatus,
-		// TODO(b/400910349): Stop setting the deprecated fields
-		// once integrators no longer read them.
-		InventoriesDeprecated: inventory.GetPackages(),
-		FindingsDeprecated:    inventory.GetGenericFindings(),
-		Inventory:             inventory,
+		Inventory:    inventory,
 	}, nil
 }
 
 // --- Proto to Struct
+
+// ScanResultFromProto converts a ScanResult proto into the equivalent go struct.
+func ScanResultFromProto(r *spb.ScanResult) (*result.ScanResult, error) {
+	pluginStatus := make([]*plugin.Status, 0, len(r.PluginStatus))
+	for _, s := range r.PluginStatus {
+		pluginStatus = append(pluginStatus, PluginStatusToStruct(s))
+	}
+
+	inventory := InventoryToStruct(r.Inventory)
+
+	return &result.ScanResult{
+		Version:      r.Version,
+		StartTime:    r.StartTime.AsTime(),
+		EndTime:      r.EndTime.AsTime(),
+		Status:       scanStatusToStruct(r.Status),
+		PluginStatus: pluginStatus,
+		Inventory:    *inventory,
+	}, nil
+}

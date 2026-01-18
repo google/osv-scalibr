@@ -15,42 +15,24 @@
 package github
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/github/validate"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// ClassicPATValidator validates Github classic personal access token via the Github API endpoint.
-type ClassicPATValidator struct {
-	httpC *http.Client
-}
-
-// ClassicPATValidatorOption configures a Validator when creating it via NewValidator.
-type ClassicPATValidatorOption func(*ClassicPATValidator)
-
-// ClassicPATWithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func ClassicPATWithClient(c *http.Client) ClassicPATValidatorOption {
-	return func(v *ClassicPATValidator) {
-		v.httpC = c
+// NewClassicPATValidator creates a new Validator that validates Github classic
+// personal access token via the Github API endpoint.
+func NewClassicPATValidator() *simplevalidate.Validator[ClassicPersonalAccessToken] {
+	return &simplevalidate.Validator[ClassicPersonalAccessToken]{
+		Endpoint:   githubAPIBaseURL + UserValidationEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k ClassicPersonalAccessToken) map[string]string {
+			return apiHeaders(k.Token)
+		},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC: &http.Client{
+			Timeout: validationTimeout,
+		},
 	}
-}
-
-// NewClassicPATValidator creates a new Validator with the given ValidatorOptions.
-func NewClassicPATValidator(opts ...ClassicPATValidatorOption) *ClassicPATValidator {
-	v := &ClassicPATValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given Github classic personal access token is valid.
-func (v *ClassicPATValidator) Validate(ctx context.Context, key ClassicPersonalAccessToken) (veles.ValidationStatus, error) {
-	return validate.Validate(ctx, v.httpC, "/user", key.Token)
 }

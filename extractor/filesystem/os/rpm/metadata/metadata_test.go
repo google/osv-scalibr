@@ -33,13 +33,13 @@ func TestSetProto(t *testing.T) {
 		want *pb.Package
 	}{
 		{
-			desc: "nil metadata",
+			desc: "nil_metadata",
 			m:    nil,
 			p:    &pb.Package{Name: "some-package"},
 			want: &pb.Package{Name: "some-package"},
 		},
 		{
-			desc: "nil package",
+			desc: "nil_package",
 			m: &metadata.Metadata{
 				PackageName: "name",
 			},
@@ -47,7 +47,7 @@ func TestSetProto(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "set metadata",
+			desc: "set_metadata",
 			m: &metadata.Metadata{
 				PackageName: "name",
 			},
@@ -62,7 +62,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "override metadata",
+			desc: "override_metadata",
 			m: &metadata.Metadata{
 				PackageName: "another-name",
 			},
@@ -84,17 +84,19 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &metadata.Metadata{
 				PackageName:  "name",
 				SourceRPM:    "source-rpm",
 				Epoch:        1,
 				OSName:       "os-name",
+				OSPrettyName: "os-pretty-name",
 				OSID:         "os-id",
 				OSVersionID:  "os-version-id",
 				OSBuildID:    "os-build-id",
 				Vendor:       "vendor",
 				Architecture: "architecture",
+				OSCPEName:    "os-cpe-name",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -105,11 +107,13 @@ func TestSetProto(t *testing.T) {
 						SourceRpm:    "source-rpm",
 						Epoch:        1,
 						OsName:       "os-name",
+						OsPrettyName: "os-pretty-name",
 						OsId:         "os-id",
 						OsVersionId:  "os-version-id",
 						OsBuildId:    "os-build-id",
 						Vendor:       "vendor",
 						Architecture: "architecture",
+						OsCpeName:    "os-cpe-name",
 					},
 				},
 			},
@@ -153,7 +157,7 @@ func TestToStruct(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.RPMPackageMetadata{
 				PackageName: "name",
 			},
@@ -162,28 +166,32 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.RPMPackageMetadata{
 				PackageName:  "name",
 				SourceRpm:    "source-rpm",
 				Epoch:        1,
 				OsName:       "os-name",
+				OsPrettyName: "os-pretty-name",
 				OsId:         "os-id",
 				OsVersionId:  "os-version-id",
 				OsBuildId:    "os-build-id",
 				Vendor:       "vendor",
 				Architecture: "architecture",
+				OsCpeName:    "os-cpe-name",
 			},
 			want: &metadata.Metadata{
 				PackageName:  "name",
 				SourceRPM:    "source-rpm",
 				Epoch:        1,
 				OSName:       "os-name",
+				OSPrettyName: "os-pretty-name",
 				OSID:         "os-id",
 				OSVersionID:  "os-version-id",
 				OSBuildID:    "os-build-id",
 				Vendor:       "vendor",
 				Architecture: "architecture",
+				OSCPEName:    "os-cpe-name",
 			},
 		},
 	}
@@ -213,6 +221,71 @@ func TestToStruct(t *testing.T) {
 			}
 			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
 				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			}
+		})
+	}
+}
+
+func TestOpenEulerEcosystemSuffix(t *testing.T) {
+	testCases := []struct {
+		desc string
+		meta *metadata.Metadata
+		want string
+	}{
+		{
+			desc: "base_version_from_pretty_name",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03",
+			},
+			want: "24.03",
+		},
+		{
+			desc: "lts_qualifier",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03 (LTS)",
+			},
+			want: "24.03-LTS",
+		},
+		{
+			desc: "lts_space_qualifier",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03 (LTS SP1)",
+			},
+			want: "24.03-LTS-SP1",
+		},
+		{
+			desc: "lts_hyphen_qualifier",
+			meta: &metadata.Metadata{
+				OSPrettyName: "openEuler 24.03 (LTS-SP1)",
+			},
+			want: "24.03-LTS-SP1",
+		},
+		{
+			desc: "fallback_to_version_id",
+			meta: &metadata.Metadata{
+				OSVersionID: "24.03",
+			},
+			want: "24.03",
+		},
+		{
+			desc: "non_openEuler_pretty_name",
+			meta: &metadata.Metadata{
+				OSPrettyName: "Fedora Linux 38 (Container Image)",
+				OSVersionID:  "38",
+			},
+			want: "38",
+		},
+		{
+			desc: "no_details",
+			meta: &metadata.Metadata{},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := tc.meta.OpenEulerEcosystemSuffix(); got != tc.want {
+				t.Fatalf("OpenEulerEcosystemSuffix() = %q, want %q", got, tc.want)
 			}
 		})
 	}

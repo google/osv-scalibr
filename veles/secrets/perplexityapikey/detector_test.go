@@ -22,10 +22,22 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `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`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		perplexityapikey.NewDetector(),
+		testKey,
+		perplexityapikey.PerplexityAPIKey{Key: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Perplexity API key/s.
@@ -72,7 +84,7 @@ func TestDetector_truePositives(t *testing.T) {
 			perplexityapikey.PerplexityAPIKey{Key: testKey[:len(testKey)-1] + "1"},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: pplx-test
 :perplexity_api_key: %s 

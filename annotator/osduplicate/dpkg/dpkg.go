@@ -55,7 +55,7 @@ func (Annotator) Requirements() *plugin.Capabilities {
 
 // Annotate adds annotations to language packages that have already been found in DPKG OS packages.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
-	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results)
+	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results, input.ScanRoot)
 
 	it, err := dpkg.NewListFilePathIterator(input.ScanRoot.FS)
 	if err != nil {

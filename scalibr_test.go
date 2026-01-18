@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -60,7 +61,10 @@ func TestScan(t *testing.T) {
 	pluginFailure := "failed to run plugin"
 	extFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
-		FailureReason: "file.txt: " + pluginFailure,
+		FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+		FileErrors: []*plugin.FileError{
+			{FilePath: "file.txt", ErrorMessage: pluginFailure},
+		},
 	}
 	detFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
@@ -75,6 +79,7 @@ func TestScan(t *testing.T) {
 	fs := scalibrfs.DirFS(tmp)
 	tmpRoot := []*scalibrfs.ScanRoot{{FS: fs, Path: tmp}}
 	_ = os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
+	_ = os.WriteFile(filepath.Join(tmp, "config"), []byte("Content"), 0644)
 
 	pkgName := "software"
 	fakeExtractor := fe.New(
@@ -162,7 +167,7 @@ func TestScan(t *testing.T) {
 		want *scalibr.ScanResult
 	}{
 		{
-			desc: "Successful scan",
+			desc: "Successful_scan",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fakeExtractor,
@@ -188,7 +193,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Global error",
+			desc: "Global_error",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					// Will error due to duplicate non-identical Advisories.
@@ -212,7 +217,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Extractor plugin failed",
+			desc: "Extractor_plugin_failed",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: nil, Err: errors.New(pluginFailure)}}),
@@ -236,7 +241,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Detector plugin failed",
+			desc: "Detector_plugin_failed",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fakeExtractor,
@@ -257,7 +262,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Enricher plugin failed",
+			desc: "Enricher_plugin_failed",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fakeExtractor,
@@ -283,7 +288,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Missing scan roots causes error",
+			desc: "Missing_scan_roots_causes_error",
 			cfg: &scalibr.ScanConfig{
 				Plugins:   []plugin.Plugin{fakeExtractor},
 				ScanRoots: []*scalibrfs.ScanRoot{},
@@ -297,7 +302,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "One Veles secret detector",
+			desc: "One_Veles_secret_detector",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
@@ -316,7 +321,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Two Veles secret detectors",
+			desc: "Two_Veles_secret_detectors",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector-1", 1)(),
@@ -339,7 +344,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Veles secret detector with validation",
+			desc: "Veles_secret_detector_with_validation",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
@@ -363,6 +368,35 @@ func TestScan(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "Veles_secret_detector_with_extractor",
+			cfg: &scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					// use the fakeSecretDetector1 also on config files
+					cf.FromVelesDetectorWithRequire(
+						fakeSecretDetector1, "secret-detector", 1,
+						func(fa filesystem.FileAPI) bool {
+							return strings.HasSuffix(fa.Path(), "config")
+						},
+					),
+				},
+				ScanRoots: tmpRoot,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "secret-detector", Version: 1, Status: success},
+					{Name: "secrets/veles", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"},
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: "config"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -376,7 +410,11 @@ func TestScan(t *testing.T) {
 			// Ignore timestamps.
 			ignoreFields := cmpopts.IgnoreFields(inventory.SecretValidationResult{}, "At")
 
-			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields); diff != "" {
+			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
+				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
+			})
+
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields, ignoreOrder); diff != "" {
 				t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", tc.cfg, diff)
 			}
 		})
@@ -403,7 +441,7 @@ func TestScanContainer(t *testing.T) {
 		wantErr     error
 	}{
 		{
-			desc: "Successful scan with 1 layer, 2 packages",
+			desc: "Successful_scan_with_1_layer,_2_packages",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 			},
@@ -443,7 +481,7 @@ func TestScanContainer(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scan with 2 layers, 1 package deleted in last layer",
+			desc: "Successful_scan_with_2_layers,_1_package_deleted_in_last_layer",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -477,7 +515,7 @@ func TestScanContainer(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scan with 3 layers, package readded in last layer",
+			desc: "Successful_scan_with_3_layers,_package_readded_in_last_layer",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -519,7 +557,7 @@ func TestScanContainer(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scan with 4 layers",
+			desc: "Successful_scan_with_4_layers",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -569,7 +607,7 @@ func TestScanContainer(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scan with 5 layers",
+			desc: "Successful_scan_with_5_layers",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -790,7 +828,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			name: "empty",
 		},
 		{
-			name: "no required extractors",
+			name: "no_required_extractors",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo"),
@@ -799,7 +837,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo"},
 		},
 		{
-			name: "required extractor in already enabled",
+			name: "required_extractor_in_already_enabled",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
@@ -809,7 +847,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo", "bar/baz"},
 		},
 		{
-			name: "auto-loaded required extractor",
+			name: "auto-loaded_required_extractor",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
@@ -818,7 +856,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo", "python/wheelegg"},
 		},
 		{
-			name: "auto-loaded required extractor by enricher",
+			name: "auto-loaded_required_extractor_by_enricher",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fen.MustNew(t, &fen.Config{Name: "foo", RequiredPlugins: []string{"python/wheelegg"}}),
@@ -827,11 +865,21 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo", "python/wheelegg"},
 		},
 		{
-			name: "required extractor doesn't exist",
+			name: "required_extractor_doesn't_exist",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
 				},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			name: "explicit_plugins_enabled",
+			cfg: scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
+				},
+				ExplicitPlugins: true,
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -893,7 +941,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 		wantErr error
 	}{
 		{
-			desc: "requirements satisfied",
+			desc: "requirements_satisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
@@ -915,7 +963,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "one detector's requirements unsatisfied",
+			desc: "one_detector's_requirements_unsatisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
@@ -929,7 +977,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "one enrichers's requirements unsatisfied",
+			desc: "one_enrichers's_requirements_unsatisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
@@ -950,7 +998,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "both plugin's requirements unsatisfied",
+			desc: "both_plugin's_requirements_unsatisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},

@@ -22,6 +22,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 type fakePlugin struct {
@@ -108,7 +110,16 @@ func TestValidateRequirements(t *testing.T) {
 
 func TestFilterByCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
-	pls := []plugin.Plugin{snap.NewDefault(), homebrew.New()}
+	cfg := &cpb.PluginConfig{}
+	snap, err := snap.New(cfg)
+	if err != nil {
+		t.Fatalf("snap.New(%v) failed: %v", cfg, err)
+	}
+	homebrew, err := homebrew.New(cfg)
+	if err != nil {
+		t.Fatalf("homebrew.New(%v) failed: %v", cfg, err)
+	}
+	pls := []plugin.Plugin{snap, homebrew}
 	got := plugin.FilterByCapabilities(pls, capab)
 	if len(got) != 1 {
 		t.Fatalf("plugin.FilterCapabilities(%v, %v): want 1 plugin, got %d", pls, capab, len(got))
@@ -127,22 +138,22 @@ func TestString(t *testing.T) {
 		want string
 	}{
 		{
-			desc: "Successful scan",
+			desc: "Successful_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
 			want: "SUCCEEDED",
 		},
 		{
-			desc: "Partially successful scan",
+			desc: "Partially_successful_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusPartiallySucceeded},
 			want: "PARTIALLY_SUCCEEDED",
 		},
 		{
-			desc: "Failed scan",
+			desc: "Failed_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "failure"},
 			want: "FAILED: failure",
 		},
 		{
-			desc: "Unspecified status",
+			desc: "Unspecified_status",
 			s:    &plugin.ScanStatus{},
 			want: "UNSPECIFIED",
 		},
@@ -153,6 +164,183 @@ func TestString(t *testing.T) {
 			got := tc.s.String()
 			if got != tc.want {
 				t.Errorf("%v.String(): Got %s, want %s", tc.s, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDedupeStatuses(t *testing.T) {
+	testCases := []struct {
+		desc string
+		s    []*plugin.Status
+		want []*plugin.Status
+	}{
+		{
+			desc: "Separate_plugins",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name:   "plugin2",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name:   "plugin2",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+		},
+		{
+			desc: "Both_successful",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+		},
+		{
+			desc: "One_success_one_partial_success",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusPartiallySucceeded,
+						FailureReason: "reason",
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusPartiallySucceeded,
+						FailureReason: "reason",
+					},
+				},
+			},
+		},
+		{
+			desc: "One_success_one_failure",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason",
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason",
+					},
+				},
+			},
+		},
+		{
+			desc: "One_partial_success_one_failure",
+			s: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusPartiallySucceeded,
+						FailureReason: "reason1",
+					},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason2",
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason1\nreason2",
+					},
+				},
+			},
+		},
+		{
+			desc: "File_errors_combined",
+			s: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+						FileErrors: []*plugin.FileError{
+							{FilePath: "file1", ErrorMessage: "msg1"},
+						},
+					},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+						FileErrors: []*plugin.FileError{
+							{FilePath: "file2", ErrorMessage: "msg2"},
+						},
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "encountered 2 error(s) while running plugin; check file-specific errors for details",
+						FileErrors: []*plugin.FileError{
+							{FilePath: "file1", ErrorMessage: "msg1"},
+							{FilePath: "file2", ErrorMessage: "msg2"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := plugin.DedupeStatuses(tc.s)
+			sort := func(a, b *plugin.Status) bool { return a.Name < b.Name }
+			if diff := cmp.Diff(tc.want, got, cmpopts.SortSlices(sort)); diff != "" {
+				t.Fatalf("plugin.DedupeStatuses(%v) (-want +got):\n%s", tc.s, diff)
 			}
 		})
 	}

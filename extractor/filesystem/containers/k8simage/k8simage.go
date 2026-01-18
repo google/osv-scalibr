@@ -32,16 +32,18 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"gopkg.in/yaml.v3"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "containers/k8simage"
 
-	// DefaultMaxFileSizeBytes is the default maximum file size the extractor will
+	// defaultMaxFileSizeBytes is the default maximum file size the extractor will
 	// attempt to process. If a file is encountered that is larger than this
 	// limit, the file is skipped during processing.
-	DefaultMaxFileSizeBytes = 1 * units.MiB
+	defaultMaxFileSizeBytes = 1 * units.MiB
 )
 
 // k8sResource represents a Kubernetes resource with the fields needed for image extraction.
@@ -85,25 +87,9 @@ type container struct {
 	Image string `yaml:"image"`
 }
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` receives a larger file, it will return false.
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes: DefaultMaxFileSizeBytes,
-	}
-}
-
 // Extractor extracts container image references from Kubernetes YAML files.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
@@ -111,17 +97,21 @@ type Extractor struct {
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSize := defaultMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSize = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.K8SImageConfig { return c.GetK8SImage() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSize = specific.GetMaxFileSizeBytes()
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSize}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }

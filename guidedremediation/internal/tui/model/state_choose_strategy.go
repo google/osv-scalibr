@@ -80,7 +80,7 @@ func newStateChooseStrategy(m Model) stateChooseStrategy {
 		var relockFixes []resolution.Vulnerability
 		for _, v := range m.lockfileGraph.Vulns {
 			if !slices.ContainsFunc(m.relockBaseManifest.Vulns, func(r resolution.Vulnerability) bool {
-				return r.OSV.ID == v.OSV.ID
+				return r.OSV.Id == v.OSV.Id
 			}) {
 				relockFixes = append(relockFixes, v)
 			}

@@ -19,6 +19,7 @@ package semantic
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // ErrUnsupportedEcosystem is returned for unsupported ecosystems.
@@ -41,6 +42,12 @@ func MustParse(str string, ecosystem string) Version {
 // Parse attempts to parse the given string as a version for the specified ecosystem,
 // returning an ErrUnsupportedEcosystem error if the ecosystem is not supported.
 func Parse(str string, ecosystem string) (Version, error) {
+	// Remove the version suffix from the ecosystem name.
+	parts := strings.Split(ecosystem, ":")
+	if len(parts) > 1 {
+		ecosystem = parts[0]
+	}
+
 	// TODO(#457): support more ecosystems
 	switch ecosystem {
 	case "AlmaLinux":
@@ -48,6 +55,8 @@ func Parse(str string, ecosystem string) (Version, error) {
 	case "Alpaquita":
 		return parseAlpineVersion(str)
 	case "Alpine":
+		return parseAlpineVersion(str)
+	case "BellSoft Hardened Containers":
 		return parseAlpineVersion(str)
 	case "Bitnami":
 		return parseSemverVersion(str), nil

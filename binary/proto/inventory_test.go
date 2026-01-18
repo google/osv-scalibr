@@ -26,6 +26,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestInventoryToProto(t *testing.T) {
@@ -52,6 +53,9 @@ func TestInventoryToProto(t *testing.T) {
 					purlDPKGAnnotationPackage,
 					pkgWithLayerStruct,
 				},
+				PackageVulns: []*inventory.PackageVuln{
+					pkgVulnStruct1,
+				},
 				GenericFindings: []*inventory.GenericFinding{
 					genericFindingStruct1,
 				},
@@ -66,6 +70,9 @@ func TestInventoryToProto(t *testing.T) {
 				Packages: []*pb.Package{
 					purlDPKGAnnotationPackageProto,
 					pkgWithLayerProto,
+				},
+				PackageVulns: []*pb.PackageVuln{
+					pkgVulnProto1,
 				},
 				GenericFindings: []*pb.GenericFinding{
 					genericFindingProto1,
@@ -86,20 +93,87 @@ func TestInventoryToProto(t *testing.T) {
 			if !errors.Is(err, tc.wantErr) {
 				t.Errorf("InventoryToProto(%v) returned error %v, want error %v", tc.inv, err, tc.wantErr)
 			}
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform(), cmpopts.EquateEmpty()); diff != "" {
+			opts := append([]cmp.Option{
+				protocmp.Transform(),
+				protocmp.IgnoreFields(&pb.PackageVuln{}, "package_id"),
+				cmpopts.EquateEmpty(),
+			}, pkgOpts...)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("InventoryToProto(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 
 			// Test the reverse conversion for completeness.
 			gotInv := proto.InventoryToStruct(got)
-			if diff := cmp.Diff(tc.inv, gotInv, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer")); diff != "" {
-				t.Errorf("InventoryToStruct(%v) returned diff (-want +got):\n%s", got, diff)
+			opts = []cmp.Option{
+				protocmp.Transform(),
+				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
+			}
+			if diff := cmp.Diff(tc.inv, gotInv, opts...); diff != "" {
+				t.Errorf("InventoryToStruct(%v) returned diff (-want +got):\n%s", gotInv, diff)
+			}
+		})
+	}
+}
+
+// We do it in a separate test because we don't want to test the reverse operation.
+func TestInventoryToProtoInvalidPackage(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		inv     *inventory.Inventory
+		want    *pb.Inventory
+		wantErr error
+	}{
+		{
+			desc: "missing_package",
+			inv: &inventory.Inventory{
+				PackageVulns: []*inventory.PackageVuln{
+					pkgVulnStruct1,
+				},
+			},
+			wantErr: cmpopts.AnyError,
+			want:    nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := proto.InventoryToProto(tc.inv)
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("InventoryToProto() error mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.want, got, pkgOpts...); diff != "" {
+				t.Errorf("InventoryToProto(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})
 	}
 }
 
 func TestInventoryToStruct(t *testing.T) {
+	pkgWithIDProto :=
+		&pb.Package{
+			Id:        "1234567890",
+			Name:      "software",
+			Version:   "1.0.0",
+			Locations: []string{"/file1"},
+			Plugins:   []string{"os/dpkg"},
+		}
+	pkgStruct :=
+		&extractor.Package{
+			Name:      "software",
+			Version:   "1.0.0",
+			Locations: []string{"/file1"},
+			Plugins:   []string{"os/dpkg"},
+		}
+	pkgVulnProto := &pb.PackageVuln{
+		Vuln:      &osvpb.Vulnerability{Id: "GHSA-1"},
+		PackageId: pkgWithIDProto.Id,
+		Plugins:   []string{"plugin1"},
+	}
+	pkgVulnStruct := &inventory.PackageVuln{
+		Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"},
+		Package:       pkgStruct,
+		Plugins:       []string{"plugin1"},
+	}
 	testCases := []struct {
 		desc string
 		inv  *pb.Inventory
@@ -121,6 +195,10 @@ func TestInventoryToStruct(t *testing.T) {
 				Packages: []*pb.Package{
 					purlDPKGAnnotationPackageProto,
 					pkgWithLayerProto,
+					pkgWithIDProto,
+				},
+				PackageVulns: []*pb.PackageVuln{
+					pkgVulnProto,
 				},
 				GenericFindings: []*pb.GenericFinding{
 					genericFindingProto1,
@@ -136,6 +214,10 @@ func TestInventoryToStruct(t *testing.T) {
 				Packages: []*extractor.Package{
 					purlDPKGAnnotationPackage,
 					pkgWithLayerStruct,
+					pkgStruct,
+				},
+				PackageVulns: []*inventory.PackageVuln{
+					pkgVulnStruct,
 				},
 				GenericFindings: []*inventory.GenericFinding{
 					genericFindingStruct1,
@@ -153,7 +235,12 @@ func TestInventoryToStruct(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := proto.InventoryToStruct(tc.inv)
-			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer")); diff != "" {
+			opts := []cmp.Option{
+				protocmp.Transform(),
+				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
+				cmpopts.EquateEmpty(),
+			}
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("InventoryToStruct(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 
@@ -162,8 +249,61 @@ func TestInventoryToStruct(t *testing.T) {
 			if err != nil {
 				t.Fatalf("InventoryToProto(%v) returned error %v, want nil", got, err)
 			}
-			if diff := cmp.Diff(tc.inv, gotPB, protocmp.Transform(), cmpopts.EquateEmpty()); diff != "" {
-				t.Fatalf("InventoryToProto(%v) returned diff (-want +got):\n%s", got, diff)
+			revOpts := append([]cmp.Option{
+				protocmp.Transform(),
+				protocmp.IgnoreFields(&pb.PackageVuln{}, "package_id"),
+				cmpopts.EquateEmpty(),
+			}, pkgOpts...)
+			if diff := cmp.Diff(tc.inv, gotPB, revOpts...); diff != "" {
+				t.Errorf("InventoryToProto(%v) returned diff (-want +got):\n%s", got, diff)
+			}
+		})
+	}
+}
+
+// We do it in a separate test because the conversion is lossy and we don't want
+// to test the reverse operation.
+func TestInventoryToStructInvalidPkgVuln(t *testing.T) {
+	testCases := []struct {
+		desc string
+		inv  *pb.Inventory
+		want *inventory.Inventory
+	}{
+		{
+			desc: "package_without_id",
+			inv: &pb.Inventory{
+				Packages:     []*pb.Package{{Name: "no_id_pkg"}},
+				PackageVulns: []*pb.PackageVuln{{PackageId: "some_id"}},
+			},
+			want: &inventory.Inventory{
+				Packages: []*extractor.Package{{Name: "no_id_pkg"}},
+			},
+		},
+		{
+			desc: "packages_with_duplicate_id",
+			inv: &pb.Inventory{
+				Packages:     []*pb.Package{{Name: "pkg1", Id: "pkg"}, {Name: "pkg2", Id: "pkg"}},
+				PackageVulns: []*pb.PackageVuln{{PackageId: "pkg"}},
+			},
+			want: &inventory.Inventory{
+				Packages:     []*extractor.Package{{Name: "pkg1"}, {Name: "pkg2"}},
+				PackageVulns: []*inventory.PackageVuln{{Package: &extractor.Package{Name: "pkg1"}}},
+			},
+		},
+		{
+			desc: "pkgvuln_with_no_packages",
+			inv: &pb.Inventory{
+				PackageVulns: []*pb.PackageVuln{{PackageId: "some_id"}},
+			},
+			want: &inventory.Inventory{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := proto.InventoryToStruct(tc.inv)
+			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"), protocmp.Transform()); diff != "" {
+				t.Fatalf("InventoryToStruct(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})
 	}

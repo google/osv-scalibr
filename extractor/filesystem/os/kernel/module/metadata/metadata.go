@@ -15,7 +15,11 @@
 // Package metadata defines a metadata struct for kernel modules.
 package metadata
 
-import "github.com/google/osv-scalibr/log"
+import (
+	"github.com/google/osv-scalibr/log"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
 
 // Metadata holds parsing information for a kernel module.
 type Metadata struct {
@@ -46,4 +50,45 @@ func (m *Metadata) ToDistro() string {
 	}
 	log.Errorf("VERSION_ID not set in os-release")
 	return ""
+}
+
+// SetProto sets the KernelModuleMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_KernelModuleMetadata{
+		KernelModuleMetadata: &pb.KernelModuleMetadata{
+			PackageName:                    m.PackageName,
+			PackageVersion:                 m.PackageVersion,
+			PackageVermagic:                m.PackageVermagic,
+			PackageSourceVersionIdentifier: m.PackageSourceVersionIdentifier,
+			OsId:                           m.OSID,
+			OsVersionCodename:              m.OSVersionCodename,
+			OsVersionId:                    m.OSVersionID,
+			PackageAuthor:                  m.PackageAuthor,
+		},
+	}
+}
+
+// ToStruct converts the KernelModuleMetadata proto to a Metadata struct.
+func ToStruct(m *pb.KernelModuleMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		PackageName:                    m.GetPackageName(),
+		PackageVersion:                 m.GetPackageVersion(),
+		PackageVermagic:                m.GetPackageVermagic(),
+		PackageSourceVersionIdentifier: m.GetPackageSourceVersionIdentifier(),
+		OSID:                           m.GetOsId(),
+		OSVersionCodename:              m.GetOsVersionCodename(),
+		OSVersionID:                    m.GetOsVersionId(),
+		PackageAuthor:                  m.GetPackageAuthor(),
+	}
 }

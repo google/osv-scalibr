@@ -25,6 +25,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -62,7 +64,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = nimble.Extractor{}
+			e, err := nimble.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("nimble.New: %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
@@ -82,7 +87,7 @@ func TestExtract(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			name: "valid nimble file path for older versions",
+			name: "valid_nimble_file_path_for_older_versions",
 			path: "/root/.nimble/pkgs/arrayutils-0.2.0/arrayutils.nimble",
 			wantPackages: []*extractor.Package{
 				{
@@ -94,7 +99,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid nimble file path for newer versions",
+			name: "valid_nimble_file_path_for_newer_versions",
 			path: "/root/.nimble/pkgs2/libsodium-0.6.0-a2bcc3d783446e393eacf5759dda821f0f714796/libsodium.nimble",
 			wantPackages: []*extractor.Package{
 				{
@@ -106,7 +111,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid nimble file path with number",
+			name: "valid_nimble_file_path_with_number",
 			path: "/root/.nimble/pkgs2/libp2p-1.12.0-336ec68bcd5f13337666dac935007f450a48a9be/libp2p.nimble",
 			wantPackages: []*extractor.Package{
 				{
@@ -118,7 +123,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid nimble path with underscore",
+			name: "valid_nimble_path_with_underscore",
 			path: "/root/.nimble/pkgs2/bearssl_pkey_decoder-0.1.0-21b42e2e6ddca6c875d3fc50f36a5115abf51714/bearssl_pkey_decoder.nimble",
 			wantPackages: []*extractor.Package{
 				{
@@ -130,7 +135,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid nimble path with longer version",
+			name: "valid_nimble_path_with_longer_version",
 			path: "/root/.nimble/pkgs2/secp256k1-0.6.0.3.2-0cda1744a5d85c872128c50e826b979a6c0f5471/secp256k1.nimble",
 			wantPackages: []*extractor.Package{
 				{
@@ -150,7 +155,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = nimble.Extractor{}
+			e, err := nimble.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("nimble.New: %v", err)
+			}
 			input := &filesystem.ScanInput{Path: tt.path, Reader: nil}
 			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {

@@ -155,7 +155,7 @@ func TestExtract(t *testing.T) {
 		wantErr   error
 	}{
 		{
-			name: "no results",
+			name: "no_results",
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": {nil, nil},
 			}),
@@ -163,7 +163,7 @@ func TestExtract(t *testing.T) {
 			want: []*extractor.Package{},
 		},
 		{
-			name: "multiple results",
+			name: "multiple_results",
 			extractor: fakeextractor.New("extractor name", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": {[]string{name1, name2}, nil},
 			}),
@@ -171,7 +171,7 @@ func TestExtract(t *testing.T) {
 			want: multiplePackages,
 		},
 		{
-			name: "unrecognized path throws an error",
+			name: "unrecognized_path_throws_an_error",
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
 				"some path": {nil, nil},
 			}),

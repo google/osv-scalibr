@@ -16,6 +16,8 @@
 package ecosystem
 
 import (
+	"strings"
+
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
@@ -26,7 +28,7 @@ import (
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/log"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -39,9 +41,15 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *apkmeta.Metadata:
 		version := m.ToDistro()
 		if version == "" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemAlpine)
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemAlpine)
 		}
-		return osvecosystem.Parsed{Ecosystem: osvschema.EcosystemAlpine, Suffix: m.TrimDistroVersion(version)}
+		if m.OSID == "alpaquita" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpaquita, Suffix: m.OSVersionID}
+		}
+		if m.OSID == "bellsoft-hardened-containers" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemBellSoftHardenedContainers, Suffix: m.OSVersionID}
+		}
+		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpine, Suffix: m.TrimDistroVersion(version)}
 
 	case *dpkgmeta.Metadata:
 		namespace = m.ToNamespace()
@@ -49,15 +57,21 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 
 	case *rpmmeta.Metadata:
 		if m.OSID == "rhel" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemRedHat)
+			// CPE_NAME="cpe:/o:redhat:enterprise_linux:9::baseos"
+			// If :redhat: doesn't exist, then suffix will just be empty and have no suffix.
+			_, suffix, _ := strings.Cut(m.OSCPEName, ":redhat:")
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemRedHat, Suffix: suffix}
 		}
 		if m.OSID == "rocky" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemRockyLinux)
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemRockyLinux)
+		}
+		if m.OSID == "openEuler" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemOpenEuler, Suffix: m.OpenEulerEcosystemSuffix()}
 		}
 
 	case *snapmeta.Metadata:
 		if m.OSID == "ubuntu" {
-			return osvecosystem.FromEcosystem(osvschema.EcosystemUbuntu)
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemUbuntu)
 		}
 		log.Errorf("os-release[ID] not set, fallback to '' ecosystem")
 		return osvecosystem.Parsed{}

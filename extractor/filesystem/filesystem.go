@@ -26,10 +26,12 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gobwas/glob"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -164,11 +166,79 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 			return inventory.Inventory{}, nil, err
 		}
 	}
-	if err = wc.UpdateScanRoot(abs, scanRoot.FS); err != nil {
+	if err = wc.PrepareNewScan(abs, scanRoot.FS); err != nil {
 		return inventory.Inventory{}, nil, err
 	}
 
-	return RunFS(ctx, config, wc)
+	// Run extractors on the scan root
+	inv, status, err := RunFS(ctx, config, wc)
+	if err != nil {
+		return inv, status, err
+	}
+
+	// Process embedded filesystems
+	var additionalInv inventory.Inventory
+	for _, embeddedFS := range inv.EmbeddedFSs {
+		// Mount the embedded filesystem
+		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
+		if err != nil {
+			status = append(status, &plugin.Status{
+				Name:    "EmbeddedFS",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: fmt.Sprintf("failed to mount embedded filesystem %s: %v", embeddedFS.Path, err),
+				},
+			})
+			continue
+		}
+
+		// Create a new ScanRoot for the mounted filesystem
+		newScanRoot := &scalibrfs.ScanRoot{
+			FS:   mountedFS,
+			Path: "", // Virtual filesystem
+		}
+
+		// Reuse the existing config, updating only necessary fields
+		config.ScanRoots = []*scalibrfs.ScanRoot{newScanRoot}
+		// Clear PathsToExtract to scan entire mounted filesystem
+		config.PathsToExtract = []string{}
+
+		// Run extractors on the mounted filesystem using Run
+		mountedInv, mountedStatus, err := Run(ctx, config)
+		if err != nil {
+			status = append(status, &plugin.Status{
+				Name:    "EmbeddedFS",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: fmt.Sprintf("failed to extract from embedded filesystem %s: %v", embeddedFS.Path, err),
+				},
+			})
+			continue
+		}
+
+		// Prepend embeddedFS.Path to Locations for all packages in mountedInv
+		for _, pkg := range mountedInv.Packages {
+			updatedLocations := make([]string, len(pkg.Locations))
+			for i, loc := range pkg.Locations {
+				updatedLocations[i] = fmt.Sprintf("%s:%s", embeddedFS.Path, loc)
+			}
+			pkg.Locations = updatedLocations
+		}
+
+		additionalInv.Append(mountedInv)
+		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
+
+		// Collect temporary directories and raw files after traversal for removal.
+		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
+			embeddedFS.TempPaths = c.TempPaths()
+		}
+	}
+
+	// Combine inventories
+	inv.Append(additionalInv)
+	return inv, status, nil
 }
 
 // InitWalkContext initializes the walk context for a filesystem walk. It strips all the paths that
@@ -208,7 +278,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		lastStatus: time.Now(),
 
 		inventory: inventory.Inventory{},
-		errors:    make(map[string]error),
+		errors:    make(map[string]map[string]error),
 		foundInv:  make(map[string]bool),
 
 		fileAPI: &lazyFileAPI{},
@@ -258,6 +328,7 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) (inventory.Inve
 }
 
 type walkContext struct {
+	mu sync.Mutex
 	//nolint:containedctx
 	ctx               context.Context
 	stats             stats.Collector
@@ -281,8 +352,8 @@ type walkContext struct {
 	gitignores []internal.GitignorePattern
 	// Inventories found.
 	inventory inventory.Inventory
-	// Extractor name to runtime errors.
-	errors map[string]error
+	// Extractor name to file path to runtime errors.
+	errors map[string]map[string]error
 	// Whether an extractor found any inventory.
 	foundInv map[string]bool
 	// Whether to read symlinks.
@@ -336,6 +407,8 @@ func walkIndividualPaths(wc *walkContext) error {
 }
 
 func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	wc.currentPath = path
 
 	wc.inodesVisited++
@@ -451,7 +524,9 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 }
 
 func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
-	if wc.useGitignore && d.Type().IsDir() {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
+	if len(wc.gitignores) > 0 && d.Type().IsDir() {
 		// Remove .gitignores that applied to this directory.
 		wc.gitignores = wc.gitignores[:len(wc.gitignores)-1]
 	}
@@ -503,14 +578,14 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	if !isDir {
 		rc, err = wc.fs.Open(path)
 		if err != nil {
-			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("Open(%s): %w", path, err))
+			addErrToMap(wc.errors, ex.Name(), path, fmt.Errorf("Open(%s): %w", path, err))
 			return
 		}
 		defer rc.Close()
 
 		info, err = rc.Stat()
 		if err != nil {
-			addErrToMap(wc.errors, ex.Name(), fmt.Errorf("stat(%s): %w", path, err))
+			addErrToMap(wc.errors, ex.Name(), path, fmt.Errorf("stat(%s): %w", path, err))
 			return
 		}
 	}
@@ -534,7 +609,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	})
 
 	if err != nil {
-		addErrToMap(wc.errors, ex.Name(), fmt.Errorf("%s: %w", path, err))
+		addErrToMap(wc.errors, ex.Name(), path, err)
 	}
 
 	if !results.IsEmpty() {
@@ -549,12 +624,14 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	}
 }
 
-// UpdateScanRoot updates the scan root and the filesystem to use for the filesystem walk.
+// PrepareNewScan updates the scan root and the filesystem to use for the filesystem walk.
+// It also resets the inventory.
 // currentRoot is expected to be an absolute path.
-func (wc *walkContext) UpdateScanRoot(absRoot string, fs scalibrfs.FS) error {
+func (wc *walkContext) PrepareNewScan(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
 	wc.fileAPI.fs = fs
+	wc.inventory = inventory.Inventory{}
 	return nil
 }
 
@@ -638,23 +715,40 @@ func pathStringListToMap(paths []string) map[string]bool {
 	return result
 }
 
-func addErrToMap(errors map[string]error, key string, err error) {
-	if prev, ok := errors[key]; !ok {
-		errors[key] = err
-	} else {
-		errors[key] = fmt.Errorf("%w\n%w", prev, err)
+func addErrToMap(errors map[string]map[string]error, extractor string, path string, err error) {
+	if _, ok := errors[extractor]; !ok {
+		errors[extractor] = make(map[string]error)
 	}
+	errors[extractor][path] = err
 }
 
-func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errors map[string]error) []*plugin.Status {
+func errToExtractorStatus(extractors []Extractor, foundInv map[string]bool, errs map[string]map[string]error) []*plugin.Status {
 	result := make([]*plugin.Status, 0, len(extractors))
 	for _, ex := range extractors {
-		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], errors[ex.Name()]))
+		fileErrs := createFileErrorsForPlugin(errs[ex.Name()])
+		result = append(result, plugin.StatusFromErr(ex, foundInv[ex.Name()], plugin.OverallErrFromFileErrs(fileErrs), fileErrs))
 	}
 	return result
 }
 
+func createFileErrorsForPlugin(errorMap map[string]error) []*plugin.FileError {
+	if len(errorMap) == 0 {
+		return nil
+	}
+
+	var fileErrors []*plugin.FileError
+	for path, err := range errorMap {
+		fileErrors = append(fileErrors, &plugin.FileError{
+			FilePath:     path,
+			ErrorMessage: err.Error(),
+		})
+	}
+	return fileErrors
+}
+
 func (wc *walkContext) printStatus() {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	log.Infof("Status: new inodes: %d, %.1f inodes/s, new extract calls: %d, path: %q\n",
 		wc.inodesVisited-wc.lastInodes,
 		float64(wc.inodesVisited-wc.lastInodes)/time.Since(wc.lastStatus).Seconds(),

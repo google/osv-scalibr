@@ -57,9 +57,6 @@ type Package struct {
 	PURLType string
 	// The names of the Plugins that found this software instance. Set by the core library.
 	Plugins []string
-	// Deprecated - use ExploitabilitySignals instead
-	// TODO(b/400910349): Remove once integrators stop using this.
-	AnnotationsDeprecated []Annotation
 	// Signals to indicate that specific vulnerabilities are not applicable to this package.
 	ExploitabilitySignals []*vex.PackageExploitabilitySignal
 	// Details about the layer that the package was attributed to.
@@ -68,23 +65,9 @@ type Package struct {
 	Metadata any
 	// Licenses information of this package
 	Licenses []string
+	// If true, the package version is deprecated (e.g. yanked, unpublished, deprecated)
+	Deprecated bool
 }
-
-// Annotation are additional information about the package.
-// TODO(b/400910349): Remove once integrators switch to PackageExploitabilitySignal.
-type Annotation int64
-
-const (
-	// Unknown is the default value for the annotation.
-	Unknown Annotation = iota
-	// Transitional packages just point to other packages without having actual code in them. This
-	// happens for example when packages are renamed.
-	Transitional
-	// InsideOSPackage is set for packages that are found inside an OS package.
-	InsideOSPackage
-	// InsideCacheDir is set for packages that are found inside a cache directory.
-	InsideCacheDir
-)
 
 // PURL returns the Package URL of this package.
 func (p *Package) PURL() *purl.PackageURL {
