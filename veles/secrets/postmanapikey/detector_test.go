@@ -22,15 +22,37 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	// Example valid Postman API and Collection tokens.
-	detectorPMAK = "PMAK-68b96bd4ae8d2b0001db8a86-" +
-		"192b1cb49020c70a4d0c814ab71de822d7"
+	detectorPMAK = "PMAK-68b96bd4ae8d2b0001db8a86-192b1cb49020c70a4d0c814ab71de822d7"
 	detectorPMAT = "PMAT-01K4A58P2HS2Q43TXHSXFRDBZX"
 )
+
+func TestAPIKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		postmanapikey.NewAPIKeyDetector(),
+		detectorPMAK,
+		postmanapikey.PostmanAPIKey{Key: detectorPMAK},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestCollectionTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		postmanapikey.NewCollectionTokenDetector(),
+		detectorPMAT,
+		postmanapikey.PostmanCollectionToken{Key: detectorPMAT},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestAPIKeyDetector_truePositives tests PMAK detection.
 func TestAPIKeyDetector_truePositives(t *testing.T) {
@@ -71,7 +93,7 @@ func TestAPIKeyDetector_truePositives(t *testing.T) {
 			postmanapikey.PostmanAPIKey{Key: detectorPMAK},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf("config:\n  api_key: %s\n",
 			detectorPMAK),
 		want: []veles.Secret{
@@ -121,7 +143,7 @@ func TestAPIKeyDetector_trueNegatives(t *testing.T) {
 		name:  "short key should not match",
 		input: detectorPMAK[:len(detectorPMAK)-5],
 	}, {
-		name: "invalid character in key should not match",
+		name: "invalid_character_in_key_should_not_match",
 		input: "PMAK-" + strings.ReplaceAll(
 			detectorPMAK[5:], "a", "!",
 		),
@@ -188,7 +210,7 @@ func TestCollectionTokenDetector_truePositives(t *testing.T) {
 			postmanapikey.PostmanCollectionToken{Key: detectorPMAT},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf("token:\n  value: %s\n",
 			detectorPMAT),
 		want: []veles.Secret{
@@ -238,7 +260,7 @@ func TestCollectionTokenDetector_trueNegatives(t *testing.T) {
 		name:  "short key should not match",
 		input: detectorPMAT[:len(detectorPMAT)-2],
 	}, {
-		name: "invalid character in key should not match",
+		name: "invalid_character_in_key_should_not_match",
 		input: "PMAT-" + strings.ReplaceAll(
 			detectorPMAT[5:], "A", "#",
 		),

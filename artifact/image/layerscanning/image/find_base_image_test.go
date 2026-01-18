@@ -34,7 +34,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 			wantError: ErrBaseImageNotFound,
 		},
 		{
-			name: "single empty history",
+			name: "single_empty_history",
 			histories: []v1.History{
 				{
 					CreatedBy:  "Empty Layer",
@@ -44,7 +44,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 			wantError: ErrBaseImageNotFound,
 		},
 		{
-			name: "single non empty history",
+			name: "single_non_empty_history",
 			histories: []v1.History{
 				{
 					CreatedBy:  "Non Empty Layer",
@@ -54,7 +54,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 			wantError: ErrBaseImageNotFound,
 		},
 		{
-			name: "single CMD command in history",
+			name: "single_CMD_command_in_history",
 			histories: []v1.History{
 				{
 					CreatedBy:  "Non Empty Layer",
@@ -68,7 +68,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 			wantError: ErrBaseImageNotFound,
 		},
 		{
-			name: "two CMD commands in history",
+			name: "two_CMD_commands_in_history",
 			histories: []v1.History{
 				{
 					CreatedBy:  "ADD file:123 in /",
@@ -98,7 +98,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 			wantIndex: 1,
 		},
 		{
-			name: "nginx image with multiple base images in history",
+			name: "nginx_image_with_multiple_base_images_in_history",
 			histories: []v1.History{
 				{
 					CreatedBy:  "ADD rootfs.tar.xz /",
@@ -141,7 +141,7 @@ func TestFindBaseImageIndex(t *testing.T) {
 			wantIndex: 1,
 		},
 		{
-			name: "custom nginx image with multiple base images in history",
+			name: "custom_nginx_image_with_multiple_base_images_in_history",
 			histories: []v1.History{
 				{
 					CreatedBy:  "ADD rootfs.tar.xz /",

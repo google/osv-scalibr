@@ -23,9 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `rubygems_cec9db9373ea171daaaa0bf2337edce187f09558cb19c1b2`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		rubygemsapikey.NewDetector(),
+		testKey,
+		rubygemsapikey.RubyGemsAPIKey{Key: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a RubyGems API key/s.
@@ -72,7 +84,7 @@ func TestDetector_truePositives(t *testing.T) {
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey[:len(testKey)-1] + "1"},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: rubygems_abc
 :rubygems_api_key: %s 

@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_Extract(t *testing.T) {
@@ -116,7 +118,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := renvlock.Extractor{}
+			extr, err := renvlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("renvlock.New: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

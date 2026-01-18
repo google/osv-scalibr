@@ -137,7 +137,7 @@ func TestExtractor(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "valid packages.lock.json",
+			name: "valid_packages.lock.json",
 			path: "testdata/valid/packages.lock.json",
 			wantPackages: []*extractor.Package{
 				{

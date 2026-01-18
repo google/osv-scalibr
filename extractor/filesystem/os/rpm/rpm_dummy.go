@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux
+//go:build windows
 
 // Package rpm extracts packages from rpm database.
 package rpm
@@ -20,42 +20,32 @@ package rpm
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Name is the name for the RPM extractor
 const Name = "os/rpm"
 
 // Extractor extracts rpm packages from rpm database.
-type Extractor struct{}
-
-// Config contains RPM specific configuration values
-type Config struct {
-	Stats            stats.Collector
-	MaxFileSizeBytes int64
-	Timeout          time.Duration
+type Extractor struct {
+	Stats stats.Collector
 }
-
-// DefaultConfig returns the default configuration values for the RPM extractor.
-func DefaultConfig() Config { return Config{} }
 
 // New returns an RPM extractor.
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
-	return &Extractor{}
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
 }
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }

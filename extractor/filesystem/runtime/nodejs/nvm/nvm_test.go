@@ -68,7 +68,7 @@ func TestExtract(t *testing.T) {
 		inputConfigFile extracttest.ScanInputMockConfig
 	}{
 		{
-			name: "valid .nvmrc with version",
+			name: "valid_.nvmrc_with_version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/simpleValidWithComments.nvmrc",
 			},
@@ -85,7 +85,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid .nvmrc with whitespaces and comments",
+			name: "valid_.nvmrc_with_whitespaces_and_comments",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validWhiteSpaces.nvmrc",
 			},
@@ -102,14 +102,14 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: ".nvmrc with node and lts instead of version",
+			name: ".nvmrc_with_node_and_lts_instead_of_version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/notNumericVersion.nvmrc",
 			},
 			wantPackages: nil,
 		},
 		{
-			name: ".nvmrc with no numerical version",
+			name: ".nvmrc_with_no_numerical_version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiVersionWithSkip.nvmrc",
 			},

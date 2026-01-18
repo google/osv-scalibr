@@ -123,7 +123,7 @@ func tokenizeRequirement(requirement string) []VersionConstraint {
 	}
 
 	var tokenized []VersionConstraint
-	for _, constraint := range strings.Split(requirement, ",") {
+	for constraint := range strings.SplitSeq(requirement, ",") {
 		constraint = strings.TrimSpace(constraint)
 		if constraint == "" {
 			continue

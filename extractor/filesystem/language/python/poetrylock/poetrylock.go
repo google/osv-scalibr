@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -27,6 +28,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -56,7 +59,7 @@ type poetryLockFile struct {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -85,12 +88,8 @@ func resolveGroups(pkg poetryLockPackage) []string {
 		return []string{}
 	}
 
-	for _, group := range pkg.Groups {
-		// the "main" group is the default group used for "production" dependencies,
-		// which we represent by an empty slice aka no groups
-		if group == "main" {
-			return []string{}
-		}
+	if slices.Contains(pkg.Groups, "main") {
+		return []string{}
 	}
 
 	return pkg.Groups

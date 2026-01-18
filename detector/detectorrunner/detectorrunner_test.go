@@ -29,7 +29,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	fd "github.com/google/osv-scalibr/testing/fakedetector"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestRun(t *testing.T) {
@@ -62,7 +63,7 @@ func TestRun(t *testing.T) {
 	findingNoAdvisory := &inventory.GenericFinding{}
 	findingNoAdvisoryID := &inventory.GenericFinding{Adv: &inventory.GenericFindingAdvisory{}}
 	packageVuln := &inventory.PackageVuln{
-		Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+		Vulnerability: &osvpb.Vulnerability{Id: "CVE-9012"},
 	}
 	det1 := fd.New().WithName("det1").WithVersion(1)
 	det2 := fd.New().WithName("det2").WithVersion(2)
@@ -76,7 +77,7 @@ func TestRun(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			desc: "Plugins successful",
+			desc: "Plugins_successful",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithGenericFinding(finding2),
@@ -93,7 +94,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			desc: "One plugin failed",
+			desc: "One_plugin_failed",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithErr(errors.New("detection failed")),
@@ -109,7 +110,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			desc: "Duplicate findings with identical advisories",
+			desc: "Duplicate_findings_with_identical_advisories",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithGenericFinding(identicalFinding1),
@@ -124,7 +125,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			desc: "Duplicate findings with different advisories",
+			desc: "Duplicate_findings_with_different_advisories",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithGenericFinding(&inventory.GenericFinding{
@@ -139,7 +140,7 @@ func TestRun(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Error when Advisory is not set",
+			desc: "Error_when_Advisory_is_not_set",
 			det: []detector.Detector{
 				det1.WithGenericFinding(findingNoAdvisory),
 			},
@@ -150,7 +151,7 @@ func TestRun(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Error when Advisory ID is not set",
+			desc: "Error_when_Advisory_ID_is_not_set",
 			det: []detector.Detector{
 				det1.WithGenericFinding(findingNoAdvisoryID),
 			},
@@ -161,7 +162,7 @@ func TestRun(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Package and generic vulns",
+			desc: "Package_and_generic_vulns",
 			det: []detector.Detector{
 				det1.WithGenericFinding(finding1),
 				det2.WithPackageVuln(packageVuln),
@@ -187,7 +188,7 @@ func TestRun(t *testing.T) {
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detectorrunner.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
 			}
-			if diff := cmp.Diff(tc.wantFindings, gotFindings); diff != "" {
+			if diff := cmp.Diff(tc.wantFindings, gotFindings, protocmp.Transform()); diff != "" {
 				t.Errorf("detectorrunner.Run(%v): unexpected findings (-want +got):\n%s", tc.det, diff)
 			}
 			if diff := cmp.Diff(tc.wantStatus, gotStatus); diff != "" {

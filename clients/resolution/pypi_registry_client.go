@@ -42,11 +42,6 @@ func NewPyPIRegistryClient(registry string, localRegistry string) *PyPIRegistryC
 	return &PyPIRegistryClient{api: datasource.NewPyPIRegistryAPIClient(registry, localRegistry)}
 }
 
-// SetLocalRegistry sets the local directory that stores the downloaded PyPI manifests.
-func (c *PyPIRegistryClient) SetLocalRegistry(localRegistry string) {
-	c.api.SetLocalRegistry(localRegistry)
-}
-
 // Version returns metadata of a version specified by the VersionKey.
 func (c *PyPIRegistryClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
 	// Version is not used by the PyPI resolver for now, so here

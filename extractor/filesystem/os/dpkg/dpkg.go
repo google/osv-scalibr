@@ -36,71 +36,47 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "os/dpkg"
-
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
 	defaultMaxFileSizeBytes = 100 * units.MiB
-
-	// defaultIncludeNotInstalled is the default value for the IncludeNotInstalled option.
-	defaultIncludeNotInstalled = false
 )
-
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
-	MaxFileSizeBytes int64
-	// IncludeNotInstalled includes packages that are not installed
-	// (e.g. `deinstall`, `purge`, and those missing a status field).
-	IncludeNotInstalled bool
-}
-
-// DefaultConfig returns the default configuration for the DPKG extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes:    defaultMaxFileSizeBytes,
-		IncludeNotInstalled: defaultIncludeNotInstalled,
-	}
-}
 
 // Extractor extracts packages from DPKG files.
 type Extractor struct {
-	stats               stats.Collector
+	Stats               stats.Collector
+	IncludeNotInstalled bool
 	maxFileSizeBytes    int64
-	includeNotInstalled bool
 }
 
 // New returns a DPKG extractor.
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:               cfg.Stats,
-		maxFileSizeBytes:    cfg.MaxFileSizeBytes,
-		includeNotInstalled: cfg.IncludeNotInstalled,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := defaultMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
-
-// Config returns the configuration of the extractor.
-func (e Extractor) Config() Config {
-	return Config{
-		Stats:               e.stats,
-		MaxFileSizeBytes:    e.maxFileSizeBytes,
-		IncludeNotInstalled: e.includeNotInstalled,
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.DpkgConfig { return c.GetDpkg() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
+
+	e := &Extractor{
+		maxFileSizeBytes:    maxFileSizeBytes,
+		IncludeNotInstalled: specific.GetIncludeNotInstalled(),
+	}
+	return e, nil
 }
 
 // Name of the extractor.
@@ -145,10 +121,10 @@ func fileRequired(path string) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -158,12 +134,12 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 // Extract extracts packages from dpkg status files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs, err := e.extractFromInput(ctx, input)
-	if e.stats != nil {
+	if e.Stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
 			fileSizeBytes = input.Info.Size()
 		}
-		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 			Path:          input.Path,
 			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 			FileSizeBytes: fileSizeBytes,
@@ -208,7 +184,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 		// Distroless distributions have their packages in status.d, which does not contain the Status
 		// value.
-		if !e.includeNotInstalled && (!strings.Contains(input.Path, "status.d") || h.Get("Status") != "") {
+		if !e.IncludeNotInstalled && (!strings.Contains(input.Path, "status.d") || h.Get("Status") != "") {
 			if h.Get("Status") == "" {
 				log.Warnf("Package %q has no status field", h.Get("Package"))
 				continue
@@ -232,12 +208,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		description := strings.ToLower(h.Get("Description"))
-		var annotations []extractor.Annotation
 		var vexes []*vex.PackageExploitabilitySignal
 		if strings.Contains(description, "transitional package") ||
 			strings.Contains(description, "transitional dummy package") ||
 			strings.Contains(description, "transitional empty package") {
-			annotations = append(annotations, extractor.Transitional)
 			vexes = append(vexes, &vex.PackageExploitabilitySignal{
 				Plugin:          Name,
 				Justification:   vex.ComponentNotPresent,
@@ -264,9 +238,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				Maintainer:        h.Get("Maintainer"),
 				Architecture:      h.Get("Architecture"),
 			},
-			Locations: []string{input.Path},
-			// TODO(b/400910349): Remove once integrators stop using annotations.
-			AnnotationsDeprecated: annotations,
+			Locations:             []string{input.Path},
 			ExploitabilitySignals: vexes,
 		}
 		sourceName, sourceVersion, err := parseSourceNameVersion(h.Get("Source"))

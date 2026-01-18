@@ -1,0 +1,257 @@
+/*
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package scalibr;
+
+option go_package = "github.com/google/osv-scalibr/binary/proto/config_go_proto";
+option java_multiple_files = true;
+option java_outer_classname = "Config";
+
+// Proto file describing the SCALIBR plugin configs. Whenever this proto is
+// modified make sure to regenerate the go_proto file by running
+// `make protos`
+
+message PluginConfig {
+  // Global config values that apply to multiple plugins.
+
+  // The maximum file size the plugin will process.
+  int64 max_file_size_bytes = 1;
+  // The local directory to store the downloaded manifests during dependency
+  // resolution.
+  string local_registry = 3;
+  // If true, do not try to create google.DefaultClient for Artifact Registry
+  // during dependency resolution.
+  bool disable_google_auth = 4;
+  // The user agent to use when making requests.
+  string user_agent = 5;
+
+  // Config values that only apply to a single plugin.
+  repeated PluginSpecificConfig plugin_specific = 2;
+}
+
+message PluginSpecificConfig {
+  oneof config {
+    GoBinaryConfig go_binary = 1;
+    GovulncheckConfig govulncheck = 2;
+    ArchiveConfig archive = 3;
+    OVAConfig ova = 4;
+    VDIConfig vdi = 5;
+    VMDKConfig vmdk = 6;
+    HashiCorpVaultValidatorConfig hashicorp_vault_validator = 7;
+    SDPInspectConfig sdp_inspect = 8;
+    POMXMLNetConfig pom_xml_net = 9;
+    ChocolateyConfig chocolatey = 10;
+    DpkgConfig dpkg = 11;
+    RpmConfig rpm = 12;
+    ApkConfig apk = 13;
+    CosConfig cos = 14;
+    SnapConfig snap = 15;
+    KernelModuleConfig kernel_module = 16;
+    VmlinuzConfig vmlinuz = 17;
+    PacmanConfig pacman = 18;
+    PortageConfig portage = 19;
+    FlatpakConfig flatpak = 20;
+    MacAppsConfig macapps = 21;
+    PodmanConfig podman = 22;
+    DockerBaseImageConfig docker_base_image = 23;
+    ContainerdConfig containerd = 24;
+    DockerComposeImageConfig docker_compose_image = 25;
+    K8sImageConfig k8s_image = 26;
+  }
+}
+
+message GoBinaryConfig {
+  // Enables extracting the module version from the Go binary content.
+  bool version_from_content = 1;
+}
+
+message GovulncheckConfig {
+  // Path to the offline vuln DB to pass to govunlcheck. If empty,
+  // the detector will query vulns from the net instead.
+  string offline_vuln_db_path = 1;
+}
+
+message ArchiveConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message OVAConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message VDIConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message VMDKConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message ChocolateyConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message HashiCorpVaultValidatorConfig {
+  // The URL of the Vault server to connect to.
+  // https://developer.hashicorp.com/vault
+  string vault_url = 1;
+}
+
+message SDPInspectConfig {
+  // The GCP project id to use for Sensitive Data Protection InspectContent API
+  // calls.
+  string project_id = 1;
+}
+
+message POMXMLNetConfig {
+  // The URL of the upstream Maven registry.
+  string upstream_registry = 1;
+  // If true, use deps.dev requirements API for dependency resolution.
+  bool deps_dev_requirements = 2;
+}
+
+message DpkgConfig {
+  // IncludeNotInstalled includes packages that are not installed
+  // (e.g. `deinstall`, `purge`, and those missing a status field).
+  bool include_not_installed = 1;
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 2;
+}
+
+message RpmConfig {
+  // Timeout in seconds for parsing the RPM database.
+  int64 timeout_seconds = 1;
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 2;
+}
+
+message ApkConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message CosConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message SnapConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message KernelModuleConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message VmlinuzConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message PacmanConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message PortageConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message FlatpakConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message MacAppsConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message PodmanConfig {
+  // Specifies whether to list all containers, including those
+  // that are not currently running.
+  bool include_stopped = 1;
+}
+
+message DockerBaseImageConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message ContainerdConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message DockerComposeImageConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message K8sImageConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
