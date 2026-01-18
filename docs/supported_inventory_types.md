@@ -187,8 +187,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Misc
 
 | Type                    | Extractor Plugin    |
-| ----------------------- | ------------------- |
+|-------------------------| ------------------- |
 | Wordpress plugins       | `wordpress/plugins` |
+| Terraform lock file     | `misc/terraformlock`|
+| Terraform providers     | `misc/terraform`    |
 | VSCode extensions       | `vscode/extensions` |
 | Chrome extensions       | `chrome/extensions` |
 | NetScaler installations | `netscaler`         |

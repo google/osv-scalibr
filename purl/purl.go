@@ -115,6 +115,8 @@ const (
 	TypeLua = "lua"
 	// TypeChocolatey is pkg:chocolatey purl
 	TypeChocolatey = "chocolatey"
+	// TypeTerraform is pkg:terraform purl
+	TypeTerraform = "terraform"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -223,6 +225,7 @@ func validType(t string) bool {
 		TypeMacports:   true,
 		TypeWinget:     true,
 		TypeChocolatey: true,
+		TypeTerraform: true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
