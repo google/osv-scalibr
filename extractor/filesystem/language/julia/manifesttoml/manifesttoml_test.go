@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,6 +104,26 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "0.20.0",
 					PURLType:  purl.TypeJulia,
 					Locations: []string{"testdata/only-version-dependency.toml"},
+				},
+			},
+		},
+		{
+			Name: "more than one dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/more-than-two-dependencies.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "JSON",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeJulia,
+					Locations: []string{"testdata/more-than-two-dependencies.toml"},
+				},
+				{
+					Name:      "TOML",
+					Version:   "2.0.0",
+					PURLType:  purl.TypeJulia,
+					Locations: []string{"testdata/more-than-two-dependencies.toml"},
 				},
 			},
 		},
