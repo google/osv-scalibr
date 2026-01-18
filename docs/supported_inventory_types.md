@@ -160,6 +160,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
 | Tink keyset                                 | `secrets/tinkkeyset`                   |
 | Paystack Secret Key                         | `secrets/paystacksecretkey`            |
+| Qwen AI API Key 			      | `secrets/qwenpat` 		       |
 | Vapid keys                                  | `secrets/vapidkey`                     |
 | reCAPTCHA secret keys                       | `secrets/recaptchakey`                 |
 | Generic JWT tokens                          | `secrets/jwttoken`                     |

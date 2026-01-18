@@ -760,6 +760,7 @@ message SecretData {
     BitBucketCredentials bitbucket_credentials = 57;
     PaystackSecretKey paystack_secret_key = 58;
     TelegramBotToken telegram_bot_api_token = 59;
+    QwenAIKey qwen_ai_key = 60
   }
 
   message GCPSAK {
@@ -913,6 +914,10 @@ message SecretData {
   }
 
   message PyPIAPIToken {
+    string token = 1;
+  }
+  
+  message QwenAIKey {
     string token = 1;
   }
 
