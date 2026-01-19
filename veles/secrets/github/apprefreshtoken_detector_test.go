@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -30,6 +31,36 @@ const (
 	refreshTestKeyBase64  = `Z2hyX09XT0NQenFLdXkzSjR3NTNRcGtMZmZmakJVSlNoNXlMbkZIajd3aXlSME5EYWRWT2N5a05rb3Fob1lZWE0xeXkyc09wQXUwbEc4Znc=`
 	refreshAnotherTestKey = `ghr_Exma21WpQt8vgSQNpEiZtETooAnNLM3rnXRAPnCQYKiuWdmPRnVF0I6cW0zCgA14u7HQzD1Zebn0`
 )
+
+func TestAppRefreshTokenDetectorAcceptance(t *testing.T) {
+	d := github.NewAppRefreshTokenDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+		opts   []velestest.AcceptDetectorOption
+	}{
+		{
+			name:   "raw",
+			input:  refreshTestKey,
+			secret: github.AppRefreshToken{Token: refreshTestKey},
+			opts: []velestest.AcceptDetectorOption{
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			},
+		},
+		{
+			name:   "base64",
+			input:  refreshTestKeyBase64,
+			secret: github.AppRefreshToken{Token: refreshTestKey},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, tc.opts...)
+		})
+	}
+}
 
 // TestAppRefreshTokenDetector_truePositives tests for cases where we know the Detector
 // will find a Github app refresh tokens.

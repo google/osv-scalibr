@@ -35,6 +35,9 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "os/chocolatey"
+
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
 )
 
 // ChocoModule xml parser struct for .nuspec file
@@ -61,12 +64,17 @@ type Extractor struct {
 
 // New returns a chocolatey extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	maxSize := cfg.MaxFileSizeBytes
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
+	}
+
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.ChocolateyConfig { return c.GetChocolatey() })
 	if specific.GetMaxFileSizeBytes() > 0 {
-		maxSize = specific.GetMaxFileSizeBytes()
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
-	return &Extractor{maxFileSizeBytes: maxSize}, nil
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
 }
 
 // Name of the extractor.
@@ -96,7 +104,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if err != nil {
 		return false
 	}
-	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
