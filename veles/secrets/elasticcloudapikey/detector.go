@@ -22,7 +22,6 @@ import (
 )
 
 // maxTokenLength is the maximum size of an Elastic Cloud API key.
-// Pattern: "essu_" + a 92-character base64 segment (may include 0â€“2 '=' padding).
 const maxTokenLength = 97
 
 // keyRe matches an Elastic Cloud API key.
