@@ -218,7 +218,9 @@ func TestValidator_AuthorizationHeader(t *testing.T) {
 	validator.Endpoint = server.URL + "/v3/user/account"
 
 	key := sendgrid.APIKey{Key: testSendGridAPIKey}
-	validator.Validate(t.Context(), key)
+	if _, err := validator.Validate(t.Context(), key); err != nil {
+		t.Fatalf("Validate() unexpected error: %v", err)
+	}
 
 	expectedAuth := "Bearer " + testSendGridAPIKey
 	if capturedAuth != expectedAuth {

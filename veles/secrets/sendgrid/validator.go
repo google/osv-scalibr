@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package sendgrid provides a detector and validator for SendGrid API keys.
 package sendgrid
 
 import (
