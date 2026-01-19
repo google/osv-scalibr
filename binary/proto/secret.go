@@ -58,6 +58,7 @@ import (
 	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
@@ -243,6 +244,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
+	case salesforceoauth2refresh.Credentials:
+		return salesforceOAuth2RefreshCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -830,6 +833,18 @@ func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) 
 	}
 }
 
+func salesforceOAuth2RefreshCredentialsToProto(creds salesforceoauth2refresh.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SalesforceOauth2RefreshCredentials{
+			SalesforceOauth2RefreshCredentials: &spb.SecretData_SalesforceOAuth2RefreshCredentials{
+				Id:      creds.ID,
+				Secret:  creds.Secret,
+				Refresh: creds.Refresh,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1085,6 +1100,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
 		}, nil
+	case *spb.SecretData_SalesforceOauth2RefreshCredentials:
+		return salesforceOAuth2RefreshCredentialsToStruct(s.GetSalesforceOauth2RefreshCredentials()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1281,6 +1298,14 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
 		ID:       credsPB.GetId(),
+	}
+}
+
+func salesforceOAuth2RefreshCredentialsToStruct(credsPB *spb.SecretData_SalesforceOAuth2RefreshCredentials) salesforceoauth2refresh.Credentials {
+	return salesforceoauth2refresh.Credentials{
+		ID:      credsPB.GetId(),
+		Secret:  credsPB.GetSecret(),
+		Refresh: credsPB.GetRefresh(),
 	}
 }
 
