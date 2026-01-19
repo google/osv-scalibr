@@ -166,6 +166,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | pyx user key v1                             | `secrets/pyxkeyv1`                     |
 | pyx user key v2                             | `secrets/pyxkeyv2`                     |
 | Telegram Bot API Token                      | `secrets/telegrambottoken`             |
+| Salesforce OAuth 2 JWT Credentials          | `secrets/salesforceoauth2jwt`          |
 
 ### Container inventory
 
