@@ -140,6 +140,9 @@ func TestDetector_NoMatches(t *testing.T) {
 		name:  "key_prefix_but_not_api_key",
 		input: "keyboard shortcuts are not API keys",
 	}, {
+		name:  "key_in_middle_of_word_should_not_match",
+		input: "mykey_abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+	}, {
 		name:  "63_chars_after_prefix",
 		input: "key_abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456",
 	}, {

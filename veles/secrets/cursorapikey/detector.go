@@ -26,7 +26,7 @@ const maxTokenLength = 100
 
 // keyRe is a regular expression that matches Cursor Admin API keys.
 // Format: key_ followed by 64 lowercase letters and digits (a-z0-9).
-var keyRe = regexp.MustCompile(`key_[a-z0-9]{64}`)
+var keyRe = regexp.MustCompile(`\bkey_[a-z0-9]{64}\b`)
 
 // NewDetector returns a new simpletoken.Detector that matches Cursor API keys.
 func NewDetector() veles.Detector {
