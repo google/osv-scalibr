@@ -23,9 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `cioAbCdEfGhIjKlMnOpQrStUvWxYz123456`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		cratesioapitoken.NewDetector(),
+		testKey,
+		cratesioapitoken.CratesIOAPItoken{Token: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Crates.io API key/s.

@@ -34,6 +34,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"gopkg.in/yaml.v3"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -229,7 +231,7 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
