@@ -166,5 +166,3 @@ func TestEnrich(t *testing.T) {
 		})
 	}
 }
-
-

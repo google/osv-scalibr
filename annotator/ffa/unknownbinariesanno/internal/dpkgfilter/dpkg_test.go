@@ -210,13 +210,13 @@ func TestHashSetFilter(t *testing.T) {
 				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/symlink1":       {Name: "symlink1",
+				"usr/bin/symlink1": {Name: "symlink1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							BaseImage: false,
 						},
 					}},
-				"usr/bin/actual_binary":  {Name: "actual_binary",
+				"usr/bin/actual_binary": {Name: "actual_binary",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							BaseImage: false,
@@ -228,7 +228,7 @@ func TestHashSetFilter(t *testing.T) {
 							BaseImage: false,
 						},
 					}},
-				"usr/bin/not_in_list":    {Name: "not_in_list",
+				"usr/bin/not_in_list": {Name: "not_in_list",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							BaseImage: false,
