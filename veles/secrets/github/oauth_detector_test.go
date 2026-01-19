@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -30,6 +31,31 @@ const (
 	oauthTestKeyBase64  = `Z2hvX3BrNWMyblQxZks2Y2hVWEpYMWpPR3M4cmJ1elgwcjM0QlhJdQ==`
 	oauthAnotherTestKey = `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`
 )
+
+func TestOAuthTokenDetectorAcceptance(t *testing.T) {
+	d := github.NewOAuthTokenDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+	}{
+		{
+			name:   "raw",
+			input:  oauthTestKey,
+			secret: github.OAuthToken{Token: oauthTestKey},
+		},
+		{
+			name:   "base64",
+			input:  oauthTestKeyBase64,
+			secret: github.OAuthToken{Token: oauthTestKey},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, velestest.WithBackToBack(), velestest.WithPad('a'))
+		})
+	}
+}
 
 // TestOAuthDetector_truePositives tests for cases where we know the Detector
 // will find a Github OAuth tokens.

@@ -30,6 +30,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -55,7 +57,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-			e := podman.Extractor{}
+			e, err := podman.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("podman.New failed: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -67,11 +72,11 @@ func TestExtractor_FileRequired(t *testing.T) {
 func TestExtractor_Extract(t *testing.T) {
 	// extracttest.TestTableEntry + podman config
 	type testTableEntry struct {
-		Name         string
-		Path         string
-		WantPackages []*extractor.Package
-		WantErr      error
-		Config       podman.Config
+		Name           string
+		Path           string
+		WantPackages   []*extractor.Package
+		WantErr        error
+		IncludeStopped bool
 	}
 
 	tests := []testTableEntry{
@@ -88,9 +93,9 @@ func TestExtractor_Extract(t *testing.T) {
 			WantErr: extracttest.ContainsErrStr{Str: "error opening file"},
 		},
 		{
-			Name:   "valid using sqlite3 - all",
-			Path:   "testdata/db.sql",
-			Config: podman.Config{IncludeStopped: true},
+			Name:           "valid using sqlite3 - all",
+			Path:           "testdata/db.sql",
+			IncludeStopped: true,
 			WantPackages: []*extractor.Package{
 				{
 					Name:    "docker.io/hello-world",
@@ -150,9 +155,9 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			Name:   "valid using bolt - all",
-			Path:   "testdata/bolt_state.db",
-			Config: podman.Config{IncludeStopped: true},
+			Name:           "valid using bolt - all",
+			Path:           "testdata/bolt_state.db",
+			IncludeStopped: true,
 			WantPackages: []*extractor.Package{
 				{
 					Name:    "docker.io/hello-world",
@@ -195,7 +200,20 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := podman.New(tt.Config)
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Podman{
+						Podman: &cpb.PodmanConfig{
+							IncludeStopped: tt.IncludeStopped,
+						},
+					},
+					},
+				},
+			}
+			extr, err := podman.New(cfg)
+			if err != nil {
+				t.Fatalf("podman.New failed: %v", err)
+			}
 
 			// Move input to a tmp dir that SCALIBR has write access to
 			// (needed for bolt files which are opened using ).

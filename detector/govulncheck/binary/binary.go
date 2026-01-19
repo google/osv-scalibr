@@ -25,6 +25,7 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -107,7 +108,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 				allErrs = appendError(allErrs, fmt.Errorf("d.runGovulncheck(%s): %w", l, err))
 				continue
 			}
-			r, err := parseVulnsFromOutput(out)
+			r, err := parseVulnsFromOutput(out, p)
 			if err != nil {
 				allErrs = appendError(allErrs, fmt.Errorf("d.parseVulnsFromOutput(%v, %s): %w", out, l, err))
 				continue
@@ -139,7 +140,7 @@ func (d Detector) runGovulncheck(ctx context.Context, binaryPath, scanRoot strin
 	return &out, nil
 }
 
-func parseVulnsFromOutput(out *bytes.Buffer) ([]*inventory.PackageVuln, error) {
+func parseVulnsFromOutput(out *bytes.Buffer, pkg *extractor.Package) ([]*inventory.PackageVuln, error) {
 	var result []*inventory.PackageVuln
 	allOSVs := make(map[string]*osvpb.Vulnerability)
 	detectedOSVs := make(map[string]struct{}) // osvs detected at the symbol level
@@ -164,7 +165,10 @@ func parseVulnsFromOutput(out *bytes.Buffer) ([]*inventory.PackageVuln, error) {
 	// create scalibr findings for detected govulncheck findings
 	for osvID := range detectedOSVs {
 		osv := allOSVs[osvID]
-		result = append(result, &inventory.PackageVuln{Vulnerability: osv})
+		result = append(result, &inventory.PackageVuln{
+			Vulnerability: osv,
+			Package:       pkg,
+		})
 	}
 	return result, nil
 }

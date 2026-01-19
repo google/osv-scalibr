@@ -67,6 +67,11 @@ message PluginSpecificConfig {
     PortageConfig portage = 19;
     FlatpakConfig flatpak = 20;
     MacAppsConfig macapps = 21;
+    PodmanConfig podman = 22;
+    DockerBaseImageConfig docker_base_image = 23;
+    ContainerdConfig containerd = 24;
+    DockerComposeImageConfig docker_compose_image = 25;
+    K8sImageConfig k8s_image = 26;
   }
 }
 
@@ -211,6 +216,40 @@ message FlatpakConfig {
 }
 
 message MacAppsConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message PodmanConfig {
+  // Specifies whether to list all containers, including those
+  // that are not currently running.
+  bool include_stopped = 1;
+}
+
+message DockerBaseImageConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message ContainerdConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message DockerComposeImageConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message K8sImageConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
