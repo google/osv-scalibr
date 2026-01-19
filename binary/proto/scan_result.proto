@@ -760,6 +760,7 @@ message SecretData {
     BitBucketCredentials bitbucket_credentials = 57;
     PaystackSecretKey paystack_secret_key = 58;
     TelegramBotToken telegram_bot_api_token = 59;
+    SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 60;
   }
 
   message GCPSAK {
@@ -1068,6 +1069,11 @@ message SecretData {
   }
 
   message TelegramBotToken{
+    string token = 1;
+  }
+
+  message SalesforceOAuth2AccessToken {
+    // Salesforce OAuth2 Access Token
     string token = 1;
   }
 }
