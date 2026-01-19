@@ -82,7 +82,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
 |            | bun.lock                                          | `javascript/bunlock`                 |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
-|            | Julia installed packages (Manifest.toml)          |                                      |
+|            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
 | ObjectiveC | Podfile.lock                                      | `swift/podfilelock`                  |
 | PHP        | Composer                                          | `php/composerlock`                   |
