@@ -58,12 +58,12 @@ import (
 	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
-	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -837,7 +837,7 @@ func salesforceOAuth2AccessTokenToProto(s salesforceoauth2access.Token) *spb.Sec
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SalesforceOauth2AccessToken{
 			SalesforceOauth2AccessToken: &spb.SecretData_SalesforceOAuth2AccessToken{
-				Token:     s.Token,
+				Token: s.Token,
 			},
 		},
 	}
@@ -1301,7 +1301,7 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 
 func salesforceOAuth2AccessTokenToStruct(tPB *spb.SecretData_SalesforceOAuth2AccessToken) salesforceoauth2access.Token {
 	return salesforceoauth2access.Token{
-		Token:     tPB.GetToken(),
+		Token: tPB.GetToken(),
 	}
 }
 
