@@ -2,7 +2,6 @@ package salesforceoauth2refresh
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/http"
 
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
@@ -18,7 +17,7 @@ func NewValidator() *sv.Validator[Credentials] {
 		Endpoint: "https://login.salesforce.com/services/oauth2/token",
 		Body: func(creds Credentials) (string, error) {
 			// Salesforce requires refresh token in body
-			return fmt.Sprintf("refresh_token=%s", creds.Refresh), nil
+			return "refresh_token=" + creds.Refresh, nil
 		},
 		HTTPMethod: http.MethodPost,
 		HTTPHeaders: func(creds Credentials) map[string]string {
