@@ -105,12 +105,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // miseTomlFile represents the structure of a mise.toml file.
 type miseTomlFile struct {
-	Tools map[string]interface{} `toml:"tools"`
-}
-
-// toolOptions represents the options for a tool when specified as an object.
-type toolOptions struct {
-	Version string `toml:"version"`
+	Tools map[string]any `toml:"tools"`
 }
 
 // Extract extracts packages from the mise.toml file.
@@ -134,7 +129,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		case string:
 			// Simple string version: terraform = "1"
 			version = v
-		case map[string]interface{}:
+		case map[string]any:
 			// Object with options like: ToolName = { version = "22", ...}
 			if ver, ok := v["version"].(string); ok {
 				version = ver

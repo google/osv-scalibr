@@ -54,8 +54,8 @@ func TestSetProto(t *testing.T) {
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
+				Metadata: &pb.Package_MiseMetadata{
+					MiseMetadata: &pb.MiseMetadata{
 						ToolName: "name",
 					},
 				},
@@ -68,16 +68,16 @@ func TestSetProto(t *testing.T) {
 			},
 			p: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
+				Metadata: &pb.Package_MiseMetadata{
+					MiseMetadata: &pb.MiseMetadata{
 						ToolName: "name",
 					},
 				},
 			},
 			want: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
+				Metadata: &pb.Package_MiseMetadata{
+					MiseMetadata: &pb.MiseMetadata{
 						ToolName: "another-name",
 					},
 				},
@@ -92,8 +92,8 @@ func TestSetProto(t *testing.T) {
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: &pb.AsdfMetadata{
+				Metadata: &pb.Package_MiseMetadata{
+					MiseMetadata: &pb.MiseMetadata{
 						ToolName:    "name",
 						ToolVersion: "version",
 					},
@@ -119,9 +119,9 @@ func TestSetProto(t *testing.T) {
 				return
 			}
 
-			got := metadata.ToStruct(p.GetAsdfMetadata())
+			got := metadata.ToStruct(p.GetMiseMetadata())
 			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetAsdfMetadata(), diff)
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetMiseMetadata(), diff)
 			}
 		})
 	}
@@ -130,7 +130,7 @@ func TestSetProto(t *testing.T) {
 func TestToStruct(t *testing.T) {
 	testCases := []struct {
 		desc string
-		m    *pb.AsdfMetadata
+		m    *pb.MiseMetadata
 		want *metadata.Metadata
 	}{
 		{
@@ -140,7 +140,7 @@ func TestToStruct(t *testing.T) {
 		},
 		{
 			desc: "some fields",
-			m: &pb.AsdfMetadata{
+			m: &pb.MiseMetadata{
 				ToolName: "name",
 			},
 			want: &metadata.Metadata{
@@ -149,7 +149,7 @@ func TestToStruct(t *testing.T) {
 		},
 		{
 			desc: "all fields",
-			m: &pb.AsdfMetadata{
+			m: &pb.MiseMetadata{
 				ToolName:    "name",
 				ToolVersion: "version",
 			},
@@ -175,8 +175,8 @@ func TestToStruct(t *testing.T) {
 
 			gotP := &pb.Package{}
 			wantP := &pb.Package{
-				Metadata: &pb.Package_AsdfMetadata{
-					AsdfMetadata: tc.m,
+				Metadata: &pb.Package_MiseMetadata{
+					MiseMetadata: tc.m,
 				},
 			}
 			got.SetProto(gotP)

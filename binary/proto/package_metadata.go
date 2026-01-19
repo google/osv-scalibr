@@ -104,7 +104,7 @@ var (
 		reflect.TypeFor[*spb.Package_AsdfMetadata](): func(p *spb.Package) any {
 			return asdfmeta.ToStruct(p.GetAsdfMetadata())
 		},
-		reflect.TypeOf(&spb.Package_MiseMetadata{}): func(p *spb.Package) any {
+		reflect.TypeFor[*spb.Package_MiseMetadata](): func(p *spb.Package) any {
 			return misemeta.ToStruct(p.GetMiseMetadata())
 		},
 		reflect.TypeFor[*spb.Package_NvmMetadata](): func(p *spb.Package) any {
