@@ -135,7 +135,7 @@ var (
 		fromVeles(codecommit.NewValidator(), "secrets/codecommitcredentialsvalidate", 0),
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
 		fromVeles(telegrambotapitoken.NewValidator(), "secrets/telegrombotapitokenvalidate", 0),
-		fromVeles(salesforceoauth2access.NewValidator(), "secrets/salesforceoauth2access", 0),
+		fromVeles(salesforceoauth2access.NewValidator(), "secrets/salesforceoauth2accessvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
