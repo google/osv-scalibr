@@ -58,7 +58,6 @@ func TestOAuthApplicationSecretDetector_Acceptance(t *testing.T) {
 	)
 }
 
-
 // TestPersonalAccessTokenDetector_truePositives tests Personal Access Token detection.
 func TestPersonalAccessTokenDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine(
