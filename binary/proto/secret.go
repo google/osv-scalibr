@@ -30,6 +30,7 @@ import (
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -175,6 +176,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return azureIdentityTokenToProto(t), nil
 	case tinkkeyset.TinkKeySet:
 		return tinkKeysetToProto(t), nil
+	case velescursorapikey.APIKey:
+		return cursorAPIKeyToProto(t.Key), nil
 	case velesopenai.APIKey:
 		return openaiAPIKeyToProto(t.Key), nil
 	case velesopenrouter.APIKey:
@@ -665,6 +668,16 @@ func tinkKeysetToProto(t tinkkeyset.TinkKeySet) *spb.SecretData {
 	}
 }
 
+func cursorAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CursorApiKey{
+			CursorApiKey: &spb.SecretData_CursorAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
 func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_OpenaiApiKey{
@@ -968,6 +981,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesazuretoken.AzureIdentityToken{Token: s.GetAzureIdentityToken().GetToken()}, nil
 	case *spb.SecretData_TinkKeyset_:
 		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
+	case *spb.SecretData_CursorApiKey:
+		return velescursorapikey.APIKey{Key: s.GetCursorApiKey().GetKey()}, nil
 	case *spb.SecretData_PostmanApiKey:
 		return velespostmanapikey.PostmanAPIKey{
 			Key: s.GetPostmanApiKey().GetKey(),

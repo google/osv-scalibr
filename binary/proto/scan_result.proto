@@ -766,6 +766,7 @@ message SecretData {
     BitBucketCredentials bitbucket_credentials = 57;
     PaystackSecretKey paystack_secret_key = 58;
     TelegramBotToken telegram_bot_api_token = 59;
+    CursorAPIKey cursor_api_key = 60;
   }
 
   message GCPSAK {
@@ -1075,6 +1076,10 @@ message SecretData {
 
   message TelegramBotToken{
     string token = 1;
+  }
+
+  message CursorAPIKey {
+    string key = 1;
   }
 }
 
