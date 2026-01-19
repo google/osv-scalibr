@@ -27,26 +27,25 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
+// Validator is a validator for Salesforce OAuth2 JWT Credentials.
 type Validator struct {
 	HTTPC *http.Client
 }
 
+// NewValidator creates a new Validator for Salesforce OAuth2 JWT Credentials.
 func NewValidator() *Validator {
 	return &Validator{HTTPC: http.DefaultClient}
 }
 
 // Validate implements Salesforce OAuth2 JWT validation logic
-func (v *Validator) Validate(
-	ctx context.Context,
-	creds Credentials,
-) (veles.ValidationStatus, error) {
-
+func (v *Validator) Validate(ctx context.Context, creds Credentials) (veles.ValidationStatus, error) {
 	// 1. Parse and validate private key
 	key, err := parsePrivateKey(creds.PrivateKey)
 	if err != nil {
@@ -61,7 +60,7 @@ func (v *Validator) Validate(
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256"}`))
 
 	exp := time.Now().Unix() + 300
-	jti := fmt.Sprintf("%d", time.Now().UnixNano())
+	jti := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	claim := fmt.Sprintf(
 		`{"iss":"%s","sub":"%s","aud":"https://login.salesforce.com","exp":%d,"jti":"%s"}`,

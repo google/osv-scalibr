@@ -74,15 +74,19 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // mockSalesforceServer validates grant_type and that assertion exists
 func mockSalesforceServer(t *testing.T, status int) *httptest.Server {
+	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if r.Method != http.MethodPost || r.URL.Path != "/services/oauth2/token" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		r.ParseForm()
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("ParseForm failed: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		if r.Form.Get("grant_type") != "urn:ietf:params:oauth:grant-type:jwt-bearer" {
 			t.Errorf("missing or wrong grant_type")
