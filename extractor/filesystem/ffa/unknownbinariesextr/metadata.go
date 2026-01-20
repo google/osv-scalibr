@@ -13,7 +13,10 @@ type UnknownBinaryMetadata struct {
 
 // Attribution is the attribution for an unknown binary.
 type Attribution struct {
-	BaseImage bool
+	// Attributed to ecosystem (via package manager's db files)
+	LocalFilesystem bool `json:"localFilesystem"`
+	// Attributed to reputable base image available on deps.dev
+	BaseImage bool `json:"baseImage"`
 }
 
 // SetProto sets the metadata for a package.
@@ -23,7 +26,8 @@ func (m *UnknownBinaryMetadata) SetProto(p *pb.Package) {
 	}
 
 	attribution := &pb.UnknownBinaryAttribution{
-		BaseImage: m.Attribution.BaseImage,
+		LocalFilesystem: m.Attribution.LocalFilesystem,
+		BaseImage:       m.Attribution.BaseImage,
 	}
 
 	p.Metadata = &pb.Package_UnknownBinaryMetadata{
@@ -40,12 +44,13 @@ func ToStruct(ubm *pb.UnknownBinaryMetadata) *UnknownBinaryMetadata {
 		return nil
 	}
 
+	attr := ubm.GetAttribution()
+
 	return &UnknownBinaryMetadata{
 		FileHash: digest.Digest(ubm.GetFileHash()),
-		Attribution: struct {
-			BaseImage bool
-		}{
-			BaseImage: ubm.GetAttribution().GetBaseImage(),
+		Attribution: Attribution{
+			LocalFilesystem: attr.GetLocalFilesystem(),
+			BaseImage:       attr.GetBaseImage(),
 		},
 	}
 }

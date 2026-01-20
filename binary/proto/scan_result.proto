@@ -706,7 +706,8 @@ message UnknownBinaryMetadata {
 
 // Data about attributing a binary to a known base image.
 message UnknownBinaryAttribution {
-  bool base_image = 1;
+  bool local_filesystem = 1;
+  bool base_image = 2;
 }
 
 // A secret (i.e. credential) found by Veles secret scanning.

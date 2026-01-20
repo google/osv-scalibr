@@ -5504,10 +5504,11 @@ func (x *UnknownBinaryMetadata) GetAttribution() *UnknownBinaryAttribution {
 
 // Data about attributing a binary to a known base image.
 type UnknownBinaryAttribution struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	BaseImage     bool                   `protobuf:"varint,1,opt,name=base_image,json=baseImage,proto3" json:"base_image,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	LocalFilesystem bool                   `protobuf:"varint,1,opt,name=local_filesystem,json=localFilesystem,proto3" json:"local_filesystem,omitempty"`
+	BaseImage       bool                   `protobuf:"varint,2,opt,name=base_image,json=baseImage,proto3" json:"base_image,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *UnknownBinaryAttribution) Reset() {
@@ -5538,6 +5539,13 @@ func (x *UnknownBinaryAttribution) ProtoReflect() protoreflect.Message {
 // Deprecated: Use UnknownBinaryAttribution.ProtoReflect.Descriptor instead.
 func (*UnknownBinaryAttribution) Descriptor() ([]byte, []int) {
 	return file_proto_scan_result_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *UnknownBinaryAttribution) GetLocalFilesystem() bool {
+	if x != nil {
+		return x.LocalFilesystem
+	}
+	return false
 }
 
 func (x *UnknownBinaryAttribution) GetBaseImage() bool {
@@ -10872,10 +10880,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\bcommands\x18\a \x03(\tR\bcommands\"y\n" +
 	"\x15UnknownBinaryMetadata\x12\x1b\n" +
 	"\tfile_hash\x18\x01 \x01(\tR\bfileHash\x12C\n" +
-	"\vattribution\x18\x02 \x01(\v2!.scalibr.UnknownBinaryAttributionR\vattribution\"9\n" +
-	"\x18UnknownBinaryAttribution\x12\x1d\n" +
+	"\vattribution\x18\x02 \x01(\v2!.scalibr.UnknownBinaryAttributionR\vattribution\"d\n" +
+	"\x18UnknownBinaryAttribution\x12)\n" +
+	"\x10local_filesystem\x18\x01 \x01(\bR\x0flocalFilesystem\x12\x1d\n" +
 	"\n" +
-	"base_image\x18\x01 \x01(\bR\tbaseImage\"\x95\x01\n" +
+	"base_image\x18\x02 \x01(\bR\tbaseImage\"\x95\x01\n" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +

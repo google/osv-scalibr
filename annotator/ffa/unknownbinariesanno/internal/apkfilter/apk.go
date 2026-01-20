@@ -55,7 +55,7 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 	}
 	defer reader.Close()
 
-	attributeBaseImage := func(path string) {
+	attributePackage := func(path string) {
 		pkg, ok := unknownBinariesSet[strings.TrimPrefix(path, "/")]
 		if !ok {
 			return
@@ -66,7 +66,7 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 			return
 		}
 
-		md.Attribution.BaseImage = true
+		md.Attribution.LocalFilesystem = true
 	}
 
 	s := apkutil.NewScanner(reader)
@@ -81,7 +81,7 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					continue
 				}
 				filePath := path.Join(currentDir, kv.Value)
-				attributeBaseImage(filePath)
+				attributePackage(filePath)
 
 				if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
 					// EvalSymlink expects an absolute path from the root of the image.
@@ -89,7 +89,7 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					if err != nil {
 						continue
 					}
-					attributeBaseImage(strings.TrimPrefix(evalPath, "/"))
+					attributePackage(strings.TrimPrefix(evalPath, "/"))
 				}
 			}
 		}

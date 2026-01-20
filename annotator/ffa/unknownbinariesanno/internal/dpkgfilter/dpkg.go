@@ -57,7 +57,7 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 	}
 	defer it.Close()
 
-	attributeBaseImage := func(path string) {
+	attributePackage := func(path string) {
 		pkg, ok := unknownBinariesSet[strings.TrimPrefix(path, "/")]
 		if !ok {
 			return
@@ -68,7 +68,7 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 			return
 		}
 
-		md.Attribution.BaseImage = true
+		md.Attribution.LocalFilesystem = true
 	}
 
 	var errs []error
@@ -89,14 +89,14 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 
 		// Remove leading '/' since SCALIBR fs paths don't include that.
 		// noop if filePath doesn't exist
-		attributeBaseImage(strings.TrimPrefix(filePath, "/"))
+		attributePackage(strings.TrimPrefix(filePath, "/"))
 
 		if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
 			evalPath, err := evalFS.EvalSymlink(filePath)
 			if err != nil {
 				continue
 			}
-			attributeBaseImage(strings.TrimPrefix(evalPath, "/"))
+			attributePackage(strings.TrimPrefix(evalPath, "/"))
 		}
 	}
 
