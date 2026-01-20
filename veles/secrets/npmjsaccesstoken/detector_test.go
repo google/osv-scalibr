@@ -42,34 +42,34 @@ func TestDetector_truePositives(t *testing.T) {
 		name:  "simple matching string",
 		input: testKey,
 		want: []veles.Secret{
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
 		name:  "match at end of string",
 		input: `NPM_TOKEN=` + testKey,
 		want: []veles.Secret{
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
 		name:  "match in middle of string",
 		input: `NPM_TOKEN="` + testKey + `"`,
 		want: []veles.Secret{
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
 		name:  "multiple matches",
 		input: testKey + testKey + testKey,
 		want: []veles.Secret{
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
 		input: testKey + "\n" + testKey[:len(testKey)-1] + "a",
 		want: []veles.Secret{
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey[:len(testKey)-1] + "a"},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey[:len(testKey)-1] + "a"},
 		},
 	}, {
 		name: "larger input containing key",
@@ -78,13 +78,13 @@ func TestDetector_truePositives(t *testing.T) {
 :NPM_TOKEN: %s
 		`, testKey),
 		want: []veles.Secret{
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
 		input: testKey + `extra`,
 		want: []veles.Secret{
-			npmjsaccesstoken.NpmJSAccessToken{Token: testKey},
+			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}}
 	for _, tc := range cases {

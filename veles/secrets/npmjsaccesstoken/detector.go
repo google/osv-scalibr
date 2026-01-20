@@ -38,7 +38,7 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     tokenRe,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return NpmJSAccessToken{Token: string(b)}, true
+			return NpmJsAccessToken{Token: string(b)}, true
 		},
 	}
 }

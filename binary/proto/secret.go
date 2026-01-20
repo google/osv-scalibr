@@ -138,7 +138,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return pypiAPITokenToProto(t), nil
 	case cratesioapitoken.CratesIOAPItoken:
 		return cratesioAPITokenToProto(t), nil
-	case npmjsaccesstoken.NpmJSAccessToken:
+	case npmjsaccesstoken.NpmJsAccessToken:
 		return npmJSAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
@@ -337,10 +337,10 @@ func pypiAPITokenToProto(s pypiapitoken.PyPIAPIToken) *spb.SecretData {
 	}
 }
 
-func npmJSAccessTokenToProto(s npmjsaccesstoken.NpmJSAccessToken) *spb.SecretData {
+func npmJSAccessTokenToProto(s npmjsaccesstoken.NpmJsAccessToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_NpmjsAccessToken{
-			NpmjsAccessToken: &spb.SecretData_NpmJSAccessToken{
+			NpmjsAccessToken: &spb.SecretData_NpmJsAccessToken{
 				Token: s.Token,
 			},
 		},
@@ -1089,8 +1089,8 @@ func cratesioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapit
 	}
 }
 
-func npmJSAccessTokenToStruct(kPB *spb.SecretData_NpmJSAccessToken) npmjsaccesstoken.NpmJSAccessToken {
-	return npmjsaccesstoken.NpmJSAccessToken{
+func npmJSAccessTokenToStruct(kPB *spb.SecretData_NpmJsAccessToken) npmjsaccesstoken.NpmJsAccessToken {
+	return npmjsaccesstoken.NpmJsAccessToken{
 		Token: kPB.GetToken(),
 	}
 }

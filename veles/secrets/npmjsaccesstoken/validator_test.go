@@ -96,11 +96,13 @@ func TestValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 	}
 
@@ -116,12 +118,11 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := npmjsaccesstoken.NewValidator(
-				npmjsaccesstoken.WithClient(client),
-			)
+			validator := npmjsaccesstoken.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test key
-			key := npmjsaccesstoken.NpmJSAccessToken{Token: tc.key}
+			key := npmjsaccesstoken.NpmJsAccessToken{Token: tc.key}
 
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
@@ -157,11 +158,10 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := npmjsaccesstoken.NewValidator(
-		npmjsaccesstoken.WithClient(client),
-	)
+	validator := npmjsaccesstoken.NewValidator()
+	validator.HTTPC = client
 
-	key := npmjsaccesstoken.NpmJSAccessToken{Token: validatorTestKey}
+	key := npmjsaccesstoken.NpmJsAccessToken{Token: validatorTestKey}
 
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(t.Context())
@@ -190,9 +190,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := npmjsaccesstoken.NewValidator(
-		npmjsaccesstoken.WithClient(client),
-	)
+	validator := npmjsaccesstoken.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string
@@ -213,7 +212,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			key := npmjsaccesstoken.NpmJSAccessToken{Token: tc.key}
+			key := npmjsaccesstoken.NpmJsAccessToken{Token: tc.key}
 
 			got, err := validator.Validate(t.Context(), key)
 

@@ -14,9 +14,9 @@
 
 package npmjsaccesstoken
 
-// NpmJSAccessToken is a Veles Secret that holds relevant information for a
+// NpmJsAccessToken is a Veles Secret that holds relevant information for a
 // DigitalOcean API key (prefix `dop_v1_`).
 // DigitaloceanAPIToken represents an API key used to authenticate requests
-type NpmJSAccessToken struct {
+type NpmJsAccessToken struct {
 	Token string
 }

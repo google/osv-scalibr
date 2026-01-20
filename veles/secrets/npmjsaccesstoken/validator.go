@@ -15,71 +15,27 @@
 package npmjsaccesstoken
 
 import (
-	"context"
-	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates npm.js access tokens via the npm registry API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
+type pak = NpmJsAccessToken
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
-	}
-}
-
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given NpmJSAccessToken is valid.
+// NewValidator checks whether the given NpmJsAccessToken is valid.
 //
 // It performs a GET request to the npm registry whoami endpoint
 // using the access token in the Authorization header. If the request returns
 // HTTP 200, the token is considered valid.
 // If 401 Unauthorized, the token is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, key NpmJSAccessToken) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://registry.npmjs.org/-/whoami", nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+key.Token)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-	_, err = io.ReadAll(res.Body)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
-	}
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, nil
+func NewValidator() *sv.Validator[pak] {
+	return &sv.Validator[pak]{
+		Endpoint:   "https://registry.npmjs.org/-/whoami",
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s pak) map[string]string {
+			return map[string]string{"Authorization": "Bearer " + s.Token}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }
