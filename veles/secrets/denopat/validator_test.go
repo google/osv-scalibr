@@ -97,7 +97,7 @@ func mockDenoServer(t *testing.T, expectedKey string) *httptest.Server {
 	}))
 }
 
-func TestValidator(t *testing.T) {
+func TestUserTokenValidator(t *testing.T) {
 	cases := []struct {
 		name string
 		Pat  string
@@ -111,21 +111,6 @@ func TestValidator(t *testing.T) {
 		{
 			name: "invalid ddp",
 			Pat:  "ddp_invalid",
-			want: veles.ValidationInvalid,
-		},
-		{
-			name: "valid ddo",
-			Pat:  validatorTestDdoPat,
-			want: veles.ValidationValid,
-		},
-		{
-			name: "invalid ddo",
-			Pat:  "ddo_invalid",
-			want: veles.ValidationInvalid,
-		},
-		{
-			name: "unknown prefix",
-			Pat:  "unknown",
 			want: veles.ValidationInvalid,
 		},
 	}
@@ -148,12 +133,12 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := denopat.NewValidator(
+			validator := denopat.NewUserTokenValidator(
 				denopat.WithClient(client),
 			)
 
 			// Create a test pat
-			pat := denopat.DenoPAT{Pat: tc.Pat}
+			pat := denopat.DenoUserPAT{Pat: tc.Pat}
 
 			// Test validation
 			got, err := validator.Validate(context.Background(), pat)
@@ -169,7 +154,65 @@ func TestValidator(t *testing.T) {
 		})
 	}
 }
-func TestValidator_ContextCancellation(t *testing.T) {
+
+func TestOrgTokenValidator(t *testing.T) {
+	cases := []struct {
+		name string
+		Pat  string
+		want veles.ValidationStatus
+	}{
+		{
+			name: "valid ddo",
+			Pat:  validatorTestDdoPat,
+			want: veles.ValidationValid,
+		},
+		{
+			name: "invalid ddo",
+			Pat:  "ddo_invalid",
+			want: veles.ValidationInvalid,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Determine expected key for mock server
+			expectedKey := "some_invalid_key"
+			if tc.want == veles.ValidationValid {
+				expectedKey = tc.Pat
+			}
+
+			// Create a mock server
+			server := mockDenoServer(t, expectedKey)
+			defer server.Close()
+
+			// Create a client with custom transport
+			client := &http.Client{
+				Transport: &mockTransport{testServer: server},
+			}
+
+			// Create a validator with a mock client
+			validator := denopat.NewOrgTokenValidator(
+				denopat.WithClient(client),
+			)
+
+			// Create a test pat
+			pat := denopat.DenoOrgPAT{Pat: tc.Pat}
+
+			// Test validation
+			got, err := validator.Validate(context.Background(), pat)
+
+			if !cmp.Equal(err, nil, cmpopts.EquateErrors()) {
+				t.Fatalf("plugin.Validate(%v) got error: %v\n", pat, err)
+			}
+
+			// Check validation status
+			if got != tc.want {
+				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+func TestUserTokenValidator_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)
@@ -182,12 +225,12 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := denopat.NewValidator(
+	validator := denopat.NewUserTokenValidator(
 		denopat.WithClient(client),
 	)
 
 	// Create a test pat
-	pat := denopat.DenoPAT{Pat: validatorTestDdpPat}
+	pat := denopat.DenoUserPAT{Pat: validatorTestDdpPat}
 
 	// Create context with a short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -204,7 +247,42 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}
 }
 
-func TestValidator_InvalidRequest(t *testing.T) {
+func TestOrgTokenValidator_ContextCancellation(t *testing.T) {
+	// Create a server that delays response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	// Create a client with custom transport
+	client := &http.Client{
+		Transport: &mockTransport{testServer: server},
+	}
+
+	validator := denopat.NewOrgTokenValidator(
+		denopat.WithClient(client),
+	)
+
+	// Create a test pat
+	pat := denopat.DenoOrgPAT{Pat: validatorTestDdoPat}
+
+	// Create context with a short timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	// Test validation with cancelled context
+	got, err := validator.Validate(ctx, pat)
+
+	if err == nil {
+		t.Errorf("Validate() expected error due to context cancellation, got nil")
+	}
+	if got != veles.ValidationFailed {
+		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
+	}
+}
+
+func TestUserTokenValidator_InvalidRequest(t *testing.T) {
 	// Create a mock server that returns 401 Unauthorized
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -216,7 +294,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := denopat.NewValidator(
+	validator := denopat.NewUserTokenValidator(
 		denopat.WithClient(client),
 	)
 
@@ -239,7 +317,56 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pat := denopat.DenoPAT{Pat: tc.Pat}
+			pat := denopat.DenoUserPAT{Pat: tc.Pat}
+
+			got, err := validator.Validate(context.Background(), pat)
+
+			if err != nil {
+				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+			}
+			if got != tc.expected {
+				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+			}
+		})
+	}
+}
+
+func TestOrgTokenValidator_InvalidRequest(t *testing.T) {
+	// Create a mock server that returns 401 Unauthorized
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+
+	// Create a client with custom transport
+	client := &http.Client{
+		Transport: &mockTransport{testServer: server},
+	}
+
+	validator := denopat.NewOrgTokenValidator(
+		denopat.WithClient(client),
+	)
+
+	testCases := []struct {
+		name     string
+		Pat      string
+		expected veles.ValidationStatus
+	}{
+		{
+			name:     "empty_key",
+			Pat:      "",
+			expected: veles.ValidationInvalid,
+		},
+		{
+			name:     "invalid_key_format",
+			Pat:      "invalid-key-format",
+			expected: veles.ValidationInvalid,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pat := denopat.DenoOrgPAT{Pat: tc.Pat}
 
 			got, err := validator.Validate(context.Background(), pat)
 

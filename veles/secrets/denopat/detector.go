@@ -12,48 +12,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package denopat contains a Veles Secret type and a Detector for
-// Deno Personal Access Tokens (prefix `ddo_` and `ddp_`).
+// Package denopat contains Veles Secret types and Detectors for
+// Deno Personal Access Tokens (user tokens with prefix `ddp_` and organization tokens with prefix `ddo_`).
 package denopat
 
 import (
-	"bytes"
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
 // maxTokenLength is the maximum size of a Deno PAT.
 const maxTokenLength = 40
 
-// patRe is a regular expression that matches a Deno Personal Access Token.
-// Deno Personal Access Tokens have the form: `ddo_` and `ddp_` followed by 36
-// alphanumeric characters.
-var patRe = regexp.MustCompile(`(?:ddp|ddo)_[A-Za-z0-9]{36}`)
+// userPatRe is a regular expression that matches a Deno User Personal Access Token.
+// User PATs have the form: `ddp_` followed by 36 alphanumeric characters.
+var userPatRe = regexp.MustCompile(`ddp_[A-Za-z0-9]{36}`)
 
-var _ veles.Detector = NewDetector()
+// orgPatRe is a regular expression that matches a Deno Organization Personal Access Token.
+// Organization PATs have the form: `ddo_` followed by 36 alphanumeric characters.
+var orgPatRe = regexp.MustCompile(`ddo_[A-Za-z0-9]{36}`)
 
-// detector is a Veles Detector.
-type detector struct{}
+var _ veles.Detector = NewUserTokenDetector()
+var _ veles.Detector = NewOrgTokenDetector()
 
-// NewDetector returns a new Detector that matches
-// Deno PAT.
-func NewDetector() veles.Detector {
-	return &detector{}
-}
-
-func (d *detector) MaxSecretLen() uint32 {
-	return maxTokenLength
-}
-func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var offsets []int
-	patReMatches := patRe.FindAll(content, -1)
-	for _, m := range patReMatches {
-		newPat := string(m)
-		secrets = append(secrets, DenoPAT{Pat: newPat})
-		offsets = append(offsets, bytes.Index(content, m))
+// NewUserTokenDetector returns a new Detector that matches
+// Deno User Personal Access Tokens (prefix `ddp_`).
+func NewUserTokenDetector() veles.Detector {
+	return simpletoken.Detector{
+		MaxLen: maxTokenLength,
+		Re:     userPatRe,
+		FromMatch: func(match []byte) veles.Secret {
+			return DenoUserPAT{Pat: string(match)}
+		},
 	}
+}
 
-	return secrets, offsets
+// NewOrgTokenDetector returns a new Detector that matches
+// Deno Organization Personal Access Tokens (prefix `ddo_`).
+func NewOrgTokenDetector() veles.Detector {
+	return simpletoken.Detector{
+		MaxLen: maxTokenLength,
+		Re:     orgPatRe,
+		FromMatch: func(match []byte) veles.Secret {
+			return DenoOrgPAT{Pat: string(match)}
+		},
+	}
 }

@@ -104,8 +104,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpsakToProto(t), nil
 	case dockerhubpat.DockerHubPAT:
 		return dockerHubPATToProto(t), nil
-	case denopat.DenoPAT:
-		return denoPATToProto(t), nil
+	case denopat.DenoUserPAT:
+		return denoUserPATToProto(t), nil
+	case denopat.DenoOrgPAT:
+		return denoOrgPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
 	case velesanthropicapikey.WorkspaceAPIKey:
@@ -153,7 +155,17 @@ func dockerHubPATToProto(s dockerhubpat.DockerHubPAT) *spb.SecretData {
 		},
 	}
 }
-func denoPATToProto(s denopat.DenoPAT) *spb.SecretData {
+func denoUserPATToProto(s denopat.DenoUserPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DenoPat_{
+			DenoPat: &spb.SecretData_DenoPat{
+				Pat: s.Pat,
+			},
+		},
+	}
+}
+
+func denoOrgPATToProto(s denopat.DenoOrgPAT) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_DenoPat_{
 			DenoPat: &spb.SecretData_DenoPat{
@@ -495,10 +507,12 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 	}
 }
 
-func denoPATToStruct(kPB *spb.SecretData_DenoPat) denopat.DenoPAT {
-	return denopat.DenoPAT{
-		Pat: kPB.GetPat(),
+func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
+	pat := kPB.GetPat()
+	if len(pat) >= 4 && pat[:4] == "ddp_" {
+		return denopat.DenoUserPAT{Pat: pat}
 	}
+	return denopat.DenoOrgPAT{Pat: pat}
 }
 
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {

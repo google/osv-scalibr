@@ -18,31 +18,40 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
-// Validator validates Deno PATs via the Deno API endpoint.
-type Validator struct {
+// UserTokenValidator validates Deno User PATs via the Deno API endpoint.
+type UserTokenValidator struct {
 	httpC *http.Client
 }
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
+// OrgTokenValidator validates Deno Organization PATs via the Deno API endpoint.
+type OrgTokenValidator struct {
+	httpC *http.Client
+}
+
+// ValidatorOption configures a Validator when creating it via NewUserTokenValidator or NewOrgTokenValidator.
+type ValidatorOption func(any)
 
 // WithClient configures the http.Client that the Validator uses.
 //
 // By default, it uses http.DefaultClient.
 func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
+	return func(v any) {
+		switch val := v.(type) {
+		case *UserTokenValidator:
+			val.httpC = c
+		case *OrgTokenValidator:
+			val.httpC = c
+		}
 	}
 }
 
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
+// NewUserTokenValidator creates a new UserTokenValidator with the given ValidatorOptions.
+func NewUserTokenValidator(opts ...ValidatorOption) *UserTokenValidator {
+	v := &UserTokenValidator{
 		httpC: http.DefaultClient,
 	}
 	for _, opt := range opts {
@@ -51,23 +60,52 @@ func NewValidator(opts ...ValidatorOption) *Validator {
 	return v
 }
 
-// Validate checks whether the given DenoPAT is valid.
+// NewOrgTokenValidator creates a new OrgTokenValidator with the given ValidatorOptions.
+func NewOrgTokenValidator(opts ...ValidatorOption) *OrgTokenValidator {
+	v := &OrgTokenValidator{
+		httpC: http.DefaultClient,
+	}
+	for _, opt := range opts {
+		opt(v)
+	}
+	return v
+}
+
+// Validate checks whether the given DenoUserPAT is valid.
 //
-// It performs a GET request to the appropriate Deno API endpoint
-// based on the token prefix. For tokens starting with "ddp", it uses
-// https://api.deno.com/user. For "ddo", https://api.deno.com/organization.
+// It performs a GET request to https://api.deno.com/user.
 // If the request returns HTTP 200, the key is considered valid.
 // If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, pat DenoPAT) (veles.ValidationStatus, error) {
-	var url string
-	if strings.HasPrefix(pat.Pat, "ddp_") {
-		url = "https://api.deno.com/user"
-	} else if strings.HasPrefix(pat.Pat, "ddo_") {
-		url = "https://api.deno.com/organization"
-	} else {
-		return veles.ValidationInvalid, nil
+func (v *UserTokenValidator) Validate(ctx context.Context, pat DenoUserPAT) (veles.ValidationStatus, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.deno.com/user", nil)
+	if err != nil {
+		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req.Header.Set("Authorization", "Bearer "+pat.Pat)
+
+	res, err := v.httpC.Do(req)
+	if err != nil {
+		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
+	}
+	defer res.Body.Close()
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		return veles.ValidationValid, nil
+	case http.StatusUnauthorized:
+		return veles.ValidationInvalid, nil
+	default:
+		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+	}
+}
+
+// Validate checks whether the given DenoOrgPAT is valid.
+//
+// It performs a GET request to https://api.deno.com/organization.
+// If the request returns HTTP 200, the key is considered valid.
+// If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
+func (v *OrgTokenValidator) Validate(ctx context.Context, pat DenoOrgPAT) (veles.ValidationStatus, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.deno.com/organization", nil)
 	if err != nil {
 		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
 	}

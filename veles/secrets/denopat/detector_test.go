@@ -29,10 +29,13 @@ const testKeyDdp = `ddp_qz538MNyqwfETb1ikqeqHiqA9Aa9Pv22yzmw`
 
 const testKeyDdo = `ddo_qz538MNyqwfETb1ikqeqHiqA9Aa9Pv22yzmw`
 
-// TestDetector_truePositives tests for cases where we know the Detector
-// will find a Deno PAT/s.
+// TestDetector_truePositives tests for cases where we know the Detectors
+// will find Deno PAT/s.
 func TestDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{denopat.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{
+		denopat.NewUserTokenDetector(),
+		denopat.NewOrgTokenDetector(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,38 +48,40 @@ func TestDetector_truePositives(t *testing.T) {
 			name:  "simple matching string with ddp_ prefix",
 			input: testKeyDdp,
 			want: []veles.Secret{
-				denopat.DenoPAT{Pat: testKeyDdp},
+				denopat.DenoUserPAT{Pat: testKeyDdp},
 			},
 		},
 		{
 			name:  "simple matching string with ddo_ prefix",
 			input: testKeyDdo,
 			want: []veles.Secret{
-				denopat.DenoPAT{Pat: testKeyDdo},
+				denopat.DenoOrgPAT{Pat: testKeyDdo},
 			},
 		},
 		{
 			name:  "match in middle of string",
 			input: `DENO_PAT="` + testKeyDdp + `"`,
 			want: []veles.Secret{
-				denopat.DenoPAT{Pat: testKeyDdp},
+				denopat.DenoUserPAT{Pat: testKeyDdp},
 			},
 		},
 		{
 			name:  "multiple matches",
 			input: testKeyDdp + testKeyDdo + testKeyDdp,
+			// Note: Results are grouped by detector type (all user tokens first, then all org tokens)
+			// since the two detectors run independently
 			want: []veles.Secret{
-				denopat.DenoPAT{Pat: testKeyDdp},
-				denopat.DenoPAT{Pat: testKeyDdo},
-				denopat.DenoPAT{Pat: testKeyDdp},
+				denopat.DenoUserPAT{Pat: testKeyDdp},
+				denopat.DenoUserPAT{Pat: testKeyDdp},
+				denopat.DenoOrgPAT{Pat: testKeyDdo},
 			},
 		},
 		{
 			name:  "multiple distinct matches with different prefixes",
 			input: testKeyDdp + "\n" + testKeyDdo,
 			want: []veles.Secret{
-				denopat.DenoPAT{Pat: testKeyDdp},
-				denopat.DenoPAT{Pat: testKeyDdo},
+				denopat.DenoUserPAT{Pat: testKeyDdp},
+				denopat.DenoOrgPAT{Pat: testKeyDdo},
 			},
 		},
 		{
@@ -86,14 +91,14 @@ func TestDetector_truePositives(t *testing.T) {
 		:deno_pat: %s
 				`, testKeyDdp),
 			want: []veles.Secret{
-				denopat.DenoPAT{Pat: testKeyDdp},
+				denopat.DenoUserPAT{Pat: testKeyDdp},
 			},
 		},
 		{
 			name:  "potential match longer than max key length",
 			input: testKeyDdp + `extra`,
 			want: []veles.Secret{
-				denopat.DenoPAT{Pat: testKeyDdp},
+				denopat.DenoUserPAT{Pat: testKeyDdp},
 			},
 		},
 	}
@@ -111,10 +116,13 @@ func TestDetector_truePositives(t *testing.T) {
 	}
 }
 
-// TestDetector_trueNegatives tests for cases where we know the Detector
+// TestDetector_trueNegatives tests for cases where we know the Detectors
 // will not find a Deno PAT.
 func TestDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{denopat.NewDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{
+		denopat.NewUserTokenDetector(),
+		denopat.NewOrgTokenDetector(),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
