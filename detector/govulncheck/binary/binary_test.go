@@ -69,6 +69,13 @@ func TestScan(t *testing.T) {
 	}
 	got := findings.PackageVulns[0]
 	want := &inventory.PackageVuln{
+		Package: &extractor.Package{
+			Name:      binaryName,
+			Version:   "1.2.3",
+			PURLType:  purl.TypeGolang,
+			Locations: []string{filepath.Join("testdata", binaryName)},
+			Plugins:   []string{gobinary.Name},
+		},
 		Vulnerability: &osvpb.Vulnerability{
 			Id:        "GO-2022-1144",
 			Modified:  &timestamppb.Timestamp{},

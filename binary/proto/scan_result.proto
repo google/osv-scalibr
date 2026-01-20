@@ -124,7 +124,7 @@ message Package {
     FlatpakPackageMetadata flatpak_metadata = 24;
     MacAppsMetadata mac_apps_metadata = 34;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-      25;
+        25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
@@ -139,6 +139,7 @@ message Package {
     NodeVersionMetadata nodeversion_metadata = 58;
     DepGroupMetadata dep_group_metadata = 61;
     ChocolateyPackageMetadata chocolatey_metadata = 62;
+    MiseMetadata mise_metadata = 63;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -665,6 +666,11 @@ message AsdfMetadata {
   string tool_version = 2;
 }
 
+message MiseMetadata {
+  string tool_name = 1;
+  string tool_version = 2;
+}
+
 message NvmMetadata {
   string nodejs_version = 2;
 }
@@ -729,7 +735,7 @@ message SecretData {
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
     GithubFineGrainedPersonalAccessToken
-      github_fine_grained_personal_access_token = 29;
+        github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
     OpenRouterAPIKey openrouter_api_key = 32;
@@ -760,6 +766,8 @@ message SecretData {
     BitBucketCredentials bitbucket_credentials = 57;
     PaystackSecretKey paystack_secret_key = 58;
     TelegramBotToken telegram_bot_api_token = 59;
+    CursorAPIKey cursor_api_key = 60;
+    ElasticCloudAPIKey elastic_cloud_api_key = 61;
   }
 
   message GCPSAK {
@@ -928,7 +936,7 @@ message SecretData {
     string role_id = 1;
     string secret_id = 2;
     string id =
-      3;  // General ID field for uncertain UUID types when context is unclear
+        3;  // General ID field for uncertain UUID types when context is unclear
   }
 
   message GCPAPIKey {
@@ -1051,24 +1059,32 @@ message SecretData {
     string key = 1;
   }
 
-  message CodeCatalystCredentials{
+  message CodeCatalystCredentials {
     string url = 1;
   }
 
-  message CodeCommitCredentials{
+  message CodeCommitCredentials {
     string url = 1;
   }
 
-  message BitBucketCredentials{
+  message BitBucketCredentials {
     string url = 1;
+  }
+
+  message ElasticCloudAPIKey {
+    string key = 1;
   }
 
   message PaystackSecretKey {
     string key = 1;
   }
 
-  message TelegramBotToken{
+  message TelegramBotToken {
     string token = 1;
+  }
+
+  message CursorAPIKey {
+    string key = 1;
   }
 }
 
