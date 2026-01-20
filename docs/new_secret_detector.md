@@ -68,9 +68,9 @@ files) you can implement your detector
 [convert.FromVelesDetectorWithRequire](/extractor/filesystem/secrets/awsaccesskey/awsaccesskey.go)
 to add file name requirements.
 
-In most cases the detection logic is simply looking for regexps in the byte
-array. If this is the case with your secret type you can use the
-[simpletoken](/veles/secrets/common/simpletoken/simpletoken.go)
+In most cases the detection logic is simply looking for regexps that correspond
+directly to the token in the byte array. If this is the case with your secret
+type you can use the [simpletoken](/veles/secrets/common/simpletoken/simpletoken.go)
 library to make your plugin simpler.
 
 When writing unit tests, make sure to register an [acceptance test](/veles/secrets/github/pat_classic_detector_test.go#L21)
@@ -93,7 +93,7 @@ validator you can use the
 library which takes care of most of the boilerplate for you.
 
 Validators are for validation steps that requires networking. Other types of
-validation logic (e.g. cryptographically validating the a GCP key candidate) can
+validation logic (e.g. cryptographically validating a GCP key candidate) can
 be performed inside the Detector implementation.
 
 ## e2e Testing
