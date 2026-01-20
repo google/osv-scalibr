@@ -72,6 +72,7 @@ message PluginSpecificConfig {
     ContainerdConfig containerd = 24;
     DockerComposeImageConfig docker_compose_image = 25;
     K8sImageConfig k8s_image = 26;
+    QCOW2Config qcow2 = 27;
   }
 }
 
@@ -254,4 +255,13 @@ message K8sImageConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message QCOW2Config {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // The password the plugin requires to extract the encrypted .qcow2 file
+  string password = 2;
 }
