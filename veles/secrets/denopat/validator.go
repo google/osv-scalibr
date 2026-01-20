@@ -16,20 +16,20 @@ package denopat
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
 // UserTokenValidator validates Deno User PATs via the Deno API endpoint.
 type UserTokenValidator struct {
-	httpC *http.Client
+	validator *simplevalidate.Validator[DenoUserPAT]
 }
 
 // OrgTokenValidator validates Deno Organization PATs via the Deno API endpoint.
 type OrgTokenValidator struct {
-	httpC *http.Client
+	validator *simplevalidate.Validator[DenoOrgPAT]
 }
 
 // ValidatorOption configures a Validator when creating it via NewUserTokenValidator or NewOrgTokenValidator.
@@ -42,9 +42,9 @@ func WithClient(c *http.Client) ValidatorOption {
 	return func(v any) {
 		switch val := v.(type) {
 		case *UserTokenValidator:
-			val.httpC = c
+			val.validator.HTTPC = c
 		case *OrgTokenValidator:
-			val.httpC = c
+			val.validator.HTTPC = c
 		}
 	}
 }
@@ -52,7 +52,16 @@ func WithClient(c *http.Client) ValidatorOption {
 // NewUserTokenValidator creates a new UserTokenValidator with the given ValidatorOptions.
 func NewUserTokenValidator(opts ...ValidatorOption) *UserTokenValidator {
 	v := &UserTokenValidator{
-		httpC: http.DefaultClient,
+		validator: &simplevalidate.Validator[DenoUserPAT]{
+			Endpoint:   "https://api.deno.com/user",
+			HTTPMethod: http.MethodGet,
+			HTTPHeaders: func(pat DenoUserPAT) map[string]string {
+				return map[string]string{"Authorization": "Bearer " + pat.Pat}
+			},
+			ValidResponseCodes:   []int{http.StatusOK},
+			InvalidResponseCodes: []int{http.StatusUnauthorized},
+			HTTPC:                http.DefaultClient,
+		},
 	}
 	for _, opt := range opts {
 		opt(v)
@@ -63,7 +72,16 @@ func NewUserTokenValidator(opts ...ValidatorOption) *UserTokenValidator {
 // NewOrgTokenValidator creates a new OrgTokenValidator with the given ValidatorOptions.
 func NewOrgTokenValidator(opts ...ValidatorOption) *OrgTokenValidator {
 	v := &OrgTokenValidator{
-		httpC: http.DefaultClient,
+		validator: &simplevalidate.Validator[DenoOrgPAT]{
+			Endpoint:   "https://api.deno.com/organization",
+			HTTPMethod: http.MethodGet,
+			HTTPHeaders: func(pat DenoOrgPAT) map[string]string {
+				return map[string]string{"Authorization": "Bearer " + pat.Pat}
+			},
+			ValidResponseCodes:   []int{http.StatusOK},
+			InvalidResponseCodes: []int{http.StatusUnauthorized},
+			HTTPC:                http.DefaultClient,
+		},
 	}
 	for _, opt := range opts {
 		opt(v)
@@ -77,26 +95,7 @@ func NewOrgTokenValidator(opts ...ValidatorOption) *OrgTokenValidator {
 // If the request returns HTTP 200, the key is considered valid.
 // If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
 func (v *UserTokenValidator) Validate(ctx context.Context, pat DenoUserPAT) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.deno.com/user", nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+pat.Pat)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
-	}
+	return v.validator.Validate(ctx, pat)
 }
 
 // Validate checks whether the given DenoOrgPAT is valid.
@@ -105,24 +104,5 @@ func (v *UserTokenValidator) Validate(ctx context.Context, pat DenoUserPAT) (vel
 // If the request returns HTTP 200, the key is considered valid.
 // If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
 func (v *OrgTokenValidator) Validate(ctx context.Context, pat DenoOrgPAT) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.deno.com/organization", nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+pat.Pat)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
-	}
+	return v.validator.Validate(ctx, pat)
 }
