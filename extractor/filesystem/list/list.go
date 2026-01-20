@@ -93,6 +93,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/mise"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
@@ -378,6 +379,7 @@ var (
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
 		asdf.Name:        {noCFG(asdf.New)},
+		mise.Name:        {noCFG(mise.New)},
 		nvm.Name:         {noCFG(nvm.New)},
 		nodeversion.Name: {noCFG(nodeversion.New)},
 	}
