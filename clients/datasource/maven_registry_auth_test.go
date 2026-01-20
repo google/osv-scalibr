@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This test uses datasource package in order to test auth data
 package datasource
 
 import (
@@ -28,7 +27,7 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
 
 	// Create original client with multiple registries
-	client, _ := NewMavenRegistryAPIClient(t.Context(), MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, "")
+	client, _ := NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
 	testRegistry1 := MavenRegistry{
 		URL:             "https://test1.maven.org/maven2/",
 		ID:              "test1",

@@ -36,12 +36,12 @@ func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     keyRe,
-		FromMatch: func(b []byte) veles.Secret {
+		FromMatch: func(b []byte) (veles.Secret, bool) {
 			key := string(b)
 			if IsWorkspaceKey(key) {
-				return WorkspaceAPIKey{Key: key}
+				return WorkspaceAPIKey{Key: key}, true
 			}
-			return ModelAPIKey{Key: key}
+			return ModelAPIKey{Key: key}, true
 		},
 	}
 }

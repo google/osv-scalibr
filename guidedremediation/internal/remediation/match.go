@@ -22,7 +22,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/severity"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
 	"github.com/google/osv-scalibr/guidedremediation/options"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // MatchVuln checks whether a found vulnerability should be considered according to the remediation options.
@@ -39,7 +39,7 @@ func MatchVuln(opts options.RemediationOptions, v resolution.Vulnerability) bool
 }
 
 func matchID(v resolution.Vulnerability, ids []string) bool {
-	if slices.Contains(ids, v.OSV.ID) {
+	if slices.Contains(ids, v.OSV.Id) {
 		return true
 	}
 
@@ -57,12 +57,12 @@ func matchSeverity(v resolution.Vulnerability, minSeverity float64) bool {
 	severities := v.OSV.Severity
 	if len(severities) == 0 {
 		// There are no top-level severity, see if there are individual affected[].severity field.
-		severities = []osvschema.Severity{}
+		severities = []*osvpb.Severity{}
 		for _, sg := range v.Subgraphs {
 			inv := vulns.VKToPackage(sg.Nodes[sg.Dependency].Version)
 			// Make and match a dummy OSV record per affected[] entry to determine which applies.
 			for _, affected := range v.OSV.Affected {
-				if vulns.IsAffected(&osvschema.Vulnerability{Affected: []osvschema.Affected{affected}}, inv) {
+				if vulns.IsAffected(&osvpb.Vulnerability{Affected: []*osvpb.Affected{affected}}, inv) {
 					severities = append(severities, affected.Severity...)
 					break
 				}

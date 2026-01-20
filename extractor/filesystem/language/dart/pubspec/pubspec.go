@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -28,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"gopkg.in/yaml.v3"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -72,7 +75,7 @@ type pubspecLockfile struct {
 type Extractor struct{}
 
 // New returns a new instance of this Extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -110,11 +113,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			},
 			Metadata: osv.DepGroupMetadata{},
 		}
-		for _, str := range strings.Split(pkg.Dependency, " ") {
-			if str == "dev" {
-				pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
-				break
-			}
+		if slices.Contains(strings.Split(pkg.Dependency, " "), "dev") {
+			pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
 		}
 		packages = append(packages, pkgDetails)
 	}

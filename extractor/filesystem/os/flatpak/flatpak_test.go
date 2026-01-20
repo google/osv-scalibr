@@ -35,6 +35,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -106,10 +108,11 @@ func TestFileRequired(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = flatpak.New(flatpak.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := flatpak.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("flatpak.New: %v", err)
+			}
+			e.(*flatpak.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -146,7 +149,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		cfg              flatpak.Config
+		cfg              *cpb.PluginConfig
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -219,7 +222,6 @@ func TestExtract(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
@@ -241,7 +243,15 @@ func TestExtract(t *testing.T) {
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info}
 
-			e := flatpak.New(defaultConfigWith(tt.cfg))
+			cfg := tt.cfg
+			if cfg == nil {
+				cfg = &cpb.PluginConfig{}
+			}
+			e, err := flatpak.New(cfg)
+			if err != nil {
+				t.Fatalf("flatpak.New: %v", err)
+			}
+			e.(*flatpak.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
@@ -275,19 +285,4 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
-func defaultConfigWith(cfg flatpak.Config) flatpak.Config {
-	newCfg := flatpak.DefaultConfig()
-
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-
-	return newCfg
 }

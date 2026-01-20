@@ -20,13 +20,17 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 
 	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/opencontainers/go-digest"
+	"github.com/opencontainers/image-spec/identity"
 	"go.uber.org/multierr"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -34,6 +38,11 @@ const (
 	Name = "baseimage"
 	// Version is the version of the base image enricher.
 	Version = 0
+	// digestSHA256EmptyTar is the canonical sha256 digest of empty tar file -
+	// (1024 NULL bytes)
+	digestSHA256EmptyTar = digest.Digest("sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef")
+
+	maxConcurrentRequests = 1000
 )
 
 // Config is the configuration for the base image enricher.
@@ -107,55 +116,128 @@ func (*Enricher) RequiredPlugins() []string {
 
 // Enrich enriches the inventory with base image information from deps.dev.
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
-	if inv.Packages == nil {
+	if inv.ContainerImageMetadata == nil {
 		return nil
 	}
 
 	// Map from chain ID to list of repositories it belongs to.
-	baseImageCache := make(map[string][]string)
+	chainIDToBaseImage := make(map[string][]*extractor.BaseImageDetails)
 	var enrichErr error
-	for _, pkg := range inv.Packages {
-		// Only enrich packages that have a layer details with a chain ID.
-		if pkg.LayerDetails == nil {
-			continue
-		}
-		if pkg.LayerDetails.ChainID == "" {
+	for _, cim := range inv.ContainerImageMetadata {
+		if cim.LayerMetadata == nil {
 			continue
 		}
 
-		// Validate the chain ID.
-		chainID, err := digest.Parse(pkg.LayerDetails.ChainID)
-		if err != nil {
-			enrichErr = multierr.Append(enrichErr, fmt.Errorf("failed to parse chain ID %q: %w", pkg.LayerDetails.ChainID, err))
-			continue
+		// Placeholder for the scanned image itself.
+		cim.BaseImages = [][]*extractor.BaseImageDetails{
+			[]*extractor.BaseImageDetails{},
 		}
 
-		repos, ok := baseImageCache[chainID.String()]
-		if !ok {
-			// Query deps.dev for the container image repository.
-			req := &Request{
-				ChainID: chainID.String(),
+		chainIDsByLayerIndex := make([]digest.Digest, len(cim.LayerMetadata))
+		baseImagesByLayerIndex := make([][]*extractor.BaseImageDetails, len(cim.LayerMetadata))
+		g, ctx := errgroup.WithContext(ctx)
+		g.SetLimit(maxConcurrentRequests)
+
+		// We do not want to use the normal chainID of the layer, because it does not include empty
+		// layers. Deps.dev does a special calculation of the chainID that includes empty layers, so we
+		// do the same here.
+		for i, l := range cim.LayerMetadata {
+			diffID := l.DiffID
+			if l.DiffID == "" {
+				diffID = digestSHA256EmptyTar
 			}
-			resp, err := e.client.QueryContainerImages(ctx, req)
-			if err != nil {
-				enrichErr = multierr.Append(enrichErr, fmt.Errorf("failed to query container images for chain ID %q: %w", chainID.String(), err))
+
+			// first populate this with diffIDs
+			chainIDsByLayerIndex[i] = diffID
+		}
+		// This replaces the diffIDs with chainIDs for the corresponding index.
+		identity.ChainIDs(chainIDsByLayerIndex)
+
+		for i, chainID := range chainIDsByLayerIndex {
+			if val, ok := chainIDToBaseImage[chainID.String()]; ok {
+				// Already cached, we can just skip this layer.
+				baseImagesByLayerIndex[i] = val
 				continue
 			}
-			// If the layer exists in any base image, mark the package as in a base image.
-			if resp != nil && resp.Results != nil && len(resp.Results) > 0 {
-				for _, result := range resp.Results {
-					if result.Repository != "" {
-						repos = append(repos, result.Repository)
+
+			// Otherwise query deps.dev for the base images of this layer.
+			g.Go(func() error {
+				if ctx.Err() != nil {
+					// this return value doesn't matter to errgroup.Wait(), since it already errored
+					return ctx.Err()
+				}
+
+				req := &Request{
+					ChainID: chainID.String(),
+				}
+				resp, err := e.client.QueryContainerImages(ctx, req)
+				if err != nil {
+					if !errors.Is(err, errNotFound) {
+						// If one query fails even with grpc retries, we cancel the rest of the
+						// queries and return the error.
+						return fmt.Errorf("failed to query container images for chain ID %q: %w", chainID.String(), err)
+					}
+					return nil
+				}
+				var baseImages []*extractor.BaseImageDetails
+
+				if resp != nil && resp.Results != nil && len(resp.Results) > 0 {
+					for _, result := range resp.Results {
+						if result.Repository != "" {
+							baseImages = append(baseImages, &extractor.BaseImageDetails{
+								Repository: result.Repository,
+								Registry:   "docker.io", // Currently all deps.dev images are from the docker mirror.
+								ChainID:    chainID,
+								Plugin:     Name,
+							})
+						}
+					}
+				}
+
+				// Cache and also save to layer map.
+				baseImagesByLayerIndex[i] = baseImages
+
+				return nil
+			})
+		}
+
+		if err := g.Wait(); err != nil {
+			enrichErr = multierr.Append(enrichErr, err)
+			// Move onto the next image
+			continue
+		}
+
+		// Loop backwards through the layers, from the newest to the oldest layer.
+		// This is because base images are identified by the chain ID of the newest layer in the image,
+		// so all older layer must belong to that base image.
+		for i, lm := range slices.Backward(cim.LayerMetadata) {
+			baseImages := baseImagesByLayerIndex[i]
+			lm.BaseImageIndex = len(cim.BaseImages) - 1
+			chainIDToBaseImage[chainIDsByLayerIndex[i].String()] = baseImages
+
+			if len(baseImages) == 0 {
+				continue
+			}
+
+			// Is the current set of baseImages the same as the previous?
+			isSame := false
+			lastBaseImages := cim.BaseImages[len(cim.BaseImages)-1]
+			if len(baseImages) == len(lastBaseImages) {
+				isSame = true
+				for j := range baseImages {
+					if baseImages[j].Repository != lastBaseImages[j].Repository ||
+						baseImages[j].Registry != lastBaseImages[j].Registry {
+						isSame = false
+						break
 					}
 				}
 			}
-			baseImageCache[chainID.String()] = repos
-		}
 
-		for _, repo := range repos {
-			if repo != "" {
-				pkg.LayerDetails.InBaseImage = true
-				break
+			if !isSame {
+				// Only if it's not the same base image, update
+				cim.BaseImages = append(cim.BaseImages, baseImages)
+				// And if we do update, also change the base image index to new last index.
+				lm.BaseImageIndex++
 			}
 		}
 	}

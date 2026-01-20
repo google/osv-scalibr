@@ -26,7 +26,6 @@ var (
 	pypiVersionPartsFinder   = regexp.MustCompile(`(\d+|[a-z]+|\.|-)`)
 	// from https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
 	pypiVersionFinder = regexp.MustCompile(`^\s*v?(?:(?:(?P<epoch>[0-9]+)!)?(?P<release>[0-9]+(?:\.[0-9]+)*)(?P<pre>[-_\.]?(?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))[-_\.]?(?P<pre_n>[0-9]+)?)?(?P<post>(?:-(?P<post_n1>[0-9]+))|(?:[-_\.]?(?P<post_l>post|rev|r)[-_\.]?(?P<post_n2>[0-9]+)?))?(?P<dev>[-_\.]?(?P<dev_l>dev)[-_\.]?(?P<dev_n>[0-9]+)?)?)(?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?\s*$`)
-	pypiIsDigit       = semverIsDigit
 )
 
 type pyPIVersion struct {
@@ -122,7 +121,7 @@ func normalizePyPILegacyPart(part string) string {
 		part = "@"
 	}
 
-	if pypiIsDigit.MatchString(part[:1]) {
+	if isASCIIDigit(rune(part[0])) {
 		// pad for numeric comparison
 		return fmt.Sprintf("%08s", part)
 	}
@@ -188,7 +187,7 @@ func parsePyPIVersion(str string) (pyPIVersion, error) {
 		version.epoch = epoch
 	}
 
-	for _, r := range strings.Split(match[pypiVersionFinder.SubexpIndex("release")], ".") {
+	for r := range strings.SplitSeq(match[pypiVersionFinder.SubexpIndex("release")], ".") {
 		release, err := convertToBigInt(r)
 
 		if err != nil {

@@ -32,8 +32,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -61,7 +64,7 @@ func parseResolvedVersion(version maven.String) string {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -83,12 +86,15 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project *maven.Project
 
-	err := xml.NewDecoder(input.Reader).Decode(&project)
-	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	if err := xml.NewDecoder(input.Reader).Decode(&project); err != nil {
+		err := fmt.Errorf("could not extract pom from %s: %w", input.Path, err)
+		log.Errorf(err.Error())
+		return inventory.Inventory{}, err
 	}
 	if err := project.Interpolate(); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to interpolate pom.xml: %w", err)
+		err := fmt.Errorf("failed to interpolate pom for %s in %s: %w", project.Name, input.Path, err)
+		log.Errorf(err.Error())
+		return inventory.Inventory{}, err
 	}
 
 	// Merging parents data by parsing local parent pom.xml.
@@ -97,7 +103,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		AllowLocal:         true,
 		InitialParentIndex: 1,
 	}); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to merge parents: %w", err)
+		err := fmt.Errorf("failed to merge parents for %s in %s: %w", project.Name, input.Path, err)
+		log.Errorf(err.Error())
+		return inventory.Inventory{}, err
 	}
 	// Process the dependencies:
 	//  - dedupe dependencies and dependency management
@@ -113,7 +121,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	for _, dep := range project.Dependencies {
 		g, a, found := strings.Cut(dep.Name(), ":")
 		if !found {
-			return inventory.Inventory{}, fmt.Errorf("invalid package name: %s", dep.Name())
+			err := fmt.Errorf("invalid package name %q for %s in %s", dep.Name(), project.Name, input.Path)
+			log.Errorf(err.Error())
+			return inventory.Inventory{}, err
 		}
 
 		depType := ""

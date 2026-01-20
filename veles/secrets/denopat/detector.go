@@ -43,8 +43,8 @@ func NewUserTokenDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     userPatRe,
-		FromMatch: func(match []byte) veles.Secret {
-			return DenoUserPAT{Pat: string(match)}
+		FromMatch: func(match []byte) (veles.Secret, bool) {
+			return DenoUserPAT{Pat: string(match)}, true
 		},
 	}
 }
@@ -55,8 +55,8 @@ func NewOrgTokenDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,
 		Re:     orgPatRe,
-		FromMatch: func(match []byte) veles.Secret {
-			return DenoOrgPAT{Pat: string(match)}
+		FromMatch: func(match []byte) (veles.Secret, bool) {
+			return DenoOrgPAT{Pat: string(match)}, true
 		},
 	}
 }

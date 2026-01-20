@@ -20,7 +20,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -110,9 +109,10 @@ func TestValidator(t *testing.T) {
 				},
 			}
 
-			v := gitlabpat.NewValidator(gitlabpat.WithClient(client))
+			v := gitlabpat.NewValidator()
+			v.HTTPC = client
 
-			ctx := context.Background()
+			ctx := t.Context()
 			pat := gitlabpat.GitlabPAT{Pat: tc.pat}
 			got, err := v.Validate(ctx, pat)
 
@@ -128,7 +128,6 @@ func TestValidator(t *testing.T) {
 }
 func TestValidator_ContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -139,19 +138,18 @@ func TestValidator_ContextCancellation(t *testing.T) {
 			hostToRedirect: "gitlab.com",
 		},
 	}
-	validator := gitlabpat.NewValidator(
-		gitlabpat.WithClient(client),
-	)
+	validator := gitlabpat.NewValidator()
+	validator.HTTPC = client
 
 	usernamePat := gitlabpat.GitlabPAT{Pat: validatorTestPat}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	got, err := validator.Validate(ctx, usernamePat)
 
-	if !cmp.Equal(err, context.DeadlineExceeded, cmpopts.EquateErrors()) {
-		t.Errorf("Validate() error = %v, want %v", err, context.DeadlineExceeded)
+	if !cmp.Equal(err, context.Canceled, cmpopts.EquateErrors()) {
+		t.Errorf("Validate() error = %v, want %v", err, context.Canceled)
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)

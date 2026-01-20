@@ -15,6 +15,8 @@
 package proto
 
 import (
+	"fmt"
+
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -31,12 +33,27 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 	}
 
 	packages := make([]*spb.Package, 0, len(inv.Packages))
-	for _, p := range inv.Packages {
-		p := PackageToProto(p)
-		packages = append(packages, p)
+	pkgToID := make(map[*extractor.Package]string)
+	for _, pkg := range inv.Packages {
+		pkgProto, err := PackageToProto(pkg)
+		if err != nil {
+			return nil, err
+		}
+		packages = append(packages, pkgProto)
+		if pkgProto.Id == "" {
+			return nil, fmt.Errorf("package %v has no ID", pkg)
+		}
+		pkgToID[pkg] = pkgProto.Id
 	}
 
-	// TODO(b/400910349): Add PackageVulns to the proto too.
+	pkgVulns := make([]*spb.PackageVuln, 0, len(inv.PackageVulns))
+	for _, v := range inv.PackageVulns {
+		p, err := PackageVulnToProto(v, pkgToID)
+		if err != nil {
+			return nil, err
+		}
+		pkgVulns = append(pkgVulns, p)
+	}
 
 	genericFindings := make([]*spb.GenericFinding, 0, len(inv.GenericFindings))
 	for _, f := range inv.GenericFindings {
@@ -56,10 +73,17 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 		secrets = append(secrets, p)
 	}
 
+	var containerImageMetadata []*spb.ContainerImageMetadata
+	for _, cim := range inv.ContainerImageMetadata {
+		containerImageMetadata = append(containerImageMetadata, containerImageMetadataToProto(cim))
+	}
+
 	return &spb.Inventory{
-		Packages:        packages,
-		GenericFindings: genericFindings,
-		Secrets:         secrets,
+		Packages:               packages,
+		PackageVulns:           pkgVulns,
+		GenericFindings:        genericFindings,
+		Secrets:                secrets,
+		ContainerImageMetadata: containerImageMetadata,
 	}, nil
 }
 
@@ -72,12 +96,30 @@ func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
 	}
 
 	var packages []*extractor.Package
+	idToPkg := make(map[string]*extractor.Package)
 	for _, pProto := range invProto.GetPackages() {
-		p := PackageToStruct(pProto)
+		p, err := PackageToStruct(pProto)
+		if err != nil {
+			log.Errorf("Failed to convert Package to struct: %v", err)
+			continue
+		}
 		packages = append(packages, p)
+		if idToPkg[pProto.Id] != nil {
+			log.Errorf("Duplicate package ID %q for %q", pProto.Id, pProto.Name)
+			continue
+		}
+		idToPkg[pProto.Id] = p
 	}
 
-	// TODO(b/400910349): Add PackageVulns to the struct too.
+	var pkgVulns []*inventory.PackageVuln
+	for _, pkgVulnProto := range invProto.GetPackageVulns() {
+		pkgVuln, err := PackageVulnToStruct(pkgVulnProto, idToPkg)
+		if err != nil {
+			log.Errorf("Failed to convert PackageVuln to struct: %v", err)
+			continue
+		}
+		pkgVulns = append(pkgVulns, pkgVuln)
+	}
 
 	var genericFindings []*inventory.GenericFinding
 	for _, fProto := range invProto.GetGenericFindings() {
@@ -99,9 +141,33 @@ func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
 		secrets = append(secrets, s)
 	}
 
+	var containerImageMetadata []*extractor.ContainerImageMetadata
+	for _, cimProto := range invProto.GetContainerImageMetadata() {
+		cim := containerImageMetadataToStruct(cimProto)
+		containerImageMetadata = append(containerImageMetadata, cim)
+		for _, lm := range cim.LayerMetadata {
+			lm.ParentContainer = cim
+		}
+	}
+
+	for i, p := range packages {
+		pProto := invProto.GetPackages()[i]
+		cii := pProto.GetContainerImageMetadataIndexes()
+
+		if cii != nil &&
+			int(cii.ContainerImageIndex) < len(containerImageMetadata) {
+			cim := containerImageMetadata[cii.ContainerImageIndex]
+			if int(cii.LayerIndex) < len(cim.LayerMetadata) {
+				p.LayerMetadata = cim.LayerMetadata[cii.LayerIndex]
+			}
+		}
+	}
+
 	return &inventory.Inventory{
-		Packages:        packages,
-		GenericFindings: genericFindings,
-		Secrets:         secrets,
+		Packages:               packages,
+		PackageVulns:           pkgVulns,
+		GenericFindings:        genericFindings,
+		Secrets:                secrets,
+		ContainerImageMetadata: containerImageMetadata,
 	}
 }

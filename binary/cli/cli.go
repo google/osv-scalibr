@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -33,19 +32,19 @@ import (
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
-	"github.com/google/osv-scalibr/binary/spdx"
-	"github.com/google/osv-scalibr/clients/resolution"
+	binspdx "github.com/google/osv-scalibr/binary/spdx"
 	"github.com/google/osv-scalibr/converter"
+	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
-	"github.com/google/osv-scalibr/detector/govulncheck/binary"
-	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/spdx/tools-golang/spdx/v2/common"
+	"google.golang.org/protobuf/encoding/prototext"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,
@@ -117,41 +116,41 @@ func (s *StringListFlag) Reset() {
 
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
-	PrintVersion               bool
-	Root                       string
-	ResultFile                 string
-	Output                     Array
-	ExtractorsToRun            []string
-	DetectorsToRun             []string
-	AnnotatorsToRun            []string
-	PluginsToRun               []string
-	PathsToExtract             []string
-	IgnoreSubDirs              bool
-	DirsToSkip                 []string
-	SkipDirRegex               string
-	SkipDirGlob                string
-	MaxFileSize                int
-	UseGitignore               bool
-	RemoteImage                string
-	ImageLocal                 string
-	ImageTarball               string
-	ImagePlatform              string
-	GoBinaryVersionFromContent bool
-	GovulncheckDBPath          string
-	SPDXDocumentName           string
-	SPDXDocumentNamespace      string
-	SPDXCreators               string
-	CDXComponentName           string
-	CDXComponentType           string
-	CDXComponentVersion        string
-	CDXAuthors                 string
-	Verbose                    bool
-	ExplicitExtractors         bool
-	FilterByCapabilities       bool
-	StoreAbsolutePath          bool
-	WindowsAllDrives           bool
-	Offline                    bool
-	LocalRegistry              string
+	PrintVersion          bool
+	Root                  string
+	ResultFile            string
+	Output                Array
+	ExtractorsToRun       []string
+	DetectorsToRun        []string
+	AnnotatorsToRun       []string
+	PluginsToRun          []string
+	PluginCFG             []string
+	ExtractorOverride     Array
+	PathsToExtract        []string
+	IgnoreSubDirs         bool
+	DirsToSkip            []string
+	SkipDirRegex          string
+	SkipDirGlob           string
+	MaxFileSize           int
+	UseGitignore          bool
+	RemoteImage           string
+	ImageLocal            string
+	ImageTarball          string
+	ImagePlatform         string
+	GovulncheckDBPath     string
+	SPDXDocumentName      string
+	SPDXDocumentNamespace string
+	SPDXCreators          string
+	CDXComponentName      string
+	CDXComponentType      string
+	CDXComponentVersion   string
+	CDXAuthors            string
+	Verbose               bool
+	ExplicitPlugins       bool
+	FilterByCapabilities  bool
+	StoreAbsolutePath     bool
+	WindowsAllDrives      bool
+	Offline               bool
 }
 
 var supportedOutputFormats = []string{
@@ -200,6 +199,9 @@ func ValidateFlags(flags *Flags) error {
 	if err := validateOutput(flags.Output); err != nil {
 		return fmt.Errorf("--o %w", err)
 	}
+	if err := validateExtractorOverride(flags.ExtractorOverride); err != nil {
+		return fmt.Errorf("--extractor-override: %w", err)
+	}
 	if err := validateImagePlatform(flags.ImagePlatform); err != nil {
 		return fmt.Errorf("--image-platform %w", err)
 	}
@@ -227,11 +229,24 @@ func ValidateFlags(flags *Flags) error {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
 	pluginsToRun := slices.Concat(flags.PluginsToRun, flags.ExtractorsToRun, flags.DetectorsToRun, flags.AnnotatorsToRun)
-	if err := validateDependency(pluginsToRun, flags.ExplicitExtractors); err != nil {
+	if err := validateDependency(pluginsToRun, flags.ExplicitPlugins); err != nil {
 		return err
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validateExtractorOverride(extractorOverride []string) error {
+	for _, item := range extractorOverride {
+		parts := strings.SplitN(item, ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return fmt.Errorf("invalid format for extractor override %q, should be <plugin-name>:<glob-pattern>", item)
+		}
+		if _, err := glob.Compile(parts[1]); err != nil {
+			return fmt.Errorf("invalid glob pattern %q in extractor override %q: %w", parts[1], item, err)
+		}
 	}
 	return nil
 }
@@ -279,7 +294,7 @@ func validateMultiStringArg(arg []string) error {
 		if len(item) == 0 {
 			continue
 		}
-		for _, item := range strings.Split(item, ",") {
+		for item := range strings.SplitSeq(item, ",") {
 			if len(item) == 0 {
 				return errors.New("list item cannot be left empty")
 			}
@@ -303,7 +318,7 @@ func validateGlob(arg string) error {
 
 func validateDependency(pluginNames []string, requireExtractors bool) error {
 	f := &Flags{PluginsToRun: pluginNames}
-	plugins, err := f.pluginsToRun()
+	plugins, _, err := f.pluginsToRun()
 	if err != nil {
 		return err
 	}
@@ -333,9 +348,14 @@ func validateComponentType(componentType string) error {
 	return nil
 }
 
+type extractorOverride struct {
+	glob      glob.Glob
+	extractor filesystem.Extractor
+}
+
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
-	plugins, err := f.pluginsToRun()
+	plugins, pluginCFG, err := f.pluginsToRun()
 	if err != nil {
 		return nil, err
 	}
@@ -343,6 +363,14 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if f.FilterByCapabilities {
 		plugins = filterByCapabilities(plugins, capab)
 	}
+	if len(f.PluginsToRun)+len(f.ExtractorsToRun)+len(f.DetectorsToRun)+len(f.AnnotatorsToRun) == 0 {
+		names := make([]string, 0, len(plugins))
+		for _, p := range plugins {
+			names = append(names, p.Name())
+		}
+		log.Warnf("No plugins specified, using default list: %v", names)
+	}
+
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
 		skipDirRegex, err = regexp.Compile(f.SkipDirRegex)
@@ -363,26 +391,71 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 		return nil, err
 	}
 
+	var overrides []extractorOverride
+	if len(f.ExtractorOverride) > 0 {
+		pluginMap := make(map[string]filesystem.Extractor)
+		for _, p := range plugins {
+			if e, ok := p.(filesystem.Extractor); ok {
+				pluginMap[e.Name()] = e
+			}
+		}
+
+		for _, o := range f.ExtractorOverride {
+			parts := strings.SplitN(o, ":", 2)
+			pluginName := parts[0]
+			globPattern := parts[1]
+			extractor, ok := pluginMap[pluginName]
+			if !ok {
+				return nil, fmt.Errorf("plugin %q specified in --extractor-override not found or not a filesystem extractor", pluginName)
+			}
+			g, err := glob.Compile(globPattern)
+			if err != nil {
+				// This should not happen due to ValidateFlags.
+				return nil, fmt.Errorf("invalid glob pattern %q in extractor override: %w", globPattern, err)
+			}
+			overrides = append(overrides, extractorOverride{
+				glob:      g,
+				extractor: extractor,
+			})
+		}
+	}
+
+	var extractorOverrideFn func(filesystem.FileAPI) []filesystem.Extractor
+	if len(overrides) > 0 {
+		extractorOverrideFn = func(api filesystem.FileAPI) []filesystem.Extractor {
+			var result []filesystem.Extractor
+			for _, o := range overrides {
+				if o.glob.Match(api.Path()) {
+					result = append(result, o.extractor)
+				}
+			}
+			return result
+		}
+	}
+
 	return &scalibr.ScanConfig{
-		ScanRoots:         scanRoots,
-		Plugins:           plugins,
-		Capabilities:      capab,
-		PathsToExtract:    f.PathsToExtract,
-		IgnoreSubDirs:     f.IgnoreSubDirs,
-		DirsToSkip:        f.dirsToSkip(scanRoots),
-		SkipDirRegex:      skipDirRegex,
-		SkipDirGlob:       skipDirGlob,
-		MaxFileSize:       f.MaxFileSize,
-		UseGitignore:      f.UseGitignore,
-		StoreAbsolutePath: f.StoreAbsolutePath,
+		ScanRoots:            scanRoots,
+		Plugins:              plugins,
+		Capabilities:         capab,
+		PathsToExtract:       f.PathsToExtract,
+		IgnoreSubDirs:        f.IgnoreSubDirs,
+		DirsToSkip:           f.dirsToSkip(scanRoots),
+		SkipDirRegex:         skipDirRegex,
+		SkipDirGlob:          skipDirGlob,
+		MaxFileSize:          f.MaxFileSize,
+		UseGitignore:         f.UseGitignore,
+		StoreAbsolutePath:    f.StoreAbsolutePath,
+		ExtractorOverride:    extractorOverrideFn,
+		ExplicitPlugins:      f.ExplicitPlugins,
+		RequiredPluginConfig: pluginCFG,
 	}, nil
 }
 
 // GetSPDXConfig creates an SPDXConfig struct based on the CLI flags.
-func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
+func (f *Flags) GetSPDXConfig() convspdx.Config {
 	var creators []common.Creator
 	if len(f.SPDXCreators) > 0 {
-		for _, item := range strings.Split(f.SPDXCreators, ",") {
+		for item := range strings.SplitSeq(f.SPDXCreators, ",") {
 			c := strings.Split(item, ":")
 			cType := c[0]
 			cName := c[1]
@@ -392,7 +465,7 @@ func (f *Flags) GetSPDXConfig() converter.SPDXConfig {
 			})
 		}
 	}
-	return converter.SPDXConfig{
+	return convspdx.Config{
 		DocumentName:      f.SPDXDocumentName,
 		DocumentNamespace: f.SPDXDocumentNamespace,
 		Creators:          creators,
@@ -437,7 +510,7 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 				}
 			} else if strings.Contains(oFormat, "spdx23") {
 				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
-				if err := spdx.Write23(doc, oPath, oFormat); err != nil {
+				if err := binspdx.Write23(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			} else if strings.Contains(oFormat, "cdx") {
@@ -452,9 +525,14 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
+func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
 	result := make([]plugin.Plugin, 0, len(f.PluginsToRun))
 	pluginNames := multiStringToList(f.PluginsToRun)
+	pluginCFG, err := pluginCFGFromFlags(f.PluginCFG)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	extractorNames := addPluginPrefixToGroups("extractors/", multiStringToList(f.ExtractorsToRun))
 	detectorNames := addPluginPrefixToGroups("detectors/", multiStringToList(f.DetectorsToRun))
 	annotatorNames := addPluginPrefixToGroups("annotators/", multiStringToList(f.AnnotatorsToRun))
@@ -466,36 +544,15 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 	}
 
 	for _, name := range allPluginNames {
-		plugins, err := pl.FromNames([]string{name})
+		plugins, err := pl.FromNames([]string{name}, pluginCFG)
 		if err != nil {
-			return nil, err
-		}
-
-		// Apply plugin-specific config.
-		for _, p := range plugins {
-			if p.Name() == gobinary.Name {
-				p.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
-			}
-			if p.Name() == binary.Name {
-				p.(*binary.Detector).OfflineVulnDBPath = f.GovulncheckDBPath
-			}
-			if f.LocalRegistry != "" {
-				switch p.Name() {
-				case pomxmlnet.Name:
-					p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(filepath.Join(f.LocalRegistry, "maven"))
-				case requirements.Name:
-					if client, ok := p.(*requirements.Enricher).Client.(*resolution.PyPIRegistryClient); ok {
-						// The resolution client is the native PyPI registry client.
-						client.SetLocalRegistry(filepath.Join(f.LocalRegistry, "pypi"))
-					}
-				}
-			}
+			return nil, nil, err
 		}
 
 		result = append(result, plugins...)
 	}
 
-	return result, nil
+	return result, pluginCFG, nil
 }
 
 // addPluginPrefixToGroups adds the specified prefix to the "default" and "all"
@@ -510,6 +567,30 @@ func addPluginPrefixToGroups(prefix string, pluginNames []string) []string {
 		result = append(result, p)
 	}
 	return result
+}
+
+// pluginCFGFromFlags parses individually provided
+// plugin config strings into one proto.
+func pluginCFGFromFlags(flags []string) (*cpb.PluginConfig, error) {
+	var cfgString strings.Builder
+	for _, flag := range flags {
+		pluginCFG := &cpb.PluginConfig{}
+		err := prototext.Unmarshal([]byte(flag), pluginCFG)
+		if err != nil {
+			// Flags can use a shorthand for specifying a single plugin-specific setting.
+			// In this case we have to add the wrapping proto parts manually.
+			flag = "plugin_specific:{" + flag + "}"
+			err := prototext.Unmarshal([]byte(flag), pluginCFG)
+			if err != nil {
+				return nil, err
+			}
+		}
+		cfgString.WriteString(flag + "\n")
+	}
+
+	allCFGs := &cpb.PluginConfig{}
+	err := prototext.Unmarshal([]byte(cfgString.String()), allCFGs)
+	return allCFGs, err
 }
 
 func multiStringToList(arg []string) []string {

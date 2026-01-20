@@ -26,42 +26,49 @@ import (
 )
 
 func main() {
-	os.Exit(run(os.Args))
+	runFn := getRunFn(os.Args, flag.CommandLine)
+	os.Exit(runFn())
 }
 
-func run(args []string) int {
+func getRunFn(args []string, fs *flag.FlagSet) func() int {
 	var subcommand string
 	if len(args) >= 2 {
 		subcommand = args[1]
 	}
 	switch subcommand {
 	case "scan":
-		flags, err := parseFlags(args[2:])
+		flags, err := parseFlags(args[2:], fs)
 		if err != nil {
-			log.Errorf("Error parsing CLI args: %v", err)
-			return 1
+			return parseErrorFunc(err)
 		}
-		return scanrunner.RunScan(flags)
+		return func() int { return scanrunner.RunScan(flags) }
 	default:
 		// Assume 'scan' if subcommand is not recognized/specified.
-		flags, err := parseFlags(args[1:])
+		flags, err := parseFlags(args[1:], fs)
 		if err != nil {
-			log.Errorf("Error parsing CLI args: %v", err)
-			return 1
+			return parseErrorFunc(err)
 		}
-		return scanrunner.RunScan(flags)
+		return func() int { return scanrunner.RunScan(flags) }
 	}
 }
 
-func parseFlags(args []string) (*cli.Flags, error) {
-	fs := flag.NewFlagSet("scalibr", flag.ExitOnError)
-	printVersion := fs.Bool("version", false, `Prints the version of the scanner`)
+func parseErrorFunc(err error) func() int {
+	return func() int {
+		log.Errorf("Error parsing CLI args: %v", err)
+		return 1
+	}
+}
+
+func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
+	printVersion := fs.Bool("version", false, "Prints the version of the scanner")
 	root := fs.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := fs.String("result", "", "The path of the output scan result file")
 	var output cli.Array
 	fs.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
 	pluginsToRun := cli.NewStringListFlag(nil)
 	fs.Var(&pluginsToRun, "plugins", "Comma-separated list of plugin to run")
+	var extractorOverride cli.Array
+	fs.Var(&extractorOverride, "extractor-override", `Override extractor for files matching a glob pattern. Format: <plugin-name>:<glob-pattern>. Can be specified multiple times.`)
 	extractorsToRun := cli.NewStringListFlag(nil)
 	fs.Var(&extractorsToRun, "extractors", "[Legacy field, prefer using --plugins instead] Comma-separated list of extractor plugins to run")
 	detectorsToRun := cli.NewStringListFlag(nil)
@@ -69,6 +76,8 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	annotatorsToRun := cli.NewStringListFlag(nil)
 	// TODO(b/400910349): Remove once integrators stop using this CLI arg.
 	fs.Var(&annotatorsToRun, "annotators", "[Legacy field, prefer using --plugins instead] Comma-separated list of annotators plugins to run")
+	var pluginCFG cli.Array
+	fs.Var(&pluginCFG, "plugin-config", "Plugin-specific config values. Example: --plugin-config=\"max_file_size_bytes:10000000 plugin_specific: {go_binary: {version_from_content: true} }\", or --plugin-config=go_binary:{version_from_content:true}. See binary/proto/config.proto for more settings")
 	ignoreSubDirs := fs.Bool("ignore-sub-dirs", false, "Non-recursive mode: Extract only the files in the top-level directory and skip sub-directories")
 	var dirsToSkip cli.StringListFlag
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
@@ -80,8 +89,6 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	imageTarball := fs.String("image-tarball", "", "The path to a tarball containing a container image. These are commonly procuded using `docker save`. If specified, SCALIBR scans this image instead of the local filesystem.")
 	imageDockerLocal := fs.String("image-local-docker", "", "The docker image that is available in the local filesystem. These are the images from the output of \"docker image ls\". If specified, SCALIBR scans this image. The name of the image MUST also include the tag of the image <image_name>:<image_tag>.")
 	imagePlatform := fs.String("image-platform", "", "The platform of the remote image to scan. If not specified, the platform of the client is used. Format is os/arch (e.g. linux/arm64)")
-	goBinaryVersionFromContent := fs.Bool("gobinary-version-from-content", false, "Parse the main module version from the binary content. Off by default because this drastically increases latency (~10x).")
-	govulncheckDBPath := fs.String("govulncheck-db", "", "Path to the offline DB for the govulncheck detectors to use. Leave empty to run the detectors in online mode.")
 	spdxDocumentName := fs.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
 	spdxDocumentNamespace := fs.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
 	spdxCreators := fs.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
@@ -90,11 +97,10 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	cdxComponentVersion := fs.String("cdx-component-version", "", "The 'metadata.component.version' field for the output CDX document")
 	cdxAuthors := fs.String("cdx-authors", "", "The 'authors' field for the output CDX document. Format is --cdx-authors=author1,author2")
 	verbose := fs.Bool("verbose", false, "Enable this to print debug logs")
-	explicitExtractors := fs.Bool("explicit-extractors", false, "If set, the program will exit with an error if not all extractors required by enabled detectors are explicitly enabled.")
+	explicitPlugins := fs.Bool("explicit-plugins", false, "If set, the program will exit with an error if not all plugins' required plugins are explicitly enabled.")
 	filterByCapabilities := fs.Bool("filter-by-capabilities", true, "If set, plugins whose requirements (network access, OS, etc.) aren't satisfied by the scanning environment will be silently disabled instead of throwing a validation error.")
 	windowsAllDrives := fs.Bool("windows-all-drives", false, "Scan all drives on Windows")
 	offline := fs.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
-	localRegistry := fs.String("local-registry", "", "The local directory to store the downloaded manifests during dependency resolution.")
 
 	if err := fs.Parse(args); err != nil {
 		return nil, err
@@ -102,40 +108,39 @@ func parseFlags(args []string) (*cli.Flags, error) {
 	pathsToExtract := fs.Args()
 
 	flags := &cli.Flags{
-		PrintVersion:               *printVersion,
-		Root:                       *root,
-		ResultFile:                 *resultFile,
-		Output:                     output,
-		PluginsToRun:               pluginsToRun.GetSlice(),
-		ExtractorsToRun:            extractorsToRun.GetSlice(),
-		DetectorsToRun:             detectorsToRun.GetSlice(),
-		AnnotatorsToRun:            annotatorsToRun.GetSlice(),
-		PathsToExtract:             pathsToExtract,
-		IgnoreSubDirs:              *ignoreSubDirs,
-		DirsToSkip:                 dirsToSkip.GetSlice(),
-		SkipDirRegex:               *skipDirRegex,
-		SkipDirGlob:                *skipDirGlob,
-		MaxFileSize:                *maxFileSize,
-		UseGitignore:               *useGitignore,
-		RemoteImage:                *remoteImage,
-		ImageLocal:                 *imageDockerLocal,
-		ImageTarball:               *imageTarball,
-		ImagePlatform:              *imagePlatform,
-		GoBinaryVersionFromContent: *goBinaryVersionFromContent,
-		GovulncheckDBPath:          *govulncheckDBPath,
-		SPDXDocumentName:           *spdxDocumentName,
-		SPDXDocumentNamespace:      *spdxDocumentNamespace,
-		SPDXCreators:               *spdxCreators,
-		CDXComponentName:           *cdxComponentName,
-		CDXComponentType:           *cdxComponentType,
-		CDXComponentVersion:        *cdxComponentVersion,
-		CDXAuthors:                 *cdxAuthors,
-		Verbose:                    *verbose,
-		ExplicitExtractors:         *explicitExtractors,
-		FilterByCapabilities:       *filterByCapabilities,
-		WindowsAllDrives:           *windowsAllDrives,
-		Offline:                    *offline,
-		LocalRegistry:              *localRegistry,
+		PrintVersion:          *printVersion,
+		Root:                  *root,
+		ResultFile:            *resultFile,
+		Output:                output,
+		PluginsToRun:          pluginsToRun.GetSlice(),
+		ExtractorOverride:     extractorOverride,
+		ExtractorsToRun:       extractorsToRun.GetSlice(),
+		DetectorsToRun:        detectorsToRun.GetSlice(),
+		AnnotatorsToRun:       annotatorsToRun.GetSlice(),
+		PluginCFG:             pluginCFG,
+		PathsToExtract:        pathsToExtract,
+		IgnoreSubDirs:         *ignoreSubDirs,
+		DirsToSkip:            dirsToSkip.GetSlice(),
+		SkipDirRegex:          *skipDirRegex,
+		SkipDirGlob:           *skipDirGlob,
+		MaxFileSize:           *maxFileSize,
+		UseGitignore:          *useGitignore,
+		RemoteImage:           *remoteImage,
+		ImageLocal:            *imageDockerLocal,
+		ImageTarball:          *imageTarball,
+		ImagePlatform:         *imagePlatform,
+		SPDXDocumentName:      *spdxDocumentName,
+		SPDXDocumentNamespace: *spdxDocumentNamespace,
+		SPDXCreators:          *spdxCreators,
+		CDXComponentName:      *cdxComponentName,
+		CDXComponentType:      *cdxComponentType,
+		CDXComponentVersion:   *cdxComponentVersion,
+		CDXAuthors:            *cdxAuthors,
+		Verbose:               *verbose,
+		ExplicitPlugins:       *explicitPlugins,
+		FilterByCapabilities:  *filterByCapabilities,
+		WindowsAllDrives:      *windowsAllDrives,
+		Offline:               *offline,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		return nil, err

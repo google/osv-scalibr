@@ -43,7 +43,7 @@ func TestDetector_truePositives(t *testing.T) {
 			}},
 		},
 		{
-			name: "pretty json",
+			name: "pretty_json",
 			input: `{
 				"primaryKeyId":1976038263,
 				"key":[
@@ -83,7 +83,7 @@ func TestDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple keysets pretty json",
+			name: "multiple_keysets_pretty_json",
 			input: `[
 				{ "primaryKeyId": 2090791689, "key": [ { "keyData": { "typeUrl": "type.googleapis.com/google.crypto.tink.AesCtrHmacAeadKey", "value": "EhYSAggQGhDWzHIvfSnRr5S1JFDTqbBSGigSBAgDEBAaIG52KwuWno/8wN0lqzNpN/3QxX0k5mGDOGTEBy+8J4yO", "keyMaterialType": "SYMMETRIC" }, "status": "ENABLED", "keyId": 2090791689, "outputPrefixType": "TINK" } ] },
 				{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}
@@ -131,7 +131,7 @@ func TestDetector_truePositives(t *testing.T) {
 			}},
 		},
 		{
-			name: "nested escaped json",
+			name: "nested_escaped_json",
 			input: `{
 				"prop1": 1,
 				"key": "{\"primaryKeyId\":1976038263,\n\"key\":[{\"keyData\":{\"typeUrl\":\"type.googleapis.com/google.crypto.tink.AesGcmKey\",\"value\":\"GhBi7O0TErBM9eTl3UppUGZg\",\"keyMaterialType\":\"SYMMETRIC\"},\"status\":\"ENABLED\",\"keyId\":1976038263,\"outputPrefixType\":\"TINK\"}]}",
@@ -142,7 +142,7 @@ func TestDetector_truePositives(t *testing.T) {
 			}},
 		},
 		{
-			name: "double nested escaped json",
+			name: "double_nested_escaped_json",
 			input: `{
 				"prop1": 1,
 				"key": "{\"sub-key\":\""{\\"primaryKeyId\\":1976038263,\\"key\\":[{\\"keyData\\":{\\"typeUrl\\":\\"type.googleapis.com/google.crypto.tink.AesGcmKey\\",\\"value\\":\\"GhBi7O0TErBM9eTl3UppUGZg\\",\\"keyMaterialType\\":\\"SYMMETRIC\\"},\\"status\\":\\"ENABLED\\",\\"keyId\\":1976038263,\\"outputPrefixType\\":\\"TINK\\"}]}\\"\"}",
@@ -153,7 +153,7 @@ func TestDetector_truePositives(t *testing.T) {
 			}},
 		},
 		{
-			name: "nested base64 encoded json",
+			name: "nested_base64_encoded_json",
 			input: `{
 				"prop1": 1,
 				"key": "eyJwcmltYXJ5S2V5SWQiOjEwNDU4Mzc4MDksImtleSI6W3sia2V5RGF0YSI6eyJ0eXBlVXJsIjoidHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbmsuQWVzR2NtS2V5IiwidmFsdWUiOiJHaEJDK0I2R3FWNnJaSTRqSUE4WFhEVkQiLCJrZXlNYXRlcmlhbFR5cGUiOiJTWU1NRVRSSUMifSwic3RhdHVzIjoiRU5BQkxFRCIsImtleUlkIjoxMDQ1ODM3ODA5LCJvdXRwdXRQcmVmaXhUeXBlIjoiVElOSyJ9XX0=",
@@ -164,7 +164,7 @@ func TestDetector_truePositives(t *testing.T) {
 			}},
 		},
 		{
-			name: "nested base64 encoded binary yml",
+			name: "nested_base64_encoded_binary_yml",
 			input: `
 			something_else:
 				- 1
@@ -177,7 +177,7 @@ func TestDetector_truePositives(t *testing.T) {
 			}},
 		},
 		{
-			name: "nested base64 encoded binary and json yml",
+			name: "nested_base64_encoded_binary_and_json_yml",
 			input: `
 			something_else:
 				- 1

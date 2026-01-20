@@ -43,6 +43,7 @@ package fakelayerbuilder
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -87,13 +88,14 @@ func BuildFakeChainLayersFromPath(t *testing.T, testDir string, layerInfoPath st
 
 	for index, layer := range layers.Layers {
 		diffID := digest.NewDigestFromEncoded(digest.SHA256, fmt.Sprintf("diff-id-%d", index))
+		chainID := digest.NewDigestFromEncoded(digest.SHA256, fmt.Sprintf("chain-id-%d", index))
 		command := fmt.Sprintf("command-%d", index)
 
 		// Build and edit layer contents
 		layerContents := map[string]string{}
 		for key, file := range layer.Files {
-			if strings.HasPrefix(key, "~") {
-				key = strings.TrimPrefix(key, "~")
+			if after, ok := strings.CutPrefix(key, "~"); ok {
+				key = after
 				layerContents[whiteout.ToWhiteout(key)] = ""
 				delete(chainLayerContents, key)
 
@@ -110,13 +112,12 @@ func BuildFakeChainLayersFromPath(t *testing.T, testDir string, layerInfoPath st
 		}
 
 		chainLayerContentsClone := make(map[string]string, len(chainLayerContents))
-		for k, v := range chainLayerContents {
-			chainLayerContentsClone[k] = v
-		}
+		maps.Copy(chainLayerContentsClone, chainLayerContents)
 		cfg := &fakechainlayer.Config{
 			TestDir:           filepath.Join(testDir, fmt.Sprintf("chainlayer-%d", index)),
 			Index:             index,
 			DiffID:            diffID,
+			ChainID:           chainID,
 			Command:           command,
 			Layer:             fakeLayer,
 			Files:             chainLayerContentsClone,

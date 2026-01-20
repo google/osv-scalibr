@@ -35,17 +35,6 @@ type SourceCodeIdentifier struct {
 	Commit string
 }
 
-// LayerDetails stores details about the layer a package was found in.
-type LayerDetails struct {
-	Index  int
-	DiffID string
-	// The layer chain ID (sha256 hash) of the layer in the container image.
-	// https://github.com/opencontainers/image-spec/blob/main/config.md#layer-chainid
-	ChainID     string
-	Command     string
-	InBaseImage bool
-}
-
 // Package is an instance of a software package or library found by the extractor.
 // TODO(b/400910349): Currently package is also used to store non-package data
 // like open ports. Move these into their own dedicated types.
@@ -68,34 +57,17 @@ type Package struct {
 	PURLType string
 	// The names of the Plugins that found this software instance. Set by the core library.
 	Plugins []string
-	// Deprecated - use ExploitabilitySignals instead
-	// TODO(b/400910349): Remove once integrators stop using this.
-	AnnotationsDeprecated []Annotation
 	// Signals to indicate that specific vulnerabilities are not applicable to this package.
 	ExploitabilitySignals []*vex.PackageExploitabilitySignal
 	// Details about the layer that the package was attributed to.
-	LayerDetails *LayerDetails
+	LayerMetadata *LayerMetadata
 	// The additional data found in the package.
 	Metadata any
 	// Licenses information of this package
 	Licenses []string
+	// If true, the package version is deprecated (e.g. yanked, unpublished, deprecated)
+	Deprecated bool
 }
-
-// Annotation are additional information about the package.
-// TODO(b/400910349): Remove once integrators switch to PackageExploitabilitySignal.
-type Annotation int64
-
-const (
-	// Unknown is the default value for the annotation.
-	Unknown Annotation = iota
-	// Transitional packages just point to other packages without having actual code in them. This
-	// happens for example when packages are renamed.
-	Transitional
-	// InsideOSPackage is set for packages that are found inside an OS package.
-	InsideOSPackage
-	// InsideCacheDir is set for packages that are found inside a cache directory.
-	InsideCacheDir
-)
 
 // PURL returns the Package URL of this package.
 func (p *Package) PURL() *purl.PackageURL {

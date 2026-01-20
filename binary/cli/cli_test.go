@@ -15,6 +15,7 @@
 package cli_test
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -25,10 +26,11 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
-	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/plugin"
-	pl "github.com/google/osv-scalibr/plugin/list"
+	"google.golang.org/protobuf/testing/protocmp"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestValidateFlags(t *testing.T) {
@@ -139,17 +141,6 @@ func TestValidateFlags(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Detector with missing extractor dependency when ExplicitExtractors",
-			flags: &cli.Flags{
-				Root:               "/",
-				ResultFile:         "result.textproto",
-				ExtractorsToRun:    []string{"python,javascript"},
-				DetectorsToRun:     []string{"govulncheck"}, // Needs the Go binary extractor.
-				ExplicitExtractors: true,
-			},
-			wantErr: cmpopts.AnyError,
-		},
-		{
 			desc: "Detector with missing extractor dependency (enabled automatically)",
 			flags: &cli.Flags{
 				Root:            "/",
@@ -224,6 +215,33 @@ func TestValidateFlags(t *testing.T) {
 				ImageLocal:   "nginx:latest",
 				ImageTarball: "image.tar",
 				ResultFile:   "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "valid extractor override",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+			},
+			wantErr: nil,
+		},
+		{
+			desc: "extractor override invalid format",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "extractor override invalid glob",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:["},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -529,67 +547,91 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 	}
 }
 
-func TestGetScanConfig_GovulncheckParams(t *testing.T) {
-	dbPath := "path/to/db"
-	flags := &cli.Flags{
-		ExtractorsToRun:   []string{"go"},
-		DetectorsToRun:    []string{binary.Detector{}.Name()},
-		GovulncheckDBPath: dbPath,
-	}
-
-	cfg, err := flags.GetScanConfig()
-	if err != nil {
-		t.Errorf("%v.GetScanConfig(): %v", flags, err)
-	}
-	detectors := pl.Detectors(cfg.Plugins)
-	if len(detectors) != 1 {
-		t.Fatalf("%v.GetScanConfig() want 1 detector got %d", flags, len(detectors))
-	}
-	got := detectors[0].(*binary.Detector).OfflineVulnDBPath
-	if got != dbPath {
-		t.Errorf("%v.GetScanConfig() want govulncheck detector with DB path %q got %q", flags, dbPath, got)
-	}
-}
-
-func TestGetScanConfig_GoBinaryVersionFromContent(t *testing.T) {
+func TestGetScanConfig_PluginConfig(t *testing.T) {
 	for _, tc := range []struct {
 		desc                   string
-		flags                  *cli.Flags
+		cfgFlags               []string
+		wantCFG                *cpb.PluginConfig
+		wantMaxFileSizeBytes   int64
 		wantVersionFromContent bool
 	}{
 		{
-			desc: "version_from_content_enabled",
-			flags: &cli.Flags{
-				ExtractorsToRun:            []string{"go"},
-				GoBinaryVersionFromContent: true,
+			desc:     "single_setting_in_one_flag",
+			cfgFlags: []string{"max_file_size_bytes:1234"},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
 			},
+			wantMaxFileSizeBytes: 1234,
+		},
+		{
+			desc:     "multiple_settings_in_one_flag",
+			cfgFlags: []string{"max_file_size_bytes:1234 plugin_specific:{go_binary:{version_from_content:true}}"},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantMaxFileSizeBytes:   1234,
 			wantVersionFromContent: true,
 		},
 		{
-			desc: "version_from_content_disabled",
-			flags: &cli.Flags{
-				ExtractorsToRun:            []string{"go"},
-				GoBinaryVersionFromContent: false,
+			desc: "multiple_settings_in_multiple_flags",
+			cfgFlags: []string{
+				"max_file_size_bytes:1234",
+				"plugin_specific:{go_binary:{version_from_content:true}}",
 			},
-			wantVersionFromContent: false,
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantMaxFileSizeBytes:   1234,
+			wantVersionFromContent: true,
+		},
+		{
+			desc:     "plugin_specific_config_short_version",
+			cfgFlags: []string{"go_binary:{version_from_content:true}"},
+			wantCFG: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantVersionFromContent: true,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			cfg, err := tc.flags.GetScanConfig()
+			flags := &cli.Flags{
+				ExtractorsToRun: []string{gobinary.Name},
+				PluginCFG:       tc.cfgFlags,
+			}
+
+			scanConfig, err := flags.GetScanConfig()
 			if err != nil {
-				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+				t.Errorf("%v.GetScanConfig(): %v", flags, err)
 			}
-			var gobinaryExt *gobinary.Extractor
-			for _, p := range cfg.Plugins {
-				if p.Name() == gobinary.Name {
-					gobinaryExt = p.(*gobinary.Extractor)
-				}
+
+			if diff := cmp.Diff(tc.wantCFG, scanConfig.RequiredPluginConfig, protocmp.Transform()); diff != "" {
+				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
 			}
-			if gobinaryExt == nil {
-				t.Fatalf("%+v.GetScanConfig() want go binary extractor got nil", tc.flags)
+			if len(scanConfig.Plugins) != 1 {
+				t.Fatalf("%v.GetScanConfig(): Got %d plugins, want 1", flags, len(scanConfig.Plugins))
 			}
-			if gobinaryExt.VersionFromContent != tc.wantVersionFromContent {
-				t.Errorf("%+v.GetScanConfig() want go binary extractor with version from content %v got %v", tc.flags, tc.wantVersionFromContent, gobinaryExt.VersionFromContent)
+
+			ext, ok := scanConfig.Plugins[0].(*gobinary.Extractor)
+			if !ok {
+				t.Fatalf("%v.GetScanConfig(): Got wrong plugin type", flags)
+			}
+
+			maxFileSizeBytes := ext.MaxFileSizeBytes()
+			if tc.wantMaxFileSizeBytes != maxFileSizeBytes {
+				t.Errorf("%v.GetScanConfig(): Want maxFileSizeBytes %d, got %d", flags, tc.wantMaxFileSizeBytes, maxFileSizeBytes)
+			}
+
+			versionFromContent := ext.VersionFromContent()
+			if tc.wantVersionFromContent != versionFromContent {
+				t.Errorf("%v.GetScanConfig(): Want versionFromContent %t, got %t", flags, tc.wantVersionFromContent, versionFromContent)
 			}
 		})
 	}
@@ -889,6 +931,104 @@ func TestWriteScanResults(t *testing.T) {
 
 			if !strings.HasPrefix(gotStr, tc.wantContentPrefix) {
 				t.Errorf("%v.WriteScanResults(%v) want file with content prefix %q, got %q", tc.flags, result, tc.wantContentPrefix, gotStr)
+			}
+		})
+	}
+}
+
+type fakeFileAPI struct {
+	path string
+}
+
+func (f *fakeFileAPI) Path() string {
+	return f.path
+}
+
+func (f *fakeFileAPI) Stat() (fs.FileInfo, error) {
+	return nil, nil
+}
+
+func TestGetScanConfig_ExtractorOverride(t *testing.T) {
+	tests := []struct {
+		name              string
+		flags             *cli.Flags
+		fileAPI           *fakeFileAPI
+		wantExtractorName string
+		wantNumExtractors int
+		wantErr           error
+	}{
+		{
+			name: "no_override",
+			flags: &cli.Flags{
+				Root:       "/",
+				ResultFile: "result.textproto",
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantNumExtractors: 0,
+			wantErr:           nil,
+		},
+		{
+			name: "extractor_override_plugin_not_found",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"nonexistent/plugin:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantNumExtractors: 0,
+			wantErr:           cmpopts.AnyError,
+		},
+		{
+			name: "override_matches",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantExtractorName: "python/wheelegg",
+			wantNumExtractors: 1,
+			wantErr:           nil,
+		},
+		{
+			name: "override_does_not_match",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "abc/efg/foo.go"},
+			wantNumExtractors: 0,
+			wantErr:           nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := tt.flags.GetScanConfig()
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("GetScanConfig() error got diff (-want +got):\n%s", diff)
+			}
+
+			// If an error was expected, the rest of the checks are not necessary.
+			if tt.wantErr != nil {
+				return
+			}
+
+			if cfg.ExtractorOverride == nil && tt.wantNumExtractors > 0 {
+				t.Fatalf("ExtractorOverride is nil, want non-nil")
+			}
+			if cfg.ExtractorOverride != nil {
+				extractors := cfg.ExtractorOverride(tt.fileAPI)
+				if len(extractors) != tt.wantNumExtractors {
+					t.Fatalf("ExtractorOverride() returned %d extractors, want %d", len(extractors), tt.wantNumExtractors)
+				}
+				if tt.wantNumExtractors == 1 && extractors[0].Name() != tt.wantExtractorName {
+					t.Errorf("ExtractorOverride() returned extractor %q, want %q", extractors[0].Name(), tt.wantExtractorName)
+				}
 			}
 		})
 	}

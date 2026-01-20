@@ -19,6 +19,7 @@ import (
 	"context"
 	"path/filepath"
 	"regexp"
+	"slices"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/inventory"
@@ -37,6 +38,7 @@ var cacheDirPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/?tmp/`),
 	regexp.MustCompile(`^/?home/[^/]+/\.local/share/Trash/`),
 	regexp.MustCompile(`^/?home/[^/]+/\.cache/`),
+	regexp.MustCompile(`^/?root/\.cache/`),
 	regexp.MustCompile(`^/?var/cache/`),
 
 	// macOS
@@ -71,15 +73,12 @@ func (Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, resul
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		for _, loc := range pkg.Locations {
-			if isInsideCacheDir(loc) {
-				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-					Plugin:          Name,
-					Justification:   vex.ComponentNotPresent,
-					MatchesAllVulns: true,
-				})
-				break
-			}
+		if slices.ContainsFunc(pkg.Locations, isInsideCacheDir) {
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 	}
 	return nil
