@@ -28,6 +28,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Name is the name for the vscode extensions extractor
@@ -60,8 +62,8 @@ func (e *extension) validate() error {
 type Extractor struct{}
 
 // New returns an vscode extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
 }
 
 // Name of the extractor.

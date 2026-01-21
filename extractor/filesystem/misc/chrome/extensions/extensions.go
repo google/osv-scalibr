@@ -30,6 +30,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Name is the name for the Chrome extensions extractor
@@ -80,8 +82,8 @@ type message struct {
 type Extractor struct{}
 
 // New returns an chrome extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
 }
 
 // Name of the extractor.
