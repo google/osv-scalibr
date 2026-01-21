@@ -104,133 +104,108 @@ func mockSalesforceServer(t *testing.T, status int) *httptest.Server {
 	}))
 }
 
-func TestValidator_ValidJWT(t *testing.T) {
-	server := mockSalesforceServer(t, http.StatusOK)
-	defer server.Close()
-
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
+func TestValidator(t *testing.T) {
+	tests := []struct {
+		name           string
+		username       string
+		privateKey     string
+		serverStatus   int
+		cancelContext  bool
+		expectedResult veles.ValidationStatus
+		expectError    bool
+		useServer      bool
+	}{
+		{
+			name:           "ValidJWT",
+			username:       testUsername,
+			privateKey:     testPrivateKeyPEM,
+			serverStatus:   http.StatusOK,
+			expectedResult: veles.ValidationValid,
+			useServer:      true,
+		},
+		{
+			name:           "InvalidUser",
+			username:       "invalid@example.com",
+			privateKey:     testPrivateKeyPEM,
+			serverStatus:   http.StatusUnauthorized,
+			expectedResult: veles.ValidationInvalid,
+			useServer:      true,
+		},
+		{
+			name:           "MalformedPrivateKey",
+			username:       testUsername,
+			privateKey:     "NOT A KEY",
+			expectedResult: veles.ValidationInvalid,
+			expectError:    true,
+			useServer:      false, // validation fails before HTTP
+		},
+		{
+			name:           "ContextCancelled",
+			username:       testUsername,
+			privateKey:     testPrivateKeyPEM,
+			serverStatus:   http.StatusOK,
+			cancelContext:  true,
+			expectedResult: veles.ValidationFailed,
+			expectError:    true,
+			useServer:      true,
+		},
+		{
+			name:           "ServerError",
+			username:       testUsername,
+			privateKey:     testPrivateKeyPEM,
+			serverStatus:   http.StatusInternalServerError,
+			expectedResult: veles.ValidationFailed,
+			expectError:    true,
+			useServer:      true,
+		},
 	}
 
-	validator := salesforceoauth2jwt.NewValidator()
-	validator.HTTPC = client
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var (
+				ctx    context.Context
+				cancel context.CancelFunc
+				client *http.Client
+			)
 
-	creds := salesforceoauth2jwt.Credentials{
-		ID:         testClientID,
-		Username:   testUsername,
-		PrivateKey: testPrivateKeyPEM,
-	}
+			ctx = context.Background()
 
-	got, err := validator.Validate(context.Background(), creds)
+			if tt.useServer {
+				server := mockSalesforceServer(t, tt.serverStatus)
+				defer server.Close()
 
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+				client = &http.Client{
+					Transport: &mockTransport{testServer: server},
+				}
+			}
 
-	if got != veles.ValidationValid {
-		t.Errorf("expected Valid, got %v", got)
-	}
-}
+			if tt.cancelContext {
+				ctx, cancel = context.WithCancel(ctx)
+				cancel()
+			}
 
-func TestValidator_InvalidUser(t *testing.T) {
-	server := mockSalesforceServer(t, http.StatusUnauthorized)
-	defer server.Close()
+			validator := salesforceoauth2jwt.NewValidator()
+			if client != nil {
+				validator.HTTPC = client
+			}
 
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
+			creds := salesforceoauth2jwt.Credentials{
+				ID:         testClientID,
+				Username:   tt.username,
+				PrivateKey: tt.privateKey,
+			}
 
-	validator := salesforceoauth2jwt.NewValidator()
-	validator.HTTPC = client
+			got, err := validator.Validate(ctx, creds)
 
-	creds := salesforceoauth2jwt.Credentials{
-		ID:         testClientID,
-		Username:   "invalid@example.com",
-		PrivateKey: testPrivateKeyPEM,
-	}
-
-	got, err := validator.Validate(context.Background(), creds)
-
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if got != veles.ValidationInvalid {
-		t.Errorf("expected Invalid, got %v", got)
-	}
-}
-
-func TestValidator_MalformedPrivateKey(t *testing.T) {
-	validator := salesforceoauth2jwt.NewValidator()
-
-	creds := salesforceoauth2jwt.Credentials{
-		ID:         testClientID,
-		Username:   testUsername,
-		PrivateKey: "NOT A KEY",
-	}
-
-	got, err := validator.Validate(context.Background(), creds)
-
-	if err == nil {
-		t.Errorf("expected error for malformed private key, got nil")
-	}
-	if got != veles.ValidationInvalid {
-		t.Errorf("expected Invalid due to malformed key, got %v", got)
-	}
-}
-
-func TestValidator_ContextCancelled(t *testing.T) {
-	server := mockSalesforceServer(t, http.StatusOK)
-	defer server.Close()
-
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := salesforceoauth2jwt.NewValidator()
-	validator.HTTPC = client
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	creds := salesforceoauth2jwt.Credentials{
-		ID:         testClientID,
-		Username:   testUsername,
-		PrivateKey: testPrivateKeyPEM,
-	}
-
-	got, err := validator.Validate(ctx, creds)
-
-	if err == nil {
-		t.Errorf("expected context cancellation error, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("expected Failed due to cancelled context, got %v", got)
-	}
-}
-
-func TestValidator_ServerError(t *testing.T) {
-	server := mockSalesforceServer(t, http.StatusInternalServerError)
-	defer server.Close()
-
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := salesforceoauth2jwt.NewValidator()
-	validator.HTTPC = client
-
-	creds := salesforceoauth2jwt.Credentials{
-		ID:         testClientID,
-		Username:   testUsername,
-		PrivateKey: testPrivateKeyPEM,
-	}
-
-	got, err := validator.Validate(context.Background(), creds)
-
-	if err == nil {
-		t.Errorf("expected error for 500, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("expected Failed for server error, got %v", got)
+			if tt.expectError && err == nil {
+				t.Fatalf("expected error, got nil")
+			}
+			if !tt.expectError && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.expectedResult {
+				t.Fatalf("expected %v, got %v", tt.expectedResult, got)
+			}
+		})
 	}
 }

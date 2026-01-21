@@ -22,7 +22,25 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+const (
+	validClientID      = "3MVG123456789.ABCDEF.ABC11112222223456789ABC123456789ABC1"
+	validUsername      = "yuvraj@saxena.com"
+	validPrivateKeyPEM = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD...
+-----END PRIVATE KEY-----`
+)
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		salesforceoauth2jwt.NewDetector(),
+		validClientID+"\n"+validUsername+"\n"+validPrivateKeyPEM,
+		salesforceoauth2jwt.Credentials{ID: validClientID, Username: validUsername, PrivateKey: validPrivateKeyPEM},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{salesforceoauth2jwt.NewDetector()})
@@ -105,6 +123,31 @@ dev.user@example.org
 				salesforceoauth2jwt.Credentials{
 					ID:         "3MVGAAAAAA2222222222222222222",
 					Username:   "dev.user@example.org",
+					PrivateKey: privateKeySample,
+				},
+			},
+		},
+
+		// Multiple tuples in one file (reverse order)
+		{
+			name: "multiple_credential_sets_reverse_order",
+			input: `
+3MVGAAAAAA2222222222222222222
+dev.user@example.org
+` + privateKeySample + `
+
+3MVGAAAAAA1111111111111111111
+admin1@example.com
+` + privateKeySample,
+			want: []veles.Secret{
+				salesforceoauth2jwt.Credentials{
+					ID:         "3MVGAAAAAA2222222222222222222",
+					Username:   "dev.user@example.org",
+					PrivateKey: privateKeySample,
+				},
+				salesforceoauth2jwt.Credentials{
+					ID:         "3MVGAAAAAA1111111111111111111",
+					Username:   "admin1@example.com",
 					PrivateKey: privateKeySample,
 				},
 			},

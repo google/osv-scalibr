@@ -22,7 +22,7 @@ package salesforceoauth2jwt
 // - https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_jwt_flow.htm&type=5
 type Credentials struct {
 	// ID is the client ID in format:
-	// `3MVG[a-zA-Z_.\-]{20,}`
+	// `3MVG[a-zA-Z_.\-]{20,180}`
 	ID string
 	// Secret is the client secret
 	Username string

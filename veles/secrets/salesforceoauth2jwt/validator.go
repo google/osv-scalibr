@@ -57,6 +57,7 @@ func (v *Validator) Validate(ctx context.Context, creds Credentials) (veles.Vali
 	}
 
 	// 2. Build JWT components
+	// Reference: https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_jwt_flow.htm&type=5
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256"}`))
 
 	exp := time.Now().Unix() + 300
