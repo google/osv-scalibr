@@ -370,10 +370,10 @@ var (
 
 	// Misc artifact extractors.
 	Misc = InitMap{
-		vscodeextensions.Name: {noCFG(vscodeextensions.New)},
-		wordpressplugins.Name: {noCFG(wordpressplugins.NewDefault)},
-		chromeextensions.Name: {noCFG(chromeextensions.New)},
-		netscaler.Name:        {noCFG(netscaler.New)},
+		vscodeextensions.Name: {vscodeextensions.New},
+		wordpressplugins.Name: {wordpressplugins.New},
+		chromeextensions.Name: {chromeextensions.New},
+		netscaler.Name:        {netscaler.New},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.

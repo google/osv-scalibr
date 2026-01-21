@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 var (
@@ -43,8 +45,8 @@ var (
 type Extractor struct{}
 
 // New returns a new NetScaler extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
 }
 
 // Name returns the name of the extractor.
