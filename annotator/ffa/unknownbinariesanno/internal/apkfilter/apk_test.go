@@ -118,31 +118,19 @@ R:binary2
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/lib/library1": {Name: "library1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"bin/binary2": {Name: "binary2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/unknown1": {Name: "unknown1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -150,7 +138,6 @@ R:binary2
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					},
 				},
@@ -158,22 +145,17 @@ R:binary2
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"bin/binary2": {Name: "binary2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/unknown1": {Name: "unknown1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -183,19 +165,13 @@ R:binary2
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			wantErr: true,
@@ -208,19 +184,13 @@ R:binary2
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -246,38 +216,23 @@ R:symlink
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/symlink1": {Name: "symlink1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/actual_binary": {Name: "actual_binary",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"path/to/another/symlink": {Name: "symlink",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"path/to/another/actual": {Name: "another_actual",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/not_in_db": {Name: "not_in_db",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -285,36 +240,29 @@ R:symlink
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/actual_binary": {Name: "actual_binary",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"path/to/another/symlink": {Name: "symlink",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"path/to/another/actual": {Name: "another_actual",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/not_in_db": {Name: "not_in_db",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -337,17 +285,11 @@ R:symlink2
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/symlink2": {Name: "symlink2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/unknown2": {Name: "unknown2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -355,15 +297,11 @@ R:symlink2
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/unknown2": {Name: "unknown2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -378,19 +316,13 @@ V:1.0
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -402,38 +334,23 @@ V:1.0
 			unknownBinariesSet: map[string]*extractor.Package{
 				"etc/motd": {Name: "motd",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/scanelf": {Name: "scanelf",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/ssl_client": {Name: "ssl_client",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"lib/libz.so.1": {Name: "libz.so.1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"unknown/binary": {Name: "unknown",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -441,36 +358,29 @@ V:1.0
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/scanelf": {Name: "scanelf",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/ssl_client": {Name: "ssl_client",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"lib/libz.so.1": {Name: "libz.so.1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"unknown/binary": {Name: "unknown",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -482,17 +392,11 @@ V:1.0
 			unknownBinariesSet: map[string]*extractor.Package{
 				"etc/fstab": {Name: "fstab",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"unknown/binary": {Name: "unknown",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -500,15 +404,11 @@ V:1.0
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"unknown/binary": {Name: "unknown",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -520,19 +420,13 @@ V:1.0
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			wantErr: true,
@@ -545,19 +439,13 @@ V:1.0
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},

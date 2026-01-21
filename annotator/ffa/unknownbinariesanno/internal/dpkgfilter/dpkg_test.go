@@ -93,38 +93,23 @@ func TestHashSetFilter(t *testing.T) {
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/lib/library1": {Name: "library1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"bin/binary2": {Name: "binary2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/unknown1": {Name: "unknown1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"opt/google/binary": {Name: "google-binary",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -132,36 +117,27 @@ func TestHashSetFilter(t *testing.T) {
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/lib/library1": {Name: "library1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"bin/binary2": {Name: "binary2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/unknown1": {Name: "unknown1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"opt/google/binary": {Name: "google-binary",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -171,19 +147,13 @@ func TestHashSetFilter(t *testing.T) {
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -195,19 +165,13 @@ func TestHashSetFilter(t *testing.T) {
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
 				"usr/bin/binary1": {Name: "binary1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -226,31 +190,19 @@ func TestHashSetFilter(t *testing.T) {
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/symlink1": {Name: "symlink1",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/actual_binary": {Name: "actual_binary",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"path/to/another/actual": {Name: "another_actual",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/not_in_list": {Name: "not_in_list",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -258,29 +210,23 @@ func TestHashSetFilter(t *testing.T) {
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/actual_binary": {Name: "actual_binary",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"path/to/another/actual": {Name: "another_actual",
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/not_in_list": {Name: "not_in_list",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},
@@ -298,17 +244,11 @@ func TestHashSetFilter(t *testing.T) {
 			unknownBinariesSet: map[string]*extractor.Package{
 				"usr/bin/symlink2": {Name: "symlink2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 				"usr/bin/unknown2": {Name: "unknown2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 			want: map[string]*extractor.Package{
@@ -316,15 +256,11 @@ func TestHashSetFilter(t *testing.T) {
 					Metadata: &ubextr.UnknownBinaryMetadata{
 						Attribution: ubextr.Attribution{
 							LocalFilesystem: true,
-							BaseImage:       false,
 						},
 					}},
 				"usr/bin/unknown2": {Name: "unknown2",
 					Metadata: &ubextr.UnknownBinaryMetadata{
-						Attribution: ubextr.Attribution{
-							LocalFilesystem: false,
-							BaseImage:       false,
-						},
+						Attribution: ubextr.Attribution{},
 					}},
 			},
 		},

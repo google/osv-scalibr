@@ -32,9 +32,7 @@ func TestEnrich(t *testing.T) {
 							BaseImageIndex: 1,
 						},
 						Metadata: &unknownbinariesextr.UnknownBinaryMetadata{
-							Attribution: unknownbinariesextr.Attribution{
-								BaseImage: false,
-							},
+							Attribution: unknownbinariesextr.Attribution{},
 						},
 					},
 				},
@@ -47,9 +45,7 @@ func TestEnrich(t *testing.T) {
 							BaseImageIndex: 1,
 						},
 						Metadata: &unknownbinariesextr.UnknownBinaryMetadata{
-							Attribution: unknownbinariesextr.Attribution{
-								BaseImage: false,
-							},
+							Attribution: unknownbinariesextr.Attribution{},
 						},
 					},
 				},
@@ -62,9 +58,7 @@ func TestEnrich(t *testing.T) {
 					{
 						Plugins: []string{unknownbinariesextr.Name},
 						Metadata: &unknownbinariesextr.UnknownBinaryMetadata{
-							Attribution: unknownbinariesextr.Attribution{
-								BaseImage: false,
-							},
+							Attribution: unknownbinariesextr.Attribution{},
 						},
 					},
 				},
@@ -74,9 +68,7 @@ func TestEnrich(t *testing.T) {
 					{
 						Plugins: []string{unknownbinariesextr.Name},
 						Metadata: &unknownbinariesextr.UnknownBinaryMetadata{
-							Attribution: unknownbinariesextr.Attribution{
-								BaseImage: false,
-							},
+							Attribution: unknownbinariesextr.Attribution{},
 						},
 					},
 				},
@@ -92,9 +84,7 @@ func TestEnrich(t *testing.T) {
 							BaseImageIndex: 0,
 						},
 						Metadata: &unknownbinariesextr.UnknownBinaryMetadata{
-							Attribution: unknownbinariesextr.Attribution{
-								BaseImage: false,
-							},
+							Attribution: unknownbinariesextr.Attribution{},
 						},
 					},
 				},
@@ -107,9 +97,7 @@ func TestEnrich(t *testing.T) {
 							BaseImageIndex: 0,
 						},
 						Metadata: &unknownbinariesextr.UnknownBinaryMetadata{
-							Attribution: unknownbinariesextr.Attribution{
-								BaseImage: false,
-							},
+							Attribution: unknownbinariesextr.Attribution{},
 						},
 					},
 				},
@@ -125,9 +113,7 @@ func TestEnrich(t *testing.T) {
 							BaseImageIndex: 1,
 						},
 						Metadata: &unknownbinariesextr.UnknownBinaryMetadata{
-							Attribution: unknownbinariesextr.Attribution{
-								BaseImage: false,
-							},
+							Attribution: unknownbinariesextr.Attribution{},
 						},
 					},
 				},

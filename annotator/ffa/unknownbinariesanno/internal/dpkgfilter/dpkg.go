@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/common/linux/dpkg"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
@@ -57,20 +56,6 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 	}
 	defer it.Close()
 
-	attributePackage := func(path string) {
-		pkg, ok := unknownBinariesSet[strings.TrimPrefix(path, "/")]
-		if !ok {
-			return
-		}
-
-		md, ok := pkg.Metadata.(*unknownbinariesextr.UnknownBinaryMetadata)
-		if !ok {
-			return
-		}
-
-		md.Attribution.LocalFilesystem = true
-	}
-
 	var errs []error
 	for {
 		// Return if canceled or exceeding deadline.
@@ -89,16 +74,17 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 
 		// Remove leading '/' since SCALIBR fs paths don't include that.
 		// noop if filePath doesn't exist
-		attributePackage(strings.TrimPrefix(filePath, "/"))
+		filter.AttributePackage(unknownBinariesSet, strings.TrimPrefix(filePath, "/"))
 
 		if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
 			evalPath, err := evalFS.EvalSymlink(filePath)
 			if err != nil {
 				continue
 			}
-			attributePackage(strings.TrimPrefix(evalPath, "/"))
+			filter.AttributePackage(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 		}
 	}
+
 
 	return errors.Join(errs...)
 }
