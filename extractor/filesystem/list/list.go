@@ -142,6 +142,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -310,6 +311,7 @@ var (
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
+		{squareapikey.NewDetector(), "secrets/squareapikey", 0},
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
