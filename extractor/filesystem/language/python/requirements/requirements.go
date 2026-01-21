@@ -31,11 +31,16 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "python/requirements"
+
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
 )
 
 var (
@@ -56,44 +61,26 @@ var (
 	reHashOption                    = regexp.MustCompile(`--hash=(.+?)(?:$|\s)`)
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		Stats:            nil,
-		MaxFileSizeBytes: 0,
-	}
-}
-
 // Extractor extracts python packages from requirements.txt files.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
 // New returns a requirements.txt extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsConfig { return c.GetPythonRequirements() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -118,7 +105,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if err != nil {
 		return false
 	}
-	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
@@ -128,10 +115,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -149,7 +136,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
-	if e.stats != nil {
+	if e.Stats != nil {
 		e.exportStats(input, err)
 	}
 	extraPaths = append(extraPaths, newPaths...)
@@ -290,7 +277,7 @@ func (e Extractor) exportStats(input *filesystem.ScanInput, err error) {
 	if input.Info != nil {
 		fileSizeBytes = input.Info.Size()
 	}
-	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+	e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 		Path:          input.Path,
 		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 		FileSizeBytes: fileSizeBytes,

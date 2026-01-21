@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -32,41 +31,9 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     podfilelock.Config
-		wantCfg podfilelock.Config
-	}{
-		{
-			name: "default",
-			cfg:  podfilelock.DefaultConfig(),
-			wantCfg: podfilelock.Config{
-				MaxFileSizeBytes: 10 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: podfilelock.Config{
-				MaxFileSizeBytes: 10,
-			},
-			wantCfg: podfilelock.Config{
-				MaxFileSizeBytes: 10,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := podfilelock.New(tt.cfg)
-			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
-				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -131,10 +98,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = podfilelock.New(podfilelock.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := podfilelock.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("podfilelock.New: %v", err)
+			}
+			e.(*podfilelock.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -231,10 +199,11 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = podfilelock.New(podfilelock.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: 100,
-			})
+			e, err := podfilelock.New(&cpb.PluginConfig{MaxFileSizeBytes: 100})
+			if err != nil {
+				t.Fatalf("podfilelock.New: %v", err)
+			}
+			e.(*podfilelock.Extractor).Stats = collector
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

@@ -32,11 +32,16 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/saferwall/pe"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique Name of this extractor.
 	Name = "dotnet/pe"
+
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
 )
 
 // Supported extensions for Portable Executable (PE) files.
@@ -49,38 +54,24 @@ var peExtensions = []string{
 
 // Extractor extracts dotnet dependencies from a PE file
 type Extractor struct {
-	cfg Config
-}
-
-// Config is the configuration for the .NET PE extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will parse. If
-	// `FileRequired` gets a bigger file, it will return false.
-	// Use 0 to accept all file sizes
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration of the extractor.
-func DefaultConfig() Config {
-	return Config{}
+	Stats            stats.Collector
+	maxFileSizeBytes int64
 }
 
 // New returns an .NET PE extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		cfg: cfg,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns the extractor with its default configuration.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.DotnetPeConfig { return c.GetDotnetPe() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -106,7 +97,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 
 	fileinfo, err := api.Stat()
-	if err != nil || (e.cfg.MaxFileSizeBytes > 0 && fileinfo.Size() > e.cfg.MaxFileSizeBytes) {
+	if err != nil || (e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes) {
 		e.reportFileRequired(path, stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
@@ -118,12 +109,12 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract parses the PE files to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	inventory, err := e.extractFromInput(input)
-	if e.cfg.Stats != nil {
+	if e.Stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
 			fileSizeBytes = input.Info.Size()
 		}
-		e.cfg.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 			Path:          input.Path,
 			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 			FileSizeBytes: fileSizeBytes,
@@ -244,10 +235,10 @@ func hasPEMagicBytes(input *filesystem.ScanInput) (bool, error) {
 }
 
 func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResult) {
-	if e.cfg.Stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.cfg.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:   path,
 		Result: result,
 	})

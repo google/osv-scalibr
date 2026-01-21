@@ -172,39 +172,39 @@ var (
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
-		javaarchive.Name: {noCFG(javaarchive.NewDefault)},
+		javaarchive.Name: {javaarchive.New},
 	}
 	// JavascriptSource extractors for Javascript.
 	JavascriptSource = InitMap{
-		packagejson.Name:     {noCFG(packagejson.NewDefault)},
-		packagelockjson.Name: {noCFG(packagelockjson.NewDefault)},
+		packagejson.Name:     {packagejson.New},
+		packagelockjson.Name: {packagelockjson.New},
 		pnpmlock.Name:        {pnpmlock.New},
 		yarnlock.Name:        {yarnlock.New},
 		bunlock.Name:         {bunlock.New},
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name: {noCFG(packagejson.NewDefault)},
+		packagejson.Name: {packagejson.New},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name: {noCFG(requirements.NewDefault)},
-		setup.Name:        {noCFG(setup.NewDefault)},
+		requirements.Name: {requirements.New},
+		setup.Name:        {setup.New},
 		pipfilelock.Name:  {pipfilelock.New},
 		pdmlock.Name:      {pdmlock.New},
 		poetrylock.Name:   {poetrylock.New},
 		pylock.Name:       {pylock.New},
-		condameta.Name:    {noCFG(condameta.NewDefault)},
+		condameta.Name:    {condameta.New},
 		uvlock.Name:       {uvlock.New},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
-		wheelegg.Name: {noCFG(wheelegg.NewDefault)},
+		wheelegg.Name: {wheelegg.New},
 	}
 	// GoSource extractors for Go.
 	GoSource = InitMap{
-		gomod.Name: {noCFG(gomod.New)},
+		gomod.Name: {gomod.New},
 	}
 	// GoArtifact extractors for Go.
 	GoArtifact = InitMap{
@@ -219,17 +219,17 @@ var (
 	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
 	// ElixirSource extractors for Elixir.
-	ElixirSource = InitMap{elixir.Name: {noCFG(elixir.NewDefault)}}
+	ElixirSource = InitMap{elixir.Name: {elixir.New}}
 	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
-		stacklock.Name: {noCFG(stacklock.NewDefault)},
-		cabal.Name:     {noCFG(cabal.NewDefault)},
+		stacklock.Name: {stacklock.New},
+		cabal.Name:     {cabal.New},
 	}
 	// RSource extractors for R source extractors
 	RSource = InitMap{renvlock.Name: {renvlock.New}}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
-		gemspec.Name:     {noCFG(gemspec.NewDefault)},
+		gemspec.Name:     {gemspec.New},
 		gemfilelock.Name: {gemfilelock.New},
 	}
 	// RustSource extractors for Rust.
@@ -239,7 +239,7 @@ var (
 	}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
-		cargoauditable.Name: {noCFG(cargoauditable.NewDefault)},
+		cargoauditable.Name: {cargoauditable.New},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
@@ -248,20 +248,20 @@ var (
 	}
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
-		depsjson.Name:         {noCFG(depsjson.NewDefault)},
-		packagesconfig.Name:   {noCFG(packagesconfig.NewDefault)},
-		packageslockjson.Name: {noCFG(packageslockjson.NewDefault)},
+		depsjson.Name:         {depsjson.New},
+		packagesconfig.Name:   {packagesconfig.New},
+		packageslockjson.Name: {packageslockjson.New},
 	}
 	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
-		dotnetpe.Name: {noCFG(dotnetpe.NewDefault)},
+		dotnetpe.Name: {dotnetpe.New},
 	}
 	// PHPSource extractors for PHP Source extractors.
 	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
-		packageresolved.Name: {noCFG(packageresolved.NewDefault)},
-		podfilelock.Name:     {noCFG(podfilelock.NewDefault)},
+		packageresolved.Name: {packageresolved.New},
+		podfilelock.Name:     {podfilelock.New},
 	}
 
 	// Containers extractors.

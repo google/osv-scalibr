@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -60,7 +61,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-			e := gomod.Extractor{}
+			e, err := gomod.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("gomod.New() error: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -399,7 +403,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := gomod.New()
+			extr, err := gomod.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("gomod.New() error: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
@@ -422,16 +429,16 @@ func TestExtractor_Extract(t *testing.T) {
 func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
 	tests := []struct {
 		name            string
-		config          gomod.Config
+		excludeIndirect bool
 		inputPath       string
 		wantPackages    []*extractor.Package
 		wantNotPackages []*extractor.Package
 		wantErr         error
 	}{
 		{
-			name:      "exclude indirect",
-			config:    gomod.Config{ExcludeIndirect: true},
-			inputPath: "testdata/indirect-packages.mod",
+			name:            "exclude indirect",
+			excludeIndirect: true,
+			inputPath:       "testdata/indirect-packages.mod",
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "github.com/BurntSushi/toml",
@@ -477,7 +484,19 @@ func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extr := gomod.NewWithConfig(tt.config)
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoMod{
+						GoMod: &cpb.GoModConfig{
+							ExcludeIndirect: tt.excludeIndirect,
+						},
+					}},
+				},
+			}
+			extr, err := gomod.New(cfg)
+			if err != nil {
+				t.Fatalf("gomod.New(%v) error: %v", cfg, err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tt.inputPath,

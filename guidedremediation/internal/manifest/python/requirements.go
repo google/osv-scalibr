@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 	"github.com/google/osv-scalibr/log"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 type requirementsReadWriter struct{}
@@ -59,7 +61,12 @@ func (r requirementsReadWriter) Read(path string, fsys scalibrfs.FS) (manifest.M
 	}
 	defer f.Close()
 
-	inv, err := requirements.NewDefault().Extract(context.Background(), &filesystem.ScanInput{
+	extractor, err := requirements.New(&cpb.PluginConfig{})
+	if err != nil {
+		return nil, err
+	}
+
+	inv, err := extractor.Extract(context.Background(), &filesystem.ScanInput{
 		FS:     fsys,
 		Path:   path,
 		Root:   filepath.Dir(path),

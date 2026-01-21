@@ -34,6 +34,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -123,10 +125,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := wheelegg.New(wheelegg.Config{
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-				Stats:            collector,
-			})
+			e, err := wheelegg.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("wheelegg.New(%v) error: %v", tt.maxFileSizeBytes, err)
+			}
+			e.(*wheelegg.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -154,7 +157,6 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		cfg              wheelegg.Config
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -286,10 +288,13 @@ func TestExtract(t *testing.T) {
 			}
 
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			e := wheelegg.New(defaultConfigWith(tt.cfg))
+			e, err := wheelegg.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("wheelegg.New() error: %v", err)
+			}
+			e.(*wheelegg.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
@@ -317,21 +322,11 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-// defaultConfigWith combines any non-zero fields of cfg with wheelegg.DefaultConfig().
-func defaultConfigWith(cfg wheelegg.Config) wheelegg.Config {
-	newCfg := wheelegg.DefaultConfig()
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-	return newCfg
-}
-
 func TestExtractWithoutReadAt(t *testing.T) {
-	var e filesystem.Extractor = wheelegg.New(wheelegg.DefaultConfig())
+	e, err := wheelegg.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("wheelegg.New() error: %v", err)
+	}
 
 	tests := []struct {
 		name         string
@@ -431,11 +426,14 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 			r := bytes.NewReader(tt.fakeFileBytes)
 
 			collector := testcollector.New()
-			cfg := wheelegg.Config{Stats: collector}
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			e := wheelegg.New(defaultConfigWith(cfg))
-			_, err := e.Extract(t.Context(), input)
+			e, err := wheelegg.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("wheelegg.New() error: %v", err)
+			}
+			e.(*wheelegg.Extractor).Stats = collector
+			_, err = e.Extract(t.Context(), input)
 			if err == nil {
 				t.Fatalf("Extract(%+v) succeeded, want error: %v", tt.name, tt.wantErr)
 			}

@@ -35,6 +35,8 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -98,8 +100,8 @@ func TestFileRequired(t *testing.T) {
 			path:             "package.json",
 			fileSizeBytes:    1000 * units.MiB,
 			maxFileSizeBytes: 0,
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
 		},
 	}
 
@@ -107,10 +109,11 @@ func TestFileRequired(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := packagejson.New(packagejson.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := packagejson.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("packagejson.New: %v", err)
+			}
+			e.(*packagejson.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -139,7 +142,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		cfg              packagejson.Config
+		includeDeps      bool
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -311,9 +314,9 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "package_with_dependencies",
-			path: "testdata/package-with-deps.json",
-			cfg:  packagejson.Config{IncludeDependencies: true},
+			name:        "package_with_dependencies",
+			path:        "testdata/package-with-deps.json",
+			includeDeps: true,
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "package-with-deps",
@@ -388,7 +391,6 @@ func TestExtract(t *testing.T) {
 			}
 
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			input := &filesystem.ScanInput{
 				FS:     scalibrfs.DirFS("."),
@@ -396,7 +398,20 @@ func TestExtract(t *testing.T) {
 				Reader: r,
 				Info:   info,
 			}
-			e := packagejson.New(defaultConfigWith(tt.cfg))
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{
+						JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
+							IncludeDependencies: tt.includeDeps,
+						},
+					}},
+				},
+			}
+			e, err := packagejson.New(cfg)
+			if err != nil {
+				t.Fatalf("packagejson.New: %v", err)
+			}
+			e.(*packagejson.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
@@ -426,18 +441,4 @@ func TestExtract(t *testing.T) {
 			}
 		})
 	}
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
-func defaultConfigWith(cfg packagejson.Config) packagejson.Config {
-	newCfg := packagejson.DefaultConfig()
-	newCfg.IncludeDependencies = cfg.IncludeDependencies
-
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	return newCfg
 }
