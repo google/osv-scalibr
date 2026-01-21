@@ -23,7 +23,7 @@ import (
 
 const (
 	// maxTokenLength is the maximum length of a valid Salesforce OAuth2 Access Token.
-	maxTokenLength = 200
+	maxTokenLength = 150
 )
 
 var (
@@ -33,7 +33,7 @@ var (
 	// Moreover, here are few real word demonstration on youtube:
 	// https://youtu.be/WMoyIh0y2Vg?si=3E4cseMwNQvpg0VB&t=440
 	// https://youtu.be/kNavqT_7310?si=5w6s8QQijkxhrIGB&t=289
-	tokenRe = regexp.MustCompile(`00D[0-9A-Za-z]{8,}![A-Za-z0-9._\-]{30,}`)
+	tokenRe = regexp.MustCompile(`\b00D[0-9A-Za-z]{8,15}![A-Za-z0-9._\-]{30,100}\b`)
 )
 
 // NewDetector returns a detector that matches Salesforce OAuth2 client credentials.
