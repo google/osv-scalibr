@@ -1,0 +1,3 @@
+this file is not a valid toml file
+[tools]
+tool1 = "2"

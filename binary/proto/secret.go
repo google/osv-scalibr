@@ -30,8 +30,10 @@ import (
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
@@ -176,6 +178,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return azureIdentityTokenToProto(t), nil
 	case tinkkeyset.TinkKeySet:
 		return tinkKeysetToProto(t), nil
+	case velescursorapikey.APIKey:
+		return cursorAPIKeyToProto(t.Key), nil
 	case velesopenai.APIKey:
 		return openaiAPIKeyToProto(t.Key), nil
 	case velesopenrouter.APIKey:
@@ -240,6 +244,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return codeCommitCredentialsToProto(t), nil
 	case bitbucket.Credentials:
 		return bitbucketCredentialsToProto(t), nil
+	case elasticcloudapikey.ElasticCloudAPIKey:
+		return elasticCloudAPIKeyToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
@@ -288,6 +294,10 @@ func squareOAuthApplicationSecretToProto(s velessquareapikey.SquareOAuthApplicat
 		Secret: &spb.SecretData_SquareOauthApplicationSecret{
 			SquareOauthApplicationSecret: &spb.SecretData_SquareOAuthApplicationSecret{
 				Id:  s.ID,
+func elasticCloudAPIKeyToProto(s elasticcloudapikey.ElasticCloudAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ElasticCloudApiKey{
+			ElasticCloudApiKey: &spb.SecretData_ElasticCloudAPIKey{
 				Key: s.Key,
 			},
 		},
@@ -691,6 +701,16 @@ func tinkKeysetToProto(t tinkkeyset.TinkKeySet) *spb.SecretData {
 	}
 }
 
+func cursorAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CursorApiKey{
+			CursorApiKey: &spb.SecretData_CursorAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
 func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_OpenaiApiKey{
@@ -994,6 +1014,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesazuretoken.AzureIdentityToken{Token: s.GetAzureIdentityToken().GetToken()}, nil
 	case *spb.SecretData_TinkKeyset_:
 		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
+	case *spb.SecretData_CursorApiKey:
+		return velescursorapikey.APIKey{Key: s.GetCursorApiKey().GetKey()}, nil
 	case *spb.SecretData_PostmanApiKey:
 		return velespostmanapikey.PostmanAPIKey{
 			Key: s.GetPostmanApiKey().GetKey(),
@@ -1102,6 +1124,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_BitbucketCredentials:
 		return bitbucket.Credentials{
 			FullURL: s.GetBitbucketCredentials().GetUrl(),
+		}, nil
+	case *spb.SecretData_ElasticCloudApiKey:
+		return elasticcloudapikey.ElasticCloudAPIKey{
+			Key: s.GetElasticCloudApiKey().GetKey(),
 		}, nil
 	case *spb.SecretData_PaystackSecretKey_:
 		return velespaystacksecretkey.PaystackSecret{
