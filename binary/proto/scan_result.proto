@@ -768,6 +768,8 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    SquarePersonalAccessToken square_personal_access_token = 62;
+    SquareOAuthApplicationSecret square_oauth_application_secret = 63;
   }
 
   message GCPSAK {
@@ -1086,6 +1088,16 @@ message SecretData {
   message CursorAPIKey {
     string key = 1;
   }
+
+  message SquarePersonalAccessToken {
+    string key = 1;
+  }
+
+  message SquareOAuthApplicationSecret {
+    string id = 1;   // OAuth Application ID (prefix: sq0idp-)
+    string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+
 }
 
 message SecretStatus {
