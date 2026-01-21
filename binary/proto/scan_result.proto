@@ -768,6 +768,7 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    MistralAPIKey mistral_api_key = 62;
   }
 
   message GCPSAK {
@@ -807,6 +808,10 @@ message SecretData {
   }
 
   message PerplexityAPIKey {
+    string key = 1;
+  }
+
+  message MistralAPIKey {
     string key = 1;
   }
 
