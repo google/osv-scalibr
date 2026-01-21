@@ -768,6 +768,7 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    DenoPat deno_pat = 62;
   }
 
   message GCPSAK {
@@ -858,6 +859,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message DenoPat {
+    string pat = 1;
   }
 
   message GitlabPat {
