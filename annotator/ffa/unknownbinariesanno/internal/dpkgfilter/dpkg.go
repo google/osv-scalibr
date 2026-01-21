@@ -85,7 +85,6 @@ func (DpkgFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBin
 		}
 	}
 
-
 	return errors.Join(errs...)
 }
 
