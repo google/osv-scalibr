@@ -128,6 +128,7 @@ var (
 		fromVeles(stripeapikeys.NewSecretKeyValidator(), "secrets/stripesecretkeyvalidate", 0),
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(squareapikey.NewPersonalAccessTokenValidator(), "secrets/squarepersonalaccesstokenvalidate", 0),
+		fromVeles(squareapikey.NewOAuthApplicationSecretValidator(), "secrets/squareoauthapplicationsecretvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(paystacksecretkey.NewValidator(), "secrets/paystacksecretkeyvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),

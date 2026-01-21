@@ -10205,7 +10205,8 @@ func (x *SecretData_SquarePersonalAccessToken) GetKey() string {
 
 type SecretData_SquareOAuthApplicationSecret struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`   // OAuth Application ID (prefix: sq0idp-)
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"` // OAuth Application Secret (prefix: sq0csp-)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10238,6 +10239,13 @@ func (x *SecretData_SquareOAuthApplicationSecret) ProtoReflect() protoreflect.Me
 // Deprecated: Use SecretData_SquareOAuthApplicationSecret.ProtoReflect.Descriptor instead.
 func (*SecretData_SquareOAuthApplicationSecret) Descriptor() ([]byte, []int) {
 	return file_proto_scan_result_proto_rawDescGZIP(), []int{59, 60}
+}
+
+func (x *SecretData_SquareOAuthApplicationSecret) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *SecretData_SquareOAuthApplicationSecret) GetKey() string {
@@ -10686,7 +10694,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xdeM\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xeeM\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -10941,9 +10949,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x10TelegramBotToken\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x1a-\n" +
 	"\x19SquarePersonalAccessToken\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x1a0\n" +
-	"\x1cSquareOAuthApplicationSecret\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03keyB\b\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a@\n" +
+	"\x1cSquareOAuthApplicationSecret\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03keyB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +

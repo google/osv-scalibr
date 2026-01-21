@@ -287,6 +287,7 @@ func squareOAuthApplicationSecretToProto(s velessquareapikey.SquareOAuthApplicat
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SquareOauthApplicationSecret{
 			SquareOauthApplicationSecret: &spb.SecretData_SquareOAuthApplicationSecret{
+				Id:  s.ID,
 				Key: s.Key,
 			},
 		},

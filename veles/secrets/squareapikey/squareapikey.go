@@ -25,5 +25,6 @@ type SquarePersonalAccessToken struct {
 // SquareOAuthApplicationSecret is a Veles Secret that holds a Square OAuth Application Secret.
 // These secrets are used for OAuth authentication flows.
 type SquareOAuthApplicationSecret struct {
+	ID  string
 	Key string
 }

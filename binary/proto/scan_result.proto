@@ -1078,7 +1078,8 @@ message SecretData {
   }
 
   message SquareOAuthApplicationSecret {
-    string key = 1;
+    string id = 1;   // OAuth Application ID (prefix: sq0idp-)
+    string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
   }
 
 }

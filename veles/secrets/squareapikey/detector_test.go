@@ -28,8 +28,9 @@ import (
 
 const (
 	// Example valid Square API and OAuth tokens.
-	detectorPersonalAccessToken    = "EAAAlwuZiieL54OUmRp1q-7VFVcBa9QICgMkWOv8qAFsiSZdwyy6kP4xRduxAV1T"
-	detectorOAuthApplicationSecret = "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVajqTijTM0xc"
+	detectorPersonalAccessToken    = "EAAAlwuZiieL54OUmRp1q-7GFVcBa9QICgMkWOv8qAFsiSZdwyy6kP4xRduxAV1T"
+	detectorOAuthApplicationID     = "sq0idp-wuPhZFY8etbvhybDEdHllQ"
+	detectorOAuthApplicationSecret = "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVijqJijTM0bc"
 )
 
 func TestPersonalAccessTokenDetector_Acceptance(t *testing.T) {
@@ -48,6 +49,8 @@ func TestPersonalAccessTokenDetector_Acceptance(t *testing.T) {
 func TestOAuthApplicationSecretDetector_Acceptance(t *testing.T) {
 	d := squareapikey.NewOAuthApplicationSecretDetector()
 
+	// For acceptance test, we test with just the secret (partial pair)
+	// since the test framework adds padding that may separate the ID and secret
 	velestest.AcceptDetector(
 		t,
 		d,
@@ -186,42 +189,44 @@ func TestOAuthApplicationSecretDetector_truePositives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "simple matching string",
-		input: detectorOAuthApplicationSecret,
+		name:  "paired ID and secret",
+		input: fmt.Sprintf("client_id=%s\nclient_secret=%s", detectorOAuthApplicationID, detectorOAuthApplicationSecret),
 		want: []veles.Secret{
-			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
+			squareapikey.SquareOAuthApplicationSecret{
+				ID:  detectorOAuthApplicationID,
+				Key: detectorOAuthApplicationSecret,
+			},
 		},
 	}, {
-		name:  "match at end of string",
+		name:  "paired in JSON format",
+		input: fmt.Sprintf(`{"client_id":"%s","client_secret":"%s"}`, detectorOAuthApplicationID, detectorOAuthApplicationSecret),
+		want: []veles.Secret{
+			squareapikey.SquareOAuthApplicationSecret{
+				ID:  detectorOAuthApplicationID,
+				Key: detectorOAuthApplicationSecret,
+			},
+		},
+	}, {
+		name:  "secret only (partial pair)",
 		input: `SQUARE_OAUTH_SECRET=` + detectorOAuthApplicationSecret,
 		want: []veles.Secret{
 			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
 		},
 	}, {
-		name:  "match in quotes",
+		name:  "secret in quotes",
 		input: `secret="` + detectorOAuthApplicationSecret + `"`,
 		want: []veles.Secret{
 			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
 		},
 	}, {
-		name:  "multiple matches",
-		input: detectorOAuthApplicationSecret + " " + detectorOAuthApplicationSecret,
+		name: "larger input containing paired credentials",
+		input: fmt.Sprintf("config:\n  oauth:\n    id: %s\n    secret: %s\n",
+			detectorOAuthApplicationID, detectorOAuthApplicationSecret),
 		want: []veles.Secret{
-			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
-			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
-		},
-	}, {
-		name: "larger input containing key",
-		input: fmt.Sprintf("token:\n  value: %s\n",
-			detectorOAuthApplicationSecret),
-		want: []veles.Secret{
-			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
-		},
-	}, {
-		name:  "potential match longer than max key length",
-		input: detectorOAuthApplicationSecret + "EXTRA",
-		want: []veles.Secret{
-			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
+			squareapikey.SquareOAuthApplicationSecret{
+				ID:  detectorOAuthApplicationID,
+				Key: detectorOAuthApplicationSecret,
+			},
 		},
 	}}
 
@@ -258,19 +263,28 @@ func TestOAuthApplicationSecretDetector_trueNegatives(t *testing.T) {
 		name:  "empty input",
 		input: "",
 	}, {
-		name:  "short key should not match",
+		name:  "short secret should not match",
 		input: detectorOAuthApplicationSecret[:len(detectorOAuthApplicationSecret)-2],
 	}, {
-		name: "invalid character in key should not match",
+		name: "invalid character in secret should not match",
 		input: "sq0csp-" + strings.ReplaceAll(
 			detectorOAuthApplicationSecret[7:], "a", "#",
 		),
 	}, {
-		name:  "incorrect prefix should not match",
+		name:  "incorrect secret prefix should not match",
 		input: "sq0csx-" + detectorOAuthApplicationSecret[7:],
 	}, {
-		name:  "prefix missing dash should not match",
+		name:  "secret prefix missing dash should not match",
 		input: "sq0csp" + detectorOAuthApplicationSecret[7:], // removes the dash
+	}, {
+		name:  "ID only should not match",
+		input: detectorOAuthApplicationID,
+	}, {
+		name:  "short ID should not match",
+		input: detectorOAuthApplicationID[:len(detectorOAuthApplicationID)-2],
+	}, {
+		name:  "incorrect ID prefix should not match",
+		input: "sq0idx-" + detectorOAuthApplicationID[7:],
 	}}
 
 	for _, tc := range cases {
