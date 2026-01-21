@@ -229,6 +229,51 @@ func FindAllMatches(r *regexp.Regexp) Finder {
 	}
 }
 
+// FindAllMatchesGroup returns a Finder that extracts regex matches similarly to
+// FindAllMatches, but with support for context-aware capture groups.
+//
+// If the provided regexp contains at least one capturing group and that group
+// matches, the span of the *first* capturing group is returned as the Match.
+// Otherwise, the span of the full match is used as a fallback.
+//
+// This is intended for secret-detection use cases where the regex includes
+// surrounding context (e.g. "client_secret", "refresh_token") to reduce false
+// positives, but only the secret value itself should be returned.
+//
+// For example, given a regexp like:
+//
+//	(?:client_secret\s*[:=]\s*)([A-Za-z0-9]{30,})
+//
+// the full match includes the context, but only the captured secret value
+// ([A-Za-z0-9]{30,}) is returned in Match.Value.
+//
+// This function is fully backward-compatible and opt-in; existing detectors
+// using FindAllMatches are unaffected.
+func FindAllMatchesGroup(r *regexp.Regexp) Finder {
+	return func(b []byte) []Match {
+		idxs := r.FindAllSubmatchIndex(b, -1)
+		matches := make([]Match, 0, len(idxs))
+
+		for _, idx := range idxs {
+			// idx layout:
+			// [fullStart, fullEnd, g1Start, g1End, g2Start, g2End, ...]
+			start, end := idx[0], idx[1]
+
+			// If group 1 exists and matched, prefer it
+			if len(idx) >= 4 && idx[2] >= 0 && idx[3] >= 0 {
+				start, end = idx[2], idx[3]
+			}
+
+			matches = append(matches, Match{
+				Start: start,
+				End:   end,
+				Value: b[start:end],
+			})
+		}
+		return matches
+	}
+}
+
 // collectAllTuples constructs all possible N-tuples using one match from each
 // Finder. Filtering by distance happens internally during tuple generation.
 func collectAllTuples(all [][]Match, maxDistance int) []Tuple {
