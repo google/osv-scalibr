@@ -23,7 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+const (
+	validToken = "00DE0000000BV7z!AR8AQP0jITN80ESEsj5EbaZTFG0RNBaT1cyWk7TrqoDjoNIWQ2ME_sTZzBjfmOE6zMHq6y8PIW4eWze9JksNEkWUl.Cju7m4"
+)
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		salesforceoauth2access.NewDetector(),
+		validToken,
+		salesforceoauth2access.Token{Token: validToken},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{salesforceoauth2access.NewDetector()})

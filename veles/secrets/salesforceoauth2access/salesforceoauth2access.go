@@ -17,7 +17,6 @@ package salesforceoauth2access
 
 // Token represents a Salesforce OAuth2 Access Token.
 type Token struct {
-	// Token is the salesforce oauth2 access token in format:
-	// 00D[0-9A-Za-z]{8,}![A-Za-z0-9._-]{60,}
+	// Token is the salesforce oauth2 access token.
 	Token string
 }

@@ -69,10 +69,11 @@ func mockPaystackServer(t *testing.T, expectedToken string, statusCode int) *htt
 
 func TestValidator(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		want        veles.ValidationStatus
-		expectError bool
+		name          string
+		statusCode    int
+		cancelContext bool
+		want          veles.ValidationStatus
+		expectError   bool
 	}{
 		{
 			name:       "valid_token",
@@ -96,77 +97,51 @@ func TestValidator(t *testing.T) {
 			want:        veles.ValidationFailed,
 			expectError: true,
 		},
+		{
+			name:          "context cancelled",
+			statusCode:    http.StatusInternalServerError,
+			cancelContext: true,
+			want:          veles.ValidationFailed,
+			expectError:   true,
+		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+
 			// Create mock server
-			server := mockPaystackServer(t, validatorTestToken, tc.statusCode)
+			server := mockPaystackServer(t, validatorTestToken, tt.statusCode)
 			defer server.Close()
 
-			// Create client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
+			if tt.cancelContext {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel()
 			}
 
-			// Create validator with mock client
 			validator := salesforceoauth2access.NewValidator()
-			validator.HTTPC = client
+			if server != nil {
+				validator.HTTPC = &http.Client{
+					Transport: &mockTransport{testServer: server},
+				}
+			}
 
 			// Create test token
 			token := salesforceoauth2access.Token{Token: validatorTestToken}
 
 			// Test validation
-			got, err := validator.Validate(t.Context(), token)
+			got, err := validator.Validate(ctx, token)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if tt.expectError && err == nil {
+				t.Fatalf("expected error, got nil")
 			}
-
-			// Check validation status
-			if got != tc.want {
-				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			if !tt.expectError && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("expected %v, got %v", tt.want, got)
 			}
 		})
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := salesforceoauth2access.NewValidator()
-	validator.HTTPC = client
-
-	// Create test token
-	token := salesforceoauth2access.Token{Token: validatorTestToken}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

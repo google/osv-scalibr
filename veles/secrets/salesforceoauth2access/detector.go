@@ -18,12 +18,12 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/ntuple"
+	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
 const (
 	// maxTokenLength is the maximum length of a valid Salesforce OAuth2 Access Token.
-	maxTokenLength = 150
+	maxTokenLength = 119
 )
 
 var (
@@ -38,14 +38,11 @@ var (
 
 // NewDetector returns a detector that matches Salesforce OAuth2 client credentials.
 func NewDetector() veles.Detector {
-	return &ntuple.Detector{
-		MaxElementLen: maxTokenLength,
-		MaxDistance:   1000,
-		Finders: []ntuple.Finder{
-			ntuple.FindAllMatches(tokenRe),
-		},
-		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
-			return Token{Token: string(ms[0].Value)}, true
+	return simpletoken.Detector{
+		MaxLen: maxTokenLength,
+		Re:     tokenRe,
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return Token{Token: string(b)}, true
 		},
 	}
 }
