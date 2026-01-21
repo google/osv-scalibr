@@ -121,6 +121,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Composer Packagist credentials              | `secrets/composerpackagist`            |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
@@ -148,6 +149,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`      |
 | OpenAI API key                              | `secrets/openai`                       |
 | OpenRouter API key                          | `secrets/openrouter`                   |
+| Packagist API Key                           | `secrets/packagist`                    |
+| Packagist API Secret                        | `secrets/packagistsecret`              |
 | Perplexity API key                          | `secrets/perplexityapikey`             |
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |

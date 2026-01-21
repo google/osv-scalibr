@@ -99,6 +99,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
@@ -132,6 +133,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/packagist"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -298,6 +300,7 @@ var (
 		mysqlmylogin.Name:            {noCFG(mysqlmylogin.New)},
 		pgpass.Name:                  {noCFG(pgpass.New)},
 		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
+		composerpackagist.Name:       {noCFG(composerpackagist.New)},
 		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
 		awsaccesskey.Name:            {noCFG(awsaccesskey.New)},
 		codecatalyst.Name:            {noCFG(codecatalyst.New)},
@@ -332,6 +335,8 @@ var (
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
+		{packagist.NewAPIKeyDetector(), "secrets/packagist", 0},
+		{packagist.NewAPISecretDetector(), "secrets/packagistsecret", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},

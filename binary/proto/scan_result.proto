@@ -768,6 +768,9 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    ComposerPackagistCredentials composer_http_basic_credentials = 62;
+    PackagistAPIKey packagist_api_key = 63;
+    PackagistAPISecret packagist_api_secret = 64;
   }
 
   message GCPSAK {
@@ -1069,6 +1072,22 @@ message SecretData {
 
   message BitBucketCredentials {
     string url = 1;
+  }
+
+  message ComposerPackagistCredentials {
+    string host = 1;
+    string username = 2;
+    string password = 3;
+    string repository_url = 4;
+  }
+
+    message PackagistAPIKey {
+    string key = 1;
+  }
+
+  message PackagistAPISecret {
+    string secret = 1;
+    string key = 2;  // Optional: populated when both key and secret are found together
   }
 
   message ElasticCloudAPIKey {

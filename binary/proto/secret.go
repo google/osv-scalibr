@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	velesmysqlmylogin "github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
@@ -52,6 +53,7 @@ import (
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
+	velespackagist "github.com/google/osv-scalibr/veles/secrets/packagist"
 	velespaystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -183,6 +185,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return openaiAPIKeyToProto(t.Key), nil
 	case velesopenrouter.APIKey:
 		return openrouterAPIKeyToProto(t.Key), nil
+	case velespackagist.APIKey:
+		return packagistAPIKeyToProto(t), nil
+	case velespackagist.APISecret:
+		return packagistAPISecretToProto(t), nil
 	case velespostmanapikey.PostmanAPIKey:
 		return postmanAPIKeyToProto(t), nil
 	case velespostmanapikey.PostmanCollectionToken:
@@ -243,6 +249,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return codeCommitCredentialsToProto(t), nil
 	case bitbucket.Credentials:
 		return bitbucketCredentialsToProto(t), nil
+	case composerpackagist.Credential:
+		return composerPackagistCredentialToProto(t), nil
 	case elasticcloudapikey.ElasticCloudAPIKey:
 		return elasticCloudAPIKeyToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
@@ -269,6 +277,19 @@ func bitbucketCredentialsToProto(s bitbucket.Credentials) *spb.SecretData {
 		Secret: &spb.SecretData_BitbucketCredentials{
 			BitbucketCredentials: &spb.SecretData_BitBucketCredentials{
 				Url: s.FullURL,
+			},
+		},
+	}
+}
+
+func composerPackagistCredentialToProto(s composerpackagist.Credential) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ComposerHttpBasicCredentials{
+			ComposerHttpBasicCredentials: &spb.SecretData_ComposerPackagistCredentials{
+				Host:          s.Host,
+				Username:      s.Username,
+				Password:      s.Password,
+				RepositoryUrl: s.RepositoryURL,
 			},
 		},
 	}
@@ -996,6 +1017,13 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
 	case *spb.SecretData_CursorApiKey:
 		return velescursorapikey.APIKey{Key: s.GetCursorApiKey().GetKey()}, nil
+	case *spb.SecretData_PackagistApiKey:
+		return velespackagist.APIKey{Key: s.GetPackagistApiKey().GetKey()}, nil
+	case *spb.SecretData_PackagistApiSecret:
+		return velespackagist.APISecret{
+			Secret: s.GetPackagistApiSecret().GetSecret(),
+			Key:    s.GetPackagistApiSecret().GetKey(),
+		}, nil
 	case *spb.SecretData_PostmanApiKey:
 		return velespostmanapikey.PostmanAPIKey{
 			Key: s.GetPostmanApiKey().GetKey(),
@@ -1104,6 +1132,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_BitbucketCredentials:
 		return bitbucket.Credentials{
 			FullURL: s.GetBitbucketCredentials().GetUrl(),
+		}, nil
+	case *spb.SecretData_ComposerHttpBasicCredentials:
+		creds := s.GetComposerHttpBasicCredentials()
+		return composerpackagist.Credential{
+			Host:          creds.GetHost(),
+			Username:      creds.GetUsername(),
+			Password:      creds.GetPassword(),
+			RepositoryURL: creds.GetRepositoryUrl(),
 		}, nil
 	case *spb.SecretData_ElasticCloudApiKey:
 		return elasticcloudapikey.ElasticCloudAPIKey{
@@ -1313,6 +1349,27 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
 		ID:       credsPB.GetId(),
+	}
+}
+
+func packagistAPIKeyToProto(s velespackagist.APIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistApiKey{
+			PackagistApiKey: &spb.SecretData_PackagistAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func packagistAPISecretToProto(s velespackagist.APISecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistApiSecret{
+			PackagistApiSecret: &spb.SecretData_PackagistAPISecret{
+				Secret: s.Secret,
+				Key:    s.Key,
+			},
+		},
 	}
 }
 
