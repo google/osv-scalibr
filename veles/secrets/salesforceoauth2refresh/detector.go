@@ -23,8 +23,7 @@ import (
 
 const (
 	// maxIDLength is the maximum length of a valid client ID.
-	// There is not documented length but 200 is a good upper bound.
-	maxIDLength = 200
+	maxIDLength = 184
 
 	// maxSecretLength is the maximum length of a valid client secret.
 	// There is not documented length but 100 is a good upper bound.
@@ -43,7 +42,7 @@ var (
 	// https://youtu.be/WMoyIh0y2Vg?si=3E4cseMwNQvpg0VB&t=440
 	// https://youtu.be/kNavqT_7310?si=5w6s8QQijkxhrIGB&t=289
 
-	clientIDRe = regexp.MustCompile(`3MVG[a-zA-Z0-9._\-]{20,}`)
+	clientIDRe = regexp.MustCompile(`\b3MVG[a-zA-Z0-9._\-]{20,180}\b`)
 
 	// clientSecretRe is a regular expression that matches salesforce OAuth2 client secrets.
 	// There is no clear documentation on the exact format of salesforce OAuth2 client secrets.
@@ -52,10 +51,10 @@ var (
 	// Moreover, real word demonstrations on youtube suggest it is Alphanumeric:
 	// https://youtu.be/WMoyIh0y2Vg?si=3E4cseMwNQvpg0VB&t=440
 	// https://youtu.be/kNavqT_7310?si=5w6s8QQijkxhrIGB&t=289
-	clientSecretRe = regexp.MustCompile(`[a-zA-Z0-9]{30,}`)
+	clientSecretRe = regexp.MustCompile(`(?i)\bclient_secret\b\s*[:=]\s*([A-Za-z0-9]{30,100})\b`)
 
 	// refreshRe is a regular expression that matches Salesforce OAuth2 refresh tokens.
-	refreshRe = regexp.MustCompile(`[a-zA-Z0-9]{30,}`)
+	refreshRe = regexp.MustCompile(`(?i)\brefresh_token\b\s*[:=]\s*([A-Za-z0-9]{30,100})\b`)
 )
 
 // NewDetector returns a detector that matches Salesforce OAuth2 client credentials.
@@ -65,8 +64,8 @@ func NewDetector() veles.Detector {
 		MaxDistance:   maxDistance,
 		Finders: []ntuple.Finder{
 			ntuple.FindAllMatches(clientIDRe),
-			ntuple.FindAllMatches(clientSecretRe),
-			ntuple.FindAllMatches(refreshRe),
+			ntuple.FindAllMatchesGroup(clientSecretRe),
+			ntuple.FindAllMatchesGroup(refreshRe),
 		},
 		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
 			return Credentials{ID: string(ms[0].Value), Secret: string(ms[1].Value), Refresh: string(ms[2].Value)}, true

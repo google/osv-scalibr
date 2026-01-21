@@ -21,8 +21,7 @@ package salesforceoauth2refresh
 // - https://help.salesforce.com/s/articleView?language=en_US&id=sf.remoteaccess_oauth_client_credentials_flow.htm&type=5
 // - https://help.salesforce.com/s/articleView?language=en_US&id=xcloud.remoteaccess_oauth_refresh_token_flow.htm&type=5
 type Credentials struct {
-	// ID is the client ID in format:
-	// `3MVG[a-zA-Z_.\-]{20,}`
+	// ID is the client ID
 	ID string
 	// Secret is the client secret
 	Secret string
