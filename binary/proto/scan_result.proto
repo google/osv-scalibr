@@ -768,6 +768,8 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    CircleCIPersonalAccessToken circleci_personal_access_token = 62;
+    CircleCIProjectToken circleci_project_token = 63;
   }
 
   message GCPSAK {
@@ -1085,6 +1087,14 @@ message SecretData {
 
   message CursorAPIKey {
     string key = 1;
+  }
+  
+  message CircleCIPersonalAccessToken {
+    string token = 1;
+  }
+
+  message CircleCIProjectToken {
+    string token = 1;
   }
 }
 
