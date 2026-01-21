@@ -121,7 +121,6 @@ func TestValidator(t *testing.T) {
 			privateKey:     testPrivateKeyPEM,
 			serverStatus:   http.StatusOK,
 			expectedResult: veles.ValidationValid,
-			useServer:      true,
 		},
 		{
 			name:           "InvalidUser",
@@ -129,7 +128,6 @@ func TestValidator(t *testing.T) {
 			privateKey:     testPrivateKeyPEM,
 			serverStatus:   http.StatusUnauthorized,
 			expectedResult: veles.ValidationInvalid,
-			useServer:      true,
 		},
 		{
 			name:           "MalformedPrivateKey",
@@ -137,7 +135,6 @@ func TestValidator(t *testing.T) {
 			privateKey:     "NOT A KEY",
 			expectedResult: veles.ValidationInvalid,
 			expectError:    true,
-			useServer:      false, // validation fails before HTTP
 		},
 		{
 			name:           "ContextCancelled",
@@ -147,7 +144,6 @@ func TestValidator(t *testing.T) {
 			cancelContext:  true,
 			expectedResult: veles.ValidationFailed,
 			expectError:    true,
-			useServer:      true,
 		},
 		{
 			name:           "ServerError",
@@ -156,37 +152,25 @@ func TestValidator(t *testing.T) {
 			serverStatus:   http.StatusInternalServerError,
 			expectedResult: veles.ValidationFailed,
 			expectError:    true,
-			useServer:      true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var (
-				ctx    context.Context
-				cancel context.CancelFunc
-				client *http.Client
-			)
+			ctx := t.Context()
 
-			ctx = context.Background()
-
-			if tt.useServer {
-				server := mockSalesforceServer(t, tt.serverStatus)
-				defer server.Close()
-
-				client = &http.Client{
-					Transport: &mockTransport{testServer: server},
-				}
-			}
+			server := mockSalesforceServer(t, tt.serverStatus)
+			defer server.Close()
 
 			if tt.cancelContext {
+				var cancel context.CancelFunc
 				ctx, cancel = context.WithCancel(ctx)
 				cancel()
 			}
 
 			validator := salesforceoauth2jwt.NewValidator()
-			if client != nil {
-				validator.HTTPC = client
+			validator.HTTPC = &http.Client{
+				Transport: &mockTransport{testServer: server},
 			}
 
 			creds := salesforceoauth2jwt.Credentials{

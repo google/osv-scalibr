@@ -155,7 +155,7 @@ admin1@example.com
 
 		// Test proximity: ID + Email far away, key beyond MaxDistance (should not match)
 		{
-			name: "id_and_username_without_private_key",
+			name: "id_and_username_with_private_key_far_away",
 			input: `3MVG123456789.AB_CDEF.ABC123456789
 test@example.com
 
@@ -181,13 +181,13 @@ valid.user@example.org
 ` + privateKeySample,
 			want: []veles.Secret{
 				salesforceoauth2jwt.Credentials{
-					ID:         "3MVGABCDE123456789ABCDEFGHIJK",
-					Username:   "test1@example.com",
+					ID:         "3MVGXYZ987654321ABCDEFGHIJKLM",
+					Username:   "valid.user@example.org",
 					PrivateKey: privateKeySample,
 				},
 				salesforceoauth2jwt.Credentials{
-					ID:         "3MVGXYZ987654321ABCDEFGHIJKLM",
-					Username:   "valid.user@example.org",
+					ID:         "3MVGABCDE123456789ABCDEFGHIJK",
+					Username:   "test1@example.com",
 					PrivateKey: privateKeySample,
 				},
 			},

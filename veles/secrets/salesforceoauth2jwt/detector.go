@@ -23,8 +23,7 @@ import (
 
 const (
 	// maxIDLength is the maximum length of a valid client ID.
-	// There is not documented length but 200 is a good upper bound.
-	maxIDLength = 200
+	maxIDLength = 184
 
 	// maxPrivateKeyLength is the maximum length of a private key block.
 	maxPrivateKeyLength = 1280 * 1024
