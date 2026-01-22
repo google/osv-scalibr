@@ -32,14 +32,14 @@ fi
 # Compile scan_result.proto if it changed.
 if [ "$REGEN_RESULT" -eq 0 ]; then
   rm -rf binary/proto/scan_result_go_proto
-  protoc -I=binary --go_out=binary/proto binary/proto/scan_result.proto
+  protoc -I=binary --experimental_allow_proto3_optional --go_out=binary/proto binary/proto/scan_result.proto
   mv binary/proto/github.com/google/osv-scalibr/binary/proto/scan_result_go_proto binary/proto/
 fi
 
 # Compile config.proto if it changed.
 if [ "$REGEN_CONFIG" -eq 0 ]; then
   rm -rf binary/proto/config_go_proto
-  protoc -I=binary --go_out=binary/proto binary/proto/config.proto
+  protoc -I=binary --experimental_allow_proto3_optional --go_out=binary/proto binary/proto/config.proto
   mv binary/proto/github.com/google/osv-scalibr/binary/proto/config_go_proto binary/proto/
 fi
 
