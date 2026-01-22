@@ -243,8 +243,8 @@ var (
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
-		cdx.Name:  {noCFG(cdx.New)},
-		spdx.Name: {noCFG(spdx.New)},
+		cdx.Name:  {cdx.New},
+		spdx.Name: {spdx.New},
 	}
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
