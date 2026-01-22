@@ -296,14 +296,14 @@ var (
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
-		mysqlmylogin.Name:            {noCFG(mysqlmylogin.New)},
-		pgpass.Name:                  {noCFG(pgpass.New)},
-		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
-		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
-		awsaccesskey.Name:            {noCFG(awsaccesskey.New)},
-		codecatalyst.Name:            {noCFG(codecatalyst.New)},
-		codecommit.Name:              {noCFG(codecommit.New)},
-		bitbucket.Name:               {noCFG(bitbucket.New)},
+		mysqlmylogin.Name:            {mysqlmylogin.New},
+		pgpass.Name:                  {pgpass.New},
+		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
+		mariadb.Name:                 {mariadb.New},
+		awsaccesskey.Name:            {awsaccesskey.New},
+		codecatalyst.Name:            {codecatalyst.New},
+		codecommit.Name:              {codecommit.New},
+		bitbucket.Name:               {bitbucket.New},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -540,7 +540,7 @@ type velesPlugin struct {
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{noCFG(convert.FromVelesDetector(p.detector, p.name, p.version))}
+		result[p.name] = []InitFn{convert.FromVelesDetector(p.detector, p.name, p.version)}
 	}
 	return result
 }

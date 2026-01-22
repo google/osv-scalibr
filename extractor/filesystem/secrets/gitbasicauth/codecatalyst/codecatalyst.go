@@ -17,10 +17,11 @@ package codecatalyst
 
 import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
-
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth"
+	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -31,8 +32,8 @@ const (
 )
 
 // New returns a filesystem.Extractor which extracts Amazon CodeCatalyst Credentials using the codecatalyst.Detector
-func New() filesystem.Extractor {
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
 	return convert.FromVelesDetectorWithRequire(
 		codecatalyst.NewDetector(), Name, Version, gitbasicauth.FileRequired,
-	)
+	), nil
 }

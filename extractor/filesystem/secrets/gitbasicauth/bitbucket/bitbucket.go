@@ -20,6 +20,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -30,8 +32,8 @@ const (
 )
 
 // New returns a filesystem.Extractor which extracts Bitbucket Credentials using the bitbucket.Detector
-func New() filesystem.Extractor {
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
 	return convert.FromVelesDetectorWithRequire(
 		bitbucket.NewDetector(), Name, Version, gitbasicauth.FileRequired,
-	)
+	), nil
 }

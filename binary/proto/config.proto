@@ -92,6 +92,7 @@ message PluginSpecificConfig {
     PythonWheelEggConfig python_wheel_egg = 44;
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
+    MariadbConfig mariadb = 47;
   }
 }
 
@@ -428,4 +429,13 @@ message WordpressPluginsConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message MariadbConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // Tells the extractor to follow the include or not.
+  optional bool follow_include = 2;
 }

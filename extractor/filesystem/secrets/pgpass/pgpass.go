@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Pgpass is a Veles Secret that holds relevant information for a [Postgres Pgpass](https://www.postgresql.org/docs/current/libpq-pgpass.html).
@@ -64,7 +66,7 @@ var (
 type Extractor struct{}
 
 // New returns a pgpass extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }

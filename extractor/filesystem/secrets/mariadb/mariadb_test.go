@@ -23,6 +23,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -175,9 +177,19 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := mariadb.New(mariadb.Config{
-				FollowInclude: tt.FollowInclude,
-			})
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Mariadb{
+						Mariadb: &cpb.MariadbConfig{
+							FollowInclude: &tt.FollowInclude,
+						},
+					}},
+				},
+			}
+			extr, err := mariadb.New(cfg)
+			if err != nil {
+				t.Fatalf("mariadb.New failed: %v", err)
+			}
 
 			inputCfg := extracttest.ScanInputMockConfig{
 				Path:         tt.Path,

@@ -169,6 +169,7 @@ type PluginSpecificConfig struct {
 	//	*PluginSpecificConfig_PythonWheelEgg
 	//	*PluginSpecificConfig_GoMod
 	//	*PluginSpecificConfig_WordpressPlugins
+	//	*PluginSpecificConfig_Mariadb
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -625,6 +626,15 @@ func (x *PluginSpecificConfig) GetWordpressPlugins() *WordpressPluginsConfig {
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetMariadb() *MariadbConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Mariadb); ok {
+			return x.Mariadb
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -813,6 +823,10 @@ type PluginSpecificConfig_WordpressPlugins struct {
 	WordpressPlugins *WordpressPluginsConfig `protobuf:"bytes,46,opt,name=wordpress_plugins,json=wordpressPlugins,proto3,oneof"`
 }
 
+type PluginSpecificConfig_Mariadb struct {
+	Mariadb *MariadbConfig `protobuf:"bytes,47,opt,name=mariadb,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
@@ -904,6 +918,8 @@ func (*PluginSpecificConfig_PythonWheelEgg) isPluginSpecificConfig_Config() {}
 func (*PluginSpecificConfig_GoMod) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_WordpressPlugins) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Mariadb) isPluginSpecificConfig_Config() {}
 
 type GoBinaryConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3150,6 +3166,62 @@ func (x *WordpressPluginsConfig) GetMaxFileSizeBytes() int64 {
 	return 0
 }
 
+type MariadbConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	// FollowInclude directive tells the extractor to follow the include or not.
+	FollowInclude *bool `protobuf:"varint,2,opt,name=follow_include,json=followInclude,proto3,oneof" json:"follow_include,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MariadbConfig) Reset() {
+	*x = MariadbConfig{}
+	mi := &file_proto_config_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MariadbConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MariadbConfig) ProtoMessage() {}
+
+func (x *MariadbConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MariadbConfig.ProtoReflect.Descriptor instead.
+func (*MariadbConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *MariadbConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+func (x *MariadbConfig) GetFollowInclude() bool {
+	if x != nil && x.FollowInclude != nil {
+		return *x.FollowInclude
+	}
+	return false
+}
+
 var File_proto_config_proto protoreflect.FileDescriptor
 
 const file_proto_config_proto_rawDesc = "" +
@@ -3161,7 +3233,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xca\x17\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xfe\x17\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -3214,7 +3286,8 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x10python_condameta\x18+ \x01(\v2\x1e.scalibr.PythonCondametaConfigH\x00R\x0fpythonCondameta\x12I\n" +
 	"\x10python_wheel_egg\x18, \x01(\v2\x1d.scalibr.PythonWheelEggConfigH\x00R\x0epythonWheelEgg\x12-\n" +
 	"\x06go_mod\x18- \x01(\v2\x14.scalibr.GoModConfigH\x00R\x05goMod\x12N\n" +
-	"\x11wordpress_plugins\x18. \x01(\v2\x1f.scalibr.WordpressPluginsConfigH\x00R\x10wordpressPluginsB\b\n" +
+	"\x11wordpress_plugins\x18. \x01(\v2\x1f.scalibr.WordpressPluginsConfigH\x00R\x10wordpressPlugins\x122\n" +
+	"\amariadb\x18/ \x01(\v2\x16.scalibr.MariadbConfigH\x00R\amariadbB\b\n" +
 	"\x06config\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
@@ -3324,7 +3397,11 @@ const file_proto_config_proto_rawDesc = "" +
 	"\vGoModConfig\x12)\n" +
 	"\x10exclude_indirect\x18\x01 \x01(\bR\x0fexcludeIndirect\"G\n" +
 	"\x16WordpressPluginsConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"}\n" +
+	"\rMariadbConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12*\n" +
+	"\x0efollow_include\x18\x02 \x01(\bH\x00R\rfollowInclude\x88\x01\x01B\x11\n" +
+	"\x0f_follow_includeBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
@@ -3338,7 +3415,7 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 48)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 49)
 var file_proto_config_proto_goTypes = []any{
 	(*PluginConfig)(nil),                    // 0: scalibr.PluginConfig
 	(*PluginSpecificConfig)(nil),            // 1: scalibr.PluginSpecificConfig
@@ -3388,6 +3465,7 @@ var file_proto_config_proto_goTypes = []any{
 	(*PythonWheelEggConfig)(nil),            // 45: scalibr.PythonWheelEggConfig
 	(*GoModConfig)(nil),                     // 46: scalibr.GoModConfig
 	(*WordpressPluginsConfig)(nil),          // 47: scalibr.WordpressPluginsConfig
+	(*MariadbConfig)(nil),                   // 48: scalibr.MariadbConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1,  // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
@@ -3437,11 +3515,12 @@ var file_proto_config_proto_depIdxs = []int32{
 	45, // 44: scalibr.PluginSpecificConfig.python_wheel_egg:type_name -> scalibr.PythonWheelEggConfig
 	46, // 45: scalibr.PluginSpecificConfig.go_mod:type_name -> scalibr.GoModConfig
 	47, // 46: scalibr.PluginSpecificConfig.wordpress_plugins:type_name -> scalibr.WordpressPluginsConfig
-	47, // [47:47] is the sub-list for method output_type
-	47, // [47:47] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	48, // 47: scalibr.PluginSpecificConfig.mariadb:type_name -> scalibr.MariadbConfig
+	48, // [48:48] is the sub-list for method output_type
+	48, // [48:48] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -3496,15 +3575,17 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_PythonWheelEgg)(nil),
 		(*PluginSpecificConfig_GoMod)(nil),
 		(*PluginSpecificConfig_WordpressPlugins)(nil),
+		(*PluginSpecificConfig_Mariadb)(nil),
 	}
 	file_proto_config_proto_msgTypes[39].OneofWrappers = []any{}
+	file_proto_config_proto_msgTypes[48].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   48,
+			NumMessages:   49,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

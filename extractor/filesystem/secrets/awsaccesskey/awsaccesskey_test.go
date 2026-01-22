@@ -25,6 +25,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	awsaccesskeydetector "github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -49,7 +51,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 			if tt.isWindows && runtime.GOOS != "windows" {
 				t.Skipf("Skipping test %q for %q", t.Name(), runtime.GOOS)
 			}
-			e := awsaccesskey.New()
+			e, err := awsaccesskey.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("awsaccesskey.New failed: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -92,7 +97,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := awsaccesskey.New()
+			extr, err := awsaccesskey.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("awsaccesskey.New failed: %v", err)
+			}
 
 			inputCfg := extracttest.ScanInputMockConfig{
 				Path:         tt.Path,
