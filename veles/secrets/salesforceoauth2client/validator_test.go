@@ -70,15 +70,15 @@ func mockSalesforceServer(t *testing.T, expectedBase64Data string, serverRespons
 		w.WriteHeader(serverResponseCode)
 	}))
 }
-
 func TestValidator(t *testing.T) {
-	cases := []struct {
+	tests := []struct {
 		name                     string
 		id                       string
 		secret                   string
 		url                      string
 		serverExpectedBase64Data string
 		serverResponseCode       int
+		cancelContext            bool
 		want                     veles.ValidationStatus
 		expectError              bool
 	}{
@@ -109,131 +109,70 @@ func TestValidator(t *testing.T) {
 			serverResponseCode:       http.StatusUnauthorized,
 			want:                     veles.ValidationInvalid,
 		},
+		{
+			name:               "empty client_id",
+			id:                 "",
+			secret:             validatorTestClientSecret,
+			url:                validatorTestURL,
+			serverResponseCode: http.StatusUnauthorized,
+			want:               veles.ValidationInvalid,
+		},
+		{
+			name:               "empty client_secret",
+			id:                 validatorTestClientID,
+			secret:             "",
+			url:                validatorTestURL,
+			serverResponseCode: http.StatusUnauthorized,
+			want:               veles.ValidationInvalid,
+		},
+		{
+			name:                     "context cancelled",
+			id:                       validatorTestClientID,
+			secret:                   validatorTestClientSecret,
+			url:                      validatorTestURL,
+			serverExpectedBase64Data: validatorExpectedBase64Data,
+			serverResponseCode:       http.StatusOK,
+			cancelContext:            true,
+			want:                     veles.ValidationFailed,
+			expectError:              true,
+		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock server
-			server := mockSalesforceServer(t, tc.serverExpectedBase64Data, tc.serverResponseCode)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+
+			// Create mock server
+			server := mockSalesforceServer(t, tt.serverExpectedBase64Data, tt.serverResponseCode)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
+			if tt.cancelContext {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel()
+			}
+
+			validator := salesforceoauth2client.NewValidator()
+			validator.HTTPC = &http.Client{
 				Transport: &mockTransport{testServer: server},
 			}
 
-			// Create a validator with a mock client
-			validator := salesforceoauth2client.NewValidator()
-			validator.HTTPC = client
-
-			// Create test credentials
-			cred := salesforceoauth2client.Credentials{ID: tc.id, Secret: tc.secret, URL: tc.url}
-
-			// Test validation
-			got, err := validator.Validate(t.Context(), cred)
-
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			cred := salesforceoauth2client.Credentials{
+				ID:     tt.id,
+				Secret: tt.secret,
+				URL:    tt.url,
 			}
 
-			// Check validation status
-			if got != tc.want {
-				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			got, err := validator.Validate(ctx, cred)
+
+			if tt.expectError && err == nil {
+				t.Fatalf("expected error, got nil")
 			}
-		})
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := salesforceoauth2client.NewValidator()
-	validator.HTTPC = client
-
-	// Create test credentials
-	cred := salesforceoauth2client.Credentials{ID: validatorTestClientID, Secret: validatorTestClientSecret, URL: validatorTestURL}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, cred)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
-func TestValidator_InvalidRequest(t *testing.T) {
-	// Create a mock server that returns 401 Unauthorized
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := salesforceoauth2client.NewValidator()
-	validator.HTTPC = client
-
-	testCases := []struct {
-		name     string
-		id       string
-		secret   string
-		url      string
-		expected veles.ValidationStatus
-	}{
-		{
-			name:     "empty clientID",
-			id:       "",
-			secret:   validatorTestClientSecret,
-			url:      validatorTestURL,
-			expected: veles.ValidationInvalid,
-		},
-		{
-			name:     "empty clientSecret",
-			id:       validatorTestClientID,
-			secret:   "",
-			url:      validatorTestURL,
-			expected: veles.ValidationInvalid,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Create test credentials
-			cred := salesforceoauth2client.Credentials{ID: tc.id, Secret: tc.secret, URL: tc.url}
-
-			got, err := validator.Validate(t.Context(), cred)
-
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
+			if !tt.expectError && err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
-			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+			if got != tt.want {
+				t.Fatalf("expected %v, got %v", tt.want, got)
 			}
 		})
 	}

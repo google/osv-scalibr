@@ -23,7 +23,23 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+const (
+	validClientID = "3MVG123456789.ABCDEF.ABC11112222223456789ABC123456789ABC1"
+	validSecret   = "A123456789ABCDEFABC1234567895123456789ABCDEFABC1234567895"
+	validURL      = "yuvrajapp.my.salesforce.com"
+)
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		salesforceoauth2client.NewDetector(),
+		validClientID+"\n"+"client_secret:"+validSecret+"\n"+validURL,
+		salesforceoauth2client.Credentials{ID: validClientID, Secret: validSecret, URL: validURL},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{salesforceoauth2client.NewDetector()})
@@ -75,19 +91,19 @@ func TestDetector_Detect(t *testing.T) {
 		},
 		{
 			name:  "client secret but no client ID and URL",
-			input: `app_secret: 123456789ABCDEFABC1234567895`,
+			input: `client_secret: 123456789ABCDEFABC1234567895`,
 			want:  nil,
 		},
 		{
 			name:  "URL but no client ID and client secret",
-			input: `app_secret: yuvrajapp.my.salesforce.com`,
+			input: `yuvrajapp.my.salesforce.com`,
 			want:  nil,
 		},
 		// -- Single Client ID, Secret and URL in close proximity (happy path) ---
 		{
 			name: "client_ID_client_secret_and_URL_in_close_proximity",
 			input: `3MVG123456789.AB_CDEF.ABC123456789ABC123456789ABC1
-123456789ABCDEFABC1234567895123456789ABCDEFABC1234567895
+client_secret: 123456789ABCDEFABC1234567895123456789ABCDEFABC1234567895
 yuvrajapp.my.salesforce.com
 `,
 			want: []veles.Secret{
@@ -108,8 +124,8 @@ abcdef-1mVwFTjGIXgs2BC2uHzksQi0HAK1`,
 			name: "valid_formats_mixed_with_invalid",
 			input: `valid_id: 3MVG123456789.AB_CDEF.ABC123456789ABC123456789ABC1
 invalid_id: 3MG123456789.AB_CDEF.ABC123456789ABC123456789ABC11
-valid_secret: 12345678901234567123456789012345671234567890123456712345678901234567
-invalid_secret: 1234567890-1234567
+client_secret: 12345678901234567123456789012345671234567890123456712345678901234567
+client_secret: 1234567890-1234567
 valid_url: yuvrajapp.my.salesforce.com
 invalid_url: yuvrajapp.my.salesforces.com`,
 			want: []veles.Secret{
@@ -126,12 +142,12 @@ invalid_url: yuvrajapp.my.salesforces.com`,
 			input: `
 config_app1:
 3MVG123456789.AB_CDEF.ABC123456789ABC123456789ABC1
-12345678901234567123456789012345671234567890123456712345678901234567
+client_secret: 12345678901234567123456789012345671234567890123456712345678901234567
 yuvrajapp1.my.salesforce.com
 
 config_app2:
 3MVG123456789.AB_CEEF.ABC123456789ABC123456789ABC1
-12345678901234867123456789012345671234567890123456
+client_secret: 12345678901234867123456789012345671234567890123456
 yuvrajapp.2.my.salesforce.com`,
 			want: []veles.Secret{
 				salesforceoauth2client.Credentials{

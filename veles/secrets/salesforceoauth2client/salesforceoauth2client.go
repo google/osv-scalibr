@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package salesforceoauth2client contains Veles Secret types and Detectors for Salesforce OAuth2 client credentials.
+// Package salesforceoauth2client contains Veles Secret types and Detectors for Salesforce OAuth2 Client Credentials.
 package salesforceoauth2client
 
-// Credentials represents a Salesforce OAuth2 client credential.
+// Credentials represents a Salesforce OAuth2 Client Credential.
 //
 // See:
 // - https://help.salesforce.com/s/articleView?language=en_US&id=sf.remoteaccess_oauth_client_credentials_flow.htm&type=5
 type Credentials struct {
-	// ID is the client ID in format:
-	// `3MVG[a-zA-Z_.\-]{20,}`
+	// ID is the client ID
 	ID string
 	// Secret is the client secret
 	Secret string
-	// URL is the instance URL in format:
-	// *.my.salesforce.com
+	// URL is the instance URL
 	URL string
 }
