@@ -46,7 +46,7 @@ var VEX = InitMap{
 	cachedir.Name:         {cachedir.New},
 	cos.Name:              {cos.New},
 	dpkg.Name:             {dpkg.New},
-	rpm.Name:              {noCFG(rpm.NewDefault)},
+	rpm.Name:              {rpm.New},
 	noexecutabledpkg.Name: {noexecutabledpkg.New},
 }
 
