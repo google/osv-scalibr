@@ -51,10 +51,10 @@ var (
 	// Moreover, real word demonstrations on youtube suggest it is Alphanumeric:
 	// https://youtu.be/WMoyIh0y2Vg?si=3E4cseMwNQvpg0VB&t=440
 	// https://youtu.be/kNavqT_7310?si=5w6s8QQijkxhrIGB&t=289
-	clientSecretRe = regexp.MustCompile(`(?i)\bclient_secret\b\s*[:=]\s*([A-Za-z0-9]{30,100})\b`)
+	clientSecretRe = regexp.MustCompile(`(?i)\bclient[_-]?secret\b\s*[:=]?\s*([A-Za-z0-9]{30,100})\b`)
 
 	// refreshRe is a regular expression that matches Salesforce OAuth2 refresh tokens.
-	refreshRe = regexp.MustCompile(`(?i)\brefresh_token\b\s*[:=]\s*([A-Za-z0-9]{30,100})\b`)
+	refreshRe = regexp.MustCompile(`(?i)\brefresh[_-]?token\b\s*[:=]?\s*([A-Za-z0-9]{30,100})\b`)
 )
 
 // NewDetector returns a detector that matches Salesforce OAuth2 client credentials.

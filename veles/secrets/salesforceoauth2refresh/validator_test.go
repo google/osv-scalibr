@@ -154,12 +154,7 @@ func TestValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
 
-			var server = mockSalesforceServer(
-				t,
-				validatorTestRefresh,
-				tt.serverExpectedBase64Data,
-				tt.serverResponseCode,
-			)
+			server := mockSalesforceServer(t, validatorTestRefresh, tt.serverExpectedBase64Data, tt.serverResponseCode)
 			defer server.Close()
 
 			if tt.cancelContext {
