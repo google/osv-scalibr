@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/ffa/baseimageattr"
 	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
@@ -170,6 +171,12 @@ var (
 		packagedeprecation.Name: {packagedeprecation.New},
 	}
 
+	// FFA enrichers.
+	FFA = InitMap{
+		baseimage.Name:     {noCFG(baseimage.NewDefault)},
+		baseimageattr.Name: {baseimageattr.New},
+	}
+
 	// Default enrichers.
 	Default = concat()
 
@@ -185,6 +192,7 @@ var (
 		Reachability,
 		TransitiveDependency,
 		PackageDeprecation,
+		FFA,
 	)
 
 	enricherNames = concat(All, InitMap{
@@ -197,6 +205,7 @@ var (
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
 		"packagedeprecation":   vals(PackageDeprecation),
+		"ffa":                  vals(FFA),
 
 		"enrichers/default": vals(Default),
 		"default":           vals(Default),

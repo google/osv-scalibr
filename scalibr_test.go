@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,6 +51,15 @@ import (
 	"github.com/mohae/deepcopy"
 	"github.com/opencontainers/go-digest"
 )
+
+func fromVelesDetector(t *testing.T, d veles.Detector, name string, ver int) plugin.Plugin {
+	t.Helper()
+	p, err := cf.FromVelesDetector(d, name, ver)(nil)
+	if err != nil {
+		t.Fatalf("Failed to create plugin from Veles detector: %v", err)
+	}
+	return p
+}
 
 func TestScan(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
@@ -305,7 +314,7 @@ func TestScan(t *testing.T) {
 			desc: "One_Veles_secret_detector",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
-					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
+					fromVelesDetector(t, fakeSecretDetector1, "secret-detector", 1),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -324,8 +333,8 @@ func TestScan(t *testing.T) {
 			desc: "Two_Veles_secret_detectors",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
-					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector-1", 1)(),
-					cf.FromVelesDetector(fakeSecretDetector2, "secret-detector-2", 2)(),
+					fromVelesDetector(t, fakeSecretDetector1, "secret-detector-1", 1),
+					fromVelesDetector(t, fakeSecretDetector2, "secret-detector-2", 2),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -347,7 +356,7 @@ func TestScan(t *testing.T) {
 			desc: "Veles_secret_detector_with_validation",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
-					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
+					fromVelesDetector(t, fakeSecretDetector1, "secret-detector", 1),
 					ce.FromVelesValidator(fakeSecretValidator1, "secret-validator", 1)(),
 				},
 				ScanRoots: tmpRoot,

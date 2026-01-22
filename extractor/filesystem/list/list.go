@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -244,8 +245,8 @@ var (
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
-		cdx.Name:  {noCFG(cdx.New)},
-		spdx.Name: {noCFG(spdx.New)},
+		cdx.Name:  {cdx.New},
+		spdx.Name: {spdx.New},
 	}
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
@@ -296,14 +297,14 @@ var (
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
-		mysqlmylogin.Name:            {noCFG(mysqlmylogin.New)},
-		pgpass.Name:                  {noCFG(pgpass.New)},
-		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
-		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
-		awsaccesskey.Name:            {noCFG(awsaccesskey.New)},
-		codecatalyst.Name:            {noCFG(codecatalyst.New)},
-		codecommit.Name:              {noCFG(codecommit.New)},
-		bitbucket.Name:               {noCFG(bitbucket.New)},
+		mysqlmylogin.Name:            {mysqlmylogin.New},
+		pgpass.Name:                  {pgpass.New},
+		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
+		mariadb.Name:                 {mariadb.New},
+		awsaccesskey.Name:            {awsaccesskey.New},
+		codecatalyst.Name:            {codecatalyst.New},
+		codecommit.Name:              {codecommit.New},
+		bitbucket.Name:               {bitbucket.New},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -394,6 +395,11 @@ var (
 		ova.Name:     {ova.New},
 	}
 
+	// FFA extractor.
+	FFA = InitMap{
+		unknownbinariesextr.Name: {unknownbinariesextr.New},
+	}
+
 	// Collections of extractors.
 
 	// SourceCode extractors find packages in source code contexts (e.g. lockfiles).
@@ -434,6 +440,7 @@ var (
 		EmbeddedFS,
 		Containers,
 		Secrets,
+		FFA,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -478,6 +485,7 @@ var (
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
 		"miscsource": vals(MiscSource),
+		"ffa":        vals(FFA),
 
 		// Collections.
 		"artifact":           vals(Artifact),
@@ -534,7 +542,7 @@ type velesPlugin struct {
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{noCFG(convert.FromVelesDetector(p.detector, p.name, p.version))}
+		result[p.name] = []InitFn{convert.FromVelesDetector(p.detector, p.name, p.version)}
 	}
 	return result
 }
