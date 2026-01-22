@@ -140,12 +140,12 @@ invalid_url: yuvrajapp.my.salesforces.com`,
 		{
 			name: "complex_file_with_multiple_client_ID_client_secret_and_URL_-_test_proximity",
 			input: `
-config_app1:
+config_application_1:
 3MVG123456789.AB_CDEF.ABC123456789ABC123456789ABC1
 client_secret: 12345678901234567123456789012345671234567890123456712345678901234567
 yuvrajapp1.my.salesforce.com
 
-config_app2:
+config_application_2:
 3MVG123456789.AB_CEEF.ABC123456789ABC123456789ABC1
 client_secret: 12345678901234867123456789012345671234567890123456
 yuvrajapp.2.my.salesforce.com`,
