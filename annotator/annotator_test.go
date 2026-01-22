@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -61,6 +62,11 @@ func TestRun(t *testing.T) {
 		cpy.IgnoreAllUnexported(),
 	)
 
+	anno, err := cachedir.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		desc    string
 		cfg     *annotator.Config
@@ -77,7 +83,7 @@ func TestRun(t *testing.T) {
 		{
 			desc: "annotator_modifies_inventory",
 			cfg: &annotator.Config{
-				Annotators: []annotator.Annotator{cachedir.New()},
+				Annotators: []annotator.Annotator{anno},
 			},
 			inv: inv,
 			want: []*plugin.Status{

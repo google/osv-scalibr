@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakeimage"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	ce "github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/extractor"
@@ -1093,8 +1094,13 @@ func TestAnnotator(t *testing.T) {
 		map[string]fe.NamesErr{"tmp/file.txt": {Names: []string{pkgName}, Err: nil}},
 	)
 
+	anno, err := cachedir.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cfg := &scalibr.ScanConfig{
-		Plugins:   []plugin.Plugin{fakeExtractor, cachedir.New()},
+		Plugins:   []plugin.Plugin{fakeExtractor, anno},
 		ScanRoots: tmpRoot,
 	}
 
