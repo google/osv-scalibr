@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -101,12 +103,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = requirements.New(
-				requirements.Config{
-					Stats:            collector,
-					MaxFileSizeBytes: tt.maxFileSizeBytes,
-				},
-			)
+			e, err := requirements.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("requirements.New(%v) error: %v", tt.maxFileSizeBytes, err)
+			}
+			e.(*requirements.Extractor).Stats = collector
 
 			// Set default size if not provided.
 			fileSizeBytes := tt.fileSizeBytes
@@ -309,11 +310,11 @@ func TestExtract(t *testing.T) {
 					Metadata: &requirements.Metadata{VersionComparator: "~=", Requirement: "Mopidy-Dirble ~= 1.1"},
 				},
 				{
-					Name:      "transitive-req",
-					Version:   "1",
+					Name:      "pandas",
+					Version:   "2.2.3",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/example.txt", "testdata/other-requirements.txt"},
-					Metadata:  &requirements.Metadata{Requirement: "transitive-req==1"},
+					Metadata:  &requirements.Metadata{Requirement: "pandas==2.2.3"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -497,7 +498,11 @@ func TestExtract(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = requirements.New(requirements.Config{Stats: collector})
+			e, err := requirements.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("requirements.New() error: %v", err)
+			}
+			e.(*requirements.Extractor).Stats = collector
 
 			fsys := scalibrfs.DirFS(".")
 

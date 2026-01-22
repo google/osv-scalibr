@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import (
 	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
+	misemeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/mise/metadata"
 	nodeversionmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion/metadata"
 	nvmmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
@@ -102,6 +103,9 @@ var (
 		},
 		reflect.TypeFor[*spb.Package_AsdfMetadata](): func(p *spb.Package) any {
 			return asdfmeta.ToStruct(p.GetAsdfMetadata())
+		},
+		reflect.TypeFor[*spb.Package_MiseMetadata](): func(p *spb.Package) any {
+			return misemeta.ToStruct(p.GetMiseMetadata())
 		},
 		reflect.TypeFor[*spb.Package_NvmMetadata](): func(p *spb.Package) any {
 			return nvmmeta.ToStruct(p.GetNvmMetadata())
@@ -184,6 +188,7 @@ var (
 		(*nixmeta.Metadata)(nil),
 		(*macapps.Metadata)(nil),
 		(*asdfmeta.Metadata)(nil),
+		(*misemeta.Metadata)(nil),
 		(*nvmmeta.Metadata)(nil),
 		(*nodeversionmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),

@@ -149,6 +149,27 @@ type PluginSpecificConfig struct {
 	//	*PluginSpecificConfig_Containerd
 	//	*PluginSpecificConfig_DockerComposeImage
 	//	*PluginSpecificConfig_K8SImage
+	//	*PluginSpecificConfig_DotnetDepsJson
+	//	*PluginSpecificConfig_DotnetPackagesConfig
+	//	*PluginSpecificConfig_DotnetPackagesLockJson
+	//	*PluginSpecificConfig_DotnetPe
+	//	*PluginSpecificConfig_Gemspec
+	//	*PluginSpecificConfig_CargoAuditable
+	//	*PluginSpecificConfig_SwiftPackageResolved
+	//	*PluginSpecificConfig_SwiftPodfileLock
+	//	*PluginSpecificConfig_ElixirMixLock
+	//	*PluginSpecificConfig_HaskellStacklock
+	//	*PluginSpecificConfig_HaskellCabal
+	//	*PluginSpecificConfig_JavaArchive
+	//	*PluginSpecificConfig_JavascriptPackageJson
+	//	*PluginSpecificConfig_JavascriptPackageLockJson
+	//	*PluginSpecificConfig_PythonRequirements
+	//	*PluginSpecificConfig_PythonSetup
+	//	*PluginSpecificConfig_PythonCondameta
+	//	*PluginSpecificConfig_PythonWheelEgg
+	//	*PluginSpecificConfig_GoMod
+	//	*PluginSpecificConfig_WordpressPlugins
+	//	*PluginSpecificConfig_Mariadb
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -425,6 +446,195 @@ func (x *PluginSpecificConfig) GetK8SImage() *K8SImageConfig {
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetDotnetDepsJson() *DotnetDepsJsonConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_DotnetDepsJson); ok {
+			return x.DotnetDepsJson
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetDotnetPackagesConfig() *DotnetPackagesConfigConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_DotnetPackagesConfig); ok {
+			return x.DotnetPackagesConfig
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetDotnetPackagesLockJson() *DotnetPackagesLockJsonConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_DotnetPackagesLockJson); ok {
+			return x.DotnetPackagesLockJson
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetDotnetPe() *DotnetPeConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_DotnetPe); ok {
+			return x.DotnetPe
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetGemspec() *GemspecConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Gemspec); ok {
+			return x.Gemspec
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetCargoAuditable() *CargoAuditableConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_CargoAuditable); ok {
+			return x.CargoAuditable
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetSwiftPackageResolved() *SwiftPackageResolvedConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_SwiftPackageResolved); ok {
+			return x.SwiftPackageResolved
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetSwiftPodfileLock() *SwiftPodfileLockConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_SwiftPodfileLock); ok {
+			return x.SwiftPodfileLock
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetElixirMixLock() *ElixirMixLockConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_ElixirMixLock); ok {
+			return x.ElixirMixLock
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetHaskellStacklock() *HaskellStacklockConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_HaskellStacklock); ok {
+			return x.HaskellStacklock
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetHaskellCabal() *HaskellCabalConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_HaskellCabal); ok {
+			return x.HaskellCabal
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetJavaArchive() *JavaArchiveConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_JavaArchive); ok {
+			return x.JavaArchive
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetJavascriptPackageJson() *JavascriptPackageJsonConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_JavascriptPackageJson); ok {
+			return x.JavascriptPackageJson
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetJavascriptPackageLockJson() *JavascriptPackageLockJsonConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_JavascriptPackageLockJson); ok {
+			return x.JavascriptPackageLockJson
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetPythonRequirements() *PythonRequirementsConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_PythonRequirements); ok {
+			return x.PythonRequirements
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetPythonSetup() *PythonSetupConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_PythonSetup); ok {
+			return x.PythonSetup
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetPythonCondameta() *PythonCondametaConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_PythonCondameta); ok {
+			return x.PythonCondameta
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetPythonWheelEgg() *PythonWheelEggConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_PythonWheelEgg); ok {
+			return x.PythonWheelEgg
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetGoMod() *GoModConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_GoMod); ok {
+			return x.GoMod
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetWordpressPlugins() *WordpressPluginsConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_WordpressPlugins); ok {
+			return x.WordpressPlugins
+		}
+	}
+	return nil
+}
+
+func (x *PluginSpecificConfig) GetMariadb() *MariadbConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Mariadb); ok {
+			return x.Mariadb
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -533,6 +743,90 @@ type PluginSpecificConfig_K8SImage struct {
 	K8SImage *K8SImageConfig `protobuf:"bytes,26,opt,name=k8s_image,json=k8sImage,proto3,oneof"`
 }
 
+type PluginSpecificConfig_DotnetDepsJson struct {
+	DotnetDepsJson *DotnetDepsJsonConfig `protobuf:"bytes,27,opt,name=dotnet_deps_json,json=dotnetDepsJson,proto3,oneof"`
+}
+
+type PluginSpecificConfig_DotnetPackagesConfig struct {
+	DotnetPackagesConfig *DotnetPackagesConfigConfig `protobuf:"bytes,28,opt,name=dotnet_packages_config,json=dotnetPackagesConfig,proto3,oneof"`
+}
+
+type PluginSpecificConfig_DotnetPackagesLockJson struct {
+	DotnetPackagesLockJson *DotnetPackagesLockJsonConfig `protobuf:"bytes,29,opt,name=dotnet_packages_lock_json,json=dotnetPackagesLockJson,proto3,oneof"`
+}
+
+type PluginSpecificConfig_DotnetPe struct {
+	DotnetPe *DotnetPeConfig `protobuf:"bytes,30,opt,name=dotnet_pe,json=dotnetPe,proto3,oneof"`
+}
+
+type PluginSpecificConfig_Gemspec struct {
+	Gemspec *GemspecConfig `protobuf:"bytes,31,opt,name=gemspec,proto3,oneof"`
+}
+
+type PluginSpecificConfig_CargoAuditable struct {
+	CargoAuditable *CargoAuditableConfig `protobuf:"bytes,32,opt,name=cargo_auditable,json=cargoAuditable,proto3,oneof"`
+}
+
+type PluginSpecificConfig_SwiftPackageResolved struct {
+	SwiftPackageResolved *SwiftPackageResolvedConfig `protobuf:"bytes,33,opt,name=swift_package_resolved,json=swiftPackageResolved,proto3,oneof"`
+}
+
+type PluginSpecificConfig_SwiftPodfileLock struct {
+	SwiftPodfileLock *SwiftPodfileLockConfig `protobuf:"bytes,34,opt,name=swift_podfile_lock,json=swiftPodfileLock,proto3,oneof"`
+}
+
+type PluginSpecificConfig_ElixirMixLock struct {
+	ElixirMixLock *ElixirMixLockConfig `protobuf:"bytes,35,opt,name=elixir_mix_lock,json=elixirMixLock,proto3,oneof"`
+}
+
+type PluginSpecificConfig_HaskellStacklock struct {
+	HaskellStacklock *HaskellStacklockConfig `protobuf:"bytes,36,opt,name=haskell_stacklock,json=haskellStacklock,proto3,oneof"`
+}
+
+type PluginSpecificConfig_HaskellCabal struct {
+	HaskellCabal *HaskellCabalConfig `protobuf:"bytes,37,opt,name=haskell_cabal,json=haskellCabal,proto3,oneof"`
+}
+
+type PluginSpecificConfig_JavaArchive struct {
+	JavaArchive *JavaArchiveConfig `protobuf:"bytes,38,opt,name=java_archive,json=javaArchive,proto3,oneof"`
+}
+
+type PluginSpecificConfig_JavascriptPackageJson struct {
+	JavascriptPackageJson *JavascriptPackageJsonConfig `protobuf:"bytes,39,opt,name=javascript_package_json,json=javascriptPackageJson,proto3,oneof"`
+}
+
+type PluginSpecificConfig_JavascriptPackageLockJson struct {
+	JavascriptPackageLockJson *JavascriptPackageLockJsonConfig `protobuf:"bytes,40,opt,name=javascript_package_lock_json,json=javascriptPackageLockJson,proto3,oneof"`
+}
+
+type PluginSpecificConfig_PythonRequirements struct {
+	PythonRequirements *PythonRequirementsConfig `protobuf:"bytes,41,opt,name=python_requirements,json=pythonRequirements,proto3,oneof"`
+}
+
+type PluginSpecificConfig_PythonSetup struct {
+	PythonSetup *PythonSetupConfig `protobuf:"bytes,42,opt,name=python_setup,json=pythonSetup,proto3,oneof"`
+}
+
+type PluginSpecificConfig_PythonCondameta struct {
+	PythonCondameta *PythonCondametaConfig `protobuf:"bytes,43,opt,name=python_condameta,json=pythonCondameta,proto3,oneof"`
+}
+
+type PluginSpecificConfig_PythonWheelEgg struct {
+	PythonWheelEgg *PythonWheelEggConfig `protobuf:"bytes,44,opt,name=python_wheel_egg,json=pythonWheelEgg,proto3,oneof"`
+}
+
+type PluginSpecificConfig_GoMod struct {
+	GoMod *GoModConfig `protobuf:"bytes,45,opt,name=go_mod,json=goMod,proto3,oneof"`
+}
+
+type PluginSpecificConfig_WordpressPlugins struct {
+	WordpressPlugins *WordpressPluginsConfig `protobuf:"bytes,46,opt,name=wordpress_plugins,json=wordpressPlugins,proto3,oneof"`
+}
+
+type PluginSpecificConfig_Mariadb struct {
+	Mariadb *MariadbConfig `protobuf:"bytes,47,opt,name=mariadb,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
@@ -584,6 +878,48 @@ func (*PluginSpecificConfig_Containerd) isPluginSpecificConfig_Config() {}
 func (*PluginSpecificConfig_DockerComposeImage) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_K8SImage) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_DotnetDepsJson) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_DotnetPackagesConfig) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_DotnetPackagesLockJson) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_DotnetPe) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Gemspec) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_CargoAuditable) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_SwiftPackageResolved) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_SwiftPodfileLock) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_ElixirMixLock) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_HaskellStacklock) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_HaskellCabal) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_JavaArchive) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_JavascriptPackageJson) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_JavascriptPackageLockJson) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_PythonRequirements) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_PythonSetup) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_PythonCondameta) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_PythonWheelEgg) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_GoMod) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_WordpressPlugins) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Mariadb) isPluginSpecificConfig_Config() {}
 
 type GoBinaryConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1059,7 +1395,7 @@ func (x *POMXMLNetConfig) GetDepsDevRequirements() bool {
 
 type DpkgConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// IncludeNotInstalled includes packages that are not installed
+	// Includes packages that are not installed
 	// (e.g. `deinstall`, `purge`, and those missing a status field).
 	IncludeNotInstalled bool `protobuf:"varint,1,opt,name=include_not_installed,json=includeNotInstalled,proto3" json:"include_not_installed,omitempty"`
 	// The maximum file size the plugin will process.
@@ -1595,7 +1931,7 @@ func (x *MacAppsConfig) GetMaxFileSizeBytes() int64 {
 
 type PodmanConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// IncludeStopped specifies whether to list all containers, including those
+	// Specifies whether to list all containers, including those
 	// that are not currently running.
 	IncludeStopped bool `protobuf:"varint,1,opt,name=include_stopped,json=includeStopped,proto3" json:"include_stopped,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -1827,6 +2163,1065 @@ func (x *K8SImageConfig) GetMaxFileSizeBytes() int64 {
 	return 0
 }
 
+type DotnetDepsJsonConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DotnetDepsJsonConfig) Reset() {
+	*x = DotnetDepsJsonConfig{}
+	mi := &file_proto_config_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DotnetDepsJsonConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DotnetDepsJsonConfig) ProtoMessage() {}
+
+func (x *DotnetDepsJsonConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DotnetDepsJsonConfig.ProtoReflect.Descriptor instead.
+func (*DotnetDepsJsonConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *DotnetDepsJsonConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type DotnetPackagesConfigConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DotnetPackagesConfigConfig) Reset() {
+	*x = DotnetPackagesConfigConfig{}
+	mi := &file_proto_config_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DotnetPackagesConfigConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DotnetPackagesConfigConfig) ProtoMessage() {}
+
+func (x *DotnetPackagesConfigConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DotnetPackagesConfigConfig.ProtoReflect.Descriptor instead.
+func (*DotnetPackagesConfigConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *DotnetPackagesConfigConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type DotnetPackagesLockJsonConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DotnetPackagesLockJsonConfig) Reset() {
+	*x = DotnetPackagesLockJsonConfig{}
+	mi := &file_proto_config_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DotnetPackagesLockJsonConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DotnetPackagesLockJsonConfig) ProtoMessage() {}
+
+func (x *DotnetPackagesLockJsonConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DotnetPackagesLockJsonConfig.ProtoReflect.Descriptor instead.
+func (*DotnetPackagesLockJsonConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *DotnetPackagesLockJsonConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type DotnetPeConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DotnetPeConfig) Reset() {
+	*x = DotnetPeConfig{}
+	mi := &file_proto_config_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DotnetPeConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DotnetPeConfig) ProtoMessage() {}
+
+func (x *DotnetPeConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DotnetPeConfig.ProtoReflect.Descriptor instead.
+func (*DotnetPeConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *DotnetPeConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type GemspecConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GemspecConfig) Reset() {
+	*x = GemspecConfig{}
+	mi := &file_proto_config_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GemspecConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GemspecConfig) ProtoMessage() {}
+
+func (x *GemspecConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GemspecConfig.ProtoReflect.Descriptor instead.
+func (*GemspecConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GemspecConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type CargoAuditableConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	// If true, extract build dependencies.
+	ExtractBuildDependencies bool `protobuf:"varint,2,opt,name=extract_build_dependencies,json=extractBuildDependencies,proto3" json:"extract_build_dependencies,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *CargoAuditableConfig) Reset() {
+	*x = CargoAuditableConfig{}
+	mi := &file_proto_config_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CargoAuditableConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CargoAuditableConfig) ProtoMessage() {}
+
+func (x *CargoAuditableConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CargoAuditableConfig.ProtoReflect.Descriptor instead.
+func (*CargoAuditableConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *CargoAuditableConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+func (x *CargoAuditableConfig) GetExtractBuildDependencies() bool {
+	if x != nil {
+		return x.ExtractBuildDependencies
+	}
+	return false
+}
+
+type SwiftPackageResolvedConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SwiftPackageResolvedConfig) Reset() {
+	*x = SwiftPackageResolvedConfig{}
+	mi := &file_proto_config_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SwiftPackageResolvedConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwiftPackageResolvedConfig) ProtoMessage() {}
+
+func (x *SwiftPackageResolvedConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwiftPackageResolvedConfig.ProtoReflect.Descriptor instead.
+func (*SwiftPackageResolvedConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *SwiftPackageResolvedConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type SwiftPodfileLockConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SwiftPodfileLockConfig) Reset() {
+	*x = SwiftPodfileLockConfig{}
+	mi := &file_proto_config_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SwiftPodfileLockConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwiftPodfileLockConfig) ProtoMessage() {}
+
+func (x *SwiftPodfileLockConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwiftPodfileLockConfig.ProtoReflect.Descriptor instead.
+func (*SwiftPodfileLockConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *SwiftPodfileLockConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type ElixirMixLockConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ElixirMixLockConfig) Reset() {
+	*x = ElixirMixLockConfig{}
+	mi := &file_proto_config_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ElixirMixLockConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ElixirMixLockConfig) ProtoMessage() {}
+
+func (x *ElixirMixLockConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ElixirMixLockConfig.ProtoReflect.Descriptor instead.
+func (*ElixirMixLockConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *ElixirMixLockConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type HaskellStacklockConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *HaskellStacklockConfig) Reset() {
+	*x = HaskellStacklockConfig{}
+	mi := &file_proto_config_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HaskellStacklockConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HaskellStacklockConfig) ProtoMessage() {}
+
+func (x *HaskellStacklockConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HaskellStacklockConfig.ProtoReflect.Descriptor instead.
+func (*HaskellStacklockConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *HaskellStacklockConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type HaskellCabalConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *HaskellCabalConfig) Reset() {
+	*x = HaskellCabalConfig{}
+	mi := &file_proto_config_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HaskellCabalConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HaskellCabalConfig) ProtoMessage() {}
+
+func (x *HaskellCabalConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HaskellCabalConfig.ProtoReflect.Descriptor instead.
+func (*HaskellCabalConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *HaskellCabalConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type JavaArchiveConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	// The maximum number of inner zip files within an archive the extractor will
+	// unzip.
+	MaxZipDepth int32 `protobuf:"varint,2,opt,name=max_zip_depth,json=maxZipDepth,proto3" json:"max_zip_depth,omitempty"`
+	// The maximum number of bytes recursively read from an archive file.
+	MaxOpenedBytes int64 `protobuf:"varint,3,opt,name=max_opened_bytes,json=maxOpenedBytes,proto3" json:"max_opened_bytes,omitempty"`
+	// Zip files smaller than min_zip_bytes are ignored.
+	MinZipBytes int32 `protobuf:"varint,4,opt,name=min_zip_bytes,json=minZipBytes,proto3" json:"min_zip_bytes,omitempty"`
+	// Configures if JAR files should be extracted from filenames when no
+	// "pom.properties" is present.
+	ExtractFromFilename *bool `protobuf:"varint,5,opt,name=extract_from_filename,json=extractFromFilename,proto3,oneof" json:"extract_from_filename,omitempty"`
+	// Configures if JAR files should be hashed with base64(sha1()).
+	HashJars      *bool `protobuf:"varint,6,opt,name=hash_jars,json=hashJars,proto3,oneof" json:"hash_jars,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JavaArchiveConfig) Reset() {
+	*x = JavaArchiveConfig{}
+	mi := &file_proto_config_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JavaArchiveConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JavaArchiveConfig) ProtoMessage() {}
+
+func (x *JavaArchiveConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JavaArchiveConfig.ProtoReflect.Descriptor instead.
+func (*JavaArchiveConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *JavaArchiveConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+func (x *JavaArchiveConfig) GetMaxZipDepth() int32 {
+	if x != nil {
+		return x.MaxZipDepth
+	}
+	return 0
+}
+
+func (x *JavaArchiveConfig) GetMaxOpenedBytes() int64 {
+	if x != nil {
+		return x.MaxOpenedBytes
+	}
+	return 0
+}
+
+func (x *JavaArchiveConfig) GetMinZipBytes() int32 {
+	if x != nil {
+		return x.MinZipBytes
+	}
+	return 0
+}
+
+func (x *JavaArchiveConfig) GetExtractFromFilename() bool {
+	if x != nil && x.ExtractFromFilename != nil {
+		return *x.ExtractFromFilename
+	}
+	return false
+}
+
+func (x *JavaArchiveConfig) GetHashJars() bool {
+	if x != nil && x.HashJars != nil {
+		return *x.HashJars
+	}
+	return false
+}
+
+type JavascriptPackageJsonConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	// Specifies whether to extract dependencies.
+	IncludeDependencies bool `protobuf:"varint,2,opt,name=include_dependencies,json=includeDependencies,proto3" json:"include_dependencies,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *JavascriptPackageJsonConfig) Reset() {
+	*x = JavascriptPackageJsonConfig{}
+	mi := &file_proto_config_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JavascriptPackageJsonConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JavascriptPackageJsonConfig) ProtoMessage() {}
+
+func (x *JavascriptPackageJsonConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JavascriptPackageJsonConfig.ProtoReflect.Descriptor instead.
+func (*JavascriptPackageJsonConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *JavascriptPackageJsonConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+func (x *JavascriptPackageJsonConfig) GetIncludeDependencies() bool {
+	if x != nil {
+		return x.IncludeDependencies
+	}
+	return false
+}
+
+type JavascriptPackageLockJsonConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *JavascriptPackageLockJsonConfig) Reset() {
+	*x = JavascriptPackageLockJsonConfig{}
+	mi := &file_proto_config_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JavascriptPackageLockJsonConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JavascriptPackageLockJsonConfig) ProtoMessage() {}
+
+func (x *JavascriptPackageLockJsonConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JavascriptPackageLockJsonConfig.ProtoReflect.Descriptor instead.
+func (*JavascriptPackageLockJsonConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *JavascriptPackageLockJsonConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type PythonRequirementsConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PythonRequirementsConfig) Reset() {
+	*x = PythonRequirementsConfig{}
+	mi := &file_proto_config_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PythonRequirementsConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PythonRequirementsConfig) ProtoMessage() {}
+
+func (x *PythonRequirementsConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PythonRequirementsConfig.ProtoReflect.Descriptor instead.
+func (*PythonRequirementsConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *PythonRequirementsConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type PythonSetupConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PythonSetupConfig) Reset() {
+	*x = PythonSetupConfig{}
+	mi := &file_proto_config_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PythonSetupConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PythonSetupConfig) ProtoMessage() {}
+
+func (x *PythonSetupConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PythonSetupConfig.ProtoReflect.Descriptor instead.
+func (*PythonSetupConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *PythonSetupConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type PythonCondametaConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PythonCondametaConfig) Reset() {
+	*x = PythonCondametaConfig{}
+	mi := &file_proto_config_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PythonCondametaConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PythonCondametaConfig) ProtoMessage() {}
+
+func (x *PythonCondametaConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PythonCondametaConfig.ProtoReflect.Descriptor instead.
+func (*PythonCondametaConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *PythonCondametaConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type PythonWheelEggConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PythonWheelEggConfig) Reset() {
+	*x = PythonWheelEggConfig{}
+	mi := &file_proto_config_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PythonWheelEggConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PythonWheelEggConfig) ProtoMessage() {}
+
+func (x *PythonWheelEggConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PythonWheelEggConfig.ProtoReflect.Descriptor instead.
+func (*PythonWheelEggConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *PythonWheelEggConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type GoModConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Excludes indirect dependencies from the extraction.
+	ExcludeIndirect bool `protobuf:"varint,1,opt,name=exclude_indirect,json=excludeIndirect,proto3" json:"exclude_indirect,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GoModConfig) Reset() {
+	*x = GoModConfig{}
+	mi := &file_proto_config_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GoModConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GoModConfig) ProtoMessage() {}
+
+func (x *GoModConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GoModConfig.ProtoReflect.Descriptor instead.
+func (*GoModConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *GoModConfig) GetExcludeIndirect() bool {
+	if x != nil {
+		return x.ExcludeIndirect
+	}
+	return false
+}
+
+type WordpressPluginsConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *WordpressPluginsConfig) Reset() {
+	*x = WordpressPluginsConfig{}
+	mi := &file_proto_config_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WordpressPluginsConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WordpressPluginsConfig) ProtoMessage() {}
+
+func (x *WordpressPluginsConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WordpressPluginsConfig.ProtoReflect.Descriptor instead.
+func (*WordpressPluginsConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *WordpressPluginsConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+type MariadbConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	// FollowInclude directive tells the extractor to follow the include or not.
+	FollowInclude *bool `protobuf:"varint,2,opt,name=follow_include,json=followInclude,proto3,oneof" json:"follow_include,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MariadbConfig) Reset() {
+	*x = MariadbConfig{}
+	mi := &file_proto_config_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MariadbConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MariadbConfig) ProtoMessage() {}
+
+func (x *MariadbConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MariadbConfig.ProtoReflect.Descriptor instead.
+func (*MariadbConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *MariadbConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+func (x *MariadbConfig) GetFollowInclude() bool {
+	if x != nil && x.FollowInclude != nil {
+		return *x.FollowInclude
+	}
+	return false
+}
+
 var File_proto_config_proto protoreflect.FileDescriptor
 
 const file_proto_config_proto_rawDesc = "" +
@@ -1838,7 +3233,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xc2\v\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xfe\x17\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -1871,7 +3266,28 @@ const file_proto_config_proto_rawDesc = "" +
 	"containerd\x18\x18 \x01(\v2\x19.scalibr.ContainerdConfigH\x00R\n" +
 	"containerd\x12U\n" +
 	"\x14docker_compose_image\x18\x19 \x01(\v2!.scalibr.DockerComposeImageConfigH\x00R\x12dockerComposeImage\x126\n" +
-	"\tk8s_image\x18\x1a \x01(\v2\x17.scalibr.K8sImageConfigH\x00R\bk8sImageB\b\n" +
+	"\tk8s_image\x18\x1a \x01(\v2\x17.scalibr.K8sImageConfigH\x00R\bk8sImage\x12I\n" +
+	"\x10dotnet_deps_json\x18\x1b \x01(\v2\x1d.scalibr.DotnetDepsJsonConfigH\x00R\x0edotnetDepsJson\x12[\n" +
+	"\x16dotnet_packages_config\x18\x1c \x01(\v2#.scalibr.DotnetPackagesConfigConfigH\x00R\x14dotnetPackagesConfig\x12b\n" +
+	"\x19dotnet_packages_lock_json\x18\x1d \x01(\v2%.scalibr.DotnetPackagesLockJsonConfigH\x00R\x16dotnetPackagesLockJson\x126\n" +
+	"\tdotnet_pe\x18\x1e \x01(\v2\x17.scalibr.DotnetPeConfigH\x00R\bdotnetPe\x122\n" +
+	"\agemspec\x18\x1f \x01(\v2\x16.scalibr.GemspecConfigH\x00R\agemspec\x12H\n" +
+	"\x0fcargo_auditable\x18  \x01(\v2\x1d.scalibr.CargoAuditableConfigH\x00R\x0ecargoAuditable\x12[\n" +
+	"\x16swift_package_resolved\x18! \x01(\v2#.scalibr.SwiftPackageResolvedConfigH\x00R\x14swiftPackageResolved\x12O\n" +
+	"\x12swift_podfile_lock\x18\" \x01(\v2\x1f.scalibr.SwiftPodfileLockConfigH\x00R\x10swiftPodfileLock\x12F\n" +
+	"\x0felixir_mix_lock\x18# \x01(\v2\x1c.scalibr.ElixirMixLockConfigH\x00R\relixirMixLock\x12N\n" +
+	"\x11haskell_stacklock\x18$ \x01(\v2\x1f.scalibr.HaskellStacklockConfigH\x00R\x10haskellStacklock\x12B\n" +
+	"\rhaskell_cabal\x18% \x01(\v2\x1b.scalibr.HaskellCabalConfigH\x00R\fhaskellCabal\x12?\n" +
+	"\fjava_archive\x18& \x01(\v2\x1a.scalibr.JavaArchiveConfigH\x00R\vjavaArchive\x12^\n" +
+	"\x17javascript_package_json\x18' \x01(\v2$.scalibr.JavascriptPackageJsonConfigH\x00R\x15javascriptPackageJson\x12k\n" +
+	"\x1cjavascript_package_lock_json\x18( \x01(\v2(.scalibr.JavascriptPackageLockJsonConfigH\x00R\x19javascriptPackageLockJson\x12T\n" +
+	"\x13python_requirements\x18) \x01(\v2!.scalibr.PythonRequirementsConfigH\x00R\x12pythonRequirements\x12?\n" +
+	"\fpython_setup\x18* \x01(\v2\x1a.scalibr.PythonSetupConfigH\x00R\vpythonSetup\x12K\n" +
+	"\x10python_condameta\x18+ \x01(\v2\x1e.scalibr.PythonCondametaConfigH\x00R\x0fpythonCondameta\x12I\n" +
+	"\x10python_wheel_egg\x18, \x01(\v2\x1d.scalibr.PythonWheelEggConfigH\x00R\x0epythonWheelEgg\x12-\n" +
+	"\x06go_mod\x18- \x01(\v2\x14.scalibr.GoModConfigH\x00R\x05goMod\x12N\n" +
+	"\x11wordpress_plugins\x18. \x01(\v2\x1f.scalibr.WordpressPluginsConfigH\x00R\x10wordpressPlugins\x122\n" +
+	"\amariadb\x18/ \x01(\v2\x16.scalibr.MariadbConfigH\x00R\amariadbB\b\n" +
 	"\x06config\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
@@ -1931,7 +3347,61 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x18DockerComposeImageConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"?\n" +
 	"\x0eK8sImageConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"E\n" +
+	"\x14DotnetDepsJsonConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"K\n" +
+	"\x1aDotnetPackagesConfigConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"M\n" +
+	"\x1cDotnetPackagesLockJsonConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"?\n" +
+	"\x0eDotnetPeConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\">\n" +
+	"\rGemspecConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"\x83\x01\n" +
+	"\x14CargoAuditableConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12<\n" +
+	"\x1aextract_build_dependencies\x18\x02 \x01(\bR\x18extractBuildDependencies\"K\n" +
+	"\x1aSwiftPackageResolvedConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"G\n" +
+	"\x16SwiftPodfileLockConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"D\n" +
+	"\x13ElixirMixLockConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"G\n" +
+	"\x16HaskellStacklockConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"C\n" +
+	"\x12HaskellCabalConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"\xb7\x02\n" +
+	"\x11JavaArchiveConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12\"\n" +
+	"\rmax_zip_depth\x18\x02 \x01(\x05R\vmaxZipDepth\x12(\n" +
+	"\x10max_opened_bytes\x18\x03 \x01(\x03R\x0emaxOpenedBytes\x12\"\n" +
+	"\rmin_zip_bytes\x18\x04 \x01(\x05R\vminZipBytes\x127\n" +
+	"\x15extract_from_filename\x18\x05 \x01(\bH\x00R\x13extractFromFilename\x88\x01\x01\x12 \n" +
+	"\thash_jars\x18\x06 \x01(\bH\x01R\bhashJars\x88\x01\x01B\x18\n" +
+	"\x16_extract_from_filenameB\f\n" +
+	"\n" +
+	"_hash_jars\"\x7f\n" +
+	"\x1bJavascriptPackageJsonConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x121\n" +
+	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependencies\"P\n" +
+	"\x1fJavascriptPackageLockJsonConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"I\n" +
+	"\x18PythonRequirementsConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"B\n" +
+	"\x11PythonSetupConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"F\n" +
+	"\x15PythonCondametaConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"E\n" +
+	"\x14PythonWheelEggConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"8\n" +
+	"\vGoModConfig\x12)\n" +
+	"\x10exclude_indirect\x18\x01 \x01(\bR\x0fexcludeIndirect\"G\n" +
+	"\x16WordpressPluginsConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"}\n" +
+	"\rMariadbConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12*\n" +
+	"\x0efollow_include\x18\x02 \x01(\bH\x00R\rfollowInclude\x88\x01\x01B\x11\n" +
+	"\x0f_follow_includeBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
@@ -1945,36 +3415,57 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 49)
 var file_proto_config_proto_goTypes = []any{
-	(*PluginConfig)(nil),                  // 0: scalibr.PluginConfig
-	(*PluginSpecificConfig)(nil),          // 1: scalibr.PluginSpecificConfig
-	(*GoBinaryConfig)(nil),                // 2: scalibr.GoBinaryConfig
-	(*GovulncheckConfig)(nil),             // 3: scalibr.GovulncheckConfig
-	(*ArchiveConfig)(nil),                 // 4: scalibr.ArchiveConfig
-	(*OVAConfig)(nil),                     // 5: scalibr.OVAConfig
-	(*VDIConfig)(nil),                     // 6: scalibr.VDIConfig
-	(*VMDKConfig)(nil),                    // 7: scalibr.VMDKConfig
-	(*ChocolateyConfig)(nil),              // 8: scalibr.ChocolateyConfig
-	(*HashiCorpVaultValidatorConfig)(nil), // 9: scalibr.HashiCorpVaultValidatorConfig
-	(*SDPInspectConfig)(nil),              // 10: scalibr.SDPInspectConfig
-	(*POMXMLNetConfig)(nil),               // 11: scalibr.POMXMLNetConfig
-	(*DpkgConfig)(nil),                    // 12: scalibr.DpkgConfig
-	(*RpmConfig)(nil),                     // 13: scalibr.RpmConfig
-	(*ApkConfig)(nil),                     // 14: scalibr.ApkConfig
-	(*CosConfig)(nil),                     // 15: scalibr.CosConfig
-	(*SnapConfig)(nil),                    // 16: scalibr.SnapConfig
-	(*KernelModuleConfig)(nil),            // 17: scalibr.KernelModuleConfig
-	(*VmlinuzConfig)(nil),                 // 18: scalibr.VmlinuzConfig
-	(*PacmanConfig)(nil),                  // 19: scalibr.PacmanConfig
-	(*PortageConfig)(nil),                 // 20: scalibr.PortageConfig
-	(*FlatpakConfig)(nil),                 // 21: scalibr.FlatpakConfig
-	(*MacAppsConfig)(nil),                 // 22: scalibr.MacAppsConfig
-	(*PodmanConfig)(nil),                  // 23: scalibr.PodmanConfig
-	(*DockerBaseImageConfig)(nil),         // 24: scalibr.DockerBaseImageConfig
-	(*ContainerdConfig)(nil),              // 25: scalibr.ContainerdConfig
-	(*DockerComposeImageConfig)(nil),      // 26: scalibr.DockerComposeImageConfig
-	(*K8SImageConfig)(nil),                // 27: scalibr.K8sImageConfig
+	(*PluginConfig)(nil),                    // 0: scalibr.PluginConfig
+	(*PluginSpecificConfig)(nil),            // 1: scalibr.PluginSpecificConfig
+	(*GoBinaryConfig)(nil),                  // 2: scalibr.GoBinaryConfig
+	(*GovulncheckConfig)(nil),               // 3: scalibr.GovulncheckConfig
+	(*ArchiveConfig)(nil),                   // 4: scalibr.ArchiveConfig
+	(*OVAConfig)(nil),                       // 5: scalibr.OVAConfig
+	(*VDIConfig)(nil),                       // 6: scalibr.VDIConfig
+	(*VMDKConfig)(nil),                      // 7: scalibr.VMDKConfig
+	(*ChocolateyConfig)(nil),                // 8: scalibr.ChocolateyConfig
+	(*HashiCorpVaultValidatorConfig)(nil),   // 9: scalibr.HashiCorpVaultValidatorConfig
+	(*SDPInspectConfig)(nil),                // 10: scalibr.SDPInspectConfig
+	(*POMXMLNetConfig)(nil),                 // 11: scalibr.POMXMLNetConfig
+	(*DpkgConfig)(nil),                      // 12: scalibr.DpkgConfig
+	(*RpmConfig)(nil),                       // 13: scalibr.RpmConfig
+	(*ApkConfig)(nil),                       // 14: scalibr.ApkConfig
+	(*CosConfig)(nil),                       // 15: scalibr.CosConfig
+	(*SnapConfig)(nil),                      // 16: scalibr.SnapConfig
+	(*KernelModuleConfig)(nil),              // 17: scalibr.KernelModuleConfig
+	(*VmlinuzConfig)(nil),                   // 18: scalibr.VmlinuzConfig
+	(*PacmanConfig)(nil),                    // 19: scalibr.PacmanConfig
+	(*PortageConfig)(nil),                   // 20: scalibr.PortageConfig
+	(*FlatpakConfig)(nil),                   // 21: scalibr.FlatpakConfig
+	(*MacAppsConfig)(nil),                   // 22: scalibr.MacAppsConfig
+	(*PodmanConfig)(nil),                    // 23: scalibr.PodmanConfig
+	(*DockerBaseImageConfig)(nil),           // 24: scalibr.DockerBaseImageConfig
+	(*ContainerdConfig)(nil),                // 25: scalibr.ContainerdConfig
+	(*DockerComposeImageConfig)(nil),        // 26: scalibr.DockerComposeImageConfig
+	(*K8SImageConfig)(nil),                  // 27: scalibr.K8sImageConfig
+	(*DotnetDepsJsonConfig)(nil),            // 28: scalibr.DotnetDepsJsonConfig
+	(*DotnetPackagesConfigConfig)(nil),      // 29: scalibr.DotnetPackagesConfigConfig
+	(*DotnetPackagesLockJsonConfig)(nil),    // 30: scalibr.DotnetPackagesLockJsonConfig
+	(*DotnetPeConfig)(nil),                  // 31: scalibr.DotnetPeConfig
+	(*GemspecConfig)(nil),                   // 32: scalibr.GemspecConfig
+	(*CargoAuditableConfig)(nil),            // 33: scalibr.CargoAuditableConfig
+	(*SwiftPackageResolvedConfig)(nil),      // 34: scalibr.SwiftPackageResolvedConfig
+	(*SwiftPodfileLockConfig)(nil),          // 35: scalibr.SwiftPodfileLockConfig
+	(*ElixirMixLockConfig)(nil),             // 36: scalibr.ElixirMixLockConfig
+	(*HaskellStacklockConfig)(nil),          // 37: scalibr.HaskellStacklockConfig
+	(*HaskellCabalConfig)(nil),              // 38: scalibr.HaskellCabalConfig
+	(*JavaArchiveConfig)(nil),               // 39: scalibr.JavaArchiveConfig
+	(*JavascriptPackageJsonConfig)(nil),     // 40: scalibr.JavascriptPackageJsonConfig
+	(*JavascriptPackageLockJsonConfig)(nil), // 41: scalibr.JavascriptPackageLockJsonConfig
+	(*PythonRequirementsConfig)(nil),        // 42: scalibr.PythonRequirementsConfig
+	(*PythonSetupConfig)(nil),               // 43: scalibr.PythonSetupConfig
+	(*PythonCondametaConfig)(nil),           // 44: scalibr.PythonCondametaConfig
+	(*PythonWheelEggConfig)(nil),            // 45: scalibr.PythonWheelEggConfig
+	(*GoModConfig)(nil),                     // 46: scalibr.GoModConfig
+	(*WordpressPluginsConfig)(nil),          // 47: scalibr.WordpressPluginsConfig
+	(*MariadbConfig)(nil),                   // 48: scalibr.MariadbConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1,  // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
@@ -2004,11 +3495,32 @@ var file_proto_config_proto_depIdxs = []int32{
 	25, // 24: scalibr.PluginSpecificConfig.containerd:type_name -> scalibr.ContainerdConfig
 	26, // 25: scalibr.PluginSpecificConfig.docker_compose_image:type_name -> scalibr.DockerComposeImageConfig
 	27, // 26: scalibr.PluginSpecificConfig.k8s_image:type_name -> scalibr.K8sImageConfig
-	27, // [27:27] is the sub-list for method output_type
-	27, // [27:27] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	28, // 27: scalibr.PluginSpecificConfig.dotnet_deps_json:type_name -> scalibr.DotnetDepsJsonConfig
+	29, // 28: scalibr.PluginSpecificConfig.dotnet_packages_config:type_name -> scalibr.DotnetPackagesConfigConfig
+	30, // 29: scalibr.PluginSpecificConfig.dotnet_packages_lock_json:type_name -> scalibr.DotnetPackagesLockJsonConfig
+	31, // 30: scalibr.PluginSpecificConfig.dotnet_pe:type_name -> scalibr.DotnetPeConfig
+	32, // 31: scalibr.PluginSpecificConfig.gemspec:type_name -> scalibr.GemspecConfig
+	33, // 32: scalibr.PluginSpecificConfig.cargo_auditable:type_name -> scalibr.CargoAuditableConfig
+	34, // 33: scalibr.PluginSpecificConfig.swift_package_resolved:type_name -> scalibr.SwiftPackageResolvedConfig
+	35, // 34: scalibr.PluginSpecificConfig.swift_podfile_lock:type_name -> scalibr.SwiftPodfileLockConfig
+	36, // 35: scalibr.PluginSpecificConfig.elixir_mix_lock:type_name -> scalibr.ElixirMixLockConfig
+	37, // 36: scalibr.PluginSpecificConfig.haskell_stacklock:type_name -> scalibr.HaskellStacklockConfig
+	38, // 37: scalibr.PluginSpecificConfig.haskell_cabal:type_name -> scalibr.HaskellCabalConfig
+	39, // 38: scalibr.PluginSpecificConfig.java_archive:type_name -> scalibr.JavaArchiveConfig
+	40, // 39: scalibr.PluginSpecificConfig.javascript_package_json:type_name -> scalibr.JavascriptPackageJsonConfig
+	41, // 40: scalibr.PluginSpecificConfig.javascript_package_lock_json:type_name -> scalibr.JavascriptPackageLockJsonConfig
+	42, // 41: scalibr.PluginSpecificConfig.python_requirements:type_name -> scalibr.PythonRequirementsConfig
+	43, // 42: scalibr.PluginSpecificConfig.python_setup:type_name -> scalibr.PythonSetupConfig
+	44, // 43: scalibr.PluginSpecificConfig.python_condameta:type_name -> scalibr.PythonCondametaConfig
+	45, // 44: scalibr.PluginSpecificConfig.python_wheel_egg:type_name -> scalibr.PythonWheelEggConfig
+	46, // 45: scalibr.PluginSpecificConfig.go_mod:type_name -> scalibr.GoModConfig
+	47, // 46: scalibr.PluginSpecificConfig.wordpress_plugins:type_name -> scalibr.WordpressPluginsConfig
+	48, // 47: scalibr.PluginSpecificConfig.mariadb:type_name -> scalibr.MariadbConfig
+	48, // [48:48] is the sub-list for method output_type
+	48, // [48:48] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -2043,14 +3555,37 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_Containerd)(nil),
 		(*PluginSpecificConfig_DockerComposeImage)(nil),
 		(*PluginSpecificConfig_K8SImage)(nil),
+		(*PluginSpecificConfig_DotnetDepsJson)(nil),
+		(*PluginSpecificConfig_DotnetPackagesConfig)(nil),
+		(*PluginSpecificConfig_DotnetPackagesLockJson)(nil),
+		(*PluginSpecificConfig_DotnetPe)(nil),
+		(*PluginSpecificConfig_Gemspec)(nil),
+		(*PluginSpecificConfig_CargoAuditable)(nil),
+		(*PluginSpecificConfig_SwiftPackageResolved)(nil),
+		(*PluginSpecificConfig_SwiftPodfileLock)(nil),
+		(*PluginSpecificConfig_ElixirMixLock)(nil),
+		(*PluginSpecificConfig_HaskellStacklock)(nil),
+		(*PluginSpecificConfig_HaskellCabal)(nil),
+		(*PluginSpecificConfig_JavaArchive)(nil),
+		(*PluginSpecificConfig_JavascriptPackageJson)(nil),
+		(*PluginSpecificConfig_JavascriptPackageLockJson)(nil),
+		(*PluginSpecificConfig_PythonRequirements)(nil),
+		(*PluginSpecificConfig_PythonSetup)(nil),
+		(*PluginSpecificConfig_PythonCondameta)(nil),
+		(*PluginSpecificConfig_PythonWheelEgg)(nil),
+		(*PluginSpecificConfig_GoMod)(nil),
+		(*PluginSpecificConfig_WordpressPlugins)(nil),
+		(*PluginSpecificConfig_Mariadb)(nil),
 	}
+	file_proto_config_proto_msgTypes[39].OneofWrappers = []any{}
+	file_proto_config_proto_msgTypes[48].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   28,
+			NumMessages:   49,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
