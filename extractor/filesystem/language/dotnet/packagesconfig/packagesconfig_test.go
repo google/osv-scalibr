@@ -36,7 +36,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -46,41 +45,9 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     packagesconfig.Config
-		wantCfg packagesconfig.Config
-	}{
-		{
-			name: "default",
-			cfg:  packagesconfig.DefaultConfig(),
-			wantCfg: packagesconfig.Config{
-				MaxFileSizeBytes: 20 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: packagesconfig.Config{
-				MaxFileSizeBytes: 20,
-			},
-			wantCfg: packagesconfig.Config{
-				MaxFileSizeBytes: 20,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := packagesconfig.New(tt.cfg)
-			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
-				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -145,10 +112,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = packagesconfig.New(packagesconfig.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := packagesconfig.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("New() unexpected error: %v", err)
+			}
+			e.(*packagesconfig.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -234,10 +202,11 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = packagesconfig.New(packagesconfig.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: 100,
-			})
+			e, err := packagesconfig.New(&cpb.PluginConfig{MaxFileSizeBytes: 100})
+			if err != nil {
+				t.Fatalf("New() unexpected error: %v", err)
+			}
+			e.(*packagesconfig.Extractor).Stats = collector
 
 			// Use the generated scan input for each test case
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

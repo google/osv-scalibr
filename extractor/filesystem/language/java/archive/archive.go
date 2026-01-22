@@ -37,6 +37,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"go.uber.org/multierr"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -52,34 +54,13 @@ const (
 	// defaultMinZipBytes is slightly larger than an empty zip file which is 22 bytes.
 	// https://en.wikipedia.org/wiki/ZIP_(file_format)#:~:text=Viewed%20as%20an%20ASCII%20string,file%20are%20usually%20%22PK%22.
 	defaultMinZipBytes = 30
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
 )
 
 var (
 	archiveExtensions = []string{".jar", ".war", ".ear", ".jmod", ".par", ".sar", ".jpi", ".hpi", ".lpkg", ".nar"}
 )
-
-// Config is the configuration for the Extractor.
-type Config struct {
-	// MaxZipDepth is the maximum number of inner zip files within an archive the extractor will unzip.
-	// Once reached, no more inner zip files will be explored during extraction.
-	MaxZipDepth int
-	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
-	// If this limit is greater than zero and a file is encountered that is larger
-	// than this limit, the file is ignored by returning false for `FileRequired`.
-	MaxFileSizeBytes int64
-	// MaxOpenedBytes is the maximum number of bytes recursively read from an archive file.
-	// If this limit is reached, extraction is halted and results so far are returned.
-	MaxOpenedBytes int64
-	// MinZipBytes is use to ignore empty zip files during extraction.
-	// Zip files smaller than minZipBytes are ignored.
-	MinZipBytes int
-	// ExtractFromFilename configures if JAR files should be extracted from filenames when no "pom.properties" is present.
-	ExtractFromFilename bool
-	// HashJars configures if JAR files should be hashed with base64(sha1()), which can be used in deps.dev.
-	HashJars bool
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-}
 
 // Extractor extracts Java packages from archive files.
 type Extractor struct {
@@ -89,42 +70,52 @@ type Extractor struct {
 	minZipBytes         int
 	extractFromFilename bool
 	hashJars            bool
-	stats               stats.Collector
-}
-
-// DefaultConfig returns the default configuration for the Java archive extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxZipDepth:         defaultMaxZipDepth,
-		MaxFileSizeBytes:    0,
-		MaxOpenedBytes:      defaultMaxZipBytes,
-		MinZipBytes:         defaultMinZipBytes,
-		ExtractFromFilename: true,
-		HashJars:            true,
-		Stats:               nil,
-	}
+	Stats               stats.Collector
 }
 
 // New returns a Java archive extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		maxZipDepth:         cfg.MaxZipDepth,
-		maxFileSizeBytes:    cfg.MaxFileSizeBytes,
-		maxOpenedBytes:      cfg.MaxOpenedBytes,
-		minZipBytes:         cfg.MinZipBytes,
-		extractFromFilename: cfg.ExtractFromFilename,
-		hashJars:            cfg.HashJars,
-		stats:               cfg.Stats,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxZipDepth := defaultMaxZipDepth
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
+	maxOpenedBytes := defaultMaxZipBytes
+	minZipBytes := defaultMinZipBytes
+	extractFromFilename := true
+	hashJars := true
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavaArchiveConfig { return c.GetJavaArchive() })
+	if specific != nil {
+		if specific.GetMaxFileSizeBytes() > 0 {
+			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+		}
+		if specific.GetMaxZipDepth() > 0 {
+			maxZipDepth = int(specific.GetMaxZipDepth())
+		}
+		if specific.GetMaxOpenedBytes() > 0 {
+			maxOpenedBytes = specific.GetMaxOpenedBytes()
+		}
+		if specific.GetMinZipBytes() > 0 {
+			minZipBytes = int(specific.GetMinZipBytes())
+		}
+		if specific.ExtractFromFilename != nil {
+			extractFromFilename = specific.GetExtractFromFilename()
+		}
+		if specific.HashJars != nil {
+			hashJars = specific.GetHashJars()
+		}
+	}
+
+	return &Extractor{
+		maxZipDepth:         maxZipDepth,
+		maxFileSizeBytes:    maxFileSizeBytes,
+		maxOpenedBytes:      maxOpenedBytes,
+		minZipBytes:         minZipBytes,
+		extractFromFilename: extractFromFilename,
+		hashJars:            hashJars,
+	}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -146,7 +137,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if err != nil {
 		return false
 	}
-	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
@@ -156,10 +147,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -169,12 +160,12 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 // Extract extracts java packages from archive files passed through input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs, openedBytes, err := e.extractWithMax(ctx, input, 1, 0)
-	if e.stats != nil {
+	if e.Stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
 			fileSizeBytes = input.Info.Size()
 		}
-		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 			Path:              input.Path,
 			Result:            filesystem.ExtractorErrorToFileExtractedResult(err),
 			FileSizeBytes:     fileSizeBytes,

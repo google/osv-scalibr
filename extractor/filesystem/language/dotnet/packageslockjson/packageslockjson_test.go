@@ -33,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -98,12 +100,11 @@ func TestFileRequired(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = packageslockjson.New(
-				packageslockjson.Config{
-					Stats:            collector,
-					MaxFileSizeBytes: test.maxFileSizeBytes,
-				},
-			)
+			e, err := packageslockjson.New(&cpb.PluginConfig{MaxFileSizeBytes: test.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("New() unexpected error: %v", err)
+			}
+			e.(*packageslockjson.Extractor).Stats = collector
 
 			// Set default size if not provided.
 			fileSizeBytes := test.fileSizeBytes
@@ -202,7 +203,11 @@ func TestExtractor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = packageslockjson.New(packageslockjson.Config{Stats: collector})
+			e, err := packageslockjson.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New() unexpected error: %v", err)
+			}
+			e.(*packageslockjson.Extractor).Stats = collector
 
 			r, err := os.Open(test.path)
 			defer func() {
