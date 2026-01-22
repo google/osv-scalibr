@@ -91,12 +91,6 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
-// Wraps initer functions that don't take any config value to initer functions that do.
-// TODO(b/400910349): Remove once all plugins take config values.
-func noCFG(f func() annotator.Annotator) InitFn {
-	return func(_ *cpb.PluginConfig) (annotator.Annotator, error) { return f(), nil }
-}
-
 // AnnotatorsFromName returns a list of annotators from a name.
 func AnnotatorsFromName(name string, cfg *cpb.PluginConfig) ([]annotator.Annotator, error) {
 	if initers, ok := annotatorNames[name]; ok {
