@@ -140,6 +140,7 @@ message Package {
     DepGroupMetadata dep_group_metadata = 61;
     ChocolateyPackageMetadata chocolatey_metadata = 62;
     MiseMetadata mise_metadata = 63;
+    UnknownBinaryMetadata unknown_binary_metadata = 64;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -695,6 +696,18 @@ message WingetPackageMetadata {
   string channel = 5;
   repeated string tags = 6;
   repeated string commands = 7;
+}
+
+// Additional data attributed to unknown binaries.
+message UnknownBinaryMetadata {
+  string file_hash = 1;
+  UnknownBinaryAttribution attribution = 2;
+}
+
+// Data about attributing a binary to a known base image.
+message UnknownBinaryAttribution {
+  bool local_filesystem = 1;
+  bool base_image = 2;
 }
 
 // A secret (i.e. credential) found by Veles secret scanning.

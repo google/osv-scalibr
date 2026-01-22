@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
+	"github.com/google/osv-scalibr/enricher/ffa/baseimageattr"
 	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
@@ -168,6 +169,12 @@ var (
 		packagedeprecation.Name: {packagedeprecation.New},
 	}
 
+	// FFA enrichers.
+	FFA = InitMap{
+		baseimage.Name:     {noCFG(baseimage.NewDefault)},
+		baseimageattr.Name: {baseimageattr.New},
+	}
+
 	// Default enrichers.
 	Default = concat()
 
@@ -183,6 +190,7 @@ var (
 		Reachability,
 		TransitiveDependency,
 		PackageDeprecation,
+		FFA,
 	)
 
 	enricherNames = concat(All, InitMap{
@@ -195,6 +203,7 @@ var (
 		"reachability":         vals(Reachability),
 		"transitivedependency": vals(TransitiveDependency),
 		"packagedeprecation":   vals(PackageDeprecation),
+		"ffa":                  vals(FFA),
 
 		"enrichers/default": vals(Default),
 		"default":           vals(Default),

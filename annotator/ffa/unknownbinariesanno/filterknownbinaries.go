@@ -18,7 +18,9 @@ package unknownbinariesanno
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"slices"
 
 	"github.com/google/osv-scalibr/annotator"
@@ -32,7 +34,7 @@ import (
 )
 
 // Name of the plugin
-const Name = "ffa/unknownbinaries"
+const Name = "ffa/unknownbinariesanno"
 
 // List of filters to apply to exclude known binaries
 var filters = []filter.Filter{
@@ -79,6 +81,11 @@ func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput,
 	for _, f := range filters {
 		err := f.HashSetFilter(ctx, input.ScanRoot.FS, unknownBinariesSet)
 		if err != nil {
+			// If a particular system's package manager db doesn't exist, it is not installed or has no package info.
+			// We simply continue down the filter list
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
 			return fmt.Errorf("%s halted at %q (%q) because %w", anno.Name(), input.ScanRoot.Path, f.Name(), err)
 		}
 	}

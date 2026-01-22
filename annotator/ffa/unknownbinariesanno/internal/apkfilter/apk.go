@@ -66,7 +66,7 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					continue
 				}
 				filePath := path.Join(currentDir, kv.Value)
-				delete(unknownBinariesSet, filePath)
+				filter.AttributePackage(unknownBinariesSet, filePath)
 
 				if evalFS, ok := fs.(image.EvalSymlinksFS); ok {
 					// EvalSymlink expects an absolute path from the root of the image.
@@ -74,7 +74,7 @@ func (ApkFilter) HashSetFilter(ctx context.Context, fs scalibrfs.FS, unknownBina
 					if err != nil {
 						continue
 					}
-					delete(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
+					filter.AttributePackage(unknownBinariesSet, strings.TrimPrefix(evalPath, "/"))
 				}
 			}
 		}
