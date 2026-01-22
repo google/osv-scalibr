@@ -42,25 +42,25 @@ type InitMap map[string][]InitFn
 
 // VEX generation related annotators.
 var VEX = InitMap{
-	apk.Name:              {noCFG(apk.New)},
-	cachedir.Name:         {noCFG(cachedir.New)},
-	cos.Name:              {noCFG(cos.New)},
-	dpkg.Name:             {noCFG(dpkg.New)},
+	apk.Name:              {apk.New},
+	cachedir.Name:         {cachedir.New},
+	cos.Name:              {cos.New},
+	dpkg.Name:             {dpkg.New},
 	rpm.Name:              {noCFG(rpm.NewDefault)},
-	noexecutabledpkg.Name: {noCFG(noexecutabledpkg.New)},
+	noexecutabledpkg.Name: {noexecutabledpkg.New},
 }
 
 // Misc annotators.
 var Misc = InitMap{
-	npmsource.Name:  {noCFG(npmsource.New)},
-	dpkgsource.Name: {noCFG(dpkgsource.New)},
+	npmsource.Name:  {npmsource.New},
+	dpkgsource.Name: {dpkgsource.New},
 }
 
 // FFA (Full Filesystem Accountability) related annotators.
-var FFA = InitMap{unknownbinariesanno.Name: {noCFG(unknownbinariesanno.New)}}
+var FFA = InitMap{unknownbinariesanno.Name: {unknownbinariesanno.New}}
 
 // Default detectors that are recommended to be enabled.
-var Default = InitMap{cachedir.Name: {noCFG(cachedir.New)}}
+var Default = InitMap{cachedir.Name: {cachedir.New}}
 
 // All annotators.
 var All = concat(

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -47,7 +48,7 @@ const (
 type Annotator struct{}
 
 // New returns a new Annotator.
-func New() annotator.Annotator { return &Annotator{} }
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
 func (Annotator) Name() string { return Name }

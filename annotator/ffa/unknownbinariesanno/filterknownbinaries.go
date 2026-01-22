@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/apkfilter"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/dpkgfilter"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/inventory"
@@ -47,8 +48,8 @@ type Annotator struct {
 }
 
 // New returns a new Annotator.
-func New() annotator.Annotator {
-	return &Annotator{}
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) {
+	return &Annotator{}, nil
 }
 
 // Annotate filters out binaries extracted by unknwonbinaries extractor that can be accounted for by other
