@@ -67,8 +67,7 @@ var _ veles.Detector = &Detector{}
 // The greedy selection logic prefers tuples with minimal Dist (tightest grouping)
 // and avoids reusing overlapping matches across different tuple results.
 type Detector struct {
-	// MaxElementLen is used to estimate MaxSecretLen(). It does not constrain
-	// actual regex match sizes; it only contributes to a safe upper bound.
+	// MaxElementLen is used to estimate MaxSecretLen().
 	MaxElementLen uint32
 
 	// MaxDistance defines the maximum allowed distance between tuple components.
@@ -76,9 +75,13 @@ type Detector struct {
 	// Smaller values prefer tightly grouped matches.
 	MaxDistance uint32
 
-	// Finders is a list of regex-based match functions. Each Finder corresponds
-	// to one element of the tuple. A valid N-tuple requires one match from each
-	// Finder.
+	// Finders is an ordered list of regex-based match functions.
+	// Each Finder corresponds to one element of the tuple, and a valid N-tuple
+	// requires at least one match from each Finder.
+	//
+	// Finders should be ordered from most specific to most generic. This allows
+	// the search to exit early if a more specific Finder produces no matches
+	// in the file, avoiding unnecessary work by broader matchers.
 	Finders []Finder
 
 	// FromTuple converts a slice of Matches (one from each Finder) into a
