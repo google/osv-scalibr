@@ -21,6 +21,8 @@ import (
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -30,38 +32,22 @@ const (
 	defaultTimeout = 5 * time.Minute
 )
 
-// Config contains RPM specific configuration values
-type Config struct {
-	// Timeout is the timeout duration for parsing the RPM database.
-	Timeout time.Duration
-}
-
-// DefaultConfig returns the default configuration values for the Annotator.
-func DefaultConfig() Config {
-	return Config{
-		Timeout: defaultTimeout,
-	}
-}
-
 // Annotator adds annotations to language packages that have already been found in RPM OS packages.
 type Annotator struct {
 	Timeout time.Duration
 }
 
 // New returns a new Annotator.
-//
-// For most use cases, initialize with:
-// ```
-// a := New(DefaultConfig())
-// ```
-func New(cfg Config) *Annotator {
-	return &Annotator{
-		Timeout: cfg.Timeout,
-	}
-}
+func New(cfg *cpb.PluginConfig) (annotator.Annotator, error) {
+	timeout := defaultTimeout
 
-// NewDefault returns the Annotator with the default config settings.
-func NewDefault() annotator.Annotator { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.RpmConfig { return c.GetRpm() })
+	if specific.GetTimeoutSeconds() > 0 {
+		timeout = time.Duration(specific.GetTimeoutSeconds()) * time.Second
+	}
+
+	return &Annotator{Timeout: timeout}, nil
+}
 
 // Name of the annotator.
 func (Annotator) Name() string { return Name }

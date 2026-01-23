@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/annotator/cachedir"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -72,7 +73,13 @@ func TestIsInsideCacheDir(t *testing.T) {
 					Locations: []string{tt.inputPath},
 				}},
 			}
-			if err := cachedir.New().Annotate(t.Context(), nil, inv); err != nil {
+			anno, err := cachedir.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(t.Context(), nil, inv)
+			if err != nil {
 				t.Errorf("Annotate(%v): %v", inv, err)
 			}
 			var want []*vex.PackageExploitabilitySignal

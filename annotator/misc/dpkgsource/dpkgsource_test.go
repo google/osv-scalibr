@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/inventory"
@@ -44,7 +45,10 @@ func TestAnnotate_DPKGSource(t *testing.T) {
 	}
 	dpkgsource.FetchAptCachePolicy = mockGetAptCachePolicy(mockPolicyResults)
 
-	annotatorInstance := dpkgsource.New()
+	annotatorInstance, err := dpkgsource.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testCases := []struct {
 		name  string
@@ -270,7 +274,7 @@ pkg2:
   Installed: 1.0
       *** 1.0 900
       malformedline
-      
+
 pkg2:
   Installed: 2.1
       *** 2.1 900

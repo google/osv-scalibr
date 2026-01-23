@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
@@ -159,7 +160,12 @@ func TestAnnotate(t *testing.T) {
 			packages := copier.Copy(tt.packages).([]*extractor.Package)
 			inv := &inventory.Inventory{Packages: packages}
 
-			err := dpkg.New().Annotate(tt.ctx, input, inv)
+			anno, err := dpkg.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(tt.ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, err, tt.wantErr)
 			}
