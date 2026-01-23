@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
+	"github.com/google/osv-scalibr/annotator/misc/brewsource"
 	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
 	"github.com/google/osv-scalibr/annotator/misc/npmsource"
 	noexecutabledpkg "github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
@@ -54,6 +55,7 @@ var VEX = InitMap{
 var Misc = InitMap{
 	npmsource.Name:  {npmsource.New},
 	dpkgsource.Name: {dpkgsource.New},
+	brewsource.Name: {brewsource.New},
 }
 
 // FFA (Full Filesystem Accountability) related annotators.
