@@ -23,15 +23,20 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 // testKey is a fake 32-character alphanumeric Mistral API key for testing.
 const testKey = "abcdefghij1234567890ABCDEFGHIJ12"
 
-// Note: We don't use velestest.AcceptDetector because this detector requires
-// context keywords (e.g., "mistral") nearby the key to reduce false positives.
-// The standard acceptance test assumes the example itself is the secret,
-// but for Mistral keys, the example must include context + key.
+func TestAcceptDetector(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		mistralapikey.NewDetector(),
+		"mistral "+testKey,
+		mistralapikey.MistralAPIKey{Key: testKey},
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Mistral API key.
@@ -77,8 +82,8 @@ func TestDetector_truePositives(t *testing.T) {
 		input: testKey + " mistral",
 		want:  []veles.Secret{mistralapikey.MistralAPIKey{Key: testKey}},
 	}, {
-		name:  "multiple_keys_same_context",
-		input: "mistral " + testKey + " " + testKey,
+		name:  "multiple_keys_different_contexts",
+		input: "mistral " + testKey + " mistralai " + testKey,
 		want: []veles.Secret{
 			mistralapikey.MistralAPIKey{Key: testKey},
 			mistralapikey.MistralAPIKey{Key: testKey},
@@ -98,6 +103,22 @@ func TestDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "context_MistralAI_camelCase",
 		input: "MistralAI " + testKey,
+		want:  []veles.Secret{mistralapikey.MistralAPIKey{Key: testKey}},
+	}, {
+		name:  "context_MistralApiKey_camelCase",
+		input: "MistralApiKey=" + testKey,
+		want:  []veles.Secret{mistralapikey.MistralAPIKey{Key: testKey}},
+	}, {
+		name:  "context_mistral-api-key_dash",
+		input: "mistral-api-key=" + testKey,
+		want:  []veles.Secret{mistralapikey.MistralAPIKey{Key: testKey}},
+	}, {
+		name:  "context_MistralKey_camelCase",
+		input: "MistralKey=" + testKey,
+		want:  []veles.Secret{mistralapikey.MistralAPIKey{Key: testKey}},
+	}, {
+		name:  "context_mistral-key_dash",
+		input: "mistral-key=" + testKey,
 		want:  []veles.Secret{mistralapikey.MistralAPIKey{Key: testKey}},
 	}}
 	for _, tc := range cases {

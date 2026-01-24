@@ -18,74 +18,45 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
 const (
-	// keyLength is the exact length of a Mistral API key.
-	keyLength = 32
-	// contextWindow is the number of bytes around a potential key to search for
-	// context indicators.
-	contextWindow = 200
+	// maxKeyLength is the exact length of a Mistral API key.
+	maxKeyLength = 32
+	// maxContextLen is the maximum length of the context keyword.
+	maxContextLen = 30
+	// maxDistance is the maximum distance between context and key.
+	maxDistance = 200
 )
 
 var (
-	// Ensure the detector satisfies the interface at compile time.
-	_ veles.Detector = (*detector)(nil)
-
 	// keyRe matches exactly 32 alphanumeric characters with word boundaries
 	// to avoid matching parts of larger base64 blobs.
 	keyRe = regexp.MustCompile(`\b[A-Za-z0-9]{32}\b`)
 
 	// contextRe matches Mistral-specific context indicators (case-insensitive).
-	// These are used to reduce false positives since Mistral keys don't have
-	// a distinguishing prefix. Uses word boundaries to avoid matching "mistral"
-	// as part of a larger word like "amistralb".
-	contextRe = regexp.MustCompile(`(?i)\bmistral(?:ai|_api_key)?\b|api\.mistral\.ai`)
+	// Matches:
+	// - mistral, Mistral, MISTRAL
+	// - mistralai, MistralAI, mistral_ai, mistral-ai
+	// - MistralKey, mistral_key, mistral-key
+	// - MistralApiKey, mistral_api_key, mistral-api-key
+	// - api.mistral.ai
+	contextRe = regexp.MustCompile(`(?i)\bmistral(?:ai)?(?:[_-]?(?:api[_-]?)?key)?\b|api\.mistral\.ai`)
 )
-
-// detector implements context-aware detection for Mistral API keys.
-type detector struct{}
 
 // NewDetector returns a new Detector that matches Mistral API keys.
 // Since Mistral API keys are 32-character alphanumeric strings without a
 // specific prefix, this detector requires context indicators (e.g., "mistral",
 // "mistralai", "api.mistral.ai") within a nearby window to reduce false positives.
 func NewDetector() veles.Detector {
-	return &detector{}
-}
-
-// MaxSecretLen returns the maximum length of secrets this detector can find.
-func (d *detector) MaxSecretLen() uint32 {
-	return keyLength
-}
-
-// Detect finds potential Mistral API keys that have contextual indicators nearby.
-func (d *detector) Detect(data []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var positions []int
-
-	matches := keyRe.FindAllIndex(data, -1)
-	for _, match := range matches {
-		start, end := match[0], match[1]
-
-		// Determine the context window boundaries.
-		contextStart := start - contextWindow
-		if contextStart < 0 {
-			contextStart = 0
-		}
-		contextEnd := end + contextWindow
-		if contextEnd > len(data) {
-			contextEnd = len(data)
-		}
-
-		// Check if there's Mistral-related context nearby.
-		contextData := data[contextStart:contextEnd]
-		if contextRe.Match(contextData) {
-			key := string(data[start:end])
-			secrets = append(secrets, MistralAPIKey{Key: key})
-			positions = append(positions, start)
-		}
+	return &pair.Detector{
+		MaxElementLen: maxKeyLength,
+		MaxDistance:   maxDistance,
+		FindA:         pair.FindAllMatches(contextRe),
+		FindB:         pair.FindAllMatches(keyRe),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return MistralAPIKey{Key: string(p.B.Value)}, true
+		},
 	}
-
-	return secrets, positions
 }
