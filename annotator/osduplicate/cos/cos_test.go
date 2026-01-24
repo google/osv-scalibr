@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	cosextractor "github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -197,7 +198,12 @@ func TestAnnotate(t *testing.T) {
 			packages := copier.Copy(tt.packages).([]*extractor.Package)
 			inv := &inventory.Inventory{Packages: packages}
 
-			err := cos.New().Annotate(tt.ctx, input, inv)
+			anno, err := cos.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(tt.ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, err, tt.wantErr)
 			}

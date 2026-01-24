@@ -50,6 +50,8 @@ import (
 	"github.com/google/osv-scalibr/version"
 	"github.com/mohae/deepcopy"
 	"github.com/opencontainers/go-digest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func fromVelesDetector(t *testing.T, d veles.Detector, name string, ver int) plugin.Plugin {
@@ -1093,8 +1095,13 @@ func TestAnnotator(t *testing.T) {
 		map[string]fe.NamesErr{"tmp/file.txt": {Names: []string{pkgName}, Err: nil}},
 	)
 
+	anno, err := cachedir.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cfg := &scalibr.ScanConfig{
-		Plugins:   []plugin.Plugin{fakeExtractor, cachedir.New()},
+		Plugins:   []plugin.Plugin{fakeExtractor, anno},
 		ScanRoots: tmpRoot,
 	}
 

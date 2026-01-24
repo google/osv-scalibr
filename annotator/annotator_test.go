@@ -29,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"google.golang.org/protobuf/proto"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 type succeedingAnnotator struct{}
@@ -61,6 +63,11 @@ func TestRun(t *testing.T) {
 		cpy.IgnoreAllUnexported(),
 	)
 
+	anno, err := cachedir.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		desc    string
 		cfg     *annotator.Config
@@ -77,7 +84,7 @@ func TestRun(t *testing.T) {
 		{
 			desc: "annotator_modifies_inventory",
 			cfg: &annotator.Config{
-				Annotators: []annotator.Annotator{cachedir.New()},
+				Annotators: []annotator.Annotator{anno},
 			},
 			inv: inv,
 			want: []*plugin.Status{
