@@ -24,8 +24,6 @@ import (
 const (
 	// maxKeyLength is the exact length of a Mistral API key.
 	maxKeyLength = 32
-	// maxContextLen is the maximum length of the context keyword.
-	maxContextLen = 30
 	// maxDistance is the maximum distance between context and key.
 	maxDistance = 200
 )
