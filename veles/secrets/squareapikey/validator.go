@@ -16,11 +16,10 @@ package squareapikey
 
 import (
 	"encoding/json"
-	"io"
+	"errors"
 	"net/http"
 	"time"
 
-	"github.com/google/osv-scalibr/veles"
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
@@ -61,29 +60,12 @@ func NewPersonalAccessTokenValidator() *sv.Validator[spat] {
 // credentials. Square's API behavior allows us to distinguish between valid and invalid credentials:
 //
 // Valid Credentials Response:
-//   - HTTP 400 Bad Request with JSON body containing:
-//     {"errors": [{"code": "NOT_FOUND", "detail": "access token not found"}]}
-//   - This indicates the credentials are VALID (they authenticated successfully, but the
-//     random access token doesn't exist, which is expected)
+//   - HTTP 200 OK - token was successfully revoked (unlikely since we use a random access token)
+//   - HTTP 404 Not Found - credentials authenticated successfully, but the random access token
+//     doesn't exist (this is the expected response)
 //
 // Invalid Credentials Response:
-//   - HTTP 401 Unauthorized with JSON body containing:
-//     {"message": "Not Authorized", "type": "service.not_authorized"}
-//   - This indicates the credentials are INVALID (authentication failed)
-//
-// Validation Requirements:
-//   - Both ID and Secret must be present (non-empty)
-//   - If either is missing, the Body function will return an error which results in ValidationFailed
-//   - This is acceptable since partial pairs (secret without ID) shouldn't be validated
-//
-// API Endpoint: POST https://connect.squareup.com/oauth2/revoke
-// Request Headers:
-//   - Content-Type: application/json
-//   - Authorization: Client <client_secret>
-//
-// Request Body:
-//   - access_token: "RANDOM_STRING" (intentionally fake)
-//   - client_id: <oauth_application_id>
+//   - HTTP 401 Unauthorized - authentication failed
 func NewOAuthApplicationSecretValidator() *sv.Validator[soauth] {
 	return &sv.Validator[soauth]{
 		Endpoint:   "https://connect.squareup.com/oauth2/revoke",
@@ -97,9 +79,8 @@ func NewOAuthApplicationSecretValidator() *sv.Validator[soauth] {
 		Body: func(s soauth) (string, error) {
 			// If either ID or Secret is missing, we can't validate
 			// Return an error which will result in ValidationFailed
-			// This is acceptable since partial pairs shouldn't be validated
 			if s.ID == "" || s.Key == "" {
-				return "", io.EOF // Return a simple error
+				return "", errors.New("ID or Key isn't set")
 			}
 
 			// Use a random/fake access token - we're only testing if the credentials authenticate
@@ -113,43 +94,12 @@ func NewOAuthApplicationSecretValidator() *sv.Validator[soauth] {
 			}
 			return string(jsonBody), nil
 		},
-		// Custom validation logic to handle Square's specific response format
-		// This runs when the status code doesn't match ValidResponseCodes or InvalidResponseCodes
-		StatusFromResponseBody: func(body io.Reader) (veles.ValidationStatus, error) {
-			// Read the response body
-			bodyBytes, err := io.ReadAll(body)
-			if err != nil {
-				return veles.ValidationFailed, err
-			}
-
-			// Parse the JSON response
-			var response map[string]any
-			if err := json.Unmarshal(bodyBytes, &response); err != nil {
-				// If we can't parse JSON, it's a validation failure
-				return veles.ValidationFailed, err
-			}
-
-			// Check for "Not Authorized" message (invalid credentials)
-			if msg, ok := response["message"].(string); ok && msg == "Not Authorized" {
-				return veles.ValidationInvalid, nil
-			}
-
-			// Check for "access token not found" error (valid credentials)
-			// This is the expected response when credentials are valid but the access token is fake
-			if errors, ok := response["errors"].([]any); ok && len(errors) > 0 {
-				if errorMap, ok := errors[0].(map[string]any); ok {
-					if code, ok := errorMap["code"].(string); ok && code == "NOT_FOUND" {
-						if detail, ok := errorMap["detail"].(string); ok && detail == "access token not found" {
-							return veles.ValidationValid, nil
-						}
-					}
-				}
-			}
-
-			// Any other response is considered a validation failure
-			return veles.ValidationFailed, nil
-		},
-		// 401 Unauthorized typically means invalid credentials
+		// 200 OK and 404 Not Found both mean credentials are valid
+		// - 200 OK: token was successfully revoked (unlikely since we use a random access token)
+		// - 404 Not Found: credentials authenticated successfully, but the random access token
+		//   doesn't exist (this is the expected response)
+		ValidResponseCodes: []int{http.StatusOK, http.StatusNotFound},
+		// 401 Unauthorized means invalid credentials (authentication failed)
 		InvalidResponseCodes: []int{http.StatusUnauthorized},
 		HTTPC: &http.Client{
 			Timeout: validationTimeout,

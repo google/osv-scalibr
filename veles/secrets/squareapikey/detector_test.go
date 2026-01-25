@@ -75,39 +75,39 @@ func TestPersonalAccessTokenDetector_truePositives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "simple matching string",
+		name:  "simple_matching_string",
 		input: detectorPersonalAccessToken,
 		want: []veles.Secret{
 			squareapikey.SquarePersonalAccessToken{Key: detectorPersonalAccessToken},
 		},
 	}, {
-		name:  "match at end of string",
+		name:  "match_at_end_of_string",
 		input: `SQUARE_KEY=` + detectorPersonalAccessToken,
 		want: []veles.Secret{
 			squareapikey.SquarePersonalAccessToken{Key: detectorPersonalAccessToken},
 		},
 	}, {
-		name:  "match in quotes",
+		name:  "match_in_quotes",
 		input: `key="` + detectorPersonalAccessToken + `"`,
 		want: []veles.Secret{
 			squareapikey.SquarePersonalAccessToken{Key: detectorPersonalAccessToken},
 		},
 	}, {
-		name:  "multiple matches",
+		name:  "multiple_matches",
 		input: detectorPersonalAccessToken + "\n" + detectorPersonalAccessToken,
 		want: []veles.Secret{
 			squareapikey.SquarePersonalAccessToken{Key: detectorPersonalAccessToken},
 			squareapikey.SquarePersonalAccessToken{Key: detectorPersonalAccessToken},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf("config:\n  api_key: %s\n",
 			detectorPersonalAccessToken),
 		want: []veles.Secret{
 			squareapikey.SquarePersonalAccessToken{Key: detectorPersonalAccessToken},
 		},
 	}, {
-		name:  "potential match longer than max key length",
+		name:  "potential_match_longer_than_max_key_length",
 		input: detectorPersonalAccessToken + "EXTRA",
 		want: []veles.Secret{
 			squareapikey.SquarePersonalAccessToken{Key: detectorPersonalAccessToken},
@@ -144,18 +144,18 @@ func TestPersonalAccessTokenDetector_trueNegatives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "empty input",
+		name:  "empty_input",
 		input: "",
 	}, {
-		name:  "short key should not match",
+		name:  "short_key_should_not_match",
 		input: detectorPersonalAccessToken[:len(detectorPersonalAccessToken)-5],
 	}, {
-		name: "invalid character in key should not match",
+		name: "invalid_character_in_key_should_not_match",
 		input: "EAAA" + strings.ReplaceAll(
 			detectorPersonalAccessToken[4:], "A", "!",
 		),
 	}, {
-		name:  "incorrect prefix should not match",
+		name:  "incorrect_prefix_should_not_match",
 		input: "XXXX" + detectorPersonalAccessToken[4:],
 	}}
 
@@ -189,7 +189,7 @@ func TestOAuthApplicationSecretDetector_truePositives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "paired ID and secret",
+		name:  "paired_ID_and_secret",
 		input: fmt.Sprintf("client_id=%s\nclient_secret=%s", detectorOAuthApplicationID, detectorOAuthApplicationSecret),
 		want: []veles.Secret{
 			squareapikey.SquareOAuthApplicationSecret{
@@ -198,7 +198,7 @@ func TestOAuthApplicationSecretDetector_truePositives(t *testing.T) {
 			},
 		},
 	}, {
-		name:  "paired in JSON format",
+		name:  "paired_in_JSON_format",
 		input: fmt.Sprintf(`{"client_id":"%s","client_secret":"%s"}`, detectorOAuthApplicationID, detectorOAuthApplicationSecret),
 		want: []veles.Secret{
 			squareapikey.SquareOAuthApplicationSecret{
@@ -207,19 +207,19 @@ func TestOAuthApplicationSecretDetector_truePositives(t *testing.T) {
 			},
 		},
 	}, {
-		name:  "secret only (partial pair)",
+		name:  "secret_only_(partial_pair)",
 		input: `SQUARE_OAUTH_SECRET=` + detectorOAuthApplicationSecret,
 		want: []veles.Secret{
 			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
 		},
 	}, {
-		name:  "secret in quotes",
+		name:  "secret_in_quotes",
 		input: `secret="` + detectorOAuthApplicationSecret + `"`,
 		want: []veles.Secret{
 			squareapikey.SquareOAuthApplicationSecret{Key: detectorOAuthApplicationSecret},
 		},
 	}, {
-		name: "larger input containing paired credentials",
+		name: "larger_input_containing_paired_credentials",
 		input: fmt.Sprintf("config:\n  oauth:\n    id: %s\n    secret: %s\n",
 			detectorOAuthApplicationID, detectorOAuthApplicationSecret),
 		want: []veles.Secret{
@@ -260,30 +260,30 @@ func TestOAuthApplicationSecretDetector_trueNegatives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "empty input",
+		name:  "empty_input",
 		input: "",
 	}, {
-		name:  "short secret should not match",
+		name:  "short_secret_should_not_match",
 		input: detectorOAuthApplicationSecret[:len(detectorOAuthApplicationSecret)-2],
 	}, {
-		name: "invalid character in secret should not match",
+		name: "invalid_character_in_secret_should_not_match",
 		input: "sq0csp-" + strings.ReplaceAll(
 			detectorOAuthApplicationSecret[7:], "a", "#",
 		),
 	}, {
-		name:  "incorrect secret prefix should not match",
+		name:  "incorrect_secret_prefix_should_not_match",
 		input: "sq0csx-" + detectorOAuthApplicationSecret[7:],
 	}, {
-		name:  "secret prefix missing dash should not match",
+		name:  "secret_prefix_missing_dash_should_not_match",
 		input: "sq0csp" + detectorOAuthApplicationSecret[7:], // removes the dash
 	}, {
-		name:  "ID only should not match",
+		name:  "ID_only_should_not_match",
 		input: detectorOAuthApplicationID,
 	}, {
-		name:  "short ID should not match",
+		name:  "short_ID_should_not_match",
 		input: detectorOAuthApplicationID[:len(detectorOAuthApplicationID)-2],
 	}, {
-		name:  "incorrect ID prefix should not match",
+		name:  "incorrect_ID_prefix_should_not_match",
 		input: "sq0idx-" + detectorOAuthApplicationID[7:],
 	}}
 

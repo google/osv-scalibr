@@ -294,6 +294,12 @@ func squareOAuthApplicationSecretToProto(s velessquareapikey.SquareOAuthApplicat
 		Secret: &spb.SecretData_SquareOauthApplicationSecret{
 			SquareOauthApplicationSecret: &spb.SecretData_SquareOAuthApplicationSecret{
 				Id:  s.ID,
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func elasticCloudAPIKeyToProto(s elasticcloudapikey.ElasticCloudAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_ElasticCloudApiKey{

@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 )
@@ -87,7 +89,7 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 		serverExpectedKey  string
 		serverResponseCode int
 		want               veles.ValidationStatus
-		expectError        bool
+		wantErr            error
 	}{
 		{
 			name:               "valid_token",
@@ -109,7 +111,7 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 			serverExpectedKey:  validatorTestToken,
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "bad_gateway",
@@ -117,7 +119,7 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 			serverExpectedKey:  validatorTestToken,
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "forbidden",
@@ -125,7 +127,7 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 			serverExpectedKey:  validatorTestToken,
 			serverResponseCode: http.StatusForbidden,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 	}
 
@@ -150,15 +152,9 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), token)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tc.wantErr)
+				return
 			}
 
 			// Check validation status
@@ -292,52 +288,95 @@ func TestPersonalAccessTokenValidator_AuthorizationHeader(t *testing.T) {
 
 func TestOAuthApplicationSecretValidator(t *testing.T) {
 	cases := []struct {
-		name             string
-		id               string
-		secret           string
-		validCredentials bool
-		want             veles.ValidationStatus
+		name               string
+		id                 string
+		secret             string
+		serverResponseCode int
+		want               veles.ValidationStatus
+		wantErr            error
 	}{
 		{
-			name:             "valid_credentials",
-			id:               "sq0idp-wuPhZFY8etbvhybDEdHllQ",
-			secret:           "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVajqTijTM0xc",
-			validCredentials: true,
-			want:             veles.ValidationValid,
+			name:               "valid_credentials_with_404",
+			id:                 "sq0idp-wuPhZFY8etbvhybDEdHllQ",
+			secret:             "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVajqTijTM0xc",
+			serverResponseCode: http.StatusNotFound, // 404 means valid credentials
+			want:               veles.ValidationValid,
 		},
 		{
-			name:             "invalid_credentials",
-			id:               "sq0idp-wuPhZFY8etbvhybDEdHllQ",
-			secret:           "sq0csp-INVALID_SECRET_INVALID_SECRET_INVALID",
-			validCredentials: false,
-			want:             veles.ValidationInvalid,
+			name:               "valid_credentials_with_200",
+			id:                 "sq0idp-wuPhZFY8etbvhybDEdHllQ",
+			secret:             "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVajqTijTM0xc",
+			serverResponseCode: http.StatusOK, // 200 means valid credentials (unlikely with random token)
+			want:               veles.ValidationValid,
 		},
 		{
-			name:             "missing_id",
-			id:               "",
-			secret:           "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVajqTijTM0xc",
-			validCredentials: true,
-			want:             veles.ValidationFailed, // Changed: Body function returns error when ID is missing
+			name:               "invalid_credentials",
+			id:                 "sq0idp-wuPhZFY8etbvhybDEdHllQ",
+			secret:             "sq0csp-INVALID_SECRET_INVALID_SECRET_INVALID",
+			serverResponseCode: http.StatusUnauthorized, // 401 means invalid credentials
+			want:               veles.ValidationInvalid,
 		},
 		{
-			name:             "missing_secret",
-			id:               "sq0idp-wuPhZFY8etbvhybDEdHllQ",
-			secret:           "",
-			validCredentials: true,
-			want:             veles.ValidationFailed, // Changed: Body function returns error when Secret is missing
+			name:               "server_error",
+			id:                 "sq0idp-wuPhZFY8etbvhybDEdHllQ",
+			secret:             "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVajqTijTM0xc",
+			serverResponseCode: http.StatusInternalServerError,
+			want:               veles.ValidationFailed,
+			wantErr:            cmpopts.AnyError,
+		},
+		{
+			name:    "missing_id",
+			id:      "",
+			secret:  "sq0csp-aebm-dWBi74tX5f-LQQ-pC5x3WtHg7jVajqTijTM0xc",
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			name:    "missing_secret",
+			id:      "sq0idp-wuPhZFY8etbvhybDEdHllQ",
+			secret:  "",
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Skip tests that require network mocking for now
-			// These would need a proper mock server setup
-			if tc.name == "valid_credentials" || tc.name == "invalid_credentials" {
-				t.Skip("Skipping network-dependent test")
+			// Create a mock server for OAuth validation
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Check if it's a POST request to the expected endpoint
+				if r.Method != http.MethodPost || r.URL.Path != "/oauth2/revoke" {
+					t.Errorf("unexpected request: %s %s, expected: POST /oauth2/revoke", r.Method, r.URL.Path)
+					http.Error(w, "not found", http.StatusNotFound)
+					return
+				}
+
+				// Check Authorization header format
+				authHeader := r.Header.Get("Authorization")
+				if !strings.HasPrefix(authHeader, "Client ") {
+					t.Errorf("Authorization header = %q, want prefix 'Client '", authHeader)
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.serverResponseCode)
+
+				// Write appropriate response body based on status code
+				if tc.serverResponseCode == http.StatusNotFound {
+					_, _ = w.Write([]byte(`{"errors":[{"code":"NOT_FOUND","detail":"access token not found"}]}`))
+				} else if tc.serverResponseCode == http.StatusUnauthorized {
+					_, _ = w.Write([]byte(`{"message":"Not Authorized","type":"service.not_authorized"}`))
+				}
+			}))
+			defer server.Close()
+
+			// Create a client with custom transport
+			client := &http.Client{
+				Transport: &mockOAuthTransport{testServer: server},
 			}
 
-			// Create a validator
+			// Create a validator with a mock client
 			validator := squareapikey.NewOAuthApplicationSecretValidator()
+			validator.HTTPC = client
 
 			// Create test credentials
 			creds := squareapikey.SquareOAuthApplicationSecret{
@@ -348,13 +387,9 @@ func TestOAuthApplicationSecretValidator(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), creds)
 
-			// For missing ID or Secret cases, we expect an error and ValidationFailed
-			if tc.want == veles.ValidationFailed && (tc.id == "" || tc.secret == "") {
-				if err == nil {
-					t.Errorf("Validate() expected error for missing credentials, got nil")
-				}
-			} else if err != nil {
-				t.Errorf("Validate() unexpected error: %v", err)
+			if !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tc.wantErr)
+				return
 			}
 
 			// Check validation status
@@ -365,16 +400,17 @@ func TestOAuthApplicationSecretValidator(t *testing.T) {
 	}
 }
 
-func TestOAuthApplicationSecretValidator_WrongSecretType(t *testing.T) {
-	validator := squareapikey.NewOAuthApplicationSecretValidator()
+// mockOAuthTransport redirects OAuth requests to the test server
+type mockOAuthTransport struct {
+	testServer *httptest.Server
+}
 
-	// Test with wrong secret type
-	wrongSecret := squareapikey.SquarePersonalAccessToken{Key: "EAAAlwuZiieL54OUmRp1q-7VFVcBa9QICgMkWOv8qAFsiSZdwyy6kP4xRduxAV1T"}
-
-	// This should fail to compile or return an error since the type doesn't match
-	// The validator is typed to only accept SquareOAuthApplicationSecret
-	_ = validator
-	_ = wrongSecret
-	// Note: This test is commented out because the generic type system prevents
-	// calling Validate with the wrong type at compile time
+func (m *mockOAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Replace the original URL with our test server URL
+	if req.URL.Host == "connect.squareup.com" {
+		testURL, _ := url.Parse(m.testServer.URL)
+		req.URL.Scheme = testURL.Scheme
+		req.URL.Host = testURL.Host
+	}
+	return http.DefaultTransport.RoundTrip(req)
 }
