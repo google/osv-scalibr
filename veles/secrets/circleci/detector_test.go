@@ -36,6 +36,8 @@ func TestPersonalAccessTokenDetectorAcceptance(t *testing.T) {
 		circleci.NewPersonalAccessTokenDetector(),
 		testPAT,
 		circleci.PersonalAccessToken{Token: testPAT},
+		velestest.WithBackToBack(),
+		velestest.WithPad('A'),
 	)
 }
 
@@ -45,6 +47,8 @@ func TestProjectTokenDetectorAcceptance(t *testing.T) {
 		circleci.NewProjectTokenDetector(),
 		testProject,
 		circleci.ProjectToken{Token: testProject},
+		velestest.WithBackToBack(),
+		velestest.WithPad('A'),
 	)
 }
 
@@ -60,14 +64,14 @@ func TestPersonalAccessTokenDetector_TruePositives(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name:  "PAT in config",
+			name:  "PAT_in_config",
 			input: `circle_token: CCIPAT_GHFzqc7fRZ2GviZQ7hbdeb_9f54ac82eef4bb69a8fece88199a7414f32d8b36`,
 			want: []veles.Secret{
 				circleci.PersonalAccessToken{Token: testPAT},
 			},
 		},
 		{
-			name:  "PAT in environment variable",
+			name:  "PAT_in_environment_variable",
 			input: `export CIRCLECI_TOKEN="CCIPAT_GHFzqc7fRZ2GviZQ7hbdeb_9f54ac82eef4bb69a8fece88199a7414f32d8b36"`,
 			want: []veles.Secret{
 				circleci.PersonalAccessToken{Token: testPAT},
@@ -99,15 +103,19 @@ func TestPersonalAccessTokenDetector_TrueNegatives(t *testing.T) {
 		input string
 	}{
 		{
-			name:  "Invalid prefix",
-			input: `CCIPAT_invalid`,
+			name:  "invalid_prefix",
+			input: `CCIXXX_GHFzqc7fRZ2GviZQ7hbdeb_9f54ac82eef4bb69a8fece88199a7414f32d8b36`,
 		},
 		{
-			name:  "Wrong hex length",
-			input: `CCIPAT_test_123abc`,
+			name:  "wrong_identifier_length",
+			input: `CCIPAT_short_9f54ac82eef4bb69a8fece88199a7414f32d8b36`,
 		},
 		{
-			name:  "Missing underscore",
+			name:  "wrong_hex_length",
+			input: `CCIPAT_GHFzqc7fRZ2GviZQ7hbdeb_123abc`,
+		},
+		{
+			name:  "missing_underscore",
 			input: `CCIPATGHFzqc7fRZ2GviZQ7hbdeb9f54ac82eef4bb69a8fece88199a7414f32d8b36`,
 		},
 	}
@@ -137,7 +145,7 @@ func TestProjectTokenDetector_TruePositives(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name:  "Project token in config",
+			name:  "project_token_in_config",
 			input: `token: CCIPRJ_Nw1xCXXyTW8uvdkHKLNUqK_4ad9cadd8b2b29d02a49ed03720fac5644f66c92`,
 			want: []veles.Secret{
 				circleci.ProjectToken{Token: testProject},
@@ -169,12 +177,16 @@ func TestProjectTokenDetector_TrueNegatives(t *testing.T) {
 		input string
 	}{
 		{
-			name:  "Invalid prefix",
-			input: `CCIPRJ_invalid`,
+			name:  "invalid_prefix",
+			input: `CCIXXX_Nw1xCXXyTW8uvdkHKLNUqK_4ad9cadd8b2b29d02a49ed03720fac5644f66c92`,
 		},
 		{
-			name:  "Wrong hex length",
-			input: `CCIPRJ_test_123abc`,
+			name:  "wrong_identifier_length",
+			input: `CCIPRJ_short_4ad9cadd8b2b29d02a49ed03720fac5644f66c92`,
+		},
+		{
+			name:  "wrong_hex_length",
+			input: `CCIPRJ_Nw1xCXXyTW8uvdkHKLNUqK_123abc`,
 		},
 	}
 

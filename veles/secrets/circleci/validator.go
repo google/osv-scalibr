@@ -15,13 +15,8 @@
 package circleci
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
@@ -47,37 +42,15 @@ func NewPersonalAccessTokenValidator() *sv.Validator[PersonalAccessToken] {
 	}
 }
 
-// projectTokenErrorResponse models CircleCI's v1.1 API error JSON.
-type projectTokenErrorResponse struct {
-	Message string `json:"message"`
-}
-
-func statusFromProjectTokenResponseBody(body io.Reader) (veles.ValidationStatus, error) {
-	var resp projectTokenErrorResponse
-	if err := json.NewDecoder(body).Decode(&resp); err != nil {
-		// Decoding failed -> ambiguous response, treat as failed to validate.
-		return veles.ValidationFailed, fmt.Errorf("unable to parse response: %w", err)
-	}
-
-	// CircleCI returns 404 with "Not Found" when the token is valid but the project doesn't exist.
-	// This confirms the token was successfully authenticated.
-	if resp.Message == "Not Found" {
-		return veles.ValidationValid, nil
-	}
-
-	// Other error messages (like "Invalid token provided.") indicate the token is invalid.
-	return veles.ValidationInvalid, nil
-}
-
 // NewProjectTokenValidator creates a new CircleCI Project Token Validator.
 //
 // Validation approach:
 // CircleCI Project tokens are validated by attempting to access a non-existent project.
-// We use HTTP Basic Auth with the token as username and empty password.
+// We use the Circle-Token header with the token value.
 //
 // Validation logic:
 // - HTTP 200 OK: Token is valid and has access to the project (rare with dummy project)
-// - HTTP 404 with {"message":"Not Found"}: Token is valid but project doesn't exist (expected)
+// - HTTP 404 Not Found: Token is valid but project doesn't exist (expected)
 // - HTTP 401 Unauthorized: Token is invalid
 // - Other status codes: Validation failed (unexpected response)
 //
@@ -88,17 +61,11 @@ func NewProjectTokenValidator() *sv.Validator[ProjectToken] {
 		Endpoint:   "https://circleci.com/api/v1.1/project/scalibr-validation-nonexistent-a8f3c2d9",
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(s ProjectToken) map[string]string {
-			// Encode token as Basic Auth: base64(token:)
-			// The colon after the token indicates an empty password
-			auth := base64.StdEncoding.EncodeToString([]byte(s.Token + ":"))
 			return map[string]string{
-				"Accept":        "application/json",
-				"Authorization": "Basic " + auth,
+				"Circle-Token": s.Token,
 			}
 		},
-		ValidResponseCodes:   []int{http.StatusOK},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusNotFound},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},
-		// StatusFromResponseBody handles 404 responses to check for "Not Found" message
-		StatusFromResponseBody: statusFromProjectTokenResponseBody,
 	}
 }

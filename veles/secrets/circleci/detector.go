@@ -28,17 +28,17 @@ var (
 )
 
 const (
-	patMaxLen     = 100 // CCIPAT_ (7) + identifier + _ + 40 hex chars
-	projectMaxLen = 100 // CCIPRJ_ (7) + identifier + _ + 40 hex chars
+	patMaxLen     = 70 // CCIPAT_ (7) + identifier (22) + _ (1) + 40 hex chars = 70
+	projectMaxLen = 70 // CCIPRJ_ (7) + identifier (22) + _ (1) + 40 hex chars = 70
 )
 
 // circleCIPATRe matches CircleCI Personal Access Tokens in the format:
-// CCIPAT_[A-Za-z0-9]+_[0-9a-f]{40}
-var circleCIPATRe = regexp.MustCompile(`CCIPAT_[A-Za-z0-9]+_[0-9a-f]{40}`)
+// CCIPAT_[A-Za-z0-9]{22}_[0-9a-f]{40}
+var circleCIPATRe = regexp.MustCompile(`CCIPAT_[A-Za-z0-9]{22}_[0-9a-f]{40}`)
 
 // circleCIProjectRe matches CircleCI Project Tokens in the format:
-// CCIPRJ_[A-Za-z0-9]+_[0-9a-f]{40}
-var circleCIProjectRe = regexp.MustCompile(`CCIPRJ_[A-Za-z0-9]+_[0-9a-f]{40}`)
+// CCIPRJ_[A-Za-z0-9]{22}_[0-9a-f]{40}
+var circleCIProjectRe = regexp.MustCompile(`CCIPRJ_[A-Za-z0-9]{22}_[0-9a-f]{40}`)
 
 // NewPersonalAccessTokenDetector returns a detector for CircleCI Personal Access Tokens.
 func NewPersonalAccessTokenDetector() veles.Detector {
