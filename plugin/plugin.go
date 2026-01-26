@@ -173,10 +173,10 @@ func FilterByCapabilities(pls []Plugin, capabs *Capabilities) []Plugin {
 	return result
 }
 
-// FindConfig finds a plugin-specific config in the oveall config proto
+// FindConfig finds a plugin-specific config in the overall config proto
 // using the specified getter function.
 func FindConfig[T any](cfg *cpb.PluginConfig, getter func(c *cpb.PluginSpecificConfig) *T) *T {
-	for _, specific := range cfg.PluginSpecific {
+	for _, specific := range cfg.GetPluginSpecific() {
 		got := getter(specific)
 		if got != nil {
 			return got
