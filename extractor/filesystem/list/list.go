@@ -147,6 +147,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -361,6 +362,7 @@ var (
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
+		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
