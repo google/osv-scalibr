@@ -54,7 +54,7 @@ func TestDetector_Detect(t *testing.T) {
 		// --- Only access ID or Secret ---
 		{
 			name:  "access_ID_but_no_secret",
-			input: `app_id: AIKA1984R439T439HTH4`,
+			input: `app_id: AKIA1984R439T439HTH4`,
 			want:  nil,
 		},
 		{
@@ -66,21 +66,21 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "aws credentials",
 			input: `[default]
-aws_access_key_id = AIKA1984R439T439HTH4
+aws_access_key_id = AKIA1984R439T439HTH4
 aws_secret_access_key = 32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 			want: []veles.Secret{
 				awsaccesskey.Credentials{
-					AccessID: "AIKA1984R439T439HTH4",
+					AccessID: "AKIA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
 			},
 		},
 		{
 			name:  "access_ID_and_secret_in_close_proximity_-_no_space",
-			input: `AIKA1984R439T439HTH4:32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
+			input: `AKIA1984R439T439HTH4:32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 			want: []veles.Secret{
 				awsaccesskey.Credentials{
-					AccessID: "AIKA1984R439T439HTH4",
+					AccessID: "AKIA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
 			},
@@ -88,25 +88,25 @@ aws_secret_access_key = 32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
 		{
 			name: "access_ID_and_secret_in_close_proximity_in_json_format",
 			input: `{
-				"access_id": "AIKA1984R439T439HTH4",
+				"access_id": "AKIA1984R439T439HTH4",
 				"secret": "32r923jr023rk320rk2a3rkB34tj340r32Ckt433"
 			}`,
 			want: []veles.Secret{
 				awsaccesskey.Credentials{
-					AccessID: "AIKA1984R439T439HTH4",
+					AccessID: "AKIA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
 			},
 		},
 		{
 			name: "valid_formats_mixed_with_invalid",
-			input: `valid_id: AIKA1984R439T439HTH4
+			input: `valid_id: AKIA1984R439T439HTH4
 invalid_id: 123-invalid.apps.googleusercontent.com
 valid_secret: 32r923jr023rk320rk2a3rkB34tj340r32Ckt433
 invalid_secret: WRONG-InvalidSecret123456789012`,
 			want: []veles.Secret{
 				awsaccesskey.Credentials{
-					AccessID: "AIKA1984R439T439HTH4",
+					AccessID: "AKIA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
 			},
@@ -115,19 +115,19 @@ invalid_secret: WRONG-InvalidSecret123456789012`,
 		{
 			name: "complex_file_with_multiple_access_ID_and_secret_-_test_proximity",
 			input: `config_app1:
-			AIKA1984R439T439HTH4
+			AKIA1984R439T439HTH4
 32r923jr023rk320rk2a3rkB34tj340r32Ckt433
 
 config_app2:
-AIKA1984R439T439HTH3
+AKIA1984R439T439HTH3
 32r923jr023rk320rk2a3rkB34tj340r32Ckt432`,
 			want: []veles.Secret{
 				awsaccesskey.Credentials{
-					AccessID: "AIKA1984R439T439HTH4",
+					AccessID: "AKIA1984R439T439HTH4",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 				},
 				awsaccesskey.Credentials{
-					AccessID: "AIKA1984R439T439HTH3",
+					AccessID: "AKIA1984R439T439HTH3",
 					Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt432",
 				},
 			},
@@ -136,7 +136,7 @@ AIKA1984R439T439HTH3
 		{
 			name: "complex_file_with_access_ID_and_secret_-_far_apart_(no_pairing)",
 			input: `config_app1:
-AIKA1984R439T439HTH4` + strings.Repeat("\nfiller line with random data", 500) + `
+AKIA1984R439T439HTH4` + strings.Repeat("\nfiller line with random data", 500) + `
 config_app2:
 32r923jr023rk320rk2a3rkB34tj340r32Ckt432`,
 			want: nil,
