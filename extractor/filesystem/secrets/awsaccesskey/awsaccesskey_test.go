@@ -81,7 +81,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantSecrets: []*inventory.Secret{
 				{
 					Secret: awsaccesskeydetector.Credentials{
-						AccessID: "AIKA1984R439T439HTH4",
+						AccessID: "AKIA1984R439T439HTH4",
 						Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 					},
 					Location: "aws_credentials",
