@@ -785,6 +785,7 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    URLCredentials url_credentials = 62;
   }
 
   message GCPSAK {
@@ -1102,6 +1103,10 @@ message SecretData {
 
   message CursorAPIKey {
     string key = 1;
+  }
+
+  message URLCredentials {
+    string url = 1;
   }
 }
 

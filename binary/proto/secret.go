@@ -64,6 +64,7 @@ import (
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -245,12 +246,24 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return bitbucketCredentialsToProto(t), nil
 	case elasticcloudapikey.ElasticCloudAPIKey:
 		return elasticCloudAPIKeyToProto(t), nil
+	case urlcreds.Credentials:
+		return urlCredentialsToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func urlCredentialsToProto(s urlcreds.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_UrlCredentials{
+			UrlCredentials: &spb.SecretData_URLCredentials{
+				Url: s.FullURL,
+			},
+		},
 	}
 }
 
@@ -1108,6 +1121,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_ElasticCloudApiKey:
 		return elasticcloudapikey.ElasticCloudAPIKey{
 			Key: s.GetElasticCloudApiKey().GetKey(),
+		}, nil
+	case *spb.SecretData_UrlCredentials:
+		return urlcreds.Credentials{
+			FullURL: s.GetUrlCredentials().GetUrl(),
 		}, nil
 	case *spb.SecretData_PaystackSecretKey_:
 		return velespaystacksecretkey.PaystackSecret{
