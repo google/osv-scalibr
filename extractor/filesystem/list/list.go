@@ -146,6 +146,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -360,6 +361,7 @@ var (
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
+		{urlcreds.NewDetector(), "secrets/urlcreds", 0},
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 	})
 
@@ -379,10 +381,10 @@ var (
 
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
-		asdf.Name:        {noCFG(asdf.New)},
-		mise.Name:        {noCFG(mise.New)},
-		nvm.Name:         {noCFG(nvm.New)},
-		nodeversion.Name: {noCFG(nodeversion.New)},
+		asdf.Name:        {asdf.New},
+		mise.Name:        {mise.New},
+		nvm.Name:         {nvm.New},
+		nodeversion.Name: {nodeversion.New},
 	}
 
 	// EmbeddedFS extractors.
@@ -507,12 +509,6 @@ func concat(initMaps ...InitMap) InitMap {
 
 func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
-}
-
-// Wraps initer functions that don't take any config value to initer functions that do.
-// TODO(b/400910349): Remove once all plugins take config values.
-func noCFG(f func() filesystem.Extractor) InitFn {
-	return func(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return f(), nil }
 }
 
 // ExtractorsFromName returns a list of extractors from a name.

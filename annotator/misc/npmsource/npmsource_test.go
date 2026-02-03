@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/misc/npmsource"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -66,7 +67,12 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 		},
 	}
 
-	err := npmsource.New().Annotate(t.Context(), input, inv)
+	anno, err := npmsource.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = anno.Annotate(t.Context(), input, inv)
 	if err != nil {
 		t.Errorf("Annotate(%v) error: %v; want error presence = false", inputPackage, err)
 	}
@@ -272,7 +278,12 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := npmsource.New().Annotate(t.Context(), input, inv)
+			anno, err := npmsource.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)
@@ -500,7 +511,12 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := npmsource.New().Annotate(t.Context(), input, inv)
+			anno, err := npmsource.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)
