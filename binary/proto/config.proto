@@ -446,4 +446,7 @@ message OSVLocalConfig {
   bool download = 1;
   // The path that the downloaded zip files should be stored at
   string local_path = 2;
+  // The remote host to download zip files from, which will be suffixed with
+  // "/<ecosystem>/all.zip"
+  string remote_host = 3;
 }

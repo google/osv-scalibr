@@ -3243,7 +3243,10 @@ type OSVLocalConfig struct {
 	// If true, OSV databases will be downloaded as needed for enriching
 	Download bool `protobuf:"varint,1,opt,name=download,proto3" json:"download,omitempty"`
 	// The path that the downloaded zip files should be stored at
-	LocalPath     string `protobuf:"bytes,2,opt,name=local_path,json=localPath,proto3" json:"local_path,omitempty"`
+	LocalPath string `protobuf:"bytes,2,opt,name=local_path,json=localPath,proto3" json:"local_path,omitempty"`
+	// The remote host to download zip files from, which will be suffixed with
+	// "/<ecosystem>/all.zip"
+	RemoteHost    string `protobuf:"bytes,3,opt,name=remote_host,json=remoteHost,proto3" json:"remote_host,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3288,6 +3291,13 @@ func (x *OSVLocalConfig) GetDownload() bool {
 func (x *OSVLocalConfig) GetLocalPath() string {
 	if x != nil {
 		return x.LocalPath
+	}
+	return ""
+}
+
+func (x *OSVLocalConfig) GetRemoteHost() string {
+	if x != nil {
+		return x.RemoteHost
 	}
 	return ""
 }
@@ -3472,11 +3482,13 @@ const file_proto_config_proto_rawDesc = "" +
 	"\rMariadbConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12*\n" +
 	"\x0efollow_include\x18\x02 \x01(\bH\x00R\rfollowInclude\x88\x01\x01B\x11\n" +
-	"\x0f_follow_include\"K\n" +
+	"\x0f_follow_include\"l\n" +
 	"\x0eOSVLocalConfig\x12\x1a\n" +
 	"\bdownload\x18\x01 \x01(\bR\bdownload\x12\x1d\n" +
 	"\n" +
-	"local_path\x18\x02 \x01(\tR\tlocalPathBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
+	"local_path\x18\x02 \x01(\tR\tlocalPath\x12\x1f\n" +
+	"\vremote_host\x18\x03 \x01(\tR\n" +
+	"remoteHostBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
