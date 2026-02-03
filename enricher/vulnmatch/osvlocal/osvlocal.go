@@ -47,17 +47,19 @@ type Enricher struct {
 
 // New makes a new osvlocal.Enricher with the given config.
 func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	localPath := ""
 	download := true
 
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OSVLocalConfig { return c.GetOsvlocal() })
 	if specific != nil {
+		localPath = specific.LocalPath
 		download = specific.Download
 	}
 
 	return &Enricher{
 		zippedDBRemoteHost: "https://osv-vulnerabilities.storage.googleapis.com",
 
-		localPath: "",
+		localPath: localPath,
 		download:  download,
 	}, nil
 }

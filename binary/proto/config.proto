@@ -444,4 +444,6 @@ message MariadbConfig {
 message OSVLocalConfig {
   // If true, OSV databases will be downloaded as needed for enriching
   bool download = 1;
+  // The path that the downloaded zip files should be stored at
+  string local_path = 2;
 }
