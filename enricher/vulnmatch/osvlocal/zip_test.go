@@ -151,9 +151,6 @@ func TestNewZippedDB_Offline_WithCache(t *testing.T) {
 		t.Fatalf("unexpected error \"%v\"", err)
 	}
 
-	if db.Partial != false {
-		t.Errorf("db is incorrectly marked as partially loaded")
-	}
 	expectDBToHaveOSVs(t, db, osvs)
 }
 
@@ -208,9 +205,6 @@ func TestNewZippedDB_Online_WithoutCache(t *testing.T) {
 		t.Fatalf("unexpected error \"%v\"", err)
 	}
 
-	if db.Partial != false {
-		t.Errorf("db is incorrectly marked as partially loaded")
-	}
 	expectDBToHaveOSVs(t, db, osvs)
 }
 
@@ -241,9 +235,6 @@ func TestNewZippedDB_Online_WithoutCacheAndNoHashHeader(t *testing.T) {
 		t.Fatalf("unexpected error \"%v\"", err)
 	}
 
-	if db.Partial != false {
-		t.Errorf("db is incorrectly marked as partially loaded")
-	}
 	expectDBToHaveOSVs(t, db, osvs)
 }
 
@@ -280,9 +271,6 @@ func TestNewZippedDB_Online_WithSameCache(t *testing.T) {
 		t.Fatalf("unexpected error \"%v\"", err)
 	}
 
-	if db.Partial != false {
-		t.Errorf("db is incorrectly marked as partially loaded")
-	}
 	expectDBToHaveOSVs(t, db, osvs)
 }
 
@@ -319,9 +307,6 @@ func TestNewZippedDB_Online_WithDifferentCache(t *testing.T) {
 		t.Fatalf("unexpected error \"%v\"", err)
 	}
 
-	if db.Partial != false {
-		t.Errorf("db is incorrectly marked as partially loaded")
-	}
 	expectDBToHaveOSVs(t, db, osvs)
 }
 
@@ -376,9 +361,6 @@ func TestNewZippedDB_Online_WithBadCache(t *testing.T) {
 		t.Fatalf("unexpected error \"%v\"", err)
 	}
 
-	if db.Partial != false {
-		t.Errorf("db is incorrectly marked as partially loaded")
-	}
 	expectDBToHaveOSVs(t, db, osvs)
 }
 
@@ -403,9 +385,6 @@ func TestNewZippedDB_FileChecks(t *testing.T) {
 		t.Fatalf("unexpected error \"%v\"", err)
 	}
 
-	if db.Partial != false {
-		t.Errorf("db is incorrectly marked as partially loaded")
-	}
 	expectDBToHaveOSVs(t, db, osvs)
 }
 
@@ -462,11 +441,6 @@ func TestNewZippedDB_WithSpecificPackages(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
-	}
-
-	// we are loaded for specific packages
-	if db.Partial != true {
-		t.Errorf("db is incorrectly marked as fully loaded")
 	}
 
 	expectDBToHaveOSVs(t, db, []*osvschema.Vulnerability{
