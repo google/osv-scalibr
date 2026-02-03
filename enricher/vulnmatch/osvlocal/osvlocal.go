@@ -41,14 +41,20 @@ var _ enricher.Enricher = &Enricher{}
 type Enricher struct {
 	zippedDBRemoteHost string
 
+	userAgent string
 	localPath string
 	download  bool
 }
 
 // New makes a new osvlocal.Enricher with the given config.
 func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	userAgent := "osv-scanner_scan/" + scalibrversion.ScannerVersion
 	localPath := ""
 	download := true
+
+	if cfg.UserAgent != "" {
+		userAgent = cfg.UserAgent
+	}
 
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OSVLocalConfig { return c.GetOsvlocal() })
 	if specific != nil {
@@ -59,13 +65,14 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	return &Enricher{
 		zippedDBRemoteHost: "https://osv-vulnerabilities.storage.googleapis.com",
 
+		userAgent: userAgent,
 		localPath: localPath,
 		download:  download,
 	}, nil
 }
 
 func newForTesting(zippedDBRemoteHost string) enricher.Enricher {
-	return &Enricher{zippedDBRemoteHost, "", true}
+	return &Enricher{zippedDBRemoteHost, "", "", true}
 }
 
 // Name of the Enricher.
@@ -103,7 +110,7 @@ func (Enricher) RequiredPlugins() []string {
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	dbs, err := newlocalMatcher(
 		e.localPath,
-		"osv-scanner_scan/"+scalibrversion.ScannerVersion,
+		e.userAgent,
 		e.download,
 		e.zippedDBRemoteHost,
 	)
