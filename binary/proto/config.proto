@@ -93,7 +93,7 @@ message PluginSpecificConfig {
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
-    OSVLocalConfig osvlocal = 48;
+    OSVLocalConfig osvlocal = 57;
   }
 }
 

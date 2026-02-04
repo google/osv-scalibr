@@ -838,7 +838,7 @@ type PluginSpecificConfig_Mariadb struct {
 }
 
 type PluginSpecificConfig_Osvlocal struct {
-	Osvlocal *OSVLocalConfig `protobuf:"bytes,48,opt,name=osvlocal,proto3,oneof"`
+	Osvlocal *OSVLocalConfig `protobuf:"bytes,57,opt,name=osvlocal,proto3,oneof"`
 }
 
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
@@ -3368,7 +3368,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x06go_mod\x18- \x01(\v2\x14.scalibr.GoModConfigH\x00R\x05goMod\x12N\n" +
 	"\x11wordpress_plugins\x18. \x01(\v2\x1f.scalibr.WordpressPluginsConfigH\x00R\x10wordpressPlugins\x122\n" +
 	"\amariadb\x18/ \x01(\v2\x16.scalibr.MariadbConfigH\x00R\amariadb\x125\n" +
-	"\bosvlocal\x180 \x01(\v2\x17.scalibr.OSVLocalConfigH\x00R\bosvlocalB\b\n" +
+	"\bosvlocal\x189 \x01(\v2\x17.scalibr.OSVLocalConfigH\x00R\bosvlocalB\b\n" +
 	"\x06config\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
