@@ -228,9 +228,7 @@ happen when, say, you want to contribute a new inventory type. For such cases,
 you'll need to install a few dependencies:
 
 *   `protoc`: Install the appropriate
-    [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).
-    *   For Mac, you can also
-        [install via HomeBrew](https://grpc.io/docs/protoc-installation/#install-using-a-package-manager).
+    [precompiled protoc binary](https://protobuf.dev/installation/).
 *   `protoc-gen-go`: Run `go install
     google.golang.org/protobuf/cmd/protoc-gen-go`
 

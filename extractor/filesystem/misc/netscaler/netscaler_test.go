@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,10 +26,15 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
-	extractor := netscaler.New()
+	extractor, err := netscaler.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("netscaler.New failed: %v", err)
+	}
 	tests := []struct {
 		path string
 		want bool
@@ -128,7 +133,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := netscaler.New()
+			extr, err := netscaler.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("netscaler.New failed: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
