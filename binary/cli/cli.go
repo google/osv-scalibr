@@ -151,6 +151,7 @@ type Flags struct {
 	StoreAbsolutePath     bool
 	WindowsAllDrives      bool
 	Offline               bool
+	AllowUnsafePlugins    bool
 }
 
 var supportedOutputFormats = []string{
@@ -665,17 +666,19 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 	if f.RemoteImage != "" {
 		// We're scanning a Linux container image whose filesystem is mounted to the host's disk.
 		return &plugin.Capabilities{
-			OS:            plugin.OSLinux,
-			Network:       network,
-			DirectFS:      true,
-			RunningSystem: false,
+			OS:                 plugin.OSLinux,
+			Network:            network,
+			DirectFS:           true,
+			RunningSystem:      false,
+			AllowUnsafePlugins: f.AllowUnsafePlugins,
 		}
 	}
 	return &plugin.Capabilities{
-		OS:            platform.OS(),
-		Network:       network,
-		DirectFS:      true,
-		RunningSystem: true,
+		OS:                 platform.OS(),
+		Network:            network,
+		DirectFS:           true,
+		RunningSystem:      true,
+		AllowUnsafePlugins: f.AllowUnsafePlugins,
 	}
 }
 
@@ -686,6 +689,8 @@ func filterByCapabilities(plugins []plugin.Plugin, capab *plugin.Capabilities) [
 	for _, p := range plugins {
 		if err := plugin.ValidateRequirements(p, capab); err == nil {
 			fp = append(fp, p)
+		} else {
+			log.Warnf("Disabling plugin %q: %v", p.Name(), err)
 		}
 	}
 	return fp
