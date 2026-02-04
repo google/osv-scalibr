@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
@@ -39,29 +40,25 @@ const (
 	Name = "go/gomod"
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	ExcludeIndirect bool
-}
-
 // Extractor extracts go packages from a go.mod file,
 // including the stdlib version by using the top level go version
 //
 // The output is not sorted and will not be in a consistent order
 type Extractor struct {
-	config Config
-}
-
-// DefaultConfig returns a default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{}
+	excludeIndirect bool
 }
 
 // New returns a new instance of the extractor with the default configuration.
-func New() filesystem.Extractor { return NewWithConfig(DefaultConfig()) }
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	excludeIndirect := false
 
-// NewWithConfig returns a new instance of the extractor with the given configuration.
-func NewWithConfig(cfg Config) filesystem.Extractor { return &Extractor{config: cfg} }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoModConfig { return c.GetGoMod() })
+	if specific != nil {
+		excludeIndirect = specific.GetExcludeIndirect()
+	}
+
+	return &Extractor{excludeIndirect: excludeIndirect}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -139,7 +136,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 
 	for _, require := range parsedLockfile.Require {
 		// Skip indirect dependencies based on the configuration.
-		if e.config.ExcludeIndirect && require.Indirect {
+		if e.excludeIndirect && require.Indirect {
 			continue
 		}
 
