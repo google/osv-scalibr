@@ -786,6 +786,7 @@ message SecretData {
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
     URLCredentials url_credentials = 62;
+    SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
   }
 
   message GCPSAK {
@@ -1099,6 +1100,15 @@ message SecretData {
 
   message TelegramBotToken {
     string token = 1;
+  }
+
+  message SalesforceOAuth2ClientCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce instance URL
+    string url = 3;
   }
 
   message CursorAPIKey {

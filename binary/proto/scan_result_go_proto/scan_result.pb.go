@@ -5706,6 +5706,7 @@ type SecretData struct {
 	//	*SecretData_CursorApiKey
 	//	*SecretData_ElasticCloudApiKey
 	//	*SecretData_UrlCredentials
+	//	*SecretData_SalesforceOauth2ClientCredentials
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6306,6 +6307,15 @@ func (x *SecretData) GetUrlCredentials() *SecretData_URLCredentials {
 	return nil
 }
 
+func (x *SecretData) GetSalesforceOauth2ClientCredentials() *SecretData_SalesforceOAuth2ClientCredentials {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SalesforceOauth2ClientCredentials); ok {
+			return x.SalesforceOauth2ClientCredentials
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -6558,6 +6568,10 @@ type SecretData_UrlCredentials struct {
 	UrlCredentials *SecretData_URLCredentials `protobuf:"bytes,62,opt,name=url_credentials,json=urlCredentials,proto3,oneof"`
 }
 
+type SecretData_SalesforceOauth2ClientCredentials struct {
+	SalesforceOauth2ClientCredentials *SecretData_SalesforceOAuth2ClientCredentials `protobuf:"bytes,63,opt,name=salesforce_oauth2_client_credentials,json=salesforceOauth2ClientCredentials,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
 func (*SecretData_AnthropicWorkspaceApiKey) isSecretData_Secret() {}
@@ -6681,6 +6695,8 @@ func (*SecretData_CursorApiKey) isSecretData_Secret() {}
 func (*SecretData_ElasticCloudApiKey) isSecretData_Secret() {}
 
 func (*SecretData_UrlCredentials) isSecretData_Secret() {}
+
+func (*SecretData_SalesforceOauth2ClientCredentials) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -10433,6 +10449,69 @@ func (x *SecretData_TelegramBotToken) GetToken() string {
 	return ""
 }
 
+type SecretData_SalesforceOAuth2ClientCredentials struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Salesforce OAuth2 client ID
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Salesforce OAuth2 client secret
+	Secret string `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
+	// Salesforce instance URL
+	Url           string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SalesforceOAuth2ClientCredentials) Reset() {
+	*x = SecretData_SalesforceOAuth2ClientCredentials{}
+	mi := &file_proto_scan_result_proto_msgTypes[135]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SalesforceOAuth2ClientCredentials) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SalesforceOAuth2ClientCredentials) ProtoMessage() {}
+
+func (x *SecretData_SalesforceOAuth2ClientCredentials) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[135]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SalesforceOAuth2ClientCredentials.ProtoReflect.Descriptor instead.
+func (*SecretData_SalesforceOAuth2ClientCredentials) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{62, 60}
+}
+
+func (x *SecretData_SalesforceOAuth2ClientCredentials) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SecretData_SalesforceOAuth2ClientCredentials) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *SecretData_SalesforceOAuth2ClientCredentials) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
 type SecretData_CursorAPIKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -10442,7 +10521,7 @@ type SecretData_CursorAPIKey struct {
 
 func (x *SecretData_CursorAPIKey) Reset() {
 	*x = SecretData_CursorAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[135]
+	mi := &file_proto_scan_result_proto_msgTypes[136]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10454,7 +10533,7 @@ func (x *SecretData_CursorAPIKey) String() string {
 func (*SecretData_CursorAPIKey) ProtoMessage() {}
 
 func (x *SecretData_CursorAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[135]
+	mi := &file_proto_scan_result_proto_msgTypes[136]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10467,7 +10546,7 @@ func (x *SecretData_CursorAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CursorAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_CursorAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{62, 60}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{62, 61}
 }
 
 func (x *SecretData_CursorAPIKey) GetKey() string {
@@ -10486,7 +10565,7 @@ type SecretData_URLCredentials struct {
 
 func (x *SecretData_URLCredentials) Reset() {
 	*x = SecretData_URLCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[136]
+	mi := &file_proto_scan_result_proto_msgTypes[137]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10498,7 +10577,7 @@ func (x *SecretData_URLCredentials) String() string {
 func (*SecretData_URLCredentials) ProtoMessage() {}
 
 func (x *SecretData_URLCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[136]
+	mi := &file_proto_scan_result_proto_msgTypes[137]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10511,7 +10590,7 @@ func (x *SecretData_URLCredentials) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_URLCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_URLCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{62, 61}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{62, 62}
 }
 
 func (x *SecretData_URLCredentials) GetUrl() string {
@@ -10975,7 +11054,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xf4M\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xdeO\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -11050,7 +11129,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x16telegram_bot_api_token\x18; \x01(\v2$.scalibr.SecretData.TelegramBotTokenH\x00R\x13telegramBotApiToken\x12H\n" +
 	"\x0ecursor_api_key\x18< \x01(\v2 .scalibr.SecretData.CursorAPIKeyH\x00R\fcursorApiKey\x12[\n" +
 	"\x15elastic_cloud_api_key\x18= \x01(\v2&.scalibr.SecretData.ElasticCloudAPIKeyH\x00R\x12elasticCloudApiKey\x12M\n" +
-	"\x0furl_credentials\x18> \x01(\v2\".scalibr.SecretData.URLCredentialsH\x00R\x0eurlCredentials\x1a\xb0\x03\n" +
+	"\x0furl_credentials\x18> \x01(\v2\".scalibr.SecretData.URLCredentialsH\x00R\x0eurlCredentials\x12\x88\x01\n" +
+	"$salesforce_oauth2_client_credentials\x18? \x01(\v25.scalibr.SecretData.SalesforceOAuth2ClientCredentialsH\x00R!salesforceOauth2ClientCredentials\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -11231,7 +11311,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x11PaystackSecretKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a(\n" +
 	"\x10TelegramBotToken\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x1a \n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1a]\n" +
+	"!SalesforceOAuth2ClientCredentials\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06secret\x18\x02 \x01(\tR\x06secret\x12\x10\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\x1a \n" +
 	"\fCursorAPIKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a\"\n" +
 	"\x0eURLCredentials\x12\x10\n" +
@@ -11323,7 +11407,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 138)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 139)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                         // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                             // 1: scalibr.SeverityEnum
@@ -11465,15 +11549,16 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_ElasticCloudAPIKey)(nil),                   // 137: scalibr.SecretData.ElasticCloudAPIKey
 	(*SecretData_PaystackSecretKey)(nil),                    // 138: scalibr.SecretData.PaystackSecretKey
 	(*SecretData_TelegramBotToken)(nil),                     // 139: scalibr.SecretData.TelegramBotToken
-	(*SecretData_CursorAPIKey)(nil),                         // 140: scalibr.SecretData.CursorAPIKey
-	(*SecretData_URLCredentials)(nil),                       // 141: scalibr.SecretData.URLCredentials
-	nil,                                                     // 142: scalibr.ContainerImageMetadata.OsInfoEntry
-	(*timestamppb.Timestamp)(nil),                           // 143: google.protobuf.Timestamp
-	(*osvschema.Vulnerability)(nil),                         // 144: osv.Vulnerability
+	(*SecretData_SalesforceOAuth2ClientCredentials)(nil),    // 140: scalibr.SecretData.SalesforceOAuth2ClientCredentials
+	(*SecretData_CursorAPIKey)(nil),                         // 141: scalibr.SecretData.CursorAPIKey
+	(*SecretData_URLCredentials)(nil),                       // 142: scalibr.SecretData.URLCredentials
+	nil,                                                     // 143: scalibr.ContainerImageMetadata.OsInfoEntry
+	(*timestamppb.Timestamp)(nil),                           // 144: google.protobuf.Timestamp
+	(*osvschema.Vulnerability)(nil),                         // 145: osv.Vulnerability
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	143, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	143, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	144, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	144, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	6,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
@@ -11533,7 +11618,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	14,  // 58: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
 	0,   // 59: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
 	17,  // 60: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	144, // 61: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
+	145, // 61: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
 	15,  // 62: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
 	20,  // 63: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
 	22,  // 64: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
@@ -11544,8 +11629,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	16,  // 69: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	16,  // 70: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	79,  // 71: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	143, // 72: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	143, // 73: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	144, // 72: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	144, // 73: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	62,  // 74: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	65,  // 75: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
 	67,  // 76: scalibr.Secret.secret:type_name -> scalibr.SecretData
@@ -11610,26 +11695,27 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	136, // 135: scalibr.SecretData.bitbucket_credentials:type_name -> scalibr.SecretData.BitBucketCredentials
 	138, // 136: scalibr.SecretData.paystack_secret_key:type_name -> scalibr.SecretData.PaystackSecretKey
 	139, // 137: scalibr.SecretData.telegram_bot_api_token:type_name -> scalibr.SecretData.TelegramBotToken
-	140, // 138: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
+	141, // 138: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
 	137, // 139: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
-	141, // 140: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
-	4,   // 141: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	143, // 142: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	70,  // 143: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	71,  // 144: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	72,  // 145: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	73,  // 146: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	12,  // 147: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	77,  // 148: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	75,  // 149: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	142, // 150: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	76,  // 151: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	56,  // 152: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	153, // [153:153] is the sub-list for method output_type
-	153, // [153:153] is the sub-list for method input_type
-	153, // [153:153] is the sub-list for extension type_name
-	153, // [153:153] is the sub-list for extension extendee
-	0,   // [0:153] is the sub-list for field type_name
+	142, // 140: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
+	140, // 141: scalibr.SecretData.salesforce_oauth2_client_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2ClientCredentials
+	4,   // 142: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	144, // 143: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	70,  // 144: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	71,  // 145: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	72,  // 146: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	73,  // 147: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	12,  // 148: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	77,  // 149: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	75,  // 150: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	143, // 151: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	76,  // 152: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	56,  // 153: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	154, // [154:154] is the sub-list for method output_type
+	154, // [154:154] is the sub-list for method input_type
+	154, // [154:154] is the sub-list for extension type_name
+	154, // [154:154] is the sub-list for extension extendee
+	0,   // [0:154] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -11746,6 +11832,7 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_CursorApiKey)(nil),
 		(*SecretData_ElasticCloudApiKey)(nil),
 		(*SecretData_UrlCredentials)(nil),
+		(*SecretData_SalesforceOauth2ClientCredentials)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[64].OneofWrappers = []any{
 		(*Location_Filepath)(nil),
@@ -11759,7 +11846,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   138,
+			NumMessages:   139,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
