@@ -21,7 +21,6 @@ import (
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/go-cmp/cmp"
-	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
@@ -40,22 +39,20 @@ func TestToCDX(t *testing.T) {
 	defaultBOM := cyclonedx.NewBOM()
 
 	testCases := []struct {
-		desc       string
-		scanResult *scalibr.ScanResult
-		config     converter.CDXConfig
-		want       *cyclonedx.BOM
+		desc   string
+		inv    inventory.Inventory
+		config converter.CDXConfig
+		want   *cyclonedx.BOM
 	}{
 		{
 			desc: "Package_with_custom_config",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:     "software",
-						Version:  "1.2.3",
-						PURLType: purl.TypePyPi,
-						Plugins:  []string{wheelegg.Name},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
 			},
 			config: converter.CDXConfig{
 				ComponentName:    "sbom-1",
@@ -95,15 +92,13 @@ func TestToCDX(t *testing.T) {
 		},
 		{
 			desc: "Package_with_custom_config_and_cdx-component-type",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:     "software",
-						Version:  "1.2.3",
-						PURLType: purl.TypePyPi,
-						Plugins:  []string{wheelegg.Name},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
 			},
 			config: converter.CDXConfig{
 				ComponentName:    "sbom-2",
@@ -147,7 +142,7 @@ func TestToCDX(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := converter.ToCDX(tc.scanResult, tc.config)
+			got := converter.ToCDX(tc.inv, tc.config)
 			// Can't mock time.Now() so skip verifying the timestamp.
 			tc.want.Metadata.Timestamp = got.Metadata.Timestamp
 			// Auto-populated fields
@@ -158,7 +153,7 @@ func TestToCDX(t *testing.T) {
 			tc.want.Version = defaultBOM.Version
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("converter.ToCDX(%v): unexpected diff (-want +got):\n%s", tc.scanResult, diff)
+				t.Errorf("converter.ToCDX(%v): unexpected diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})
 	}

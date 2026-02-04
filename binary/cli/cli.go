@@ -510,12 +510,12 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 					return err
 				}
 			} else if strings.Contains(oFormat, "spdx23") {
-				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
+				doc := converter.ToSPDX23(result.Inventory, f.GetSPDXConfig())
 				if err := binspdx.Write23(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			} else if strings.Contains(oFormat, "cdx") {
-				doc := converter.ToCDX(result, f.GetCDXConfig())
+				doc := converter.ToCDX(result.Inventory, f.GetCDXConfig())
 				if err := cdx.Write(doc, oPath, oFormat); err != nil {
 					return err
 				}
