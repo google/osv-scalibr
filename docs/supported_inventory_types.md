@@ -112,66 +112,67 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Secrets
 
-| Type                                        | Extractor Plugin                      |
-| ------------------------------------------- | -------------------------------------- |
-| AWS access key                              | `secrets/awsaccesskey`                |
-| Amazon CodeCommit credentials               | `secrets/codecommitcredentials`       |
-| Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`     |
-| Anthropic API key                           | `secrets/anthropicapikey`             |
+| Type                                        | Extractor Plugin                       |
+|---------------------------------------------|----------------------------------------|
+| AWS access key                              | `secrets/awsaccesskey`                 |
+| Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
+| Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
+| Anthropic API key                           | `secrets/anthropicapikey`              |
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
-| Azure Token                                 | `secrets/azuretoken`                  |
-| Bitbucket                                   | `secrets/bitbucketcredentials`        |
-| Crates.io API Token                         | `secrets/cratesioapitoken`            |
-| Cursor API key                              | `secrets/cursorapikey`                |
-| DigitalOcean API key                        | `secrets/digitaloceanapikey`          |
-| Docker hub PAT                              | `secrets/dockerhubpat`                |
-| Elastic Cloud API key                       | `secrets/elasticcloudapikey`          |
-| GCP API key                                 | `secrets/gcpapikey`                   |
-| GCP Express Mode API key                    | `secrets/gcpexpressmode`              |
-| GCP service account key                     | `secrets/gcpsak`                      |
-| GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`             |
-| GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`             |
-| Google Cloud storage HMAC keys              | `secrets/gcshmackey`                  |
-| Gitlab PAT                                  | `secrets/gitlabpat`                   |
-| Grok xAI API key                            | `secrets/grokxaiapikey`               |
-| Grok xAI Management key                     | `secrets/grokxaimanagementkey`        |
-| Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`        |
-| Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`              |
-| Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`         |
-| Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`       |
-| Hugging Face API key                        | `secrets/huggingfaceapikey`           |
-| MariaDB Credentials                         | `secrets/mariadb`                     |
-| Mysql Mylogin                               | `secrets/mysqlmylogin`                |
-| 1Password Secret Key                        | `secrets/onepasswordsecretkey`        |
-| 1Password Service Token                     | `secrets/onepasswordservicetoken`     |
-| 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`     |
-| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`     |
-| OpenAI API key                              | `secrets/openai`                      |
-| OpenRouter API key                          | `secrets/openrouter`                  |
-| Perplexity API key                          | `secrets/perplexityapikey`            |
-| PyPI API Token                              | `secrets/pypiapitoken`                |
-| Postgres pgpass file                        | `secrets/pgpass`                      |
-| Postman API key                             | `secrets/postmanapikey`               |
-| Postman Collection token                    | `secrets/postmancollectiontoken`      |
-| PEM/OpenSSH Private key                     | `secrets/privatekey`                  |
-| RubyGems API key                            | `secrets/rubygemsapikey`              |
-| Slack Application Level Token               | `secrets/slackappleveltoken`          |
-| Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`   |
-| Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken`  |
-| Stripe Secret Key                           | `secrets/stripesecretkey`             |
-| Stripe Restricted Key                       | `secrets/striperestrictedkey`         |
-| Stripe Webhook Secret                       | `secrets/stripewebhooksecret`         |
-| Tink keyset                                 | `secrets/tinkkeyset`                  |
-| Paystack Secret Key                         | `secrets/paystacksecretkey`           |
-| Vapid keys                                  | `secrets/vapidkey`                    |
-| reCAPTCHA secret keys                       | `secrets/recaptchakey`                |
-| Generic JWT tokens                          | `secrets/jwttoken`                    |
-| pyx user key v1                             | `secrets/pyxkeyv1`                    |
-| pyx user key v2                             | `secrets/pyxkeyv2`                    |
-| Telegram Bot API Token                      | `secrets/telegrambottoken`            |
-| Salesforce OAuth 2 Client Credentials       | `secrets/salesforceoauth2client`      |
-| Generic URL with credentials                | `secrets/urlcreds`                    |
-| Heroku Platform API Key                     | `secrets/herokuplatformkey`           |
+| Azure Token                                 | `secrets/azuretoken`                   |
+| Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Crates.io API Token                         | `secrets/cratesioapitoken`             |
+| Cursor API key                              | `secrets/cursorapikey`                 |
+| DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
+| Docker hub PAT                              | `secrets/dockerhubpat`                 |
+| Elastic Cloud API key                       | `secrets/elasticcloudapikey`           |
+| GCP API key                                 | `secrets/gcpapikey`                    |
+| GCP Express Mode API key                    | `secrets/gcpexpressmode`               |
+| GCP service account key                     | `secrets/gcpsak`                       |
+| GCP OAuth 2 Access Tokens                   | `secrets/gcpoauth2access`              |
+| GCP OAuth 2 Client Credentials              | `secrets/gcpoauth2client`              |
+| Google Cloud storage HMAC keys              | `secrets/gcshmackey`                   |
+| Gitlab PAT                                  | `secrets/gitlabpat`                    |
+| Grok xAI API key                            | `secrets/grokxaiapikey`                |
+| Grok xAI Management key                     | `secrets/grokxaimanagementkey`         |
+| Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`         |
+| Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`               |
+| Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`          |
+| Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`        |
+| Hugging Face API key                        | `secrets/huggingfaceapikey`            |
+| MariaDB Credentials                         | `secrets/mariadb`                      |
+| Mysql Mylogin                               | `secrets/mysqlmylogin`                 |
+| 1Password Secret Key                        | `secrets/onepasswordsecretkey`         |
+| 1Password Service Token                     | `secrets/onepasswordservicetoken`      |
+| 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`      |
+| 1Password Connect Token                     | `secrets/onepasswordconnecttoken`      |
+| OpenAI API key                              | `secrets/openai`                       |
+| OpenRouter API key                          | `secrets/openrouter`                   |
+| Perplexity API key                          | `secrets/perplexityapikey`             |
+| PyPI API Token                              | `secrets/pypiapitoken`                 |
+| Postgres pgpass file                        | `secrets/pgpass`                       |
+| Postman API key                             | `secrets/postmanapikey`                |
+| Postman Collection token                    | `secrets/postmancollectiontoken`       |
+| PEM/OpenSSH Private key                     | `secrets/privatekey`                   |
+| RubyGems API key                            | `secrets/rubygemsapikey`               |
+| Slack Application Level Token               | `secrets/slackappleveltoken`           |
+| Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`    |
+| Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken`   |
+| Stripe Secret Key                           | `secrets/stripesecretkey`              |
+| Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
+| Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
+| Tink keyset                                 | `secrets/tinkkeyset`                   |
+| Paystack Secret Key                         | `secrets/paystacksecretkey`            |
+| Vapid keys                                  | `secrets/vapidkey`                     |
+| reCAPTCHA secret keys                       | `secrets/recaptchakey`                 |
+| Generic JWT tokens                          | `secrets/jwttoken`                     |
+| pyx user key v1                             | `secrets/pyxkeyv1`                     |
+| pyx user key v2                             | `secrets/pyxkeyv2`                     |
+| Telegram Bot API Token                      | `secrets/telegrambottoken`             |
+| Salesforce OAuth2 Access Tokens             | `secrets/salesforceoauth2access`       |
+| Salesforce OAuth 2 Client Credentials       | `secrets/salesforceoauth2client`       |
+| Generic URL with credentials                | `secrets/urlcreds`                     |
+| Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 
 ### Container inventory
 
