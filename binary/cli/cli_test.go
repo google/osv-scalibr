@@ -369,6 +369,35 @@ func TestGetScanConfig_NetworkCapabilities(t *testing.T) {
 	}
 }
 
+func TestGetScanConfig_AllowUnsafePlugins(t *testing.T) {
+	for _, tc := range []struct {
+		desc                   string
+		flags                  cli.Flags
+		wantAllowUnsafePlugins bool
+	}{
+		{
+			desc:                   "false_if_nothing_set",
+			flags:                  cli.Flags{},
+			wantAllowUnsafePlugins: false,
+		},
+		{
+			desc:                   "true_if_set_to_true",
+			flags:                  cli.Flags{AllowUnsafePlugins: true},
+			wantAllowUnsafePlugins: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if tc.wantAllowUnsafePlugins != cfg.Capabilities.AllowUnsafePlugins {
+				t.Errorf("%v.GetScanConfig(): want %v, got %v", tc.flags, tc.wantAllowUnsafePlugins, cfg.Capabilities.AllowUnsafePlugins)
+			}
+		})
+	}
+}
+
 func TestGetScanConfig_DirsToSkip(t *testing.T) {
 	for _, tc := range []struct {
 		desc           string

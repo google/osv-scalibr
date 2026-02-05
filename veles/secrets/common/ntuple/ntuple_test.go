@@ -119,6 +119,35 @@ func TestNTupleDetection(t *testing.T) {
 			},
 			wantPos: []int{1},
 		},
+		{
+			name:        "closest_pairing",
+			input:       " a2 a1 b1 c1",
+			maxDistance: 1000,
+			want: []veles.Secret{
+				mockSecret{Value: "a1-b1-c1"},
+			},
+			wantPos: []int{4},
+		},
+		{
+			name:        "zero_distance",
+			input:       "a1",
+			maxDistance: 0,
+			fromPartial: mockSecretFromPartial,
+			want: []veles.Secret{
+				mockSecret{Value: "a1"},
+			},
+			wantPos: []int{0},
+		},
+		{
+			name:        "no_reuse_after_tuple_consumed",
+			input:       "a1 b1 c1  a2 b1 c2",
+			maxDistance: 2,
+			want: []veles.Secret{
+				mockSecret{Value: "a1-b1-c1"},
+				mockSecret{Value: "a2-b1-c2"},
+			},
+			wantPos: []int{0, 10},
+		},
 	}
 
 	aPattern := regexp.MustCompile(`a[a-z]*[0-9]`)

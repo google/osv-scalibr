@@ -21,6 +21,7 @@ package ntuple
 
 import (
 	"regexp"
+	"sort"
 
 	"github.com/google/osv-scalibr/veles"
 )
@@ -34,6 +35,15 @@ type Match struct {
 	End         int
 	Value       []byte
 	FinderIndex int
+}
+
+// matchKey uniquely identifies a Match instance for deduplication.
+// Two matches are considered identical if they originate from the same
+// Finder and span the same byte range.
+type matchKey struct {
+	FinderIndex int
+	Start       int
+	End         int
 }
 
 // Tuple represents a completed grouping of individual matches that together
@@ -129,48 +139,54 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	}
 
 	tuples := collectAllTuples(all, int(d.MaxDistance))
-
 	if len(tuples) == 0 && d.FromPartial == nil {
 		return nil, nil
 	}
 
 	if len(tuples) > 0 {
-		usedRanges := make([][2]int, 0)
+		// Sort only for ranking
+		sort.Slice(tuples, func(i, j int) bool {
+			return tuples[i].Dist < tuples[j].Dist
+		})
+
+		// Track already consumed matches so they cannot participate in any future tuples.
+		usedMatches := make(map[matchKey]struct{})
 		var out []veles.Secret
 		var pos []int
 
 		for _, t := range tuples {
-			// This only accounts for overlap between the tuples not the tuples themselves
-			minS := t.Matches[0].Start
-			maxE := t.Matches[0].End
-			for _, m := range t.Matches[1:] {
-				if m.Start < minS {
-					minS = m.Start
+			conflict := false
+			for _, m := range t.Matches {
+				key := matchKey{
+					FinderIndex: m.FinderIndex,
+					Start:       m.Start,
+					End:         m.End,
 				}
-				if m.End > maxE {
-					maxE = m.End
-				}
-			}
-
-			overlap := false
-			for _, r := range usedRanges {
-				if minS < r[1] && r[0] < maxE {
-					overlap = true
+				if _, used := usedMatches[key]; used {
+					conflict = true
 					break
 				}
 			}
-			if overlap {
+			if conflict {
 				continue
 			}
-
 			secret, ok := d.FromTuple(t.Matches)
 			if !ok {
 				continue
 			}
-
-			usedRanges = append(usedRanges, [2]int{minS, maxE})
+			// Accept tuple:
+			// Mark all of its Matches as consumed so they cannot participate
+			// in any future tuples.
+			for _, m := range t.Matches {
+				key := matchKey{
+					FinderIndex: m.FinderIndex,
+					Start:       m.Start,
+					End:         m.End,
+				}
+				usedMatches[key] = struct{}{}
+			}
 			out = append(out, secret)
-			pos = append(pos, t.Start) // usually min start
+			pos = append(pos, t.Start)
 		}
 
 		if len(out) > 0 {
@@ -310,7 +326,7 @@ func generateTuples(all [][]Match, idx int, current []Match, maxDist int) []Tupl
 	if idx == len(all) {
 		t := buildTuple(append([]Match(nil), current...))
 		// Only return the tuple if it's valid (Dist >= 0 and not discarded)
-		if t.Dist > 0 && len(t.Matches) == len(all) { // extra safety
+		if t.Dist >= 0 && len(t.Matches) == len(all) { // extra safety
 			if t.Dist <= maxDist {
 				return []Tuple{t}
 			}
@@ -362,27 +378,34 @@ func buildTuple(matches []Match) Tuple {
 		}
 	}
 
-	// Compute min/max for distance
-	minStart := matches[0].Start
-	maxStart := matches[0].Start
-	minEnd := matches[0].End
+	// Sort matches by start position to measure pairwise gaps
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].Start < matches[j].Start
+	})
 
-	for _, m := range matches[1:] {
-		if m.Start < minStart {
-			minStart = m.Start
-		}
-		if m.Start > maxStart {
-			maxStart = m.Start
-		}
-		if m.End < minEnd {
-			minEnd = m.End
+	minStart := matches[0].Start
+	maxEnd := matches[0].End
+	totalGap := 0
+
+	for i := 1; i < len(matches); i++ {
+		prev := matches[i-1]
+		curr := matches[i]
+		gap := max(0, curr.Start-prev.End) // safety; overlap already rejected earlier
+		totalGap += gap
+		if curr.End > maxEnd {
+			maxEnd = curr.End
 		}
 	}
+
+	// Sort matches by FinderIndex position to restore finder order
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].FinderIndex < matches[j].FinderIndex
+	})
 
 	return Tuple{
 		Matches: matches,
 		Start:   minStart,
-		End:     maxStart,
-		Dist:    maxStart - minEnd,
+		End:     maxEnd,
+		Dist:    totalGap,
 	}
 }
