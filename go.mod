@@ -32,6 +32,7 @@ require (
 	github.com/google/go-cpy v0.0.0-20211218193943-a9c933c06932
 	github.com/google/uuid v1.6.0
 	github.com/ianlancetaylor/demangle v0.0.0-20251118225945-96ee0021ea0f
+	github.com/icholy/digest v1.1.0
 	github.com/masahiro331/go-ext4-filesystem v0.0.0-20240620024024-ca14e6327bbd
 	github.com/michaelkedar/xml v0.0.0-20250501021638-021a7b1a061e
 	github.com/micromdm/plist v0.2.1

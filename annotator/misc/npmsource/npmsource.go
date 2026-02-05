@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -61,7 +63,7 @@ var (
 type Annotator struct{}
 
 // New returns a new Annotator.
-func New() annotator.Annotator { return &Annotator{} }
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
 func (Annotator) Name() string { return "misc/npm-source" }

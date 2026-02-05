@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,6 +78,7 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
+  reserved 17 to 20, 29, 32, 43, 59;
   // Unique identifier for the package.
   string id = 60;
   // Human-readable name of the software, to be used for things like logging.
@@ -140,6 +141,7 @@ message Package {
     DepGroupMetadata dep_group_metadata = 61;
     ChocolateyPackageMetadata chocolatey_metadata = 62;
     MiseMetadata mise_metadata = 63;
+    UnknownBinaryMetadata unknown_binary_metadata = 64;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -603,7 +605,11 @@ message WindowsOSVersion {
 }
 
 // The additional data found in Homebrew packages.
-message HomebrewPackageMetadata {}
+message HomebrewPackageMetadata {
+  string url = 1;
+  string head = 2;
+  repeated string mirrors = 3;
+}
 
 // The additional data found in Chrome extensions.
 message ChromeExtensionsMetadata {
@@ -697,6 +703,18 @@ message WingetPackageMetadata {
   repeated string commands = 7;
 }
 
+// Additional data attributed to unknown binaries.
+message UnknownBinaryMetadata {
+  string file_hash = 1;
+  UnknownBinaryAttribution attribution = 2;
+}
+
+// Data about attributing a binary to a known base image.
+message UnknownBinaryAttribution {
+  bool local_filesystem = 1;
+  bool base_image = 2;
+}
+
 // A secret (i.e. credential) found by Veles secret scanning.
 message Secret {
   SecretData secret = 1;
@@ -768,6 +786,10 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    URLCredentials url_credentials = 62;
+    SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
+    SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
+    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials = 65;
   }
 
   message GCPSAK {
@@ -1083,8 +1105,35 @@ message SecretData {
     string token = 1;
   }
 
+  message SalesforceOAuth2AccessToken {
+    // Salesforce OAuth2 Access Token
+    string token = 1;
+  }
+
+  message SalesforceOAuth2ClientCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce instance URL
+    string url = 3;
+  }
+
+  message SalesforceOAuth2RefreshCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce OAuth2 Refresh Token
+    string refresh = 3;
+  }
+
   message CursorAPIKey {
     string key = 1;
+  }
+
+  message URLCredentials {
+    string url = 1;
   }
 }
 

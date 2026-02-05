@@ -171,6 +171,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | pyx user key v1                             | `secrets/pyxkeyv1`                     |
 | pyx user key v2                             | `secrets/pyxkeyv2`                     |
 | Telegram Bot API Token                      | `secrets/telegrambottoken`             |
+| Salesforce OAuth2 Access Tokens             | `secrets/salesforceoauth2access`       |
+| Salesforce OAuth 2 Client Credentials       | `secrets/salesforceoauth2client`       |
+| Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
+| Generic URL with credentials                | `secrets/urlcreds`                     |
 
 ### Container inventory
 
@@ -248,8 +252,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Validates secrets, e.g. checking if a GCP service account key is active.   | `secrets/velesvalidate`             |
 | Finds vulns in Go source with reachability data using govulncheck. Requires a vulnmatch enricher to be enabled. | `reachability/go/source`            |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
-| Performs reachability analysis for Rust code. (Linux-only)                 | `reachability/rust`                 |
+| Performs reachability analysis for Rust code. (Linux-only) *               | `reachability/rust`                 |
 | Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |
 | Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |
+
+Warning: Plugins marked with * use or mimic native toolchains.
+Any scripts or build-time logic defined within the project will run as-is.
+Please ensure you trust the source code before proceeding.
