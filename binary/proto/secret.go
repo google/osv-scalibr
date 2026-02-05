@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,8 +30,10 @@ import (
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
@@ -58,11 +60,14 @@ import (
 	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -176,6 +181,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return azureIdentityTokenToProto(t), nil
 	case tinkkeyset.TinkKeySet:
 		return tinkKeysetToProto(t), nil
+	case velescursorapikey.APIKey:
+		return cursorAPIKeyToProto(t.Key), nil
 	case velesopenai.APIKey:
 		return openaiAPIKeyToProto(t.Key), nil
 	case velesopenrouter.APIKey:
@@ -240,14 +247,32 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return codeCommitCredentialsToProto(t), nil
 	case bitbucket.Credentials:
 		return bitbucketCredentialsToProto(t), nil
+	case elasticcloudapikey.ElasticCloudAPIKey:
+		return elasticCloudAPIKeyToProto(t), nil
+	case urlcreds.Credentials:
+		return urlCredentialsToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
 	case salesforceoauth2refresh.Credentials:
 		return salesforceOAuth2RefreshCredentialsToProto(t), nil
+	case salesforceoauth2access.Token:
+		return salesforceOAuth2AccessTokenToProto(t), nil
+	case salesforceoauth2client.Credentials:
+		return salesforceOAuth2ClientCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func urlCredentialsToProto(s urlcreds.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_UrlCredentials{
+			UrlCredentials: &spb.SecretData_URLCredentials{
+				Url: s.FullURL,
+			},
+		},
 	}
 }
 
@@ -266,6 +291,16 @@ func bitbucketCredentialsToProto(s bitbucket.Credentials) *spb.SecretData {
 		Secret: &spb.SecretData_BitbucketCredentials{
 			BitbucketCredentials: &spb.SecretData_BitBucketCredentials{
 				Url: s.FullURL,
+			},
+		},
+	}
+}
+
+func elasticCloudAPIKeyToProto(s elasticcloudapikey.ElasticCloudAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ElasticCloudApiKey{
+			ElasticCloudApiKey: &spb.SecretData_ElasticCloudAPIKey{
+				Key: s.Key,
 			},
 		},
 	}
@@ -668,6 +703,16 @@ func tinkKeysetToProto(t tinkkeyset.TinkKeySet) *spb.SecretData {
 	}
 }
 
+func cursorAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CursorApiKey{
+			CursorApiKey: &spb.SecretData_CursorAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
 func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_OpenaiApiKey{
@@ -845,6 +890,28 @@ func salesforceOAuth2RefreshCredentialsToProto(creds salesforceoauth2refresh.Cre
 	}
 }
 
+func salesforceOAuth2AccessTokenToProto(s salesforceoauth2access.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SalesforceOauth2AccessToken{
+			SalesforceOauth2AccessToken: &spb.SecretData_SalesforceOAuth2AccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SalesforceOauth2ClientCredentials{
+			SalesforceOauth2ClientCredentials: &spb.SecretData_SalesforceOAuth2ClientCredentials{
+				Id:     s.ID,
+				Secret: s.Secret,
+				Url:    s.URL,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -983,6 +1050,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesazuretoken.AzureIdentityToken{Token: s.GetAzureIdentityToken().GetToken()}, nil
 	case *spb.SecretData_TinkKeyset_:
 		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
+	case *spb.SecretData_CursorApiKey:
+		return velescursorapikey.APIKey{Key: s.GetCursorApiKey().GetKey()}, nil
 	case *spb.SecretData_PostmanApiKey:
 		return velespostmanapikey.PostmanAPIKey{
 			Key: s.GetPostmanApiKey().GetKey(),
@@ -1092,6 +1161,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return bitbucket.Credentials{
 			FullURL: s.GetBitbucketCredentials().GetUrl(),
 		}, nil
+	case *spb.SecretData_ElasticCloudApiKey:
+		return elasticcloudapikey.ElasticCloudAPIKey{
+			Key: s.GetElasticCloudApiKey().GetKey(),
+		}, nil
+	case *spb.SecretData_UrlCredentials:
+		return urlcreds.Credentials{
+			FullURL: s.GetUrlCredentials().GetUrl(),
+		}, nil
 	case *spb.SecretData_PaystackSecretKey_:
 		return velespaystacksecretkey.PaystackSecret{
 			Key: s.GetPaystackSecretKey().GetKey(),
@@ -1102,6 +1179,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		}, nil
 	case *spb.SecretData_SalesforceOauth2RefreshCredentials:
 		return salesforceOAuth2RefreshCredentialsToStruct(s.GetSalesforceOauth2RefreshCredentials()), nil
+	case *spb.SecretData_SalesforceOauth2AccessToken:
+		return salesforceOAuth2AccessTokenToStruct(s.GetSalesforceOauth2AccessToken()), nil
+	case *spb.SecretData_SalesforceOauth2ClientCredentials:
+		return salesforceOAuth2ClientCredentialsToStruct(s.GetSalesforceOauth2ClientCredentials()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1306,6 +1387,20 @@ func salesforceOAuth2RefreshCredentialsToStruct(credsPB *spb.SecretData_Salesfor
 		ID:      credsPB.GetId(),
 		Secret:  credsPB.GetSecret(),
 		Refresh: credsPB.GetRefresh(),
+	}
+}
+
+func salesforceOAuth2AccessTokenToStruct(tPB *spb.SecretData_SalesforceOAuth2AccessToken) salesforceoauth2access.Token {
+	return salesforceoauth2access.Token{
+		Token: tPB.GetToken(),
+	}
+}
+
+func salesforceOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_SalesforceOAuth2ClientCredentials) salesforceoauth2client.Credentials {
+	return salesforceoauth2client.Credentials{
+		ID:     credsPB.GetId(),
+		Secret: credsPB.GetSecret(),
+		URL:    credsPB.GetUrl(),
 	}
 }
 

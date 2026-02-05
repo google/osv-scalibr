@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -60,50 +62,36 @@ type packageJSON struct {
 	Dependencies map[string]string `json:"dependencies"`
 }
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
-	// If this limit is greater than zero and a file is encountered that is larger
-	// than this limit, the file is ignored by returning false for `FileRequired`.
-	MaxFileSizeBytes int64
-	// IncludeDependencies specifies whether to extract dependencies.
-	IncludeDependencies bool
-}
-
-// DefaultConfig returns the default configuration for the package.json extractor.
-func DefaultConfig() Config {
-	return Config{
-		Stats:               nil,
-		MaxFileSizeBytes:    defaultMaxFileSizeBytes,
-		IncludeDependencies: false,
-	}
-}
-
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	stats               stats.Collector
+	Stats               stats.Collector
 	maxFileSizeBytes    int64
 	includeDependencies bool
 }
 
 // New returns a package.json extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:               cfg.Stats,
-		maxFileSizeBytes:    cfg.MaxFileSizeBytes,
-		includeDependencies: cfg.IncludeDependencies,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := defaultMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	includeDependencies := false
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavascriptPackageJsonConfig {
+		return c.GetJavascriptPackageJson()
+	})
+	if specific != nil {
+		if specific.GetMaxFileSizeBytes() > 0 {
+			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+		}
+		includeDependencies = specific.GetIncludeDependencies()
+	}
+
+	return &Extractor{
+		maxFileSizeBytes:    maxFileSizeBytes,
+		includeDependencies: includeDependencies,
+	}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -136,10 +124,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -163,14 +151,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
 	var fileSizeBytes int64
 	if fileinfo != nil {
 		fileSizeBytes = fileinfo.Size()
 	}
-	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+	e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 		Path:          path,
 		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 		FileSizeBytes: fileSizeBytes,

@@ -1,0 +1,4 @@
+[tools]
+terraform = "1"
+aws-cli = "2"
+node = { version = "22", postinstall = "corepack enable" }
