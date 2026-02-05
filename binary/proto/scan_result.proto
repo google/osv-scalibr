@@ -787,6 +787,7 @@ message SecretData {
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
     URLCredentials url_credentials = 62;
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
+    SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
   }
 
   message GCPSAK {
@@ -1099,6 +1100,11 @@ message SecretData {
   }
 
   message TelegramBotToken {
+    string token = 1;
+  }
+
+  message SalesforceOAuth2AccessToken {
+    // Salesforce OAuth2 Access Token
     string token = 1;
   }
 

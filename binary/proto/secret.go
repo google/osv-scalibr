@@ -60,6 +60,7 @@ import (
 	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -253,6 +254,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
+	case salesforceoauth2access.Token:
+		return salesforceOAuth2AccessTokenToProto(t), nil
 	case salesforceoauth2client.Credentials:
 		return salesforceOAuth2ClientCredentialsToProto(t), nil
 	default:
@@ -872,6 +875,16 @@ func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) 
 	}
 }
 
+func salesforceOAuth2AccessTokenToProto(s salesforceoauth2access.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SalesforceOauth2AccessToken{
+			SalesforceOauth2AccessToken: &spb.SecretData_SalesforceOAuth2AccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentials) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SalesforceOauth2ClientCredentials{
@@ -1149,6 +1162,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
 		}, nil
+	case *spb.SecretData_SalesforceOauth2AccessToken:
+		return salesforceOAuth2AccessTokenToStruct(s.GetSalesforceOauth2AccessToken()), nil
 	case *spb.SecretData_SalesforceOauth2ClientCredentials:
 		return salesforceOAuth2ClientCredentialsToStruct(s.GetSalesforceOauth2ClientCredentials()), nil
 	default:
@@ -1347,6 +1362,12 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
 		ID:       credsPB.GetId(),
+	}
+}
+
+func salesforceOAuth2AccessTokenToStruct(tPB *spb.SecretData_SalesforceOAuth2AccessToken) salesforceoauth2access.Token {
+	return salesforceoauth2access.Token{
+		Token: tPB.GetToken(),
 	}
 }
 
