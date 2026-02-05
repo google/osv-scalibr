@@ -109,6 +109,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | runtime | Details        | Extractor Plugin(s) |
 | ------- | -------------- | ------------------- |
 | asdf    | .tool-versions | `runtime/asdf`      |
+| mise    | mise.toml      | `runtime/mise`      |
 | nvm     | .nvmrc         | `runtime/nvm`       |
 
 ### Secrets
@@ -123,8 +124,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
+| Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
 | Docker hub PAT                              | `secrets/dockerhubpat`                 |
+| Elastic Cloud API key                       | `secrets/elasticcloudapikey`           |
 | GCP API key                                 | `secrets/gcpapikey`                    |
 | GCP Express Mode API key                    | `secrets/gcpexpressmode`               |
 | GCP service account key                     | `secrets/gcpsak`                       |
