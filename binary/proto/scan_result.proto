@@ -787,6 +787,8 @@ message SecretData {
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
     URLCredentials url_credentials = 62;
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
+    HerokuSecretKey heroku_secret_key = 64;
+
   }
 
   message GCPSAK {
@@ -1097,6 +1099,13 @@ message SecretData {
   message PaystackSecretKey {
     string key = 1;
   }
+
+  message HerokuSecretKey {
+    string key = 1;
+    // Optional expire enrichment fields populated when available
+    string expire_time =2;
+  }
+
 
   message TelegramBotToken {
     string token = 1;

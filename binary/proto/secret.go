@@ -47,6 +47,7 @@ import (
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
+	velesherokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
@@ -251,6 +252,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return urlCredentialsToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
+	case velesherokuplatformkey.HerokuSecret:
+		return herokuKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
 	case salesforceoauth2client.Credentials:
@@ -862,6 +865,17 @@ func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.Secr
 	}
 }
 
+func herokuKeyToProto(s velesherokuplatformkey.HerokuSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HerokuSecretKey_{
+			HerokuSecretKey: &spb.SecretData_HerokuSecretKey{
+				Key:        s.Key,
+				ExpireTime: s.ExpireTime,
+			},
+		},
+	}
+}
+
 func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_TelegramBotApiToken{
@@ -1144,6 +1158,11 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_PaystackSecretKey_:
 		return velespaystacksecretkey.PaystackSecret{
 			Key: s.GetPaystackSecretKey().GetKey(),
+		}, nil
+	case *spb.SecretData_HerokuSecretKey_:
+		return velesherokuplatformkey.HerokuSecret{
+			Key:        s.GetHerokuSecretKey().GetKey(),
+			ExpireTime: s.GetHerokuSecretKey().GetExpireTime(),
 		}, nil
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{

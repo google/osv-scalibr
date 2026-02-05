@@ -128,6 +128,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
+	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
@@ -365,6 +366,7 @@ var (
 		{urlcreds.NewDetector(), "secrets/urlcreds", 0},
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 		{salesforceoauth2client.NewDetector(), "secrets/salesforceoauth2client", 0},
+		{herokuplatformkey.NewSecretKeyDetector(), "secrets/herokuplatformkey", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

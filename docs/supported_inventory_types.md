@@ -113,7 +113,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Secrets
 
 | Type                                        | Extractor Plugin                       |
-| ------------------------------------------- | -------------------------------------- |
+|---------------------------------------------|----------------------------------------|
 | AWS access key                              | `secrets/awsaccesskey`                 |
 | Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
@@ -171,6 +171,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Telegram Bot API Token                      | `secrets/telegrambottoken`             |
 | Salesforce OAuth 2 Client Credentials       | `secrets/salesforceoauth2client`       |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
+| Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 
 ### Container inventory
 

@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/ffa/baseimageattr"
 	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
+	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
@@ -55,6 +56,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
+	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -135,6 +137,7 @@ var (
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(paystacksecretkey.NewValidator(), "secrets/paystacksecretkeyvalidate", 0),
+		fromVeles(herokuplatformkey.NewValidator(), "secrets/herokuplatformkeykeyvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
 		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
 		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
@@ -148,7 +151,8 @@ var (
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
 	SecretsEnrich = InitMap{
-		hcpidentity.Name: {noCFG(hcpidentity.New)},
+		hcpidentity.Name:      {noCFG(hcpidentity.New)},
+		herokuexpiration.Name: {noCFG(herokuexpiration.New)},
 	}
 
 	// HuggingfaceMeta enricher.
