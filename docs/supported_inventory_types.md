@@ -171,6 +171,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Telegram Bot API Token                      | `secrets/telegrambottoken`             |
 | Salesforce OAuth2 Access Tokens             | `secrets/salesforceoauth2access`       |
 | Salesforce OAuth 2 Client Credentials       | `secrets/salesforceoauth2client`       |
+| Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 
 ### Container inventory
