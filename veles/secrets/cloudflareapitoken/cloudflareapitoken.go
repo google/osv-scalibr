@@ -15,8 +15,11 @@
 package cloudflareapitoken
 
 // CloudflareAPIToken is a Veles Secret that holds relevant information for a
-// Docker Hub Personal Access Tokens (prefix `dckr_pat_`).
-// DockerHubPAT represents PAT and Username used to authenticate requests
+// Cloudflare API Token. The detector identifies 40-character alphanumeric tokens
+// (including underscores and hyphens) in three formats:
+// - Environment variable assignments (e.g., CLOUDFLARE_API_TOKEN=token)
+// - JSON key-value pairs (e.g., "cloudflare_api_token": "token")
+// - YAML configurations (e.g., cloudflare_api_token: token)
 type CloudflareAPIToken struct {
 	Token string
 }

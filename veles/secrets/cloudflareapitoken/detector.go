@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cloudflareapitoken contains a Veles Secret type and a Detector for
-// Cloudflare API Tokens.
+// Package cloudflareapitoken contains a Veles Secret type, Detector, and Validator
+// for Cloudflare API Tokens. Detects 40-character tokens in environment variables,
+// JSON, and YAML formats.
 package cloudflareapitoken
 
 import (

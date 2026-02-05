@@ -88,7 +88,7 @@ var (
 		fromVeles(slacktoken.NewAppConfigRefreshTokenValidator(), "secrets/slackconfigrefreshtokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigAccessTokenValidator(), "secrets/slackconfigaccesstokenvalidate", 0),
 		fromVeles(dockerhubpat.NewValidator(), "secrets/dockerhubpatvalidate", 0),
-		fromVeles(cloudflareapitoken.NewValidator(), "secrets/cloudflareapitoken", 0),
+		fromVeles(cloudflareapitoken.NewValidator(), "secrets/cloudflareapitokenvalidate", 0),
 		fromVeles(gcpsak.NewValidator(), "secrets/gcpsakvalidate", 0),
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
