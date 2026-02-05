@@ -114,6 +114,8 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPackagist)
 	case purl.TypeCargo:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemCratesIO)
+	case purl.TypeJulia:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemJulia)
 	case purl.TypePub:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPub)
 	}
