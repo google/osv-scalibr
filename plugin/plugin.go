@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/google/osv-scalibr/log"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -80,6 +82,11 @@ type Capabilities struct {
 	// TODO(b/400910349): This doesn't quite fit into Capabilities so this should be moved into a
 	// separate Filesystem Extractor specific function.
 	ExtractFromDirs bool
+	// Whether the scan runner has explicitly enabled running "unsafe" plugins, signaling that the
+	// scanner is either sandboxed or is not running on untrusted artifacts.
+	// Some plugins such as the Rust code Reachability Enricher are "unsafe" and require this to be
+	// set as they might trigger Remote Code Execution when running on untrusted artifacts.
+	AllowUnsafePlugins bool
 }
 
 // Plugin is the part of the plugin interface that's shared between extractors and detectors.
@@ -154,6 +161,9 @@ func ValidateRequirements(p Plugin, capabs *Capabilities) error {
 	if p.Requirements().RunningSystem && !capabs.RunningSystem {
 		errs = append(errs, "scanner isn't scanning the host it's run from directly")
 	}
+	if p.Requirements().AllowUnsafePlugins && !capabs.AllowUnsafePlugins {
+		errs = append(errs, "plugin requires --allow-unsafe-plugins to be enabled. Make sure you're scanning a trusted artifact before enabling this setting.")
+	}
 	if len(errs) == 0 {
 		return nil
 	}
@@ -168,15 +178,17 @@ func FilterByCapabilities(pls []Plugin, capabs *Capabilities) []Plugin {
 	for _, pl := range pls {
 		if err := ValidateRequirements(pl, capabs); err == nil {
 			result = append(result, pl)
+		} else {
+			log.Warnf("Disabling plugin %q: %v", pl.Name(), err)
 		}
 	}
 	return result
 }
 
-// FindConfig finds a plugin-specific config in the oveall config proto
+// FindConfig finds a plugin-specific config in the overall config proto
 // using the specified getter function.
 func FindConfig[T any](cfg *cpb.PluginConfig, getter func(c *cpb.PluginSpecificConfig) *T) *T {
-	for _, specific := range cfg.PluginSpecific {
+	for _, specific := range cfg.GetPluginSpecific() {
 		got := getter(specific)
 		if got != nil {
 			return got

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	accessIDPattern = regexp.MustCompile(`\b(AIKA[A-Z0-9]{16}|ASIA[A-Z0-9]{16})\b`)
+	accessIDPattern = regexp.MustCompile(`\b(AKIA[A-Z0-9]{16}|ASIA[A-Z0-9]{16})\b`)
 	secretPattern   = regexp.MustCompile(`\b[A-Za-z0-9+/]{40}\b`)
 )
 

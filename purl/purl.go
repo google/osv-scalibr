@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -105,6 +105,8 @@ const (
 	TypeWordpress = "wordpress"
 	// TypeAsdf is pkg:asdf purl
 	TypeAsdf = "asdf"
+	// TypeMise is pkg:mise purl
+	TypeMise = "mise"
 	// TypeMacports is pkg:macports purl
 	TypeMacports = "macports"
 	// TypeWinget is pkg:winget purl
@@ -223,6 +225,7 @@ func validType(t string) bool {
 		TypeMacports:   true,
 		TypeWinget:     true,
 		TypeChocolatey: true,
+		TypeMise:       true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

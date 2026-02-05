@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -364,6 +364,35 @@ func TestGetScanConfig_NetworkCapabilities(t *testing.T) {
 			}
 			if tc.wantNetwork != cfg.Capabilities.Network {
 				t.Errorf("%v.GetScanConfig(): want %v, got %v", tc.flags, tc.wantNetwork, cfg.Capabilities.Network)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_AllowUnsafePlugins(t *testing.T) {
+	for _, tc := range []struct {
+		desc                   string
+		flags                  cli.Flags
+		wantAllowUnsafePlugins bool
+	}{
+		{
+			desc:                   "false_if_nothing_set",
+			flags:                  cli.Flags{},
+			wantAllowUnsafePlugins: false,
+		},
+		{
+			desc:                   "true_if_set_to_true",
+			flags:                  cli.Flags{AllowUnsafePlugins: true},
+			wantAllowUnsafePlugins: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if tc.wantAllowUnsafePlugins != cfg.Capabilities.AllowUnsafePlugins {
+				t.Errorf("%v.GetScanConfig(): want %v, got %v", tc.flags, tc.wantAllowUnsafePlugins, cfg.Capabilities.AllowUnsafePlugins)
 			}
 		})
 	}
