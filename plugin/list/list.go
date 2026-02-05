@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,24 +29,34 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	sl "github.com/google/osv-scalibr/extractor/standalone/list"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // FromCapabilities returns all plugins that can run under the specified
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
-func FromCapabilities(capabs *plugin.Capabilities) []plugin.Plugin {
-	return plugin.FilterByCapabilities(All(), capabs)
+func FromCapabilities(capabs *plugin.Capabilities, cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
+	all, err := All(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return plugin.FilterByCapabilities(all, capabs), nil
 }
 
 // FromNames returns a deduplicated list of plugins from a list of names.
-func FromNames(names []string) ([]plugin.Plugin, error) {
+func FromNames(names []string, cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
+	if cfg == nil {
+		// Do the nil check here instead of in individual plugin initers.
+		cfg = &cpb.PluginConfig{}
+	}
 	resultMap := make(map[string]plugin.Plugin)
 	for _, name := range names {
-		fsex, ferr := fl.ExtractorsFromName(name)
-		stex, serr := sl.ExtractorsFromName(name)
-		det, derr := dl.DetectorsFromName(name)
-		ann, aerr := al.AnnotatorsFromName(name)
-		enr, eerr := el.EnrichersFromName(name)
+		fsex, ferr := fl.ExtractorsFromName(name, cfg)
+		stex, serr := sl.ExtractorsFromName(name, cfg)
+		det, derr := dl.DetectorsFromName(name, cfg)
+		ann, aerr := al.AnnotatorsFromName(name, cfg)
+		enr, eerr := el.EnrichersFromName(name, cfg)
 
 		// Report an error if none of the type-specific lists were able to resolve the name.
 		if ferr != nil && serr != nil && derr != nil && aerr != nil && eerr != nil {
@@ -78,8 +88,8 @@ func FromNames(names []string) ([]plugin.Plugin, error) {
 }
 
 // FromName returns a single plugin based on its exact name.
-func FromName(name string) (plugin.Plugin, error) {
-	plugins, err := FromNames([]string{name})
+func FromName(name string, cfg *cpb.PluginConfig) (plugin.Plugin, error) {
+	plugins, err := FromNames([]string{name}, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -93,34 +103,58 @@ func FromName(name string) (plugin.Plugin, error) {
 // Note that these plugins have different capability Requirements and can't all
 // be run on the same host (e.g. some are Linux-only while others are Windows-only)
 // Prefer using FromCapabilities instead.
-func All() []plugin.Plugin {
+func All(cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
+	if cfg == nil {
+		// Do the nil check here instead of in individual plugin initers.
+		cfg = &cpb.PluginConfig{}
+	}
 	all := []plugin.Plugin{}
 	for _, initers := range fl.All {
 		for _, initer := range initers {
-			all = append(all, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range sl.All {
 		for _, initer := range initers {
-			all = append(all, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range dl.All {
 		for _, initer := range initers {
-			all = append(all, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range al.All {
 		for _, initer := range initers {
-			all = append(all, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			all = append(all, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, p)
 		}
 	}
-	return all
+	return all, nil
 }
 
 // FilesystemExtractors returns the plugins from a list which are filesystem Extractors.

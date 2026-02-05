@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,7 +75,6 @@ type response struct {
 
 func TestValidator_Validate(t *testing.T) {
 	realTokenURL := mustURLWithParams(t, endpoint, map[string]string{"access_token": realToken})
-	// shortTokenURL := mustURLWithParams(t, endpoint, map[string]string{"access_token": shortToken})
 
 	tests := []struct {
 		name         string
@@ -228,10 +227,8 @@ func TestValidator_Validate(t *testing.T) {
 			if tc.roundTripper != nil {
 				tc.roundTripper.t = t
 			}
-			c := &http.Client{Transport: tc.roundTripper}
-			v := gcpoauth2access.NewValidator(
-				gcpoauth2access.WithClient(c),
-			)
+			v := gcpoauth2access.NewValidator()
+			v.HTTPC = &http.Client{Transport: tc.roundTripper}
 
 			got, err := v.Validate(t.Context(), tc.token)
 			if tc.wantErr {

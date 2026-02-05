@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ func ComputePatches(patchFunc PatchFunc, resolved *remediation.ResolvedManifest,
 
 	toProcess := 0
 	for _, v := range resolved.Vulns {
-		go doPatch([]string{v.OSV.ID})
+		go doPatch([]string{v.OSV.Id})
 		toProcess++
 	}
 

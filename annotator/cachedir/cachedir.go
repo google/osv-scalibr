@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,14 @@ import (
 	"context"
 	"path/filepath"
 	"regexp"
+	"slices"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -55,7 +58,7 @@ var cacheDirPatterns = []*regexp.Regexp{
 type Annotator struct{}
 
 // New returns a new Annotator.
-func New() annotator.Annotator { return &Annotator{} }
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
 func (Annotator) Name() string { return Name }
@@ -72,15 +75,12 @@ func (Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, resul
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		for _, loc := range pkg.Locations {
-			if isInsideCacheDir(loc) {
-				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-					Plugin:          Name,
-					Justification:   vex.ComponentNotPresent,
-					MatchesAllVulns: true,
-				})
-				break
-			}
+		if slices.ContainsFunc(pkg.Locations, isInsideCacheDir) {
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 	}
 	return nil

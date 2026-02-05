@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ func TestExtractTokens_validTokens(t *testing.T) {
 		wantPos       []int
 	}{
 		{
-			name: "basic jwt with simple claims",
+			name: "basic_jwt_with_simple_claims",
 			input: []byte("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
 				"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.signature"),
 			wantRaw: []string{
@@ -60,7 +60,7 @@ func TestExtractTokens_validTokens(t *testing.T) {
 			wantPos: []int{0},
 		},
 		{
-			name: "azure token",
+			name: "azure_token",
 			input: []byte("prefix eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
 				"eyJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vdGVuYW50L3YyLjAiLCJzdWIiOiJ1c2VyMTIzIn0.signature suffix"),
 			wantRaw: []string{
@@ -140,7 +140,7 @@ func TestExtractTokens_invalidTokens(t *testing.T) {
 			input: []byte("eyJhbGciOiJSUzI1NiJ9.invalid_base64!.signature"),
 		},
 		{
-			name: "payload is not json",
+			name: "payload_is_not_json",
 			input: []byte("eyJhbGciOiJSUzI1NiJ9." +
 				base64.RawStdEncoding.EncodeToString([]byte("not json")) +
 				".signature"),

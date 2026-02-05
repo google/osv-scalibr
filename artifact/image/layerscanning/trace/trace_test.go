@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			wantPackages: []*extractor.Package{},
 		},
 		{
-			name: "empty chain layers",
+			name: "empty_chain_layers",
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
@@ -92,7 +92,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "package with nil extractor",
+			name: "package_with_nil_extractor",
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
@@ -112,7 +112,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "package in single chain layer",
+			name: "package_in_single_chain_layer",
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
@@ -149,7 +149,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "package in two chain layers - package deleted in second layer",
+			name: "package_in_two_chain_layers_-_package_deleted_in_second_layer",
 			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
@@ -174,7 +174,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "packages in multiple chain layers - package added in third layer",
+			name: "packages_in_multiple_chain_layers_-_package_added_in_third_layer",
 			pkgs: []*extractor.Package{
 				{
 					Name:      "foo",
@@ -213,7 +213,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "packages in multiple chain layers - bar package added back in last layer",
+			name: "packages_in_multiple_chain_layers_-_bar_package_added_back_in_last_layer",
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
@@ -266,7 +266,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "package in multiple chain layers - foo package overwritten in last layer",
+			name: "package_in_multiple_chain_layers_-_foo_package_overwritten_in_last_layer",
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,
@@ -333,7 +333,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 			},
 		},
 		{
-			name: "chain layer with invalid diffID",
+			name: "chain_layer_with_invalid_diffID",
 			pkgs: []*extractor.Package{
 				{
 					Name:      fooPackage,

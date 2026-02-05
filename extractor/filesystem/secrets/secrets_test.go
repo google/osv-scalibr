@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,57 +43,62 @@ func TestFileRequired(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "accept JSON",
+			name: "accept_JSON",
 			path: "foo.json",
 			want: true,
 		},
 		{
-			name: "accept YAML",
+			name: "accept_YAML",
 			path: "bar.yaml",
 			want: true,
 		},
 		{
-			name: "accept CFG",
+			name: "accept_CFG",
 			path: "baz.cfg",
 			want: true,
 		},
 		{
-			name: "accept textproto",
+			name: "accept_INI",
+			path: "config.ini",
+			want: true,
+		},
+		{
+			name: "accept_textproto",
 			path: "hello.textproto",
 			want: true,
 		},
 		{
-			name: "accepts full path",
+			name: "accepts_full_path",
 			path: "/foo/bar/baz/credentials.json",
 			want: true,
 		},
 		{
-			name: "accepts last of multiple extensions",
+			name: "accepts_last_of_multiple_extensions",
 			path: "credentials.enc.json",
 			want: true,
 		},
 		{
-			name: "accepts uppercase",
+			name: "accepts_uppercase",
 			path: "credentials.JSON",
 			want: true,
 		},
 		{
-			name: "accepts mixed case",
+			name: "accepts_mixed_case",
 			path: "credentials.Json",
 			want: true,
 		},
 		{
-			name: "rejects e.g. PNG",
+			name: "rejects_e.g._PNG",
 			path: "image.png",
 			want: false,
 		},
 		{
-			name: "rejects if not last in multiple extensions",
+			name: "rejects_if_not_last_in_multiple_extensions",
 			path: "credentials.json.tar.gz",
 			want: false,
 		},
 		{
-			name: "rejects w/o extension",
+			name: "rejects_w/o_extension",
 			path: "/foo/bar/baz",
 			want: false,
 		},

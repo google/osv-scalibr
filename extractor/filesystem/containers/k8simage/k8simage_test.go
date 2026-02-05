@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,19 +26,20 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name         string
-		path         string
-		cfg          k8simage.Config
-		wantPackages []*extractor.Package
+		name             string
+		path             string
+		maxFileSizeBytes int64
+		wantPackages     []*extractor.Package
 	}{
 		{
-			name: "comprehensive multi-resource test file",
+			name: "comprehensive_multi-resource_test_file",
 			path: "testdata/comprehensive-test.yaml",
-			cfg:  k8simage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "tag1",
@@ -91,16 +92,19 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name:         "larger than size limit",
-			path:         "testdata/comprehensive-test.yaml",
-			cfg:          k8simage.Config{MaxFileSizeBytes: 1},
-			wantPackages: nil,
+			name:             "larger than size limit",
+			path:             "testdata/comprehensive-test.yaml",
+			maxFileSizeBytes: 1,
+			wantPackages:     nil,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := k8simage.New(tc.cfg)
+			extr, err := k8simage.New(&cpb.PluginConfig{MaxFileSizeBytes: tc.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("k8simage.New failed: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,
@@ -121,7 +125,10 @@ func TestExtract(t *testing.T) {
 }
 
 func TestFileRequired(t *testing.T) {
-	extr := k8simage.New(k8simage.DefaultConfig())
+	extr, err := k8simage.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("k8simage.New failed: %v", err)
+	}
 
 	tests := []struct {
 		name string
@@ -129,17 +136,17 @@ func TestFileRequired(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "yaml extension",
+			name: "yaml_extension",
 			path: "deployment.yaml",
 			want: true,
 		},
 		{
-			name: "yml extension",
+			name: "yml_extension",
 			path: "service.yml",
 			want: true,
 		},
 		{
-			name: "other extension",
+			name: "other_extension",
 			path: "config.json",
 			want: false,
 		},
@@ -159,18 +166,19 @@ func TestExtract_empty_results(t *testing.T) {
 	tests := []struct {
 		name string
 		path string
-		cfg  k8simage.Config
 	}{
 		{
-			name: "empty image fields should result in no packages",
+			name: "empty_image_fields_should_result_in_no_packages",
 			path: "testdata/comprehensive-test-failures.yaml",
-			cfg:  k8simage.DefaultConfig(),
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := k8simage.New(tc.cfg)
+			extr, err := k8simage.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("k8simage.New failed: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,
@@ -197,14 +205,17 @@ func TestExtract_skip_non_k8s_files(t *testing.T) {
 		path string
 	}{
 		{
-			name: "invalid YAML syntax",
+			name: "invalid_YAML_syntax",
 			path: "testdata/yaml-parsing-error.yaml",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := k8simage.New(k8simage.DefaultConfig())
+			extr, err := k8simage.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("k8simage.New failed: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,

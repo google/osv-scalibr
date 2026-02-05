@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/python"
-	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax"
+	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
@@ -54,7 +54,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm-simple",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			manifestPath: "npm/simple/package.json",
 			readWriter:   npmRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -63,7 +63,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm-vuln-without-fix",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			manifestPath: "npm/vuln-without-fix/package.json",
 			readWriter:   npmRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -72,7 +72,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm-diamond",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			manifestPath: "npm/diamond/package.json",
 			readWriter:   npmRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -81,7 +81,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm-removed-vuln-dep",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			manifestPath: "npm/removed-vuln/package.json",
 			readWriter:   npmRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -90,7 +90,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm-introduced-vuln",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			manifestPath: "npm/introduce-vuln/package.json",
 			readWriter:   npmRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -99,7 +99,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm-non-constraining-dep",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			manifestPath: "npm/non-constraining/package.json",
 			readWriter:   npmRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -108,7 +108,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "npm-deepen-to-remediate",
 			universeFile: "testdata/npm/universe.yaml",
-			vulnsFile:    "testdata/npm/vulnerabilities.yaml",
+			vulnsFile:    "testdata/npm/vulnerabilities.json",
 			manifestPath: "npm/deepen/package.json",
 			readWriter:   npmRW,
 			opts: options.RemediationOptions{
@@ -120,7 +120,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-simple",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/simple/requirements.txt",
 			readWriter:   pythonRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -129,7 +129,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-no-fix",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/no-fix/requirements.txt",
 			readWriter:   pythonRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -138,7 +138,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-diamond",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/diamond/requirements.txt",
 			readWriter:   pythonRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -147,7 +147,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-removed-dependency",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/removed/requirements.txt",
 			readWriter:   pythonRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -156,7 +156,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-introduce-new-vuln",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/introduce/requirements.txt",
 			readWriter:   pythonRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -165,7 +165,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-non-constraining-dependency",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/non-constraining/requirements.txt",
 			readWriter:   pythonRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -174,7 +174,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-deepen",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/deepen/requirements.txt",
 			readWriter:   pythonRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -183,7 +183,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "python-max-depth",
 			universeFile: "testdata/python/universe.yaml",
-			vulnsFile:    "testdata/python/vulnerabilities.yaml",
+			vulnsFile:    "testdata/python/vulnerabilities.json",
 			manifestPath: "python/max-depth/requirements.txt",
 			readWriter:   pythonRW,
 			opts: options.RemediationOptions{
@@ -213,12 +213,12 @@ func TestComputePatches(t *testing.T) {
 			}
 
 			cl := clienttest.NewMockResolutionClient(t, tt.universeFile)
-			vm := matchertest.NewMockVulnerabilityMatcher(t, tt.vulnsFile)
-			resolved, err := remediation.ResolveManifest(t.Context(), cl, vm, m, &tt.opts)
+			ve := vulnenrichertest.NewMockVulnerabilityEnricher(t, tt.vulnsFile)
+			resolved, err := remediation.ResolveManifest(t.Context(), cl, ve, m, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed resolving manifest: %v", err)
 			}
-			gotFull, err := relax.ComputePatches(t.Context(), cl, vm, resolved, &tt.opts)
+			gotFull, err := relax.ComputePatches(t.Context(), cl, ve, resolved, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed computing patches: %v", err)
 			}

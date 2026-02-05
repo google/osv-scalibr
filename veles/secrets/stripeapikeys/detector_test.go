@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	stripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 var (
@@ -45,6 +46,39 @@ var (
 	detectorRK    = "rk_live_" + strings.Repeat("a", 99)
 	detectorWHSEC = "whsec_UOTBUgpYjyLswPFMxvzo4PyUxleOAiJd"
 )
+
+func TestSecretKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		stripeapikeys.NewSecretKeyDetector(),
+		detectorSK,
+		stripeapikeys.StripeSecretKey{Key: detectorSK},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestRestrictedKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		stripeapikeys.NewRestrictedKeyDetector(),
+		detectorRK,
+		stripeapikeys.StripeRestrictedKey{Key: detectorRK},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestWebhookSecretDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		stripeapikeys.NewWebhookSecretDetector(),
+		detectorWHSEC,
+		stripeapikeys.StripeWebhookSecret{Key: detectorWHSEC},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestSecretKeyDetector_truePositives tests SK detection.
 func TestSecretKeyDetector_truePositives(t *testing.T) {
@@ -85,7 +119,7 @@ func TestSecretKeyDetector_truePositives(t *testing.T) {
 			stripeapikeys.StripeSecretKey{Key: detectorSK},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf("config:\n  api_key: %s\n",
 			detectorSK),
 		want: []veles.Secret{
@@ -135,7 +169,7 @@ func TestSecretKeyDetector_trueNegatives(t *testing.T) {
 		name:  "short key should not match",
 		input: detectorSK[:len(detectorSK)-90],
 	}, {
-		name: "invalid character in key should not match",
+		name: "invalid_character_in_key_should_not_match",
 		input: "sk_live_" + strings.ReplaceAll(
 			detectorSK[8:], "a", "!",
 		),
@@ -202,7 +236,7 @@ func TestRestrictedKeyDetector_truePositives(t *testing.T) {
 			stripeapikeys.StripeRestrictedKey{Key: detectorRK},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf("token:\n  value: %s\n",
 			detectorRK),
 		want: []veles.Secret{
@@ -252,7 +286,7 @@ func TestRestrictedKeyDetector_trueNegatives(t *testing.T) {
 		name:  "short key should not match",
 		input: detectorRK[:len(detectorRK)-90],
 	}, {
-		name: "invalid character in key should not match",
+		name: "invalid_character_in_key_should_not_match",
 		input: "rk_live_" + strings.ReplaceAll(
 			detectorRK[8:], "a", "#",
 		),
@@ -319,7 +353,7 @@ func TestWebhookSecretDetector_truePositives(t *testing.T) {
 			stripeapikeys.StripeWebhookSecret{Key: detectorWHSEC},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf("token:\n  value: %s\n",
 			detectorWHSEC),
 		want: []veles.Secret{
@@ -369,7 +403,7 @@ func TestWebhookSecretDetector_trueNegatives(t *testing.T) {
 		name:  "short key should not match",
 		input: detectorWHSEC[:len(detectorWHSEC)-2],
 	}, {
-		name: "invalid character in key should not match",
+		name: "invalid_character_in_key_should_not_match",
 		input: "whsec_" + strings.ReplaceAll(
 			detectorWHSEC[6:], "U", "#",
 		),

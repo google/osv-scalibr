@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,42 +15,24 @@
 package github
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/github/validate"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// AppS2STokenValidator validates Github app Server to Server token via the Github API endpoint.
-type AppS2STokenValidator struct {
-	httpC *http.Client
-}
-
-// App2S2TokenValidatorOption configures a Validator when creating it via NewValidator.
-type App2S2TokenValidatorOption func(*AppS2STokenValidator)
-
-// AppS2STokenWithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func AppS2STokenWithClient(c *http.Client) App2S2TokenValidatorOption {
-	return func(v *AppS2STokenValidator) {
-		v.httpC = c
+// NewAppS2STokenValidator creates a new Validator that validates Github app
+// Server to Server token via the Github API endpoint.
+func NewAppS2STokenValidator() *simplevalidate.Validator[AppServerToServerToken] {
+	return &simplevalidate.Validator[AppServerToServerToken]{
+		Endpoint:   githubAPIBaseURL + S2SValidationEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k AppServerToServerToken) map[string]string {
+			return apiHeaders(k.Token)
+		},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC: &http.Client{
+			Timeout: validationTimeout,
+		},
 	}
-}
-
-// NewAppS2STokenValidator creates a new Validator with the given ValidatorOptions.
-func NewAppS2STokenValidator(opts ...App2S2TokenValidatorOption) *AppS2STokenValidator {
-	v := &AppS2STokenValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given Github app Server to Server token is valid.
-func (v *AppS2STokenValidator) Validate(ctx context.Context, key AppServerToServerToken) (veles.ValidationStatus, error) {
-	return validate.Validate(ctx, v.httpC, "/installation/repositories", key.Token)
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,12 +19,20 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 )
 
-// BuildLocationToPKGsMap sets up a map of package locations to package pointers from the inventory.
-func BuildLocationToPKGsMap(results *inventory.Inventory) map[string][]*extractor.Package {
+// BuildLocationToPKGsMap sets up a map of package locations (relative to the specified scan root)
+// to package pointers from the inventory.
+func BuildLocationToPKGsMap(results *inventory.Inventory, scanRoot *scalibrfs.ScanRoot) map[string][]*extractor.Package {
 	locationToPKGs := map[string][]*extractor.Package{}
+
+	// Get root prefix to compare absolute package locations with
+	rootPrefix := scanRoot.Path
+	if !strings.HasSuffix(rootPrefix, "/") {
+		rootPrefix += "/"
+	}
 pkgLoop:
 	for _, pkg := range results.Packages {
 		if len(pkg.Locations) == 0 {
@@ -40,6 +48,13 @@ pkgLoop:
 		// TODO(b/400910349): Separate locations into a dedicated "descriptor file"
 		// and "other files" field.
 		loc := pkg.Locations[0]
+
+		// If ScanConfig.StoreAbsolutePath is on, this will be an absolute path.
+		// Convert to relative in these cases.
+		// Root starts and ends in a slash while relative paths don't, so this will only
+		// take effect for absolute paths.
+		loc = strings.TrimPrefix(loc, rootPrefix)
+
 		if prev, ok := locationToPKGs[loc]; ok {
 			locationToPKGs[loc] = append(prev, pkg)
 		} else {

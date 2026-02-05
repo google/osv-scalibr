@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ func doInPlaceResolutionCmd(opts options.FixVulnsOptions, rw lockfile.ReadWriter
 			return inPlaceResolutionMsg{err: err}
 		}
 
-		resolved, err := remediation.ResolveGraphVulns(context.Background(), opts.ResolveClient, opts.MatcherClient, g, nil, &opts.RemediationOptions)
+		resolved, err := remediation.ResolveGraphVulns(context.Background(), opts.ResolveClient, opts.VulnEnricher, g, nil, &opts.RemediationOptions)
 		if err != nil {
 			return inPlaceResolutionMsg{err: fmt.Errorf("failed resolving lockfile vulnerabilities: %w", err)}
 		}
@@ -165,7 +165,7 @@ func doInitialRelockCmd(opts options.FixVulnsOptions, rw manifest.ReadWriter) te
 		if opts.DepCachePopulator != nil {
 			opts.DepCachePopulator.PopulateCache(context.Background(), opts.ResolveClient, m.Requirements(), opts.Manifest)
 		}
-		resolved, err := remediation.ResolveManifest(context.Background(), opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
+		resolved, err := remediation.ResolveManifest(context.Background(), opts.ResolveClient, opts.VulnEnricher, m, &opts.RemediationOptions)
 		if err != nil {
 			return doRelockMsg{err: fmt.Errorf("failed resolving manifest vulnerabilities: %w", err)}
 		}

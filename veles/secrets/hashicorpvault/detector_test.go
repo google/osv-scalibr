@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,17 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		NewTokenDetector(),
+		"hvs.CAESIB8KI2QJk0ePUYdOQXaxl0",
+		Token{Token: "hvs.CAESIB8KI2QJk0ePUYdOQXaxl0"},
+	)
+}
 
 func TestNewTokenDetector_Detect(t *testing.T) {
 	tests := []struct {

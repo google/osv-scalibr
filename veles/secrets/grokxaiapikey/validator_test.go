@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -28,21 +27,6 @@ import (
 )
 
 const validatorTestKey = "grokx-test12345678901234567890123456789012345678901234567890"
-
-// mockTransport redirects requests to the test server for the configured hosts.
-type mockTransport struct {
-	testServer *httptest.Server
-}
-
-func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL for both API hosts.
-	if req.URL.Host == "api.x.ai" || req.URL.Host == "management-api.x.ai" {
-		testURL, _ := url.Parse(m.testServer.URL)
-		req.URL.Scheme = testURL.Scheme
-		req.URL.Host = testURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
-}
 
 // mockAPIServer creates a mock x.ai /v1/api-key endpoint for testing API validator.
 func mockAPIServer(t *testing.T, expectedKey string, statusCode int, body any) *httptest.Server {
@@ -157,15 +141,10 @@ func TestValidatorAPI(t *testing.T) {
 			server := mockAPIServer(t, validatorTestKey, tc.statusCode, tc.body)
 			defer server.Close()
 
-			// Create client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
-
 			// Create validator with mock client
-			validator := grokxaiapikey.NewAPIValidator(
-				grokxaiapikey.WithClientAPI(client),
-			)
+			validator := grokxaiapikey.NewAPIValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + "/v1/api-key"
 
 			// Create test key
 			key := grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}
@@ -193,29 +172,23 @@ func TestValidatorAPI(t *testing.T) {
 }
 
 func TestValidatorAPI_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"api_key_blocked": false, "api_key_disabled": false}`))
 	}))
 	defer server.Close()
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := grokxaiapikey.NewAPIValidator(
-		grokxaiapikey.WithClientAPI(client),
-	)
+	validator := grokxaiapikey.NewAPIValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/v1/api-key"
 
 	key := grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}
 
-	// Create a cancelled context
+	// Create a cancelled context.
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
-	// Test validation with cancelled context
+	// Test validation with cancelled context.
 	got, err := validator.Validate(ctx, key)
 
 	if err == nil {
@@ -235,14 +208,9 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 	})
 	defer server.Close()
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := grokxaiapikey.NewAPIValidator(
-		grokxaiapikey.WithClientAPI(client),
-	)
+	validator := grokxaiapikey.NewAPIValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/v1/api-key"
 
 	testCases := []struct {
 		name     string
@@ -337,15 +305,10 @@ func TestValidatorManagement(t *testing.T) {
 			server := mockManagementServer(t, validatorTestKey, tc.statusCode, tc.body)
 			defer server.Close()
 
-			// Create client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
-
 			// Create validator with mock client
-			validator := grokxaiapikey.NewManagementAPIValidator(
-				grokxaiapikey.WithClientManagement(client),
-			)
+			validator := grokxaiapikey.NewManagementAPIValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + "/auth/teams/ffffffff-ffff-ffff-ffff-ffffffffffff/api-keys"
 
 			// Create test key
 			key := grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}
@@ -380,14 +343,9 @@ func TestValidatorManagement_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := grokxaiapikey.NewManagementAPIValidator(
-		grokxaiapikey.WithClientManagement(client),
-	)
+	validator := grokxaiapikey.NewManagementAPIValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/auth/teams/ffffffff-ffff-ffff-ffff-ffffffffffff/api-keys"
 
 	key := grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}
 
@@ -411,14 +369,9 @@ func TestValidatorManagement_InvalidRequest(t *testing.T) {
 	server := mockManagementServer(t, "", http.StatusUnauthorized, nil)
 	defer server.Close()
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := grokxaiapikey.NewManagementAPIValidator(
-		grokxaiapikey.WithClientManagement(client),
-	)
+	validator := grokxaiapikey.NewManagementAPIValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/auth/teams/ffffffff-ffff-ffff-ffff-ffffffffffff/api-keys"
 
 	testCases := []struct {
 		name     string

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 
 		exInv, err := extractor.Extract(ctx, scanInput)
 		if err != nil {
-			statuses = append(statuses, plugin.StatusFromErr(extractor, false, err))
+			statuses = append(statuses, plugin.StatusFromErr(extractor, false, err, nil))
 			continue
 		}
 		for _, p := range exInv.Packages {
@@ -77,7 +77,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 		}
 
 		inv.Append(exInv)
-		statuses = append(statuses, plugin.StatusFromErr(extractor, false, nil))
+		statuses = append(statuses, plugin.StatusFromErr(extractor, false, nil, nil))
 	}
 
 	return inv, statuses, nil

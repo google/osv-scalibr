@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -122,14 +122,14 @@ func compareRedHatComponents(a, b string) int {
 			isExpectedRunType = isASCIILetter
 		}
 
-		var as, bs string
+		var asb, bsb strings.Builder
 
 		for _, c := range a[ai:] {
 			if !isExpectedRunType(c) {
 				break
 			}
 
-			as += string(c)
+			asb.WriteRune(c)
 			ai++
 		}
 
@@ -138,18 +138,21 @@ func compareRedHatComponents(a, b string) int {
 				break
 			}
 
-			bs += string(c)
+			bsb.WriteRune(c)
 			bi++
 		}
 
 		// 8. If the segment from `b` had 0 length, return 1 if the segment from `a` was numeric, or -1 if it was alphabetic. The logical result of this is that if `a` begins with numbers and `b` does not, `a` is newer (return 1). If `a` begins with letters and `b` does not, then `a` is older (return -1). If the leading character(s) from `a` and `b` were both numbers or both letters, continue on.
-		if bs == "" {
+		if bsb.Len() == 0 {
 			if isDigit {
 				return +1
 			}
 
 			return -1
 		}
+
+		as := asb.String()
+		bs := bsb.String()
 
 		// 9. If the leading segments were both numeric, discard any leading zeros and whichever one is longer wins. If `a` is longer than `b` (without leading zeroes), return 1, and vice versa. If they’re of the same length, continue on.
 		if isDigit {

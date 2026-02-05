@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package fakeextractor provides a Extractor implementation to be used in tests.
+//
+//nolint:plugger // This package contains test only mocks
 package fakeextractor
 
 import (

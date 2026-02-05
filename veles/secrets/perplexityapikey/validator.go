@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,67 +15,26 @@
 package perplexityapikey
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates Perplexity API keys via the Perplexity API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
+type pak = PerplexityAPIKey
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
-//
-// By default it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
-	}
-}
-
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given PerplexityAPIKey is valid.
-//
+// NewValidator creates a new Perplexity API key Validator with the given Options.
 // It performs a GET request to the Perplexity chat completions endpoint
 // using the API key in the Authorization header. If the request returns
 // HTTP 200, the key is considered valid. If 401 Unauthorized, the key
 // is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, key PerplexityAPIKey) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://api.perplexity.ai/async/chat/completions", nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+key.Key)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+func NewValidator() *sv.Validator[pak] {
+	return &sv.Validator[pak]{
+		Endpoint:   "https://api.perplexity.ai/async/chat/completions",
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s pak) map[string]string {
+			return map[string]string{"Authorization": "Bearer " + s.Key}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }

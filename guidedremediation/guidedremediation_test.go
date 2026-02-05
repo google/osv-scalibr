@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/guidedremediation"
-	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
+	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
@@ -95,7 +95,7 @@ func TestFixOverride(t *testing.T) {
 			// mavenClient is not used in the test, but is required to be non-nil for pom.xml manifests.
 			mavenClient, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
-			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+			enricher := vulnenrichertest.NewMockVulnerabilityEnricher(t, filepath.Join(tt.universeDir, "vulnerabilities.json"))
 
 			tmpDir := t.TempDir()
 			manifestPath := filepath.Join(tmpDir, "pom.xml")
@@ -110,7 +110,7 @@ func TestFixOverride(t *testing.T) {
 			opts := options.FixVulnsOptions{
 				Manifest:           manifestPath,
 				Strategy:           strategy.StrategyOverride,
-				MatcherClient:      matcher,
+				VulnEnricher:       enricher,
 				ResolveClient:      client,
 				MavenClient:        mavenClient,
 				RemediationOptions: tt.remOpts,
@@ -197,10 +197,18 @@ func TestFixRelax(t *testing.T) {
 			wantResultPath:   "testdata/python/relax/poetry/result.json",
 			remOpts:          options.DefaultRemediationOptions(),
 		},
+		{
+			name:             "python pipfile",
+			universeDir:      "testdata/python",
+			manifest:         "testdata/python/relax/pipfile/Pipfile",
+			wantManifestPath: "testdata/python/relax/pipfile/want.Pipfile",
+			wantResultPath:   "testdata/python/relax/pipfile/result.json",
+			remOpts:          options.DefaultRemediationOptions(),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
-			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+			enricher := vulnenrichertest.NewMockVulnerabilityEnricher(t, filepath.Join(tt.universeDir, "vulnerabilities.json"))
 
 			tmpDir := t.TempDir()
 			manifestPath := filepath.Join(tmpDir, filepath.Base(tt.manifest))
@@ -228,7 +236,7 @@ func TestFixRelax(t *testing.T) {
 				Manifest:           manifestPath,
 				Lockfile:           lockfilePath,
 				Strategy:           strategy.StrategyRelax,
-				MatcherClient:      matcher,
+				VulnEnricher:       enricher,
 				ResolveClient:      client,
 				RemediationOptions: tt.remOpts,
 				MaxUpgrades:        tt.maxUpgrades,
@@ -314,7 +322,7 @@ func TestFixInPlace(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			client := clienttest.NewMockResolutionClient(t, filepath.Join(tt.universeDir, "universe.yaml"))
-			matcher := matchertest.NewMockVulnerabilityMatcher(t, filepath.Join(tt.universeDir, "vulnerabilities.yaml"))
+			enricher := vulnenrichertest.NewMockVulnerabilityEnricher(t, filepath.Join(tt.universeDir, "vulnerabilities.json"))
 
 			tmpDir := t.TempDir()
 			lockfilePath := filepath.Join(tmpDir, "package-lock.json")
@@ -334,7 +342,7 @@ func TestFixInPlace(t *testing.T) {
 			opts := options.FixVulnsOptions{
 				Lockfile:           lockfilePath,
 				Strategy:           strategy.StrategyInPlace,
-				MatcherClient:      matcher,
+				VulnEnricher:       enricher,
 				ResolveClient:      client,
 				RemediationOptions: tt.remOpts,
 				MaxUpgrades:        tt.maxUpgrades,

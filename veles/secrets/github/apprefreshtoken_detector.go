@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,15 +22,19 @@ import (
 	checksum "github.com/google/osv-scalibr/veles/secrets/github/checksum"
 )
 
-const appRefreshTokenMaxLen = 80
+const appRefreshTokenBase64MaxLen = 109 // 80 bytes, base64 encoded
 
 var appRefreshTokenPattern = regexp.MustCompile(`ghr_[A-Za-z0-9]{76}`)
+
+// base64(ghr_) -> Z2hyX (minus the last incomplete byte)
+var appRefreshTokenBase64Pattern = regexp.MustCompile(`Z2hyX[0-9a-zA-Z+/=]{0,104}`)
 
 // NewAppRefreshTokenDetector returns a new Veles Detector that finds Github app refresh tokens
 func NewAppRefreshTokenDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: appRefreshTokenMaxLen,
-		Re:     appRefreshTokenPattern,
+		MaxLen:   appRefreshTokenBase64MaxLen,
+		Re:       appRefreshTokenPattern,
+		ReBase64: appRefreshTokenBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false

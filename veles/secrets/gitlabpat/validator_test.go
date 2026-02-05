@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,7 +109,8 @@ func TestValidator(t *testing.T) {
 				},
 			}
 
-			v := gitlabpat.NewValidator(gitlabpat.WithClient(client))
+			v := gitlabpat.NewValidator()
+			v.HTTPC = client
 
 			ctx := t.Context()
 			pat := gitlabpat.GitlabPAT{Pat: tc.pat}
@@ -137,9 +138,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 			hostToRedirect: "gitlab.com",
 		},
 	}
-	validator := gitlabpat.NewValidator(
-		gitlabpat.WithClient(client),
-	)
+	validator := gitlabpat.NewValidator()
+	validator.HTTPC = client
 
 	usernamePat := gitlabpat.GitlabPAT{Pat: validatorTestPat}
 
@@ -149,7 +149,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	got, err := validator.Validate(ctx, usernamePat)
 
 	if !cmp.Equal(err, context.Canceled, cmpopts.EquateErrors()) {
-		t.Errorf("Validate() error = %v, want %v", err, context.DeadlineExceeded)
+		t.Errorf("Validate() error = %v, want %v", err, context.Canceled)
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)

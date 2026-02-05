@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,42 +15,24 @@
 package github
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/github/validate"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// OAuthTokenValidator validates Github OAuth token via the Github API endpoint.
-type OAuthTokenValidator struct {
-	httpC *http.Client
-}
-
-// OAuthTokenValidatorOption configures a OAuthValidator when creating it via NewOAuthValidator.
-type OAuthTokenValidatorOption func(*OAuthTokenValidator)
-
-// OAuthTokenWithClient configures the http.Client that the OAuthValidator uses.
-//
-// By default, it uses http.DefaultClient.
-func OAuthTokenWithClient(c *http.Client) OAuthTokenValidatorOption {
-	return func(v *OAuthTokenValidator) {
-		v.httpC = c
+// NewOAuthTokenValidator creates a new Validator that validates Github OAuth
+// token via the Github API endpoint.
+func NewOAuthTokenValidator() *simplevalidate.Validator[OAuthToken] {
+	return &simplevalidate.Validator[OAuthToken]{
+		Endpoint:   githubAPIBaseURL + UserValidationEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k OAuthToken) map[string]string {
+			return apiHeaders(k.Token)
+		},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC: &http.Client{
+			Timeout: validationTimeout,
+		},
 	}
-}
-
-// NewOAuthTokenValidator creates a new OAuthValidator with the given OAuthValidatorOptions.
-func NewOAuthTokenValidator(opts ...OAuthTokenValidatorOption) *OAuthTokenValidator {
-	v := &OAuthTokenValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given Github OAuth token is valid.
-func (v *OAuthTokenValidator) Validate(ctx context.Context, key OAuthToken) (veles.ValidationStatus, error) {
-	return validate.Validate(ctx, v.httpC, "/user", key.Token)
 }

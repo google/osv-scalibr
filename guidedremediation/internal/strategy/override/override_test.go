@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
-	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/override"
+	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
@@ -54,7 +54,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "maven-zeppelin-server",
 			universeFile: "testdata/zeppelin-server/universe.yaml",
-			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
+			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.json",
 			manifestPath: "zeppelin-server/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -63,7 +63,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "maven-classifier",
 			universeFile: "testdata/maven-classifier/universe.yaml",
-			vulnsFile:    "testdata/maven-classifier/vulnerabilities.yaml",
+			vulnsFile:    "testdata/maven-classifier/vulnerabilities.json",
 			manifestPath: "maven-classifier/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -72,7 +72,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "maven-management-only",
 			universeFile: "testdata/zeppelin-server/universe.yaml",
-			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.yaml",
+			vulnsFile:    "testdata/zeppelin-server/vulnerabilities.json",
 			manifestPath: "zeppelin-server/parent/pom.xml",
 			readWriter:   mavenRW,
 			opts: options.RemediationOptions{
@@ -88,7 +88,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-maven-guava-none-to-jre",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/guava/none-to-jre/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -97,7 +97,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-maven-guava-jre-to-jre",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/guava/jre-to-jre/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -106,7 +106,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-maven-guava-android-to-android",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/guava/android-to-android/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -115,7 +115,7 @@ func TestComputePatches(t *testing.T) {
 		{
 			name:         "workaround-commons",
 			universeFile: "testdata/workaround/universe.yaml",
-			vulnsFile:    "testdata/workaround/vulnerabilities.yaml",
+			vulnsFile:    "testdata/workaround/vulnerabilities.json",
 			manifestPath: "workaround/commons/pom.xml",
 			readWriter:   mavenRW,
 			opts:         options.DefaultRemediationOptions(),
@@ -142,12 +142,12 @@ func TestComputePatches(t *testing.T) {
 			}
 
 			cl := clienttest.NewMockResolutionClient(t, tt.universeFile)
-			vm := matchertest.NewMockVulnerabilityMatcher(t, tt.vulnsFile)
-			resolved, err := remediation.ResolveManifest(t.Context(), cl, vm, m, &tt.opts)
+			ve := vulnenrichertest.NewMockVulnerabilityEnricher(t, tt.vulnsFile)
+			resolved, err := remediation.ResolveManifest(t.Context(), cl, ve, m, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed resolving manifest: %v", err)
 			}
-			gotFull, err := override.ComputePatches(t.Context(), cl, vm, resolved, &tt.opts)
+			gotFull, err := override.ComputePatches(t.Context(), cl, ve, resolved, &tt.opts)
 			if err != nil {
 				t.Fatalf("failed computing patches: %v", err)
 			}

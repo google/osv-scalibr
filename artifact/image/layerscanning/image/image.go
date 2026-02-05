@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -640,9 +640,9 @@ func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersTo
 	currentChainLayer := chainLayersToFill[0]
 
 	runningDir := "/"
-	dirs := strings.Split(path.Dir(virtualPath), "/")
+	dirs := strings.SplitSeq(path.Dir(virtualPath), "/")
 
-	for _, dir := range dirs {
+	for dir := range dirs {
 		runningDir = path.Join(runningDir, dir)
 
 		// If the directory already exists in the current chain layer, then skip it.

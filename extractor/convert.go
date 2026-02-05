@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import (
 	winpurl "github.com/google/osv-scalibr/extractor/standalone/windows/common/purl"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 // toPURL converts a SCALIBR package structure into a package URL.
@@ -88,34 +88,34 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 
 		return osecosystem.MakeEcosystem(p.Metadata)
 	case purl.TypePyPi:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemPyPI)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemPyPI)
 	case purl.TypeMaven:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemMaven)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemMaven)
 	case purl.TypeNPM:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemNPM)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemNPM)
 	case purl.TypeGolang:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemGo)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemGo)
 	// Not yet supported by OSV yet
 	// case purl.TypeCocoapods:
 	// 	return string(osvschema.EcosystemCocoaPods)
 	case purl.TypeConan:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemConanCenter)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemConanCenter)
 	case purl.TypeCran:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemCRAN)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemCRAN)
 	case purl.TypeGem:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemRubyGems)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems)
 	case purl.TypeNuget:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemNuGet)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemNuGet)
 	case purl.TypeHaskell:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemHackage)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemHackage)
 	case purl.TypeHex:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemHex)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemHex)
 	case purl.TypeComposer:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemPackagist)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemPackagist)
 	case purl.TypeCargo:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemCratesIO)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemCratesIO)
 	case purl.TypePub:
-		return osvecosystem.FromEcosystem(osvschema.EcosystemPub)
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemPub)
 	}
 
 	// No Ecosystem defined for this package.

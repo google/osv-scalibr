@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,12 +23,39 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
-	us2TestKey        = `ghu_aGgfQsQ52sImE9zwWxKcjt2nhESfYG1U2FhX`
+	u2sTestKey        = `ghu_aGgfQsQ52sImE9zwWxKcjt2nhESfYG1U2FhX`
+	u2sTestKeyBase64  = `Z2h1X2FHZ2ZRc1E1MnNJbUU5endXeEtjanQybmhFU2ZZRzFVMkZoWA==`
 	u2sAnotherTestKey = `ghu_QoXdtrSAaW5sNsCFtHv8cK0ImbQxn11nVkQT`
 )
+
+func TestAppU2SDetectorAcceptance(t *testing.T) {
+	d := github.NewAppU2SDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+	}{
+		{
+			name:   "raw",
+			input:  u2sTestKey,
+			secret: github.AppUserToServerToken{Token: u2sTestKey},
+		},
+		{
+			name:   "base64",
+			input:  u2sTestKeyBase64,
+			secret: github.AppUserToServerToken{Token: u2sTestKey},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, velestest.WithBackToBack(), velestest.WithPad('a'))
+		})
+	}
+}
 
 // TestAppU2SDetector_truePositives tests for cases where we know the Detector
 // will find a Github app user to server tokens.
@@ -43,9 +70,9 @@ func TestAppU2SDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{{
 		name:  "simple matching string",
-		input: us2TestKey,
+		input: u2sTestKey,
 		want: []veles.Secret{
-			github.AppUserToServerToken{Token: us2TestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
 		},
 	}, {
 		name:  "simple matching string another key",
@@ -55,45 +82,51 @@ func TestAppU2SDetector_truePositives(t *testing.T) {
 		},
 	}, {
 		name:  "match at end of string",
-		input: `API_TOKEN=` + us2TestKey,
+		input: `API_TOKEN=` + u2sTestKey,
 		want: []veles.Secret{
-			github.AppUserToServerToken{Token: us2TestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
 		},
 	}, {
 		name:  "match in middle of string",
-		input: `API_TOKEN="` + us2TestKey + `"`,
+		input: `API_TOKEN="` + u2sTestKey + `"`,
 		want: []veles.Secret{
-			github.AppUserToServerToken{Token: us2TestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
 		},
 	}, {
 		name:  "multiple matches",
-		input: us2TestKey + us2TestKey + us2TestKey,
+		input: u2sTestKey + u2sTestKey + u2sTestKey,
 		want: []veles.Secret{
-			github.AppUserToServerToken{Token: us2TestKey},
-			github.AppUserToServerToken{Token: us2TestKey},
-			github.AppUserToServerToken{Token: us2TestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
 		},
 	}, {
 		name:  "multiple distinct matches",
-		input: us2TestKey + "\n" + u2sAnotherTestKey,
+		input: u2sTestKey + "\n" + u2sAnotherTestKey,
 		want: []veles.Secret{
-			github.AppUserToServerToken{Token: us2TestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
 			github.AppUserToServerToken{Token: u2sAnotherTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
-		`, us2TestKey),
+		`, u2sTestKey),
 		want: []veles.Secret{
-			github.AppUserToServerToken{Token: us2TestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
 		},
 	}, {
 		name:  "potential match longer than max key length",
-		input: us2TestKey + `extra`,
+		input: u2sTestKey + `extra`,
 		want: []veles.Secret{
-			github.AppUserToServerToken{Token: us2TestKey},
+			github.AppUserToServerToken{Token: u2sTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: u2sTestKeyBase64,
+		want: []veles.Secret{
+			github.AppUserToServerToken{Token: u2sTestKey},
 		},
 	}}
 	for _, tc := range cases {
@@ -125,7 +158,7 @@ func TestAppU2SDetector_trueNegatives(t *testing.T) {
 		input: "",
 	}, {
 		name:  "short key should not match",
-		input: us2TestKey[:len(us2TestKey)-1],
+		input: u2sTestKey[:len(u2sTestKey)-1],
 	}, {
 		name:  "invalid character in key should not match",
 		input: `gh` + `u_aGgfQsQ52sImE9zwWxKcjt2nhESf^G1U2FhX`,

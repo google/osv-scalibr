@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 func TestToPURL(t *testing.T) {
@@ -77,7 +77,7 @@ func TestToPURL(t *testing.T) {
 				PURLType:  purl.TypeNPM,
 				Locations: []string{"location"},
 				Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: javascriptmeta.Unknown,
 				},
 			},
 			want: &purl.PackageURL{
@@ -223,7 +223,7 @@ func TestToEcosystem(t *testing.T) {
 				Version:  "version",
 				PURLType: purl.TypeGolang,
 			},
-			want: osvecosystem.FromEcosystem(osvschema.EcosystemGo),
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
 		},
 		{
 			name: "os_ecosystem",
@@ -239,7 +239,7 @@ func TestToEcosystem(t *testing.T) {
 				},
 			},
 			want: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemDebian,
+				Ecosystem: osvconstants.EcosystemDebian,
 				Suffix:    "11",
 			},
 		},

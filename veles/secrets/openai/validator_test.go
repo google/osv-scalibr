@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,10 +34,11 @@ func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int) *httptes
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
 		r *http.Request) {
+		modelsEndpoint := openai.ModelsEndpoint
 		// Check if it's a GET request to the models endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/v1/models" {
-			t.Errorf("unexpected request: %s %s, expected: GET /v1/models",
-				r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != modelsEndpoint {
+			t.Errorf("unexpected request: %s %s, expected: GET %s",
+				r.Method, r.URL.Path, modelsEndpoint)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -101,10 +102,9 @@ func TestProjectValidator(t *testing.T) {
 			defer server.Close()
 
 			// Create validator with mock client and server URL
-			validator := openai.NewProjectValidator(
-				openai.WithProjectHTTPClient(server.Client()),
-				openai.WithProjectAPIURL(server.URL),
-			)
+			validator := openai.NewProjectValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + openai.ModelsEndpoint
 
 			// Create test key
 			key := openai.APIKey{Key: projectValidatorTestKey}
@@ -128,19 +128,5 @@ func TestProjectValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestProjectValidator_EmptyKey(t *testing.T) {
-	validator := openai.NewProjectValidator()
-	key := openai.APIKey{Key: ""}
-
-	got, err := validator.Validate(t.Context(), key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error for empty key, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

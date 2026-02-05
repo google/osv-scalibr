@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ type BaseImageDetails struct {
 	Registry string
 	// Plugin name of the plugin used to extract the base image.
 	Plugin string
-	// ChainID of the last layer in the base image.
+	// ChainID used to query this layer. This is calculated including empty layers, so will not correspond
+	// to the ChainID of any layer in the inventory.
 	ChainID digest.Digest
 }

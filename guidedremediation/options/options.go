@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/clients/datasource"
-	"github.com/google/osv-scalibr/guidedremediation/matcher"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 )
@@ -42,7 +42,7 @@ type FixVulnsOptions struct {
 	MaxUpgrades       int                                // Maximum number of patches to apply. If <= 0 applies as many as possible.
 	NoIntroduce       bool                               // If true, do not apply patches that introduce new vulnerabilities.
 	NoMavenNewDepMgmt bool                               // If true, do not apply patches that introduce new dependency management.
-	MatcherClient     matcher.VulnerabilityMatcher       // Matcher for vulnerability information.
+	VulnEnricher      enricher.Enricher                  // Enricher to get vulnerability information.
 	ResolveClient     resolve.Client                     // Client for dependency information.
 	MavenClient       *datasource.MavenRegistryAPIClient // Client for fetching Maven dependency information, may be nil.
 	DepCachePopulator DependencyCachePopulator           // Interface for populating the cache of the resolve.Client. Can be nil.

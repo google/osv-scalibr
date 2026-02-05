@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,16 +23,20 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
-	"github.com/google/osv-scalibr/annotator/misc/fromnpm"
+	"github.com/google/osv-scalibr/annotator/misc/brewsource"
+	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
+	"github.com/google/osv-scalibr/annotator/misc/npmsource"
 	noexecutabledpkg "github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/apk"
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/rpm"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the annotator initializer function.
-type InitFn func() annotator.Annotator
+type InitFn func(cfg *cpb.PluginConfig) (annotator.Annotator, error)
 
 // InitMap is a map of annotator names to their initers.
 type InitMap map[string][]InitFn
@@ -43,12 +47,16 @@ var VEX = InitMap{
 	cachedir.Name:         {cachedir.New},
 	cos.Name:              {cos.New},
 	dpkg.Name:             {dpkg.New},
-	rpm.Name:              {rpm.NewDefault},
+	rpm.Name:              {rpm.New},
 	noexecutabledpkg.Name: {noexecutabledpkg.New},
 }
 
 // Misc annotators.
-var Misc = InitMap{fromnpm.Name: {fromnpm.New}}
+var Misc = InitMap{
+	npmsource.Name:  {npmsource.New},
+	dpkgsource.Name: {dpkgsource.New},
+	brewsource.Name: {brewsource.New},
+}
 
 // FFA (Full Filesystem Accountability) related annotators.
 var FFA = InitMap{unknownbinariesanno.Name: {unknownbinariesanno.New}}
@@ -86,11 +94,15 @@ func vals(initMap InitMap) []InitFn {
 }
 
 // AnnotatorsFromName returns a list of annotators from a name.
-func AnnotatorsFromName(name string) ([]annotator.Annotator, error) {
+func AnnotatorsFromName(name string, cfg *cpb.PluginConfig) ([]annotator.Annotator, error) {
 	if initers, ok := annotatorNames[name]; ok {
 		result := []annotator.Annotator{}
 		for _, initer := range initers {
-			result = append(result, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}

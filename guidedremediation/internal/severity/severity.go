@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	gocvss20 "github.com/pandatix/go-cvss/20"
 	gocvss30 "github.com/pandatix/go-cvss/30"
 	gocvss31 "github.com/pandatix/go-cvss/31"
@@ -31,14 +31,13 @@ import (
 //
 // returns (-1.0, "UNKNOWN", nil) if the severity is the empty struct.
 // returns (-1.0, "", error) if severity type or score is invalid.
-func CalculateScoreAndRating(severity osvschema.Severity) (float64, string, error) {
-	var empty osvschema.Severity
-	if severity == empty {
+func CalculateScoreAndRating(severity *osvpb.Severity) (float64, string, error) {
+	if severity == nil || severity.Score == "" {
 		return -1.0, "UNKNOWN", nil
 	}
 
 	switch severity.Type {
-	case osvschema.SeverityCVSSV2:
+	case osvpb.Severity_CVSS_V2:
 		vec, err := gocvss20.ParseVector(severity.Score)
 		if err != nil {
 			return -1.0, "", err
@@ -50,7 +49,7 @@ func CalculateScoreAndRating(severity osvschema.Severity) (float64, string, erro
 			rating = "UNKNOWN"
 		}
 		return score, rating, nil
-	case osvschema.SeverityCVSSV3:
+	case osvpb.Severity_CVSS_V3:
 		switch {
 		case strings.HasPrefix(severity.Score, "CVSS:3.0/"):
 			vec, err := gocvss30.ParseVector(severity.Score)
@@ -77,7 +76,7 @@ func CalculateScoreAndRating(severity osvschema.Severity) (float64, string, erro
 		default:
 			return -1.0, "", fmt.Errorf("unsupported CVSS_V3 version: %s", severity.Score)
 		}
-	case osvschema.SeverityCVSSV4:
+	case osvpb.Severity_CVSS_V4:
 		vec, err := gocvss40.ParseVector(severity.Score)
 		if err != nil {
 			return -1.0, "", err
@@ -99,7 +98,7 @@ func CalculateScoreAndRating(severity osvschema.Severity) (float64, string, erro
 //
 // returns (-1.0, nil) if the severity is the empty struct.
 // returns (-1.0, error) if severity type or score is invalid.
-func CalculateScore(severity osvschema.Severity) (float64, error) {
+func CalculateScore(severity *osvpb.Severity) (float64, error) {
 	score, _, err := CalculateScoreAndRating(severity)
 	return score, err
 }

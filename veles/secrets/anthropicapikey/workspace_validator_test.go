@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,9 +32,10 @@ func mockAnthropicWorkspaceServer(t *testing.T, expectedKey string, statusCode i
 	t.Helper()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		workspacesEndpoint := anthropicapikey.AnthropicWorkspacesEndpoint
 		// Check if it's a GET request to the workspaces endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/v1/organizations/workspaces" {
-			t.Errorf("unexpected request: %s %s, expected: GET /v1/organizations/workspaces", r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != workspacesEndpoint {
+			t.Errorf("unexpected request: %s %s, expected: GET %s", r.Method, r.URL.Path, workspacesEndpoint)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -137,10 +138,9 @@ func TestWorkspaceValidator(t *testing.T) {
 			defer server.Close()
 
 			// Create validator with mock client and server URL
-			validator := anthropicapikey.NewWorkspaceValidator(
-				anthropicapikey.WithWorkspaceHTTPClient(server.Client()),
-				anthropicapikey.WithWorkspaceAPIURL(server.URL),
-			)
+			validator := anthropicapikey.NewWorkspaceValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + anthropicapikey.AnthropicWorkspacesEndpoint
 
 			// Create test key
 			key := anthropicapikey.WorkspaceAPIKey{Key: workspaceValidatorTestKey}
@@ -164,19 +164,5 @@ func TestWorkspaceValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestWorkspaceValidator_EmptyKey(t *testing.T) {
-	validator := anthropicapikey.NewWorkspaceValidator()
-	key := anthropicapikey.WorkspaceAPIKey{Key: ""}
-
-	got, err := validator.Validate(t.Context(), key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error for empty key, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,125 +15,63 @@
 package hcp
 
 import (
-	"context"
-	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
 // Defaults derived from public HCP API docs.
 const (
 	defaultTokenURL = "https://auth.idp.hashicorp.com/oauth2/token"
 	// Use the Cloud API host for identity introspection.
-	defaultAPIBase = "https://api.cloud.hashicorp.com"
+	defaultAPIBase         = "https://api.cloud.hashicorp.com"
+	callerIdentityEndpoint = "/iam/2019-12-10/caller-identity"
 )
 
-// ClientCredentialsValidator validates an HCP client credential pair by attempting to exchange it for an access token.
-type ClientCredentialsValidator struct {
-	httpC    *http.Client
-	tokenURL string
-}
+type cc = ClientCredentials
 
-var _ veles.Validator[ClientCredentials] = &ClientCredentialsValidator{}
-
-// ClientCredentialsValidatorOption configures a ClientCredentialsValidator.
-type ClientCredentialsValidatorOption func(*ClientCredentialsValidator)
-
-// WithHTTPClient sets the HTTP client to use.
-func WithHTTPClient(c *http.Client) ClientCredentialsValidatorOption {
-	return func(v *ClientCredentialsValidator) { v.httpC = c }
-}
-
-// WithTokenURL overrides the token endpoint URL.
-func WithTokenURL(u string) ClientCredentialsValidatorOption {
-	return func(v *ClientCredentialsValidator) { v.tokenURL = u }
-}
-
-// NewClientCredentialsValidator creates a new validator with optional configuration.
-func NewClientCredentialsValidator(opts ...ClientCredentialsValidatorOption) *ClientCredentialsValidator {
-	v := &ClientCredentialsValidator{httpC: http.DefaultClient, tokenURL: defaultTokenURL}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate validates ClientCredentials by attempting a client_credentials OAuth2
+// NewClientCredentialsValidator creates a new HCP client credential pair validator.
+// It validates ClientCredentials by attempting a client_credentials OAuth2
 // token exchange against the configured token endpoint. A 200 response indicates
 // valid credentials; 400/401 indicates invalid; other responses are treated as
 // validation failures.
-func (v *ClientCredentialsValidator) Validate(ctx context.Context, cc ClientCredentials) (veles.ValidationStatus, error) {
-	// If one of the fields is missing, we cannot validate
-	if cc.ClientID == "" || cc.ClientSecret == "" {
-		return veles.ValidationUnsupported, nil
+func NewClientCredentialsValidator(opts ...ClientCredentialsOption) *sv.Validator[cc] {
+	v := &sv.Validator[cc]{
+		Endpoint:   defaultTokenURL,
+		HTTPMethod: http.MethodPost,
+		HTTPHeaders: func(_ cc) map[string]string {
+			return map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
+		},
+		Body: func(s cc) (string, error) {
+			form := url.Values{}
+			form.Set("grant_type", "client_credentials")
+			form.Set("client_id", s.ClientID)
+			form.Set("client_secret", s.ClientSecret)
+			return form.Encode(), nil
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusBadRequest, http.StatusUnauthorized},
 	}
-	if err := ctx.Err(); err != nil {
-		return veles.ValidationFailed, err
-	}
-	form := url.Values{}
-	form.Set("grant_type", "client_credentials")
-	form.Set("client_id", cc.ClientID)
-	form.Set("client_secret", cc.ClientSecret)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, v.tokenURL, strings.NewReader(form.Encode()))
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to POST %q: %w", v.tokenURL, err)
-	}
-	defer res.Body.Close()
-
-	// 200 means exchange succeeded: valid credentials.
-	if res.StatusCode == http.StatusOK {
-		return veles.ValidationValid, nil
-	}
-	// 400/401 indicates invalid credentials for client credentials flow.
-	if res.StatusCode == http.StatusBadRequest || res.StatusCode == http.StatusUnauthorized {
-		// Drain body for completeness.
-		_, _ = io.Copy(io.Discard, res.Body)
-		return veles.ValidationInvalid, nil
-	}
-	return veles.ValidationFailed, fmt.Errorf("token endpoint %q returned %q", v.tokenURL, res.Status)
-}
-
-// AccessTokenValidator validates an HCP access token by calling the caller-identity endpoint.
-type AccessTokenValidator struct {
-	httpC   *http.Client
-	apiBase string
-}
-
-var _ veles.Validator[AccessToken] = &AccessTokenValidator{}
-
-// AccessTokenValidatorOption configures an AccessTokenValidator.
-type AccessTokenValidatorOption func(*AccessTokenValidator)
-
-// WithAccessHTTPClient sets the HTTP client for the access token validator.
-func WithAccessHTTPClient(c *http.Client) AccessTokenValidatorOption {
-	return func(v *AccessTokenValidator) { v.httpC = c }
-}
-
-// WithAPIBase overrides the base API URL (default: https://api.cloud.hashicorp.com).
-func WithAPIBase(base string) AccessTokenValidatorOption {
-	return func(v *AccessTokenValidator) { v.apiBase = strings.TrimRight(base, "/") }
-}
-
-// NewAccessTokenValidator creates a new validator for HCP access tokens.
-func NewAccessTokenValidator(opts ...AccessTokenValidatorOption) *AccessTokenValidator {
-	v := &AccessTokenValidator{httpC: http.DefaultClient, apiBase: defaultAPIBase}
 	for _, opt := range opts {
 		opt(v)
 	}
 	return v
 }
 
-// Validate validates an AccessToken by sending a GET request to the HCP
+// ClientCredentialsOption configures a ClientCredentialsValidator.
+type ClientCredentialsOption func(*sv.Validator[cc])
+
+// WithTokenURL overrides the token endpoint URL.
+func WithTokenURL(u string) ClientCredentialsOption {
+	return func(v *sv.Validator[cc]) { v.Endpoint = u }
+}
+
+type at = AccessToken
+
+// NewAccessTokenValidator creates a new validator for HCP access tokens.
+// It validates an AccessToken by sending a GET request to the HCP
 // caller-identity endpoint with the token as a Bearer credential.
 //
 // Documentation: https://developer.hashicorp.com/hcp/api-docs/identity#IamService_GetCallerIdentity
@@ -141,28 +79,28 @@ func NewAccessTokenValidator(opts ...AccessTokenValidatorOption) *AccessTokenVal
 // - 200: token is valid (identity returned)
 // - 401: token is invalid
 // - any other response: treated as ValidationFailed
-func (v *AccessTokenValidator) Validate(ctx context.Context, at AccessToken) (veles.ValidationStatus, error) {
-	if err := ctx.Err(); err != nil {
-		return veles.ValidationFailed, err
+func NewAccessTokenValidator(opts ...AccessTokenOption) *sv.Validator[at] {
+	v := &sv.Validator[at]{
+		Endpoint:   defaultAPIBase + callerIdentityEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s at) map[string]string {
+			return map[string]string{"Authorization": "Bearer " + s.Token}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
-	endpoint := v.apiBase + "/iam/2019-12-10/caller-identity"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
+	for _, opt := range opts {
+		opt(v)
 	}
-	req.Header.Set("Authorization", "Bearer "+at.Token)
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to GET %q: %w", endpoint, err)
-	}
-	defer res.Body.Close()
+	return v
+}
 
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("GET %q returned %q", endpoint, res.Status)
+// AccessTokenOption configures an AccessTokenValidator.
+type AccessTokenOption func(*sv.Validator[at])
+
+// WithAPIBase overrides the base API URL (default: https://api.cloud.hashicorp.com).
+func WithAPIBase(base string) AccessTokenOption {
+	return func(v *sv.Validator[at]) {
+		v.Endpoint = strings.TrimRight(base, "/") + callerIdentityEndpoint
 	}
 }

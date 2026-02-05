@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,11 +40,6 @@ type PyPIRegistryClient struct {
 // NewPyPIRegistryClient makes a new PyPIRegistryClient.
 func NewPyPIRegistryClient(registry string, localRegistry string) *PyPIRegistryClient {
 	return &PyPIRegistryClient{api: datasource.NewPyPIRegistryAPIClient(registry, localRegistry)}
-}
-
-// SetLocalRegistry sets the local directory that stores the downloaded PyPI manifests.
-func (c *PyPIRegistryClient) SetLocalRegistry(localRegistry string) {
-	c.api.SetLocalRegistry(localRegistry)
 }
 
 // Version returns metadata of a version specified by the VersionKey.

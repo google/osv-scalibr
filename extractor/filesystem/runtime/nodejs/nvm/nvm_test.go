@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,13 +20,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -53,7 +54,10 @@ func TestFileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = nvm.Extractor{}
+			e, err := nvm.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
@@ -68,7 +72,7 @@ func TestExtract(t *testing.T) {
 		inputConfigFile extracttest.ScanInputMockConfig
 	}{
 		{
-			name: "valid .nvmrc with version",
+			name: "valid_.nvmrc_with_version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/simpleValidWithComments.nvmrc",
 			},
@@ -85,7 +89,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid .nvmrc with whitespaces and comments",
+			name: "valid_.nvmrc_with_whitespaces_and_comments",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validWhiteSpaces.nvmrc",
 			},
@@ -102,14 +106,14 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: ".nvmrc with node and lts instead of version",
+			name: ".nvmrc_with_node_and_lts_instead_of_version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/notNumericVersion.nvmrc",
 			},
 			wantPackages: nil,
 		},
 		{
-			name: ".nvmrc with no numerical version",
+			name: ".nvmrc_with_no_numerical_version",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiVersionWithSkip.nvmrc",
 			},
@@ -119,7 +123,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extr := nvm.Extractor{}
+			extr, err := nvm.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
 			defer extracttest.CloseTestScanInput(t, scanInput)

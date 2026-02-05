@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -149,7 +149,7 @@ func TestSecretToProto(t *testing.T) {
 			want: secretGCPSAKProto1,
 		},
 		{
-			desc: "empty validation",
+			desc: "empty_validation",
 			s: func(s *inventory.Secret) *inventory.Secret {
 				s = copier.Copy(s).(*inventory.Secret)
 				s.Validation = inventory.SecretValidationResult{}
@@ -162,12 +162,12 @@ func TestSecretToProto(t *testing.T) {
 			}(secretGCPSAKProto1),
 		},
 		{
-			desc: "success GCP API key",
+			desc: "success_GCP_API_key",
 			s:    secretGCPAPIKeyStruct,
 			want: secretGCPAPIKeyProto,
 		},
 		{
-			desc: "GCP OAuth2 client credentials",
+			desc: "GCP_OAuth2_client_credentials",
 			s:    secretGCPOAuth2ClientCredentialsStruct,
 			want: secretGCPOAuth2ClientCredentialsProto,
 		},
@@ -224,7 +224,7 @@ func TestSecretToStruct(t *testing.T) {
 			want: secretGCPSAKStruct1,
 		},
 		{
-			desc: "empty validation",
+			desc: "empty_validation",
 			s: func(s *spb.Secret) *spb.Secret {
 				s = copier.Copy(s).(*spb.Secret)
 				s.Status = nil
@@ -237,12 +237,12 @@ func TestSecretToStruct(t *testing.T) {
 			}(secretGCPSAKStruct1),
 		},
 		{
-			desc: "success GCP API key",
+			desc: "success_GCP_API_key",
 			s:    secretGCPAPIKeyProto,
 			want: secretGCPAPIKeyStruct,
 		},
 		{
-			desc: "GCP OAuth2 client credentials",
+			desc: "GCP_OAuth2_client_credentials",
 			s:    secretGCPOAuth2ClientCredentialsProto,
 			want: secretGCPOAuth2ClientCredentialsStruct,
 		},

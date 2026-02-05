@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,42 +15,24 @@
 package github
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/github/validate"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// FineGrainedPATValidator validates Github fine-grained personal access token via the Github API endpoint.
-type FineGrainedPATValidator struct {
-	httpC *http.Client
-}
-
-// FineGrainedPATValidatorOption configures a Validator when creating it via NewValidator.
-type FineGrainedPATValidatorOption func(*FineGrainedPATValidator)
-
-// FineGrainedPATWithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func FineGrainedPATWithClient(c *http.Client) FineGrainedPATValidatorOption {
-	return func(v *FineGrainedPATValidator) {
-		v.httpC = c
+// NewFineGrainedPATValidator creates a new Validator that validates Github
+// fine-grained personal access token via the Github API endpoint.
+func NewFineGrainedPATValidator() *simplevalidate.Validator[FineGrainedPersonalAccessToken] {
+	return &simplevalidate.Validator[FineGrainedPersonalAccessToken]{
+		Endpoint:   githubAPIBaseURL + UserValidationEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k FineGrainedPersonalAccessToken) map[string]string {
+			return apiHeaders(k.Token)
+		},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC: &http.Client{
+			Timeout: validationTimeout,
+		},
 	}
-}
-
-// NewFineGrainedPATValidator creates a new Validator with the given ValidatorOptions.
-func NewFineGrainedPATValidator(opts ...FineGrainedPATValidatorOption) *FineGrainedPATValidator {
-	v := &FineGrainedPATValidator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given Github fine-grained personal access token is valid.
-func (v *FineGrainedPATValidator) Validate(ctx context.Context, key FineGrainedPersonalAccessToken) (veles.ValidationStatus, error) {
-	return validate.Validate(ctx, v.httpC, "/user", key.Token)
 }

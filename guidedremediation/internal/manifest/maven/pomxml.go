@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -243,8 +243,14 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 		return nil, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 
-	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
+	// Interpolate the project in case there are properties in any repository.
+	if err := project.InterpolateRepositories(); err != nil {
+		return nil, fmt.Errorf("failed to interpolate project: %w", err)
+	}
 	for _, repo := range project.Repositories {
+		if repo.URL.ContainsProperty() {
+			continue
+		}
 		if err := r.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),

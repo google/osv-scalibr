@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,12 +23,39 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	oauthTestKey        = `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`
+	oauthTestKeyBase64  = `Z2hvX3BrNWMyblQxZks2Y2hVWEpYMWpPR3M4cmJ1elgwcjM0QlhJdQ==`
 	oauthAnotherTestKey = `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`
 )
+
+func TestOAuthTokenDetectorAcceptance(t *testing.T) {
+	d := github.NewOAuthTokenDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+	}{
+		{
+			name:   "raw",
+			input:  oauthTestKey,
+			secret: github.OAuthToken{Token: oauthTestKey},
+		},
+		{
+			name:   "base64",
+			input:  oauthTestKeyBase64,
+			secret: github.OAuthToken{Token: oauthTestKey},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, velestest.WithBackToBack(), velestest.WithPad('a'))
+		})
+	}
+}
 
 // TestOAuthDetector_truePositives tests for cases where we know the Detector
 // will find a Github OAuth tokens.
@@ -85,7 +112,7 @@ func TestOAuthDetector_truePositives(t *testing.T) {
 			github.OAuthToken{Token: oauthAnotherTestKey},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: do-test
 :API_TOKEN: %s
@@ -96,6 +123,12 @@ func TestOAuthDetector_truePositives(t *testing.T) {
 	}, {
 		name:  "potential match longer than max key length",
 		input: oauthTestKey + `extra`,
+		want: []veles.Secret{
+			github.OAuthToken{Token: oauthTestKey},
+		},
+	}, {
+		name:  "base64 encoded key",
+		input: oauthTestKeyBase64,
 		want: []veles.Secret{
 			github.OAuthToken{Token: oauthTestKey},
 		},

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -47,6 +48,37 @@ const (
 	testRecoveryKey     = "1PRK-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ12-3456-789A-BCDE-FGHI-JKLM-NOPQ"
 	testRecoveryKeyAlt  = "1PRK-1234-5678-9ABC-DEFG-HIJK-LMNO-PQRS-TUVW-XYZ1-2345-6789-ABCD-EFGH"
 )
+
+func TestSecretKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		onepasswordkeys.NewSecretKeyDetector(),
+		testSecretKey,
+		onepasswordkeys.OnePasswordSecretKey{Key: testSecretKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('A'),
+	)
+}
+
+func TestServiceTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		onepasswordkeys.NewServiceTokenDetector(),
+		testServiceTokenAlt,
+		onepasswordkeys.OnePasswordServiceToken{Key: testServiceTokenAlt},
+	)
+}
+
+func TestRecoveryTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		onepasswordkeys.NewRecoveryTokenDetector(),
+		testRecoveryKeyAlt,
+		onepasswordkeys.OnePasswordRecoveryCode{Key: testRecoveryKeyAlt},
+		velestest.WithBackToBack(),
+		velestest.WithPad('A'),
+	)
+}
 
 // TestSecretKeyDetector_TruePositives tests for cases where we know the SecretKeyDetector
 // will find 1Password Secret Key/s.
@@ -93,7 +125,7 @@ func TestSecretKeyDetector_TruePositives(t *testing.T) {
 			onepasswordkeys.OnePasswordSecretKey{Key: testSecretKeyAlt},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_secret_key: A3-ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z1234
 :onepassword_secret_key: %s 
@@ -218,7 +250,7 @@ func TestServiceTokenDetector_TruePositives(t *testing.T) {
 			onepasswordkeys.OnePasswordServiceToken{Key: testServiceTokenAlt},
 		},
 	}, {
-		name: "larger input containing token",
+		name: "larger_input_containing_token",
 		input: fmt.Sprintf(`
 :test_service_token: ops_eyJtest
 :onepassword_service_token: %s 
@@ -340,7 +372,7 @@ func TestRecoveryKeyDetector_TruePositives(t *testing.T) {
 			onepasswordkeys.OnePasswordRecoveryCode{Key: testRecoveryKeyAlt},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_recovery_key: 1PRK-ABCD-EFGH-IJKL
 :onepassword_recovery_key: %s 
