@@ -195,3 +195,80 @@ func TestSetupEncryption_LegacyAES(t *testing.T) {
 		t.Fatalf("expected legacyAESConfig")
 	}
 }
+
+func TestInitESSIV_AES_SHA256(t *testing.T) {
+	key := []byte("this is a test key")
+
+	c, err := initESSIV(key, hashSHA256, "aes")
+	if err != nil {
+		t.Fatalf("initESSIV failed: %v", err)
+	}
+	if c == nil {
+		t.Fatalf("expected non-nil ESSIV cipher")
+	}
+
+	// AES block size sanity check
+	if c.BlockSize() != aes.BlockSize {
+		t.Fatalf("unexpected block size: %d", c.BlockSize())
+	}
+}
+
+func TestInitESSIV_InvalidHash(t *testing.T) {
+	_, err := initESSIV([]byte("key"), "md5", "aes")
+	if err == nil {
+		t.Fatalf("expected error for unsupported hash")
+	}
+}
+
+func TestInitESSIV_InvalidCipher(t *testing.T) {
+	_, err := initESSIV([]byte("key"), hashSHA1, "blowfish")
+	if err == nil {
+		t.Fatalf("expected error for unsupported cipher")
+	}
+}
+
+func TestLUKSDecryptCBCESSIV(t *testing.T) {
+	key := make([]byte, 16) // AES-128
+	for i := range key {
+		key[i] = byte(i)
+	}
+
+	essiv, err := initESSIV(key, hashSHA256, "aes")
+	if err != nil {
+		t.Fatalf("initESSIV failed: %v", err)
+	}
+
+	cfg := &luksConfig{
+		masterKey:   key,
+		cipherName:  "aes",
+		cipherMode:  cipherModeCBC,
+		ivGen:       ivGenESSIV,
+		ivHash:      hashSHA256,
+		sectorSize:  sectorSize,
+		essivCipher: essiv,
+	}
+
+	plaintext := make([]byte, sectorSize)
+	for i := range plaintext {
+		plaintext[i] = byte(100 + i)
+	}
+
+	// Encrypt manually using ESSIV IV
+	block, _ := aes.NewCipher(key)
+	ivgen := &ESSIVGen{cipher: essiv}
+	iv, err := ivgen.Calculate(0, block.BlockSize())
+	if err != nil {
+		t.Fatalf("IV generation failed: %v", err)
+	}
+
+	ciphertext := make([]byte, sectorSize)
+	cipher.NewCBCEncrypter(block, iv).CryptBlocks(ciphertext, plaintext)
+
+	out, err := cfg.Decrypt(ciphertext, 0)
+	if err != nil {
+		t.Fatalf("decrypt failed: %v", err)
+	}
+	if !bytes.Equal(out, plaintext) {
+		t.Fatalf("ESSIV CBC decrypt mismatch")
+	}
+}
