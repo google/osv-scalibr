@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import (
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	homebrew "github.com/google/osv-scalibr/extractor/filesystem/os/homebrew/metadata"
 	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
 	macportsmeta "github.com/google/osv-scalibr/extractor/filesystem/os/macports/metadata"
@@ -143,6 +144,9 @@ var (
 		reflect.TypeFor[*spb.Package_WindowsOsVersionMetadata](): func(p *spb.Package) any {
 			return winmetadata.ToStruct(p.GetWindowsOsVersionMetadata())
 		},
+		reflect.TypeFor[*spb.Package_HomebrewMetadata](): func(p *spb.Package) any {
+			return homebrew.ToStruct(p.GetHomebrewMetadata())
+		},
 		reflect.TypeFor[*spb.Package_VscodeExtensionsMetadata](): func(p *spb.Package) any {
 			return vscodeextensions.ToStruct(p.GetVscodeExtensionsMetadata())
 		},
@@ -193,6 +197,7 @@ var (
 		(*nodeversionmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
+		(*homebrew.Metadata)(nil),
 		(*ctrdfs.Metadata)(nil),
 		(*vmlinuzmeta.Metadata)(nil),
 		(*ctrdruntime.Metadata)(nil),

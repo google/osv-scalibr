@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,6 +73,10 @@ func (*Enricher) Requirements() *plugin.Capabilities {
 		Network:       plugin.NetworkOnline,
 		OS:            plugin.OSLinux,
 		RunningSystem: true,
+		// Rust Reachability uses native toolchains and thus any scripts or build-time logic defined
+		// within the scanned project will run as-is. Make sure you trust the source code before
+		// enabling this plugin.
+		AllowUnsafePlugins: true,
 	}
 }
 
