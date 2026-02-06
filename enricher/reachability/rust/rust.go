@@ -73,6 +73,10 @@ func (*Enricher) Requirements() *plugin.Capabilities {
 		Network:       plugin.NetworkOnline,
 		OS:            plugin.OSLinux,
 		RunningSystem: true,
+		// Rust Reachability uses native toolchains and thus any scripts or build-time logic defined
+		// within the scanned project will run as-is. Make sure you trust the source code before
+		// enabling this plugin.
+		AllowUnsafePlugins: true,
 	}
 }
 

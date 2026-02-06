@@ -95,6 +95,18 @@ func TestValidateRequirements(t *testing.T) {
 			capabs:     &plugin.Capabilities{OS: plugin.OSMac},
 			wantErr:    nil,
 		},
+		{
+			desc:       "Unsafe plugins not allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: false},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "Unsafe plugins allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: true},
+			wantErr:    nil,
+		},
 	}
 
 	for _, tc := range testCases {

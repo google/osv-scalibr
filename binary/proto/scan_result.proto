@@ -78,6 +78,7 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
+  reserved 17 to 20, 29, 32, 43, 59;
   // Unique identifier for the package.
   string id = 60;
   // Human-readable name of the software, to be used for things like logging.
@@ -785,7 +786,11 @@ message SecretData {
     TelegramBotToken telegram_bot_api_token = 59;
     CursorAPIKey cursor_api_key = 60;
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
-    MistralAPIKey mistral_api_key = 62;
+    URLCredentials url_credentials = 62;
+    SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
+    SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
+    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials = 65;
+    MistralAPIKey mistral_api_key = 66;
   }
 
   message GCPSAK {
@@ -1105,8 +1110,35 @@ message SecretData {
     string token = 1;
   }
 
+  message SalesforceOAuth2AccessToken {
+    // Salesforce OAuth2 Access Token
+    string token = 1;
+  }
+
+  message SalesforceOAuth2ClientCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce instance URL
+    string url = 3;
+  }
+
+  message SalesforceOAuth2RefreshCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce OAuth2 Refresh Token
+    string refresh = 3;
+  }
+
   message CursorAPIKey {
     string key = 1;
+  }
+
+  message URLCredentials {
+    string url = 1;
   }
 }
 
