@@ -790,6 +790,7 @@ message SecretData {
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
     SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
     SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials = 65;
+    MistralAPIKey mistral_api_key = 66;
   }
 
   message GCPSAK {
@@ -829,6 +830,10 @@ message SecretData {
   }
 
   message PerplexityAPIKey {
+    string key = 1;
+  }
+
+  message MistralAPIKey {
     string key = 1;
   }
 
