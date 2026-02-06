@@ -45,6 +45,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
+  reserved 48 to 56;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
