@@ -93,6 +93,8 @@ message PluginSpecificConfig {
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
+    PerlCPANConfig cpan = 48;
+
     OSVLocalConfig osvlocal = 57;
   }
 }
@@ -137,6 +139,13 @@ message VMDKConfig {
 }
 
 message ChocolateyConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message PerlCPANConfig{
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.

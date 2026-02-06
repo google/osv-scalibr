@@ -55,6 +55,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -241,6 +242,8 @@ var (
 		cargolock.Name: {cargolock.New},
 		cargotoml.Name: {cargotoml.New},
 	}
+	// CPANSource extractors for Perl.
+	CPANSource = InitMap{cpan.Name: {cpan.New}}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.New},
@@ -427,6 +430,7 @@ var (
 		LuaSource,
 		Secrets,
 		MiscSource,
+		CPANSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -481,6 +485,7 @@ var (
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
 		"swift":      vals(SwiftSource),
+		"perl":       vals(CPANSource),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
