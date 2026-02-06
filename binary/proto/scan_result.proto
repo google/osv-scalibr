@@ -790,6 +790,7 @@ message SecretData {
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
     SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
     SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials = 65;
+    SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 66;
   }
 
   message GCPSAK {
@@ -1126,6 +1127,15 @@ message SecretData {
     string secret = 2;
     // Salesforce OAuth2 Refresh Token
     string refresh = 3;
+  }
+
+  message SalesforceOAuth2JWTCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce username (email)
+    string username = 2;
+    // Salesforce OAuth2 private key
+    string private_key = 3;
   }
 
   message CursorAPIKey {
