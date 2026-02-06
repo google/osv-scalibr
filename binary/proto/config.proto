@@ -95,6 +95,7 @@ message PluginSpecificConfig {
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
     OSVLocalConfig osvlocal = 57;
+    QCOW2Config qcow2 = 58;
   }
 }
 
@@ -450,4 +451,13 @@ message OSVLocalConfig {
   // The remote host to download zip files from, which will be suffixed with
   // "/<ecosystem>/all.zip"
   string remote_host = 3;
+}
+
+message QCOW2Config {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // The password the plugin requires to extract the encrypted .qcow2 file
+  string password = 2;
 }
