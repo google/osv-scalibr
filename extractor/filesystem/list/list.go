@@ -53,6 +53,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/manifesttoml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/projecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
@@ -248,6 +250,15 @@ var (
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.New},
 	}
+	// JuliaSource extractors for Julia.
+	JuliaSource = InitMap{
+		projecttoml.Name:  {noCFG(projecttoml.New)},
+		manifesttoml.Name: {noCFG(manifesttoml.New)},
+	}
+	// JuliaArtifact extractors for Julia.
+	JuliaArtifact = InitMap{
+		manifesttoml.Name: {noCFG(manifesttoml.New)},
+	}
 	// SBOM extractors.
 	SBOM = InitMap{
 		cdx.Name:  {cdx.New},
@@ -428,6 +439,7 @@ var (
 		RSource,
 		RubySource,
 		RustSource,
+		JuliaSource,
 		DotnetSource,
 		SwiftSource,
 		NimSource,
@@ -452,6 +464,7 @@ var (
 		Containers,
 		Secrets,
 		FFA,
+		JuliaArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -487,6 +500,7 @@ var (
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
+		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
 
 		"sbom":       vals(SBOM),
