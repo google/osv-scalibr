@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/extractor"
@@ -36,22 +35,20 @@ func TestToSPDX23(t *testing.T) {
 	uuid.SetRand(rand.New(rand.NewSource(1)))
 
 	testCases := []struct {
-		desc       string
-		scanResult *scalibr.ScanResult
-		config     spdx.Config
-		want       *v2_3.Document
+		desc   string
+		inv    inventory.Inventory
+		config spdx.Config
+		want   *v2_3.Document
 	}{
 		{
 			desc: "Package_with_no_custom_config",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:     "software",
-						Version:  "1.2.3",
-						PURLType: purl.TypePyPi,
-						Plugins:  []string{wheelegg.Name},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -134,15 +131,13 @@ func TestToSPDX23(t *testing.T) {
 		},
 		{
 			desc: "Package_with_custom_config",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:     "software",
-						Version:  "1.2.3",
-						PURLType: purl.TypePyPi,
-						Plugins:  []string{wheelegg.Name},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
 			},
 			config: spdx.Config{
 				DocumentName:      "Custom name",
@@ -239,22 +234,20 @@ func TestToSPDX23(t *testing.T) {
 		},
 		{
 			desc: "Packages_with_licenses",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:     "software-1",
-						Version:  "1.2.3",
-						PURLType: purl.TypePyPi,
-						Licenses: []string{"MIT"},
-						Plugins:  []string{wheelegg.Name},
-					}, {
-						Name:     "software-2",
-						Version:  "4.5.6",
-						PURLType: purl.TypePyPi,
-						Licenses: []string{"Apache-2.0", "MIT", "MADE UP"},
-						Plugins:  []string{wheelegg.Name},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "software-1",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Licenses: []string{"MIT"},
+					Plugins:  []string{wheelegg.Name},
+				}, {
+					Name:     "software-2",
+					Version:  "4.5.6",
+					PURLType: purl.TypePyPi,
+					Licenses: []string{"Apache-2.0", "MIT", "MADE UP"},
+					Plugins:  []string{wheelegg.Name},
+				}},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -377,19 +370,17 @@ func TestToSPDX23(t *testing.T) {
 		},
 		{
 			desc: "Package_with_invalid_PURLs_skipped",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{
-						// PURL field missing
-						{Plugins: []string{wheelegg.Name}},
-						// No name
-						{
-							Version: "1.2.3", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
-						},
-						// No version
-						{
-							Name: "software", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
-						},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{
+					// PURL field missing
+					{Plugins: []string{wheelegg.Name}},
+					// No name
+					{
+						Version: "1.2.3", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
+					},
+					// No version
+					{
+						Name: "software", PURLType: purl.TypePyPi, Plugins: []string{wheelegg.Name},
 					},
 				},
 			},
@@ -433,15 +424,13 @@ func TestToSPDX23(t *testing.T) {
 		},
 		{
 			desc: "Invalid_chars_in_package_name_replaced",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:     "softw@re&",
-						Version:  "1.2.3",
-						PURLType: purl.TypePyPi,
-						Plugins:  []string{wheelegg.Name},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "softw@re&",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -524,16 +513,14 @@ func TestToSPDX23(t *testing.T) {
 		},
 		{
 			desc: "One_location_reported",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:      "software",
-						Version:   "1.2.3",
-						PURLType:  purl.TypePyPi,
-						Plugins:   []string{wheelegg.Name},
-						Locations: []string{"/file1"},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:      "software",
+					Version:   "1.2.3",
+					PURLType:  purl.TypePyPi,
+					Plugins:   []string{wheelegg.Name},
+					Locations: []string{"/file1"},
+				}},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -616,16 +603,14 @@ func TestToSPDX23(t *testing.T) {
 		},
 		{
 			desc: "Multiple_locations_reported",
-			scanResult: &scalibr.ScanResult{
-				Inventory: inventory.Inventory{
-					Packages: []*extractor.Package{{
-						Name:      "software",
-						Version:   "1.2.3",
-						Plugins:   []string{wheelegg.Name},
-						PURLType:  purl.TypePyPi,
-						Locations: []string{"/file1", "/file2", "/file3"},
-					}},
-				},
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:      "software",
+					Version:   "1.2.3",
+					Plugins:   []string{wheelegg.Name},
+					PURLType:  purl.TypePyPi,
+					Locations: []string{"/file1", "/file2", "/file3"},
+				}},
 			},
 			want: &v2_3.Document{
 				SPDXVersion:       "SPDX-2.3",
@@ -710,12 +695,12 @@ func TestToSPDX23(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := converter.ToSPDX23(tc.scanResult, tc.config)
+			got := converter.ToSPDX23(tc.inv, tc.config)
 			// Can't mock time.Now() so skip verifying the timestamp.
 			tc.want.CreationInfo.Created = got.CreationInfo.Created
 
 			if diff := cmp.Diff(tc.want, got, cmp.AllowUnexported(v2_3.Package{})); diff != "" {
-				t.Errorf("converter.ToSPDX23(%v): unexpected diff (-want +got):\n%s", tc.scanResult, diff)
+				t.Errorf("converter.ToSPDX23(%v): unexpected diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})
 	}

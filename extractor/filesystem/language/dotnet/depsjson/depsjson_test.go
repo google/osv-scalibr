@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,41 +33,9 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     depsjson.Config
-		wantCfg depsjson.Config
-	}{
-		{
-			name: "default",
-			cfg:  depsjson.DefaultConfig(),
-			wantCfg: depsjson.Config{
-				MaxFileSizeBytes: 10 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: depsjson.Config{
-				MaxFileSizeBytes: 10,
-			},
-			wantCfg: depsjson.Config{
-				MaxFileSizeBytes: 10,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := depsjson.New(tt.cfg)
-			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
-				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -132,10 +100,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = depsjson.New(depsjson.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := depsjson.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("New() unexpected error: %v", err)
+			}
+			e.(*depsjson.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -164,7 +133,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		cfg              depsjson.Config
+		maxFileSizeBytes int64
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -255,10 +224,11 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = depsjson.New(depsjson.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: 100,
-			})
+			e, err := depsjson.New(&cpb.PluginConfig{MaxFileSizeBytes: 100})
+			if err != nil {
+				t.Fatalf("New() unexpected error: %v", err)
+			}
+			e.(*depsjson.Extractor).Stats = collector
 
 			d := t.TempDir()
 

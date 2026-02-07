@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,6 +69,13 @@ func TestScan(t *testing.T) {
 	}
 	got := findings.PackageVulns[0]
 	want := &inventory.PackageVuln{
+		Package: &extractor.Package{
+			Name:      binaryName,
+			Version:   "1.2.3",
+			PURLType:  purl.TypeGolang,
+			Locations: []string{filepath.Join("testdata", binaryName)},
+			Plugins:   []string{gobinary.Name},
+		},
 		Vulnerability: &osvpb.Vulnerability{
 			Id:        "GO-2022-1144",
 			Modified:  &timestamppb.Timestamp{},

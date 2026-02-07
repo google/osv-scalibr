@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -64,7 +66,10 @@ func TestFileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := onepasswordconnecttoken.Extractor{}
+			e, err := onepasswordconnecttoken.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("onepasswordconnecttoken.New failed: %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
@@ -117,7 +122,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extr := onepasswordconnecttoken.Extractor{}
+			extr, err := onepasswordconnecttoken.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("onepasswordconnecttoken.New failed: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
 			defer extracttest.CloseTestScanInput(t, scanInput)

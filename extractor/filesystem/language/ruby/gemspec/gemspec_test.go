@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -92,12 +94,11 @@ func TestFileRequired(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = gemspec.New(
-				gemspec.Config{
-					Stats:            collector,
-					MaxFileSizeBytes: test.maxFileSizeBytes,
-				},
-			)
+			e, err := gemspec.New(&cpb.PluginConfig{MaxFileSizeBytes: test.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("gemspec.New(%v) error: %v", test.maxFileSizeBytes, err)
+			}
+			e.(*gemspec.Extractor).Stats = collector
 
 			// Set default size if not provided.
 			fileSizeBytes := test.fileSizeBytes
@@ -353,7 +354,11 @@ func TestExtract(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = gemspec.New(gemspec.Config{Stats: collector})
+			e, err := gemspec.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("gemspec.New() error: %v", err)
+			}
+			e.(*gemspec.Extractor).Stats = collector
 
 			r, err := os.Open(test.path)
 			defer func() {

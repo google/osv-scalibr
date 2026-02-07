@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -86,10 +88,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := cargoauditable.New(cargoauditable.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := cargoauditable.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("cargoauditable.New(%v) error: %v", tt.maxFileSizeBytes, err)
+			}
+			e.(*cargoauditable.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -230,7 +233,11 @@ func TestExtract(t *testing.T) {
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: f}
 
-			e := cargoauditable.New(cargoauditable.Config{Stats: collector})
+			e, err := cargoauditable.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("cargoauditable.New() error: %v", err)
+			}
+			e.(*cargoauditable.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
