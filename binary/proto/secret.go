@@ -67,6 +67,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	velessupabase "github.com/google/osv-scalibr/veles/secrets/supabase"
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
@@ -259,6 +260,12 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
+	case velessupabase.PAT:
+		return supabasePATToProto(t), nil
+	case velessupabase.ProjectSecretKey:
+		return supabaseProjectSecretKeyToProto(t), nil
+	case velessupabase.ServiceRoleJWT:
+		return supabaseServiceRoleJWTToProto(t), nil
 	case velescircleci.PersonalAccessToken:
 		return circleCIPersonalAccessTokenToProto(t), nil
 	case velescircleci.ProjectToken:
@@ -1229,6 +1236,19 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return salesforceOAuth2AccessTokenToStruct(s.GetSalesforceOauth2AccessToken()), nil
 	case *spb.SecretData_SalesforceOauth2ClientCredentials:
 		return salesforceOAuth2ClientCredentialsToStruct(s.GetSalesforceOauth2ClientCredentials()), nil
+	case *spb.SecretData_SupabasePat:
+		return velessupabase.PAT{
+			Token: s.GetSupabasePat().GetToken(),
+		}, nil
+	case *spb.SecretData_SupabaseProjectSecretKey_:
+		return velessupabase.ProjectSecretKey{
+			Key:        s.GetSupabaseProjectSecretKey().GetKey(),
+			ProjectRef: s.GetSupabaseProjectSecretKey().GetProjectRef(),
+		}, nil
+	case *spb.SecretData_SupabaseServiceRoleJwt:
+		return velessupabase.ServiceRoleJWT{
+			Token: s.GetSupabaseServiceRoleJwt().GetToken(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1439,6 +1459,37 @@ func salesforceOAuth2RefreshCredentialsToStruct(credsPB *spb.SecretData_Salesfor
 func salesforceOAuth2AccessTokenToStruct(tPB *spb.SecretData_SalesforceOAuth2AccessToken) salesforceoauth2access.Token {
 	return salesforceoauth2access.Token{
 		Token: tPB.GetToken(),
+	}
+}
+
+func supabasePATToProto(s velessupabase.PAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SupabasePat{
+			SupabasePat: &spb.SecretData_SupabasePAT{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func supabaseProjectSecretKeyToProto(s velessupabase.ProjectSecretKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SupabaseProjectSecretKey_{
+			SupabaseProjectSecretKey: &spb.SecretData_SupabaseProjectSecretKey{
+				Key:        s.Key,
+				ProjectRef: s.ProjectRef,
+			},
+		},
+	}
+}
+
+func supabaseServiceRoleJWTToProto(s velessupabase.ServiceRoleJWT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SupabaseServiceRoleJwt{
+			SupabaseServiceRoleJwt: &spb.SecretData_SupabaseServiceRoleJWT{
+				Token: s.Token,
+			},
+		},
 	}
 }
 
