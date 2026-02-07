@@ -149,6 +149,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/supabase"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
@@ -357,6 +358,9 @@ var (
 		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{supabase.NewPATDetector(), "secrets/supabasepat", 0},
+		{supabase.NewProjectSecretKeyDetector(), "secrets/supabaseprojectsecretkey", 0},
+		{supabase.NewServiceRoleJWTDetector(), "secrets/supabaseservicerolejwt", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
