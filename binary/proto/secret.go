@@ -71,6 +71,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -259,16 +260,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
-	case velescircleci.PersonalAccessToken:
-		return circleCIPersonalAccessTokenToProto(t), nil
-	case velescircleci.ProjectToken:
-		return circleCIProjectTokenToProto(t), nil
-	case salesforceoauth2refresh.Credentials:
-		return salesforceOAuth2RefreshCredentialsToProto(t), nil
-	case salesforceoauth2access.Token:
-		return salesforceOAuth2AccessTokenToProto(t), nil
-	case salesforceoauth2client.Credentials:
-		return salesforceOAuth2ClientCredentialsToProto(t), nil
+	case qwenpat.QwenPAT:
+		return qwenPATToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -381,6 +374,16 @@ func pypiAPITokenToProto(s pypiapitoken.PyPIAPIToken) *spb.SecretData {
 		Secret: &spb.SecretData_Pypi{
 			Pypi: &spb.SecretData_PyPIAPIToken{
 				Token: s.Token,
+			},
+		},
+	}
+}
+
+func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_QwenPat_{
+			QwenPat: &spb.SecretData_QwenPat{
+				Pat: s.Pat,
 			},
 		},
 	}
@@ -1104,6 +1107,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return hashicorpVaultAppRoleCredentialsToStruct(s.GetHashicorpVaultAppRoleCredentials()), nil
 	case *spb.SecretData_GcpApiKey:
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
+	case *spb.SecretData_QwenPat_:
+		return qwenPATToStruct(s.GetQwenPat()), nil
 	case *spb.SecretData_Hugginface:
 		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
 	case *spb.SecretData_StripeSecretKey_:
@@ -1279,6 +1284,12 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
+		Pat: kPB.GetPat(),
+	}
+}
+
+func qwenPATToStruct(kPB *spb.SecretData_QwenPat) qwenpat.QwenPAT {
+	return qwenpat.QwenPAT{
 		Pat: kPB.GetPat(),
 	}
 }
