@@ -98,9 +98,8 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := cloudflareapitoken.NewValidator(
-				cloudflareapitoken.WithClient(client),
-			)
+			validator := cloudflareapitoken.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test token
 			token := cloudflareapitoken.CloudflareAPIToken{Token: tc.Token}
@@ -132,9 +131,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := cloudflareapitoken.NewValidator(
-		cloudflareapitoken.WithClient(client),
-	)
+	validator := cloudflareapitoken.NewValidator()
+	validator.HTTPC = client
 
 	// Create a test token
 	token := cloudflareapitoken.CloudflareAPIToken{Token: validatorTestToken}
@@ -166,9 +164,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := cloudflareapitoken.NewValidator(
-		cloudflareapitoken.WithClient(client),
-	)
+	validator := cloudflareapitoken.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string

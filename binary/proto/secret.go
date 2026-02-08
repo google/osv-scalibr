@@ -1252,7 +1252,6 @@ func cloudflareAPITokenToStruct(kPB *spb.SecretData_CloudflareAPIToken) cloudfla
 	}
 }
 
-
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),

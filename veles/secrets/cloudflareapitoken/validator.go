@@ -15,70 +15,28 @@
 package cloudflareapitoken
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 
-	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates Cloudflare API Tokens via the Cloudflare API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
+type cat = CloudflareAPIToken
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
-	}
-}
-
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given CloudflareAPIToken is valid.
-//
+// NewValidator creates a new Cloudflare API Token Validator.
 // It performs a GET request to the Cloudflare API zones endpoint
 // using the API token in the Authorization header. If the request returns
 // HTTP 200, the token is considered valid. If 403 Forbidden, the token
 // is invalid. Other errors return ValidationFailed.
 //
 // See: https://developers.cloudflare.com/api/resources/zones/methods/list/
-func (v *Validator) Validate(ctx context.Context, token CloudflareAPIToken) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://api.cloudflare.com/client/v4/zones",
-		nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token.Token)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusForbidden:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+func NewValidator() *sv.Validator[cat] {
+	return &sv.Validator[cat]{
+		Endpoint:   "https://api.cloudflare.com/client/v4/zones",
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s cat) map[string]string {
+			return map[string]string{"Authorization": "Bearer " + s.Token}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusForbidden},
 	}
 }
