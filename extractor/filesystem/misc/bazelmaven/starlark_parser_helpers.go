@@ -243,9 +243,9 @@ func findLoadStatements(file *build.File) loadMapping {
 			source := loadStmt.Module.Value
 
 			// Process all the rules loaded from this source
-			for i := range loadStmt.To {
+			for _, loadedRule := range loadStmt.To {
 				// Extract the name of the loaded rule
-				ruleName := loadStmt.To[i].Name
+				ruleName := loadedRule.Name
 				// Map the rule name to its source path
 				loadMapping[ruleName] = source
 			}

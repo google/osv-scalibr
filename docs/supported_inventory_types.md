@@ -118,12 +118,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type              | Extractor Plugin    |
-|-------------------|---------------------|
-| Wordpress plugins | `wordpress/plugins` |
-| VSCode extensions | `vscode/extensions` |
-| Chrome extensions | `chrome/extensions` |
-| Bazel Build Files | `os/bazelmaven`     |
+| Type                               | Extractor Plugin    |
+|------------------------------------|---------------------|
+| Wordpress plugins                  | `wordpress/plugins` |
+| VSCode extensions                  | `vscode/extensions` |
+| Chrome extensions                  | `chrome/extensions` |
+| Maven entries in Bazel build files | `os/bazelmaven`     |
 
 ## Detectors
 

@@ -176,7 +176,7 @@ func FindAllMavenDependencies(input []byte) (RuleDependencies, error) {
 									artifact := getAttributeStringValue(r, f, "artifact")
 									version := getAttributeStringValue(r, f, "version")
 									allDeps["maven.artifact"] = append(allDeps["maven.artifact"], bazelmetadata.Metadata{
-										Name:       group + ":" + artifact + ":" + version,
+										Name:       group + ":" + artifact,
 										GroupID:    group,
 										ArtifactID: artifact,
 										Version:    version,
@@ -200,9 +200,8 @@ func ExtractMavenArtifactInfo(artifacts []string) []bazelmetadata.Metadata {
 	for _, artifact := range artifacts {
 		parts := strings.Split(artifact, ":")
 
-		dep := bazelmetadata.Metadata{
-			Name: artifact,
-		}
+		dep := bazelmetadata.Metadata{}
+		dep.Name = parts[0] + ":" + parts[1]
 
 		if len(parts) >= 3 {
 			dep.GroupID = parts[0]
