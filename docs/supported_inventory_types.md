@@ -121,6 +121,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| CircleCI Personal Access Token              | `secrets/circlecipat`                  |
+| CircleCI Project Token                      | `secrets/circleciproject`              |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Cursor API key                              | `secrets/cursorapikey`                 |

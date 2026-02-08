@@ -3313,7 +3313,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xb5\x18\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xbb\x18\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -3369,7 +3369,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x11wordpress_plugins\x18. \x01(\v2\x1f.scalibr.WordpressPluginsConfigH\x00R\x10wordpressPlugins\x122\n" +
 	"\amariadb\x18/ \x01(\v2\x16.scalibr.MariadbConfigH\x00R\amariadb\x125\n" +
 	"\bosvlocal\x189 \x01(\v2\x17.scalibr.OSVLocalConfigH\x00R\bosvlocalB\b\n" +
-	"\x06config\"B\n" +
+	"\x06configJ\x04\b0\x109\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
 	"\x11GovulncheckConfig\x12/\n" +

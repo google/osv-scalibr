@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	velescircleci "github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
@@ -50,6 +51,7 @@ import (
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
+	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -206,6 +208,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return pgpassToProto(t), nil
 	case huggingfaceapikey.HuggingfaceAPIKey:
 		return huggingfaceAPIKeyToProto(t), nil
+	case velesmistralapikey.MistralAPIKey:
+		return mistralAPIKeyToProto(t), nil
 	case velesstripeapikeys.StripeSecretKey:
 		return stripeSecretKeyToProto(t), nil
 	case velesstripeapikeys.StripeRestrictedKey:
@@ -258,6 +262,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
+	case velescircleci.PersonalAccessToken:
+		return circleCIPersonalAccessTokenToProto(t), nil
+	case velescircleci.ProjectToken:
+		return circleCIProjectTokenToProto(t), nil
 	case salesforceoauth2refresh.Credentials:
 		return salesforceOAuth2RefreshCredentialsToProto(t), nil
 	case salesforceoauth2access.Token:
@@ -540,6 +548,16 @@ func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData
 	}
 }
 
+func mistralAPIKeyToProto(s velesmistralapikey.MistralAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_MistralApiKey{
+			MistralApiKey: &spb.SecretData_MistralAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
 func grokXAIAPIKeyToProto(s velesgrokxaiapikey.GrokXAIAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GrokXaiApiKey{
@@ -731,6 +749,26 @@ func openaiAPIKeyToProto(key string) *spb.SecretData {
 		Secret: &spb.SecretData_OpenaiApiKey{
 			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
 				Key: key,
+			},
+		},
+	}
+}
+
+func circleCIPersonalAccessTokenToProto(s velescircleci.PersonalAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CircleciPersonalAccessToken{
+			CircleciPersonalAccessToken: &spb.SecretData_CircleCIPersonalAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func circleCIProjectTokenToProto(s velescircleci.ProjectToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CircleciProjectToken{
+			CircleciProjectToken: &spb.SecretData_CircleCIProjectToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -1191,6 +1229,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
+		}, nil
+	case *spb.SecretData_CircleciPersonalAccessToken:
+		return velescircleci.PersonalAccessToken{
+			Token: s.GetCircleciPersonalAccessToken().GetToken(),
+		}, nil
+	case *spb.SecretData_CircleciProjectToken:
+		return velescircleci.ProjectToken{
+			Token: s.GetCircleciProjectToken().GetToken(),
 		}, nil
 	case *spb.SecretData_SalesforceOauth2RefreshCredentials:
 		return salesforceOAuth2RefreshCredentialsToStruct(s.GetSalesforceOauth2RefreshCredentials()), nil
