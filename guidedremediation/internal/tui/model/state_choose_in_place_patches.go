@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ func newStateChooseInPlacePatches(m Model, inPlaceState stateInPlaceResult) stat
 	for idx, p := range m.lockfilePatches {
 		for _, fixedVuln := range p.Fixed {
 			s.patchIdx = append(s.patchIdx, idx)
-			vulnIdx := slices.IndexFunc(m.lockfileGraph.Vulns, func(v resolution.Vulnerability) bool { return v.OSV.ID == fixedVuln.ID })
+			vulnIdx := slices.IndexFunc(m.lockfileGraph.Vulns, func(v resolution.Vulnerability) bool { return v.OSV.Id == fixedVuln.ID })
 			if vulnIdx == -1 {
 				// something went wrong, just ignore this.
 				s.vulnsInfos = append(s.vulnsInfos, components.TextView(""))

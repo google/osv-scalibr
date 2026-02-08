@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ func NewMockHTTPServer(t *testing.T) *MockHTTPServer {
 	t.Helper()
 	mock := &MockHTTPServer{response: make(map[string][]byte)}
 	mock.Server = httptest.NewServer(mock)
-	t.Cleanup(func() { mock.Server.Close() })
+	t.Cleanup(func() { mock.Close() })
 
 	return mock
 }

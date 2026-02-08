@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayer"
 	"github.com/google/osv-scalibr/extractor"
+	ubextr "github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
@@ -90,27 +91,71 @@ func TestHashSetFilter(t *testing.T) {
 				"var/lib/dpkg/info/not-a-list.txt": "/usr/bin/ignored",
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1":   {Name: "binary1"},
-				"usr/lib/library1":  {Name: "library1"},
-				"bin/binary2":       {Name: "binary2"},
-				"usr/bin/unknown1":  {Name: "unknown1"},
-				"opt/google/binary": {Name: "google-binary"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"usr/lib/library1": {Name: "library1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"bin/binary2": {Name: "binary2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"usr/bin/unknown1": {Name: "unknown1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"opt/google/binary": {Name: "google-binary",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/unknown1":  {Name: "unknown1"},
-				"opt/google/binary": {Name: "google-binary"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							LocalFilesystem: true,
+						},
+					}},
+				"usr/lib/library1": {Name: "library1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							LocalFilesystem: true,
+						},
+					}},
+				"bin/binary2": {Name: "binary2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							LocalFilesystem: true,
+						},
+					}},
+				"usr/bin/unknown1": {Name: "unknown1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"opt/google/binary": {Name: "google-binary",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 		},
 		{
 			name:  "dpkg_info_dir_does_not_exist",
 			files: map[string]string{},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
-			wantErr: true,
 		},
 		{
 			name: "empty_list_file",
@@ -118,10 +163,16 @@ func TestHashSetFilter(t *testing.T) {
 				"var/lib/dpkg/info/empty.list": "",
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/binary1": {Name: "binary1"},
+				"usr/bin/binary1": {Name: "binary1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 		},
 		{
@@ -137,13 +188,46 @@ func TestHashSetFilter(t *testing.T) {
 				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/symlink1":       {Name: "symlink1"},
-				"usr/bin/actual_binary":  {Name: "actual_binary"},
-				"path/to/another/actual": {Name: "another_actual"},
-				"usr/bin/not_in_list":    {Name: "not_in_list"},
+				"usr/bin/symlink1": {Name: "symlink1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"usr/bin/actual_binary": {Name: "actual_binary",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"path/to/another/actual": {Name: "another_actual",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"usr/bin/not_in_list": {Name: "not_in_list",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/not_in_list": {Name: "not_in_list"},
+				"usr/bin/symlink1": {Name: "symlink1",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							LocalFilesystem: true,
+						},
+					}},
+				"usr/bin/actual_binary": {Name: "actual_binary",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							LocalFilesystem: true,
+						},
+					}},
+				"path/to/another/actual": {Name: "another_actual",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							LocalFilesystem: true,
+						},
+					}},
+				"usr/bin/not_in_list": {Name: "not_in_list",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 		},
 		{
@@ -158,11 +242,26 @@ func TestHashSetFilter(t *testing.T) {
 				})
 			},
 			unknownBinariesSet: map[string]*extractor.Package{
-				"usr/bin/symlink2": {Name: "symlink2"},
-				"usr/bin/unknown2": {Name: "unknown2"},
+				"usr/bin/symlink2": {Name: "symlink2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
+				"usr/bin/unknown2": {Name: "unknown2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 			want: map[string]*extractor.Package{
-				"usr/bin/unknown2": {Name: "unknown2"},
+				"usr/bin/symlink2": {Name: "symlink2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{
+							LocalFilesystem: true,
+						},
+					}},
+				"usr/bin/unknown2": {Name: "unknown2",
+					Metadata: &ubextr.UnknownBinaryMetadata{
+						Attribution: ubextr.Attribution{},
+					}},
 			},
 		},
 	}

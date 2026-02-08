@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,18 @@ import (
 	"syscall"
 	"time"
 )
+
+type fakeFile struct {
+	perms fs.FileMode
+	uid   uint32
+	gid   uint32
+}
+
+type fakeFileInfo struct {
+	perms fs.FileMode
+	uid   uint32
+	gid   uint32
+}
 
 func (f *fakeFS) Open(name string) (fs.File, error) {
 	if name == "etc/passwd" {

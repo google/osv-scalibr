@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,12 +27,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
-	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
-	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
-	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
-	perplexityapikey "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
-	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 )
 
 const (
@@ -47,6 +41,7 @@ var (
 		".cfg":       true,
 		".env":       true,
 		".html":      true,
+		".ini":       true,
 		".ipynb":     true,
 		".json":      true,
 		".log":       true,
@@ -57,37 +52,20 @@ var (
 		".txt":       true,
 		".xml":       true,
 		".yaml":      true,
+		".pem":       true,
+		".crt":       true,
+		".key":       true,
+		".der":       true,
+		".cer":       true,
+		".pypirc":    true,
 	}
-
-	defaultEngine *veles.DetectionEngine
 )
-
-func init() { //nolint:gochecknoinits
-	var err error
-	defaultEngine, err = veles.NewDetectionEngine([]veles.Detector{
-		anthropicapikey.NewDetector(),
-		gcpsak.NewDetector(),
-		dockerhubpat.NewDetector(),
-		perplexityapikey.NewDetector(),
-		grokxaiapikey.NewAPIKeyDetector(),
-		grokxaiapikey.NewManagementKeyDetector(),
-		privatekey.NewDetector(),
-	})
-	if err != nil {
-		panic(fmt.Sprintf("Unable to initialize default Veles engine: %v", err))
-	}
-}
 
 // Extractor extracts secrets from the filesystem using the Veles secret
 // scanning library.
 // Other than most extractors, it adds Secrets to the Inventory, not Packages.
 type Extractor struct {
 	e *veles.DetectionEngine
-}
-
-// New creates a new Extractor using the default Veles detectors.
-func New() filesystem.Extractor {
-	return &Extractor{e: defaultEngine}
 }
 
 // NewWithEngine creates a new Extractor that uses the specified

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import (
 	"slices"
 
 	"deps.dev/util/resolve"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/common"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/relax/relaxer"
-	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 )
@@ -34,9 +34,9 @@ import (
 // returning the list of unique possible patches.
 // Vulnerabilities are resolved by relaxing version constraints of the direct dependencies that bring in the vulnerable packages.
 // If a patch introduces new vulnerabilities, additional relaxations are attempted for the new vulnerabilities.
-func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) (common.PatchResult, error) {
+func ComputePatches(ctx context.Context, cl resolve.Client, ve enricher.Enricher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) (common.PatchResult, error) {
 	patchFn := func(vulnIDs []string) common.StrategyResult {
-		patched, err := patchVulns(ctx, cl, vm, resolved, vulnIDs, opts)
+		patched, err := patchVulns(ctx, cl, ve, resolved, vulnIDs, opts)
 		return common.StrategyResult{
 			VulnIDs:  vulnIDs,
 			Resolved: patched,
@@ -48,7 +48,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.Vulnerabi
 
 // patchVulns tries to fix all vulns in vulnIDs by relaxing direct dependency versions.
 // returns ErrPatchImpossible if all cannot be patched.
-func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) (*remediation.ResolvedManifest, error) {
+func patchVulns(ctx context.Context, cl resolve.Client, ve enricher.Enricher, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) (*remediation.ResolvedManifest, error) {
 	resolved = &remediation.ResolvedManifest{
 		Manifest:      resolved.Manifest.Clone(),
 		ResolvedGraph: resolved.ResolvedGraph,
@@ -61,7 +61,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 	toRelax := reqsToRelax(ctx, cl, resolved, vulnIDs, opts)
 	for len(toRelax) > 0 {
 		for _, req := range toRelax {
-			if opts.UpgradeConfig.Get(req.VersionKey.Name) == upgrade.None {
+			if opts.UpgradeConfig.Get(req.Name) == upgrade.None {
 				return nil, common.ErrPatchImpossible
 			}
 			newVer, ok := reqRelaxer.Relax(ctx, cl, req, opts.UpgradeConfig)
@@ -79,7 +79,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 		if err != nil {
 			return nil, err
 		}
-		resolved.UnfilteredVulns, err = resolution.FindVulnerabilities(ctx, vm, resolved.Manifest.Groups(), resolved.Graph)
+		resolved.UnfilteredVulns, err = resolution.FindVulnerabilities(ctx, ve, resolved.Manifest.Groups(), resolved.Graph)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 func reqsToRelax(ctx context.Context, cl resolve.Client, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) []resolve.RequirementVersion {
 	var toRelax []resolve.RequirementVersion
 	for _, v := range resolved.Vulns {
-		if !slices.Contains(vulnIDs, v.OSV.ID) {
+		if !slices.Contains(vulnIDs, v.OSV.Id) {
 			continue
 		}
 		// Only relax dependencies if their distance is less than MaxDepth
@@ -118,7 +118,7 @@ func reqsToRelax(ctx context.Context, cl resolve.Client, resolved *remediation.R
 	}
 
 	cmpFn := func(a, b resolve.RequirementVersion) int {
-		if cmp := a.VersionKey.Compare(b.VersionKey); cmp != 0 {
+		if cmp := a.Compare(b.VersionKey); cmp != 0 {
 			return cmp
 		}
 		return a.Type.Compare(b.Type)

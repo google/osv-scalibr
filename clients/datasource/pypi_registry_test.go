@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -203,7 +203,7 @@ func TestPyPILocalRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse URL %s: %v", srv.URL, err)
 	}
-	filePath := filepath.Join(tempDir, parsed.Hostname(), "beautifulsoup4")
+	filePath := filepath.Join(tempDir, "pypi", parsed.Hostname(), "beautifulsoup4")
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)

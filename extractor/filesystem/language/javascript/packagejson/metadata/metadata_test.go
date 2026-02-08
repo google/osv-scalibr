@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ func TestPersonString(t *testing.T) {
 			want:  "",
 		},
 		{
-			desc: "person with no name",
+			desc: "person_with_no_name",
 			input: &metadata.Person{
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
@@ -144,7 +144,7 @@ func TestPersonString(t *testing.T) {
 			want: "",
 		},
 		{
-			desc: "person with no email",
+			desc: "person_with_no_email",
 			input: &metadata.Person{
 				Name: "Developer",
 				URL:  "http://dev.blog.com",
@@ -152,7 +152,7 @@ func TestPersonString(t *testing.T) {
 			want: "Developer (http://dev.blog.com)",
 		},
 		{
-			desc: "person with no url",
+			desc: "person_with_no_url",
 			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
@@ -160,7 +160,7 @@ func TestPersonString(t *testing.T) {
 			want: "Developer <dev@corp.com>",
 		},
 		{
-			desc: "person object",
+			desc: "person_object",
 			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
@@ -243,13 +243,13 @@ func TestSetProto(t *testing.T) {
 		want *pb.Package
 	}{
 		{
-			desc: "nil metadata",
+			desc: "nil_metadata",
 			m:    nil,
 			p:    &pb.Package{Name: "some-package"},
 			want: &pb.Package{Name: "some-package"},
 		},
 		{
-			desc: "nil package",
+			desc: "nil_package",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -260,12 +260,13 @@ func TestSetProto(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "set metadata",
+			desc: "set_metadata",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
+				Source: metadata.Unknown,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -273,17 +274,19 @@ func TestSetProto(t *testing.T) {
 				Metadata: &pb.Package_JavascriptMetadata{
 					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
 						Author: "some-author <some-author@google.com>",
+						Source: pb.PackageSource_UNKNOWN,
 					},
 				},
 			},
 		},
 		{
-			desc: "override metadata",
+			desc: "override_metadata",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-other-author",
 					Email: "some-other-author@google.com",
 				},
+				Source: metadata.Unknown,
 			},
 			p: &pb.Package{
 				Name: "some-package",
@@ -298,12 +301,13 @@ func TestSetProto(t *testing.T) {
 				Metadata: &pb.Package_JavascriptMetadata{
 					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
 						Author: "some-other-author <some-other-author@google.com>",
+						Source: pb.PackageSource_UNKNOWN,
 					},
 				},
 			},
 		},
 		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -329,7 +333,7 @@ func TestSetProto(t *testing.T) {
 						Email: "second-contributor@google.com",
 					},
 				},
-				FromNPMRepository: true,
+				Source: metadata.PublicRegistry,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -345,7 +349,67 @@ func TestSetProto(t *testing.T) {
 							"first-contributor <first-contributor@google.com>",
 							"second-contributor <second-contributor@google.com>",
 						},
-						FromNpmRepository: true,
+						Source: pb.PackageSource_PUBLIC_REGISTRY,
+					},
+				},
+			},
+		},
+		{
+			desc: "set_public_registry_NPMResolutionSource",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.PublicRegistry,
+			},
+			p: &pb.Package{Name: "some-package"},
+			want: &pb.Package{
+				Name: "some-package",
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+						Author: "some-author <some-author@google.com>",
+						Source: pb.PackageSource_PUBLIC_REGISTRY,
+					},
+				},
+			},
+		},
+		{
+			desc: "set_other_NPMResolutionSource",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Other,
+			},
+			p: &pb.Package{Name: "some-package"},
+			want: &pb.Package{
+				Name: "some-package",
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+						Author: "some-author <some-author@google.com>",
+						Source: pb.PackageSource_OTHER,
+					},
+				},
+			},
+		},
+		{
+			desc: "set_local_NPMResolutionSource",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Local,
+			},
+			p: &pb.Package{Name: "some-package"},
+			want: &pb.Package{
+				Name: "some-package",
+				Metadata: &pb.Package_JavascriptMetadata{
+					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
+						Author: "some-author <some-author@google.com>",
+						Source: pb.PackageSource_LOCAL,
 					},
 				},
 			},
@@ -389,7 +453,7 @@ func TestToStruct(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author",
 			},
@@ -397,10 +461,11 @@ func TestToStruct(t *testing.T) {
 				Author: &metadata.Person{
 					Name: "some-author",
 				},
+				Source: metadata.Unknown,
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
 				Maintainers: []string{
@@ -411,7 +476,7 @@ func TestToStruct(t *testing.T) {
 					"first-contributor <first-contributor@google.com>",
 					"second-contributor <second-contributor@google.com>",
 				},
-				FromNpmRepository: true,
+				Source: pb.PackageSource_PUBLIC_REGISTRY,
 			},
 			want: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
@@ -438,7 +503,49 @@ func TestToStruct(t *testing.T) {
 						Email: "second-maintainer@google.com",
 					},
 				},
-				FromNPMRepository: true,
+				Source: metadata.PublicRegistry,
+			},
+		},
+		{
+			desc: "set_public_registry_NPMResolutionSource",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_PUBLIC_REGISTRY,
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.PublicRegistry,
+			},
+		},
+		{
+			desc: "set_other_NPMResolutionSource",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_OTHER,
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Other,
+			},
+		},
+		{
+			desc: "set_local_NPMResolutionSource",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_LOCAL,
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Local,
 			},
 		},
 	}

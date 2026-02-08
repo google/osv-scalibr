@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ type Validator[S Secret] interface {
 //
 // There can only be one Validator[S] for each concrete S.
 type ValidationEngine struct {
-	vs map[reflect.Type]validator
+	vs map[reflect.Type]GenericValidator
 }
 
 // ValidationEngineOption is an option that can be used to configure a
@@ -77,6 +77,14 @@ func WithValidator[S Secret](v Validator[S]) ValidationEngineOption {
 	}
 }
 
+// WithGenericValidator configures the ValidationEngine to use the provided
+// type-erased GenericValidator with the secret type explicitly specified.
+func WithGenericValidator(v GenericValidator, typ reflect.Type) ValidationEngineOption {
+	return func(e *ValidationEngine) {
+		AddGenericValidator(e, v, typ)
+	}
+}
+
 // NewValidationEngine creates a new ValidationEngine that bundles a number of
 // Validators together.
 //
@@ -86,7 +94,7 @@ func WithValidator[S Secret](v Validator[S]) ValidationEngineOption {
 // Validators for the same Secret type.
 func NewValidationEngine(opts ...ValidationEngineOption) *ValidationEngine {
 	e := &ValidationEngine{
-		vs: make(map[reflect.Type]validator),
+		vs: make(map[reflect.Type]GenericValidator),
 	}
 	for _, opt := range opts {
 		opt(e)
@@ -99,8 +107,15 @@ func NewValidationEngine(opts ...ValidationEngineOption) *ValidationEngine {
 // Returns whether there was already a Validator in place that now got replaced.
 func AddValidator[S Secret](e *ValidationEngine, v Validator[S]) bool {
 	typ := reflect.TypeFor[S]()
+	return AddGenericValidator(e, &wrapped[S]{v: v}, typ)
+}
+
+// AddGenericValidator adds a new GenericValidator for a concrete Secret type typ to the engine.
+//
+// Returns whether there was already a GenericValidator in place that now got replaced.
+func AddGenericValidator(e *ValidationEngine, v GenericValidator, typ reflect.Type) bool {
 	_, replaced := e.vs[typ]
-	e.vs[typ] = &wrapped[S]{v: v}
+	e.vs[typ] = v
 	return replaced
 }
 
@@ -124,10 +139,14 @@ func (e *ValidationEngine) Validate(ctx context.Context, s Secret) (ValidationSt
 	return v.Validate(ctx, s)
 }
 
-// These are used to type-erase Validator[S] using a shared interface.
-
-type validator interface {
+// GenericValidator is used to type erase type-erase Validator[S] using a shared interface.
+type GenericValidator interface {
 	Validate(ctx context.Context, s Secret) (ValidationStatus, error)
+}
+
+// NewGenericValidator wraps a specific validator around a type-erased one.
+func NewGenericValidator[S Secret](v Validator[S]) GenericValidator {
+	return &wrapped[S]{v: v}
 }
 
 type wrapped[S Secret] struct {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,32 @@ func TestPluginStatusToProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "nil status",
+			desc: "converts_file_errors",
+			s: &plugin.Status{
+				Name:    "test-plugin-with-file-errors",
+				Version: 1,
+				Status: &plugin.ScanStatus{
+					Status: plugin.ScanStatusPartiallySucceeded,
+					FileErrors: []*plugin.FileError{
+						{FilePath: "file1", ErrorMessage: "error1"},
+						{FilePath: "file2", ErrorMessage: "error2"},
+					},
+				},
+			},
+			want: &spb.PluginStatus{
+				Name:    "test-plugin-with-file-errors",
+				Version: 1,
+				Status: &spb.ScanStatus{
+					Status: spb.ScanStatus_PARTIALLY_SUCCEEDED,
+					FileErrors: []*spb.FileError{
+						{FilePath: "file1", ErrorMessage: "error1"},
+						{FilePath: "file2", ErrorMessage: "error2"},
+					},
+				},
+			},
+		},
+		{
+			desc: "nil_status",
 			s: &plugin.Status{
 				Name:    "test-plugin",
 				Version: 1,

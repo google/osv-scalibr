@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,12 @@ package plugin
 
 import (
 	"fmt"
+	"slices"
 	"strings"
+
+	"github.com/google/osv-scalibr/log"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // OS is the OS the scanner is running on, or a specific OS type a Plugin needs to be run on.
@@ -35,12 +40,12 @@ const (
 	// OSUnix is used only when specifying Plugin requirements.
 	// Specifies that the plugin needs to be run either on Linux or Mac.
 	OSUnix OS = iota
-
-	// OSUnknown is only used when specifying Capabilities.
-	// Specifies that the OS is not known and so only
-	// plugins that require OSAny should be run.
-	OSUnknown = OSAny
 )
+
+// OSUnknown is only used when specifying Capabilities.
+// Specifies that the OS is not known and so only
+// plugins that require OSAny should be run.
+const OSUnknown = OSAny
 
 // Network is the network access of the scanner or the network
 // requirements of a plugin.
@@ -77,6 +82,11 @@ type Capabilities struct {
 	// TODO(b/400910349): This doesn't quite fit into Capabilities so this should be moved into a
 	// separate Filesystem Extractor specific function.
 	ExtractFromDirs bool
+	// Whether the scan runner has explicitly enabled running "unsafe" plugins, signaling that the
+	// scanner is either sandboxed or is not running on untrusted artifacts.
+	// Some plugins such as the Rust code Reachability Enricher are "unsafe" and require this to be
+	// set as they might trigger Remote Code Execution when running on untrusted artifacts.
+	AllowUnsafePlugins bool
 }
 
 // Plugin is the part of the plugin interface that's shared between extractors and detectors.
@@ -102,6 +112,13 @@ type Status struct {
 type ScanStatus struct {
 	Status        ScanStatusEnum
 	FailureReason string
+	FileErrors    []*FileError
+}
+
+// FileError contains the errors that occurred while scanning a specific file.
+type FileError struct {
+	FilePath     string
+	ErrorMessage string
 }
 
 // ScanStatusEnum is the enum for the scan status.
@@ -144,6 +161,9 @@ func ValidateRequirements(p Plugin, capabs *Capabilities) error {
 	if p.Requirements().RunningSystem && !capabs.RunningSystem {
 		errs = append(errs, "scanner isn't scanning the host it's run from directly")
 	}
+	if p.Requirements().AllowUnsafePlugins && !capabs.AllowUnsafePlugins {
+		errs = append(errs, "plugin requires --allow-unsafe-plugins to be enabled. Make sure you're scanning a trusted artifact before enabling this setting.")
+	}
 	if len(errs) == 0 {
 		return nil
 	}
@@ -158,15 +178,29 @@ func FilterByCapabilities(pls []Plugin, capabs *Capabilities) []Plugin {
 	for _, pl := range pls {
 		if err := ValidateRequirements(pl, capabs); err == nil {
 			result = append(result, pl)
+		} else {
+			log.Warnf("Disabling plugin %q: %v", pl.Name(), err)
 		}
 	}
 	return result
 }
 
+// FindConfig finds a plugin-specific config in the overall config proto
+// using the specified getter function.
+func FindConfig[T any](cfg *cpb.PluginConfig, getter func(c *cpb.PluginSpecificConfig) *T) *T {
+	for _, specific := range cfg.GetPluginSpecific() {
+		got := getter(specific)
+		if got != nil {
+			return got
+		}
+	}
+	return nil
+}
+
 // StatusFromErr returns a successful or failed plugin scan status for a given plugin based on an error.
-func StatusFromErr(p Plugin, partial bool, err error) *Status {
+func StatusFromErr(p Plugin, partial bool, overallErr error, fileErrors []*FileError) *Status {
 	status := &ScanStatus{}
-	if err == nil {
+	if overallErr == nil {
 		status.Status = ScanStatusSucceeded
 	} else {
 		if partial {
@@ -174,13 +208,84 @@ func StatusFromErr(p Plugin, partial bool, err error) *Status {
 		} else {
 			status.Status = ScanStatusFailed
 		}
-		status.FailureReason = err.Error()
+		status.FileErrors = fileErrors
+		status.FailureReason = overallErr.Error()
 	}
 	return &Status{
 		Name:    p.Name(),
 		Version: p.Version(),
 		Status:  status,
 	}
+}
+
+// OverallErrFromFileErrs returns an error to set as the scan status overall failure
+// reason based on the plugin's per-file errors.
+func OverallErrFromFileErrs(fileErrors []*FileError) error {
+	if len(fileErrors) == 0 {
+		return nil
+	}
+	return fmt.Errorf("encountered %d error(s) while running plugin; check file-specific errors for details", len(fileErrors))
+}
+
+// DedupeStatuses combines the status of multiple instances of the same plugins
+// in a list, making sure there's only one entry per plugin.
+func DedupeStatuses(statuses []*Status) []*Status {
+	// Plugin name to status map
+	resultMap := map[string]*Status{}
+
+	for _, s := range statuses {
+		if old, ok := resultMap[s.Name]; ok {
+			resultMap[s.Name] = mergeStatus(old, s)
+		} else {
+			resultMap[s.Name] = s
+		}
+	}
+
+	result := make([]*Status, 0, len(resultMap))
+	for _, v := range resultMap {
+		result = append(result, v)
+	}
+	return result
+}
+
+func mergeStatus(s1 *Status, s2 *Status) *Status {
+	result := &Status{
+		Name:    s1.Name,
+		Version: s1.Version,
+		Status: &ScanStatus{
+			Status: mergeScanStatus(s1.Status.Status, s2.Status.Status),
+		},
+	}
+
+	if len(s1.Status.FailureReason) > 0 && len(s2.Status.FailureReason) > 0 {
+		result.Status.FailureReason = s1.Status.FailureReason + "\n" + s2.Status.FailureReason
+	} else if len(s1.Status.FailureReason) > 0 {
+		result.Status.FailureReason = s1.Status.FailureReason
+	} else {
+		result.Status.FailureReason = s2.Status.FailureReason
+	}
+
+	result.Status.FileErrors = slices.Concat(s1.Status.FileErrors, s2.Status.FileErrors)
+	if len(result.Status.FileErrors) > 0 {
+		// Instead of concating two generic "check file errors" message we create a new one.
+		result.Status.FailureReason = OverallErrFromFileErrs(result.Status.FileErrors).Error()
+	}
+
+	return result
+}
+
+func mergeScanStatus(e1 ScanStatusEnum, e2 ScanStatusEnum) ScanStatusEnum {
+	// Failures take precedence over successes.
+	if e1 == ScanStatusFailed || e2 == ScanStatusFailed {
+		return ScanStatusFailed
+	}
+	if e1 == ScanStatusPartiallySucceeded || e2 == ScanStatusPartiallySucceeded {
+		return ScanStatusPartiallySucceeded
+	}
+	if e1 == ScanStatusSucceeded || e2 == ScanStatusSucceeded {
+		return ScanStatusSucceeded
+	}
+	return ScanStatusUnspecified
 }
 
 // String returns a string representation of the scan status.

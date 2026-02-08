@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,27 +18,38 @@ package cos
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name of the Annotator.
-	Name           = "vex/os-duplicate/cos"
-	cosPkgInfoPath = "etc/cos-package-info.json"
-	cosPkgDir      = "mnt/stateful_partition/var_overlay/db/pkg/"
+	Name = "vex/os-duplicate/cos"
+	// The dir in which all OS-installed COS packages are stored.
+	cosPkgDir = "mnt/stateful_partition/var_overlay/db/pkg/"
+	// The only mutable path inside COS filesystems.
+	mutableDir = "mnt/stateful_partition"
+
+	// The COS package info file.
+	cosPackageInfoFile = "etc/cos-package-info.json"
 )
 
 // Annotator adds annotations to language packages that have already been found in COS OS packages.
 type Annotator struct{}
 
 // New returns a new Annotator.
-func New() annotator.Annotator { return &Annotator{} }
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
 func (Annotator) Name() string { return Name }
@@ -53,26 +64,44 @@ func (Annotator) Requirements() *plugin.Capabilities {
 
 // Annotate adds annotations to language packages that have already been found in COS OS packages.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+	if input == nil || input.ScanRoot == nil || input.ScanRoot.FS == nil {
+		return errors.New("input is nil")
+	}
+
+	if _, err := input.ScanRoot.FS.Stat(cosPackageInfoFile); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Nothing to annotate if we're not running on COS.
+			return nil
+		}
+		return fmt.Errorf("failed to stat %s: %w", cosPackageInfoFile, err)
+	}
+
 	for _, pkg := range results.Packages {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err)
 		}
 
-		if len(pkg.Locations) == 0 {
+		// Packages handled by the OS should always be scanned.
+		if slices.Contains(pkg.Plugins, cos.Name) {
 			continue
 		}
 
-		loc := pkg.Locations[0]
-		// annotate every package found under COS pkg install folder
-		if !strings.HasPrefix(loc, cosPkgDir) {
+		if len(pkg.Locations) == 0 {
 			continue
 		}
-		pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-			Plugin:          Name,
-			Justification:   vex.ComponentNotPresent,
-			MatchesAllVulns: true,
-		})
+		loc := pkg.Locations[0]
+		// Annotate non-OS (e.g. language) packages as OS duplicates if:
+		// They're in the OS package installation directory
+		if strings.HasPrefix(loc, cosPkgDir) ||
+			// Or if they're outside of the user-writable path (only OS-installed packages can live there).
+			!strings.HasPrefix(loc, mutableDir) {
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
+		}
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,11 +22,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	testKey = "AQ.Ab8Rthat-is-1-very-nice-KeyYouGotThere_ShameIfLost"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t, gcpexpressmode.NewDetector(),
+		testKey,
+		gcpexpressmode.APIKey{Key: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 func TestDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gcpexpressmode.NewDetector()})

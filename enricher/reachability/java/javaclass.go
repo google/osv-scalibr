@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ const (
 	ConstantKindModule             ConstantKind = 19
 	ConstantKindPackage            ConstantKind = 20
 
-	// This is not a real Java class constant kind.
+	// ConstantKindPlaceholder is not a real Java class constant kind.
 	// We use this to implement long and double constants taking up two entries
 	// in the constant pool, as well as the constant pool being 1-indexed.
 	//

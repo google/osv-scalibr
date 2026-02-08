@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,14 @@ package baseimage
 
 import (
 	"context"
+	"errors"
 
 	grpcpb "deps.dev/api/v3alpha"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+var errNotFound = errors.New("chainID not found")
 
 // Client is the interface for the deps.dev client.
 type Client interface {
@@ -55,6 +60,10 @@ func (c *ClientGRPC) QueryContainerImages(ctx context.Context, req *Request) (*R
 	reqpb := makeReq(req.ChainID)
 	resppb, err := c.client.QueryContainerImages(ctx, reqpb)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, errNotFound
+		}
+
 		return nil, err
 	}
 

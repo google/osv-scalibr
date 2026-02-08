@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // VKToPackage converts a resolve.VersionKey to an *extractor.Package
@@ -40,18 +41,18 @@ func VKToPackage(vk resolve.VersionKey) *extractor.Package {
 // toPURLType an OSV ecosystem into a PURL type.
 func toPURLType(ecosystem string) string {
 	switch ecosystem {
-	case string(osvschema.EcosystemNPM):
+	case string(osvconstants.EcosystemNPM):
 		return purl.TypeNPM
-	case string(osvschema.EcosystemMaven):
+	case string(osvconstants.EcosystemMaven):
 		return purl.TypeMaven
-	case string(osvschema.EcosystemPyPI):
+	case string(osvconstants.EcosystemPyPI):
 		return purl.TypePyPi
 	}
 	return ""
 }
 
 // IsAffected returns true if the Vulnerability applies to the package version of the Package.
-func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
+func IsAffected(vuln *osvpb.Vulnerability, pkg *extractor.Package) bool {
 	resolveSys := util.OSVToDepsDevEcosystem(pkg.Ecosystem().Ecosystem)
 	if resolveSys == resolve.UnknownSystem {
 		return false
@@ -66,12 +67,12 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 			return true
 		}
 		for _, r := range affected.Ranges {
-			if r.Type != "ECOSYSTEM" &&
-				!(r.Type == "SEMVER" && affected.Package.Ecosystem == "npm") {
+			if r.Type != osvpb.Range_ECOSYSTEM &&
+				!(r.Type == osvpb.Range_SEMVER && affected.Package.Ecosystem == "npm") {
 				continue
 			}
 			events := slices.Clone(r.Events)
-			eventVersion := func(e osvschema.Event) string {
+			eventVersion := func(e *osvpb.Event) string {
 				if e.Introduced != "" {
 					return e.Introduced
 				}
@@ -80,7 +81,7 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 				}
 				return e.LastAffected
 			}
-			slices.SortFunc(events, func(a, b osvschema.Event) int {
+			slices.SortFunc(events, func(a, b *osvpb.Event) int {
 				aVer := eventVersion(a)
 				bVer := eventVersion(b)
 				if aVer == "0" {
@@ -95,7 +96,7 @@ func IsAffected(vuln *osvschema.Vulnerability, pkg *extractor.Package) bool {
 				// sys.Compare on strings is expensive, should consider precomputing sys.Parse
 				return sys.Compare(aVer, bVer)
 			})
-			idx, exact := slices.BinarySearchFunc(events, pkg.Version, func(e osvschema.Event, v string) int {
+			idx, exact := slices.BinarySearchFunc(events, pkg.Version, func(e *osvpb.Event, v string) int {
 				eVer := eventVersion(e)
 				if eVer == "0" {
 					return -1

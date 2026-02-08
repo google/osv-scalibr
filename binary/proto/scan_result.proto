@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ syntax = "proto3";
 package scalibr;
 
 import "google/protobuf/timestamp.proto";
+import "proto/vulnerability.proto";
 
-option go_package = "github.com/google/scalibr/binary/proto/scan_result_go_proto";
+option go_package = "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto";
 option java_multiple_files = true;
 
 // Proto file describing the SCALIBR scan results. Whenever this proto is
@@ -29,6 +30,7 @@ option java_multiple_files = true;
 
 // The results of a scan incl. scan status and artifacts found.
 message ScanResult {
+  reserved 6, 7;
   string version = 1;
   google.protobuf.Timestamp start_time = 2;
   google.protobuf.Timestamp end_time = 3;
@@ -36,22 +38,23 @@ message ScanResult {
   ScanStatus status = 4;
   // Status and versions of the plugins that ran.
   repeated PluginStatus plugin_status = 5;
-  // TODO(b/400910349): Remove once integrators stop using these fields.
-  repeated Package inventories_deprecated = 6 [deprecated = true];
-  repeated GenericFinding findings_deprecated = 7 [deprecated = true];
   Inventory inventory = 8;
 }
 
 // The artifacts (e.g. software inventory, security findings) that a scan found.
 message Inventory {
   repeated Package packages = 1;
+  repeated PackageVuln package_vulns = 6;
   repeated GenericFinding generic_findings = 2;
   repeated Secret secrets = 3;
+  repeated ContainerImageMetadata container_image_metadata = 5;
 }
 
 message ScanStatus {
   ScanStatusEnum status = 1;
   string failure_reason = 2;
+  repeated FileError file_errors = 4;
+
   enum ScanStatusEnum {
     UNSPECIFIED = 0;
     SUCCEEDED = 1;
@@ -66,10 +69,18 @@ message PluginStatus {
   ScanStatus status = 3;
 }
 
+message FileError {
+  string file_path = 1;
+  string error_message = 2;
+}
+
 // A software package or library found by an extractor.
 // PURL or CPE needs to be set, maybe both.
 message Package {
-  reserved 3, 4;
+  reserved 3, 4, 10, 28, 35;
+  reserved 17 to 20, 29, 32, 43, 59;
+  // Unique identifier for the package.
+  string id = 60;
   // Human-readable name of the software, to be used for things like logging.
   // For vuln matching, use the name from metadata.
   string name = 11;
@@ -84,8 +95,6 @@ message Package {
   string ecosystem = 27;
   // Paths or source of files related to the package.
   repeated string locations = 2;
-  // TODO(b/400910349): Remove once integrators stop using these fields.
-  string extractor_deprecated = 10 [deprecated = true];
   // The names of the plugins that found this software. Set by the
   // core library.
   repeated string plugins = 49;
@@ -127,29 +136,32 @@ message Package {
     MacportsPackageMetadata macports_metadata = 53;
     WingetPackageMetadata winget_metadata = 54;
     AsdfMetadata asdf_metadata = 55;
-    BazelMavenMetadata bazel_maven_metadata = 56;
+    NvmMetadata nvm_metadata = 56;
+    NodeVersionMetadata nodeversion_metadata = 58;
+    DepGroupMetadata dep_group_metadata = 61;
+    ChocolateyPackageMetadata chocolatey_metadata = 62;
+    MiseMetadata mise_metadata = 63;
+    UnknownBinaryMetadata unknown_binary_metadata = 64;
+    BazelMavenMetadata bazel_maven_metadata = 65;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
-  // Deprecated - use exploitability_signals instead
-  // TODO(b/400910349): Remove once integrators stop using this.
-  repeated AnnotationEnum annotations_deprecated = 28 [deprecated = true];
   // Signals to indicate that specific vulnerabilities are not applicable to
   // this package.
   repeated PackageExploitabilitySignal exploitability_signals = 51;
-  enum AnnotationEnum {
-    UNSPECIFIED = 0;
-    TRANSITIONAL = 1;
-    INSIDE_OS_PACKAGE = 2;
-    INSIDE_CACHE_DIR = 3;
-  }
-
-  // Details about the layer a package was found in. This should be set only for
-  // container image scanning.
-  LayerDetails layer_details = 35;
 
   // Software licenses information
   repeated string licenses = 52;
+
+  message ContainerImageMetadataIndexes {
+    // The index of ContainerImageMetadata in Inventory.ContainerImageMetadata
+    // list.
+    int32 container_image_index = 1;
+    // The index of LayerMetadata in ContainerImageMetadata.LayerMetadata list.
+    int32 layer_index = 2;
+  }
+
+  optional ContainerImageMetadataIndexes container_image_metadata_indexes = 57;
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).
@@ -244,6 +256,18 @@ message Qualifier {
   string value = 2;
 }
 
+// Describes a vulnerability (e.g. a CVE) related to a package.
+message PackageVuln {
+  osv.Vulnerability vuln = 1;
+  // The ID of the associated package in Inventory.Packages.
+  // Used for mapping between proto and struct.
+  string package_id = 2;
+  // The plugins (e.g. Detectors, Enrichers) that found this vuln.
+  repeated string plugins = 3;
+  // Signals that indicate this finding is not exploitable.
+  repeated FindingExploitabilitySignal exploitability_signals = 4;
+}
+
 // Describes generic security findings not associated with any
 // specific package, e.g. weak credentials.
 message GenericFinding {
@@ -303,10 +327,25 @@ message PythonPackageMetadata {
 
 // The additional data found in npm packages.
 message JavascriptPackageJSONMetadata {
+  reserved 4;
+
   string author = 1;
   repeated string maintainers = 2;
   repeated string contributors = 3;
-  bool from_npm_repository = 4;
+  PackageSource source = 5;
+}
+
+// The source of the package.
+enum PackageSource {
+  UNKNOWN = 0;
+  // PUBLIC_REGISTRY is the public NPM registry.
+  PUBLIC_REGISTRY = 1;
+  // OTHER is any other remote or private source (e.g. Github).
+  // This is used for packages that are not found in the public NPM registry.
+  OTHER = 2;
+  // LOCAL is the local filesystem that stores the package versions.
+  // This is used for when the package is locally-developed or -installed.
+  LOCAL = 3;
 }
 
 // The additional data found in APK packages.
@@ -324,7 +363,7 @@ message APKPackageMetadata {
 }
 
 // The additional data found in DPKG packages.
-// Next ID: 11
+// Next ID: 12
 message DPKGPackageMetadata {
   string package_name = 1;
   string source_name = 2;
@@ -336,6 +375,7 @@ message DPKGPackageMetadata {
   string maintainer = 8;
   string architecture = 9;
   string status = 10;
+  string package_source = 11;
 }
 
 // The additional data found in RPM packages.
@@ -351,6 +391,8 @@ message RPMPackageMetadata {
   string os_name = 7;
   string vendor = 8;
   string architecture = 9;
+  string os_pretty_name = 11;
+  string os_cpe_name = 12;
 
   reserved "license";
 }
@@ -510,6 +552,11 @@ message OSVPackageMetadata {
   string compare_as = 4;
 }
 
+// The additional data for dependency groups.
+message DepGroupMetadata {
+  repeated string dep_group_vals = 1;
+}
+
 message PythonRequirementsMetadata {
   repeated string hash_checking_mode_values = 1;
   string version_comparator = 2;
@@ -559,7 +606,11 @@ message WindowsOSVersion {
 }
 
 // The additional data found in Homebrew packages.
-message HomebrewPackageMetadata {}
+message HomebrewPackageMetadata {
+  string url = 1;
+  string head = 2;
+  repeated string mirrors = 3;
+}
 
 // The additional data found in Chrome extensions.
 message ChromeExtensionsMetadata {
@@ -596,6 +647,16 @@ message PodmanMetadata {
   bool exited = 8;
 }
 
+// The additional data found in Chocolatey packages.
+message ChocolateyPackageMetadata {
+  string name = 1;
+  string version = 2;
+  string authors = 3;
+  string licenseurl = 4;
+  string projecturl = 5;
+  string tags = 6;
+}
+
 message Protocol {
   repeated string names = 1;
 }
@@ -610,6 +671,19 @@ message DockerContainersMetadata {
 message AsdfMetadata {
   string tool_name = 1;
   string tool_version = 2;
+}
+
+message MiseMetadata {
+  string tool_name = 1;
+  string tool_version = 2;
+}
+
+message NvmMetadata {
+  string nodejs_version = 2;
+}
+
+message NodeVersionMetadata {
+  string nodejs_version = 2;
 }
 
 message BazelMavenMetadata {
@@ -638,6 +712,18 @@ message WingetPackageMetadata {
   repeated string commands = 7;
 }
 
+// Additional data attributed to unknown binaries.
+message UnknownBinaryMetadata {
+  string file_hash = 1;
+  UnknownBinaryAttribution attribution = 2;
+}
+
+// Data about attributing a binary to a known base image.
+message UnknownBinaryAttribution {
+  bool local_filesystem = 1;
+  bool base_image = 2;
+}
+
 // A secret (i.e. credential) found by Veles secret scanning.
 message Secret {
   SecretData secret = 1;
@@ -655,6 +741,68 @@ message SecretData {
     GrokXAIAPIKey grok_xai_api_key = 6;
     GrokXAIManagementAPIKey grok_xai_management_api_key = 7;
     DockerHubPat docker_hub_pat = 8;
+    DigitalOceanAPIToken digitalocean = 9;
+    OpenAIAPIKey openai_api_key = 10;
+    PostmanAPIKey postman_api_key = 11;
+    PostmanCollectionAccessToken postman_collection_access_token = 12;
+    AzureAccessToken azure_access_token = 13;
+    AzureIdentityToken azure_identity_token = 14;
+    TinkKeyset tink_keyset = 15;
+    GitlabPat gitlab_pat = 16;
+    HashiCorpVaultToken hashicorp_vault_token = 17;
+    HashiCorpVaultAppRoleCredentials hashicorp_vault_app_role_credentials = 18;
+    GCPAPIKey gcp_api_key = 19;
+    HuggingfaceAPIKey hugginface = 20;
+    GithubAppRefreshToken github_app_refresh_token = 21;
+    StripeSecretKey stripe_secret_key = 22;
+    StripeRestrictedKey stripe_restricted_key = 23;
+    StripeWebhookSecret stripe_webhook_secret = 24;
+    GCPOAuth2ClientCredentials gcp_oauth2_client_credentials = 25;
+    GCPOAuth2AccessToken gcp_oauth2_access_token = 26;
+    GithubAppServerToServerToken github_app_server_to_server_token = 27;
+    GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
+    GithubFineGrainedPersonalAccessToken
+        github_fine_grained_personal_access_token = 29;
+    GithubAppUserToServerToken github_app_user_to_server_token = 30;
+    GithubOAuthToken github_oauth_token = 31;
+    OpenRouterAPIKey openrouter_api_key = 32;
+    SlackAppConfigRefreshToken slack_app_config_refresh_token = 33;
+    SlackAppLevelToken slack_app_level_token = 34;
+    SlackAppConfigAccessToken slack_app_config_access_token = 35;
+    AzureStorageAccountAccessKey azure_storage_account_access_key = 36;
+    HashiCorpCloudPlatformCredentials hashicorp_cloud_platform_credentials = 37;
+    HashiCorpCloudPlatformToken hashicorp_cloud_platform_token = 38;
+    OnePasswordSecretKey onepassword_secret_key = 39;
+    OnePasswordServiceToken onepassword_service_token = 40;
+    OnePasswordRecoveryCode onepassword_recovery_code = 41;
+    OnePasswordConnectToken onepassword_connect_token = 42;
+    Pgpass pgpass = 43;
+    PyPIAPIToken pypi = 44;
+    CratesIOAPIToken crates_io_api_token = 45;
+    MariaDBCredentials maria_db_credentials = 46;
+    GCSHmacKey gcs_hmac_key = 47;
+    MysqlMyloginSection mysql_mylogin_section = 48;
+    VapidKey vapid_key = 49;
+    AwsAccessKeyCredentials aws_access_key_credentials = 50;
+    ReCaptchaKey re_captcha_key = 51;
+    PyxKeyV1 pyx_key_v1 = 52;
+    PyxKeyV2 pyx_key_v2 = 53;
+    CodeCatalystCredentials code_catalyst_credentials = 54;
+    JWTToken jwt_token = 55;
+    CodeCommitCredentials code_commit_credentials = 56;
+    BitBucketCredentials bitbucket_credentials = 57;
+    PaystackSecretKey paystack_secret_key = 58;
+    TelegramBotToken telegram_bot_api_token = 59;
+    CursorAPIKey cursor_api_key = 60;
+    ElasticCloudAPIKey elastic_cloud_api_key = 61;
+    URLCredentials url_credentials = 62;
+    SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
+    SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
+    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials =
+        65;
+    MistralAPIKey mistral_api_key = 66;
+    CircleCIPersonalAccessToken circleci_personal_access_token = 67;
+    CircleCIProjectToken circleci_project_token = 68;
   }
 
   message GCPSAK {
@@ -678,6 +826,11 @@ message SecretData {
     string private_key = 12;
   }
 
+  message JWTToken {
+    // a generic JWT token
+    string token = 1;
+  }
+
   message AnthropicWorkspaceAPIKey {
     // The Anthropic Workspace API key (contains "admin01").
     string key = 1;
@@ -692,6 +845,10 @@ message SecretData {
     string key = 1;
   }
 
+  message MistralAPIKey {
+    string key = 1;
+  }
+
   message GrokXAIAPIKey {
     string key = 1;
   }
@@ -700,14 +857,308 @@ message SecretData {
     string key = 1;
   }
 
+  message AzureStorageAccountAccessKey {
+    string key = 1;
+  }
+
   message PrivateKey {
     string block = 1;  // PEM/OpenSSH private key block
     bytes der = 2;     // DER-encoded key material
   }
 
+  message AzureAccessToken {
+    string token = 1;
+  }
+
+  message Pgpass {
+    string hostname = 1;
+    string port = 2;
+    string database = 3;
+    string username = 4;
+    string password = 5;
+  }
+
+  message MariaDBCredentials {
+    string host = 1;
+    string port = 2;
+    string user = 4;
+    string password = 5;
+    string section = 6;
+  }
+
+  message AzureIdentityToken {
+    string token = 1;
+  }
+
+  message OpenAIAPIKey {
+    string key = 1;
+  }
+
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message GitlabPat {
+    string pat = 1;
+  }
+
+  message SlackAppLevelToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigAccessToken {
+    string token = 1;
+  }
+
+  message SlackAppConfigRefreshToken {
+    string token = 1;
+  }
+
+  message PostmanAPIKey {
+    string key = 1;
+  }
+
+  message PostmanCollectionAccessToken {
+    string key = 1;
+  }
+
+  message OpenRouterAPIKey {
+    string key = 1;
+  }
+
+  message DigitalOceanAPIToken {
+    string key = 1;
+  }
+
+  message CratesIOAPIToken {
+    string token = 1;
+  }
+
+  message GithubAppRefreshToken {
+    string token = 1;
+  }
+
+  message GithubAppServerToServerToken {
+    string token = 1;
+  }
+
+  message GithubClassicPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubFineGrainedPersonalAccessToken {
+    string token = 1;
+  }
+
+  message GithubOAuthToken {
+    string token = 1;
+  }
+
+  message GithubAppUserToServerToken {
+    string token = 1;
+  }
+
+  message PyPIAPIToken {
+    string token = 1;
+  }
+
+  message TinkKeyset {
+    string content = 1;  // JSON encoded Tink keyset
+  }
+
+  message HashiCorpVaultToken {
+    string token = 1;
+  }
+
+  message HashiCorpVaultAppRoleCredentials {
+    string role_id = 1;
+    string secret_id = 2;
+    string id =
+        3;  // General ID field for uncertain UUID types when context is unclear
+  }
+
+  message GCPAPIKey {
+    string key = 1;
+  }
+
+  message HuggingfaceAPIKey {
+    string key = 1;
+    string role = 2;
+    repeated string fine_grained_scope = 3;
+  }
+
+  message HashiCorpCloudPlatformCredentials {
+    string client_id = 1;
+    string client_secret = 2;
+  }
+
+  message HashiCorpCloudPlatformToken {
+    string token = 1;
+    // Optional identity enrichment fields populated when available
+    string organization_id = 2;
+    string project_id = 3;
+    string principal_id = 4;
+    string principal_type = 5;
+    string service_name = 6;
+    string user_id = 7;
+    string user_email = 8;
+    repeated string group_ids = 9;
+  }
+
+  message StripeSecretKey {
+    string key = 1;
+  }
+
+  message StripeRestrictedKey {
+    string key = 1;
+  }
+
+  message StripeWebhookSecret {
+    string key = 1;
+  }
+
+  message GCPOAuth2ClientCredentials {
+    // GCP OAuth2 client ID in format:
+    // `12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com`
+    string id = 1;
+    // GCP OAuth2 client secret, typically 24+ character alphanumeric string
+    // prefixed with `GOCSPX-`
+    string secret = 2;
+  }
+
+  message GCPOAuth2AccessToken {
+    // GCP OAuth2 access token, typically in format:
+    // "ya29.[alphanumeric_string]"
+    string token = 1;
+  }
+
+  message GCSHmacKey {
+    string access_id = 1;
+    string secret = 2;
+  }
+
+  message MysqlMyloginSection {
+    string section_name = 1;
+    string user = 2;
+    string password = 3;
+    string host = 4;
+    string port = 5;
+    string socket = 6;
+  }
+
+  message VapidKey {
+    string private_b64 = 1;
+    string public_b64 = 2;
+  }
+
+  message OnePasswordConnectToken {
+    // Device UUID from the token JSON.
+    string device_uuid = 1;
+    // Version field from the token JSON.
+    string version = 2;
+    // Encrypted payload data (from encCredentials.data).
+    string encrypted_data = 3;
+    // Key ID used to encrypt the credentials (encCredentials.kid).
+    string encryption_key_id = 4;
+    // Initialization vector (encCredentials.iv).
+    string iv = 5;
+    // Unique key kid (uniqueKey.kid).
+    string unique_key_id = 6;
+    // Verifier salt (verifier.salt).
+    string verifier_salt = 7;
+    // Verifier local hash (verifier.localHash).
+    string verifier_local_hash = 8;
+  }
+
+  message OnePasswordSecretKey {
+    string key = 1;
+  }
+  message OnePasswordServiceToken {
+    string key = 1;
+  }
+
+  message OnePasswordRecoveryCode {
+    string key = 1;
+  }
+
+  message AwsAccessKeyCredentials {
+    string access_id = 1;
+    string secret = 2;
+  }
+
+  message ReCaptchaKey {
+    string secret = 1;
+  }
+  message PyxKeyV1 {
+    string key = 1;
+  }
+
+  message PyxKeyV2 {
+    string key = 1;
+  }
+
+  message CodeCatalystCredentials {
+    string url = 1;
+  }
+
+  message CodeCommitCredentials {
+    string url = 1;
+  }
+
+  message BitBucketCredentials {
+    string url = 1;
+  }
+
+  message ElasticCloudAPIKey {
+    string key = 1;
+  }
+
+  message PaystackSecretKey {
+    string key = 1;
+  }
+
+  message TelegramBotToken {
+    string token = 1;
+  }
+
+  message SalesforceOAuth2AccessToken {
+    // Salesforce OAuth2 Access Token
+    string token = 1;
+  }
+
+  message SalesforceOAuth2ClientCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce instance URL
+    string url = 3;
+  }
+
+  message SalesforceOAuth2RefreshCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce OAuth2 Refresh Token
+    string refresh = 3;
+  }
+
+  message CursorAPIKey {
+    string key = 1;
+  }
+
+  message CircleCIPersonalAccessToken {
+    string token = 1;
+  }
+
+  message CircleCIProjectToken {
+    string token = 1;
+  }
+
+  message URLCredentials {
+    string url = 1;
   }
 }
 
@@ -756,4 +1207,52 @@ message EnvironmentVariable {
 
 message ContainerCommand {
   string command = 1;
+}
+
+message ContainerImageMetadata {
+  int32 index = 1;
+  // Layers are ordered from the earliest to the latest.
+  repeated LayerMetadata layer_metadata = 2;
+  // The base images that make up the chain.
+  // The first base image is always empty, acting as a placeholder for the
+  // scanned image itself. If the scanned image is a base image, there will be
+  // no layers pointing to the first base image.
+  //
+  // The base images are ordered from the biggest base image containing all base
+  // images to the smallest. e.g. [empty, postgresql, alpine]
+  repeated BaseImageChain base_image_chains = 3;
+
+  // Key value map of OS info from /etc/os-release.
+  map<string, string> os_info = 4;
+}
+
+message BaseImageChain {
+  // List of potential base images (repositories that have a matching ChainID).
+  repeated BaseImageDetails base_images = 1;
+  // Chain ID of the last layer in the image.
+  string chain_id = 2;
+}
+
+message BaseImageDetails {
+  // Name of the image. (e.g. `debian`, `circleci/node`)
+  string repository = 1;
+  // Name of the registry. (e.g. `docker.io`, `ghcr.io`)
+  string registry = 2;
+  // Name of the plugin used to extract the base image.
+  string plugin = 3;
+}
+
+message LayerMetadata {
+  // The index of the layer within the ContainerImageMetadata.layer_metadata
+  // field.
+  int32 index = 1;
+  string diff_id = 2;
+  string chain_id = 3;
+  // The command that was used to build the layer.
+  string command = 4;
+  // Whether the layer is empty (currently always false).
+  bool is_empty = 5;
+  // The index of the base image match within the
+  // ContainerImageMetadata.base_image_chains field.
+  int32 base_image_index = 6;
 }

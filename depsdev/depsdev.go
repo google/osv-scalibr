@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package depsdev contains constants and mappings for the deps.dev API.
+// Package depsdev contains constants and mappings for the deps.dev v3 API.
 package depsdev
 
 import (
@@ -33,4 +33,5 @@ var System = map[string]depsdevpb.System{
 	purl.TypeGolang: depsdevpb.System_GO,
 	purl.TypeMaven:  depsdevpb.System_MAVEN,
 	purl.TypePyPi:   depsdevpb.System_PYPI,
+	purl.TypeGem:    depsdevpb.System_RUBYGEMS,
 }

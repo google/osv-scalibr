@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,19 +33,19 @@ func TestSetProto(t *testing.T) {
 		want *pb.Package
 	}{
 		{
-			desc: "nil metadata",
+			desc: "nil_metadata",
 			m:    nil,
 			p:    &pb.Package{Name: "some-package"},
 			want: &pb.Package{Name: "some-package"},
 		},
 		{
-			desc: "nil package",
+			desc: "nil_package",
 			m:    &depsjson.Metadata{PackageName: "some-package"},
 			p:    nil,
 			want: nil,
 		},
 		{
-			desc: "set metadata",
+			desc: "set_metadata",
 			m:    &depsjson.Metadata{PackageName: "some-package"},
 			p:    &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -58,7 +58,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "override metadata",
+			desc: "override_metadata",
 			m:    &depsjson.Metadata{PackageName: "another-package"},
 			p: &pb.Package{
 				Name: "some-package",
@@ -78,7 +78,7 @@ func TestSetProto(t *testing.T) {
 			},
 		},
 		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &depsjson.Metadata{
 				PackageName:    "some-package",
 				PackageVersion: "1.0.0",
@@ -135,7 +135,7 @@ func TestToStruct(t *testing.T) {
 			want: nil,
 		},
 		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.DEPSJSONMetadata{
 				PackageName: "some-package",
 			},
@@ -144,7 +144,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.DEPSJSONMetadata{
 				PackageName:    "some-package",
 				PackageVersion: "1.0.0",

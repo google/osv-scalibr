@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ func NewAPIKeyDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: apiKeyMaxLen,
 		Re:     apiKeyRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return GrokXAIAPIKey{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return GrokXAIAPIKey{Key: string(b)}, true
 		},
 	}
 }
@@ -67,8 +67,8 @@ func NewManagementKeyDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: mgmtKeyMaxLen,
 		Re:     mgmtKeyRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return GrokXAIManagementKey{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return GrokXAIManagementKey{Key: string(b)}, true
 		},
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -153,6 +153,7 @@ func TestRunScan(t *testing.T) {
 		setupFunc         func(t *testing.T) string
 		flags             *cli.Flags
 		wantExit          int
+		wantScanStatus    spb.ScanStatus_ScanStatusEnum
 		wantPluginStatus  []spb.ScanStatus_ScanStatusEnum
 		wantPackagesCount int
 		wantFindingCount  int
@@ -162,6 +163,7 @@ func TestRunScan(t *testing.T) {
 			desc:              "Successful detector run",
 			setupFunc:         createDetectorTestFiles,
 			flags:             &cli.Flags{DetectorsToRun: []string{"cis"}},
+			wantScanStatus:    spb.ScanStatus_SUCCEEDED,
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantPackagesCount: 0,
 			wantFindingCount:  1,
@@ -172,6 +174,7 @@ func TestRunScan(t *testing.T) {
 			desc:              "Successful extractor run",
 			setupFunc:         createExtractorTestFiles,
 			flags:             &cli.Flags{ExtractorsToRun: []string{"python/wheelegg"}},
+			wantScanStatus:    spb.ScanStatus_SUCCEEDED,
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantPackagesCount: 1,
 			wantFindingCount:  0,
@@ -183,6 +186,7 @@ func TestRunScan(t *testing.T) {
 				ImageTarball:    "image.tar",
 				ExtractorsToRun: []string{"go/gomod"},
 			},
+			wantScanStatus:    spb.ScanStatus_SUCCEEDED,
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantPackagesCount: 2,
 			wantFindingCount:  0,
@@ -195,6 +199,7 @@ func TestRunScan(t *testing.T) {
 				ExtractorsToRun: []string{"go/gomod"},
 			},
 			wantExit:          1,
+			wantScanStatus:    spb.ScanStatus_FAILED,
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
 			wantPackagesCount: 0,
 			wantFindingCount:  0,
@@ -203,6 +208,8 @@ func TestRunScan(t *testing.T) {
 			desc:              "Unsuccessful plugin run",
 			setupFunc:         createFailingDetectorTestFiles,
 			flags:             &cli.Flags{DetectorsToRun: []string{"cis"}},
+			wantExit:          1,
+			wantScanStatus:    spb.ScanStatus_PARTIALLY_SUCCEEDED,
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
 			wantPackagesCount: 0,
 			wantFindingCount:  0,
@@ -249,8 +256,8 @@ func TestRunScan(t *testing.T) {
 			if err = prototext.Unmarshal(output, result); err != nil {
 				t.Fatalf("prototext.Unmarshal(%v): %v", result, err)
 			}
-			if result.Status.Status != spb.ScanStatus_SUCCEEDED {
-				t.Errorf("Unexpected scan status, want success got %v", result.Status.Status)
+			if result.Status.Status != tc.wantScanStatus {
+				t.Errorf("Unexpected scan status, want %v got %v", tc.wantScanStatus, result.Status.Status)
 			}
 			gotPS := []spb.ScanStatus_ScanStatusEnum{}
 			for _, s := range result.PluginStatus {

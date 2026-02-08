@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ func (m *npmManifest) Clone() manifest.Manifest {
 		requirements: slices.Clone(m.requirements),
 		groups:       maps.Clone(m.groups),
 	}
-	clone.root.AttrSet = m.root.AttrSet.Clone()
+	clone.root.AttrSet = m.root.Clone()
 	clone.localManifests = make([]*npmManifest, len(m.localManifests))
 	for i, local := range m.localManifests {
 		clone.localManifests[i] = local.Clone().(*npmManifest)
@@ -139,7 +139,7 @@ type readWriter struct{}
 
 // GetReadWriter returns a ReadWriter for package.json manifest files.
 // registry is unused.
-func GetReadWriter(registry string) (manifest.ReadWriter, error) {
+func GetReadWriter() (manifest.ReadWriter, error) {
 	return readWriter{}, nil
 }
 

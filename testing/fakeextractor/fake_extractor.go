@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package fakeextractor provides a Extractor implementation to be used in tests.
+//
+//nolint:plugger // This package contains test only mocks
 package fakeextractor
 
 import (
@@ -39,6 +41,7 @@ type fakeExtractor struct {
 	version        int
 	requiredFiles  map[string]bool
 	pathToNamesErr map[string]NamesErr
+	dirExtractor   bool
 }
 
 // AllowUnexported is a utility function to be used with cmp.Diff to
@@ -65,7 +68,18 @@ func New(name string, version int, requiredFiles []string, pathToNamesErr map[st
 		version:        version,
 		requiredFiles:  rfs,
 		pathToNamesErr: pathToNamesErr,
+		dirExtractor:   false,
 	}
+}
+
+// NewDirExtractor returns a fake fakeExtractor designed for extracting directories.
+//
+// The fakeExtractor returns FileRequired(path) = true for any path in requiredFiles.
+// The fakeExtractor returns the package and error from pathToNamesErr given the same path to Extract(...).
+func NewDirExtractor(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) filesystem.Extractor {
+	ext := New(name, version, requiredFiles, pathToNamesErr).(*fakeExtractor)
+	ext.dirExtractor = true
+	return ext
 }
 
 // Name returns the extractor's name.
@@ -75,7 +89,11 @@ func (e *fakeExtractor) Name() string { return e.name }
 func (e *fakeExtractor) Version() int { return e.version }
 
 // Requirements returns the extractor's requirements.
-func (e *fakeExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *fakeExtractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{
+		ExtractFromDirs: e.dirExtractor,
+	}
+}
 
 // FileRequired should return true if the file described by path and mode is
 // relevant for the extractor.

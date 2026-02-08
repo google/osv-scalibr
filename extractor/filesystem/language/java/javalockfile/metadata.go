@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
 // Package javalockfile provides shared structures for Java extractors.
 package javalockfile
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata holds parsing information for a Java package.
 type Metadata struct {
 	ArtifactID   string
@@ -28,4 +32,37 @@ type Metadata struct {
 // DepGroups returns the dependency groups for the package.
 func (m Metadata) DepGroups() []string {
 	return m.DepGroupVals
+}
+
+// SetProto sets the JavaLockfileMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_JavaLockfileMetadata{
+		JavaLockfileMetadata: &pb.JavaLockfileMetadata{
+			ArtifactId:   m.ArtifactID,
+			GroupId:      m.GroupID,
+			DepGroupVals: m.DepGroupVals,
+			IsTransitive: m.IsTransitive,
+		},
+	}
+}
+
+// ToStruct converts the JavaLockfileMetadata proto to a Metadata struct.
+func ToStruct(m *pb.JavaLockfileMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		ArtifactID:   m.GetArtifactId(),
+		GroupID:      m.GetGroupId(),
+		DepGroupVals: m.GetDepGroupVals(),
+		IsTransitive: m.GetIsTransitive(),
+	}
 }

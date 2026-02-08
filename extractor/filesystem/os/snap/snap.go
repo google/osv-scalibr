@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
 	"github.com/google/osv-scalibr/inventory"
@@ -33,15 +32,16 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"gopkg.in/yaml.v3"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "os/snap"
 
-	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
-	defaultMaxFileSizeBytes = 1 * units.MiB
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
 )
 
 type snap struct {
@@ -52,26 +52,9 @@ type snap struct {
 	Architectures []string `yaml:"architectures"`
 }
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes: defaultMaxFileSizeBytes,
-		Stats:            nil,
-	}
-}
-
 // Extractor extracts snap apps.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
@@ -79,17 +62,21 @@ type Extractor struct {
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.SnapConfig { return c.GetSnap() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -120,7 +107,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if err != nil {
 		return false
 	}
-	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
@@ -130,10 +117,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -143,12 +130,12 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 // Extract extracts snap info from snap.yaml file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs, err := e.extractFromInput(input)
-	if e.stats != nil {
+	if e.Stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
 			fileSizeBytes = input.Info.Size()
 		}
-		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 			Path:          input.Path,
 			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 			FileSizeBytes: fileSizeBytes,

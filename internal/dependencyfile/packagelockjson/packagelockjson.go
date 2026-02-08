@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ type Package struct {
 	Dev         bool `json:"dev,omitempty"`
 	DevOptional bool `json:"devOptional,omitempty"`
 	Optional    bool `json:"optional,omitempty"`
+	InBundle    bool `json:"inBundle,omitempty"`
 
 	Dependencies         map[string]string `json:"dependencies,omitempty"`
 	DevDependencies      map[string]string `json:"devDependencies,omitempty"`
@@ -75,17 +76,27 @@ type Package struct {
 }
 
 // DepGroups returns the list of groups this package belongs to.
-// May be empty, or one or both of "dev", "optional".
+// Supported groups are "bundled", "dev", and "optional", with an
+// empty group implying a production dependency.
 func (pkg Package) DepGroups() []string {
-	if pkg.Dev {
-		return []string{"dev"}
-	}
-	if pkg.Optional {
-		return []string{"optional"}
-	}
-	if pkg.DevOptional {
-		return []string{"dev", "optional"}
+	var groups []string
+
+	if pkg.InBundle {
+		groups = []string{"bundled"}
 	}
 
-	return nil
+	if pkg.DevOptional {
+		groups = append(groups, "dev", "optional")
+
+		return groups
+	}
+
+	if pkg.Dev {
+		groups = append(groups, "dev")
+	}
+	if pkg.Optional {
+		groups = append(groups, "optional")
+	}
+
+	return groups
 }

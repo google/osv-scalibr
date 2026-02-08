@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 )
 
 func canonicalizeRubyGemVersion(str string) string {
-	res := ""
+	var res strings.Builder
 
 	checkPrevious := false
 	previousWasDigit := true
@@ -27,24 +27,24 @@ func canonicalizeRubyGemVersion(str string) string {
 	for _, c := range str {
 		if c == 46 {
 			checkPrevious = false
-			res += "."
+			res.WriteString(".")
 
 			continue
 		}
 
-		isDigit := c >= 48 && c <= 57
+		isDigit := isASCIIDigit(c)
 
 		if checkPrevious && previousWasDigit != isDigit {
-			res += "."
+			res.WriteString(".")
 		}
 
-		res += string(c)
+		res.WriteRune(c)
 
 		previousWasDigit = isDigit
 		checkPrevious = true
 	}
 
-	return res
+	return res.String()
 }
 
 func groupSegments(segs []string) (numbers []string, build []string) {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -296,7 +296,7 @@ func TestExtractor(t *testing.T) {
 				},
 				{
 					// This is not valid JSON. The extractor can still parse it, however.
-					name: "multiline trailing comma",
+					name: "multiline_trailing_comma",
 					input: `{
 	"baz": "12345",
 	"bar": "world",
@@ -349,7 +349,7 @@ func TestExtractor(t *testing.T) {
 					},
 				},
 				{
-					name: "different whitespace after colon",
+					name: "different_whitespace_after_colon",
 					input: `{
 	"baz":  "12345",
 	"bar":	"world",

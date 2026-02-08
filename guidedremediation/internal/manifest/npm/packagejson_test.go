@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ func checkManifest(t *testing.T, name string, got manifest.Manifest, want testMa
 }
 
 func TestRead(t *testing.T) {
-	rw, err := npm.GetReadWriter("")
+	rw, err := npm.GetReadWriter()
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestReadWithWorkspaces(t *testing.T) {
-	rw, err := npm.GetReadWriter("")
+	rw, err := npm.GetReadWriter()
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -250,7 +250,7 @@ func TestReadWithWorkspaces(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	rw, err := npm.GetReadWriter("")
+	rw, err := npm.GetReadWriter()
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}

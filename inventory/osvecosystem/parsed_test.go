@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 type testCase struct {
@@ -36,133 +36,140 @@ func buildCases(t *testing.T) []testCase {
 		{
 			string: "crates.io",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemCratesIO,
+				Ecosystem: osvconstants.EcosystemCratesIO,
+				Suffix:    "",
+			},
+		},
+		{
+			string: "GIT",
+			parsed: osvecosystem.Parsed{
+				Ecosystem: "GIT",
 				Suffix:    "",
 			},
 		},
 		{
 			string: "npm",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemNPM,
+				Ecosystem: osvconstants.EcosystemNPM,
 				Suffix:    "",
 			},
 		},
 		{
 			string: "Debian: ",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemDebian,
+				Ecosystem: osvconstants.EcosystemDebian,
 				Suffix:    " ",
 			},
 		},
 		{
 			string: "Debian::",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemDebian,
+				Ecosystem: osvconstants.EcosystemDebian,
 				Suffix:    ":",
 			},
 		},
 		{
 			string: "Alpine",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemAlpine,
+				Ecosystem: osvconstants.EcosystemAlpine,
 				Suffix:    "",
 			},
 		},
 		{
 			string: "Alpine:v",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemAlpine,
+				Ecosystem: osvconstants.EcosystemAlpine,
 				Suffix:    "v",
 			},
 		},
 		{
 			string: "Alpine:v3.16",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemAlpine,
+				Ecosystem: osvconstants.EcosystemAlpine,
 				Suffix:    "v3.16",
 			},
 		},
 		{
 			string: "Alpine:3.16",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemAlpine,
+				Ecosystem: osvconstants.EcosystemAlpine,
 				Suffix:    "3.16",
 			},
 		},
 		{
 			string: "Maven",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemMaven,
+				Ecosystem: osvconstants.EcosystemMaven,
 				Suffix:    "",
 			},
 		},
 		{
 			string: "Maven:https://maven.google.com",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemMaven,
+				Ecosystem: osvconstants.EcosystemMaven,
 				Suffix:    "https://maven.google.com",
 			},
 		},
 		{
 			string: "Photon OS",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemPhotonOS,
+				Ecosystem: osvconstants.EcosystemPhotonOS,
 				Suffix:    "",
 			},
 		},
 		{
 			string: "Photon OS:abc",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemPhotonOS,
+				Ecosystem: osvconstants.EcosystemPhotonOS,
 				Suffix:    "abc",
 			},
 		},
 		{
 			string: "Photon OS:3.0",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemPhotonOS,
+				Ecosystem: osvconstants.EcosystemPhotonOS,
 				Suffix:    "3.0",
 			},
 		},
 		{
 			string: "Red Hat",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemRedHat,
+				Ecosystem: osvconstants.EcosystemRedHat,
 				Suffix:    "",
 			},
 		},
 		{
 			string: "Red Hat:abc",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemRedHat,
+				Ecosystem: osvconstants.EcosystemRedHat,
 				Suffix:    "abc",
 			},
 		},
 		{
 			string: "Red Hat:rhel_aus:8.4::appstream",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemRedHat,
+				Ecosystem: osvconstants.EcosystemRedHat,
 				Suffix:    "rhel_aus:8.4::appstream",
 			},
 		},
 		{
 			string: "Ubuntu",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemUbuntu,
+				Ecosystem: osvconstants.EcosystemUbuntu,
 				Suffix:    "",
 			},
 		},
 		{
 			string: "Ubuntu:Pro",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemUbuntu,
+				Ecosystem: osvconstants.EcosystemUbuntu,
 				Suffix:    "Pro",
 			},
 		},
 		{
 			string: "Ubuntu:Pro:18.04:LTS",
 			parsed: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemUbuntu,
+				Ecosystem: osvconstants.EcosystemUbuntu,
 				Suffix:    "Pro:18.04:LTS",
 			},
 		},

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ func TestDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name: "larger input containing key",
+			name: "larger_input_containing_key",
 			input: fmt.Sprintf(`
 		:test_api_key: pat-test
 		:dockerhub_pat: %s

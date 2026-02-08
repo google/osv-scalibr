@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -115,23 +115,23 @@ func TestScan(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			desc: "File doesn't exist",
+			desc: "File_doesn't_exist",
 			fsys: &fakeFS{},
 		},
 		{
-			desc: "File empty",
+			desc: "File_empty",
 			fsys: &fakeFS{files: map[string]string{"etc/shadow": ""}},
 		},
 		{
-			desc: "File with incorrect format",
+			desc: "File_with_incorrect_format",
 			fsys: &fakeFS{files: map[string]string{"etc/shadow": "x\ny\n"}},
 		},
 		{
-			desc: "File without hashes",
+			desc: "File_without_hashes",
 			fsys: &fakeFS{files: map[string]string{"etc/shadow": "x:!:stuff\ny:*:stuff\nz:!!:stuff\n"}},
 		},
 		{
-			desc: "File with hashes, some cracked",
+			desc: "File_with_hashes,_some_cracked",
 			fsys: &fakeFS{files: map[string]string{"etc/shadow": sampleEtcShadow}},
 			wantFindings: []*inventory.GenericFinding{{
 				Adv: wantAdv,

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ package resolution
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sync"
 
 	"deps.dev/util/resolve"
+	"github.com/google/osv-scalibr/clients/datasource"
 )
 
 // CombinedNativeClient is a ResolutionClient that combines all the native clients:
@@ -37,20 +37,26 @@ type CombinedNativeClient struct {
 
 // CombinedNativeClientOptions contains the options each client in the CombinedNativeClient.
 type CombinedNativeClientOptions struct {
-	ProjectDir    string // The project directory to use, currently only used for NPM to find .npmrc files.
-	LocalRegistry string // The local directory to store the downloaded manifests during resolution.
-	MavenRegistry string // The default Maven registry to use.
-	PyPIRegistry  string // The default PyPI registry to use.
+	ProjectDir        string                             // The project directory to use, currently only used for NPM to find .npmrc files.
+	LocalRegistry     string                             // The local directory to store the downloaded manifests during resolution.
+	MavenRegistry     string                             // The default Maven registry to use.
+	PyPIRegistry      string                             // The default PyPI registry to use.
+	MavenClient       *datasource.MavenRegistryAPIClient // The Maven registry client to use, if nil, a new client will be created.
+	DisableGoogleAuth bool                               // If true, do not try to create google.DefaultClient for Artifact Registry.
 }
 
 // NewCombinedNativeClient makes a new CombinedNativeClient.
 func NewCombinedNativeClient(opts CombinedNativeClientOptions) (*CombinedNativeClient, error) {
-	return &CombinedNativeClient{opts: opts}, nil
+	client := &CombinedNativeClient{opts: opts}
+	if opts.MavenClient != nil {
+		client.mavenRegistryClient = NewMavenRegistryClientWithAPI(opts.MavenClient)
+	}
+	return client, nil
 }
 
 // Version returns metadata of a version specified by the VersionKey.
 func (c *CombinedNativeClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
-	client, err := c.clientForSystem(vk.System)
+	client, err := c.clientForSystem(ctx, vk.System)
 	if err != nil {
 		return resolve.Version{}, err
 	}
@@ -59,7 +65,7 @@ func (c *CombinedNativeClient) Version(ctx context.Context, vk resolve.VersionKe
 
 // Versions returns all the available versions of the package specified by the given PackageKey.
 func (c *CombinedNativeClient) Versions(ctx context.Context, pk resolve.PackageKey) ([]resolve.Version, error) {
-	client, err := c.clientForSystem(pk.System)
+	client, err := c.clientForSystem(ctx, pk.System)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +74,7 @@ func (c *CombinedNativeClient) Versions(ctx context.Context, pk resolve.PackageK
 
 // Requirements returns requirements of a version specified by the VersionKey.
 func (c *CombinedNativeClient) Requirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
-	client, err := c.clientForSystem(vk.System)
+	client, err := c.clientForSystem(ctx, vk.System)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +83,7 @@ func (c *CombinedNativeClient) Requirements(ctx context.Context, vk resolve.Vers
 
 // MatchingVersions returns versions matching the requirement specified by the VersionKey.
 func (c *CombinedNativeClient) MatchingVersions(ctx context.Context, vk resolve.VersionKey) ([]resolve.Version, error) {
-	client, err := c.clientForSystem(vk.System)
+	client, err := c.clientForSystem(ctx, vk.System)
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +91,12 @@ func (c *CombinedNativeClient) MatchingVersions(ctx context.Context, vk resolve.
 }
 
 // AddRegistries adds registries to the MavenRegistryClient.
-func (c *CombinedNativeClient) AddRegistries(registries []Registry) error {
+func (c *CombinedNativeClient) AddRegistries(ctx context.Context, registries []Registry) error {
 	// TODO(#541): Currently only MavenRegistryClient supports adding registries.
 	// We might need to add support for PyPIRegistryClient.
 	// But this AddRegistries method should take a system as input,
 	// so that we can add registries to the corresponding client.
-	client, err := c.clientForSystem(resolve.Maven)
+	client, err := c.clientForSystem(ctx, resolve.Maven)
 	if err != nil {
 		return err
 	}
@@ -99,22 +105,18 @@ func (c *CombinedNativeClient) AddRegistries(registries []Registry) error {
 		// Currently should not happen.
 		return nil
 	}
-	return regCl.AddRegistries(registries)
+	return regCl.AddRegistries(ctx, registries)
 }
 
-func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Client, error) {
+func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.System) (resolve.Client, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	localRegistry := c.opts.LocalRegistry
 	var err error
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			if localRegistry != "" {
-				localRegistry = filepath.Join(c.opts.LocalRegistry, "maven")
-			}
-			c.mavenRegistryClient, err = NewMavenRegistryClient(c.opts.MavenRegistry, localRegistry)
+			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, c.opts.LocalRegistry, c.opts.DisableGoogleAuth)
 			if err != nil {
 				return nil, err
 			}
@@ -129,11 +131,8 @@ func (c *CombinedNativeClient) clientForSystem(sys resolve.System) (resolve.Clie
 		}
 		return c.npmRegistryClient, nil
 	case resolve.PyPI:
-		if localRegistry != "" {
-			localRegistry = filepath.Join(c.opts.LocalRegistry, "pypi")
-		}
 		if c.pypiRegistryClient == nil {
-			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry, localRegistry)
+			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry, c.opts.LocalRegistry)
 		}
 		return c.pypiRegistryClient, nil
 	case resolve.UnknownSystem:

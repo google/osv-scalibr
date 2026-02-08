@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,18 +35,6 @@ type fakeFS struct {
 	perms  fs.FileMode
 	uid    uint32
 	gid    uint32
-}
-
-type fakeFile struct {
-	perms fs.FileMode
-	uid   uint32
-	gid   uint32
-}
-
-type fakeFileInfo struct {
-	perms fs.FileMode
-	uid   uint32
-	gid   uint32
 }
 
 func TestScan(t *testing.T) {
@@ -90,7 +78,7 @@ func TestScan(t *testing.T) {
 			wantFindings: nil,
 		},
 		{
-			desc: "Permissions incorrect",
+			desc: "Permissions_incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 0},
 			wantFindings: []*inventory.GenericFinding{{
 				Adv: wantAdv,
@@ -100,7 +88,7 @@ func TestScan(t *testing.T) {
 			}},
 		},
 		{
-			desc: "Permissions and uid incorrect",
+			desc: "Permissions_and_uid_incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 10, gid: 0},
 			wantFindings: []*inventory.GenericFinding{{
 				Adv: wantAdv,
@@ -110,7 +98,7 @@ func TestScan(t *testing.T) {
 			}},
 		},
 		{
-			desc: "Permissions and gid incorrect",
+			desc: "Permissions_and_gid_incorrect",
 			fsys: &fakeFS{exists: true, perms: 0777, uid: 0, gid: 10},
 			wantFindings: []*inventory.GenericFinding{{
 				Adv: wantAdv,

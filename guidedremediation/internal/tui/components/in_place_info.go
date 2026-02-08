@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -140,8 +140,8 @@ func (ip *inPlaceInfo) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		case key.Matches(msg, Keys.Quit):
 			return ip, CloseViewModel
 		case key.Matches(msg, Keys.Select):
-			vID := ip.Model.Rows()[ip.Model.Cursor()][2]
-			vIdx := slices.IndexFunc(ip.vulns, func(v resolution.Vulnerability) bool { return v.OSV.ID == vID })
+			vID := ip.Rows()[ip.Cursor()][2]
+			vIdx := slices.IndexFunc(ip.vulns, func(v resolution.Vulnerability) bool { return v.OSV.Id == vID })
 			if vIdx == -1 {
 				// something went wrong, just ignore this.
 				return ip, nil

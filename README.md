@@ -111,13 +111,13 @@ A collection of all built-in plugin modules can be found in the definition files
 [detectors](/detector/list/list.go),
 [annotators](/annotator/list/list.go),
 [enrichers](/enricher/enricherlist/list.go)).
-To enable them, just import plugins/list and add the appropriate plugin names
+To enable them, just import plugin/list and add the appropriate plugin names
 to the scan config, e.g.
 ```
 import (
   "context"
   scalibr "github.com/google/osv-scalibr"
-  pl "github.com/google/osv-scalibr/plugins/list"
+  pl "github.com/google/osv-scalibr/plugin/list"
   scalibrfs "github.com/google/osv-scalibr/fs"
 )
 plugins, _ := pl.FromNames([]string{"os", "cis", "vex"})
@@ -216,6 +216,10 @@ log.Info(results)
 
 Read how to [contribute to OSV-SCALIBR](CONTRIBUTING.md).
 
+Look for any [open issues](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20-label%3APRP)
+or [unowned Patch Reward work](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20label%3APRP%3AInactive)
+you'd like to contribute to.
+
 To build and test your local changes, run `make` and `make test`. A local
 `scalibr` binary will be generated in the repo base.
 
@@ -224,9 +228,7 @@ happen when, say, you want to contribute a new inventory type. For such cases,
 you'll need to install a few dependencies:
 
 *   `protoc`: Install the appropriate
-    [precompiled protoc binary](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os).
-    *   For Mac, you can also
-        [install via HomeBrew](https://grpc.io/docs/protoc-installation/#install-using-a-package-manager).
+    [precompiled protoc binary](https://protobuf.dev/installation/).
 *   `protoc-gen-go`: Run `go install
     google.golang.org/protobuf/cmd/protoc-gen-go`
 

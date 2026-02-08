@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package unknownbinariesanno
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"slices"
 
 	"github.com/google/osv-scalibr/annotator"
@@ -29,10 +31,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Name of the plugin
-const Name = "ffa/unknownbinaries"
+const Name = "ffa/unknownbinariesanno"
 
 // List of filters to apply to exclude known binaries
 var filters = []filter.Filter{
@@ -42,6 +46,11 @@ var filters = []filter.Filter{
 
 // Annotator further processes the UnknownBinaryExtractor
 type Annotator struct {
+}
+
+// New returns a new Annotator.
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) {
+	return &Annotator{}, nil
 }
 
 // Annotate filters out binaries extracted by unknwonbinaries extractor that can be accounted for by other
@@ -74,6 +83,11 @@ func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput,
 	for _, f := range filters {
 		err := f.HashSetFilter(ctx, input.ScanRoot.FS, unknownBinariesSet)
 		if err != nil {
+			// If a particular system's package manager db doesn't exist, it is not installed or has no package info.
+			// We simply continue down the filter list
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
 			return fmt.Errorf("%s halted at %q (%q) because %w", anno.Name(), input.ScanRoot.Path, f.Name(), err)
 		}
 	}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestDependencySubgraph(t *testing.T) {
@@ -104,17 +104,17 @@ root 1.0.0
 	cl.AddVersion(v, []resolve.RequirementVersion{})
 	v.Version = "2.0.0"
 	cl.AddVersion(v, []resolve.RequirementVersion{})
-	vuln := &osvschema.Vulnerability{
-		ID: "VULN-001",
-		Affected: []osvschema.Affected{{
-			Package: osvschema.Package{
+	vuln := &osvpb.Vulnerability{
+		Id: "VULN-001",
+		Affected: []*osvpb.Affected{{
+			Package: &osvpb.Package{
 				Ecosystem: "npm",
 				Name:      vulnPkgName,
 			},
-			Ranges: []osvschema.Range{
+			Ranges: []*osvpb.Range{
 				{
-					Type:   "SEMVER",
-					Events: []osvschema.Event{{Introduced: "0"}, {Fixed: "2.0.0"}},
+					Type:   osvpb.Range_SEMVER,
+					Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: "2.0.0"}},
 				},
 			},
 		},

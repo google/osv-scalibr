@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package containerd_test
 
 import (
-	"context"
 	"testing"
 
 	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
@@ -25,7 +24,7 @@ import (
 
 func TestDummyExtract(t *testing.T) {
 	dummyExtractor := plugin.New(plugin.Config{})
-	_, err := dummyExtractor.Extract(context.Background(), nil)
+	_, err := dummyExtractor.Extract(t.Context(), nil)
 	// Always expect an error on non-Linux.
 	if err == nil {
 		t.Fatalf("Extract() error: %v", err)

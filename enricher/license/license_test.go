@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ func TestEnrich(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
+				tt.ctx = t.Context()
 			}
 
 			var input *enricher.ScanInput

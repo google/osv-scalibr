@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ func Run(ctx context.Context, c stats.Collector, detectors []detector.Detector, 
 		}
 		findings.PackageVulns = append(findings.PackageVulns, result.PackageVulns...)
 		findings.GenericFindings = append(findings.GenericFindings, result.GenericFindings...)
-		status = append(status, plugin.StatusFromErr(d, false, err))
+		status = append(status, plugin.StatusFromErr(d, false, err, nil))
 	}
 	if err := validateAdvisories(findings.GenericFindings); err != nil {
 		return inventory.Finding{}, status, err

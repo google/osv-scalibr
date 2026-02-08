@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,17 +27,17 @@ func TestYankedUnmarshalJSON(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "boolean false",
+			name: "boolean_false",
 			json: `false`,
 			want: Yanked{Value: false},
 		},
 		{
-			name: "boolean true",
+			name: "boolean_true",
 			json: `true`,
 			want: Yanked{Value: true},
 		},
 		{
-			name: "string reason",
+			name: "string_reason",
 			json: `"security issue"`,
 			want: Yanked{Value: true},
 		},

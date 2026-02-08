@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -88,12 +88,12 @@ func TestRun(t *testing.T) {
 		wantInv *inventory.Inventory // Inventory after enrichment.
 	}{
 		{
-			name: "no enrichers",
+			name: "no_enrichers",
 			cfg:  &enricher.Config{},
 			want: nil,
 		},
 		{
-			name: "enricher requires FS access but no scan root is provided",
+			name: "enricher_requires_FS_access_but_no_scan_root_is_provided",
 			cfg: &enricher.Config{
 				Enrichers: []enricher.Enricher{
 					fakeenricher.MustNew(t, &fakeenricher.Config{
@@ -108,7 +108,7 @@ func TestRun(t *testing.T) {
 			wantInv: inventory1, // Inventory is not modified.
 		},
 		{
-			name: "some enrichers run successfully",
+			name: "some_enrichers_run_successfully",
 			cfg: &enricher.Config{
 				Enrichers: []enricher.Enricher{
 					fakeenricher.MustNew(t, &fakeenricher.Config{
@@ -133,7 +133,7 @@ func TestRun(t *testing.T) {
 			wantInv: inventory3,
 		},
 		{
-			name: "some fail and some succeed",
+			name: "some_fail_and_some_succeed",
 			cfg: &enricher.Config{
 				Enrichers: []enricher.Enricher{
 					fakeenricher.MustNew(t, &fakeenricher.Config{

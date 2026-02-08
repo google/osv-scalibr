@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -47,55 +49,29 @@ var (
 	reVersion = regexp.MustCompile(`(\x00|\x{FFFD})(.L)?(?P<version>v?(\d+\.\d+\.\d+[-\w]*[+\w]*))\x00`)
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
-	// If this limit is greater than zero and a file is encountered that is larger
-	// than this limit, the file is ignored by returning false for `FileRequired`.
-	MaxFileSizeBytes int64
-	// VersionFromContent enables extracting the module version from the binary content.
-	// This is off by default because the operation is expensive as it uses a regexp to parse the
-	// binary content.
-	VersionFromContent bool
-}
-
 // Extractor extracts packages from buildinfo inside go binaries files.
 type Extractor struct {
-	stats            stats.Collector
+
+	// Stats is a stats collector for reporting metrics.
+	Stats stats.Collector
+
+	// maxFileSizeBytes is the maximum size of a file that can be extracted.
+	// If this limit is greater than zero and a file is encountered that is larger
+	// than this limit, the file is ignored by returning false for `FileRequired`.
 	maxFileSizeBytes int64
 
-	// VersionFromBinary enables extracting the module version from the binary content.
+	// versionFromBinary enables extracting the module version from the binary content.
 	// This operation is expensive because it uses a regexp to parse the binary content.
-	VersionFromContent bool
-}
-
-// DefaultConfig returns a default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		Stats:              nil,
-		MaxFileSizeBytes:   0,
-		VersionFromContent: false,
-	}
+	versionFromContent bool
 }
 
 // New returns a Go binary extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:              cfg.Stats,
-		maxFileSizeBytes:   cfg.MaxFileSizeBytes,
-		VersionFromContent: cfg.VersionFromContent,
-	}
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	e := &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoBinaryConfig { return c.GetGoBinary() })
+	e.versionFromContent = specific.GetVersionFromContent()
+	return e, nil
 }
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -127,10 +103,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -161,7 +137,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	pkg := e.extractPackagesFromBuildInfo(binfo, input.Path)
 	mainPkg := mainModule(binfo, input.Path)
 	if mainPkg != nil {
-		if mainPkg.Version == devel && e.VersionFromContent {
+		if mainPkg.Version == devel && e.versionFromContent {
 			if version := extractVersionFromConent(input.Reader); version != "" {
 				mainPkg.Version = version
 			}
@@ -173,18 +149,29 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err error) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
 	var fileSizeBytes int64
 	if fileinfo != nil {
 		fileSizeBytes = fileinfo.Size()
 	}
-	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+	e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 		Path:          path,
 		Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 		FileSizeBytes: fileSizeBytes,
 	})
+}
+
+// MaxFileSizeBytes returns the maximum size of a file that can be extracted.
+func (e *Extractor) MaxFileSizeBytes() int64 {
+	return e.maxFileSizeBytes
+}
+
+// VersionFromContent returns whether module version extraction
+// from binary content is enabled.
+func (e *Extractor) VersionFromContent() bool {
+	return e.versionFromContent
 }
 
 func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) []*extractor.Package {

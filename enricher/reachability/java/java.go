@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -115,11 +115,8 @@ func (enr Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *
 	}
 	jars := make(map[string]struct{})
 	for i := range inv.Packages {
-		for _, extractorName := range inv.Packages[i].Plugins {
-			if extractorName == archive.Name {
-				jars[inv.Packages[i].Locations[0]] = struct{}{}
-				break
-			}
+		if slices.Contains(inv.Packages[i].Plugins, archive.Name) {
+			jars[inv.Packages[i].Locations[0]] = struct{}{}
 		}
 	}
 

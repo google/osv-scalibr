@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -213,7 +213,7 @@ func createTarBallFromImage(imageName string) (string, error) {
 		fileFd.Close()
 		errVal := os.Remove(fileFd.Name())
 		if !os.IsNotExist(errVal) {
-			log.Warnf("unable to remove file %s: %w", fileFd.Name(), errVal)
+			log.Warnf("unable to remove file %s: %v", fileFd.Name(), errVal)
 		}
 		return "", fmt.Errorf("unable to write to tarfile for image %s: %w", imageName, err)
 	}
@@ -447,7 +447,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 
 	// If history is invalid, then just create the chain layers based on the v1 layers.
 	if err := validateHistory(v1Layers, history); err != nil {
-		log.Warnf("Invalid history entries found in image, layer metadata may not be populated: %v")
+		log.Warnf("Invalid history entries found in image, layer metadata may not be populated: %v", err)
 
 		for i, v1Layer := range v1Layers {
 			chainLayers = append(chainLayers, &chainLayer{
@@ -608,7 +608,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			// If the error is due to a file read limit being exceeded or a symlink pointing outside the
 			// root, then we fail open and skip the file.
 			if errors.Is(err, ErrFileReadLimitExceeded) || errors.Is(err, ErrSymlinkPointsOutsideRoot) {
-				log.Warnf("failed to handle tar entry with path %s: %w", virtualPath, err)
+				log.Warnf("failed to handle tar entry with path %s: %v", virtualPath, err)
 				continue
 			}
 			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
@@ -640,9 +640,9 @@ func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersTo
 	currentChainLayer := chainLayersToFill[0]
 
 	runningDir := "/"
-	dirs := strings.Split(path.Dir(virtualPath), "/")
+	dirs := strings.SplitSeq(path.Dir(virtualPath), "/")
 
-	for _, dir := range dirs {
+	for dir := range dirs {
 		runningDir = path.Join(runningDir, dir)
 
 		// If the directory already exists in the current chain layer, then skip it.

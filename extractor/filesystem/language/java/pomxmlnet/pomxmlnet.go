@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	mavenresolve "deps.dev/util/resolve/maven"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/clients/resolution"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -35,6 +36,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -44,46 +47,42 @@ const (
 
 // Extractor extracts Maven packages with transitive dependency resolution.
 type Extractor struct {
-	depClient   resolve.Client
+	DepClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
 }
 
-// Config is the configuration for the pomxmlnet Extractor.
-type Config struct {
-	*datasource.MavenRegistryAPIClient
-
-	DependencyClient resolve.Client
-}
-
-// NewConfig returns the configuration given the URL of the Maven registry to fetch metadata.
-func NewConfig(remote, local string) Config {
-	// No need to check errors since we are using the default Maven Central URL.
-	mavenClient, _ := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{
-		URL:             remote,
-		ReleasesEnabled: true,
-	}, local)
-	depClient := resolution.NewMavenRegistryClientWithAPI(mavenClient)
-	return Config{
-		DependencyClient:       depClient,
-		MavenRegistryAPIClient: mavenClient,
-	}
-}
-
-// DefaultConfig returns the default configuration for the pomxmlnet extractor.
-func DefaultConfig() Config {
-	return NewConfig("", "")
-}
-
 // New makes a new pom.xml transitive extractor with the given config.
-func New(c Config) *Extractor {
-	return &Extractor{
-		depClient:   c.DependencyClient,
-		MavenClient: c.MavenRegistryAPIClient,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	upstreamRegistry := ""
+	depsdevRequirements := false
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
+	if specific != nil {
+		upstreamRegistry = specific.UpstreamRegistry
+		depsdevRequirements = specific.DepsDevRequirements
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	// No need to check errors since we are using the default Maven Central URL.
+	mavenClient, _ := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{
+		URL:             upstreamRegistry,
+		ReleasesEnabled: true,
+	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
+
+	var depClient resolve.Client
+	var err error
+	if depsdevRequirements {
+		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+		}
+	} else {
+		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
+	}
+
+	return &Extractor{
+		DepClient:   depClient,
+		MavenClient: mavenClient,
+	}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -114,10 +113,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to merge profiles: %w", err)
 	}
+	// Interpolate the repositories so that properties are resolved.
+	if err := project.InterpolateRepositories(); err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to interpolate project: %w", err)
+	}
 	// Clear the registries that may be from other extraction.
 	e.MavenClient = e.MavenClient.WithoutRegistries()
 	for _, repo := range project.Repositories {
-		if err := e.MavenClient.AddRegistry(datasource.MavenRegistry{
+		if repo.URL.ContainsProperty() {
+			continue
+		}
+		if err := e.MavenClient.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -149,14 +155,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		for i, reg := range registries {
 			clientRegs[i] = reg
 		}
-		if cl, ok := e.depClient.(resolution.ClientWithRegistries); ok {
-			if err := cl.AddRegistries(clientRegs); err != nil {
+		if cl, ok := e.DepClient.(resolution.ClientWithRegistries); ok {
+			if err := cl.AddRegistries(ctx, clientRegs); err != nil {
 				return inventory.Inventory{}, err
 			}
 		}
 	}
 
-	overrideClient := resolution.NewOverrideClient(e.depClient)
+	overrideClient := resolution.NewOverrideClient(e.DepClient)
 	resolver := mavenresolve.NewResolver(overrideClient)
 
 	// Resolve the dependencies.

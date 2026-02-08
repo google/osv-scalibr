@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,12 +14,38 @@
 
 package binary
 
-import "github.com/ossf/osv-schema/bindings/go/osvschema"
+import (
+	"encoding/json"
+
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
+)
 
 // govulncheckMessage contains the relevant parts of the json output of govulncheck.
 type govulncheckMessage struct {
-	OSV     *osvschema.Vulnerability `json:"osv,omitempty"`
-	Finding *govulncheckFinding      `json:"finding,omitempty"`
+	OSV     *osvpb.Vulnerability `json:"osv,omitempty"`
+	Finding *govulncheckFinding  `json:"finding,omitempty"`
+}
+
+// UnmarshalJSON unmarshals the govulncheck message. The OSV field is a proto
+// message, so it needs to be unmarshaled with protojson.
+func (m *govulncheckMessage) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if osv, ok := raw["osv"]; ok {
+		m.OSV = &osvpb.Vulnerability{}
+		if err := protojson.Unmarshal(osv, m.OSV); err != nil {
+			return err
+		}
+	}
+	if finding, ok := raw["finding"]; ok {
+		if err := json.Unmarshal(finding, &m.Finding); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // govulncheckFinding is a trimmed down version of govulncheck finding.

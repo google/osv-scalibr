@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ type Metadata struct {
 	Status            string
 	SourceName        string
 	SourceVersion     string
+	PackageSource     string
 	PackageVersion    string
 	OSID              string
 	OSVersionCodename string
@@ -75,6 +76,7 @@ func (m *Metadata) SetProto(p *pb.Package) {
 			Status:            m.Status,
 			SourceName:        m.SourceName,
 			SourceVersion:     m.SourceVersion,
+			PackageSource:     m.PackageSource,
 			PackageVersion:    m.PackageVersion,
 			OsId:              m.OSID,
 			OsVersionCodename: m.OSVersionCodename,
@@ -85,7 +87,7 @@ func (m *Metadata) SetProto(p *pb.Package) {
 	}
 }
 
-// ToStruct converts the NetportsMetadata proto to a Metadata struct.
+// ToStruct converts the DPKGPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.DPKGPackageMetadata) *Metadata {
 	if m == nil {
 		return nil
@@ -96,6 +98,7 @@ func ToStruct(m *pb.DPKGPackageMetadata) *Metadata {
 		Status:            m.GetStatus(),
 		SourceName:        m.GetSourceName(),
 		SourceVersion:     m.GetSourceVersion(),
+		PackageSource:     m.GetPackageSource(),
 		PackageVersion:    m.GetPackageVersion(),
 		OSID:              m.GetOsId(),
 		OSVersionCodename: m.GetOsVersionCodename(),

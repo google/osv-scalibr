@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,10 +29,15 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
-	var e filesystem.Extractor = containerd.Extractor{}
+	e, err := containerd.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("containerd.New failed: %v", err)
+	}
 
 	tests := []struct {
 		name           string
@@ -47,7 +52,7 @@ func TestFileRequired(t *testing.T) {
 			wantIsRequired: true,
 		},
 		{
-			name: "containerd metadb windows",
+			name: "containerd_metadb_windows",
 			path: "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db",
 			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
 			onGoos:         "ignore",
@@ -89,7 +94,7 @@ func TestExtract(t *testing.T) {
 		shimPIDFilePath   string // path to shim.pid, will be used for Windows test cases.
 		namespace         string
 		containerdID      string
-		cfg               containerd.Config
+		maxFileSizeBytes  int64
 		onGoos            string
 		wantPackages      []*extractor.Package
 		wantErr           error
@@ -101,10 +106,8 @@ func TestExtract(t *testing.T) {
 			statusFilePath:    "testdata/status",
 			namespace:         "k8s.io",
 			containerdID:      "b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 500 * units.MiB,
-			},
-			onGoos: "linux",
+			maxFileSizeBytes:  500 * units.MiB,
+			onGoos:            "linux",
 			wantPackages: []*extractor.Package{
 				{
 					Name:    "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/eks-pod-identity-agent:0.1.15",
@@ -133,10 +136,8 @@ func TestExtract(t *testing.T) {
 			statusFilePath:    "testdata/status_long_lived",
 			namespace:         "k8s.io",
 			containerdID:      "b0653b5a8357310c1f18d680cb26c559a8cc9595002888cf542affaaeeb30e99",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 500 * units.MiB,
-			},
-			onGoos: "linux",
+			maxFileSizeBytes:  500 * units.MiB,
+			onGoos:            "linux",
 			wantPackages: []*extractor.Package{
 				{
 					Name:    "us-docker.pkg.dev/google-samples/containers/gke/security/maven-vulns:latest",
@@ -168,11 +169,9 @@ func TestExtract(t *testing.T) {
 			namespace:         "default",
 			containerdID:      "test_pod",
 			onGoos:            "linux",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 500 * units.MiB,
-			},
-			wantPackages: nil,
-			wantErr:      cmpopts.AnyError,
+			maxFileSizeBytes:  500 * units.MiB,
+			wantPackages:      nil,
+			wantErr:           cmpopts.AnyError,
 		},
 		{
 			name:              "metadb too large",
@@ -182,11 +181,9 @@ func TestExtract(t *testing.T) {
 			namespace:         "default",
 			containerdID:      "test_pod",
 			onGoos:            "linux",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 1 * units.KiB,
-			},
-			wantPackages: nil,
-			wantErr:      cmpopts.AnyError,
+			maxFileSizeBytes:  1 * units.KiB,
+			wantPackages:      nil,
+			wantErr:           cmpopts.AnyError,
 		},
 		{
 			name:              "invalid status file",
@@ -196,20 +193,16 @@ func TestExtract(t *testing.T) {
 			namespace:         "k8s.io",
 			containerdID:      "b47fb93b51d091e16ae145b8b1438e5c011fd68cd65305fcd42fd83a13da7a8c",
 			onGoos:            "linux",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 500 * units.MiB,
-			},
-			wantPackages: []*extractor.Package{},
+			maxFileSizeBytes:  500 * units.MiB,
+			wantPackages:      []*extractor.Package{},
 		},
 		{
-			name:            "metadb valid windows",
-			path:            "testdata/meta_windows.db",
-			shimPIDFilePath: "testdata/shim.pid",
-			namespace:       "default",
-			containerdID:    "test_pod",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 500 * units.MiB,
-			},
+			name:             "metadb valid windows",
+			path:             "testdata/meta_windows.db",
+			shimPIDFilePath:  "testdata/shim.pid",
+			namespace:        "default",
+			containerdID:     "test_pod",
+			maxFileSizeBytes: 500 * units.MiB,
 			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
 			onGoos: "ignore",
 			wantPackages: []*extractor.Package{
@@ -235,11 +228,9 @@ func TestExtract(t *testing.T) {
 			namespace:       "default",
 			containerdID:    "test_pod",
 			// TODO(b/350963790): Enable this test case once the extractor is supported on Windows.
-			onGoos: "ignore",
-			cfg: containerd.Config{
-				MaxMetaDBFileSize: 500 * units.MiB,
-			},
-			wantPackages: []*extractor.Package{},
+			onGoos:           "ignore",
+			maxFileSizeBytes: 500 * units.MiB,
+			wantPackages:     []*extractor.Package{},
 		},
 	}
 
@@ -264,7 +255,10 @@ func TestExtract(t *testing.T) {
 				input = createScanInput(t, d, "ProgramData/containerd/root/io.containerd.metadata.v1.bolt/meta.db")
 			}
 
-			e := containerd.New(defaultConfigWith(tt.cfg))
+			e, err := containerd.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("containerd.New failed: %v", err)
+			}
 			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
@@ -320,15 +314,4 @@ func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInp
 	}
 	input := &filesystem.ScanInput{Path: path, Reader: reader, Root: root, Info: info}
 	return input
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
-func defaultConfigWith(cfg containerd.Config) containerd.Config {
-	newCfg := containerd.DefaultConfig()
-
-	if cfg.MaxMetaDBFileSize > 0 {
-		newCfg.MaxMetaDBFileSize = cfg.MaxMetaDBFileSize
-	}
-
-	return newCfg
 }
