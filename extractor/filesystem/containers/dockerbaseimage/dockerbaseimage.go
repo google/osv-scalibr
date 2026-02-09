@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/moby/buildkit/frontend/dockerfile/linter"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	mbi "github.com/moby/buildkit/frontend/dockerfile/instructions"
 	mbp "github.com/moby/buildkit/frontend/dockerfile/parser"
 )
@@ -42,10 +43,10 @@ const (
 	// Name is the unique name of this extractor.
 	Name = "containers/dockerbaseimage"
 
-	// DefaultMaxFileSizeBytes is the default maximum file size the extractor will
+	// defaultMaxFileSizeBytes is the default maximum file size the extractor will
 	// attempt to extract. If a file is encountered that is larger than this
 	// limit, the file is ignored by `FileRequired`.
-	DefaultMaxFileSizeBytes = 1 * units.MiB
+	defaultMaxFileSizeBytes = 1 * units.MiB
 )
 
 var (
@@ -54,25 +55,9 @@ var (
 	dockerBaseContainers = []string{"scratch"}
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes: DefaultMaxFileSizeBytes,
-	}
-}
-
 // Extractor extracts repository URLs from Dockerfiles.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
@@ -80,17 +65,21 @@ type Extractor struct {
 //
 // For most use cases, initialize with:
 // ```
-// e := New(DefaultConfig())
+// e := New(&cpb.PluginConfig{})
 // ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := defaultMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.DockerBaseImageConfig { return c.GetDockerBaseImage() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }

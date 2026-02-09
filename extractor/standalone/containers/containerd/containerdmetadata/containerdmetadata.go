@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
 // Package containerdmetadata defines the metadata for the containerd standalone extractor.
 package containerdmetadata
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata holds parsing information for a container running on the containerd runtime.
 type Metadata struct {
 	Namespace   string
@@ -24,4 +28,40 @@ type Metadata struct {
 	ID          string
 	PID         int
 	RootFS      string
+}
+
+// SetProto sets the CtrdRuntimeMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil || p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_ContainerdRuntimeContainerMetadata{
+		ContainerdRuntimeContainerMetadata: &pb.ContainerdRuntimeContainerMetadata{
+			NamespaceName: m.Namespace,
+			ImageName:     m.ImageName,
+			ImageDigest:   m.ImageDigest,
+			Runtime:       m.Runtime,
+			Id:            m.ID,
+			Pid:           int32(m.PID),
+			RootfsPath:    m.RootFS,
+		},
+	}
+}
+
+// ToStruct converts the CtrdRuntimeMetadata proto to a Metadata struct.
+func ToStruct(m *pb.ContainerdRuntimeContainerMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		Namespace:   m.GetNamespaceName(),
+		ImageName:   m.GetImageName(),
+		ImageDigest: m.GetImageDigest(),
+		Runtime:     m.GetRuntime(),
+		ID:          m.GetId(),
+		PID:         int(m.GetPid()),
+		RootFS:      m.GetRootfsPath(),
+	}
 }

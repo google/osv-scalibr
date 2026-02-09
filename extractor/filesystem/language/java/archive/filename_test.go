@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "Group ID in filename",
+			desc: "Group_ID_in_filename",
 			path: "some/path/com.google.src.yolo-1.2.3.jar",
 			want: &archive.JarProps{
 				ArtifactID: "com.google.src.yolo",
@@ -44,7 +44,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple dashes in name",
+			desc: "Multiple_dashes_in_name",
 			path: "some/path/the-yolo-package-1.2.3.jar",
 			want: &archive.JarProps{
 				ArtifactID: "the-yolo-package",
@@ -52,7 +52,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple dashes in version",
+			desc: "Multiple_dashes_in_version",
 			path: "some/path/yolo-1.2.3-jre.jar",
 			want: &archive.JarProps{
 				ArtifactID: "yolo",
@@ -76,7 +76,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "ambiguous versioning",
+			desc: "ambiguous_versioning",
 			path: "mockito-4-2_3-3.2.12.0-RC2.jar",
 			// Incorrect parsing behavior: According to
 			// https://mvnrepository.com/artifact/org.scalatestplus/mockito-4-2_3/3.2.12.0-RC2
@@ -88,7 +88,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version starts with 'build'",
+			desc: "Version_starts_with_'build'",
 			path: "some/path/yolo-build1.2.3.jar",
 			want: &archive.JarProps{
 				ArtifactID: "yolo",
@@ -96,7 +96,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "'build' part of package name",
+			desc: "'build'_part_of_package_name",
 			path: "some/path/yolo-buildasd-1.2.3.jar",
 			want: &archive.JarProps{
 				ArtifactID: "yolo-buildasd",
@@ -104,7 +104,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version starts with 'r'",
+			desc: "Version_starts_with_'r'",
 			path: "some/path/yolo-r12.jar",
 			want: &archive.JarProps{
 				ArtifactID: "yolo",
@@ -112,7 +112,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "Version starts with 'rc'",
+			desc: "Version_starts_with_'rc'",
 			path: "usr/share/java/jcsp-core-rc4.jar",
 			want: &archive.JarProps{
 				ArtifactID: "jcsp-core",
@@ -120,7 +120,7 @@ func TestParseFilename(t *testing.T) {
 			},
 		},
 		{
-			desc: "'rc' part of package name",
+			desc: "'rc'_part_of_package_name",
 			path: "some/path/yolo-rc1asd-1.2.3.jar",
 			want: &archive.JarProps{
 				ArtifactID: "yolo-rc1asd",
@@ -144,16 +144,16 @@ func TestParseFilenameVersionNotFound(t *testing.T) {
 		path string
 	}{
 		{
-			desc: "no version in name",
+			desc: "no_version_in_name",
 			path: "some/path/yolo.jar",
 		},
 
 		{
-			desc: "not a Java archive",
+			desc: "not_a_Java_archive",
 			path: "some/path/foo",
 		},
 		{
-			desc: "empty path",
+			desc: "empty_path",
 			path: "",
 		},
 	}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ var ecosystems = []string{
 	"AlmaLinux",
 	"Alpaquita",
 	"Alpine",
+	"BellSoft Hardened Containers",
 	"Bioconductor",
 	"Bitnami",
 	"Chainguard",
@@ -35,6 +36,7 @@ var ecosystems = []string{
 	"GHC",
 	"Go",
 	"Hex",
+	"Julia",
 	"Mageia",
 	"Maven",
 	"MinimOS",
@@ -54,6 +56,22 @@ var ecosystems = []string{
 }
 
 func TestParse(t *testing.T) {
+	for _, ecosystem := range ecosystems {
+		_, err := semantic.Parse("", ecosystem)
+
+		if errors.Is(err, semantic.ErrUnsupportedEcosystem) {
+			t.Errorf("'%s' is not a supported ecosystem", ecosystem)
+		}
+	}
+}
+
+func TestParse_EcosystemWithSuffix(t *testing.T) {
+	ecosystems := []string{
+		"Debian:13",
+		"Alpine:v3.9",
+		"Red Hat:ansible_automation_platform:2.0::el8",
+		"Ubuntu:Pro:24.04:LTS",
+	}
 	for _, ecosystem := range ecosystems {
 		_, err := semantic.Parse("", ecosystem)
 

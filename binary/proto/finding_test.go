@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ func TestGenericFindingToProto(t *testing.T) {
 			want:    nil,
 		},
 		{
-			desc: "missing advisory",
+			desc: "missing_advisory",
 			finding: func(f *inventory.GenericFinding) *inventory.GenericFinding {
 				f = copier.Copy(f).(*inventory.GenericFinding)
 				f.Adv = nil
@@ -103,7 +103,7 @@ func TestGenericFindingToProto(t *testing.T) {
 			wantErr: proto.ErrAdvisoryMissing,
 		},
 		{
-			desc: "missing advisory ID",
+			desc: "missing_advisory_ID",
 			finding: func(f *inventory.GenericFinding) *inventory.GenericFinding {
 				f = copier.Copy(f).(*inventory.GenericFinding)
 				f.Adv.ID = nil
@@ -163,7 +163,7 @@ func TestGenericFindingToStruct(t *testing.T) {
 			want:    nil,
 		},
 		{
-			desc: "missing advisory",
+			desc: "missing_advisory",
 			finding: func(f *spb.GenericFinding) *spb.GenericFinding {
 				f = copier.Copy(f).(*spb.GenericFinding)
 				f.Adv = nil
@@ -173,7 +173,7 @@ func TestGenericFindingToStruct(t *testing.T) {
 			wantErr: proto.ErrAdvisoryMissing,
 		},
 		{
-			desc: "missing advisory ID",
+			desc: "missing_advisory_ID",
 			finding: func(f *spb.GenericFinding) *spb.GenericFinding {
 				f = copier.Copy(f).(*spb.GenericFinding)
 				f.Adv.Id = nil

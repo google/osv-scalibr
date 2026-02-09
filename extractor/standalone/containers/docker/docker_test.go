@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ func TestExtract(t *testing.T) {
 			wantInventory: []*extractor.Package{},
 		},
 		{
-			name: "valid with one container",
+			name: "valid_with_one_container",
 			ctrs: []container.Summary{
 				{
 					ID:         "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
@@ -71,7 +71,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid with one container running",
+			name: "valid_with_one_container_running",
 			ctrs: []container.Summary{
 				{
 					ID:      "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
@@ -112,7 +112,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "valid two containers running",
+			name: "valid_two_containers_running",
 			ctrs: []container.Summary{
 				{
 					ID:      "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",

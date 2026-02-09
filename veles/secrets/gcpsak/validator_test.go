@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ func TestValidator(t *testing.T) {
 		want veles.ValidationStatus
 	}{
 		{
-			name: "example valid",
+			name: "example_valid",
 			sak: gcpsak.GCPSAK{
 				PrivateKeyID:   exampleKeyID,
 				ServiceAccount: exampleServiceAccount,
@@ -76,7 +76,7 @@ func TestValidator(t *testing.T) {
 			want: veles.ValidationValid,
 		},
 		{
-			name: "unknown private key ID invalid",
+			name: "unknown_private_key_ID_invalid",
 			sak: gcpsak.GCPSAK{
 				PrivateKeyID:   "foobar",
 				ServiceAccount: exampleServiceAccount,
@@ -85,7 +85,7 @@ func TestValidator(t *testing.T) {
 			want: veles.ValidationInvalid,
 		},
 		{
-			name: "unknown service account invalid",
+			name: "unknown_service_account_invalid",
 			sak: gcpsak.GCPSAK{
 				PrivateKeyID:   exampleKeyID,
 				ServiceAccount: "unknown-account@asasdasd",
@@ -94,7 +94,7 @@ func TestValidator(t *testing.T) {
 			want: veles.ValidationInvalid,
 		},
 		{
-			name: "invalid signature invalid",
+			name: "invalid_signature_invalid",
 			sak: gcpsak.GCPSAK{
 				PrivateKeyID:   exampleKeyID,
 				ServiceAccount: exampleServiceAccount,
@@ -128,28 +128,28 @@ func TestValidator_errors(t *testing.T) {
 		handler http.Handler
 	}{
 		{
-			name: "other HTTP status",
+			name: "other_HTTP_status",
 			handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 			}),
 		},
 		{
 			// This should never happen with the actual GCP metadata server.
-			name: "response is not JSON",
+			name: "response_is_not_JSON",
 			handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				fmt.Fprintln(w, "JSON machine broke - understandable have a nice day")
 			}),
 		},
 		{
 			// This should never happen with the actual GCP metadata server.
-			name: "certificate is not PEM",
+			name: "certificate_is_not_PEM",
 			handler: serveCerts(t, map[string]string{
 				exampleKeyID: "This doesn't even parse as a PEM block.",
 			}),
 		},
 		{
 			// This should never happen with the actual GCP metadata server.
-			name: "certificate is not DER",
+			name: "certificate_is_not_DER",
 			handler: serveCerts(t, map[string]string{
 				exampleKeyID: "-----BEGIN CERTIFICATE-----\nThis is not a real certificate.\n-----END CERTIFICATE-----\n",
 			}),

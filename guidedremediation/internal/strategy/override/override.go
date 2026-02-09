@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"deps.dev/util/semver"
+	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/internal/strategy/common"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
-	"github.com/google/osv-scalibr/guidedremediation/matcher"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 	"github.com/google/osv-scalibr/internal/mavenutil"
@@ -37,9 +37,9 @@ import (
 // ComputePatches attempts to resolve each vulnerability found in result independently, returning the list of unique possible patches.
 // Vulnerabilities are resolved by directly overriding versions of vulnerable packages to non-vulnerable versions.
 // If a patch introduces new vulnerabilities, additional overrides are attempted for the new vulnerabilities.
-func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) (common.PatchResult, error) {
+func ComputePatches(ctx context.Context, cl resolve.Client, ve enricher.Enricher, resolved *remediation.ResolvedManifest, opts *options.RemediationOptions) (common.PatchResult, error) {
 	patchFn := func(vulnIDs []string) common.StrategyResult {
-		patched, err := patchVulns(ctx, cl, vm, resolved, vulnIDs, opts)
+		patched, err := patchVulns(ctx, cl, ve, resolved, vulnIDs, opts)
 		return common.StrategyResult{
 			VulnIDs:  vulnIDs,
 			Resolved: patched,
@@ -51,7 +51,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, vm matcher.Vulnerabi
 
 // patchVulns tries to fix as many vulns in vulnIDs as possible by overriding dependency versions.
 // returns ErrPatchImpossible if 0 vulns are patchable, otherwise returns the most possible patches.
-func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.VulnerabilityMatcher, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) (*remediation.ResolvedManifest, error) {
+func patchVulns(ctx context.Context, cl resolve.Client, ve enricher.Enricher, resolved *remediation.ResolvedManifest, vulnIDs []string, opts *options.RemediationOptions) (*remediation.ResolvedManifest, error) {
 	resolved = &remediation.ResolvedManifest{
 		Manifest:      resolved.Manifest.Clone(),
 		ResolvedGraph: resolved.ResolvedGraph,
@@ -61,7 +61,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 		// Find the relevant vulns affecting each version key.
 		vkVulns := make(map[resolve.VersionKey][]*resolution.Vulnerability)
 		for i, v := range resolved.Vulns {
-			if !slices.Contains(vulnIDs, v.OSV.ID) {
+			if !slices.Contains(vulnIDs, v.OSV.Id) {
 				continue
 			}
 			// Keep track of VersionKeys we've seen for this vuln to avoid duplicates.
@@ -149,7 +149,7 @@ func patchVulns(ctx context.Context, cl resolve.Client, vm matcher.Vulnerability
 		if err != nil {
 			return nil, err
 		}
-		resolved.UnfilteredVulns, err = resolution.FindVulnerabilities(ctx, vm, resolved.Manifest.Groups(), resolved.Graph)
+		resolved.UnfilteredVulns, err = resolution.FindVulnerabilities(ctx, ve, resolved.Manifest.Groups(), resolved.Graph)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +168,7 @@ func getVersionsGreater(ctx context.Context, cl resolve.Client, vk resolve.Versi
 		return nil, err
 	}
 	semvers := make(map[resolve.VersionKey]*semver.Version)
-	sv := vk.System.Semver()
+	sv := vk.Semver()
 	for _, ver := range versions {
 		parsed, err := sv.Parse(ver.Version)
 		if err != nil {

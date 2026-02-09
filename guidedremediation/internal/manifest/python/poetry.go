@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ func (r poetryReadWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifes
 		groupReqs := parseDependencies(deps, true)
 		allReqs = append(allReqs, groupReqs...)
 		for _, r := range groupReqs {
-			key := manifest.RequirementKey(r.VersionKey.PackageKey)
+			key := manifest.RequirementKey(r.PackageKey)
 			groups[key] = append(groups[key], groupName)
 		}
 	}

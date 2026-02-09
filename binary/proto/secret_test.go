@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
+	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -70,6 +72,57 @@ var (
 			},
 		},
 	}
+	secretGCPAPIKeyStruct = &inventory.Secret{
+		Secret: gcpapikey.GCPAPIKey{
+			Key: "AIzatestestestestestestestestestesttest",
+		},
+		Location: "/foo/bar/baz.json",
+	}
+	secretGCPAPIKeyProto = &spb.Secret{
+		Secret: &spb.SecretData{
+			Secret: &spb.SecretData_GcpApiKey{
+				GcpApiKey: &spb.SecretData_GCPAPIKey{
+					Key: "AIzatestestestestestestestestestesttest",
+				},
+			},
+		},
+		Locations: []*spb.Location{
+			&spb.Location{
+				Location: &spb.Location_Filepath{
+					Filepath: &spb.Filepath{
+						Path: "/foo/bar/baz.json",
+					},
+				},
+			},
+		},
+	}
+
+	secretGCPOAuth2ClientCredentialsStruct = &inventory.Secret{
+		Secret: gcpoauth2client.Credentials{
+			ID:     "12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
+			Secret: "GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK",
+		},
+		Location: "/foo/bar/baz.json",
+	}
+	secretGCPOAuth2ClientCredentialsProto = &spb.Secret{
+		Secret: &spb.SecretData{
+			Secret: &spb.SecretData_GcpOauth2ClientCredentials{
+				GcpOauth2ClientCredentials: &spb.SecretData_GCPOAuth2ClientCredentials{
+					Id:     "12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
+					Secret: "GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK",
+				},
+			},
+		},
+		Locations: []*spb.Location{
+			&spb.Location{
+				Location: &spb.Location_Filepath{
+					Filepath: &spb.Filepath{
+						Path: "/foo/bar/baz.json",
+					},
+				},
+			},
+		},
+	}
 )
 
 // --- Struct to Proto
@@ -96,7 +149,7 @@ func TestSecretToProto(t *testing.T) {
 			want: secretGCPSAKProto1,
 		},
 		{
-			desc: "empty validation",
+			desc: "empty_validation",
 			s: func(s *inventory.Secret) *inventory.Secret {
 				s = copier.Copy(s).(*inventory.Secret)
 				s.Validation = inventory.SecretValidationResult{}
@@ -107,6 +160,16 @@ func TestSecretToProto(t *testing.T) {
 				s.Status = nil
 				return s
 			}(secretGCPSAKProto1),
+		},
+		{
+			desc: "success_GCP_API_key",
+			s:    secretGCPAPIKeyStruct,
+			want: secretGCPAPIKeyProto,
+		},
+		{
+			desc: "GCP_OAuth2_client_credentials",
+			s:    secretGCPOAuth2ClientCredentialsStruct,
+			want: secretGCPOAuth2ClientCredentialsProto,
 		},
 	}
 
@@ -161,7 +224,7 @@ func TestSecretToStruct(t *testing.T) {
 			want: secretGCPSAKStruct1,
 		},
 		{
-			desc: "empty validation",
+			desc: "empty_validation",
 			s: func(s *spb.Secret) *spb.Secret {
 				s = copier.Copy(s).(*spb.Secret)
 				s.Status = nil
@@ -172,6 +235,16 @@ func TestSecretToStruct(t *testing.T) {
 				s.Validation = inventory.SecretValidationResult{}
 				return s
 			}(secretGCPSAKStruct1),
+		},
+		{
+			desc: "success_GCP_API_key",
+			s:    secretGCPAPIKeyProto,
+			want: secretGCPAPIKeyStruct,
+		},
+		{
+			desc: "GCP_OAuth2_client_credentials",
+			s:    secretGCPOAuth2ClientCredentialsProto,
+			want: secretGCPOAuth2ClientCredentialsStruct,
 		},
 	}
 

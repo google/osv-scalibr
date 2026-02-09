@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ func MergeParents(ctx context.Context, current maven.Parent, result *maven.Proje
 		}
 		if opts.Client != nil && opts.AddRegistry && len(proj.Repositories) > 0 {
 			for _, repo := range proj.Repositories {
-				if err := opts.Client.AddRegistry(datasource.MavenRegistry{
+				if err := opts.Client.AddRegistry(ctx, datasource.MavenRegistry{
 					URL:              string(repo.URL),
 					ID:               string(repo.ID),
 					ReleasesEnabled:  repo.Releases.Enabled.Boolean(),

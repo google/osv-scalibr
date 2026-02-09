@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,10 +34,14 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/log"
 	"golang.org/x/net/html/charset"
+	"golang.org/x/oauth2/google"
 )
 
 // mavenCentral holds the URL of Maven Central Repository.
 const mavenCentral = "https://repo.maven.apache.org/maven2"
+
+// artifactRegistryScheme defines the scheme for Google Artifact Registry.
+const artifactRegistryScheme = "artifactregistry"
 
 var errAPIFailed = errors.New("API query failed")
 
@@ -47,6 +51,9 @@ type MavenRegistryAPIClient struct {
 	registries      []MavenRegistry                // Additional registries specified to fetch projects
 	registryAuths   map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
 	localRegistry   string                         // The local directory that holds Maven manifests
+
+	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
+	disableGoogleAuth bool         // If true, do not try to create google.DefaultClient for Artifact Registry.
 
 	// Cache fields
 	mu             *sync.Mutex
@@ -71,7 +78,7 @@ type MavenRegistry struct {
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
-func NewMavenRegistryAPIClient(registry MavenRegistry, localRegistry string) (*MavenRegistryAPIClient, error) {
+func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string, disableGoogleClient bool) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
@@ -86,41 +93,53 @@ func NewMavenRegistryAPIClient(registry MavenRegistry, localRegistry string) (*M
 	}
 	registry.Parsed = u
 
+	if localRegistry != "" {
+		localRegistry = filepath.Join(localRegistry, "maven")
+	}
+
 	// TODO: allow for manual specification of settings files
 	globalSettings := ParseMavenSettings(globalMavenSettingsFile())
 	userSettings := ParseMavenSettings(userMavenSettingsFile())
 
-	return &MavenRegistryAPIClient{
+	client := &MavenRegistryAPIClient{
 		// We assume only downloading releases is allowed on the default registry.
-		defaultRegistry: registry,
-		localRegistry:   localRegistry,
-		mu:              &sync.Mutex{},
-		responses:       NewRequestCache[string, response](),
-		registryAuths:   MakeMavenAuth(globalSettings, userSettings),
-	}, nil
+		defaultRegistry:   registry,
+		localRegistry:     localRegistry,
+		mu:                &sync.Mutex{},
+		responses:         NewRequestCache[string, response](),
+		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
+		disableGoogleAuth: disableGoogleClient,
+	}
+	if registry.Parsed.Scheme == artifactRegistryScheme {
+		client.createGoogleClient(ctx)
+	}
+	return client, nil
 }
 
-// SetLocalRegistry sets the local directory that stores the downloaded Maven manifests.
-func (m *MavenRegistryAPIClient) SetLocalRegistry(localRegistry string) {
-	m.localRegistry = localRegistry
+// NewDefaultMavenRegistryAPIClient creates a new MavenRegistryAPIClient with default settings,
+// using the provided registry URL.
+func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*MavenRegistryAPIClient, error) {
+	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false)
 }
 
 // WithoutRegistries makes MavenRegistryAPIClient including its cache but not registries.
 func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 	return &MavenRegistryAPIClient{
-		defaultRegistry: m.defaultRegistry,
-		localRegistry:   m.localRegistry,
-		mu:              m.mu,
-		cacheTimestamp:  m.cacheTimestamp,
-		responses:       m.responses,
-		registryAuths:   m.registryAuths,
+		defaultRegistry:   m.defaultRegistry,
+		localRegistry:     m.localRegistry,
+		mu:                m.mu,
+		cacheTimestamp:    m.cacheTimestamp,
+		responses:         m.responses,
+		registryAuths:     m.registryAuths,
+		googleClient:      m.googleClient,
+		disableGoogleAuth: m.disableGoogleAuth,
 	}
 }
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
-func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
+func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry MavenRegistry) error {
 	if registry.ID == m.defaultRegistry.ID {
-		return m.updateDefaultRegistry(registry)
+		return m.updateDefaultRegistry(ctx, registry)
 	}
 
 	for _, reg := range m.registries {
@@ -136,18 +155,45 @@ func (m *MavenRegistryAPIClient) AddRegistry(registry MavenRegistry) error {
 
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
+	if registry.Parsed.Scheme == artifactRegistryScheme {
+		m.createGoogleClient(ctx)
+	}
 
 	return nil
 }
 
-func (m *MavenRegistryAPIClient) updateDefaultRegistry(registry MavenRegistry) error {
+func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, registry MavenRegistry) error {
 	u, err := url.Parse(registry.URL)
 	if err != nil {
 		return err
 	}
 	registry.Parsed = u
 	m.defaultRegistry = registry
+	if registry.Parsed.Scheme == artifactRegistryScheme {
+		m.createGoogleClient(ctx)
+	}
 	return nil
+}
+
+// createGoogleClient creates a client for authenticating with Google services.
+func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) {
+	if m.googleClient != nil || m.disableGoogleAuth {
+		return
+	}
+	// This is the scope that artifact-registry-go-tools uses.
+	// https://github.com/GoogleCloudPlatform/artifact-registry-go-tools/blob/main/pkg/auth/auth.go
+	client, err := google.DefaultClient(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		// We don't return an error here so that we can fall back to a regular http client.
+		log.Warnf("failed to create Google default client, Artifact Registry access will be unavailable: %v", err)
+		return
+	}
+	m.googleClient = client
+}
+
+// DisableGoogleAuth prevents the creation of a Google client for authentication purpose.
+func (m *MavenRegistryAPIClient) DisableGoogleAuth() {
+	m.disableGoogleAuth = true
 }
 
 // GetRegistries returns the registries added to this client.
@@ -269,17 +315,28 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		}
 	}
 
-	u := registry.Parsed.JoinPath(paths...).String()
+	httpClient := http.DefaultClient
+	requestURL := *registry.Parsed
+	isArtifactRegistry := requestURL.Scheme == artifactRegistryScheme
+	if isArtifactRegistry {
+		requestURL.Scheme = "https"
+		// For Artifact Registry, use google.DefaultClient for ADC if available.
+		if m.googleClient != nil {
+			httpClient = m.googleClient
+		}
+	}
+
+	u := requestURL.JoinPath(paths...).String()
 	resp, err := m.responses.Get(u, func() (response, error) {
 		log.Infof("Fetching response from: %s", u)
-		resp, err := auth.Get(ctx, http.DefaultClient, u)
+		resp, err := auth.Get(ctx, httpClient, u)
 		if err != nil {
 			return response{}, fmt.Errorf("%w: Maven registry query failed: %w", errAPIFailed, err)
 		}
 		defer resp.Body.Close()
 
-		if !slices.Contains([]int{http.StatusOK, http.StatusNotFound, http.StatusUnauthorized}, resp.StatusCode) {
-			// Only cache responses with Status OK, NotFound, or Unauthorized
+		if !slices.Contains([]int{http.StatusOK, http.StatusNotFound, http.StatusUnauthorized, http.StatusForbidden}, resp.StatusCode) {
+			// Only cache responses with Status OK, NotFound, Unauthorized, or Forbidden
 			return response{}, fmt.Errorf("%w: Maven registry query status: %d", errAPIFailed, resp.StatusCode)
 		}
 
@@ -299,6 +356,10 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	if err != nil {
 		log.Warnf("failed to get response from %s: %v", u, err)
 		return err
+	}
+
+	if resp.StatusCode == http.StatusForbidden && isArtifactRegistry {
+		return fmt.Errorf("%w: Maven registry query status: %d (Forbidden). Please check your Application Default Credentials (ADC) have permission to read from %s", errAPIFailed, resp.StatusCode, registry.URL)
 	}
 
 	if resp.StatusCode != http.StatusOK {

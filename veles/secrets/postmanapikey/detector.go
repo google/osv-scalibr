@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ func NewAPIKeyDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: pmakMaxLen,
 		Re:     pmakRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return PostmanAPIKey{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return PostmanAPIKey{Key: string(b)}, true
 		},
 	}
 }
@@ -62,8 +62,8 @@ func NewCollectionTokenDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: pmatMaxLen,
 		Re:     pmatRe,
-		FromMatch: func(b []byte) veles.Secret {
-			return PostmanCollectionToken{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return PostmanCollectionToken{Key: string(b)}, true
 		},
 	}
 }

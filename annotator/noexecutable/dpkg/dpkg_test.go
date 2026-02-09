@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
-	"github.com/google/osv-scalibr/annotator/testing/dpkgutil"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -150,7 +151,7 @@ func TestAnnotate(t *testing.T) {
 				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, true)
 			}
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
+				tt.ctx = t.Context()
 			}
 			input := &annotator.ScanInput{
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
@@ -159,7 +160,12 @@ func TestAnnotate(t *testing.T) {
 			packages := copier.Copy(tt.packages).([]*extractor.Package)
 			inv := &inventory.Inventory{Packages: packages}
 
-			err := dpkg.New().Annotate(tt.ctx, input, inv)
+			anno, err := dpkg.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(tt.ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, err, tt.wantErr)
 			}

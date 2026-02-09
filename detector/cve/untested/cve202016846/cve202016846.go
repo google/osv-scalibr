@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,9 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 type saltPackageNames struct {
@@ -123,21 +125,22 @@ func (Detector) RequiredExtractors() []string { return []string{wheelegg.Name} }
 
 // DetectedFinding returns generic vulnerability information about what is detected.
 func (d Detector) DetectedFinding() inventory.Finding {
-	return d.findingForPackage(nil)
+	return d.findingForPackage(nil, nil)
 }
 
-func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
-	pkg := &extractor.Package{
+func (Detector) findingForPackage(dbSpecific *structpb.Struct, pkg *extractor.Package) inventory.Finding {
+	saltPkg := &extractor.Package{
 		Name:     "salt",
 		PURLType: "pypi",
 	}
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2020-16846",
+		Package: pkg,
+		Vulnerability: &osvpb.Vulnerability{
+			Id:      "CVE-2020-16846",
 			Summary: "CVE-2020-16846",
 			Details: "CVE-2020-16846",
-			Affected: inventory.PackageToAffected(pkg, "3002.1", &osvschema.Severity{
-				Type:  osvschema.SeverityCVSSV3,
+			Affected: inventory.PackageToAffected(saltPkg, "3002.1", &osvpb.Severity{
+				Type:  osvpb.Severity_CVSS_V3,
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
 			DatabaseSpecific: dbSpecific,
@@ -199,10 +202,12 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		log.Infof("Error removing file: %v", err)
 	}
 
-	dbSpecific := map[string]any{
-		"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
+	dbSpecific := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", "))}},
+		},
 	}
-	return d.findingForPackage(dbSpecific), nil
+	return d.findingForPackage(dbSpecific, pkg), nil
 }
 
 // CheckForCherrypy checks for the presence of Cherrypy in the server headers.
@@ -243,7 +248,7 @@ func ExploitSalt(ctx context.Context, saltIP string, saltServerPort int) bool {
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		log.Infof("Error marshaling JSON:", err)
+		log.Infof("Error marshaling JSON: %v", err)
 		return false
 	}
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)

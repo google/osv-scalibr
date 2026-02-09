@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
@@ -58,9 +57,10 @@ func mockDigitaloceanServer(t *testing.T, expectedKey string, serverResponseCode
 
 		// Check Authorization header
 		authHeader := r.Header.Get("Authorization")
-		if !strings.Contains(authHeader, expectedKey) {
+		if len(expectedKey) > 0 && !strings.Contains(authHeader, expectedKey) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 
 		// Set response
@@ -103,11 +103,13 @@ func TestValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
+			expectError:        true,
 		},
 	}
 
@@ -123,15 +125,14 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := digitaloceanapikey.NewValidator(
-				digitaloceanapikey.WithClient(client),
-			)
+			validator := digitaloceanapikey.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test key
 			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			// Check error expectation
 			if tc.expectError {
@@ -155,7 +156,6 @@ func TestValidator(t *testing.T) {
 func TestValidator_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -165,15 +165,14 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := digitaloceanapikey.NewValidator(
-		digitaloceanapikey.WithClient(client),
-	)
+	validator := digitaloceanapikey.NewValidator()
+	validator.HTTPC = client
 
 	key := digitaloceanapikey.DigitaloceanAPIToken{Key: validatorTestKey}
 
-	// Create context with a short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)
@@ -198,9 +197,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := digitaloceanapikey.NewValidator(
-		digitaloceanapikey.WithClient(client),
-	)
+	validator := digitaloceanapikey.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string
@@ -223,7 +221,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

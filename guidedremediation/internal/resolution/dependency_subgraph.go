@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"deps.dev/util/resolve/dep"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulns"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // DependencySubgraph is a subgraph of dependencies that contains all paths to a specific node.
@@ -163,7 +163,7 @@ func (ds *DependencySubgraph) IsDevOnly(groups map[manifest.RequirementKey][]str
 //
 // This is a heuristic approach and may produce false positives (meaning possibly unnecessary dependencies would be flagged to be relaxed).
 // If the constraining subgraph cannot be computed for some reason, returns the original DependencySubgraph.
-func (ds *DependencySubgraph) ConstrainingSubgraph(ctx context.Context, cl resolve.Client, vuln *osvschema.Vulnerability) *DependencySubgraph {
+func (ds *DependencySubgraph) ConstrainingSubgraph(ctx context.Context, cl resolve.Client, vuln *osvpb.Vulnerability) *DependencySubgraph {
 	// Just check if the direct requirement of the vulnerable package is constraining it.
 	// This still has some false positives.
 	// e.g. if we have

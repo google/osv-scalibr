@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,9 +81,9 @@ func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMa
 
 func addClassMapping(artifactName, class string, classMap map[string][]string, artifactMap map[string][]string) {
 	name := strings.TrimSuffix(class, ".class")
-	if strings.HasPrefix(name, MetaInfVersions) {
+	if after, ok := strings.CutPrefix(name, MetaInfVersions); ok {
 		// Strip the version after the META-INF/versions/<version>/
-		name = strings.TrimPrefix(name, MetaInfVersions)[1:]
+		name = after[1:]
 		name = name[strings.Index(name, "/")+1:]
 	}
 
@@ -255,18 +255,21 @@ func GetMainClasses(manifest io.Reader) ([]string, error) {
 		line := strings.TrimSpace(lines[i])
 		for _, marker := range markers {
 			if strings.HasPrefix(line, marker) {
-				class := strings.TrimSpace(strings.TrimPrefix(line, marker))
+				var class strings.Builder
+
+				class.WriteString(strings.TrimSpace(strings.TrimPrefix(line, marker)))
+
 				// Handle wrapped lines. Class names exceeding line length limits
 				// may be split across multiple lines, starting with a space.
 				for index := i + 1; index < len(lines); index++ {
 					nextLine := lines[index]
 					if strings.HasPrefix(nextLine, " ") {
-						class += strings.TrimSpace(nextLine)
+						class.WriteString(strings.TrimSpace(nextLine))
 					} else {
 						break
 					}
 				}
-				classes = append(classes, strings.ReplaceAll(class, ".", "/"))
+				classes = append(classes, strings.ReplaceAll(class.String(), ".", "/"))
 			}
 		}
 	}

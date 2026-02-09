@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
 
 package requirements
 
+import (
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
 // Metadata contains additional information from a package in a requirements file.
 type Metadata struct {
 	// The values from the --hash flags, as in https://pip.pypa.io/en/stable/topics/secure-installs/#hash-checking-mode.
@@ -23,4 +27,35 @@ type Metadata struct {
 	VersionComparator string
 	// The dependency requirement to used for dependency resolution
 	Requirement string
+}
+
+// SetProto sets the PythonRequirementsMetadata field in the Package proto.
+func (m *Metadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_PythonRequirementsMetadata{
+		PythonRequirementsMetadata: &pb.PythonRequirementsMetadata{
+			HashCheckingModeValues: m.HashCheckingModeValues,
+			VersionComparator:      m.VersionComparator,
+			Requirement:            m.Requirement,
+		},
+	}
+}
+
+// ToStruct converts the PythonRequirementsMetadata proto to a Metadata struct.
+func ToStruct(m *pb.PythonRequirementsMetadata) *Metadata {
+	if m == nil {
+		return nil
+	}
+
+	return &Metadata{
+		HashCheckingModeValues: m.GetHashCheckingModeValues(),
+		VersionComparator:      m.GetVersionComparator(),
+		Requirement:            m.GetRequirement(),
+	}
 }

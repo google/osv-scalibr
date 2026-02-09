@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ func NewDetector() veles.Detector {
 	return &simpletoken.Detector{
 		Re:     keyRe,
 		MaxLen: maxKeyLen,
-		FromMatch: func(b []byte) veles.Secret {
-			return APIKey{Key: string(b)}
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			return APIKey{Key: string(b)}, true
 		},
 	}
 }

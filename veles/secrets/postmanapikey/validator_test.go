@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -155,21 +155,16 @@ func TestValidatorAPI(t *testing.T) {
 			server := mockAPIServer(t, validatorTestAPIKey, tc.statusCode, tc.body)
 			defer server.Close()
 
-			// Create client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
-
 			// Create validator with mock client
-			validator := postmanapikey.NewAPIValidator(
-				postmanapikey.WithClientAPI(client),
-			)
+			validator := postmanapikey.NewAPIValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + "/me"
 
 			// Create test key
 			key := postmanapikey.PostmanAPIKey{Key: validatorTestAPIKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
@@ -189,19 +184,14 @@ func TestValidatorAPI_ContextCancellation(t *testing.T) {
 		server.Close()
 	})
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := postmanapikey.NewAPIValidator(
-		postmanapikey.WithClientAPI(client),
-	)
+	validator := postmanapikey.NewAPIValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/me"
 
 	key := postmanapikey.PostmanAPIKey{Key: validatorTestAPIKey}
 
 	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context
@@ -225,14 +215,9 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 	})
 	defer server.Close()
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := postmanapikey.NewAPIValidator(
-		postmanapikey.WithClientAPI(client),
-	)
+	validator := postmanapikey.NewAPIValidator()
+	validator.HTTPC = server.Client()
+	validator.Endpoint = server.URL + "/me"
 
 	testCases := []struct {
 		name     string
@@ -255,7 +240,7 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			k := postmanapikey.PostmanAPIKey{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), k)
+			got, err := validator.Validate(t.Context(), k)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
@@ -339,16 +324,16 @@ func TestValidatorCollection(t *testing.T) {
 				Transport: &mockTransport{testServer: server},
 			}
 
-			// Create validator with mock client
-			validator := postmanapikey.NewCollectionValidator(
-				postmanapikey.WithClientCollection(client),
-			)
+			// Create validator with mock client. We use the mockTransport intentionally
+			// here to test the validator's endpoint construction from the key.
+			validator := postmanapikey.NewCollectionValidator()
+			validator.HTTPC = client
 
 			// Create test key
 			key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
 
 			// Test validation
-			got, err := validator.Validate(context.Background(), key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
@@ -368,19 +353,15 @@ func TestValidatorCollection_ContextCancellation(t *testing.T) {
 		server.Close()
 	})
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
+	validator := postmanapikey.NewCollectionValidator()
+	validator.HTTPC = server.Client()
+	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) (string, error) {
+		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key, nil
 	}
-
-	validator := postmanapikey.NewCollectionValidator(
-		postmanapikey.WithClientCollection(client),
-	)
-
 	key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
 
 	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	// Test validation with cancelled context
@@ -399,15 +380,11 @@ func TestValidatorCollection_InvalidRequest(t *testing.T) {
 	server := mockCollectionServer(t, "", http.StatusUnauthorized, nil)
 	defer server.Close()
 
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
+	validator := postmanapikey.NewCollectionValidator()
+	validator.HTTPC = server.Client()
+	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) (string, error) {
+		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key, nil
 	}
-
-	validator := postmanapikey.NewCollectionValidator(
-		postmanapikey.WithClientCollection(client),
-	)
-
 	testCases := []struct {
 		name     string
 		key      string
@@ -429,7 +406,7 @@ func TestValidatorCollection_InvalidRequest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			k := postmanapikey.PostmanCollectionToken{Key: tc.key}
 
-			got, err := validator.Validate(context.Background(), k)
+			got, err := validator.Validate(t.Context(), k)
 
 			if err != nil {
 				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)

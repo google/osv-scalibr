@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ func (m *mavenManifest) Clone() manifest.Manifest {
 			Repositories:           slices.Clone(m.specific.Repositories),
 		},
 	}
-	clone.root.AttrSet = m.root.AttrSet.Clone()
+	clone.root.AttrSet = m.root.Clone()
 
 	return clone
 }
@@ -190,11 +190,7 @@ type readWriter struct {
 }
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
-func GetReadWriter(remote, local string) (manifest.ReadWriter, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
-	if err != nil {
-		return nil, err
-	}
+func GetReadWriter(client *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
 	return readWriter{MavenRegistryAPIClient: client}, nil
 }
 
@@ -232,7 +228,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.Maven,
-					Name:   project.Parent.ProjectKey.Name(),
+					Name:   project.Parent.Name(),
 				},
 				// Parent version is a concrete version, but we model parent as dependency here.
 				VersionType: resolve.Requirement,
@@ -247,9 +243,15 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 		return nil, fmt.Errorf("failed to merge profiles: %w", err)
 	}
 
-	// TODO(#473): there may be properties in repo.Releases.Enabled and repo.Snapshots.Enabled
+	// Interpolate the project in case there are properties in any repository.
+	if err := project.InterpolateRepositories(); err != nil {
+		return nil, fmt.Errorf("failed to interpolate project: %w", err)
+	}
 	for _, repo := range project.Repositories {
-		if err := r.MavenRegistryAPIClient.AddRegistry(datasource.MavenRegistry{
+		if repo.URL.ContainsProperty() {
+			continue
+		}
+		if err := r.AddRegistry(ctx, datasource.MavenRegistry{
 			URL:              string(repo.URL),
 			ID:               string(repo.ID),
 			ReleasesEnabled:  repo.Releases.Enabled.Boolean(),
@@ -406,7 +408,7 @@ func buildOriginalRequirements(project maven.Project, originPrefix string) []Dep
 		for _, d := range plugin.Dependencies {
 			dependencies = append(dependencies, DependencyWithOrigin{
 				Dependency: d,
-				Origin:     mavenOrigin(originPrefix, mavenutil.OriginPlugin, plugin.ProjectKey.Name()),
+				Origin:     mavenOrigin(originPrefix, mavenutil.OriginPlugin, plugin.Name()),
 			})
 		}
 	}
@@ -999,7 +1001,7 @@ func writeProject(w io.Writer, enc *forkedxml.Encoder, raw, prefix, id string, p
 				if err := dec.DecodeElement(&rawPlugin, &tt); err != nil {
 					return err
 				}
-				if err := writeProject(w, enc, "<plugin>"+rawPlugin.InnerXML+"</plugin>", mavenutil.OriginPlugin, rawPlugin.ProjectKey.Name(), patches, properties, updated); err != nil {
+				if err := writeProject(w, enc, "<plugin>"+rawPlugin.InnerXML+"</plugin>", mavenutil.OriginPlugin, rawPlugin.Name(), patches, properties, updated); err != nil {
 					return fmt.Errorf("updating profile: %w", err)
 				}
 

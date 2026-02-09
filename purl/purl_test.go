@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -152,10 +152,10 @@ func TestFromStringInvalidPURL(t *testing.T) {
 		purl string
 	}{
 		{
-			name: "missing type",
+			name: "missing_type",
 			purl: "pkg:/package-name@1.2.3",
 		}, {
-			name: "invalid type",
+			name: "invalid_type",
 			purl: "pkg:unknown/package-name@1.2.3",
 		},
 	}
@@ -176,7 +176,7 @@ func TestQualifiersFromMap(t *testing.T) {
 		wantQualifiers purl.Qualifiers
 	}{
 		{
-			name: "normal transcription",
+			name: "normal_transcription",
 			qualifierMap: map[string]string{
 				"qual":  "ifier",
 				"other": "qualifier",
@@ -186,7 +186,7 @@ func TestQualifiersFromMap(t *testing.T) {
 				{Key: "qual", Value: "ifier"},
 			},
 		}, {
-			name: "filters only empty value",
+			name: "filters_only_empty_value",
 			qualifierMap: map[string]string{
 				"empty": "",
 				"other": "qualifier",
@@ -195,7 +195,7 @@ func TestQualifiersFromMap(t *testing.T) {
 				{Key: "other", Value: "qualifier"},
 			},
 		}, {
-			name: "empty qualifiers if all empty",
+			name: "empty_qualifiers_if_all_empty",
 			qualifierMap: map[string]string{
 				"empty": "",
 			},

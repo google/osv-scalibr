@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,14 +93,14 @@ func TestEnricher(t *testing.T) {
 			},
 		},
 		{
-			name: "per secret errors",
+			name: "per_secret_errors",
 			engine: veles.NewValidationEngine(
 				veles.WithValidator(velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil)),
 				veles.WithValidator(velestest.NewFakeIntSecretValidator(veles.ValidationFailed, errTest)),
 			),
 			subs: []testEnricherSubCase{
 				{
-					name: "single error",
+					name: "single_error",
 					input: inventory.Inventory{
 						Secrets: []*inventory.Secret{
 							{
@@ -123,7 +123,7 @@ func TestEnricher(t *testing.T) {
 					},
 				},
 				{
-					name: "multiple errors",
+					name: "multiple_errors",
 					input: inventory.Inventory{
 						Secrets: []*inventory.Secret{
 							{

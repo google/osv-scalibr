@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ func TestDetect_truePositives(t *testing.T) {
 		in           []byte
 		want         []veles.Secret
 		wantPos      []int
+		fromMatch    func([]byte) (veles.Secret, bool)
 	}{{
 		name:         "match only",
 		regexp:       "FOO",
@@ -95,6 +96,19 @@ BAZ
 		want:         []veles.Secret{"FOO", "BAR"},
 		wantPos:      []int{0, 4},
 	}, {
+		name:         "not ok",
+		regexp:       "[A-Z]{3}",
+		maxSecretLen: 3,
+		in:           []byte("FOO BAR"),
+		want:         []veles.Secret{"BAR"},
+		wantPos:      []int{4},
+		fromMatch: func(b []byte) (veles.Secret, bool) {
+			if string(b) == "FOO" {
+				return nil, false
+			}
+			return string(b), true
+		},
+	}, {
 		// See https://pkg.go.dev/regexp and
 		// https://github.com/google/re2/wiki/syntax.
 		name:         "matches do not overlap",
@@ -106,12 +120,15 @@ BAZ
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.fromMatch == nil {
+				tc.fromMatch = func(b []byte) (veles.Secret, bool) {
+					return string(b), true
+				}
+			}
 			d := simpletoken.Detector{
-				MaxLen: tc.maxSecretLen,
-				Re:     regexp.MustCompile(tc.regexp),
-				FromMatch: func(b []byte) veles.Secret {
-					return string(b)
-				},
+				MaxLen:    tc.maxSecretLen,
+				Re:        regexp.MustCompile(tc.regexp),
+				FromMatch: tc.fromMatch,
 			}
 			got, gotPos := d.Detect(tc.in)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
@@ -145,8 +162,8 @@ func TestDetect_trueNegatives(t *testing.T) {
 			d := simpletoken.Detector{
 				MaxLen: tc.maxSecretLen,
 				Re:     regexp.MustCompile(tc.regexp),
-				FromMatch: func(b []byte) veles.Secret {
-					return string(b)
+				FromMatch: func(b []byte) (veles.Secret, bool) {
+					return string(b), true
 				},
 			}
 			got, gotPos := d.Detect(tc.in)

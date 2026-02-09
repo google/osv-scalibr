@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package main
 
 import (
+	"flag"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -78,7 +79,7 @@ func TestRun(t *testing.T) {
 			for i, arg := range tc.args {
 				args[i] = strings.ReplaceAll(arg, "{dir}", dir)
 			}
-			if got := run(args); got != tc.want {
+			if got := getRunFn(args, flag.NewFlagSet(tc.desc, flag.ExitOnError))(); got != tc.want {
 				t.Errorf("run(%v) returned unexpected exit code, got %d want %d", args, got, tc.want)
 			}
 		})

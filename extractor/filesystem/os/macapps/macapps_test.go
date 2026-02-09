@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -100,10 +102,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := macapps.New(macapps.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := macapps.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("macapps.New: %v", err)
+			}
+			e.(*macapps.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -137,7 +140,7 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "Valid_XML_Info.plist_data ",
+			name: "Valid_XML_Info.plist_data_",
 			path: "testdata/ValidXML.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
@@ -162,7 +165,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "Valid_Binary_Info.plist_data ",
+			name: "Valid_Binary_Info.plist_data_",
 			path: "testdata/BinaryApp.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
@@ -199,7 +202,7 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "Missing_Info.plist_data ",
+			name: "Missing_Info.plist_data_",
 			path: "testdata/MissingData.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
@@ -234,9 +237,11 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := macapps.New(macapps.Config{
-				Stats: collector,
-			})
+			e, err := macapps.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("macapps.New: %v", err)
+			}
+			e.(*macapps.Extractor).Stats = collector
 
 			d := t.TempDir()
 

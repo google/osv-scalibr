@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ type MavenRegistryClient struct {
 }
 
 // NewMavenRegistryClient makes a new MavenRegistryClient.
-func NewMavenRegistryClient(remote, local string) (*MavenRegistryClient, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local)
+func NewMavenRegistryClient(ctx context.Context, remote, local string, disableGoogleAuth bool) (*MavenRegistryClient, error) {
+	client, err := datasource.NewMavenRegistryAPIClient(ctx, datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local, disableGoogleAuth)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +43,9 @@ func NewMavenRegistryClient(remote, local string) (*MavenRegistryClient, error) 
 
 // NewMavenRegistryClientWithAPI makes a new MavenRegistryClient with the given Maven registry client.
 func NewMavenRegistryClientWithAPI(api *datasource.MavenRegistryAPIClient) *MavenRegistryClient {
+	if api == nil {
+		panic("NewMavenRegistryClientWithAPI: api must not be nil")
+	}
 	return &MavenRegistryClient{api: api}
 }
 
@@ -174,13 +177,13 @@ func (c *MavenRegistryClient) MatchingVersions(ctx context.Context, vk resolve.V
 }
 
 // AddRegistries adds registries to the MavenRegistryClient.
-func (c *MavenRegistryClient) AddRegistries(registries []Registry) error {
+func (c *MavenRegistryClient) AddRegistries(ctx context.Context, registries []Registry) error {
 	for _, reg := range registries {
 		specific, ok := reg.(datasource.MavenRegistry)
 		if !ok {
 			return errors.New("invalid Maven registry information")
 		}
-		if err := c.api.AddRegistry(specific); err != nil {
+		if err := c.api.AddRegistry(ctx, specific); err != nil {
 			return err
 		}
 	}

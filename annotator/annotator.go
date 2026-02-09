@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 
 	for _, a := range config.Annotators {
 		err := a.Annotate(ctx, input, inventory)
-		statuses = append(statuses, plugin.StatusFromErr(a, false, err))
+		statuses = append(statuses, plugin.StatusFromErr(a, false, err, nil))
 	}
 	return statuses, nil
 }

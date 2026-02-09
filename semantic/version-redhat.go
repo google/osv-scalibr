@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,18 +24,14 @@ type redHatVersion struct {
 	release string
 }
 
-// isASCIIDigit returns true if the given rune is an ASCII digit.
-//
-// Unicode digits are not considered ASCII digits by this function.
-func isASCIIDigit(c rune) bool {
-	return c >= 48 && c <= 57
-}
-
-// isASCIILetter returns true if the given rune is an ASCII letter.
-//
-// Unicode letters are not considered ASCII letters by this function.
-func isASCIILetter(c rune) bool {
-	return (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+// isOnlyDigits returns true if the given string contains only digits
+func isOnlyDigits(str string) bool {
+	for _, c := range str {
+		if !isASCIIDigit(c) {
+			return false
+		}
+	}
+	return true
 }
 
 // shouldBeTrimmed checks if the given rune should be trimmed when parsing redHatVersion components
@@ -126,14 +122,14 @@ func compareRedHatComponents(a, b string) int {
 			isExpectedRunType = isASCIILetter
 		}
 
-		var as, bs string
+		var asb, bsb strings.Builder
 
 		for _, c := range a[ai:] {
 			if !isExpectedRunType(c) {
 				break
 			}
 
-			as += string(c)
+			asb.WriteRune(c)
 			ai++
 		}
 
@@ -142,18 +138,21 @@ func compareRedHatComponents(a, b string) int {
 				break
 			}
 
-			bs += string(c)
+			bsb.WriteRune(c)
 			bi++
 		}
 
 		// 8. If the segment from `b` had 0 length, return 1 if the segment from `a` was numeric, or -1 if it was alphabetic. The logical result of this is that if `a` begins with numbers and `b` does not, `a` is newer (return 1). If `a` begins with letters and `b` does not, then `a` is older (return -1). If the leading character(s) from `a` and `b` were both numbers or both letters, continue on.
-		if bs == "" {
+		if bsb.Len() == 0 {
 			if isDigit {
 				return +1
 			}
 
 			return -1
 		}
+
+		as := asb.String()
+		bs := bsb.String()
 
 		// 9. If the leading segments were both numeric, discard any leading zeros and whichever one is longer wins. If `a` is longer than `b` (without leading zeroes), return 1, and vice versa. If they’re of the same length, continue on.
 		if isDigit {
@@ -209,29 +208,23 @@ func (v redHatVersion) CompareStr(str string) (int, error) {
 // parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
 //
 // A Red Hat version contains the following components:
-// - name (of the package), represented as "n"
 // - epoch, represented as "e"
 // - version, represented as "v"
 // - release, represented as "r"
-// - architecture, represented as "a"
 //
-// When all components are present, the version is represented as "n-e:v-r.a",
+// When all components are present, the version is represented as "e:v-r",
 // though only the version is actually required.
 func parseRedHatVersion(str string) redHatVersion {
-	bf, af, hasColon := strings.Cut(str, ":")
+	epoch, vr, hasColon := strings.Cut(str, ":")
 
-	if !hasColon {
-		af, bf = bf, af
+	// if there's not a colon, or the "epoch" value has characters other than digits,
+	// then the string does not have an epoch value
+	if !hasColon || !isOnlyDigits(epoch) {
+		vr = str
+		epoch = ""
 	}
 
-	// (note, we don't actually use the name)
-	name, epoch, hasName := strings.Cut(bf, "-")
-
-	if !hasName {
-		epoch = name
-	}
-
-	version, release, hasRelease := strings.Cut(af, "-")
+	version, release, hasRelease := strings.Cut(vr, "-")
 
 	if hasRelease {
 		release = "-" + release

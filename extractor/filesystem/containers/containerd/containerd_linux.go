@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	bolt "go.etcd.io/bbolt"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -63,40 +65,24 @@ const (
 	runhcsStateFilePrefix = "ProgramData/containerd/state/io.containerd.runtime.v2.task/"
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// MaxMetaDBFileSize is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
-	MaxMetaDBFileSize int64
-}
-
-// DefaultConfig returns the default configuration for the containerd extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxMetaDBFileSize: defaultMaxFileSize,
-	}
-}
-
 // Extractor extracts containers from the containerd metadb file.
 type Extractor struct {
 	maxMetaDBFileSize int64
 }
 
 // New returns a containerd container package extractor.
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		maxMetaDBFileSize: cfg.MaxMetaDBFileSize,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSize := defaultMaxFileSize
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSize = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
-
-// Config returns the configuration of the extractor.
-func (e Extractor) Config() Config {
-	return Config{
-		MaxMetaDBFileSize: e.maxMetaDBFileSize,
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.ContainerdConfig { return c.GetContainerd() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSize = specific.GetMaxFileSizeBytes()
 	}
+
+	return &Extractor{maxMetaDBFileSize: maxFileSize}, nil
 }
 
 // Name of the extractor.
@@ -126,7 +112,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract container package through the containerd metadb file passed as the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var pkgs = []*extractor.Package{}
+	pkgs := []*extractor.Package{}
 
 	if input.Info != nil && input.Info.Size() > e.maxMetaDBFileSize {
 		return inventory.Inventory{}, fmt.Errorf("containerd metadb file is too large: %d", input.Info.Size())
@@ -447,7 +433,7 @@ func runcInitPid(scanRoot string, id string) int {
 
 	statusContent, err := os.ReadFile(statusPath)
 	if err != nil {
-		log.Errorf("Could not read for %s status for container: %v, error: %v", id, err)
+		log.Errorf("Could not read for %s status for container: %v", id, err)
 		return -1
 	}
 	var grpcContainerStatus map[string]*json.RawMessage
@@ -480,7 +466,7 @@ func runhcsInitPid(scanRoot string, namespace string, id string) int {
 
 	shimPIDContent, err := os.ReadFile(shimPIDPath)
 	if err != nil {
-		log.Errorf("Could not read for %s shim.pid for container: %v, error: %v", id, err)
+		log.Errorf("Could not read for %s shim.pid for container: %v", id, err)
 		return -1
 	}
 	shimPidStr := strings.TrimSpace(string(shimPIDContent))

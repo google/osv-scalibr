@@ -1,0 +1,70 @@
+{
+  "id": "GO-2024-2937",
+  "summary": "Panic when parsing invalid palette-color images in golang.org/x/image",
+  "details": "Parsing a corrupt or malicious image with invalid color indices can cause a panic.",
+  "aliases": [
+    "CVE-2024-24792",
+    "GHSA-9phm-fm57-rhg8"
+  ],
+  "modified": "2024-07-15T22:12:27.099111Z",
+  "published": "2024-06-25T22:06:09Z",
+  "related": [
+    "CVE-2023-36308"
+  ],
+  "database_specific": {
+    "url": "https://pkg.go.dev/vuln/GO-2024-2937",
+    "review_status": "REVIEWED"
+  },
+  "references": [
+    {
+      "type": "FIX",
+      "url": "https://go.dev/cl/588115"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://go.dev/issue/67624"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "name": "golang.org/x/image",
+        "ecosystem": "Go",
+        "purl": "pkg:golang/golang.org/x/image"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "0.18.0"
+            }
+          ]
+        }
+      ],
+      "ecosystem_specific": {
+        "imports": [
+          {
+            "path": "golang.org/x/image/tiff",
+            "symbols": [
+              "Decode",
+              "decoder.decode"
+            ]
+          }
+        ]
+      },
+      "database_specific": {
+        "source": "https://vuln.go.dev/ID/GO-2024-2937.json"
+      }
+    }
+  ],
+  "schema_version": "1.7.3",
+  "credits": [
+    {
+      "name": "John Wright \u003Cjsw@google.com\u003E"
+    }
+  ]
+}

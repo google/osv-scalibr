@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -30,6 +31,28 @@ const (
 	detectorAPIKey  = "xai-lY6JXMlP8jvE3CAgqkn2EiRlMZ444mzFQS0JLKIv4p6ZcoGGxW2Mk6EIMs72dLXylw0Kg4MLyOHGDj6c"
 	detectorMgmtKey = "xai-token-jS4Ke7pHhyiPVH0gWNcFmpnBLAMRgZchGWroIOWqLK5TB2obw8zbgVudrULg5DkZNdOoKsQ6rema3LGz"
 )
+
+func TestAPIKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		grokxaiapikey.NewAPIKeyDetector(),
+		detectorAPIKey,
+		grokxaiapikey.GrokXAIAPIKey{Key: detectorAPIKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestManagementKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		grokxaiapikey.NewManagementKeyDetector(),
+		detectorMgmtKey,
+		grokxaiapikey.GrokXAIManagementKey{Key: detectorMgmtKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestAPIKeyDetector_truePositives tests that the API key detector finds xai-... keys.
 func TestAPIKeyDetector_truePositives(t *testing.T) {

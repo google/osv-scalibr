@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,11 +55,7 @@ func (d *detector) MaxSecretLen() uint32 {
 //   - https://learn.microsoft.com/en-us/entra/identity-platform/access-tokens
 //   - https://learn.microsoft.com/en-us/entra/identity-platform/id-tokens
 func (d *detector) Detect(data []byte) (secrets []veles.Secret, positions []int) {
-	if len(data) > jwt.MaxTokenLength {
-		return nil, nil
-	}
-
-	tokens, positions := jwt.ExtractTokens(data)
+	tokens, jwtPositions := jwt.ExtractTokens(data)
 	for i, t := range tokens {
 		payloadClaims := t.Payload()
 
@@ -74,10 +70,10 @@ func (d *detector) Detect(data []byte) (secrets []veles.Secret, positions []int)
 
 		if hasScope {
 			secrets = append(secrets, AzureAccessToken{Token: t.Raw()})
-			positions = append(positions, positions[i])
+			positions = append(positions, jwtPositions[i])
 		} else {
 			secrets = append(secrets, AzureIdentityToken{Token: t.Raw()})
-			positions = append(positions, positions[i])
+			positions = append(positions, jwtPositions[i])
 		}
 	}
 

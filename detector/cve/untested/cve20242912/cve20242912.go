@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,7 +43,9 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 type bentomlPackageNames struct {
@@ -99,21 +101,22 @@ func (Detector) RequiredExtractors() []string { return []string{wheelegg.Name} }
 
 // DetectedFinding returns generic vulnerability information about what is detected.
 func (d Detector) DetectedFinding() inventory.Finding {
-	return d.findingForPackage(nil)
+	return d.findingForPackage(nil, nil)
 }
 
-func (Detector) findingForPackage(dbSpecific map[string]any) inventory.Finding {
-	pkg := &extractor.Package{
+func (Detector) findingForPackage(dbSpecific *structpb.Struct, pkg *extractor.Package) inventory.Finding {
+	bentoMlPkg := &extractor.Package{
 		Name:     "bentoml",
 		PURLType: "pypi",
 	}
 	return inventory.Finding{PackageVulns: []*inventory.PackageVuln{{
-		Vulnerability: osvschema.Vulnerability{
-			ID:      "CVE-2024-2912",
+		Package: pkg,
+		Vulnerability: &osvpb.Vulnerability{
+			Id:      "CVE-2024-2912",
 			Summary: "CVE-2024-2912",
 			Details: "CVE-2024-2912",
-			Affected: inventory.PackageToAffected(pkg, "1.2.5", &osvschema.Severity{
-				Type:  osvschema.SeverityCVSSV3,
+			Affected: inventory.PackageToAffected(bentoMlPkg, "1.2.5", &osvpb.Severity{
+				Type:  osvpb.Severity_CVSS_V3,
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
 			}),
 			DatabaseSpecific: dbSpecific,
@@ -251,8 +254,10 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	}
 	log.Infof("Payload file removed")
 
-	dbSpecific := map[string]any{
-		"extra": fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", ")),
+	dbSpecific := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", "))}},
+		},
 	}
-	return d.findingForPackage(dbSpecific), nil
+	return d.findingForPackage(dbSpecific, pkg), nil
 }

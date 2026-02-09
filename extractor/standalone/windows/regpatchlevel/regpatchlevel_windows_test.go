@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package regpatchlevel
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -133,7 +132,7 @@ func TestExtract(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := Configuration{mockregistry.NewOpener(tc.reg)}
 			e := New(cfg)
-			got, err := e.Extract(context.Background(), nil)
+			got, err := e.Extract(t.Context(), nil)
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("Extract() returned an unexpected error: %v", err)
 			}

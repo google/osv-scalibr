@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -635,7 +635,7 @@ func TestFromV1Image(t *testing.T) {
 		wantNonZeroSize       bool
 	}{
 		{
-			name: "image with no config file",
+			name: "image_with_no_config_file",
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{
 					fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, false),
@@ -650,7 +650,7 @@ func TestFromV1Image(t *testing.T) {
 			},
 		},
 		{
-			name: "image with error on layers",
+			name: "image_with_error_on_layers",
 			v1Image: &fakeV1Image{
 				config: &v1.ConfigFile{
 					History: []v1.History{
@@ -665,7 +665,7 @@ func TestFromV1Image(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "image with single package",
+			name: "image_with_single_package",
 			v1Image: constructImageWithTarEntries(t, []*tarEntry{
 				{
 					Header: &tar.Header{
@@ -702,7 +702,7 @@ func TestFromV1Image(t *testing.T) {
 			wantNonZeroSize: true,
 		},
 		{
-			name: "image error during tar extraction",
+			name: "image_error_during_tar_extraction",
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{
 					// Layer will fail on Uncompressed() call.
@@ -720,7 +720,7 @@ func TestFromV1Image(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "image attempting trampoline path traversal attack",
+			name: "image_attempting_trampoline_path_traversal_attack",
 			v1Image: constructImageWithTarEntries(t, []*tarEntry{
 				{
 					Header: &tar.Header{
@@ -860,7 +860,7 @@ func TestFromV1Image_CleanUp(t *testing.T) {
 		wantChainLayerEntries []chainLayerEntries
 	}{
 		{
-			name: "image with single package",
+			name: "image_with_single_package",
 			v1Image: constructImageWithTarEntries(t, []*tarEntry{
 				{
 					Header: &tar.Header{
@@ -1022,7 +1022,7 @@ func TestInitializeChainLayers(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name: "no history entries",
+			name: "no_history_entries",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 			},
@@ -1040,7 +1040,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 		},
 		{
-			name: "single non-empty layer with history entry",
+			name: "single_non-empty_layer_with_history_entry",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 			},
@@ -1063,7 +1063,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple non-empty layer with history entries",
+			name: "multiple_non-empty_layer_with_history_entries",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 				fakeV1Layer2,
@@ -1114,7 +1114,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			},
 		},
 		{
-			name: "mix of filled and empty layers with history entries",
+			name: "mix_of_filled_and_empty_layers_with_history_entries",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 				fakeV1Layer2,
@@ -1207,7 +1207,7 @@ func TestInitializeChainLayers(t *testing.T) {
 			// In this case, the history is invalid because there are more v1 layers than non-empty
 			// history entries. No layer metadata should be populated in the chain layers other than the
 			// layer index.
-			name: "more layers than history entries",
+			name: "more_layers_than_history_entries",
 			v1Layers: []v1.Layer{
 				fakeV1Layer1,
 				fakeV1Layer2,
@@ -1281,14 +1281,14 @@ func TestFS(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name: "no chain layers",
+			name: "no_chain_layers",
 			image: &Image{
 				config: DefaultConfig(),
 			},
 			wantErr: true,
 		},
 		{
-			name: "single chain layer",
+			name: "single_chain_layer",
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{
@@ -1317,7 +1317,7 @@ func TestFS(t *testing.T) {
 			wantFilesFromFS: []string{"/foo.txt"},
 		},
 		{
-			name: "multiple chain layers",
+			name: "multiple_chain_layers",
 			image: &Image{
 				chainLayers: []*chainLayer{
 					{

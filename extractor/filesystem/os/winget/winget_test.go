@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	_ "modernc.org/sqlite"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -64,7 +66,10 @@ func TestFileRequired(t *testing.T) {
 		},
 	}
 
-	wingetExtractor := NewDefault()
+	wingetExtractor, err := New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("New(): %v", err)
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			api := simplefileapi.New(tt.path, fakefs.FakeFileInfo{
@@ -179,7 +184,10 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Failed to setup test database: %v", err)
 			}
 
-			wingetExtractor := NewDefault()
+			wingetExtractor, err := New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New(): %v", err)
+			}
 
 			// Create a custom Extract method that bypasses GetRealPath for testing
 			got, err := func() ([]*extractor.Package, error) {
@@ -241,7 +249,10 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtractorInterface(t *testing.T) {
-	wingetExtractor := NewDefault()
+	wingetExtractor, err := New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("New(): %v", err)
+	}
 
 	if wingetExtractor.Name() != Name {
 		t.Errorf("Name() = %v, want %v", wingetExtractor.Name(), Name)

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
 	"github.com/google/osv-scalibr/log"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 // ComputePatches attempts to resolve each vulnerability found in the graph,
@@ -42,11 +42,11 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 	if len(graph.Graph.Nodes) == 0 {
 		return nil, nil
 	}
-	sys := graph.Graph.Nodes[0].Version.System.Semver()
+	sys := graph.Graph.Nodes[0].Version.Semver()
 	requiredVersions := computeAllVersionConstraints(graph.Vulns, sys)
 	type patch struct {
 		vk    resolve.VersionKey
-		vulns []*osvschema.Vulnerability
+		vulns []*osvpb.Vulnerability
 	}
 	vkPatches := make(map[resolve.VersionKey][]patch)
 	for _, v := range graph.Vulns {
@@ -76,15 +76,15 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 			// Found a patch
 			newPatch := patch{
 				vk:    ver,
-				vulns: []*osvschema.Vulnerability{v.OSV},
+				vulns: []*osvpb.Vulnerability{v.OSV},
 			}
 			// Check the vulns of other patches if this patch also fixes them.
 			seenVulns := make(map[string]struct{})
-			seenVulns[v.OSV.ID] = struct{}{}
+			seenVulns[v.OSV.Id] = struct{}{}
 			for _, p := range vkPatches[vk] {
 				for _, vuln := range p.vulns {
-					if _, ok := seenVulns[vuln.ID]; !ok {
-						seenVulns[vuln.ID] = struct{}{}
+					if _, ok := seenVulns[vuln.Id]; !ok {
+						seenVulns[vuln.Id] = struct{}{}
 						if !vulns.IsAffected(vuln, vulns.VKToPackage(ver)) {
 							newPatch.vulns = append(newPatch.vulns, vuln)
 						}
@@ -111,7 +111,7 @@ func ComputePatches(ctx context.Context, cl resolve.Client, graph remediation.Re
 			}
 			for _, vuln := range p.vulns {
 				resultPatch.Fixed = append(resultPatch.Fixed, result.Vuln{
-					ID: vuln.ID,
+					ID: vuln.Id,
 					Packages: []result.Package{
 						result.Package{
 							Name:    vk.Name,
@@ -215,11 +215,11 @@ func requirementsSatisfied(reqs []resolve.RequirementVersion, graph *resolve.Gra
 }
 
 func findLatestMatching(ctx context.Context, cl resolve.Client, graph remediation.ResolvedGraph,
-	sg *resolution.DependencySubgraph, v *osvschema.Vulnerability,
+	sg *resolution.DependencySubgraph, v *osvpb.Vulnerability,
 	requiredVersions map[resolve.VersionKey]semver.Set,
 	opts *options.RemediationOptions) (bool, resolve.VersionKey) {
 	vk := sg.Nodes[sg.Dependency].Version
-	sys := vk.System.Semver()
+	sys := vk.Semver()
 	vers, err := cl.Versions(ctx, vk.PackageKey)
 	if err != nil {
 		log.Errorf("failed to get versions for package %s: %v", vk.PackageKey, err)

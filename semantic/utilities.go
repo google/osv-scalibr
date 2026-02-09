@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,4 +37,18 @@ func fetch(slice []string, i int, def string) string {
 	}
 
 	return slice[i]
+}
+
+// isASCIIDigit returns true if the given rune is an ASCII digit.
+//
+// Unicode digits are not considered ASCII digits by this function.
+func isASCIIDigit(c rune) bool {
+	return c >= 48 && c <= 57
+}
+
+// isASCIILetter returns true if the given rune is an ASCII letter.
+//
+// Unicode letters are not considered ASCII letters by this function.
+func isASCIILetter(c rune) bool {
+	return (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
 }

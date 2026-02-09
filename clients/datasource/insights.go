@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
+
+var connections = make(map[string]*grpc.ClientConn, 0)
+var connectionsMu sync.Mutex
 
 // CachedInsightsClient is a wrapper for InsightsClient that caches requests.
 type CachedInsightsClient struct {
@@ -68,6 +71,19 @@ func makeVersionKey(k *pb.VersionKey) versionKey {
 
 // NewCachedInsightsClient creates a CachedInsightsClient.
 func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClient, error) {
+	connectionsMu.Lock()
+	defer connectionsMu.Unlock()
+
+	key := addr + "|" + userAgent
+	if conn, ok := connections[key]; ok {
+		return &CachedInsightsClient{
+			InsightsClient:    pb.NewInsightsClient(conn),
+			packageCache:      NewRequestCache[packageKey, *pb.Package](),
+			versionCache:      NewRequestCache[versionKey, *pb.Version](),
+			requirementsCache: NewRequestCache[versionKey, *pb.Requirements](),
+		}, nil
+	}
+
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
 		return nil, fmt.Errorf("getting system cert pool: %w", err)
@@ -83,6 +99,8 @@ func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClie
 	if err != nil {
 		return nil, fmt.Errorf("dialling %q: %w", addr, err)
 	}
+
+	connections[key] = conn
 
 	return &CachedInsightsClient{
 		InsightsClient:    pb.NewInsightsClient(conn),

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,7 @@ package semantic
 import (
 	"fmt"
 	"math/big"
-	"regexp"
 	"strings"
-)
-
-var (
-	semverIsDigit = regexp.MustCompile(`\d`)
 )
 
 // semverLikeVersion is a version that is _like_ a version as defined by the
@@ -43,13 +38,15 @@ func (v *semverLikeVersion) fetchComponentsAndBuild(maxComponents int) (componen
 	comps := v.Components[:maxComponents]
 	extra := v.Components[maxComponents:]
 
-	build := v.Build
+	var build strings.Builder
+
+	build.WriteString(v.Build)
 
 	for _, c := range extra {
-		build += fmt.Sprintf(".%d", c)
+		build.WriteString(fmt.Sprintf(".%d", c))
 	}
 
-	return comps, build
+	return comps, build.String()
 }
 
 func parseSemverLikeVersion(line string, maxComponents int) semverLikeVersion {
@@ -83,7 +80,7 @@ func parseSemverLike(line string) semverLikeVersion {
 		}
 
 		// this is part of a component version
-		if semverIsDigit.MatchString(string(c)) {
+		if isASCIIDigit(c) {
 			currentCom += string(c)
 
 			continue

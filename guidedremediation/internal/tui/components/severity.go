@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/osv-scalibr/guidedremediation/internal/severity"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 var (
@@ -38,7 +38,7 @@ var (
 )
 
 // RenderSeverity renders for terminal the highest severity score & rating of a list of severities.
-func RenderSeverity(severities []osvschema.Severity) string {
+func RenderSeverity(severities []*osvpb.Severity) string {
 	text := "UNKNOWN"
 	bestScore := -1.0
 	for _, sev := range severities {
@@ -55,7 +55,7 @@ func RenderSeverity(severities []osvschema.Severity) string {
 }
 
 // RenderSeverityShort renders for terminal the highest severity score only of a list of severities.
-func RenderSeverityShort(severities []osvschema.Severity) string {
+func RenderSeverityShort(severities []*osvpb.Severity) string {
 	bestScore := -1.0
 	bestRating := "UNKNOWN"
 	for _, sev := range severities {
