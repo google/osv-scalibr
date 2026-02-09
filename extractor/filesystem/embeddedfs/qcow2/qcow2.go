@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -49,12 +50,14 @@ type Extractor struct {
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	maxSize := cfg.MaxFileSizeBytes
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.QCOW2Config { return c.GetQcow2() })
-	if specific.GetMaxFileSizeBytes() > 0 {
-		maxSize = specific.GetMaxFileSizeBytes()
-	}
 	var password string
-	if specific.GetPassword() != "" {
-		password = specific.GetPassword()
+	if specific != nil {
+		if specific.GetMaxFileSizeBytes() > 0 {
+			maxSize = specific.GetMaxFileSizeBytes()
+		}
+		if specific.GetPassword() != "" {
+			password = specific.GetPassword()
+		}
 	}
 	return &Extractor{maxFileSizeBytes: maxSize, password: password}, nil
 }
@@ -105,7 +108,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		defer func() {
 			dir := filepath.Dir(qcow2Path)
 			if err := os.RemoveAll(dir); err != nil {
-				fmt.Printf("os.RemoveAll(%q): %v\n", dir, err)
+				log.Errorf("os.RemoveAll(%q): %v\n", dir, err)
 			}
 		}()
 	}

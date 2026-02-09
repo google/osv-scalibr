@@ -40,17 +40,17 @@ func TestFileRequired(t *testing.T) {
 		want                  bool
 	}{
 		{
-			desc: "vmdk_lowercase",
+			desc: "qcow_lowercase",
 			path: "testdata/disk.qcow2",
 			want: true,
 		},
 		{
-			desc: "vmdk_uppercase",
+			desc: "qcow_uppercase",
 			path: "testdata/DISK.QCOW2",
 			want: true,
 		},
 		{
-			desc: "not_vmdk",
+			desc: "not_qcow",
 			path: "testdata/document.txt",
 			want: false,
 		},
@@ -130,8 +130,12 @@ func TestExtractValidQCOW2(t *testing.T) {
 			path: filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.qcow2"),
 		},
 		{
-			name: "Encrypted qcow2",
-			path: filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs-encrypted.qcow2"),
+			name: "LUKS Encrypted qcow2",
+			path: filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs-encrypted-luks.qcow2"),
+		},
+		{
+			name: "Legacy AES Encrypted qcow2",
+			path: filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs-encrypted-legacy-aes.qcow2"),
 		},
 	}
 

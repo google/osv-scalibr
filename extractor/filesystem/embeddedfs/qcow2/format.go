@@ -23,8 +23,8 @@ const (
 type header struct {
 	Magic                 uint32   // 0-3
 	Version               uint32   // 4-7
-	BackingFileOffset     uint64   // 8-15
-	BackingFileSize       uint32   // 16-19
+	_                     uint64   // 8-15
+	_                     uint32   // 16-19
 	ClusterBits           uint32   // 20-23
 	Size                  uint64   // 24-31
 	CryptMethod           uint32   // 32-35
@@ -32,15 +32,15 @@ type header struct {
 	L1TableOffset         uint64   // 40-47
 	RefcountTableOffset   uint64   // 48-55
 	RefcountTableClusters uint32   // 56-59
-	NbSnapshots           uint32   // 60-63
-	SnapshotsOffset       uint64   // 64-71
+	_                     uint32   // 60-63
+	_                     uint64   // 64-71
 	IncompatibleFeatures  uint64   // 72-79
-	CompatibleFeatures    uint64   // 80-87
-	AutoclearFeatures     uint64   // 88-95
-	RefcountOrder         uint32   // 96-99
+	_                     uint64   // 80-87
+	_                     uint64   // 88-95
+	_                     uint32   // 96-99
 	HeaderLength          uint32   // 100-103
 	CompressionType       uint8    // 104
-	Padding               [7]uint8 // 105-111
+	_                     [7]uint8 // 105-111
 }
 
 // headerExtension represents a QCOW2 header extension

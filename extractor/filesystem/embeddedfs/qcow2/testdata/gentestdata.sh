@@ -40,7 +40,9 @@ sudo umount /mnt/valid4
 sudo losetup -d ${LOOPDEV}
 sudo rm -rf /mnt/valid*
 qemu-img convert valid.img -O qcow2 valid-ext-exfat-fat32-ntfs.qcow2
-qemu-img convert --object secret,data="Yuvraj",id=sec0 -f raw valid.img -o encrypt.format=luks,encrypt.key-secret=sec0 -O qcow2 valid-ext-exfat-fat32-ntfs-encrypted.qcow2
+qemu-img convert --object secret,data="Yuvraj",id=sec0 -f raw valid.img -o encrypt.format=luks,encrypt.key-secret=sec0 -O qcow2 valid-ext-exfat-fat32-ntfs-encrypted-luks.qcow2
+qemu-img convert --object secret,data="Yuvraj",id=sec0 -f raw valid.img -o encrypt.format=aes,encrypt.key-secret=sec0 -O qcow2 valid-ext-exfat-fat32-ntfs-encrypted-legacy-aes.qcow2
+
 rm private-key.pem valid.img
 
 echo "Yuvraj Saxena <ysaxenax@gmail.com>" > invalid.qcow2

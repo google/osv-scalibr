@@ -26,6 +26,9 @@ type ivGen string
 type hashAlgorithm string
 
 const (
+	// Reference:
+	// https://www.qemu.org/docs/master/devel/luks-detached-header.html
+	// cdn.kernel.org/pub/linux/utils/cryptsetup/LUKS_docs/on-disk-format.pdf
 	luksMagic                   = "LUKS\xba\xbe"
 	cryptoHeaderType            = 0x0537be77
 	luksDigestSize              = 20
@@ -65,9 +68,16 @@ type luksKeySlot struct {
 	Stripes            uint32
 }
 
-// cryptoConfig interface for encryption
+// cryptoConfig abstracts a disk encryption configuration.
+// It provides decryption functionality and determines whether
+// a given disk offset is encrypted.
 type cryptoConfig interface {
+	// Decrypt decrypts the provided data starting at the given guest offset.
+	// The offset is used to derive the correct sector number and IV/tweak.
 	Decrypt(data []byte, guestOffset uint64) ([]byte, error)
+
+	// IsEncryptedOffset reports whether the given disk offset lies within
+	// the encrypted portion of the image.
 	IsEncryptedOffset(offset uint64) bool
 }
 
@@ -312,14 +322,21 @@ func (c *luksConfig) decryptData(data []byte, guestOffset uint64) ([]byte, error
 	return result, nil
 }
 
+// Decrypt decrypts encrypted data using the LUKS configuration.
+// The guestOffset is used to compute the correct sector number
+// for IV or tweak generation.
 func (c *luksConfig) Decrypt(data []byte, guestOffset uint64) ([]byte, error) {
 	return c.decryptData(data, guestOffset)
 }
 
+// IsEncryptedOffset reports whether the given offset is part of the
+// encrypted payload region for this LUKS configuration.
 func (c *luksConfig) IsEncryptedOffset(offset uint64) bool {
 	return offset >= c.encryptedStart
 }
 
+// Decrypt decrypts data using the legacy AES-CBC encryption scheme.
+// The guestOffset is used to derive the sector-based IV.
 func (c *legacyAESConfig) Decrypt(data []byte, guestOffset uint64) ([]byte, error) {
 	if len(data)%sectorSize != 0 {
 		return nil, fmt.Errorf("data size %d not sector-aligned", len(data))
@@ -335,6 +352,8 @@ func (c *legacyAESConfig) Decrypt(data []byte, guestOffset uint64) ([]byte, erro
 	return result, nil
 }
 
+// IsEncryptedOffset reports whether the given offset is encrypted.
+// For legacy AES encryption, all offsets are considered encrypted.
 func (c *legacyAESConfig) IsEncryptedOffset(offset uint64) bool {
 	return true
 }

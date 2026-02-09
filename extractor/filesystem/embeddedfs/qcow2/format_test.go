@@ -137,12 +137,9 @@ func TestConvertQCOW2ToRawMissingArgs(t *testing.T) {
 }
 
 func TestConvertQCOW2ToRawMinimalImage(t *testing.T) {
-	wdir, err := os.Getwd()
-	if err != nil {
-		t.Errorf("Failed to get current working directory")
-	}
-	in := filepath.Join(wdir, "testdata", "test.qcow2")
-	out := filepath.Join(wdir, "testdata", "out.raw")
+	tmp := t.TempDir()
+	in := filepath.Join(tmp, "test.qcow2")
+	out := filepath.Join(tmp, "out.raw")
 
 	f, err := os.Create(in)
 	if err != nil {
@@ -182,15 +179,5 @@ func TestConvertQCOW2ToRawMinimalImage(t *testing.T) {
 	}
 	if info.Size() != 0 {
 		t.Fatalf("expected empty raw image, got %d bytes", info.Size())
-	}
-
-	err = os.Remove(in)
-	if err != nil {
-		t.Fatalf("failed to remove input test qcow2 image")
-	}
-
-	err = os.Remove(out)
-	if err != nil {
-		t.Fatalf("failed to remove empty raw image")
 	}
 }
