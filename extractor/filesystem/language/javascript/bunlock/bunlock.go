@@ -69,8 +69,8 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if filepath.Base(path) != "bun.lock" {
 		return false
 	}
-	// Skip lockfiles inside node_modules directories since the root project doesn't
-	// necessarily install the packages they list. We instead use the more specific top-level
+	// Skip lockfiles inside node_modules directories since the packages they list aren't
+	// necessarily installed by the root project. We instead use the more specific top-level
 	// lockfile for the root project dependencies.
 	dir := filepath.ToSlash(filepath.Dir(path))
 	return !slices.Contains(strings.Split(dir, "/"), "node_modules")
