@@ -15,13 +15,11 @@
 package supabase
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
+	"github.com/google/osv-scalibr/veles/secrets/common/jwt"
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
@@ -69,22 +67,28 @@ func NewProjectSecretKeyValidator() *sv.Validator[ProjectSecretKey] {
 }
 
 // NewServiceRoleJWTValidator creates a new Supabase Service Role JWT Validator.
-// This validator extracts the project reference from the JWT's aud claim (if present)
+// This validator extracts the project reference from the JWT's ref claim (if present)
 // It validates by making a request to the project-specific Supabase REST endpoint.
 func NewServiceRoleJWTValidator() *sv.Validator[ServiceRoleJWT] {
 	return &sv.Validator[ServiceRoleJWT]{
 		EndpointFunc: func(secret ServiceRoleJWT) (string, error) {
-			// Try to extract project reference from JWT
-			projectRef, err := extractProjectRefFromJWT(secret.Token)
-			if err != nil {
-				return "", fmt.Errorf("cannot extract project reference from JWT: %w", err)
+			// Parse the JWT token
+			tokens, _ := jwt.ExtractTokens([]byte(secret.Token))
+			if len(tokens) == 0 {
+				return "", errors.New("invalid JWT format")
 			}
 
-			if projectRef == "" {
-				return "", errors.New("project reference not found in JWT; cannot validate without project context")
+			token := tokens[0]
+			payload := token.Payload()
+
+			// Extract project reference from the "ref" claim
+			// Example: {"iss":"supabase","ref":"project-id","role":"service_role",...}
+			ref, ok := payload["ref"].(string)
+			if !ok || len(ref) != 20 {
+				return "", errors.New("ref claim not found or invalid in JWT; cannot validate without project context")
 			}
 
-			return fmt.Sprintf("https://%s.supabase.co/rest/v1/", projectRef), nil
+			return fmt.Sprintf("https://%s.supabase.co/rest/v1/", ref), nil
 		},
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(secret ServiceRoleJWT) map[string]string {
@@ -96,34 +100,4 @@ func NewServiceRoleJWTValidator() *sv.Validator[ServiceRoleJWT] {
 		ValidResponseCodes:   []int{http.StatusOK},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
-}
-
-// extractProjectRefFromJWT attempts to extract the project reference from a JWT token.
-// Supabase JWTs contain the project reference in the "ref" claim.
-func extractProjectRefFromJWT(token string) (string, error) {
-	// Split JWT into parts
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return "", errors.New("invalid JWT format")
-	}
-
-	// Decode the payload (second part)
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return "", fmt.Errorf("failed to decode JWT payload: %w", err)
-	}
-
-	// Parse JSON payload to extract project reference
-	var claims map[string]any
-	if err := json.Unmarshal(payload, &claims); err != nil {
-		return "", fmt.Errorf("failed to parse JWT payload: %w", err)
-	}
-
-	// Extract project reference from the "ref" claim
-	// Example: {"iss":"supabase","ref":"project-id","role":"service_role",...}
-	if ref, ok := claims["ref"].(string); ok && len(ref) == 20 {
-		return ref, nil
-	}
-
-	return "", errors.New("ref claim not found or invalid in JWT")
 }

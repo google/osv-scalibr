@@ -15,12 +15,10 @@
 package supabase
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"regexp"
-	"strings"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
@@ -33,10 +31,9 @@ var (
 )
 
 const (
-	patMaxLen              = 44   // sbp_ (4) + 40 hex chars
-	projectSecretKeyMaxLen = 46   // sb_secret_ (10) + 36 chars
-	projectRefMaxLen       = 50   // project ref is typically 20 chars
-	serviceRoleJWTMaxLen   = 1000 // JWT tokens can be quite long
+	patMaxLen              = 44 // sbp_ (4) + 40 hex chars
+	projectSecretKeyMaxLen = 46 // sb_secret_ (10) + 36 chars
+	projectRefMaxLen       = 50 // project ref is typically 20 chars
 	// maxDistance is the maximum distance between project ref and secret key to be considered for pairing.
 	// 10 KiB is a good upper bound as credentials are typically close together in config files.
 	maxDistance = 10 * 1 << 10 // 10 KiB
@@ -53,15 +50,6 @@ var projectSecretKeyRe = regexp.MustCompile(`sb_secret_[A-Za-z0-9_-]{31,36}`)
 // projectRefRe matches Supabase project references in URLs.
 // Format: https://<project-ref>.supabase.co
 var projectRefRe = regexp.MustCompile(`https://([a-z0-9]{20})\.supabase\.co`)
-
-// jwtRe matches JWT tokens (three base64url segments separated by dots).
-var jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)
-
-// jwtPayload represents the decoded JWT payload.
-type jwtPayload struct {
-	Iss  string `json:"iss"`
-	Role string `json:"role"`
-}
 
 // NewPATDetector returns a detector for Supabase Personal Access Tokens.
 func NewPATDetector() veles.Detector {
@@ -100,39 +88,38 @@ func NewProjectSecretKeyDetector() veles.Detector {
 	}
 }
 
+type serviceRoleJWTDetector struct{}
+
 // NewServiceRoleJWTDetector returns a detector for Supabase service_role JWT tokens.
 // This detector validates that the JWT has iss="supabase" and role="service_role".
 func NewServiceRoleJWTDetector() veles.Detector {
-	return simpletoken.Detector{
-		MaxLen: serviceRoleJWTMaxLen,
-		Re:     jwtRe,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			token := string(b)
+	return &serviceRoleJWTDetector{}
+}
 
-			// Split JWT into parts
-			parts := strings.Split(token, ".")
-			if len(parts) != 3 {
-				return nil, false
-			}
+// Detect finds Supabase service_role JWT tokens.
+func (d *serviceRoleJWTDetector) Detect(data []byte) ([]veles.Secret, []int) {
+	tokens, positions := jwt.ExtractTokens(data)
+	var secrets []veles.Secret
+	var secretPositions []int
 
-			// Decode the payload (second part)
-			payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-			if err != nil {
-				return nil, false
-			}
+	for i, token := range tokens {
+		payload := token.Payload()
 
-			// Parse JSON payload
-			var claims jwtPayload
-			if err := json.Unmarshal(payload, &claims); err != nil {
-				return nil, false
-			}
+		// Validate that it's a Supabase service_role JWT
+		iss, issOk := payload["iss"].(string)
+		role, roleOk := payload["role"].(string)
+		if !issOk || !roleOk || iss != "supabase" || role != "service_role" {
+			continue
+		}
 
-			// Validate that it's a Supabase service_role JWT
-			if claims.Iss != "supabase" || claims.Role != "service_role" {
-				return nil, false
-			}
-
-			return ServiceRoleJWT{Token: token}, true
-		},
+		secrets = append(secrets, ServiceRoleJWT{Token: token.Raw()})
+		secretPositions = append(secretPositions, positions[i])
 	}
+
+	return secrets, secretPositions
+}
+
+// MaxSecretLen returns the maximum length of a JWT token.
+func (d *serviceRoleJWTDetector) MaxSecretLen() uint32 {
+	return jwt.MaxTokenLength
 }
