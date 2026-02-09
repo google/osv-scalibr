@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,29 +28,20 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "secrets/mariadb"
+
+	defaultFollowInclude = true
 )
 
 var (
 	keyValuePattern = regexp.MustCompile(`^\s*([^:=\s]+)\s*[:=]\s*(.+)$`)
 )
-
-// Config is the extractor config
-type Config struct {
-	// FollowInclude directive tells the extractor to follow the include or not
-	FollowInclude bool
-}
-
-// DefaultConfig returns the default configuration values for the Extractor.
-func DefaultConfig() Config {
-	return Config{
-		FollowInclude: true,
-	}
-}
 
 // Extractor extracts mariadb secret credentials.
 type Extractor struct {
@@ -59,16 +50,17 @@ type Extractor struct {
 }
 
 // New returns the Extractor with the specified config settings.
-func New(cfg Config) filesystem.Extractor {
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	followInclude := defaultFollowInclude
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.MariadbConfig { return c.GetMariadb() })
+	if specific != nil && specific.FollowInclude != nil {
+		followInclude = specific.GetFollowInclude()
+	}
+
 	return &Extractor{
 		visited:       map[string]struct{}{},
-		followInclude: cfg.FollowInclude,
-	}
-}
-
-// NewDefault returns the Extractor with the default config settings.
-func NewDefault() filesystem.Extractor {
-	return New(DefaultConfig())
+		followInclude: followInclude,
+	}, nil
 }
 
 // Name of the extractor.

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 type fakePlugin struct {
@@ -93,6 +95,18 @@ func TestValidateRequirements(t *testing.T) {
 			capabs:     &plugin.Capabilities{OS: plugin.OSMac},
 			wantErr:    nil,
 		},
+		{
+			desc:       "Unsafe plugins not allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: false},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "Unsafe plugins allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: true},
+			wantErr:    nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -108,7 +122,16 @@ func TestValidateRequirements(t *testing.T) {
 
 func TestFilterByCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
-	pls := []plugin.Plugin{snap.NewDefault(), homebrew.New()}
+	cfg := &cpb.PluginConfig{}
+	snap, err := snap.New(cfg)
+	if err != nil {
+		t.Fatalf("snap.New(%v) failed: %v", cfg, err)
+	}
+	homebrew, err := homebrew.New(cfg)
+	if err != nil {
+		t.Fatalf("homebrew.New(%v) failed: %v", cfg, err)
+	}
+	pls := []plugin.Plugin{snap, homebrew}
 	got := plugin.FilterByCapabilities(pls, capab)
 	if len(got) != 1 {
 		t.Fatalf("plugin.FilterCapabilities(%v, %v): want 1 plugin, got %d", pls, capab, len(got))

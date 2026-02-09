@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 package homebrew_test
 
 import (
+	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,12 +24,19 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
+	metadata "github.com/google/osv-scalibr/extractor/filesystem/os/homebrew/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
+	if slices.Contains([]string{"windows"}, runtime.GOOS) {
+		t.Skipf("Skipping test for unsupported OS %q", runtime.GOOS)
+	}
 	tests := []struct {
 		name           string
 		path           string
@@ -97,7 +106,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = homebrew.Extractor{}
+			e, err := homebrew.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("homebrew.New: %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantIsRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantIsRequired)
 			}
@@ -110,6 +122,9 @@ func pkgLess(i1, i2 *extractor.Package) bool {
 }
 
 func TestExtract(t *testing.T) {
+	if slices.Contains([]string{"windows"}, runtime.GOOS) {
+		t.Skipf("Skipping test for unsupported OS %q", runtime.GOOS)
+	}
 	tests := []struct {
 		name         string
 		path         string
@@ -125,6 +140,14 @@ func TestExtract(t *testing.T) {
 					Version:   "1.67.0",
 					PURLType:  purl.TypeBrew,
 					Locations: []string{"testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json"},
+					Metadata: &metadata.Metadata{
+						URL:  "https://github.com/rclone/rclone/archive/refs/tags/v1.67.0.tar.gz",
+						Head: "https://github.com/rclone/rclone.git",
+						Mirrors: []string{
+							"https://github.com/rclone/rclone/archive/refs/tags/v1.67.0.tar.gz",
+							"https://github.com/rclone/rclone/archive/refs/tags/v1.67.0.tar.gz",
+						},
+					},
 				},
 			},
 		},
@@ -161,8 +184,11 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = homebrew.Extractor{}
-			input := &filesystem.ScanInput{Path: tt.path, Reader: nil}
+			e, err := homebrew.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("homebrew.New: %v", err)
+			}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Reader: nil}
 			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)
@@ -178,25 +204,29 @@ func TestExtract(t *testing.T) {
 }
 
 func TestSplitPath(t *testing.T) {
+	if slices.Contains([]string{"windows"}, runtime.GOOS) {
+		t.Skipf("Skipping test for unsupported OS %q", runtime.GOOS)
+	}
 	tests := []struct {
 		name string
 		path string
-		want *homebrew.BrewPath
+		want *homebrew.BrewPackage
 	}{
 		{
 			name: "cellar_path",
 			path: "testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json",
-			want: &homebrew.BrewPath{
-				AppName:    "rclone",
-				AppVersion: "1.67.0",
-				AppFile:    "install_receipt.json",
-				AppExt:     "install_receipt.json",
+			want: &homebrew.BrewPackage{
+				AppName:        "rclone",
+				AppVersion:     "1.67.0",
+				AppFile:        "install_receipt.json",
+				AppExt:         "install_receipt.json",
+				AppFormulaPath: "testdata/Cellar/rclone/1.67.0/.brew/rclone.rb",
 			},
 		},
 		{
 			name: "caskroom_path",
 			path: "testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh",
-			want: &homebrew.BrewPath{
+			want: &homebrew.BrewPackage{
 				AppName:    "testapp",
 				AppVersion: "1.1.1",
 				AppFile:    "testapp.wrapper.sh",

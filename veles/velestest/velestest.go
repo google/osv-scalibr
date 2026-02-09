@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package velestest contains fakes that can be used to test parts of Veles as
-// well as integrations.
+// Package velestest contains tools to support testing Veles Detectors and Validator.
+// There are fakes that can be used to test parts of Veles as well as integrations.
 //
-//nolint:plugger // This package contains test only mocks
+// There are also acceptance tests that should be run for every new implementation.
+//
+//nolint:plugger // This package contains test only helpers
 package velestest

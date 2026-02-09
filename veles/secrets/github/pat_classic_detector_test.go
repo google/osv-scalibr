@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -30,6 +31,31 @@ const (
 	classicPATTestKeyBase64 = `Z2hwX2xiU0g0Q1dxSEtXU0pDdGY2SmRRS25Ja002SWtWMDBOelZheA==`
 	anotherClassicPATKey    = `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`
 )
+
+func TestClassicPATDetectorAcceptance(t *testing.T) {
+	d := github.NewClassicPATDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+	}{
+		{
+			name:   "raw",
+			input:  classicPATTestKey,
+			secret: github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+		},
+		{
+			name:   "base64",
+			input:  classicPATTestKeyBase64,
+			secret: github.ClassicPersonalAccessToken{Token: classicPATTestKey},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret, velestest.WithBackToBack(), velestest.WithPad('a'))
+		})
+	}
+}
 
 // TestClassicPATDetector_truePositives tests for cases where we know the Detector
 // will find a Github classic personal access tokens.

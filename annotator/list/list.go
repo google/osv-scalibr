@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
+	"github.com/google/osv-scalibr/annotator/misc/brewsource"
 	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
 	"github.com/google/osv-scalibr/annotator/misc/npmsource"
 	noexecutabledpkg "github.com/google/osv-scalibr/annotator/noexecutable/dpkg"
@@ -42,25 +43,26 @@ type InitMap map[string][]InitFn
 
 // VEX generation related annotators.
 var VEX = InitMap{
-	apk.Name:              {noCFG(apk.New)},
-	cachedir.Name:         {noCFG(cachedir.New)},
-	cos.Name:              {noCFG(cos.New)},
-	dpkg.Name:             {noCFG(dpkg.New)},
-	rpm.Name:              {noCFG(rpm.NewDefault)},
-	noexecutabledpkg.Name: {noCFG(noexecutabledpkg.New)},
+	apk.Name:              {apk.New},
+	cachedir.Name:         {cachedir.New},
+	cos.Name:              {cos.New},
+	dpkg.Name:             {dpkg.New},
+	rpm.Name:              {rpm.New},
+	noexecutabledpkg.Name: {noexecutabledpkg.New},
 }
 
 // Misc annotators.
 var Misc = InitMap{
-	npmsource.Name:  {noCFG(npmsource.New)},
-	dpkgsource.Name: {noCFG(dpkgsource.New)},
+	npmsource.Name:  {npmsource.New},
+	dpkgsource.Name: {dpkgsource.New},
+	brewsource.Name: {brewsource.New},
 }
 
 // FFA (Full Filesystem Accountability) related annotators.
-var FFA = InitMap{unknownbinariesanno.Name: {noCFG(unknownbinariesanno.New)}}
+var FFA = InitMap{unknownbinariesanno.Name: {unknownbinariesanno.New}}
 
 // Default detectors that are recommended to be enabled.
-var Default = InitMap{cachedir.Name: {noCFG(cachedir.New)}}
+var Default = InitMap{cachedir.Name: {cachedir.New}}
 
 // All annotators.
 var All = concat(
@@ -89,12 +91,6 @@ func concat(initMaps ...InitMap) InitMap {
 
 func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
-}
-
-// Wraps initer functions that don't take any config value to initer functions that do.
-// TODO(b/400910349): Remove once all plugins take config values.
-func noCFG(f func() annotator.Annotator) InitFn {
-	return func(_ *cpb.PluginConfig) (annotator.Annotator, error) { return f(), nil }
 }
 
 // AnnotatorsFromName returns a list of annotators from a name.

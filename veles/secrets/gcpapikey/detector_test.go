@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -32,6 +33,43 @@ const (
 	testKeyD = `AIzaSyDtestTESTt3s7te-_testtesttesttest`
 	testKey  = testKeyA
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := gcpapikey.NewDetector()
+	cases := []struct {
+		name string
+		key  string
+	}{
+		{
+			name: "prefix-A",
+			key:  testKeyA,
+		},
+		{
+			name: "prefix-B",
+			key:  testKeyB,
+		},
+		{
+			name: "prefix-C",
+			key:  testKeyC,
+		},
+		{
+			name: "prefix-D",
+			key:  testKeyD,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(
+				t,
+				d,
+				tc.key,
+				gcpapikey.GCPAPIKey{Key: tc.key},
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			)
+		})
+	}
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a GCP API key/s.

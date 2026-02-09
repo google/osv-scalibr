@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	stripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 var (
@@ -45,6 +46,39 @@ var (
 	detectorRK    = "rk_live_" + strings.Repeat("a", 99)
 	detectorWHSEC = "whsec_UOTBUgpYjyLswPFMxvzo4PyUxleOAiJd"
 )
+
+func TestSecretKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		stripeapikeys.NewSecretKeyDetector(),
+		detectorSK,
+		stripeapikeys.StripeSecretKey{Key: detectorSK},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestRestrictedKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		stripeapikeys.NewRestrictedKeyDetector(),
+		detectorRK,
+		stripeapikeys.StripeRestrictedKey{Key: detectorRK},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestWebhookSecretDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		stripeapikeys.NewWebhookSecretDetector(),
+		detectorWHSEC,
+		stripeapikeys.StripeWebhookSecret{Key: detectorWHSEC},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestSecretKeyDetector_truePositives tests SK detection.
 func TestSecretKeyDetector_truePositives(t *testing.T) {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,12 +22,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	testJWT    = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c`
 	testJWTAlt = `eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJvc2NhbGliLXRlc3QiLCJhdWQiOiJleGFtcGxlLmNvbSIsImV4cCI6NDQ2ODg3MDQ5MX0.Q5rFj8b0cR2pD7eL1O4mK3vT5wA6xY7zB8C9dE0fG1hI2jJ3kL4mN5oP6qR7sT8uV9wX0yZ1a2b3c4d5e6f7g`
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		jwt.NewDetector(),
+		testJWT,
+		jwt.Token{Value: testJWT},
+	)
+}
 
 // TestJWTDetector_TruePositives verifies that the detector finds valid JWT tokens.
 func TestJWTDetector_TruePositives(t *testing.T) {

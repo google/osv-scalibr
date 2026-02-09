@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -46,41 +45,9 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     setup.Config
-		wantCfg setup.Config
-	}{
-		{
-			name: "default",
-			cfg:  setup.DefaultConfig(),
-			wantCfg: setup.Config{
-				MaxFileSizeBytes: 10 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: setup.Config{
-				MaxFileSizeBytes: 10,
-			},
-			wantCfg: setup.Config{
-				MaxFileSizeBytes: 10,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := setup.New(tt.cfg)
-			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
-				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -144,10 +111,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = setup.New(setup.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := setup.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("setup.New(%v) error: %v", tt.maxFileSizeBytes, err)
+			}
+			e.(*setup.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -372,10 +340,11 @@ func TestExtract(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
 
-			var e filesystem.Extractor = setup.New(setup.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: 30,
-			})
+			e, err := setup.New(&cpb.PluginConfig{MaxFileSizeBytes: 30})
+			if err != nil {
+				t.Fatalf("setup.New() error: %v", err)
+			}
+			e.(*setup.Extractor).Stats = collector
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
