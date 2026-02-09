@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+	denometa "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson/metadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
@@ -68,6 +69,9 @@ var (
 		},
 		reflect.TypeFor[*spb.Package_DepsjsonMetadata](): func(p *spb.Package) any {
 			return depsjson.ToStruct(p.GetDepsjsonMetadata())
+		},
+		reflect.TypeFor[*spb.Package_DenoMetadata](): func(p *spb.Package) any {
+			return denometa.ToStruct(p.GetDenoMetadata())
 		},
 		reflect.TypeFor[*spb.Package_NetportsMetadata](): func(p *spb.Package) any {
 			return netports.ToStruct(p.GetNetportsMetadata())
@@ -179,6 +183,7 @@ var (
 	_ = []MetadataProtoSetter{
 		(*wheelegg.PythonPackageMetadata)(nil),
 		(*javascriptmeta.JavascriptPackageJSONMetadata)(nil),
+		(*denometa.JavascriptDenoJSONMetadata)(nil),
 		(*depsjson.Metadata)(nil),
 		(*netports.Metadata)(nil),
 		(*apkmeta.Metadata)(nil),
