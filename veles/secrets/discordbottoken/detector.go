@@ -43,8 +43,12 @@ func (d Detector) Detect(input detectors.Input) ([]secrets.Secret, error) {
 		matches := re.FindAllStringIndex(input.Content, -1)
 		for _, match := range matches {
 			secret := &DiscordBotToken{}
-			secret.SetRaw(input.Content[match[0]:match[1]])
-			secret.SetLocation(input.Location)
+      secret.SecretBase = secrets.NewSecretBase(
+	    input.Content[match[0]:match[1]],
+	    input.Location,
+)
+
+			
 
 			results = append(results, secret)
 		}
