@@ -113,6 +113,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
@@ -131,6 +132,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
+	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -316,6 +318,8 @@ var (
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
+		{circleci.NewPersonalAccessTokenDetector(), "secrets/circlecipat", 0},
+		{circleci.NewProjectTokenDetector(), "secrets/circleciproject", 0},
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
@@ -336,6 +340,7 @@ var (
 		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},
 		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
+		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},

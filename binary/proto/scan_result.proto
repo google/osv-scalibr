@@ -789,7 +789,11 @@ message SecretData {
     URLCredentials url_credentials = 62;
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
     SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
-    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials = 65;
+    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials =
+        65;
+    MistralAPIKey mistral_api_key = 66;
+    CircleCIPersonalAccessToken circleci_personal_access_token = 67;
+    CircleCIProjectToken circleci_project_token = 68;
   }
 
   message GCPSAK {
@@ -829,6 +833,10 @@ message SecretData {
   }
 
   message PerplexityAPIKey {
+    string key = 1;
+  }
+
+  message MistralAPIKey {
     string key = 1;
   }
 
@@ -1130,6 +1138,14 @@ message SecretData {
 
   message CursorAPIKey {
     string key = 1;
+  }
+
+  message CircleCIPersonalAccessToken {
+    string token = 1;
+  }
+
+  message CircleCIProjectToken {
+    string token = 1;
   }
 
   message URLCredentials {
