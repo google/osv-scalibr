@@ -146,17 +146,15 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtractErrors(t *testing.T) {
-	t.Run("invalid terraform file", func(t *testing.T) {
-		extr := terraform.Extractor{}
+	extr := terraform.Extractor{}
 
-		scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
-			Path: "testdata/invalid.tf",
-		})
-		defer extracttest.CloseTestScanInput(t, scanInput)
-
-		_, err := extr.Extract(t.Context(), &scanInput)
-		if err == nil {
-			t.Errorf("expected Error from Extract() but got = %v", err)
-		}
+	scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+		Path: "testdata/invalid.tf",
 	})
+	defer extracttest.CloseTestScanInput(t, scanInput)
+
+	_, err := extr.Extract(t.Context(), &scanInput)
+	if err == nil {
+		t.Errorf("expected Error from Extract() but got = %v", err)
+	}
 }

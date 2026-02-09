@@ -118,18 +118,15 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtractErrors(t *testing.T) {
+	extr := terraformlock.Extractor{}
 
-	t.Run("invalid HCL syntax", func(t *testing.T) {
-		extr := terraformlock.Extractor{}
-
-		scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
-			Path: "testdata/invalid.terraform.lock.hcl",
-		})
-		defer extracttest.CloseTestScanInput(t, scanInput)
-
-		_, err := extr.Extract(t.Context(), &scanInput)
-		if err == nil {
-			t.Errorf("expected Error from Extract() but got = %v", err)
-		}
+	scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
+		Path: "testdata/invalid.terraform.lock.hcl",
 	})
+	defer extracttest.CloseTestScanInput(t, scanInput)
+
+	_, err := extr.Extract(t.Context(), &scanInput)
+	if err == nil {
+		t.Errorf("expected Error from Extract() but got = %v", err)
+	}
 }
