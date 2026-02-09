@@ -215,7 +215,7 @@ func validType(t string) bool {
 		TypeMaven:      true,
 		TypeNix:        true,
 		TypeNPM:        true,
-		TypeJSR:       true,
+		TypeJSR:        true,
 		TypeNuget:      true,
 		TypeOCI:        true,
 		TypeOpkg:       true,

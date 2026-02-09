@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"deps.dev/util/semver"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
@@ -89,19 +90,7 @@ type Extractor struct {
 }
 
 // New returns a deno.json extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
-	}
-}
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -167,7 +156,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	// Parse deno.json files
 	if filepath.Base(path) == "deno.json" {
-		pkgs, err := parseDenoJsonFile(path, input.Reader)
+		pkgs, err := parseDenoJSONFile(path, input.Reader)
 		if err != nil {
 			return inventory.Inventory{},
 				fmt.Errorf("error during parsing the deno.json: %w", err)
@@ -205,13 +194,13 @@ func parseTypeScriptFile(ctx context.Context, path string, reader io.Reader) ([]
 	return pkgs, nil
 }
 
-func parseDenoJsonFile(path string, r io.Reader) ([]*extractor.Package, error) {
+func parseDenoJSONFile(path string, r io.Reader) ([]*extractor.Package, error) {
 	dec := json.NewDecoder(r)
 
 	var p denoJSON
 	if err := dec.Decode(&p); err != nil {
 		log.Debugf("deno.json file %s json decode failed: %v", path, err)
-		return nil, fmt.Errorf("failed to parseDenoJsonFile deno.json file: %w", err)
+		return nil, fmt.Errorf("failed to parseDenoJSONFile deno.json file: %w", err)
 	}
 
 	if !p.hasNameAndVersionValues() {
@@ -220,13 +209,6 @@ func parseDenoJsonFile(path string, r io.Reader) ([]*extractor.Package, error) {
 	}
 
 	var pkgs []*extractor.Package
-	// TODO: should we include the package itself?
-	//pkgs = append(pkgs, &extractor.Package{
-	//	Name:     p.Name,
-	//	Version:  p.Version,
-	//	PURLType: purl.TypeNPM,
-	//	Metadata: &metadata.JavascriptDenoJSONMetadata{},
-	//})
 
 	if len(p.Imports) > 0 {
 		for _, importSpec := range p.Imports {
@@ -242,8 +224,7 @@ func parseDenoJsonFile(path string, r io.Reader) ([]*extractor.Package, error) {
 
 func parseImportSpecifier(specifier string) *extractor.Package {
 	// Handle npm: prefixed imports (e.g., "npm:chalk@1")
-	if strings.HasPrefix(specifier, npmPrefix) {
-		pkgSpecifier := strings.TrimPrefix(specifier, npmPrefix)
+	if pkgSpecifier, ok := strings.CutPrefix(specifier, npmPrefix); ok {
 		packageName, packageVersion := parseNPMNameAndVersion(pkgSpecifier)
 		v, valid := checkNPMNameAndVersion(packageName, packageVersion)
 		if !valid {
@@ -260,8 +241,7 @@ func parseImportSpecifier(specifier string) *extractor.Package {
 		}
 	}
 	// Handle jsr: prefixed imports (e.g., "jsr:@std1/path1@^1")
-	if strings.HasPrefix(specifier, jsrPrefix) {
-		pkgSpecifier := strings.TrimPrefix(specifier, jsrPrefix)
+	if pkgSpecifier, ok := strings.CutPrefix(specifier, jsrPrefix); ok {
 		name, version := parseJSRNameAndVersion(pkgSpecifier)
 		if name != "" && version != "" {
 			return &extractor.Package{
@@ -300,15 +280,13 @@ func parseHTTPSURL(specifier string) *extractor.Package {
 		var packageName, packageVersion, purlType string
 
 		// JSR imports (starts with /jsr/)
-		if strings.HasPrefix(path, "jsr/") {
+		if jsrPath, ok := strings.CutPrefix(path, "jsr/"); ok {
 			// Example: https://esm.sh/jsr/@std/encoding@1.0.0/base64
-			jsrPath := strings.TrimPrefix(path, "jsr/")
 			packageName, packageVersion = parseJSRNameAndVersion(jsrPath)
 			purlType = purl.TypeJSR
 			// GitHub imports (starts with /gh/)
-		} else if strings.HasPrefix(path, "gh/") {
+		} else if ghPath, ok := strings.CutPrefix(path, "gh/"); ok {
 			// Example: https://esm.sh/gh/microsoft/tslib@v2.8.0
-			ghPath := strings.TrimPrefix(path, "gh/")
 			parts := strings.Split(ghPath, "@")
 			if len(parts) == 2 {
 				packageName = parts[0]
@@ -379,18 +357,14 @@ func parseHTTPSURL(specifier string) *extractor.Package {
 // Removes paths after the version (e.g., "chalk@1.0.0/dist/index.js").
 // Trims the char "v" before the version
 func parseNPMNameAndVersion(specifier string) (name, version string) {
-	if strings.HasPrefix(specifier, "@") {
-		specifier = strings.TrimPrefix(specifier, "@")
-	}
+	specifier, _ = strings.CutPrefix(specifier, "@")
 	// Extract the package name and version from the path
 	packageParts := strings.SplitN(specifier, "@", 2)
 	var extractedName, extractedVersion string
 	if len(packageParts) == 2 {
 		extractedName = packageParts[0]
 		extractedVersion = packageParts[1]
-		if strings.HasPrefix(extractedVersion, "v") {
-			extractedVersion = strings.TrimPrefix(extractedVersion, "v")
-		}
+		extractedVersion, _ = strings.CutPrefix(extractedVersion, "v")
 		// Require the version to start with a numeric value
 		if !regexp.MustCompile(`^\d`).MatchString(extractedVersion) {
 			return "", ""
@@ -409,17 +383,15 @@ func parseNPMNameAndVersion(specifier string) (name, version string) {
 // parseJSRNameAndVersion parses the name and version from a JSR package specifier.
 // Handles both regular packages and scoped packages (e.g., "@std/path@^1").
 func parseJSRNameAndVersion(specifier string) (name, version string) {
-	if strings.HasPrefix(specifier, "@") {
-		specifier = strings.TrimPrefix(specifier, "@")
-	}
+	specifier, _ = strings.CutPrefix(specifier, "@")
 	parts := strings.SplitN(specifier, "@", 2)
 	// "std/encoding@1.0.0/base64"
 	if len(parts) == 2 {
 		if strings.Contains(parts[1], "/") {
 			return parts[0], strings.Split(parts[1], "/")[0]
-		} else {
-			return parts[0], parts[1]
 		}
+
+		return parts[0], parts[1]
 	}
 	return "", ""
 }
@@ -444,7 +416,7 @@ func findImportPathsWithQuery(ctx context.Context, source []byte) ([]string, err
 	parser := sitter.NewParser()
 	parser.SetLanguage(typescript.GetLanguage())
 
-	tree, err := parser.ParseCtx(context.Background(), nil, source)
+	tree, err := parser.ParseCtx(context.WithoutCancel(ctx), nil, source)
 	if err != nil {
 		return nil, fmt.Errorf("error while parsing with tree sitter: %w", err)
 	}
@@ -456,7 +428,7 @@ func findImportPathsWithQuery(ctx context.Context, source []byte) ([]string, err
 	// Iterate through matches
 	var packages []string
 	for {
-		// Return if canceled or exceeding deadline.
+		// Return if canceled or exceeding the deadline.
 		if err := ctx.Err(); err != nil {
 			return packages, fmt.Errorf("tree-sitter halted due to context error: %w", err)
 		}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
@@ -88,10 +89,10 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			e := denojson.New(denojson.Config{
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
-
+			e, err := denojson.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("denojson.New: %v", err)
+			}
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -140,13 +141,6 @@ func TestExtract(t *testing.T) {
 						URL: "jsr:@std1/path1@^1",
 					},
 				},
-				//{
-				//	Name:      "my-deno-app",
-				//	Version:   "0.1.0",
-				//	Locations: []string{"testdata/deno.json"},
-				//	PURLType:  purl.TypeNPM,
-				//	Metadata:  &metadata.JavascriptDenoJSONMetadata{},
-				//},
 			},
 		},
 		{
@@ -209,7 +203,10 @@ func TestExtract(t *testing.T) {
 				extracttest.ScanInputMockConfig{
 					Path: tt.path,
 				})
-			e := denojson.New(defaultConfigWith(tt.cfg))
+			e, err := denojson.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("denojson.New: %v", err)
+			}
 			got, err := e.Extract(t.Context(), &scanInput)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
@@ -225,14 +222,4 @@ func TestExtract(t *testing.T) {
 			}
 		})
 	}
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with denojson.DefaultConfig().
-func defaultConfigWith(cfg denojson.Config) denojson.Config {
-	newCfg := denojson.DefaultConfig()
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	return newCfg
 }
