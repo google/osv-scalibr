@@ -47,7 +47,7 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "set FromDenolandCdn",
 			m: &metadata.JavascriptDenoJSONMetadata{
-				FromDenolandCdn: true,
+				FromDenolandCDN: true,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -64,7 +64,7 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "set FromUnpkgCdn",
 			m: &metadata.JavascriptDenoJSONMetadata{
-				FromUnpkgCdn: true,
+				FromUnpkgCDN: true,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -81,7 +81,7 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "set FromESMCdn",
 			m: &metadata.JavascriptDenoJSONMetadata{
-				FromESMCdn: true,
+				FromESMCDN: true,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -98,7 +98,7 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "set repository URL",
 			m: &metadata.JavascriptDenoJSONMetadata{
-				Url: "https://www.example.com",
+				URL: "https://www.example.com",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -113,7 +113,7 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "override metadata",
 			m: &metadata.JavascriptDenoJSONMetadata{
-				Url: "https://jsr.io/package",
+				URL: "https://jsr.io/package",
 			},
 			p: &pb.Package{
 				Name: "some-package",
@@ -133,10 +133,10 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "multiple CDNs",
 			m: &metadata.JavascriptDenoJSONMetadata{
-				FromDenolandCdn: true,
-				FromUnpkgCdn:    false,
-				FromESMCdn:      false,
-				Url:             "https://www.example.com",
+				FromDenolandCDN: true,
+				FromUnpkgCDN:    false,
+				FromESMCDN:      false,
+				URL:             "https://www.example.com",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
@@ -214,7 +214,7 @@ func TestToStruct(t *testing.T) {
 				},
 			},
 			want: &metadata.JavascriptDenoJSONMetadata{
-				FromDenolandCdn: true,
+				FromDenolandCDN: true,
 			},
 		},
 		{
@@ -225,7 +225,7 @@ func TestToStruct(t *testing.T) {
 				},
 			},
 			want: &metadata.JavascriptDenoJSONMetadata{
-				FromUnpkgCdn: true,
+				FromUnpkgCDN: true,
 			},
 		},
 		{
@@ -236,7 +236,7 @@ func TestToStruct(t *testing.T) {
 				},
 			},
 			want: &metadata.JavascriptDenoJSONMetadata{
-				FromESMCdn: true,
+				FromESMCDN: true,
 			},
 		},
 		{
@@ -245,7 +245,7 @@ func TestToStruct(t *testing.T) {
 				Url: "https://www.example.com",
 			},
 			want: &metadata.JavascriptDenoJSONMetadata{
-				Url: "https://www.example.com",
+				URL: "https://www.example.com",
 			},
 		},
 	}

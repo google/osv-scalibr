@@ -16,19 +16,16 @@ package denojson_test
 
 import (
 	"io/fs"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -131,7 +128,7 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/deno.json"},
 					PURLType:  purl.TypeNPM,
 					Metadata: &metadata.JavascriptDenoJSONMetadata{
-						Url: "npm:chalk@1",
+						URL: "npm:chalk@1",
 					},
 				},
 				{
@@ -140,7 +137,7 @@ func TestExtract(t *testing.T) {
 					PURLType:  purl.TypeJSR,
 					Locations: []string{"testdata/deno.json"},
 					Metadata: &metadata.JavascriptDenoJSONMetadata{
-						Url: "jsr:@std1/path1@^1",
+						URL: "jsr:@std1/path1@^1",
 					},
 				},
 				//{
@@ -167,8 +164,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/importSpecifiers.ts"},
 					PURLType:  purl.TypeNPM,
 					Metadata: &metadata.JavascriptDenoJSONMetadata{
-						FromUnpkgCdn: true,
-						Url:          "https://unpkg.com/lodash-es@4.17.22/lodash.js",
+						FromUnpkgCDN: true,
+						URL:          "https://unpkg.com/lodash-es@4.17.22/lodash.js",
 					},
 				},
 				{
@@ -177,8 +174,8 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/importSpecifiers.ts"},
 					PURLType:  purl.TypeNPM,
 					Metadata: &metadata.JavascriptDenoJSONMetadata{
-						FromUnpkgCdn: true,
-						Url:          "https://unpkg.com/lodash-es@4.17.21/lodash.js",
+						FromUnpkgCDN: true,
+						URL:          "https://unpkg.com/lodash-es@4.17.21/lodash.js",
 					},
 				},
 				{
@@ -187,18 +184,18 @@ func TestExtract(t *testing.T) {
 					PURLType:  purl.TypeNPM,
 					Locations: []string{"testdata/importSpecifiers.ts"},
 					Metadata: &metadata.JavascriptDenoJSONMetadata{
-						FromESMCdn: true,
-						Url:        "https://esm.sh/canvas-confetti@1.6.0",
+						FromESMCDN: true,
+						URL:        "https://esm.sh/canvas-confetti@1.6.0",
 					},
 				},
 				{
 					Name:      "openai",
-					Version:   "v4.69.0",
+					Version:   "4.69.0",
 					Locations: []string{"testdata/importSpecifiers.ts"},
 					PURLType:  purl.TypeNPM,
 					Metadata: &metadata.JavascriptDenoJSONMetadata{
-						FromDenolandCdn: true,
-						Url:             "https://deno.land/x/openai@v4.69.0/mod.ts",
+						FromDenolandCDN: true,
+						URL:             "https://deno.land/x/openai@v4.69.0/mod.ts",
 					},
 				},
 			},
@@ -208,29 +205,12 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			r, err := os.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			input := &filesystem.ScanInput{
-				FS:     scalibrfs.DirFS("."),
-				Path:   tt.path,
-				Reader: r,
-				Info:   info,
-			}
+			scanInput := extracttest.GenerateScanInputMock(t,
+				extracttest.ScanInputMockConfig{
+					Path: tt.path,
+				})
 			e := denojson.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(t.Context(), input)
+			got, err := e.Extract(t.Context(), &scanInput)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
 			}

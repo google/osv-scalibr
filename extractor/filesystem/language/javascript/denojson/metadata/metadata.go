@@ -21,10 +21,10 @@ import (
 
 // JavascriptDenoJSONMetadata holds repository source information for a deno.json file.
 type JavascriptDenoJSONMetadata struct {
-	FromDenolandCdn bool
-	FromUnpkgCdn    bool
-	FromESMCdn      bool
-	Url             string
+	FromDenolandCDN bool
+	FromUnpkgCDN    bool
+	FromESMCDN      bool
+	URL             string
 }
 
 // SetProto sets the DenoMetadata field in the Package proto.
@@ -37,21 +37,21 @@ func (m *JavascriptDenoJSONMetadata) SetProto(p *pb.Package) {
 	}
 
 	denoMetadata := &pb.JavascriptDenoJSONMetadata{
-		Url: m.Url,
+		Url: m.URL,
 	}
 
 	// Set one repository field based on priority order
 	// This respects the "oneof repository" constraint in the proto definition
 	switch {
-	case m.FromDenolandCdn:
+	case m.FromDenolandCDN:
 		denoMetadata.Cdn = &pb.JavascriptDenoJSONMetadata_FromDenolandCdn{
 			FromDenolandCdn: true,
 		}
-	case m.FromUnpkgCdn:
+	case m.FromUnpkgCDN:
 		denoMetadata.Cdn = &pb.JavascriptDenoJSONMetadata_FromUnpkgCdn{
 			FromUnpkgCdn: true,
 		}
-	case m.FromESMCdn:
+	case m.FromESMCDN:
 		denoMetadata.Cdn = &pb.JavascriptDenoJSONMetadata_FromEsmCdn{
 			FromEsmCdn: true,
 		}
@@ -69,16 +69,16 @@ func ToStruct(m *pb.JavascriptDenoJSONMetadata) *JavascriptDenoJSONMetadata {
 	}
 
 	metadata := &JavascriptDenoJSONMetadata{
-		Url: m.GetUrl(),
+		URL: m.GetUrl(),
 	}
 	// Determine which CDN is set and set the corresponding boolean
 	switch repo := m.GetCdn().(type) {
 	case *pb.JavascriptDenoJSONMetadata_FromDenolandCdn:
-		metadata.FromDenolandCdn = repo.FromDenolandCdn
+		metadata.FromDenolandCDN = repo.FromDenolandCdn
 	case *pb.JavascriptDenoJSONMetadata_FromUnpkgCdn:
-		metadata.FromUnpkgCdn = repo.FromUnpkgCdn
+		metadata.FromUnpkgCDN = repo.FromUnpkgCdn
 	case *pb.JavascriptDenoJSONMetadata_FromEsmCdn:
-		metadata.FromESMCdn = repo.FromEsmCdn
+		metadata.FromESMCDN = repo.FromEsmCdn
 	}
 
 	return metadata

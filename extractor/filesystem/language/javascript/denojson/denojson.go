@@ -153,7 +153,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		// Parse TypeScript imports
 		// TODO: Why this Typescript file belong to a Deno Project?
 		// It need to be a Deno Project, but I don't know how to do it.
-		pkgs, err := parseTypeScriptFile(path, input.Reader)
+		pkgs, err := parseTypeScriptFile(ctx, path, input.Reader)
 		if err != nil {
 			return inventory.Inventory{},
 				fmt.Errorf("error during parsing the typescript file: %w", err)
@@ -182,14 +182,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{}, nil
 }
 
-func parseTypeScriptFile(path string, reader io.Reader) ([]*extractor.Package, error) {
+func parseTypeScriptFile(ctx context.Context, path string, reader io.Reader) ([]*extractor.Package, error) {
 	// Read entire content of TypeScript file
 	content, err := io.ReadAll(reader)
 	if err != nil {
 		log.Debugf("TypeScript file %s read failed: %v", path, err)
 		return nil, fmt.Errorf("failed to read TypeScript file: %w", err)
 	}
-	pkgsStr, err := findImportPathsWithQuery(content)
+	pkgsStr, err := findImportPathsWithQuery(ctx, content)
 	if err != nil {
 		return nil, err
 	}
@@ -244,17 +244,17 @@ func parseImportSpecifier(specifier string) *extractor.Package {
 	// Handle npm: prefixed imports (e.g., "npm:chalk@1")
 	if strings.HasPrefix(specifier, npmPrefix) {
 		pkgSpecifier := strings.TrimPrefix(specifier, npmPrefix)
-		name, version := parseNPMNameAndVersion(pkgSpecifier)
-		v, valid := checkNPMNameAndVersion(name, version)
+		packageName, packageVersion := parseNPMNameAndVersion(pkgSpecifier)
+		v, valid := checkNPMNameAndVersion(packageName, packageVersion)
 		if !valid {
 			return nil
 		} else if v != "" {
 			return &extractor.Package{
-				Name:     name,
+				Name:     packageName,
 				Version:  v,
 				PURLType: purl.TypeNPM,
 				Metadata: &metadata.JavascriptDenoJSONMetadata{
-					Url: specifier,
+					URL: specifier,
 				},
 			}
 		}
@@ -269,152 +269,141 @@ func parseImportSpecifier(specifier string) *extractor.Package {
 				Version:  version,
 				PURLType: purl.TypeJSR,
 				Metadata: &metadata.JavascriptDenoJSONMetadata{
-					Url: specifier,
+					URL: specifier,
 				},
 			}
 		}
 	}
 	// Handle https:// URLs
 	if strings.HasPrefix(specifier, "https://") {
-		parsedURL, err := url.Parse(specifier)
-		if err != nil {
-			log.Debugf("failed to parse URL %s: %v", specifier, err)
-			return nil
-		}
+		return parseHTTPSURL(specifier)
+	}
+	return nil
+}
 
-		host := parsedURL.Host
-		path := parsedURL.Path
-		if path != "" && path[0] == '/' {
-			path = path[1:] // Remove the leading slash
-		}
+// parseHTTPSURL parses HTTPS URLs and extracts package information from various CDN hosts.
+func parseHTTPSURL(specifier string) *extractor.Package {
+	parsedURL, err := url.Parse(specifier)
+	if err != nil {
+		log.Debugf("failed to parse URL %s: %v", specifier, err)
+		return nil
+	}
 
-		// Handle esm.sh imports
-		if host == "esm.sh" {
-			// JSR imports (starts with /jsr/)
-			if strings.HasPrefix(path, "jsr/") {
-				// Example: https://esm.sh/jsr/@std/encoding@1.0.0/base64
-				jsrPath := strings.TrimPrefix(path, "jsr/")
-				name, version := parseJSRNameAndVersion(jsrPath)
-				if name != "" && version != "" {
-					return &extractor.Package{
-						Name:     name,
-						Version:  version,
-						PURLType: purl.TypeJSR,
-						Metadata: &metadata.JavascriptDenoJSONMetadata{
-							FromESMCdn: true,
-							Url:        specifier,
-						},
-					}
-				}
-				// GitHub imports (starts with /gh/)
-			} else if strings.HasPrefix(path, "gh/") {
-				// Example: https://esm.sh/gh/microsoft/tslib@v2.8.0
-				ghPath := strings.TrimPrefix(path, "gh/")
-				parts := strings.Split(ghPath, "@")
-				if len(parts) == 2 {
-					repo := parts[0]
-					version := parts[1]
-					if repo != "" && version != "" {
-						return &extractor.Package{
-							Name:     repo,
-							Version:  version,
-							PURLType: purl.TypeGithub,
-							Metadata: &metadata.JavascriptDenoJSONMetadata{
-								FromESMCdn: true,
-								Url:        specifier,
-							},
-						}
-					}
-				}
-				// Default URL is NPM import
-				// (e.g., "https://esm.sh/canvas-confetti@1.6.0")
-			} else {
-				name, version := parseNPMNameAndVersion(path)
-				if name != "" && version != "" {
-					return &extractor.Package{
-						Name:     name,
-						Version:  version,
-						PURLType: purl.TypeNPM,
-						Metadata: &metadata.JavascriptDenoJSONMetadata{
-							FromESMCdn: true,
-							Url:        specifier,
-						},
-					}
-				}
-			}
-		}
+	host := parsedURL.Host
+	path := parsedURL.Path
+	if path != "" && path[0] == '/' {
+		path = path[1:] // Remove the leading slash
+	}
 
-		// Handle deno.land/x imports (e.g., "https://deno.land/x/openai@v4.69.0/mod.ts")
-		if host == "deno.land" && strings.HasPrefix(path, "x/") {
-			// Extract the package name and version from a path
-			modulePath := strings.TrimPrefix(path, "x/")
-			parts := strings.SplitN(modulePath, "/", 2)
-			if len(parts) > 0 {
-				packagePart := parts[0]
-				name, version := parseNPMNameAndVersion(packagePart)
-				if name != "" && version != "" {
-					return &extractor.Package{
-						Name:     name,
-						Version:  version,
-						PURLType: purl.TypeNPM,
-						Metadata: &metadata.JavascriptDenoJSONMetadata{
-							FromDenolandCdn: true,
-							Url:             specifier,
-						},
-					}
-				}
-			}
-		}
+	// Handle esm.sh imports
+	if host == "esm.sh" {
+		var packageName, packageVersion, purlType string
 
-		// Handle unpkg.com imports (e.g., "https://unpkg.com/lodash-es@4.17.21/lodash.js")
-		if host == "unpkg.com" {
-			if path == "" {
-				return nil
-			}
-			// Extract the package name and version from the path
-			parts := strings.SplitN(path, "@", 2)
+		// JSR imports (starts with /jsr/)
+		if strings.HasPrefix(path, "jsr/") {
+			// Example: https://esm.sh/jsr/@std/encoding@1.0.0/base64
+			jsrPath := strings.TrimPrefix(path, "jsr/")
+			packageName, packageVersion = parseJSRNameAndVersion(jsrPath)
+			purlType = purl.TypeJSR
+			// GitHub imports (starts with /gh/)
+		} else if strings.HasPrefix(path, "gh/") {
+			// Example: https://esm.sh/gh/microsoft/tslib@v2.8.0
+			ghPath := strings.TrimPrefix(path, "gh/")
+			parts := strings.Split(ghPath, "@")
 			if len(parts) == 2 {
-				packageName := parts[0]
-				versionPart := parts[1]
+				packageName = parts[0]
+				packageVersion = parts[1]
+			}
+			purlType = purl.TypeGithub
+			// Default URL is NPM import
+			// (e.g., "https://esm.sh/canvas-confetti@1.6.0")
+		} else {
+			packageName, packageVersion = parseNPMNameAndVersion(path)
+			purlType = purl.TypeNPM
+		}
 
-				// Require the version to start with a numeric value
-				if !regexp.MustCompile(`^\d`).MatchString(versionPart) {
-					return nil
-				}
-
-				// Strip any trailing path after the version
-				if idx := strings.Index(versionPart, "/"); idx != -1 {
-					versionPart = versionPart[:idx]
-				}
-
-				if packageName != "" {
-					return &extractor.Package{
-						Name:     packageName,
-						Version:  versionPart,
-						PURLType: purl.TypeNPM,
-						Metadata: &metadata.JavascriptDenoJSONMetadata{
-							FromUnpkgCdn: true,
-							Url:          specifier,
-						},
-					}
-				}
+		if packageName != "" && packageVersion != "" {
+			return &extractor.Package{
+				Name:     packageName,
+				Version:  packageVersion,
+				PURLType: purlType,
+				Metadata: &metadata.JavascriptDenoJSONMetadata{
+					FromESMCDN: true,
+					URL:        specifier,
+				},
 			}
 		}
 	}
+
+	// Handle deno.land/x imports (e.g., "https://deno.land/x/openai@v4.69.0/mod.ts")
+	if host == "deno.land" && strings.HasPrefix(path, "x/") {
+		// Extract the package name and version from a path
+		packageName, packageVersion := parseNPMNameAndVersion(strings.TrimPrefix(path, "x/"))
+		if packageName != "" && packageVersion != "" {
+			return &extractor.Package{
+				Name:     packageName,
+				Version:  packageVersion,
+				PURLType: purl.TypeNPM,
+				Metadata: &metadata.JavascriptDenoJSONMetadata{
+					FromDenolandCDN: true,
+					URL:             specifier,
+				},
+			}
+		}
+	}
+
+	// Handle unpkg.com imports (e.g., "https://unpkg.com/lodash-es@4.17.21/lodash.js")
+	if host == "unpkg.com" {
+		if path == "" {
+			return nil
+		}
+		packageName, packageVersion := parseNPMNameAndVersion(path)
+		if packageName != "" && packageVersion != "" {
+			return &extractor.Package{
+				Name:     packageName,
+				Version:  packageVersion,
+				PURLType: purl.TypeNPM,
+				Metadata: &metadata.JavascriptDenoJSONMetadata{
+					FromUnpkgCDN: true,
+					URL:          specifier,
+				},
+			}
+		}
+	}
+
 	return nil
 }
 
 // parseNPMNameAndVersion parses the name and version from a npm package specifier.
 // Handles both regular packages (e.g., "chalk@1") and scoped packages (e.g., "@types/node@14").
+// Removes paths after the version (e.g., "chalk@1.0.0/dist/index.js").
+// Trims the char "v" before the version
 func parseNPMNameAndVersion(specifier string) (name, version string) {
 	if strings.HasPrefix(specifier, "@") {
 		specifier = strings.TrimPrefix(specifier, "@")
 	}
-	parts := strings.SplitN(specifier, "@", 2)
-	if len(parts) == 1 {
-		return parts[0], ""
+	// Extract the package name and version from the path
+	packageParts := strings.SplitN(specifier, "@", 2)
+	var extractedName, extractedVersion string
+	if len(packageParts) == 2 {
+		extractedName = packageParts[0]
+		extractedVersion = packageParts[1]
+		if strings.HasPrefix(extractedVersion, "v") {
+			extractedVersion = strings.TrimPrefix(extractedVersion, "v")
+		}
+		// Require the version to start with a numeric value
+		if !regexp.MustCompile(`^\d`).MatchString(extractedVersion) {
+			return "", ""
+		}
+		// Strip any trailing path after the version
+		if idx := strings.Index(extractedVersion, "/"); idx != -1 {
+			extractedVersion = extractedVersion[:idx]
+		}
 	}
-	return parts[0], parts[1]
+	if len(packageParts) == 1 {
+		return packageParts[0], ""
+	}
+	return extractedName, extractedVersion
 }
 
 // parseJSRNameAndVersion parses the name and version from a JSR package specifier.
@@ -442,7 +431,7 @@ func (p denoJSON) hasNameAndVersionValues() bool {
 // findImportPathsWithQuery uses tree-sitter to find import paths in TypeScript source code.
 //
 // returns a slice of import paths found in the source code.
-func findImportPathsWithQuery(source []byte) ([]string, error) {
+func findImportPathsWithQuery(ctx context.Context, source []byte) ([]string, error) {
 	q, err := sitter.NewQuery([]byte(`
 		(import_statement source: (string) @import-source)
 		(call_expression function: (import) arguments: (arguments (string) @dynamic-import))
@@ -467,6 +456,10 @@ func findImportPathsWithQuery(source []byte) ([]string, error) {
 	// Iterate through matches
 	var packages []string
 	for {
+		// Return if canceled or exceeding deadline.
+		if err := ctx.Err(); err != nil {
+			return packages, fmt.Errorf("tree-sitter halted due to context error: %w", err)
+		}
 		m, ok := qc.NextMatch()
 		if !ok {
 			break
