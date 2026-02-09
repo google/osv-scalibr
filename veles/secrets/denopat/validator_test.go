@@ -104,12 +104,12 @@ func TestUserTokenValidator(t *testing.T) {
 		want veles.ValidationStatus
 	}{
 		{
-			name: "valid ddp",
+			name: "valid_ddp",
 			Pat:  validatorTestDdpPat,
 			want: veles.ValidationValid,
 		},
 		{
-			name: "invalid ddp",
+			name: "invalid_ddp",
 			Pat:  "ddp_invalid",
 			want: veles.ValidationInvalid,
 		},
@@ -132,10 +132,9 @@ func TestUserTokenValidator(t *testing.T) {
 				Transport: &mockTransport{testServer: server},
 			}
 
-			// Create a validator with a mock client
-			validator := denopat.NewUserTokenValidator(
-				denopat.WithClient(client),
-			)
+			// Create a validator and set the mock client
+			validator := denopat.NewUserTokenValidator()
+			validator.HTTPC = client
 
 			// Create a test pat
 			pat := denopat.DenoUserPAT{Pat: tc.Pat}
@@ -162,12 +161,12 @@ func TestOrgTokenValidator(t *testing.T) {
 		want veles.ValidationStatus
 	}{
 		{
-			name: "valid ddo",
+			name: "valid_ddo",
 			Pat:  validatorTestDdoPat,
 			want: veles.ValidationValid,
 		},
 		{
-			name: "invalid ddo",
+			name: "invalid_ddo",
 			Pat:  "ddo_invalid",
 			want: veles.ValidationInvalid,
 		},
@@ -190,10 +189,9 @@ func TestOrgTokenValidator(t *testing.T) {
 				Transport: &mockTransport{testServer: server},
 			}
 
-			// Create a validator with a mock client
-			validator := denopat.NewOrgTokenValidator(
-				denopat.WithClient(client),
-			)
+			// Create a validator and set the mock client
+			validator := denopat.NewOrgTokenValidator()
+			validator.HTTPC = client
 
 			// Create a test pat
 			pat := denopat.DenoOrgPAT{Pat: tc.Pat}
@@ -225,9 +223,8 @@ func TestUserTokenValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := denopat.NewUserTokenValidator(
-		denopat.WithClient(client),
-	)
+	validator := denopat.NewUserTokenValidator()
+	validator.HTTPC = client
 
 	// Create a test pat
 	pat := denopat.DenoUserPAT{Pat: validatorTestDdpPat}
@@ -260,9 +257,8 @@ func TestOrgTokenValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := denopat.NewOrgTokenValidator(
-		denopat.WithClient(client),
-	)
+	validator := denopat.NewOrgTokenValidator()
+	validator.HTTPC = client
 
 	// Create a test pat
 	pat := denopat.DenoOrgPAT{Pat: validatorTestDdoPat}
@@ -294,9 +290,8 @@ func TestUserTokenValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := denopat.NewUserTokenValidator(
-		denopat.WithClient(client),
-	)
+	validator := denopat.NewUserTokenValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string
@@ -343,9 +338,8 @@ func TestOrgTokenValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := denopat.NewOrgTokenValidator(
-		denopat.WithClient(client),
-	)
+	validator := denopat.NewOrgTokenValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string

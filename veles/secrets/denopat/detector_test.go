@@ -23,11 +23,34 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKeyDdp = `ddp_qz538MNyqwfETb1ikqeqHiqA9Aa9Pv22yzmw`
 
 const testKeyDdo = `ddo_qz538MNyqwfETb1ikqeqHiqA9Aa9Pv22yzmw`
+
+func TestUserTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		denopat.NewUserTokenDetector(),
+		testKeyDdp,
+		denopat.DenoUserPAT{Pat: testKeyDdp},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestOrgTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		denopat.NewOrgTokenDetector(),
+		testKeyDdo,
+		denopat.DenoOrgPAT{Pat: testKeyDdo},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detectors
 // will find Deno PAT/s.
