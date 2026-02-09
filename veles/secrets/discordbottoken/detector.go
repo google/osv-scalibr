@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv-scalibr/veles/secrets"
-	"github.com/google/osv-scalibr/veles/secrets/detectors"
+	"github.com/google/osv-scalibr/veles/secrets/common"
+	"github.com/google/osv-scalibr/veles/secrets/common/detectors"
 )
 
 var (
@@ -28,28 +28,25 @@ var (
 // Detector detects Discord bot tokens.
 type Detector struct{}
 
-func (d Detector) Detect(input detectors.Input) ([]secrets.Secret, error) {
-	var results []secrets.Secret
+func (d Detector) Detect(input detectors.Input) ([]common.Secret, error) {
+	var results []common.Secret
 
 	contentLower := strings.ToLower(input.Content)
 
-	// Context gate (cheap + effective)
+	// Context gate
 	if !containsAny(contentLower, contextKeywords) {
 		return nil, nil
 	}
 
-	// Check both token types
 	for _, re := range []*regexp.Regexp{botTokenRegex, mfaTokenRegex} {
 		matches := re.FindAllStringIndex(input.Content, -1)
 		for _, match := range matches {
-			secret := &DiscordBotToken{}
-      secret.SecretBase = secrets.NewSecretBase(
-	    input.Content[match[0]:match[1]],
-	    input.Location,
-)
-
-			
-
+			secret := &DiscordBotToken{
+				SecretBase: common.NewSecretBase(
+					input.Content[match[0]:match[1]],
+					input.Location,
+				),
+			}
 			results = append(results, secret)
 		}
 	}
