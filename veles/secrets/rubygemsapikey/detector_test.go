@@ -39,25 +39,25 @@ func TestDetector_truePositives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "simple matching string",
+		name:  "simple_matching_string",
 		input: testKey,
 		want: []veles.Secret{
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
-		name:  "match at end of string",
+		name:  "match_at_end_of_string",
 		input: `RUBYGEMS_API_KEY=` + testKey,
 		want: []veles.Secret{
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
-		name:  "match in middle of string",
+		name:  "match_in_middle_of_string",
 		input: `RUBYGEMS_API_KEY="` + testKey + `"`,
 		want: []veles.Secret{
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
-		name:  "multiple matches",
+		name:  "multiple_matches",
 		input: testKey + testKey + testKey,
 		want: []veles.Secret{
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
@@ -65,7 +65,7 @@ func TestDetector_truePositives(t *testing.T) {
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
-		name:  "multiple distinct matches",
+		name:  "multiple_distinct_matches",
 		input: testKey + "\n" + testKey[:len(testKey)-1] + "1\n",
 		want: []veles.Secret{
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
@@ -75,13 +75,13 @@ func TestDetector_truePositives(t *testing.T) {
 		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_api_key: rubygems_abc
-:rubygems_api_key: %s 
+:rubygems_api_key: %s
 		`, testKey),
 		want: []veles.Secret{
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
 		},
 	}, {
-		name:  "potential match longer than max key length",
+		name:  "potential_match_longer_than_max_key_length",
 		input: testKey + `test`,
 		want: []veles.Secret{
 			rubygemsapikey.RubyGemsAPIKey{Key: testKey},
@@ -113,25 +113,25 @@ func TestDetector_trueNegatives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "empty input",
+		name:  "empty_input",
 		input: "",
 	}, {
-		name:  "short key should not match",
+		name:  "short_key_should_not_match",
 		input: testKey[:len(testKey)-1],
 	}, {
-		name:  "special character in key should not match",
+		name:  "special_character_in_key_should_not_match",
 		input: `rubygems_cec9db9373ea171daaaa0bf2337edce187f09558cb19c1b.`,
 	}, {
-		name:  "special character in prefix should not match",
+		name:  "special_character_in_prefix_should_not_match",
 		input: `ruby.gems_cec9db9373ea171daaaa0bf2337edce187f09558cb19c1b2`,
 	}, {
-		name:  "special character after prefix should not match",
+		name:  "special_character_after_prefix_should_not_match",
 		input: `rubygems_.cec9db9373ea171daaaa0bf2337edce187f09558cb19c1b2`,
 	}, {
-		name:  "incorrect casing of prefix should not match",
+		name:  "incorrect_casing_of_prefix_should_not_match",
 		input: `rubyGEMS_cec9db9373ea171daaaa0bf2337edce187f09558cb19c1b2`,
 	}, {
-		name:  "invalid casing in key should not match",
+		name:  "invalid_casing_in_key_should_not_match",
 		input: `rubygems_cec9db9373ea171daaaa0bf2337EDCE187f09558cb19c1b2`,
 	}}
 	for _, tc := range cases {
