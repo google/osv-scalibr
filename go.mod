@@ -41,7 +41,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/opencontainers/runtime-spec v1.2.1
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20251029033743-5e05f9d00d92
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a
 	github.com/package-url/packageurl-go v0.1.3
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
