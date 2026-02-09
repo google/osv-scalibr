@@ -1,36 +1,59 @@
 package discordbottoken
 
 import (
-	"errors"
+	"context"
 	"net/http"
+	"time"
 
-	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
+	"github.com/google/osv-scalibr/veles/secrets"
 )
 
-const discordAPIEndpoint = "https://discord.com/api/v10/users/@me"
+const discordAPIURL = "https://discord.com/api/v10/users/@me"
 
-// NewValidator creates a validator for Discord bot tokens.
-//
-// It performs a GET request to /users/@me with
-// Authorization: Bot <token>
-//
-// Valid tokens return 200 OK.
-// Invalid tokens return 401 Unauthorized or 403 Forbidden.
-func NewValidator() *sv.Validator[DiscordBotToken] {
-	return &sv.Validator[DiscordBotToken]{
-		EndpointFunc: func(t DiscordBotToken) (string, error) {
-			if t.Raw() == "" {
-				return "", errors.New("discord bot token is empty")
-			}
-			return discordAPIEndpoint, nil
-		},
-		HTTPMethod: http.MethodGet,
-		HeadersFunc: func(t DiscordBotToken) http.Header {
-			h := http.Header{}
-			h.Set("Authorization", "Bot "+t.Raw())
-			return h
-		},
-		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
+type Validator struct{}
+
+func NewValidator() secrets.Validator {
+	return &Validator{}
+}
+
+func (v *Validator) Validate(
+	ctx context.Context,
+	secret secrets.Secret,
+) (secrets.ValidationResult, error) {
+
+	token, ok := secret.(*DiscordBotToken)
+	if !ok {
+		return secrets.ValidationResult{}, nil
+	}
+
+	raw := token.SecretBase.Raw()
+	if raw == "" {
+		return secrets.ValidationResult{}, nil
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discordAPIURL, nil)
+	if err != nil {
+		return secrets.ValidationResult{}, err
+	}
+
+	req.Header.Set("Authorization", "Bot "+raw)
+
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return secrets.ValidationResult{}, nil
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return secrets.ValidationResult{Confirmed: true}, nil
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return secrets.ValidationResult{Confirmed: false}, nil
+	default:
+		return secrets.ValidationResult{}, nil
 	}
 }
