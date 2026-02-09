@@ -17,6 +17,7 @@ package terraform
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -81,12 +82,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// Extract packages from the parsed file
 	body, ok := file.Body.(*hclsyntax.Body)
 	if !ok {
-		return inventory.Inventory{}, fmt.Errorf("unexpected body type")
+		return inventory.Inventory{},
+			errors.New("unexpected body type")
 	}
 
 	for _, block := range body.Blocks {
 		if err := ctx.Err(); err != nil {
-			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+			return inventory.Inventory{},
+				fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
 		switch block.Type {

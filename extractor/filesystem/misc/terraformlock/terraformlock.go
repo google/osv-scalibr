@@ -90,7 +90,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		providerAddress := block.Labels[0]
-		
 		// Extract version from the block attributes
 		version := ""
 		for _, attr := range block.Body.Attributes {

@@ -225,7 +225,7 @@ func validType(t string) bool {
 		TypeMacports:   true,
 		TypeWinget:     true,
 		TypeChocolatey: true,
-		TypeTerraform: true,
+		TypeTerraform:  true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
