@@ -24,9 +24,21 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "npm_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8"
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		npmjsaccesstoken.NewDetector(),
+		validatorTestKey,
+		npmjsaccesstoken.NpmJsAccessToken{Token: validatorTestKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
