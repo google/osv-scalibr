@@ -160,6 +160,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Slack Application Level Token               | `secrets/slackappleveltoken`           |
 | Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`    |
 | Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken`   |
+| Square Personal Access Token                | `secrets/squarepersonalaccesstoken`    |
+| Square OAuth Application Secret             | `secrets/squareoauthapplicationsecret` |
 | Stripe Secret Key                           | `secrets/stripesecretkey`              |
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |

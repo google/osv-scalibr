@@ -794,6 +794,8 @@ message SecretData {
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
+    SquarePersonalAccessToken square_personal_access_token = 69;
+    SquareOAuthApplicationSecret square_oauth_application_secret = 70;
   }
 
   message GCPSAK {
@@ -1150,6 +1152,15 @@ message SecretData {
 
   message URLCredentials {
     string url = 1;
+  }
+
+  message SquarePersonalAccessToken {
+    string key = 1;
+  }
+
+  message SquareOAuthApplicationSecret {
+    string id = 1;   // OAuth Application ID (prefix: sq0idp-)
+    string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
   }
 }
 

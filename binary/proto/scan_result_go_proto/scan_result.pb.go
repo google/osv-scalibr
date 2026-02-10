@@ -5712,6 +5712,8 @@ type SecretData struct {
 	//	*SecretData_MistralApiKey
 	//	*SecretData_CircleciPersonalAccessToken
 	//	*SecretData_CircleciProjectToken
+	//	*SecretData_SquarePersonalAccessToken_
+	//	*SecretData_SquareOauthApplicationSecret
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6366,6 +6368,24 @@ func (x *SecretData) GetCircleciProjectToken() *SecretData_CircleCIProjectToken 
 	return nil
 }
 
+func (x *SecretData) GetSquarePersonalAccessToken() *SecretData_SquarePersonalAccessToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SquarePersonalAccessToken_); ok {
+			return x.SquarePersonalAccessToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSquareOauthApplicationSecret() *SecretData_SquareOAuthApplicationSecret {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SquareOauthApplicationSecret); ok {
+			return x.SquareOauthApplicationSecret
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -6642,6 +6662,14 @@ type SecretData_CircleciProjectToken struct {
 	CircleciProjectToken *SecretData_CircleCIProjectToken `protobuf:"bytes,68,opt,name=circleci_project_token,json=circleciProjectToken,proto3,oneof"`
 }
 
+type SecretData_SquarePersonalAccessToken_ struct {
+	SquarePersonalAccessToken *SecretData_SquarePersonalAccessToken `protobuf:"bytes,69,opt,name=square_personal_access_token,json=squarePersonalAccessToken,proto3,oneof"`
+}
+
+type SecretData_SquareOauthApplicationSecret struct {
+	SquareOauthApplicationSecret *SecretData_SquareOAuthApplicationSecret `protobuf:"bytes,70,opt,name=square_oauth_application_secret,json=squareOauthApplicationSecret,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
 func (*SecretData_AnthropicWorkspaceApiKey) isSecretData_Secret() {}
@@ -6777,6 +6805,10 @@ func (*SecretData_MistralApiKey) isSecretData_Secret() {}
 func (*SecretData_CircleciPersonalAccessToken) isSecretData_Secret() {}
 
 func (*SecretData_CircleciProjectToken) isSecretData_Secret() {}
+
+func (*SecretData_SquarePersonalAccessToken_) isSecretData_Secret() {}
+
+func (*SecretData_SquareOauthApplicationSecret) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -10920,6 +10952,102 @@ func (x *SecretData_URLCredentials) GetUrl() string {
 	return ""
 }
 
+type SecretData_SquarePersonalAccessToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SquarePersonalAccessToken) Reset() {
+	*x = SecretData_SquarePersonalAccessToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[143]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SquarePersonalAccessToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SquarePersonalAccessToken) ProtoMessage() {}
+
+func (x *SecretData_SquarePersonalAccessToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[143]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SquarePersonalAccessToken.ProtoReflect.Descriptor instead.
+func (*SecretData_SquarePersonalAccessToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{62, 68}
+}
+
+func (x *SecretData_SquarePersonalAccessToken) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type SecretData_SquareOAuthApplicationSecret struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`   // OAuth Application ID (prefix: sq0idp-)
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"` // OAuth Application Secret (prefix: sq0csp-)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SquareOAuthApplicationSecret) Reset() {
+	*x = SecretData_SquareOAuthApplicationSecret{}
+	mi := &file_proto_scan_result_proto_msgTypes[144]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SquareOAuthApplicationSecret) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SquareOAuthApplicationSecret) ProtoMessage() {}
+
+func (x *SecretData_SquareOAuthApplicationSecret) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[144]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SquareOAuthApplicationSecret.ProtoReflect.Descriptor instead.
+func (*SecretData_SquareOAuthApplicationSecret) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{62, 69}
+}
+
+func (x *SecretData_SquareOAuthApplicationSecret) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SecretData_SquareOAuthApplicationSecret) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -11374,7 +11502,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xaeV\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\x8cY\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -11455,7 +11583,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"%salesforce_oauth2_refresh_credentials\x18A \x01(\v26.scalibr.SecretData.SalesforceOAuth2RefreshCredentialsH\x00R\"salesforceOauth2RefreshCredentials\x12K\n" +
 	"\x0fmistral_api_key\x18B \x01(\v2!.scalibr.SecretData.MistralAPIKeyH\x00R\rmistralApiKey\x12v\n" +
 	"\x1ecircleci_personal_access_token\x18C \x01(\v2/.scalibr.SecretData.CircleCIPersonalAccessTokenH\x00R\x1bcircleciPersonalAccessToken\x12`\n" +
-	"\x16circleci_project_token\x18D \x01(\v2(.scalibr.SecretData.CircleCIProjectTokenH\x00R\x14circleciProjectToken\x1a\xb0\x03\n" +
+	"\x16circleci_project_token\x18D \x01(\v2(.scalibr.SecretData.CircleCIProjectTokenH\x00R\x14circleciProjectToken\x12p\n" +
+	"\x1csquare_personal_access_token\x18E \x01(\v2-.scalibr.SecretData.SquarePersonalAccessTokenH\x00R\x19squarePersonalAccessToken\x12y\n" +
+	"\x1fsquare_oauth_application_secret\x18F \x01(\v20.scalibr.SecretData.SquareOAuthApplicationSecretH\x00R\x1csquareOauthApplicationSecret\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -11656,7 +11786,12 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x14CircleCIProjectToken\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x1a\"\n" +
 	"\x0eURLCredentials\x12\x10\n" +
-	"\x03url\x18\x01 \x01(\tR\x03urlB\b\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x1a-\n" +
+	"\x19SquarePersonalAccessToken\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a@\n" +
+	"\x1cSquareOAuthApplicationSecret\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03keyB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
@@ -11744,7 +11879,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 144)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 146)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                         // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                             // 1: scalibr.SeverityEnum
@@ -11894,13 +12029,15 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_CircleCIPersonalAccessToken)(nil),          // 145: scalibr.SecretData.CircleCIPersonalAccessToken
 	(*SecretData_CircleCIProjectToken)(nil),                 // 146: scalibr.SecretData.CircleCIProjectToken
 	(*SecretData_URLCredentials)(nil),                       // 147: scalibr.SecretData.URLCredentials
-	nil,                                                     // 148: scalibr.ContainerImageMetadata.OsInfoEntry
-	(*timestamppb.Timestamp)(nil),                           // 149: google.protobuf.Timestamp
-	(*osvschema.Vulnerability)(nil),                         // 150: osv.Vulnerability
+	(*SecretData_SquarePersonalAccessToken)(nil),            // 148: scalibr.SecretData.SquarePersonalAccessToken
+	(*SecretData_SquareOAuthApplicationSecret)(nil),         // 149: scalibr.SecretData.SquareOAuthApplicationSecret
+	nil,                             // 150: scalibr.ContainerImageMetadata.OsInfoEntry
+	(*timestamppb.Timestamp)(nil),   // 151: google.protobuf.Timestamp
+	(*osvschema.Vulnerability)(nil), // 152: osv.Vulnerability
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	149, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	149, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	151, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	151, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	6,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
@@ -11960,7 +12097,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	14,  // 58: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
 	0,   // 59: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
 	17,  // 60: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	150, // 61: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
+	152, // 61: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
 	15,  // 62: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
 	20,  // 63: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
 	22,  // 64: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
@@ -11971,8 +12108,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	16,  // 69: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	16,  // 70: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	79,  // 71: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	149, // 72: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	149, // 73: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	151, // 72: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	151, // 73: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	62,  // 74: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	65,  // 75: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
 	67,  // 76: scalibr.Secret.secret:type_name -> scalibr.SecretData
@@ -12046,23 +12183,25 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	85,  // 144: scalibr.SecretData.mistral_api_key:type_name -> scalibr.SecretData.MistralAPIKey
 	145, // 145: scalibr.SecretData.circleci_personal_access_token:type_name -> scalibr.SecretData.CircleCIPersonalAccessToken
 	146, // 146: scalibr.SecretData.circleci_project_token:type_name -> scalibr.SecretData.CircleCIProjectToken
-	4,   // 147: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	149, // 148: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	70,  // 149: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	71,  // 150: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	72,  // 151: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	73,  // 152: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	12,  // 153: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	77,  // 154: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	75,  // 155: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	148, // 156: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	76,  // 157: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	56,  // 158: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	159, // [159:159] is the sub-list for method output_type
-	159, // [159:159] is the sub-list for method input_type
-	159, // [159:159] is the sub-list for extension type_name
-	159, // [159:159] is the sub-list for extension extendee
-	0,   // [0:159] is the sub-list for field type_name
+	148, // 147: scalibr.SecretData.square_personal_access_token:type_name -> scalibr.SecretData.SquarePersonalAccessToken
+	149, // 148: scalibr.SecretData.square_oauth_application_secret:type_name -> scalibr.SecretData.SquareOAuthApplicationSecret
+	4,   // 149: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	151, // 150: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	70,  // 151: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	71,  // 152: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	72,  // 153: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	73,  // 154: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	12,  // 155: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	77,  // 156: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	75,  // 157: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	150, // 158: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	76,  // 159: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	56,  // 160: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	161, // [161:161] is the sub-list for method output_type
+	161, // [161:161] is the sub-list for method input_type
+	161, // [161:161] is the sub-list for extension type_name
+	161, // [161:161] is the sub-list for extension extendee
+	0,   // [0:161] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -12185,6 +12324,8 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_MistralApiKey)(nil),
 		(*SecretData_CircleciPersonalAccessToken)(nil),
 		(*SecretData_CircleciProjectToken)(nil),
+		(*SecretData_SquarePersonalAccessToken_)(nil),
+		(*SecretData_SquareOauthApplicationSecret)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[64].OneofWrappers = []any{
 		(*Location_Filepath)(nil),
@@ -12198,7 +12339,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   144,
+			NumMessages:   146,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
