@@ -794,6 +794,9 @@ message SecretData {
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
+    SupabasePAT supabase_pat = 69;
+    SupabaseProjectSecretKey supabase_project_secret_key = 70;
+    SupabaseServiceRoleJWT supabase_service_role_jwt = 71;
   }
 
   message GCPSAK {
@@ -1151,6 +1154,20 @@ message SecretData {
   message URLCredentials {
     string url = 1;
   }
+
+  message SupabasePAT {
+    string token = 1;
+  }
+
+  message SupabaseProjectSecretKey {
+    string key = 1;
+    string project_ref = 2;
+  }
+
+  message SupabaseServiceRoleJWT {
+    string token = 1;
+  }
+
 }
 
 message SecretStatus {

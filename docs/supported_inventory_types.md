@@ -163,6 +163,9 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Secret Key                           | `secrets/stripesecretkey`              |
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
+| Supabase PAT                                | `secrets/supabasepat`                  |
+| Supabase Project Secret Key                 | `secrets/supabaseprojectsecretkey`     |
+| Supabase Service Role JWT                   | `secrets/supabaseservicerolejwt`       |
 | Tink keyset                                 | `secrets/tinkkeyset`                   |
 | Paystack Secret Key                         | `secrets/paystacksecretkey`            |
 | Vapid keys                                  | `secrets/vapidkey`                     |

@@ -69,6 +69,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/supabase"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 
@@ -140,6 +141,9 @@ var (
 		fromVeles(github.NewFineGrainedPATValidator(), "secrets/githubfinegrainedpatvalidate", 0),
 		fromVeles(stripeapikeys.NewSecretKeyValidator(), "secrets/stripesecretkeyvalidate", 0),
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
+		fromVeles(supabase.NewPATValidator(), "secrets/supabasepatvalidate", 0),
+		fromVeles(supabase.NewProjectSecretKeyValidator(), "secrets/supabaseprojectsecretkeyvalidate", 0),
+		fromVeles(supabase.NewServiceRoleJWTValidator(), "secrets/supabaseservicerolejwtvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(paystacksecretkey.NewValidator(), "secrets/paystacksecretkeyvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
