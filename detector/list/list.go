@@ -85,10 +85,13 @@ var Weakcredentials = InitMap{
 }
 
 // Misc detectors for miscellaneous security issues.
-var Misc = InitMap{
-	cronjobprivesc.Name: {cronjobprivesc.New},
-	dockersocket.Name:   {dockersocket.New},
-}
+var Misc = concat(
+	InitMap{
+		cronjobprivesc.Name: {cronjobprivesc.New},
+		dockersocket.Name:   {dockersocket.New},
+	},
+	miscOSSpecific(),
+)
 
 // CVE for vulnerabilities that have a CVE associated
 var CVE = InitMap{
@@ -134,6 +137,12 @@ func concat(initMaps ...InitMap) InitMap {
 
 func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
+}
+
+// Wraps initer functions that don't take any config value to initer functions
+// that do.
+func noCFG(f func() detector.Detector) InitFn {
+	return func(_ *cpb.PluginConfig) (detector.Detector, error) { return f(), nil }
 }
 
 // DetectorsFromName returns a list of detectors from a name.

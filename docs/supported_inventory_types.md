@@ -248,6 +248,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
 | Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |
 | Checks for weak passwords for local Windows accounts.                | `weakcredentials/winlocal`               |
+| Detects PAM misconfigurations that allow authentication bypass. (Linux-only) | `misc/pammisconfig`                      |
 
 ## Annotators
 

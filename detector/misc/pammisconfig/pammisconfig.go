@@ -97,7 +97,9 @@ func findingForTarget(target *inventory.GenericFindingTargetDetails) inventory.F
 }
 
 // PAM control flags that can cause authentication bypass when misconfigured.
-// Reference: http://www.linux-pam.org/Linux-PAM-html/sag-configuration-file.html
+// References:
+// - https://man7.org/linux/man-pages/man5/pam.conf.5.html
+// - https://fossies.org/linux/Linux-PAM-docs/doc/sag/html/sag-configuration.html
 var (
 	// bypassControls are control flags that, when used with permissive modules,
 	// can short-circuit authentication and bypass password validation.
@@ -225,11 +227,15 @@ func checkPAMFile(ctx context.Context, fsys fs.FS, filePath string, isLegacyForm
 		}
 
 		entry := parsePAMLine(line, isLegacyFormat)
-		if entry != nil && entry.moduleType == "auth" {
+		if entry == nil {
+			continue
+		}
+
+		if entry.moduleType == "auth" {
 			authEntries = append(authEntries, *entry)
 		}
 
-		if lineIssues := analyzePAMLine(filePath, lineNum, line, isLegacyFormat); len(lineIssues) > 0 {
+		if lineIssues := analyzePAMEntry(filePath, lineNum, entry); len(lineIssues) > 0 {
 			issues = append(issues, lineIssues...)
 		}
 	}
@@ -241,19 +247,105 @@ func checkPAMFile(ctx context.Context, fsys fs.FS, filePath string, isLegacyForm
 	return issues
 }
 
+// controlEffect represents the behavior of a PAM control flag that's relevant for
+// authentication-bypass detection.
+//
+// Example controls:
+//   - `sufficient`: on success, short-circuits the stack (sufficient-like).
+//   - `[success=done default=ignore]`: also short-circuits on success.
+//   - `[success=1 default=ignore]`: skips the next 1 module on success.
+type controlEffect struct {
+	isSufficientLike bool
+	skipNext         int
+	isOptionalOnly   bool
+}
+
 // pamEntry represents a parsed PAM configuration line.
 type pamEntry struct {
-	moduleType string   // auth, account, password, session
-	control    string   // required, sufficient, optional, etc.
+	moduleType string // auth, account, password, session
+	control    string // required, sufficient, optional, etc.
+	controlEff controlEffect
 	modulePath string   // e.g., pam_unix.so, pam_permit.so
 	args       []string // module arguments
 }
 
-// analyzePAMLine analyzes a single PAM configuration line for security issues.
-func analyzePAMLine(filePath string, lineNum int, line string, isLegacyFormat bool) []string {
-	var issues []string
+// parsePAMLine parses a PAM configuration line into its components.
+// PAM line format: [service] type control module-path [module-arguments]
+// In /etc/pam.d/, service is derived from filename (no service field).
+// In /etc/pam.conf, service is the first field.
+func parsePAMLine(line string, isLegacyFormat bool) *pamEntry {
+	fields := strings.Fields(line)
 
-	entry := parsePAMLine(line, isLegacyFormat)
+	minFields := 3 // type control module
+	if isLegacyFormat {
+		minFields = 4 // service type control module
+	}
+
+	if len(fields) < minFields {
+		return nil
+	}
+
+	var entry pamEntry
+	offset := 0
+	if isLegacyFormat {
+		offset = 1 // skip service field
+	}
+
+	entry.moduleType = strings.ToLower(fields[offset])
+	control := strings.ToLower(fields[offset+1])
+	entry.control = control
+	entry.modulePath = fields[offset+2]
+
+	if len(fields) > offset+3 {
+		entry.args = fields[offset+3:]
+	}
+
+	// Validate module type
+	validTypes := map[string]bool{
+		"auth": true, "account": true, "password": true, "session": true,
+		// Also handle -type prefix (e.g., -auth) which means optional
+		"-auth": true, "-account": true, "-password": true, "-session": true,
+	}
+	if !validTypes[entry.moduleType] {
+		return nil
+	}
+
+	// Normalize -type to type (the dash means optional/silent fail)
+	entry.moduleType = strings.TrimPrefix(entry.moduleType, "-")
+
+	// Compute the control effect during parsing so analysis doesn't need to re-parse it.
+	switch {
+	case bypassControls[control]:
+		entry.controlEff = controlEffect{isSufficientLike: true}
+	case control == "optional":
+		entry.controlEff = controlEffect{isOptionalOnly: true}
+	case strings.HasPrefix(control, "[") && strings.HasSuffix(control, "]"):
+		inner := strings.TrimSuffix(strings.TrimPrefix(control, "["), "]")
+		for _, token := range strings.Fields(inner) {
+			parts := strings.SplitN(token, "=", 2)
+			if len(parts) != 2 || parts[0] != "success" {
+				continue
+			}
+			action := parts[1]
+			switch action {
+			case "ok", "done":
+				entry.controlEff = controlEffect{isSufficientLike: true}
+				return &entry
+			default:
+				if skip := parseSkipCount(action); skip > 0 {
+					entry.controlEff = controlEffect{skipNext: skip}
+					return &entry
+				}
+			}
+		}
+	}
+
+	return &entry
+}
+
+// analyzePAMEntry analyzes a single parsed PAM configuration entry for security issues.
+func analyzePAMEntry(filePath string, lineNum int, entry *pamEntry) []string {
+	var issues []string
 	if entry == nil {
 		return issues
 	}
@@ -270,7 +362,7 @@ func analyzePAMLine(filePath string, lineNum int, line string, isLegacyFormat bo
 	// means any user can authenticate without a valid password.
 	// Reference: https://serverfault.com/questions/890012/pam-accepting-any-password-for-valid-users
 	if isModule(entry.modulePath, "pam_permit.so") {
-		control := parseControlEffect(entry.control)
+		control := entry.controlEff
 		if control.isSufficientLike || control.skipNext > 0 {
 			issues = append(issues, fmt.Sprintf(
 				"%s:%d: pam_permit.so with '%s' control in %s stack - this module always "+
@@ -284,7 +376,7 @@ func analyzePAMLine(filePath string, lineNum int, line string, isLegacyFormat bo
 	// and when combined with 'sufficient', those users bypass further auth checks.
 	// Reference: https://unix.stackexchange.com/a/767197
 	if isModule(entry.modulePath, "pam_succeed_if.so") {
-		control := parseControlEffect(entry.control)
+		control := entry.controlEff
 		if control.isSufficientLike || control.skipNext > 0 {
 			condition := extractPAMSucceedIfCondition(entry.args)
 			if condition != "" && isBroadPAMSucceedIfCondition(condition) {
@@ -355,46 +447,6 @@ func isBroadPAMSucceedIfCondition(condition string) bool {
 	return false
 }
 
-type controlEffect struct {
-	isSufficientLike bool
-	skipNext         int
-	isOptionalOnly   bool
-}
-
-func parseControlEffect(control string) controlEffect {
-	control = strings.ToLower(control)
-
-	if bypassControls[control] {
-		return controlEffect{isSufficientLike: true}
-	}
-	if control == "optional" {
-		return controlEffect{isOptionalOnly: true}
-	}
-
-	if !strings.HasPrefix(control, "[") || !strings.HasSuffix(control, "]") {
-		return controlEffect{}
-	}
-
-	inner := strings.TrimSuffix(strings.TrimPrefix(control, "["), "]")
-	for _, token := range strings.Fields(inner) {
-		parts := strings.SplitN(token, "=", 2)
-		if len(parts) != 2 || parts[0] != "success" {
-			continue
-		}
-		action := parts[1]
-		switch action {
-		case "ok", "done":
-			return controlEffect{isSufficientLike: true}
-		default:
-			if skip := parseSkipCount(action); skip > 0 {
-				return controlEffect{skipNext: skip}
-			}
-		}
-	}
-
-	return controlEffect{}
-}
-
 func parseSkipCount(action string) int {
 	if action == "" {
 		return 0
@@ -433,7 +485,7 @@ func checkOptionalOnlyAuth(filePath string, entries []pamEntry) []string {
 	var hasEffectiveNonOptional bool
 	var hasPermitOptional bool
 	for _, entry := range entries {
-		control := parseControlEffect(entry.control)
+		control := entry.controlEff
 		if !control.isOptionalOnly {
 			hasEffectiveNonOptional = true
 		}
@@ -449,50 +501,4 @@ func checkOptionalOnlyAuth(filePath string, entries []pamEntry) []string {
 	}
 
 	return nil
-}
-
-// parsePAMLine parses a PAM configuration line into its components.
-// PAM line format: [service] type control module-path [module-arguments]
-// In /etc/pam.d/, service is derived from filename (no service field).
-// In /etc/pam.conf, service is the first field.
-func parsePAMLine(line string, isLegacyFormat bool) *pamEntry {
-	fields := strings.Fields(line)
-
-	minFields := 3 // type control module
-	if isLegacyFormat {
-		minFields = 4 // service type control module
-	}
-
-	if len(fields) < minFields {
-		return nil
-	}
-
-	var entry pamEntry
-	offset := 0
-	if isLegacyFormat {
-		offset = 1 // skip service field
-	}
-
-	entry.moduleType = strings.ToLower(fields[offset])
-	entry.control = strings.ToLower(fields[offset+1])
-	entry.modulePath = fields[offset+2]
-
-	if len(fields) > offset+3 {
-		entry.args = fields[offset+3:]
-	}
-
-	// Validate module type
-	validTypes := map[string]bool{
-		"auth": true, "account": true, "password": true, "session": true,
-		// Also handle -type prefix (e.g., -auth) which means optional
-		"-auth": true, "-account": true, "-password": true, "-session": true,
-	}
-	if !validTypes[entry.moduleType] {
-		return nil
-	}
-
-	// Normalize -type to type (the dash means optional/silent fail)
-	entry.moduleType = strings.TrimPrefix(entry.moduleType, "-")
-
-	return &entry
 }
