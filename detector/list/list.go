@@ -85,10 +85,13 @@ var Weakcredentials = InitMap{
 }
 
 // Misc detectors for miscellaneous security issues.
-var Misc = InitMap{
-	cronjobprivesc.Name: {noCFG(cronjobprivesc.New)},
-	dockersocket.Name:   {noCFG(dockersocket.New)},
-}
+var Misc = concat(
+	InitMap{
+		cronjobprivesc.Name: {noCFG(cronjobprivesc.New)},
+		dockersocket.Name:   {noCFG(dockersocket.New)},
+	},
+	miscOSSpecific(),
+)
 
 // CVE for vulnerabilities that have a CVE associated
 var CVE = InitMap{
