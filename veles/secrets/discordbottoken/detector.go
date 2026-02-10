@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv-scalibr/veles/secrets/common"
-	"github.com/google/osv-scalibr/veles/secrets/common/detectors"
+"github.com/google/osv-scalibr/veles/secrets"
+"github.com/google/osv-scalibr/veles/secrets/detectors"
 )
 
 var (
