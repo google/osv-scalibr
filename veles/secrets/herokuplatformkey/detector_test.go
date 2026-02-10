@@ -23,12 +23,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	herokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 var (
 	// Example valid Heroku Platform API key.
 	detectorKey = "HRKU-AALJCYR7SRzPkj9_BGqhi1jAI1J5P4WfD6ITENvdVydAPCnNcAlrMMahHrTo"
 )
+
+func TestHerokuKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		herokuplatformkey.NewSecretKeyDetector(),
+		detectorKey,
+		herokuplatformkey.HerokuSecret{Key: detectorKey},
+	)
+}
 
 // TestSecretKeyDetector_truePositives tests Key detection.
 func TestSecretKeyDetector_truePositives(t *testing.T) {
