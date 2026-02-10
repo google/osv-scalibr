@@ -98,7 +98,7 @@ func TestEnrich_DefiniteExpireTime(t *testing.T) {
 	if !ok {
 		t.Fatalf("unexpected type: %T", inv.Secrets[0].Secret)
 	}
-	if *tok.Metadata.ExpireTime != 123456*time.Second {
+	if *tok.Metadata.ExpireTime != 123456*time.Second || tok.Metadata.NeverExpires != false {
 		t.Errorf("unexpected lifetime: %s", *tok.Metadata.ExpireTime)
 	}
 }
@@ -124,7 +124,7 @@ func TestEnrich_IndefiniteExpireTime(t *testing.T) {
 	if !ok {
 		t.Fatalf("unexpected type: %T", inv.Secrets[0].Secret)
 	}
-	if tok.Metadata.ExpireTime != nil {
+	if tok.Metadata.ExpireTime != nil || tok.Metadata.NeverExpires != true {
 		t.Errorf("unexpected lifetime: %s", *tok.Metadata.ExpireTime)
 	}
 }

@@ -136,10 +136,12 @@ func (e *Enricher) fetchExpiration(ctx context.Context, bearer string) (*herokup
 		if a.AccessToken.Token == bearer {
 			metadataPtr := &herokuplatformkey.Metadata{ExpireTime: nil}
 			if a.AccessToken.ExpiresIn == nil {
+				metadataPtr.NeverExpires = true
 				return metadataPtr, nil
 			}
 			d := time.Duration(*a.AccessToken.ExpiresIn) * time.Second
 			metadataPtr.ExpireTime = &d
+			metadataPtr.NeverExpires = false
 			return metadataPtr, nil
 		}
 	}

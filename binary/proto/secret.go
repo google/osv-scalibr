@@ -952,8 +952,8 @@ func herokuMetadataToProto(m *velesherokuplatformkey.Metadata) *spb.SecretData_H
 		return nil
 	}
 
-	meta := &spb.SecretData_HerokuSecretKeyMetadata{ExpireTime: nil}
-
+	meta := &spb.SecretData_HerokuSecretKeyMetadata{ExpireTime: nil, NeverExpires: false}
+	meta.NeverExpires = m.NeverExpires
 	if m.ExpireTime != nil {
 		meta.ExpireTime = durationpb.New(*m.ExpireTime)
 	}
@@ -1531,7 +1531,7 @@ func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatform
 
 	return velesherokuplatformkey.HerokuSecret{
 		Key:      k.GetKey(),
-		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur},
+		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur, NeverExpires: metadata.GetNeverExpires()},
 	}
 }
 

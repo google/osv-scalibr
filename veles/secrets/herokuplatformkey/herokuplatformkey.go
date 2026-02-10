@@ -28,4 +28,6 @@ type HerokuSecret struct {
 type Metadata struct {
 	// ExpireTime is nil if the token doesn't expire
 	ExpireTime *time.Duration
+	// NeverExpires indicates whether token expires or not
+	NeverExpires bool
 }

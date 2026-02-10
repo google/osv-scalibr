@@ -10633,8 +10633,9 @@ func (x *SecretData_HerokuSecretKey) GetHerokuSecretKeyMetadata() *SecretData_He
 
 type SecretData_HerokuSecretKeyMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// expire_time is nil if the token doesn't expire
-	ExpireTime    *durationpb.Duration `protobuf:"bytes,1,opt,name=expire_time,json=expireTime,proto3,oneof" json:"expire_time,omitempty"`
+	// expire_time is nil if the token doesn't expire, and never_expires becomes true
+	ExpireTime    *durationpb.Duration `protobuf:"bytes,1,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	NeverExpires  bool                 `protobuf:"varint,2,opt,name=never_expires,json=neverExpires,proto3" json:"never_expires,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10674,6 +10675,13 @@ func (x *SecretData_HerokuSecretKeyMetadata) GetExpireTime() *durationpb.Duratio
 		return x.ExpireTime
 	}
 	return nil
+}
+
+func (x *SecretData_HerokuSecretKeyMetadata) GetNeverExpires() bool {
+	if x != nil {
+		return x.NeverExpires
+	}
+	return false
 }
 
 type SecretData_TelegramBotToken struct {
@@ -11617,7 +11625,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xff[\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\x8f\\\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -11886,11 +11894,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x0fHerokuSecretKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12m\n" +
 	"\x1aheroku_secret_key_metadata\x18\x02 \x01(\v2+.scalibr.SecretData.HerokuSecretKeyMetadataH\x00R\x17herokuSecretKeyMetadata\x88\x01\x01B\x1d\n" +
-	"\x1b_heroku_secret_key_metadata\x1aj\n" +
-	"\x17HerokuSecretKeyMetadata\x12?\n" +
-	"\vexpire_time\x18\x01 \x01(\v2\x19.google.protobuf.DurationH\x00R\n" +
-	"expireTime\x88\x01\x01B\x0e\n" +
-	"\f_expire_time\x1a(\n" +
+	"\x1b_heroku_secret_key_metadata\x1az\n" +
+	"\x17HerokuSecretKeyMetadata\x12:\n" +
+	"\vexpire_time\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\n" +
+	"expireTime\x12#\n" +
+	"\rnever_expires\x18\x02 \x01(\bR\fneverExpires\x1a(\n" +
 	"\x10TelegramBotToken\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x1a3\n" +
 	"\x1bSalesforceOAuth2AccessToken\x12\x14\n" +
@@ -12465,7 +12473,6 @@ func file_proto_scan_result_proto_init() {
 		(*Location_ContainerCommand)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[135].OneofWrappers = []any{}
-	file_proto_scan_result_proto_msgTypes[136].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

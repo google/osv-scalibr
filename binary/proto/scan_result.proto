@@ -1121,8 +1121,10 @@ message SecretData {
   }
 
   message HerokuSecretKeyMetadata {
-    // expire_time is nil if the token doesn't expire
-    optional google.protobuf.Duration expire_time = 1;
+    // expire_time is nil if the token doesn't expire, and never_expires becomes true
+    google.protobuf.Duration expire_time = 1;
+    bool never_expires = 2;
+
   }
 
 
