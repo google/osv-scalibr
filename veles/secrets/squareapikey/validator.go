@@ -94,12 +94,7 @@ func NewOAuthApplicationSecretValidator() *sv.Validator[soauth] {
 			}
 			return string(jsonBody), nil
 		},
-		// 200 OK and 404 Not Found both mean credentials are valid
-		// - 200 OK: token was successfully revoked (unlikely since we use a random access token)
-		// - 404 Not Found: credentials authenticated successfully, but the random access token
-		//   doesn't exist (this is the expected response)
-		ValidResponseCodes: []int{http.StatusOK, http.StatusNotFound},
-		// 401 Unauthorized means invalid credentials (authentication failed)
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusNotFound},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},
 		HTTPC: &http.Client{
 			Timeout: validationTimeout,

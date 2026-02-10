@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 )
 
@@ -82,6 +83,79 @@ func mockSquareServer(t *testing.T, expectedToken string, serverResponseCode int
 	}))
 }
 
+// setupPersonalAccessTokenValidator creates a validator configured with a mock server
+func setupPersonalAccessTokenValidator(t *testing.T, server *httptest.Server) *sv.Validator[squareapikey.SquarePersonalAccessToken] {
+	t.Helper()
+
+	client := &http.Client{
+		Transport: &mockTransport{testServer: server},
+	}
+
+	validator := squareapikey.NewPersonalAccessTokenValidator()
+	validator.HTTPC = client
+
+	return validator
+}
+
+// mockOAuthServer creates a mock Square OAuth API server for testing
+func mockOAuthServer(t *testing.T, serverResponseCode int) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if it's a POST request to the expected endpoint
+		if r.Method != http.MethodPost || r.URL.Path != "/oauth2/revoke" {
+			t.Errorf("unexpected request: %s %s, expected: POST /oauth2/revoke", r.Method, r.URL.Path)
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+
+		// Check Authorization header format
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Client ") {
+			t.Errorf("Authorization header = %q, want prefix 'Client '", authHeader)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(serverResponseCode)
+
+		// Write appropriate response body based on status code
+		if serverResponseCode == http.StatusNotFound {
+			_, _ = w.Write([]byte(`{"errors":[{"code":"NOT_FOUND","detail":"access token not found"}]}`))
+		} else if serverResponseCode == http.StatusUnauthorized {
+			_, _ = w.Write([]byte(`{"message":"Not Authorized","type":"service.not_authorized"}`))
+		}
+	}))
+}
+
+// setupOAuthApplicationSecretValidator creates a validator configured with a mock server
+func setupOAuthApplicationSecretValidator(t *testing.T, server *httptest.Server) *sv.Validator[squareapikey.SquareOAuthApplicationSecret] {
+	t.Helper()
+
+	client := &http.Client{
+		Transport: &mockOAuthTransport{testServer: server},
+	}
+
+	validator := squareapikey.NewOAuthApplicationSecretValidator()
+	validator.HTTPC = client
+
+	return validator
+}
+
+// mockOAuthTransport redirects OAuth requests to the test server
+type mockOAuthTransport struct {
+	testServer *httptest.Server
+}
+
+func (m *mockOAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Replace the original URL with our test server URL
+	if req.URL.Host == "connect.squareup.com" {
+		testURL, _ := url.Parse(m.testServer.URL)
+		req.URL.Scheme = testURL.Scheme
+		req.URL.Host = testURL.Host
+	}
+	return http.DefaultTransport.RoundTrip(req)
+}
+
 func TestPersonalAccessTokenValidator(t *testing.T) {
 	cases := []struct {
 		name               string
@@ -133,23 +207,13 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock server
 			server := mockSquareServer(t, tc.serverExpectedKey, tc.serverResponseCode)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
+			validator := setupPersonalAccessTokenValidator(t, server)
 
-			// Create a validator with a mock client
-			validator := squareapikey.NewPersonalAccessTokenValidator()
-			validator.HTTPC = client
-
-			// Create a test token
 			token := squareapikey.SquarePersonalAccessToken{Key: tc.token}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), token)
 
 			if !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
@@ -157,7 +221,6 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 				return
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
@@ -166,28 +229,19 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 }
 
 func TestPersonalAccessTokenValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"client_id":"sq0idp-test","token_type":"BEARER"}`))
 	}))
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := squareapikey.NewPersonalAccessTokenValidator()
-	validator.HTTPC = client
+	validator := setupPersonalAccessTokenValidator(t, server)
 
 	token := squareapikey.SquarePersonalAccessToken{Key: validatorTestToken}
 
-	// Create a cancelled context
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
-	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, token)
 
 	if err == nil {
@@ -199,19 +253,12 @@ func TestPersonalAccessTokenValidator_ContextCancellation(t *testing.T) {
 }
 
 func TestPersonalAccessTokenValidator_InvalidRequest(t *testing.T) {
-	// Create a mock server that returns 401 Unauthorized
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := squareapikey.NewPersonalAccessTokenValidator()
-	validator.HTTPC = client
+	validator := setupPersonalAccessTokenValidator(t, server)
 
 	testCases := []struct {
 		name     string
@@ -247,7 +294,6 @@ func TestPersonalAccessTokenValidator_InvalidRequest(t *testing.T) {
 }
 
 func TestPersonalAccessTokenValidator_AuthorizationHeader(t *testing.T) {
-	// Test that the Authorization header is correctly formatted
 	var capturedAuthHeader string
 	var capturedSquareVersion string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -258,12 +304,7 @@ func TestPersonalAccessTokenValidator_AuthorizationHeader(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := squareapikey.NewPersonalAccessTokenValidator()
-	validator.HTTPC = client
+	validator := setupPersonalAccessTokenValidator(t, server)
 
 	token := squareapikey.SquarePersonalAccessToken{Key: validatorTestToken}
 
@@ -342,49 +383,16 @@ func TestOAuthApplicationSecretValidator(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a mock server for OAuth validation
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// Check if it's a POST request to the expected endpoint
-				if r.Method != http.MethodPost || r.URL.Path != "/oauth2/revoke" {
-					t.Errorf("unexpected request: %s %s, expected: POST /oauth2/revoke", r.Method, r.URL.Path)
-					http.Error(w, "not found", http.StatusNotFound)
-					return
-				}
-
-				// Check Authorization header format
-				authHeader := r.Header.Get("Authorization")
-				if !strings.HasPrefix(authHeader, "Client ") {
-					t.Errorf("Authorization header = %q, want prefix 'Client '", authHeader)
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(tc.serverResponseCode)
-
-				// Write appropriate response body based on status code
-				if tc.serverResponseCode == http.StatusNotFound {
-					_, _ = w.Write([]byte(`{"errors":[{"code":"NOT_FOUND","detail":"access token not found"}]}`))
-				} else if tc.serverResponseCode == http.StatusUnauthorized {
-					_, _ = w.Write([]byte(`{"message":"Not Authorized","type":"service.not_authorized"}`))
-				}
-			}))
+			server := mockOAuthServer(t, tc.serverResponseCode)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockOAuthTransport{testServer: server},
-			}
+			validator := setupOAuthApplicationSecretValidator(t, server)
 
-			// Create a validator with a mock client
-			validator := squareapikey.NewOAuthApplicationSecretValidator()
-			validator.HTTPC = client
-
-			// Create test credentials
 			creds := squareapikey.SquareOAuthApplicationSecret{
 				ID:  tc.id,
 				Key: tc.secret,
 			}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), creds)
 
 			if !cmp.Equal(tc.wantErr, err, cmpopts.EquateErrors()) {
@@ -392,25 +400,9 @@ func TestOAuthApplicationSecretValidator(t *testing.T) {
 				return
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
 	}
-}
-
-// mockOAuthTransport redirects OAuth requests to the test server
-type mockOAuthTransport struct {
-	testServer *httptest.Server
-}
-
-func (m *mockOAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL
-	if req.URL.Host == "connect.squareup.com" {
-		testURL, _ := url.Parse(m.testServer.URL)
-		req.URL.Scheme = testURL.Scheme
-		req.URL.Host = testURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
 }
