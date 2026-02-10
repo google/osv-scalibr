@@ -24,7 +24,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 )
 
-Discord bot token (fake but structurally valid: 24.6.27 characters)
+// Example Discord bot token (fake but structurally valid: 24.6.27 characters)
 const testToken = "MTIzNDU2Nzg5MDEyMzQ1Njc4.YAaBbC.dEFGhijklMNOPqrSTUVwxyzAB12"
 
 func TestDetector_TruePositives(t *testing.T) {
@@ -44,7 +44,7 @@ func TestDetector_TruePositives(t *testing.T) {
 			name:  "env var with discord keyword",
 			input: `DISCORD_BOT_TOKEN=` + testToken,
 			want: []veles.Secret{
-								discordbottoken.DiscordBotToken{Token: testToken},
+				discordbottoken.DiscordBotToken{Token: testToken},
 			},
 		},
 		{
