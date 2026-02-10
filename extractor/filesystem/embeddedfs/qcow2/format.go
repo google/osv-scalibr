@@ -17,7 +17,13 @@ const (
 	sectorSize = 512
 )
 
-// header matches qcow2.h's QcowHeader
+// header matches qcow2.h's QcowHeader layout exactly.
+// The struct is read directly from on-disk bytes using binary.Read,
+// so field order, sizes, and alignment must not change.
+// Unused/reserved fields are kept (as blank identifiers) to preserve
+// correct offsets, and fixed-width integer types (uint32/uint64) are
+// used to match the QCOW2 specification precisely.
+// Reference:
 // https://github.com/qemu/qemu/blob/master/block/qcow2.h#L154
 // https://www.qemu.org/docs/master/interop/qcow2.html
 type header struct {
