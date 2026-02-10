@@ -113,7 +113,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Secrets
 
 | Type                                        | Extractor Plugin                       |
-|---------------------------------------------|----------------------------------------|
+| ------------------------------------------- | -------------------------------------- |
 | AWS access key                              | `secrets/awsaccesskey`                 |
 | Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
@@ -121,6 +121,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| CircleCI Personal Access Token              | `secrets/circlecipat`                  |
+| CircleCI Project Token                      | `secrets/circleciproject`              |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
@@ -171,6 +173,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Telegram Bot API Token                      | `secrets/telegrambottoken`             |
 | Salesforce OAuth2 Access Tokens             | `secrets/salesforceoauth2access`       |
 | Salesforce OAuth 2 Client Credentials       | `secrets/salesforceoauth2client`       |
+| Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 
