@@ -95,6 +95,8 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemNPM)
 	case purl.TypeGolang:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemGo)
+	case purl.TypeOpam:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemOpam)
 	// Not yet supported by OSV yet
 	// case purl.TypeCocoapods:
 	// 	return string(osvschema.EcosystemCocoaPods)

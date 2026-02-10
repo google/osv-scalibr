@@ -79,6 +79,7 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
+  reserved 17 to 20, 29, 32, 43, 59;
   // Unique identifier for the package.
   string id = 60;
   // Human-readable name of the software, to be used for things like logging.
@@ -788,7 +789,15 @@ message SecretData {
     ElasticCloudAPIKey elastic_cloud_api_key = 61;
     URLCredentials url_credentials = 62;
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
-    HerokuSecretKey heroku_secret_key = 64;
+    SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
+    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials =
+        65;
+    MistralAPIKey mistral_api_key = 66;
+    CircleCIPersonalAccessToken circleci_personal_access_token = 67;
+    CircleCIProjectToken circleci_project_token = 68;
+    SquarePersonalAccessToken square_personal_access_token = 69;
+    SquareOAuthApplicationSecret square_oauth_application_secret = 70;
+    HerokuSecretKey heroku_secret_key = 71;
 
   }
 
@@ -829,6 +838,10 @@ message SecretData {
   }
 
   message PerplexityAPIKey {
+    string key = 1;
+  }
+
+  message MistralAPIKey {
     string key = 1;
   }
 
@@ -1113,6 +1126,11 @@ message SecretData {
     string token = 1;
   }
 
+  message SalesforceOAuth2AccessToken {
+    // Salesforce OAuth2 Access Token
+    string token = 1;
+  }
+
   message SalesforceOAuth2ClientCredentials {
     // Salesforce OAuth2 client ID
     string id = 1;
@@ -1122,12 +1140,38 @@ message SecretData {
     string url = 3;
   }
 
+  message SalesforceOAuth2RefreshCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce OAuth2 client secret
+    string secret = 2;
+    // Salesforce OAuth2 Refresh Token
+    string refresh = 3;
+  }
+
   message CursorAPIKey {
     string key = 1;
   }
 
+  message CircleCIPersonalAccessToken {
+    string token = 1;
+  }
+
+  message CircleCIProjectToken {
+    string token = 1;
+  }
+
   message URLCredentials {
     string url = 1;
+  }
+
+  message SquarePersonalAccessToken {
+    string key = 1;
+  }
+
+  message SquareOAuthApplicationSecret {
+    string id = 1;   // OAuth Application ID (prefix: sq0idp-)
+    string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
   }
 }
 

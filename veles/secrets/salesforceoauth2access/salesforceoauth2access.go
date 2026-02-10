@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+// Package salesforceoauth2access contains Veles Secret types and Detectors for Salesforce OAuth2 Access Tokens.
+package salesforceoauth2access
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.4.3"
+// Token represents a Salesforce OAuth2 Access Token.
+type Token struct {
+	// Token is the salesforce oauth2 access token.
+	Token string
+}
