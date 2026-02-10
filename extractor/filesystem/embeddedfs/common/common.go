@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -380,16 +380,19 @@ func GetDiskPartitions(tmpRawPath string) ([]part.Partition, *disk.Disk, error) 
 	// Open the raw disk image with go-diskfs
 	disk, err := diskfs.Open(tmpRawPath, diskfs.WithOpenMode(diskfs.ReadOnly))
 	if err != nil {
+		disk.Close()
 		os.Remove(tmpRawPath)
 		return nil, nil, fmt.Errorf("failed to open raw disk image %s: %w", tmpRawPath, err)
 	}
 
 	partitions, err := disk.GetPartitionTable()
 	if err != nil {
+		disk.Close()
 		return nil, nil, fmt.Errorf("failed to get partition table: %w", err)
 	}
 	partitionList := partitions.GetPartitions()
 	if len(partitionList) == 0 {
+		disk.Close()
 		return nil, nil, errors.New("no partitions found in raw disk image")
 	}
 	return partitionList, disk, nil

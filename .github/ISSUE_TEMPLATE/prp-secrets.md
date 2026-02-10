@@ -8,6 +8,7 @@ assignees: ''
 ---
 
 - **Secret name**: {e.g. `GCP Service Account Keys`}
+- **Popularity of secret/service** {e.g. `There are X million total customers using GCP`}
 - **Risk in exposing the secret**: {e.g. `Attackers can impersonate GCP Service Accounts and get access to Cloud resources`}
 - **Validation method, if any**:
  * {APIs queried to verify the secret is associated with a real prod account}
