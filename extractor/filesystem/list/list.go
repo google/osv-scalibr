@@ -120,6 +120,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -161,8 +162,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
-	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
-
+	
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
