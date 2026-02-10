@@ -15,9 +15,12 @@
 // Package herokuplatformkey contains a Veles Secret type and a Detector for Heroku Platform API Keys (https://devcenter.heroku.com/articles/platform-api-quickstart).
 package herokuplatformkey
 
+import "time"
+
 // HerokuSecret is a Veles Secret that holds relevant information for a Heroku Platform API Key (https://devcenter.heroku.com/articles/oauth#prefixed-oauth-tokens).
 type HerokuSecret struct {
 	Key string
 	// Optional expiration enrichment field populated by validators/enrichers.
-	ExpireTime string
+	ExpireTime   time.Duration
+	NeverExpires bool
 }

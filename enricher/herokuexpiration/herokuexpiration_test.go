@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
@@ -97,7 +98,7 @@ func TestEnrich_DefiniteExpireTime(t *testing.T) {
 	if !ok {
 		t.Fatalf("unexpected type: %T", inv.Secrets[0].Secret)
 	}
-	if tok.ExpireTime != "123456" {
+	if tok.ExpireTime != 123456*time.Second || tok.NeverExpires != false {
 		t.Errorf("unexpected lifetime: %s", tok.ExpireTime)
 	}
 }
@@ -123,7 +124,7 @@ func TestEnrich_IndefiniteExpireTime(t *testing.T) {
 	if !ok {
 		t.Fatalf("unexpected type: %T", inv.Secrets[0].Secret)
 	}
-	if tok.ExpireTime != "indefinite lifetime" {
+	if tok.ExpireTime != 0 || tok.NeverExpires != true {
 		t.Errorf("unexpected lifetime: %s", tok.ExpireTime)
 	}
 }
@@ -140,7 +141,7 @@ func TestEnrich_SkipsOnNon200(t *testing.T) {
 		t.Fatalf("Enrich error: %v", err)
 	}
 	tok := inv.Secrets[0].Secret.(herokuplatformkey.HerokuSecret)
-	if tok.ExpireTime != "" {
+	if tok.ExpireTime != 0 || tok.NeverExpires != false {
 		t.Errorf("should not enrich on non-200: %+v", tok)
 	}
 }
@@ -156,7 +157,7 @@ func TestEnrich_ConnectionError(t *testing.T) {
 		t.Fatalf("Enrich error: %v", err)
 	}
 	tok := inv.Secrets[0].Secret.(herokuplatformkey.HerokuSecret)
-	if tok.ExpireTime != "" {
+	if tok.ExpireTime != 0 || tok.NeverExpires != false {
 		t.Errorf("unexpected enrichment on connection error: %+v", tok)
 	}
 }

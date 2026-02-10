@@ -70,6 +70,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -869,8 +870,9 @@ func herokuKeyToProto(s velesherokuplatformkey.HerokuSecret) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_HerokuSecretKey_{
 			HerokuSecretKey: &spb.SecretData_HerokuSecretKey{
-				Key:        s.Key,
-				ExpireTime: s.ExpireTime,
+				Key:          s.Key,
+				ExpireTime:   durationpb.New(s.ExpireTime),
+				NeverExpires: s.NeverExpires,
 			},
 		},
 	}
@@ -1161,8 +1163,9 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		}, nil
 	case *spb.SecretData_HerokuSecretKey_:
 		return velesherokuplatformkey.HerokuSecret{
-			Key:        s.GetHerokuSecretKey().GetKey(),
-			ExpireTime: s.GetHerokuSecretKey().GetExpireTime(),
+			Key:          s.GetHerokuSecretKey().GetKey(),
+			ExpireTime:   s.GetHerokuSecretKey().GetExpireTime().AsDuration(),
+			NeverExpires: s.GetHerokuSecretKey().GetNeverExpires(),
 		}, nil
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{

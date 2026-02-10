@@ -20,6 +20,7 @@ package scalibr;
 
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto";
 option java_multiple_files = true;
@@ -1103,7 +1104,8 @@ message SecretData {
   message HerokuSecretKey {
     string key = 1;
     // Optional expire enrichment fields populated when available
-    string expire_time =2;
+    google.protobuf.Duration expire_time = 2;
+    bool never_expires = 3;
   }
 
 

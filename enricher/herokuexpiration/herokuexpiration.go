@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
@@ -87,11 +87,12 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 			continue
 		}
 
-		expireTime, err := e.fetchExpiration(ctx, tok.Key)
+		expireTime, neverExpires, err := e.fetchExpiration(ctx, tok.Key)
 		if err != nil {
 			continue
 		}
 		tok.ExpireTime = expireTime
+		tok.NeverExpires = neverExpires
 		s.Secret = tok
 	}
 	return nil
@@ -109,36 +110,36 @@ type accessTokenResponse struct {
 	Token     string `json:"token"`
 }
 
-func (e *Enricher) fetchExpiration(ctx context.Context, bearer string) (string, error) {
+func (e *Enricher) fetchExpiration(ctx context.Context, bearer string) (time.Duration, bool, error) {
 	url := e.baseURL + "/oauth/authorizations"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", fmt.Errorf("create request: %w", err)
+		return time.Duration(0), false, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+bearer)
 	req.Header.Set("Accept", "application/vnd.heroku+json; version=3")
 	res, err := e.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("http GET: %w", err)
+		return time.Duration(0), false, fmt.Errorf("http GET: %w", err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		// Treat non-200 as non-fatal; skip enrichment.
 		_, _ = io.Copy(io.Discard, res.Body)
-		return "", nil
+		return time.Duration(0), false, nil
 	}
 	var raw []authorizationResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&raw); err != nil {
-		return "", fmt.Errorf("decode response: %w", err)
+		return time.Duration(0), false, fmt.Errorf("decode response: %w", err)
 	}
 	for _, a := range raw {
 		if a.AccessToken.Token == bearer {
 			if a.AccessToken.ExpiresIn == nil {
-				return "indefinite lifetime", nil
+				return time.Duration(0), true, nil
 			}
-			return strconv.Itoa(*a.AccessToken.ExpiresIn), nil
+			return time.Duration(*a.AccessToken.ExpiresIn) * time.Second, false, nil
 		}
 	}
-	return "", fmt.Errorf("not found key: %w", err)
+	return time.Duration(0), false, fmt.Errorf("not found key: %w", err)
 }
