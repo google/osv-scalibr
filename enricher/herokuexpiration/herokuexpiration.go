@@ -87,12 +87,11 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 			continue
 		}
 
-		expireTime, neverExpires, err := e.fetchExpiration(ctx, tok.Key)
+		metadataPtr, err := e.fetchExpiration(ctx, tok.Key)
 		if err != nil {
 			continue
 		}
-		tok.ExpireTime = expireTime
-		tok.NeverExpires = neverExpires
+		tok.Metadata = metadataPtr
 		s.Secret = tok
 	}
 	return nil
@@ -110,36 +109,39 @@ type accessTokenResponse struct {
 	Token     string `json:"token"`
 }
 
-func (e *Enricher) fetchExpiration(ctx context.Context, bearer string) (time.Duration, bool, error) {
+func (e *Enricher) fetchExpiration(ctx context.Context, bearer string) (*herokuplatformkey.Metadata, error) {
 	url := e.baseURL + "/oauth/authorizations"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return time.Duration(0), false, fmt.Errorf("create request: %w", err)
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+bearer)
 	req.Header.Set("Accept", "application/vnd.heroku+json; version=3")
 	res, err := e.httpClient.Do(req)
 	if err != nil {
-		return time.Duration(0), false, fmt.Errorf("http GET: %w", err)
+		return nil, fmt.Errorf("http GET: %w", err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		// Treat non-200 as non-fatal; skip enrichment.
 		_, _ = io.Copy(io.Discard, res.Body)
-		return time.Duration(0), false, nil
+		return nil, nil
 	}
 	var raw []authorizationResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&raw); err != nil {
-		return time.Duration(0), false, fmt.Errorf("decode response: %w", err)
+		return nil, fmt.Errorf("decode response: %w", err)
 	}
 	for _, a := range raw {
 		if a.AccessToken.Token == bearer {
+			metadataPtr := &herokuplatformkey.Metadata{ExpireTime: nil}
 			if a.AccessToken.ExpiresIn == nil {
-				return time.Duration(0), true, nil
+				return metadataPtr, nil
 			}
-			return time.Duration(*a.AccessToken.ExpiresIn) * time.Second, false, nil
+			d := time.Duration(*a.AccessToken.ExpiresIn) * time.Second
+			metadataPtr.ExpireTime = &d
+			return metadataPtr, nil
 		}
 	}
-	return time.Duration(0), false, fmt.Errorf("not found key: %w", err)
+	return nil, fmt.Errorf("not found key: %w", err)
 }

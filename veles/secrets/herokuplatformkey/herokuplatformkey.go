@@ -20,7 +20,12 @@ import "time"
 // HerokuSecret is a Veles Secret that holds relevant information for a Heroku Platform API Key (https://devcenter.heroku.com/articles/oauth#prefixed-oauth-tokens).
 type HerokuSecret struct {
 	Key string
-	// Optional expiration enrichment field populated by validators/enrichers.
-	ExpireTime   time.Duration
-	NeverExpires bool
+	// Optional enrichment fields populated by enrichers.
+	Metadata *Metadata
+}
+
+// Metadata is a Veles Secret Metadata that holds ExpireTime attribute populated by enrichers.
+type Metadata struct {
+	// ExpireTime is nil if the token doesn't expire
+	ExpireTime *time.Duration
 }

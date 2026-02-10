@@ -73,9 +73,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -940,12 +940,25 @@ func herokuKeyToProto(s velesherokuplatformkey.HerokuSecret) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_HerokuSecretKey_{
 			HerokuSecretKey: &spb.SecretData_HerokuSecretKey{
-				Key:          s.Key,
-				ExpireTime:   durationpb.New(s.ExpireTime),
-				NeverExpires: s.NeverExpires,
+				Key:                     s.Key,
+				HerokuSecretKeyMetadata: herokuMetadataToProto(s.Metadata),
 			},
 		},
 	}
+}
+
+func herokuMetadataToProto(m *velesherokuplatformkey.Metadata) *spb.SecretData_HerokuSecretKeyMetadata {
+	if m == nil {
+		return nil
+	}
+
+	meta := &spb.SecretData_HerokuSecretKeyMetadata{ExpireTime: nil}
+
+	if m.ExpireTime != nil {
+		meta.ExpireTime = durationpb.New(*m.ExpireTime)
+	}
+
+	return meta
 }
 
 func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) *spb.SecretData {
@@ -1254,11 +1267,7 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			Key: s.GetPaystackSecretKey().GetKey(),
 		}, nil
 	case *spb.SecretData_HerokuSecretKey_:
-		return velesherokuplatformkey.HerokuSecret{
-			Key:          s.GetHerokuSecretKey().GetKey(),
-			ExpireTime:   s.GetHerokuSecretKey().GetExpireTime().AsDuration(),
-			NeverExpires: s.GetHerokuSecretKey().GetNeverExpires(),
-		}, nil
+		return herokuSecretToStruct(s.GetHerokuSecretKey()), nil
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
@@ -1503,6 +1512,26 @@ func salesforceOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_Salesforc
 		ID:     credsPB.GetId(),
 		Secret: credsPB.GetSecret(),
 		URL:    credsPB.GetUrl(),
+	}
+}
+
+func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatformkey.HerokuSecret {
+	metadata := k.GetHerokuSecretKeyMetadata()
+	if metadata == nil {
+		return velesherokuplatformkey.HerokuSecret{
+			Key: k.GetKey(),
+		}
+	}
+
+	var dur *time.Duration
+	if metadata.GetExpireTime() != nil {
+		tmp := metadata.GetExpireTime().AsDuration()
+		dur = &tmp
+	}
+
+	return velesherokuplatformkey.HerokuSecret{
+		Key:      k.GetKey(),
+		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur},
 	}
 }
 
