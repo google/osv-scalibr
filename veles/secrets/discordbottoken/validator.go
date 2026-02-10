@@ -1,59 +1,39 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package discordbottoken
 
 import (
-	"context"
 	"net/http"
-	"time"
 
-	"github.com/google/osv-scalibr/veles/secrets"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
 const discordAPIURL = "https://discord.com/api/v10/users/@me"
 
-type Validator struct{}
-
-func NewValidator() secrets.Validator {
-	return &Validator{}
-}
-
-func (v *Validator) Validate(
-	ctx context.Context,
-	secret secrets.Secret,
-) (secrets.ValidationResult, error) {
-
-	token, ok := secret.(*DiscordBotToken)
-	if !ok {
-		return secrets.ValidationResult{}, nil
-	}
-
-	raw := token.SecretBase.Raw()
-	if raw == "" {
-		return secrets.ValidationResult{}, nil
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discordAPIURL, nil)
-	if err != nil {
-		return secrets.ValidationResult{}, err
-	}
-
-	req.Header.Set("Authorization", "Bot "+raw)
-
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return secrets.ValidationResult{}, nil
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		return secrets.ValidationResult{Confirmed: true}, nil
-	case http.StatusUnauthorized, http.StatusForbidden:
-		return secrets.ValidationResult{Confirmed: false}, nil
-	default:
-		return secrets.ValidationResult{}, nil
+// NewValidator creates a new Validator that validates the DiscordBotToken via
+// the /users/@me API endpoint.
+func NewValidator() *sv.Validator[DiscordBotToken] {
+	return &sv.Validator[DiscordBotToken]{
+		Endpoint:   discordAPIURL,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s DiscordBotToken) map[string]string {
+			return map[string]string{
+				"Authorization": "Bot " + s.Token,
+			}
+		},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}
 }
