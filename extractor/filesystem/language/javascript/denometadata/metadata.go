@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata defines a metadata struct for Deno packages.
-package metadata
+// Package denometadata defines a metadata struct for Deno packages.
+package denometadata
 
 import (
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-// JavascriptDenoJSONMetadata holds repository source information for a deno.json file.
-type JavascriptDenoJSONMetadata struct {
+// DenoMetadata holds repository source information for a deno.json file.
+type DenoMetadata struct {
 	FromDenolandCDN bool
 	FromUnpkgCDN    bool
 	FromESMCDN      bool
@@ -28,7 +28,7 @@ type JavascriptDenoJSONMetadata struct {
 }
 
 // SetProto sets the DenoMetadata field in the Package proto.
-func (m *JavascriptDenoJSONMetadata) SetProto(p *pb.Package) {
+func (m *DenoMetadata) SetProto(p *pb.Package) {
 	if m == nil {
 		return
 	}
@@ -36,7 +36,7 @@ func (m *JavascriptDenoJSONMetadata) SetProto(p *pb.Package) {
 		return
 	}
 
-	denoMetadata := &pb.JavascriptDenoJSONMetadata{
+	denoMetadata := &pb.JavascriptDenoMetadata{
 		Url: m.URL,
 	}
 
@@ -44,15 +44,15 @@ func (m *JavascriptDenoJSONMetadata) SetProto(p *pb.Package) {
 	// This respects the "oneof repository" constraint in the proto definition
 	switch {
 	case m.FromDenolandCDN:
-		denoMetadata.Cdn = &pb.JavascriptDenoJSONMetadata_FromDenolandCdn{
+		denoMetadata.Cdn = &pb.JavascriptDenoMetadata_FromDenolandCdn{
 			FromDenolandCdn: true,
 		}
 	case m.FromUnpkgCDN:
-		denoMetadata.Cdn = &pb.JavascriptDenoJSONMetadata_FromUnpkgCdn{
+		denoMetadata.Cdn = &pb.JavascriptDenoMetadata_FromUnpkgCdn{
 			FromUnpkgCdn: true,
 		}
 	case m.FromESMCDN:
-		denoMetadata.Cdn = &pb.JavascriptDenoJSONMetadata_FromEsmCdn{
+		denoMetadata.Cdn = &pb.JavascriptDenoMetadata_FromEsmCdn{
 			FromEsmCdn: true,
 		}
 	}
@@ -62,22 +62,22 @@ func (m *JavascriptDenoJSONMetadata) SetProto(p *pb.Package) {
 	}
 }
 
-// ToStruct converts the JavascriptDenoJSONMetadata proto to a Metadata struct.
-func ToStruct(m *pb.JavascriptDenoJSONMetadata) *JavascriptDenoJSONMetadata {
+// ToStruct converts the DenoMetadata proto to a Metadata struct.
+func ToStruct(m *pb.JavascriptDenoMetadata) *DenoMetadata {
 	if m == nil {
 		return nil
 	}
 
-	metadata := &JavascriptDenoJSONMetadata{
+	metadata := &DenoMetadata{
 		URL: m.GetUrl(),
 	}
 	// Determine which CDN is set and set the corresponding boolean
 	switch repo := m.GetCdn().(type) {
-	case *pb.JavascriptDenoJSONMetadata_FromDenolandCdn:
+	case *pb.JavascriptDenoMetadata_FromDenolandCdn:
 		metadata.FromDenolandCDN = repo.FromDenolandCdn
-	case *pb.JavascriptDenoJSONMetadata_FromUnpkgCdn:
+	case *pb.JavascriptDenoMetadata_FromUnpkgCdn:
 		metadata.FromUnpkgCDN = repo.FromUnpkgCdn
-	case *pb.JavascriptDenoJSONMetadata_FromEsmCdn:
+	case *pb.JavascriptDenoMetadata_FromEsmCdn:
 		metadata.FromESMCDN = repo.FromEsmCdn
 	}
 

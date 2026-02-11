@@ -125,7 +125,7 @@ message Package {
     FlatpakPackageMetadata flatpak_metadata = 24;
     MacAppsMetadata mac_apps_metadata = 34;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-        25;
+      25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
@@ -142,7 +142,7 @@ message Package {
     ChocolateyPackageMetadata chocolatey_metadata = 62;
     MiseMetadata mise_metadata = 63;
     UnknownBinaryMetadata unknown_binary_metadata = 64;
-    JavascriptDenoJSONMetadata deno_metadata = 65;
+    JavascriptDenoMetadata deno_metadata = 65;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -349,7 +349,7 @@ enum PackageSource {
 }
 
 // The additional data of a deno package.
-message JavascriptDenoJSONMetadata {
+message JavascriptDenoMetadata {
   oneof cdn {
     bool from_denoland_cdn = 1;
     bool from_unpkg_cdn = 2;
@@ -765,7 +765,7 @@ message SecretData {
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
     GithubFineGrainedPersonalAccessToken
-        github_fine_grained_personal_access_token = 29;
+      github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
     OpenRouterAPIKey openrouter_api_key = 32;
@@ -802,7 +802,7 @@ message SecretData {
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
     SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
     SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials =
-        65;
+      65;
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
@@ -978,7 +978,7 @@ message SecretData {
     string role_id = 1;
     string secret_id = 2;
     string id =
-        3;  // General ID field for uncertain UUID types when context is unclear
+      3;  // General ID field for uncertain UUID types when context is unclear
   }
 
   message GCPAPIKey {

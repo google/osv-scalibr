@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata_test
+package denometadata_test
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -28,7 +28,7 @@ import (
 func TestSetProto(t *testing.T) {
 	testCases := []struct {
 		desc string
-		m    *metadata.JavascriptDenoJSONMetadata
+		m    *denometadata.DenoMetadata
 		p    *pb.Package
 		want *pb.Package
 	}{
@@ -40,21 +40,21 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "nil package",
-			m:    &metadata.JavascriptDenoJSONMetadata{},
+			m:    &denometadata.DenoMetadata{},
 			p:    nil,
 			want: nil,
 		},
 		{
 			desc: "set FromDenolandCdn",
-			m: &metadata.JavascriptDenoJSONMetadata{
+			m: &denometadata.DenoMetadata{
 				FromDenolandCDN: true,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoJSONMetadata{
-						Cdn: &pb.JavascriptDenoJSONMetadata_FromDenolandCdn{
+					DenoMetadata: &pb.JavascriptDenoMetadata{
+						Cdn: &pb.JavascriptDenoMetadata_FromDenolandCdn{
 							FromDenolandCdn: true,
 						},
 					},
@@ -63,15 +63,15 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "set FromUnpkgCdn",
-			m: &metadata.JavascriptDenoJSONMetadata{
+			m: &denometadata.DenoMetadata{
 				FromUnpkgCDN: true,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoJSONMetadata{
-						Cdn: &pb.JavascriptDenoJSONMetadata_FromUnpkgCdn{
+					DenoMetadata: &pb.JavascriptDenoMetadata{
+						Cdn: &pb.JavascriptDenoMetadata_FromUnpkgCdn{
 							FromUnpkgCdn: true,
 						},
 					},
@@ -80,15 +80,15 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "set FromESMCdn",
-			m: &metadata.JavascriptDenoJSONMetadata{
+			m: &denometadata.DenoMetadata{
 				FromESMCDN: true,
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoJSONMetadata{
-						Cdn: &pb.JavascriptDenoJSONMetadata_FromEsmCdn{
+					DenoMetadata: &pb.JavascriptDenoMetadata{
+						Cdn: &pb.JavascriptDenoMetadata_FromEsmCdn{
 							FromEsmCdn: true,
 						},
 					},
@@ -97,14 +97,14 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "set repository URL",
-			m: &metadata.JavascriptDenoJSONMetadata{
+			m: &denometadata.DenoMetadata{
 				URL: "https://www.example.com",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoJSONMetadata{
+					DenoMetadata: &pb.JavascriptDenoMetadata{
 						Url: "https://www.example.com",
 					},
 				},
@@ -112,19 +112,19 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "override metadata",
-			m: &metadata.JavascriptDenoJSONMetadata{
+			m: &denometadata.DenoMetadata{
 				URL: "https://jsr.io/package",
 			},
 			p: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoJSONMetadata{},
+					DenoMetadata: &pb.JavascriptDenoMetadata{},
 				},
 			},
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoJSONMetadata{
+					DenoMetadata: &pb.JavascriptDenoMetadata{
 						Url: "https://jsr.io/package",
 					},
 				},
@@ -132,7 +132,7 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "multiple CDNs",
-			m: &metadata.JavascriptDenoJSONMetadata{
+			m: &denometadata.DenoMetadata{
 				FromDenolandCDN: true,
 				FromUnpkgCDN:    false,
 				FromESMCDN:      false,
@@ -142,9 +142,9 @@ func TestSetProto(t *testing.T) {
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoJSONMetadata{
+					DenoMetadata: &pb.JavascriptDenoMetadata{
 						Url: "https://www.example.com",
-						Cdn: &pb.JavascriptDenoJSONMetadata_FromDenolandCdn{
+						Cdn: &pb.JavascriptDenoMetadata_FromDenolandCdn{
 							FromDenolandCdn: true,
 						},
 					},
@@ -177,7 +177,7 @@ func TestSetProto(t *testing.T) {
 				return
 			}
 
-			got := metadata.ToStruct(p.GetDenoMetadata())
+			got := denometadata.ToStruct(p.GetDenoMetadata())
 			if diff := cmp.Diff(tc.m, got); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetDenoMetadata(), diff)
 			}
@@ -188,8 +188,8 @@ func TestSetProto(t *testing.T) {
 func TestToStruct(t *testing.T) {
 	testCases := []struct {
 		desc string
-		m    *pb.JavascriptDenoJSONMetadata
-		want *metadata.JavascriptDenoJSONMetadata
+		m    *pb.JavascriptDenoMetadata
+		want *denometadata.DenoMetadata
 	}{
 		{
 			desc: "nil",
@@ -198,53 +198,53 @@ func TestToStruct(t *testing.T) {
 		},
 		{
 			desc: "from npm",
-			m:    &pb.JavascriptDenoJSONMetadata{},
-			want: &metadata.JavascriptDenoJSONMetadata{},
+			m:    &pb.JavascriptDenoMetadata{},
+			want: &denometadata.DenoMetadata{},
 		},
 		{
 			desc: "from jsr",
-			m:    &pb.JavascriptDenoJSONMetadata{},
-			want: &metadata.JavascriptDenoJSONMetadata{},
+			m:    &pb.JavascriptDenoMetadata{},
+			want: &denometadata.DenoMetadata{},
 		},
 		{
 			desc: "from denoland",
-			m: &pb.JavascriptDenoJSONMetadata{
-				Cdn: &pb.JavascriptDenoJSONMetadata_FromDenolandCdn{
+			m: &pb.JavascriptDenoMetadata{
+				Cdn: &pb.JavascriptDenoMetadata_FromDenolandCdn{
 					FromDenolandCdn: true,
 				},
 			},
-			want: &metadata.JavascriptDenoJSONMetadata{
+			want: &denometadata.DenoMetadata{
 				FromDenolandCDN: true,
 			},
 		},
 		{
 			desc: "from unpkg",
-			m: &pb.JavascriptDenoJSONMetadata{
-				Cdn: &pb.JavascriptDenoJSONMetadata_FromUnpkgCdn{
+			m: &pb.JavascriptDenoMetadata{
+				Cdn: &pb.JavascriptDenoMetadata_FromUnpkgCdn{
 					FromUnpkgCdn: true,
 				},
 			},
-			want: &metadata.JavascriptDenoJSONMetadata{
+			want: &denometadata.DenoMetadata{
 				FromUnpkgCDN: true,
 			},
 		},
 		{
 			desc: "from esm",
-			m: &pb.JavascriptDenoJSONMetadata{
-				Cdn: &pb.JavascriptDenoJSONMetadata_FromEsmCdn{
+			m: &pb.JavascriptDenoMetadata{
+				Cdn: &pb.JavascriptDenoMetadata_FromEsmCdn{
 					FromEsmCdn: true,
 				},
 			},
-			want: &metadata.JavascriptDenoJSONMetadata{
+			want: &denometadata.DenoMetadata{
 				FromESMCDN: true,
 			},
 		},
 		{
 			desc: "with repository URL",
-			m: &pb.JavascriptDenoJSONMetadata{
+			m: &pb.JavascriptDenoMetadata{
 				Url: "https://www.example.com",
 			},
-			want: &metadata.JavascriptDenoJSONMetadata{
+			want: &denometadata.DenoMetadata{
 				URL: "https://www.example.com",
 			},
 		},
@@ -252,7 +252,7 @@ func TestToStruct(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := metadata.ToStruct(tc.m)
+			got := denometadata.ToStruct(tc.m)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}

@@ -59,7 +59,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Language packages
 
 | Language   | Details                                   | Extractor Plugin(s)                  |
-| ---------- | ----------------------------------------- | ------------------------------------ |
+| ---------- |-------------------------------------------|--------------------------------------|
 | .NET       | packages.lock.json                        | `dotnet/packageslockjson`            |
 |            | packages.config                           | `dotnet/packagesconfig`              |
 |            | deps.json                                 | `dotnet/depsjson`                    |
@@ -81,6 +81,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | yarn.lock                                 | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                            | `javascript/pnpmlock`                |
 |            | bun.lock                                  | `javascript/bunlock`                 |
+|            | deno.json                                 | `javascript/denojson`                |
+|            | deno TypeScript Source                    | `javascript/denotssource`            |
 | Lua        | Luarocks modules                          | `lua/luarocks`                       |
 | ObjectiveC | Podfile.lock                              | `swift/podfilelock`                  |
 | PHP        | Composer                                  | `php/composerlock`                   |

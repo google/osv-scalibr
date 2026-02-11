@@ -16,8 +16,8 @@ const dynamicImport = await import(
     "https://unpkg.com/lodash-es@4.17.22/lodash.js"
     );
 
-// import {camelCase} from "jsr:@luca/cases@1.0.0";
-// import {say} from "npm:cowsay@1.6.0";
+import {camelCase} from "jsr:@luca/cases@1.0.0";
+import {say} from "npm:cowsay@1.6.0";
 
 console.log(
     confetti,
@@ -26,4 +26,6 @@ console.log(
     openaiLatest,
     debounce,
     dynamicImport,
+    camelCase,
+    say,
 );

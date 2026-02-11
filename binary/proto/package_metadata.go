@@ -22,7 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	denometa "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson/metadata"
+	denometa "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
@@ -183,7 +183,7 @@ var (
 	_ = []MetadataProtoSetter{
 		(*wheelegg.PythonPackageMetadata)(nil),
 		(*javascriptmeta.JavascriptPackageJSONMetadata)(nil),
-		(*denometa.JavascriptDenoJSONMetadata)(nil),
+		(*denometa.DenoMetadata)(nil),
 		(*depsjson.Metadata)(nil),
 		(*netports.Metadata)(nil),
 		(*apkmeta.Metadata)(nil),

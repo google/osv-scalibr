@@ -1208,7 +1208,7 @@ func (x *Package) GetUnknownBinaryMetadata() *UnknownBinaryMetadata {
 	return nil
 }
 
-func (x *Package) GetDenoMetadata() *JavascriptDenoJSONMetadata {
+func (x *Package) GetDenoMetadata() *JavascriptDenoMetadata {
 	if x != nil {
 		if x, ok := x.Metadata.(*Package_DenoMetadata); ok {
 			return x.DenoMetadata
@@ -1403,7 +1403,7 @@ type Package_UnknownBinaryMetadata struct {
 }
 
 type Package_DenoMetadata struct {
-	DenoMetadata *JavascriptDenoJSONMetadata `protobuf:"bytes,65,opt,name=deno_metadata,json=denoMetadata,proto3,oneof"`
+	DenoMetadata *JavascriptDenoMetadata `protobuf:"bytes,65,opt,name=deno_metadata,json=denoMetadata,proto3,oneof"`
 }
 
 func (*Package_PythonMetadata) isPackage_Metadata() {}
@@ -2434,33 +2434,33 @@ func (x *JavascriptPackageJSONMetadata) GetSource() PackageSource {
 }
 
 // The additional data of a deno package.
-type JavascriptDenoJSONMetadata struct {
+type JavascriptDenoMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Cdn:
 	//
-	//	*JavascriptDenoJSONMetadata_FromDenolandCdn
-	//	*JavascriptDenoJSONMetadata_FromUnpkgCdn
-	//	*JavascriptDenoJSONMetadata_FromEsmCdn
-	Cdn           isJavascriptDenoJSONMetadata_Cdn `protobuf_oneof:"cdn"`
-	Url           string                           `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
+	//	*JavascriptDenoMetadata_FromDenolandCdn
+	//	*JavascriptDenoMetadata_FromUnpkgCdn
+	//	*JavascriptDenoMetadata_FromEsmCdn
+	Cdn           isJavascriptDenoMetadata_Cdn `protobuf_oneof:"cdn"`
+	Url           string                       `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JavascriptDenoJSONMetadata) Reset() {
-	*x = JavascriptDenoJSONMetadata{}
+func (x *JavascriptDenoMetadata) Reset() {
+	*x = JavascriptDenoMetadata{}
 	mi := &file_proto_scan_result_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JavascriptDenoJSONMetadata) String() string {
+func (x *JavascriptDenoMetadata) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JavascriptDenoJSONMetadata) ProtoMessage() {}
+func (*JavascriptDenoMetadata) ProtoMessage() {}
 
-func (x *JavascriptDenoJSONMetadata) ProtoReflect() protoreflect.Message {
+func (x *JavascriptDenoMetadata) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_scan_result_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2472,73 +2472,73 @@ func (x *JavascriptDenoJSONMetadata) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JavascriptDenoJSONMetadata.ProtoReflect.Descriptor instead.
-func (*JavascriptDenoJSONMetadata) Descriptor() ([]byte, []int) {
+// Deprecated: Use JavascriptDenoMetadata.ProtoReflect.Descriptor instead.
+func (*JavascriptDenoMetadata) Descriptor() ([]byte, []int) {
 	return file_proto_scan_result_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *JavascriptDenoJSONMetadata) GetCdn() isJavascriptDenoJSONMetadata_Cdn {
+func (x *JavascriptDenoMetadata) GetCdn() isJavascriptDenoMetadata_Cdn {
 	if x != nil {
 		return x.Cdn
 	}
 	return nil
 }
 
-func (x *JavascriptDenoJSONMetadata) GetFromDenolandCdn() bool {
+func (x *JavascriptDenoMetadata) GetFromDenolandCdn() bool {
 	if x != nil {
-		if x, ok := x.Cdn.(*JavascriptDenoJSONMetadata_FromDenolandCdn); ok {
+		if x, ok := x.Cdn.(*JavascriptDenoMetadata_FromDenolandCdn); ok {
 			return x.FromDenolandCdn
 		}
 	}
 	return false
 }
 
-func (x *JavascriptDenoJSONMetadata) GetFromUnpkgCdn() bool {
+func (x *JavascriptDenoMetadata) GetFromUnpkgCdn() bool {
 	if x != nil {
-		if x, ok := x.Cdn.(*JavascriptDenoJSONMetadata_FromUnpkgCdn); ok {
+		if x, ok := x.Cdn.(*JavascriptDenoMetadata_FromUnpkgCdn); ok {
 			return x.FromUnpkgCdn
 		}
 	}
 	return false
 }
 
-func (x *JavascriptDenoJSONMetadata) GetFromEsmCdn() bool {
+func (x *JavascriptDenoMetadata) GetFromEsmCdn() bool {
 	if x != nil {
-		if x, ok := x.Cdn.(*JavascriptDenoJSONMetadata_FromEsmCdn); ok {
+		if x, ok := x.Cdn.(*JavascriptDenoMetadata_FromEsmCdn); ok {
 			return x.FromEsmCdn
 		}
 	}
 	return false
 }
 
-func (x *JavascriptDenoJSONMetadata) GetUrl() string {
+func (x *JavascriptDenoMetadata) GetUrl() string {
 	if x != nil {
 		return x.Url
 	}
 	return ""
 }
 
-type isJavascriptDenoJSONMetadata_Cdn interface {
-	isJavascriptDenoJSONMetadata_Cdn()
+type isJavascriptDenoMetadata_Cdn interface {
+	isJavascriptDenoMetadata_Cdn()
 }
 
-type JavascriptDenoJSONMetadata_FromDenolandCdn struct {
+type JavascriptDenoMetadata_FromDenolandCdn struct {
 	FromDenolandCdn bool `protobuf:"varint,1,opt,name=from_denoland_cdn,json=fromDenolandCdn,proto3,oneof"`
 }
 
-type JavascriptDenoJSONMetadata_FromUnpkgCdn struct {
+type JavascriptDenoMetadata_FromUnpkgCdn struct {
 	FromUnpkgCdn bool `protobuf:"varint,2,opt,name=from_unpkg_cdn,json=fromUnpkgCdn,proto3,oneof"`
 }
 
-type JavascriptDenoJSONMetadata_FromEsmCdn struct {
+type JavascriptDenoMetadata_FromEsmCdn struct {
 	FromEsmCdn bool `protobuf:"varint,3,opt,name=from_esm_cdn,json=fromEsmCdn,proto3,oneof"`
 }
 
-func (*JavascriptDenoJSONMetadata_FromDenolandCdn) isJavascriptDenoJSONMetadata_Cdn() {}
+func (*JavascriptDenoMetadata_FromDenolandCdn) isJavascriptDenoMetadata_Cdn() {}
 
-func (*JavascriptDenoJSONMetadata_FromUnpkgCdn) isJavascriptDenoJSONMetadata_Cdn() {}
+func (*JavascriptDenoMetadata_FromUnpkgCdn) isJavascriptDenoMetadata_Cdn() {}
 
-func (*JavascriptDenoJSONMetadata_FromEsmCdn) isJavascriptDenoJSONMetadata_Cdn() {}
+func (*JavascriptDenoMetadata_FromEsmCdn) isJavascriptDenoMetadata_Cdn() {}
 
 // The additional data found in APK packages.
 type APKPackageMetadata struct {
@@ -11081,7 +11081,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"M\n" +
 	"\tFileError\x12\x1b\n" +
 	"\tfile_path\x18\x01 \x01(\tR\bfilePath\x12#\n" +
-	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\"\x9b\x1f\n" +
+	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\"\x97\x1f\n" +
 	"\aPackage\x12\x0e\n" +
 	"\x02id\x18< \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x18\n" +
@@ -11131,8 +11131,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x12dep_group_metadata\x18= \x01(\v2\x19.scalibr.DepGroupMetadataH\x00R\x10depGroupMetadata\x12U\n" +
 	"\x13chocolatey_metadata\x18> \x01(\v2\".scalibr.ChocolateyPackageMetadataH\x00R\x12chocolateyMetadata\x12<\n" +
 	"\rmise_metadata\x18? \x01(\v2\x15.scalibr.MiseMetadataH\x00R\fmiseMetadata\x12X\n" +
-	"\x17unknown_binary_metadata\x18@ \x01(\v2\x1e.scalibr.UnknownBinaryMetadataH\x00R\x15unknownBinaryMetadata\x12J\n" +
-	"\rdeno_metadata\x18A \x01(\v2#.scalibr.JavascriptDenoJSONMetadataH\x00R\fdenoMetadata\x12[\n" +
+	"\x17unknown_binary_metadata\x18@ \x01(\v2\x1e.scalibr.UnknownBinaryMetadataH\x00R\x15unknownBinaryMetadata\x12F\n" +
+	"\rdeno_metadata\x18A \x01(\v2\x1f.scalibr.JavascriptDenoMetadataH\x00R\fdenoMetadata\x12[\n" +
 	"\x16exploitability_signals\x183 \x03(\v2$.scalibr.PackageExploitabilitySignalR\x15exploitabilitySignals\x12\x1a\n" +
 	"\blicenses\x184 \x03(\tR\blicenses\x12|\n" +
 	" container_image_metadata_indexes\x189 \x01(\v2..scalibr.Package.ContainerImageMetadataIndexesH\x01R\x1dcontainerImageMetadataIndexes\x88\x01\x01\x1at\n" +
@@ -11207,8 +11207,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06author\x18\x01 \x01(\tR\x06author\x12 \n" +
 	"\vmaintainers\x18\x02 \x03(\tR\vmaintainers\x12\"\n" +
 	"\fcontributors\x18\x03 \x03(\tR\fcontributors\x12.\n" +
-	"\x06source\x18\x05 \x01(\x0e2\x16.scalibr.PackageSourceR\x06sourceJ\x04\b\x04\x10\x05\"\xaf\x01\n" +
-	"\x1aJavascriptDenoJSONMetadata\x12,\n" +
+	"\x06source\x18\x05 \x01(\x0e2\x16.scalibr.PackageSourceR\x06sourceJ\x04\b\x04\x10\x05\"\xab\x01\n" +
+	"\x16JavascriptDenoMetadata\x12,\n" +
 	"\x11from_denoland_cdn\x18\x01 \x01(\bH\x00R\x0ffromDenolandCdn\x12&\n" +
 	"\x0efrom_unpkg_cdn\x18\x02 \x01(\bH\x00R\ffromUnpkgCdn\x12\"\n" +
 	"\ffrom_esm_cdn\x18\x03 \x01(\bH\x00R\n" +
@@ -11902,7 +11902,7 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*GenericFindingTargetDetails)(nil),           // 22: scalibr.GenericFindingTargetDetails
 	(*PythonPackageMetadata)(nil),                 // 23: scalibr.PythonPackageMetadata
 	(*JavascriptPackageJSONMetadata)(nil),         // 24: scalibr.JavascriptPackageJSONMetadata
-	(*JavascriptDenoJSONMetadata)(nil),            // 25: scalibr.JavascriptDenoJSONMetadata
+	(*JavascriptDenoMetadata)(nil),                // 25: scalibr.JavascriptDenoMetadata
 	(*APKPackageMetadata)(nil),                    // 26: scalibr.APKPackageMetadata
 	(*DPKGPackageMetadata)(nil),                   // 27: scalibr.DPKGPackageMetadata
 	(*RPMPackageMetadata)(nil),                    // 28: scalibr.RPMPackageMetadata
@@ -12086,7 +12086,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	56,  // 52: scalibr.Package.chocolatey_metadata:type_name -> scalibr.ChocolateyPackageMetadata
 	60,  // 53: scalibr.Package.mise_metadata:type_name -> scalibr.MiseMetadata
 	65,  // 54: scalibr.Package.unknown_binary_metadata:type_name -> scalibr.UnknownBinaryMetadata
-	25,  // 55: scalibr.Package.deno_metadata:type_name -> scalibr.JavascriptDenoJSONMetadata
+	25,  // 55: scalibr.Package.deno_metadata:type_name -> scalibr.JavascriptDenoMetadata
 	13,  // 56: scalibr.Package.exploitability_signals:type_name -> scalibr.PackageExploitabilitySignal
 	79,  // 57: scalibr.Package.container_image_metadata_indexes:type_name -> scalibr.Package.ContainerImageMetadataIndexes
 	0,   // 58: scalibr.PackageExploitabilitySignal.justification:type_name -> scalibr.VexJustification
@@ -12251,9 +12251,9 @@ func file_proto_scan_result_proto_init() {
 		(*PackageExploitabilitySignal_MatchesAllVulns)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[20].OneofWrappers = []any{
-		(*JavascriptDenoJSONMetadata_FromDenolandCdn)(nil),
-		(*JavascriptDenoJSONMetadata_FromUnpkgCdn)(nil),
-		(*JavascriptDenoJSONMetadata_FromEsmCdn)(nil),
+		(*JavascriptDenoMetadata_FromDenolandCdn)(nil),
+		(*JavascriptDenoMetadata_FromUnpkgCdn)(nil),
+		(*JavascriptDenoMetadata_FromEsmCdn)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[63].OneofWrappers = []any{
 		(*SecretData_Gcpsak)(nil),

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package denojson_test
+package denotssource_test
 
 import (
 	"io/fs"
@@ -24,8 +24,8 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -42,49 +42,64 @@ func TestFileRequired(t *testing.T) {
 		wantRequired     bool
 	}{
 		{
-			name:         "deno.json at root",
-			path:         "deno.json",
-			wantRequired: true,
-		},
-		{
-			name:         "top level deno.json",
-			path:         "testdata/deno.json",
-			wantRequired: true,
-		},
-		{
-			name:         "not deno.json",
-			path:         "testdata/test.js",
-			wantRequired: false,
-		},
-		{
-			name:         "TypeScript file not required",
+			name:         "TypeScript file .ts",
 			path:         "test.ts",
+			wantRequired: true,
+		},
+		{
+			name:         "TypeScript file .tsx",
+			path:         "test.tsx",
+			wantRequired: true,
+		},
+		{
+			name:         "TypeScript file .mts",
+			path:         "test.mts",
+			wantRequired: true,
+		},
+		{
+			name:         "TypeScript file .cts",
+			path:         "test.cts",
+			wantRequired: true,
+		},
+		{
+			name:         "TypeScript declaration file .d.ts",
+			path:         "test.d.ts",
+			wantRequired: true,
+		},
+		{
+			name:         "not a TypeScript file",
+			path:         "test.js",
 			wantRequired: false,
 		},
 		{
-			name:             "deno.json required if size less than maxFileSizeBytes",
-			path:             "deno.json",
+			name:         "deno.json not required",
+			path:         "deno.json",
+			wantRequired: false,
+		},
+		{
+			name:             "TypeScript file required if size less than maxFileSizeBytes",
+			path:             "test.ts",
 			fileSizeBytes:    1000 * units.MiB,
 			maxFileSizeBytes: 2000 * units.MiB,
 			wantRequired:     true,
 		},
 		{
-			name:             "deno.json required if size equal to maxFileSizeBytes",
-			path:             "deno.json",
+			name:             "TypeScript file required if size equal to maxFileSizeBytes",
+			path:             "test.ts",
 			fileSizeBytes:    1000 * units.MiB,
 			maxFileSizeBytes: 1000 * units.MiB,
 			wantRequired:     true,
 		},
 		{
-			name:             "deno.json not required if size greater than maxFileSizeBytes",
-			path:             "deno.json",
+			name:             "TypeScript file not required if size greater than maxFileSizeBytes",
+			path:             "test.ts",
 			fileSizeBytes:    10000 * units.MiB,
 			maxFileSizeBytes: 1000 * units.MiB,
 			wantRequired:     false,
 		},
 		{
-			name:             "deno.json required if maxFileSizeBytes explicitly set to 0",
-			path:             "deno.json",
+			name:             "TypeScript file required if maxFileSizeBytes explicitly set to 0",
+			path:             "test.ts",
 			fileSizeBytes:    1000 * units.MiB,
 			maxFileSizeBytes: 0,
 			wantRequired:     true,
@@ -92,11 +107,10 @@ func TestFileRequired(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			e, err := denojson.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			e, err := denotssource.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
 			if err != nil {
-				t.Fatalf("denojson.New: %v", err)
+				t.Fatalf("denotssource.New: %v", err)
 			}
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -120,51 +134,84 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name         string
 		path         string
-		cfg          denojson.Config
 		wantPackages []*extractor.Package
 		wantErr      error
 	}{
 		{
-			name: "deno.json with basic fields",
-			path: "testdata/deno.json",
+			name: "TypeScript file contains direct package imports",
+			path: "testdata/importSpecifiers.ts",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "chalk",
-					Version:   "1.0.0",
-					Locations: []string{"testdata/deno.json"},
+					Name:      "lodash-es",
+					Version:   "4.17.22",
+					Locations: []string{"testdata/importSpecifiers.ts"},
 					PURLType:  purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
-						URL: "npm:chalk@1",
+						FromUnpkgCDN: true,
+						URL:          "https://unpkg.com/lodash-es@4.17.22/lodash.js",
 					},
 				},
 				{
-					Name:      "std1/path1",
-					Version:   "^1",
-					PURLType:  purl.TypeJSR,
-					Locations: []string{"testdata/deno.json"},
+					Name:      "lodash-es",
+					Version:   "4.17.21",
+					Locations: []string{"testdata/importSpecifiers.ts"},
+					PURLType:  purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
-						URL: "jsr:@std1/path1@^1",
+						FromUnpkgCDN: true,
+						URL:          "https://unpkg.com/lodash-es@4.17.21/lodash.js",
+					},
+				},
+				{
+					Name:      "canvas-confetti",
+					Version:   "1.6.0",
+					PURLType:  purl.TypeNPM,
+					Locations: []string{"testdata/importSpecifiers.ts"},
+					Metadata: &denometadata.DenoMetadata{
+						FromESMCDN: true,
+						URL:        "https://esm.sh/canvas-confetti@1.6.0",
+					},
+				},
+				{
+					Name:      "openai",
+					Version:   "4.69.0",
+					Locations: []string{"testdata/importSpecifiers.ts"},
+					PURLType:  purl.TypeNPM,
+					Metadata: &denometadata.DenoMetadata{
+						FromDenolandCDN: true,
+						URL:             "https://deno.land/x/openai@v4.69.0/mod.ts",
+					},
+				},
+				{
+					Name:      "luca/cases",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/importSpecifiers.ts"},
+					PURLType:  purl.TypeJSR,
+					Metadata: &denometadata.DenoMetadata{
+						URL: "jsr:@luca/cases@1.0.0",
+					},
+				},
+				{
+					Name:      "cowsay",
+					Version:   "1.6.0",
+					Locations: []string{"testdata/importSpecifiers.ts"},
+					PURLType:  purl.TypeNPM,
+					Metadata: &denometadata.DenoMetadata{
+						URL: "npm:cowsay@1.6.0",
 					},
 				},
 			},
 		},
-		{
-			name:    "invalid deno.json, json parse error",
-			path:    "testdata/invalidDenoJson/deno.json",
-			wantErr: cmpopts.AnyError,
-		},
 	}
 
 	for _, tt := range tests {
-		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			scanInput := extracttest.GenerateScanInputMock(t,
 				extracttest.ScanInputMockConfig{
 					Path: tt.path,
 				})
-			e, err := denojson.New(&cpb.PluginConfig{})
+			e, err := denotssource.New(&cpb.PluginConfig{})
 			if err != nil {
-				t.Fatalf("denojson.New: %v", err)
+				t.Fatalf("denotssource.New: %v", err)
 			}
 			got, err := e.Extract(t.Context(), &scanInput)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
