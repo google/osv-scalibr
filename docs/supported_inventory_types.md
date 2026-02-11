@@ -121,6 +121,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
@@ -150,6 +151,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`      |
 | OpenAI API key                              | `secrets/openai`                       |
 | OpenRouter API key                          | `secrets/openrouter`                   |
+| Packagist API Key                           | `secrets/packagistapi`                 |
+| Packagist API Secret                        | `secrets/packagistsecret`              |
+| Packagist Organization Read Token           | `secrets/packagistorgreadtoken`        |
+| Packagist Organization Update Token         | `secrets/packagistorgupdatetoken`      |
+| Packagist User Update Token                 | `secrets/packagistuserupdatetoken`     |
+| Packagist Conductor Update Token            | `secrets/packagistconductorupdatetoken`|
 | Perplexity API key                          | `secrets/perplexityapikey`             |
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |
