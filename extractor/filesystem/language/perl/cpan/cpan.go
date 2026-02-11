@@ -36,8 +36,6 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "perl/cpan"
-	// This path slices can be used to determine CPAN package paths.
-	cpanPath = "/.cpan"
 
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
@@ -80,7 +78,9 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if filepath.Base(path) != "META.json" {
 		return false
 	}
-	if !(strings.Contains(path, cpanPath)) {
+
+	// This path slices can be used to determine CPAN package paths. It will both cover for packages installed through cpan and cpanm (/.cpan/ and /.cpanm/ respectively)
+	if !(strings.Contains(path, "/.cpan")) {
 		return false
 	}
 
