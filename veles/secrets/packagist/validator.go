@@ -107,26 +107,38 @@ func NewAPISecretValidator() *sv.Validator[APISecret] {
 	}
 }
 
-// NewOrgReadTokenValidator creates a new Packagist Organization Read Token Validator.
-// It performs a GET request to the repo URL with Basic Auth (token as username, token as password).
-// The RepoURL should be in the format https://repo.packagist.com/orgname
-func NewOrgReadTokenValidator() *sv.Validator[OrgReadToken] {
-	return &sv.Validator[OrgReadToken]{
-		EndpointFunc: func(secret OrgReadToken) (string, error) {
-			if secret.RepoURL == "" {
+// orgToken is an interface for organization tokens that have Token and RepoURL fields.
+type orgToken interface {
+	getToken() string
+	getRepoURL() string
+}
+
+func (t OrgReadToken) getToken() string   { return t.Token }
+func (t OrgReadToken) getRepoURL() string { return t.RepoURL }
+
+func (t OrgUpdateToken) getToken() string   { return t.Token }
+func (t OrgUpdateToken) getRepoURL() string { return t.RepoURL }
+
+// newOrgTokenValidator creates a validator for organization tokens.
+// Both read and update tokens use the same validation logic:
+// GET request to repo URL with Basic Auth (token:token).
+func newOrgTokenValidator[T orgToken]() *sv.Validator[T] {
+	return &sv.Validator[T]{
+		EndpointFunc: func(secret T) (string, error) {
+			if secret.getRepoURL() == "" {
 				return "", errors.New("repo URL not present; cannot validate token alone")
 			}
 			// Append /packages.json to the repo URL
-			repoURL := secret.RepoURL
+			repoURL := secret.getRepoURL()
 			if !strings.HasSuffix(repoURL, "/") {
 				repoURL += "/"
 			}
 			return repoURL + "packages.json", nil
 		},
 		HTTPMethod: http.MethodGet,
-		HTTPHeaders: func(s OrgReadToken) map[string]string {
+		HTTPHeaders: func(s T) map[string]string {
 			// Use Basic Auth with token:token
-			auth := base64.StdEncoding.EncodeToString([]byte("token:" + s.Token))
+			auth := base64.StdEncoding.EncodeToString([]byte("token:" + s.getToken()))
 			return map[string]string{
 				"Authorization": "Basic " + auth,
 				"Accept":        "application/json",
@@ -137,34 +149,18 @@ func NewOrgReadTokenValidator() *sv.Validator[OrgReadToken] {
 	}
 }
 
+// NewOrgReadTokenValidator creates a new Packagist Organization Read Token Validator.
+// It performs a GET request to the repo URL with Basic Auth (token:token).
+// The RepoURL should be in the format https://repo.packagist.com/orgname
+func NewOrgReadTokenValidator() *sv.Validator[OrgReadToken] {
+	return newOrgTokenValidator[OrgReadToken]()
+}
+
 // NewOrgUpdateTokenValidator creates a new Packagist Organization Update Token Validator.
-// It performs a GET request to the repo URL with Basic Auth (token as username, token as password).
+// It performs a GET request to the repo URL with Basic Auth (token:token).
 // The RepoURL should be in the format https://repo.packagist.com/orgname
 func NewOrgUpdateTokenValidator() *sv.Validator[OrgUpdateToken] {
-	return &sv.Validator[OrgUpdateToken]{
-		EndpointFunc: func(secret OrgUpdateToken) (string, error) {
-			if secret.RepoURL == "" {
-				return "", errors.New("repo URL not present; cannot validate token alone")
-			}
-			// Append /packages.json to the repo URL
-			repoURL := secret.RepoURL
-			if !strings.HasSuffix(repoURL, "/") {
-				repoURL += "/"
-			}
-			return repoURL + "packages.json", nil
-		},
-		HTTPMethod: http.MethodGet,
-		HTTPHeaders: func(s OrgUpdateToken) map[string]string {
-			// Use Basic Auth with token:token
-			auth := base64.StdEncoding.EncodeToString([]byte("token:" + s.Token))
-			return map[string]string{
-				"Authorization": "Basic " + auth,
-				"Accept":        "application/json",
-			}
-		},
-		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
-	}
+	return newOrgTokenValidator[OrgUpdateToken]()
 }
 
 // NewUserUpdateTokenValidator creates a new Packagist User Update Token Validator.

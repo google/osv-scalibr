@@ -165,3 +165,285 @@ func TestAPISecretValidator(t *testing.T) {
 		})
 	}
 }
+
+func TestOrgReadTokenValidator(t *testing.T) {
+	cases := []struct {
+		name        string
+		statusCode  int
+		hasRepoURL  bool
+		want        veles.ValidationStatus
+		expectError bool
+	}{
+		{
+			name:       "valid_token_with_repo_url",
+			statusCode: http.StatusOK,
+			hasRepoURL: true,
+			want:       veles.ValidationValid,
+		},
+		{
+			name:       "invalid_token_unauthorized",
+			statusCode: http.StatusUnauthorized,
+			hasRepoURL: true,
+			want:       veles.ValidationInvalid,
+		},
+		{
+			name:       "invalid_token_forbidden",
+			statusCode: http.StatusForbidden,
+			hasRepoURL: true,
+			want:       veles.ValidationInvalid,
+		},
+		{
+			name:        "no_repo_url",
+			hasRepoURL:  false,
+			want:        veles.ValidationFailed,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Check for Basic Auth header
+				auth := r.Header.Get("Authorization")
+				if !strings.HasPrefix(auth, "Basic ") {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				// Check that the path is correct
+				if !strings.HasSuffix(r.URL.Path, "/packages.json") {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if tc.statusCode == http.StatusOK {
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(`{"packages":[]}`))
+					return
+				}
+				w.WriteHeader(tc.statusCode)
+			}))
+			defer server.Close()
+
+			validator := packagist.NewOrgReadTokenValidator()
+
+			repoURL := ""
+			if tc.hasRepoURL {
+				repoURL = server.URL
+			}
+
+			token := packagist.OrgReadToken{
+				Token:   "test_org_read_token_1234567890",
+				RepoURL: repoURL,
+			}
+
+			got, err := validator.Validate(context.Background(), token)
+
+			if tc.expectError {
+				if err == nil {
+					t.Error("Validate() error = nil, want error")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() error = %v, want nil", err)
+				}
+			}
+
+			if got != tc.want {
+				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestOrgUpdateTokenValidator(t *testing.T) {
+	cases := []struct {
+		name        string
+		statusCode  int
+		hasRepoURL  bool
+		want        veles.ValidationStatus
+		expectError bool
+	}{
+		{
+			name:       "valid_token_with_repo_url",
+			statusCode: http.StatusOK,
+			hasRepoURL: true,
+			want:       veles.ValidationValid,
+		},
+		{
+			name:       "invalid_token_unauthorized",
+			statusCode: http.StatusUnauthorized,
+			hasRepoURL: true,
+			want:       veles.ValidationInvalid,
+		},
+		{
+			name:       "invalid_token_forbidden",
+			statusCode: http.StatusForbidden,
+			hasRepoURL: true,
+			want:       veles.ValidationInvalid,
+		},
+		{
+			name:        "no_repo_url",
+			hasRepoURL:  false,
+			want:        veles.ValidationFailed,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Check for Basic Auth header
+				auth := r.Header.Get("Authorization")
+				if !strings.HasPrefix(auth, "Basic ") {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				// Check that the path is correct
+				if !strings.HasSuffix(r.URL.Path, "/packages.json") {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if tc.statusCode == http.StatusOK {
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(`{"packages":[]}`))
+					return
+				}
+				w.WriteHeader(tc.statusCode)
+			}))
+			defer server.Close()
+
+			validator := packagist.NewOrgUpdateTokenValidator()
+
+			repoURL := ""
+			if tc.hasRepoURL {
+				repoURL = server.URL
+			}
+
+			token := packagist.OrgUpdateToken{
+				Token:   "test_org_update_token_1234567890",
+				RepoURL: repoURL,
+			}
+
+			got, err := validator.Validate(context.Background(), token)
+
+			if tc.expectError {
+				if err == nil {
+					t.Error("Validate() error = nil, want error")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() error = %v, want nil", err)
+				}
+			}
+
+			if got != tc.want {
+				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestUserUpdateTokenValidator(t *testing.T) {
+	cases := []struct {
+		name        string
+		statusCode  int
+		hasUsername bool
+		hasRepoURL  bool
+		want        veles.ValidationStatus
+		expectError bool
+	}{
+		{
+			name:        "valid_token_with_username_and_repo_url",
+			statusCode:  http.StatusOK,
+			hasUsername: true,
+			hasRepoURL:  true,
+			want:        veles.ValidationValid,
+		},
+		{
+			name:        "invalid_token_unauthorized",
+			statusCode:  http.StatusUnauthorized,
+			hasUsername: true,
+			hasRepoURL:  true,
+			want:        veles.ValidationInvalid,
+		},
+		{
+			name:        "invalid_token_forbidden",
+			statusCode:  http.StatusForbidden,
+			hasUsername: true,
+			hasRepoURL:  true,
+			want:        veles.ValidationInvalid,
+		},
+		{
+			name:        "no_username",
+			hasUsername: false,
+			hasRepoURL:  true,
+			want:        veles.ValidationFailed,
+			expectError: true,
+		},
+		{
+			name:        "no_repo_url",
+			hasUsername: true,
+			hasRepoURL:  false,
+			want:        veles.ValidationFailed,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Check for Basic Auth header
+				auth := r.Header.Get("Authorization")
+				if !strings.HasPrefix(auth, "Basic ") {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				// Check that the path is correct
+				if !strings.HasSuffix(r.URL.Path, "/packages.json") {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if tc.statusCode == http.StatusOK {
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(`{"packages":[]}`))
+					return
+				}
+				w.WriteHeader(tc.statusCode)
+			}))
+			defer server.Close()
+
+			validator := packagist.NewUserUpdateTokenValidator()
+
+			username := ""
+			if tc.hasUsername {
+				username = "testuser"
+			}
+
+			repoURL := ""
+			if tc.hasRepoURL {
+				repoURL = server.URL
+			}
+
+			token := packagist.UserUpdateToken{
+				Token:    "test_user_update_token_1234567890",
+				Username: username,
+				RepoURL:  repoURL,
+			}
+
+			got, err := validator.Validate(context.Background(), token)
+
+			if tc.expectError {
+				if err == nil {
+					t.Error("Validate() error = nil, want error")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() error = %v, want nil", err)
+				}
+			}
+
+			if got != tc.want {
+				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
