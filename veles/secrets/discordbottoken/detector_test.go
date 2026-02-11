@@ -22,10 +22,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 // Example Discord bot token (fake but structurally valid: 24.6.27 characters)
 const testToken = "MTIzNDU2Nzg5MDEyMzQ1Njc4.YAaBbC.dEFGhijklMNOPqrSTUVwxyzAB12"
+
+func TestDetector_Acceptance(t *testing.T) {
+	d := discordbottoken.NewDetector()
+
+	velestest.AcceptDetector(
+		t,
+		d,
+		testToken,
+		discordbottoken.DiscordBotToken{Token: testToken},
+	)
+}
 
 func TestDetector_TruePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{
