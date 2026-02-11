@@ -29,7 +29,6 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -43,12 +42,6 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "javascript/denojson"
-
-	// defaultMaxFileSizeBytes is the default maximum file size the extractor will
-	// attempt to extract. If a file is encountered that is larger than this
-	// limit, the file is ignored by `FileRequired`.
-	defaultMaxFileSizeBytes = 100 * units.MiB
-
 	// Import specifier prefixes
 	npmPrefix = "npm:"
 	jsrPrefix = "jsr:"
@@ -77,20 +70,15 @@ type Config struct {
 	MaxFileSizeBytes int64
 }
 
-// DefaultConfig returns the default configuration for the deno.json extractor.
-func DefaultConfig() Config {
-	return Config{
-		MaxFileSizeBytes: defaultMaxFileSizeBytes,
-	}
-}
-
 // Extractor extracts javascript packages from deno.json files.
 type Extractor struct {
 	maxFileSizeBytes int64
 }
 
-// New returns a deno.json extractor.
-func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
+// New returns a new deno.json extractor.
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
