@@ -801,6 +801,7 @@ message SecretData {
     SendGridAPIKey sendgrid_api_key = 72;
     DenoPat deno_pat = 73;
     HerokuSecretKey heroku_secret_key = 74;
+    DiscordBotToken discord_bot_token = 75;
   }
 
   message GCPSAK {
@@ -1118,6 +1119,10 @@ message SecretData {
 
   message PaystackSecretKey {
     string key = 1;
+  }
+  
+  message DiscordBotToken {
+  string token = 1;
   }
 
   message HerokuSecretKey {
