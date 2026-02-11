@@ -796,6 +796,14 @@ message SecretData {
     CircleCIProjectToken circleci_project_token = 68;
     SquarePersonalAccessToken square_personal_access_token = 69;
     SquareOAuthApplicationSecret square_oauth_application_secret = 70;
+    PackagistAPIKey packagist_api_key = 71;
+    PackagistAPISecret packagist_api_secret = 72;
+    PackagistOrgReadToken packagist_org_read_token = 73;
+    PackagistOrgUpdateToken packagist_org_update_token = 74;
+    PackagistUserUpdateToken packagist_user_update_token = 75;
+    PackagistConductorUpdateToken packagist_conductor_update_token = 76;
+    ComposerPackagistCredentials composer_http_basic_credentials = 77;
+
   }
 
   message GCPSAK {
@@ -1063,6 +1071,43 @@ message SecretData {
     // Verifier local hash (verifier.localHash).
     string verifier_local_hash = 8;
   }
+
+  message ComposerPackagistCredentials {
+    string host = 1;
+    string username = 2;
+    string password = 3;
+  }
+
+    message PackagistAPIKey {
+    string key = 1;
+  }
+
+  message PackagistAPISecret {
+    string secret = 1;
+    string key = 2;  // Optional: populated when both key and secret are found together
+  }
+
+  message PackagistOrgReadToken {
+    string token = 1;
+    string repo_url = 2;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistOrgUpdateToken {
+    string token = 1;
+    string repo_url = 2;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistUserUpdateToken {
+    string token = 1;
+    string username = 2;  // Required for validation
+    string repo_url = 3;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistConductorUpdateToken {
+    string token = 1;
+  }
+
+
 
   message OnePasswordSecretKey {
     string key = 1;
