@@ -12,8 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+// Package circleci contains detectors for CircleCI API credentials.
+package circleci
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.4.3"
+// PersonalAccessToken is a Veles Secret that holds a CircleCI Personal Access Token.
+// These tokens use the CCIPAT_ prefix and are used to authenticate with the CircleCI API v2.
+type PersonalAccessToken struct {
+	Token string
+}
+
+// ProjectToken is a Veles Secret that holds a CircleCI Project Token.
+// These tokens use the CCIPRJ_ prefix and are used to authenticate with the CircleCI API v1.1.
+type ProjectToken struct {
+	Token string
+}

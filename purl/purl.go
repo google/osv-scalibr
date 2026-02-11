@@ -85,6 +85,8 @@ const (
 	TypeNuget = "nuget"
 	// TypeOCI is a pkg:oci purl
 	TypeOCI = "oci"
+	// TypeOpam is a pkg:opam purl.
+	TypeOpam = "opam"
 	// TypeOpkg is a pkg:opkg purl.
 	TypeOpkg = "opkg"
 	// TypePub is a pkg:pub purl.
@@ -215,6 +217,7 @@ func validType(t string) bool {
 		TypeNPM:        true,
 		TypeNuget:      true,
 		TypeOCI:        true,
+		TypeOpam:       true,
 		TypeOpkg:       true,
 		TypePub:        true,
 		TypePortage:    true,

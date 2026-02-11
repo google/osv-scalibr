@@ -12,8 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+// Package mistralapikey contains a Veles Secret type, Detector and Validator
+// for Mistral API keys.
+package mistralapikey
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.4.3"
+// MistralAPIKey is a Veles Secret that holds a Mistral API key.
+// Mistral API keys are 32-character alphanumeric strings without a specific
+// prefix, so they require context-based detection (e.g., nearby keywords
+// like "mistral", "mistralai", "api.mistral.ai").
+type MistralAPIKey struct {
+	Key string
+}

@@ -304,8 +304,8 @@ github.com/opencontainers/runtime-spec v1.2.1 h1:S4k4ryNgEpxW1dzyqffOmhI1BHYcjzU
 github.com/opencontainers/runtime-spec v1.2.1/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/opencontainers/selinux v1.12.0 h1:6n5JV4Cf+4y0KNXW48TLj5DwfXpvWlxXplUkdTrmPb8=
 github.com/opencontainers/selinux v1.12.0/go.mod h1:BTPX+bjVbWGXw7ZZWUbdENt8w0htPSrlgOOysQaU62U=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251029033743-5e05f9d00d92 h1:IpQRAvtvfQRyXftn+dSkrszMfiropjXkzc8LOcBWL2M=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251029033743-5e05f9d00d92/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a h1:XHKiGf7vsACh43gFCBb5lOxDjnY6CQYNoQXsO/SlI6k=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
 github.com/package-url/packageurl-go v0.1.3 h1:4juMED3hHiz0set3Vq3KeQ75KD1avthoXLtmE3I0PLs=
 github.com/package-url/packageurl-go v0.1.3/go.mod h1:nKAWB8E6uk1MHqiS/lQb9pYBGH2+mdJ2PJc2s50dQY0=
 github.com/pandatix/go-cvss v0.6.2 h1:TFiHlzUkT67s6UkelHmK6s1INKVUG7nlKYiWWDTITGI=
