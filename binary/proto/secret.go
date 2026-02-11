@@ -75,6 +75,7 @@ import (
 	velessquareapikey "github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
+	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
@@ -279,6 +280,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return telegramBotAPITokenToProto(t), nil
 	case sendgrid.APIKey:
 		return sendgridAPIKeyToProto(t), nil
+	case velesdiscordbottoken.DiscordBotToken:
+                return discordBotTokenToProto(t), nil
 	case velescircleci.PersonalAccessToken:
 		return circleCIPersonalAccessTokenToProto(t), nil
 	case velescircleci.ProjectToken:
@@ -1041,7 +1044,17 @@ func salesforceOAuth2JWTCredentialsToProto(creds salesforceoauth2jwt.Credentials
 			SalesforceOauth2JwtCredentials: &spb.SecretData_SalesforceOAuth2JWTCredentials{
 				Id:         creds.ID,
 				Username:   creds.Username,
-				PrivateKey: creds.PrivateKey,
+                                PrivateKey: creds.PrivateKey,
+			},
+		},
+	}
+}
+
+func discordBotTokenToProto(s velesdiscordbottoken.DiscordBotToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DiscordBotToken{
+			DiscordBotToken: &spb.SecretData_DiscordBotTokenMessage{
+				Token: s.Token,
 			},
 		},
 	}
@@ -1358,6 +1371,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return sendgrid.APIKey{
 			Key: s.GetSendgridApiKey().GetKey(),
 		}, nil
+	case *spb.SecretData_DiscordBotToken:
+    return velesdiscordbottoken.DiscordBotToken{
+        Token: s.GetDiscordBotToken().GetToken(),
+    }, nil
 	case *spb.SecretData_CircleciPersonalAccessToken:
 		return velescircleci.PersonalAccessToken{
 			Token: s.GetCircleciPersonalAccessToken().GetToken(),
