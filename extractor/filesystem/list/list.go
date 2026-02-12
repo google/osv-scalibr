@@ -257,12 +257,12 @@ var (
 	}
 	// JuliaSource extractors for Julia.
 	JuliaSource = InitMap{
-		projecttoml.Name:  {noCFG(projecttoml.New)},
-		manifesttoml.Name: {noCFG(manifesttoml.New)},
+		projecttoml.Name:  {projecttoml.New},
+		manifesttoml.Name: {manifesttoml.New},
 	}
 	// JuliaArtifact extractors for Julia.
 	JuliaArtifact = InitMap{
-		manifesttoml.Name: {noCFG(manifesttoml.New)},
+		manifesttoml.Name: {manifesttoml.New},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
