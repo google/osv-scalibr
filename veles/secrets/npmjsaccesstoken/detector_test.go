@@ -23,9 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `npm_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		npmjsaccesstoken.NewDetector(),
+		testKey,
+		npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a npm.js access token/s.
