@@ -12,8 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version contains the current osv-scalibr version
-package version
+// Package squareapikey contains detectors and validators for
+// Square API credentials.
+package squareapikey
 
-// ScannerVersion is the current version of the scanner that's displayed in the scan results.
-const ScannerVersion = "0.4.3"
+// SquarePersonalAccessToken is a Veles Secret that holds a Square Personal Access Token.
+// These tokens allow programmatic access to the Square API.
+type SquarePersonalAccessToken struct {
+	Key string
+}
+
+// SquareOAuthApplicationSecret is a Veles Secret that holds a Square OAuth Application Secret.
+// These secrets are used for OAuth authentication flows.
+type SquareOAuthApplicationSecret struct {
+	ID  string
+	Key string
+}
