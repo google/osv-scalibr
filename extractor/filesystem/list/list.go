@@ -55,6 +55,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -147,8 +148,10 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -226,6 +229,8 @@ var (
 	NimSource = InitMap{nimble.Name: {nimble.New}}
 	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
+	// OcamlSource extractors for OCaml.
+	OcamlSource = InitMap{opam.Name: {opam.New}}
 	// ElixirSource extractors for Elixir.
 	ElixirSource = InitMap{elixir.Name: {elixir.New}}
 	// HaskellSource extractors for Haskell.
@@ -359,6 +364,8 @@ var (
 		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{squareapikey.NewPersonalAccessTokenDetector(), "secrets/squarepersonalaccesstoken", 0},
+		{squareapikey.NewOAuthApplicationSecretDetector(), "secrets/squareoauthapplicationsecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
@@ -375,6 +382,7 @@ var (
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 		{salesforceoauth2access.NewDetector(), "secrets/salesforceoauth2access", 0},
 		{salesforceoauth2client.NewDetector(), "secrets/salesforceoauth2client", 0},
+		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 	})
 
@@ -433,6 +441,7 @@ var (
 		DotnetSource,
 		SwiftSource,
 		NimSource,
+		OcamlSource,
 		LuaSource,
 		Secrets,
 		MiscSource,
@@ -482,6 +491,7 @@ var (
 		"erlang":     vals(ErlangSource),
 		"lua":        vals(LuaSource),
 		"nim":        vals(NimSource),
+		"ocaml":      vals(OcamlSource),
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
 		"r":          vals(RSource),
