@@ -33,12 +33,13 @@ func TestDetector_Acceptance(t *testing.T) {
 
 	example := `DISCORD_BOT_TOKEN=` + testToken
 
-	velestest.AcceptDetector(
-		t,
-		d,
-		example,
-		discordbottoken.DiscordBotToken{Token: testToken},
-	)
+velestest.AcceptDetector(
+	t,
+	d,
+	example,
+	discordbottoken.DiscordBotToken{Token: testToken},
+	velestest.WithWantPositions([]int{12}),
+)
 }
 
 func TestDetector_TruePositives(t *testing.T) {
