@@ -39,25 +39,25 @@ func TestDetector_truePositives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "simple matching string",
+		name:  "simple_matching_string",
 		input: testKey,
 		want: []veles.Secret{
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
-		name:  "match at end of string",
+		name:  "match_at_end_of_string",
 		input: `NPM_TOKEN=` + testKey,
 		want: []veles.Secret{
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
-		name:  "match in middle of string",
+		name:  "match_in_middle_of_string",
 		input: `NPM_TOKEN="` + testKey + `"`,
 		want: []veles.Secret{
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
-		name:  "multiple matches",
+		name:  "multiple_matches",
 		input: testKey + testKey + testKey,
 		want: []veles.Secret{
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
@@ -65,14 +65,14 @@ func TestDetector_truePositives(t *testing.T) {
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
-		name:  "multiple distinct matches",
+		name:  "multiple_distinct_matches",
 		input: testKey + "\n" + testKey[:len(testKey)-1] + "a",
 		want: []veles.Secret{
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey[:len(testKey)-1] + "a"},
 		},
 	}, {
-		name: "larger input containing key",
+		name: "larger_input_containing_key",
 		input: fmt.Sprintf(`
 :test_npm_token: npm-test
 :NPM_TOKEN: %s
@@ -81,7 +81,7 @@ func TestDetector_truePositives(t *testing.T) {
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
 		},
 	}, {
-		name:  "potential match longer than max key length",
+		name:  "potential_match_longer_than_max_key_length",
 		input: testKey + `extra`,
 		want: []veles.Secret{
 			npmjsaccesstoken.NpmJsAccessToken{Token: testKey},
@@ -113,19 +113,19 @@ func TestDetector_trueNegatives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{{
-		name:  "empty input",
+		name:  "empty_input",
 		input: "",
 	}, {
-		name:  "short key should not match",
+		name:  "short_key_should_not_match",
 		input: testKey[:len(testKey)-1],
 	}, {
-		name:  "invalid character in key should not match",
+		name:  "invalid_character_in_key_should_not_match",
 		input: `npm_!@#$%^&*()_+{}[]|:;<>?,./~` + `123456`,
 	}, {
-		name:  "incorrect prefix should not match",
+		name:  "incorrect_prefix_should_not_match",
 		input: `npp_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`,
 	}, {
-		name:  "prefix missing should not match",
+		name:  "prefix_missing_should_not_match",
 		input: `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8`,
 	}}
 	for _, tc := range cases {
