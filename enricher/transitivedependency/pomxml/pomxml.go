@@ -120,6 +120,8 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, pomxml.Name)
 
 	for path, pkgMap := range pkgGroups {
+		// Remove leading '/' since SCALIBR fs paths don't include that.
+		path = strings.TrimPrefix(path, "/")
 		f, err := input.ScanRoot.FS.Open(path)
 
 		if err != nil {
