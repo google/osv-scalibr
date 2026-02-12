@@ -31,12 +31,14 @@ const testToken = "MTIzNDU2Nzg5MDEyMzQ1Njc4.YAaBbC.dEFGhijklMNOPqrSTUVwxyzAB12"
 func TestDetector_Acceptance(t *testing.T) {
 	d := discordbottoken.NewDetector()
 
-	velestest.AcceptDetector(
-		t,
-		d,
-		testToken,
-		discordbottoken.DiscordBotToken{Token: testToken},
-	)
+example := `DISCORD_BOT_TOKEN=` + testToken
+
+velestest.AcceptDetector(
+	t,
+	d,
+	example,
+	discordbottoken.DiscordBotToken{Token: testToken},
+)
 }
 
 func TestDetector_TruePositives(t *testing.T) {
