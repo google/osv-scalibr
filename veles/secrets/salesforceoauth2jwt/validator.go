@@ -140,7 +140,6 @@ func parsePrivateKey(input string) (crypto.PrivateKey, error) {
 
 	if pemParsed {
 		return nil, errors.New("PEM parsed but could not parse private key")
-	} else {
-		return nil, errors.New("could not parse private key")
 	}
+	return nil, errors.New("could not parse private key")
 }
