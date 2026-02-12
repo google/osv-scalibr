@@ -794,6 +794,9 @@ message SecretData {
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
+    SquarePersonalAccessToken square_personal_access_token = 69;
+    SquareOAuthApplicationSecret square_oauth_application_secret = 70;
+    SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
   }
 
   message GCPSAK {
@@ -1136,6 +1139,15 @@ message SecretData {
     string refresh = 3;
   }
 
+  message SalesforceOAuth2JWTCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce username (email)
+    string username = 2;
+    // Salesforce OAuth2 private key
+    string private_key = 3;
+  }
+
   message CursorAPIKey {
     string key = 1;
   }
@@ -1150,6 +1162,15 @@ message SecretData {
 
   message URLCredentials {
     string url = 1;
+  }
+
+  message SquarePersonalAccessToken {
+    string key = 1;
+  }
+
+  message SquareOAuthApplicationSecret {
+    string id = 1;   // OAuth Application ID (prefix: sq0idp-)
+    string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
   }
 }
 
