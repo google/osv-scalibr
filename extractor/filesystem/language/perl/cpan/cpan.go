@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"gopkg.in/yaml.v3"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -75,7 +76,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired return true if the specified file matched the META.json file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if filepath.Base(path) != "META.json" {
+	if !(filepath.Base(path) == "META.json" || filepath.Base(path) == "META.yml") {
 		return false
 	}
 
@@ -110,8 +111,16 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from the META.json file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	pkgs, err := e.extractFromInput(ctx, input)
-
+	var pkgs []*extractor.Package
+	var err error
+	if shouldSkipYmlIfJSONIsPresent(input) {
+		return inventory.Inventory{}, nil
+	}
+	if strings.HasSuffix(input.Path, ".yml") {
+		pkgs, err = e.extractFromYMLInput(ctx, input)
+	} else {
+		pkgs, err = e.extractFromJSONInput(ctx, input)
+	}
 	if e.stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -126,13 +135,53 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
+// Some packages have only META.json and some of them have only META.yml
+func shouldSkipYmlIfJSONIsPresent(input *filesystem.ScanInput) bool {
+	basePath, isYml := strings.CutSuffix(input.Path, ".yml")
+	if !isYml {
+		return false
+	}
+	_, err := input.FS.Stat(basePath + ".json")
+	return err == nil
+}
+
 // MetaJSON structure for parsing META.json file
 type MetaJSON struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+// MetaYML structure for parsing META.yml file for older versions
+type MetaYML struct {
+	Name    string `yaml:"name"`
+	Version string `yaml:"version"`
+}
+
+func (e Extractor) extractFromYMLInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	metaYML := MetaYML{}
+	dec := yaml.NewDecoder(input.Reader)
+	if err := dec.Decode(&metaYML); err != nil {
+		return nil, fmt.Errorf("failed to yml decode: %w", err)
+	}
+	packages := []*extractor.Package{}
+
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+	}
+
+	if metaYML.Name != "" && metaYML.Version != "" {
+		pkg := &extractor.Package{
+			Name:      metaYML.Name,
+			Version:   metaYML.Version,
+			PURLType:  purl.TypeCPAN,
+			Locations: []string{input.Path},
+		}
+		packages = append(packages, pkg)
+	}
+	return packages, nil
+}
+
+func (e Extractor) extractFromJSONInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	var parsedMETAFile *MetaJSON
 	packages := []*extractor.Package{}
 

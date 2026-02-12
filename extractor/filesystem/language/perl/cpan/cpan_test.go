@@ -39,8 +39,13 @@ func TestFileRequired(t *testing.T) {
 		want                  bool
 	}{
 		{
-			desc: "valid file",
+			desc: "valid json file",
 			path: "/root/.cpanm/work/1770327163.6/URI-5.34/META.json",
+			want: true,
+		},
+		{
+			desc: "valid yml file",
+			path: "/root/.cpanm/work/1770327163.6/URI-5.34/META.yml",
 			want: true,
 		},
 		{
@@ -132,6 +137,20 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "valid META.yml file",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/META_correct.yml",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "Class-Data-Inheritable",
+					Version:   "0.08",
+					PURLType:  purl.TypeCPAN,
+					Locations: []string{"testdata/META_correct.yml"},
+				},
+			},
+		},
+		{
 			name: "valid META.json file with lots of dependencies",
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/META_correct2.json",
@@ -146,14 +165,14 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "missing name field",
+			name: "missing name field in json",
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/META_withoutname.json",
 			},
 			wantPackages: []*extractor.Package{},
 		},
 		{
-			name: "missing version field",
+			name: "missing version field in yml",
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/META_withoutversion.json",
 			},
@@ -162,9 +181,16 @@ func TestExtract(t *testing.T) {
 		{
 			name: "invalid json file",
 			inputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/invalid.json",
+				Path: "testdata/invalid_json.json",
 			},
 			wantErr: extracttest.ContainsErrStr{Str: "could not extract"},
+		},
+		{
+			name: "invalid yml file",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid_yml.yml",
+			},
+			wantErr: extracttest.ContainsErrStr{Str: "failed to yml decode"},
 		},
 	}
 
