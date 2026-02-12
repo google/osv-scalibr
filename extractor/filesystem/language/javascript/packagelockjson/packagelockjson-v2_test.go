@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestNPMLockExtractor_Extract_V2(t *testing.T) {
@@ -637,9 +639,11 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
-			extr := packagelockjson.New(packagelockjson.Config{
-				Stats: collector,
-			})
+			extr, err := packagelockjson.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("packagelockjson.New: %v", err)
+			}
+			extr.(*packagelockjson.Extractor).Stats = collector
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

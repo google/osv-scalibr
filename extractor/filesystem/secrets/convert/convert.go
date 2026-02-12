@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,15 +25,17 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // FromVelesDetector converts a Veles Detector into a SCALIBR FilesystemExtractor plugin.
 // This allows enabling Veles Detectors individually like regular SCALIBR plugins.
 // The wrapped FilesystemExtractor does not do any extraction on its own - it's a placeholder plugin
 // that is used to configure the Veles detection before the scan starts.
-func FromVelesDetector(velesDetector veles.Detector, name string, version int) func() filesystem.Extractor {
-	return func() filesystem.Extractor {
-		return &detectorWrapper{velesDetector: velesDetector, name: name, version: version}
+func FromVelesDetector(velesDetector veles.Detector, name string, version int) func(*cpb.PluginConfig) (filesystem.Extractor, error) {
+	return func(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+		return &detectorWrapper{velesDetector: velesDetector, name: name, version: version}, nil
 	}
 }
 

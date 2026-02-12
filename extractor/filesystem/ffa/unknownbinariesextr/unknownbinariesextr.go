@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,15 +19,17 @@ import (
 	"context"
 
 	//nolint:gosec //md5 used to identify files, not for security purposes
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/opencontainers/go-digest"
 )
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "ffa/unknownbinaries"
+	Name = "ffa/unknownbinariesextr"
 )
 
 // Extractor finds unknown binaries on the filesystem
@@ -47,6 +49,11 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 	}
 }
 
+// New returns a new unknown binaries extractor.
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
+}
+
 // FileRequired returns true for likely directories to contain vendored c/c++ code
 func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 	return filesystem.IsInterestingExecutable(fapi)
@@ -55,12 +62,19 @@ func (e *Extractor) FileRequired(fapi filesystem.FileAPI) bool {
 // Extract determines the most likely package version from the directory and returns them as
 // package entries with "Location" filled in.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	// Compute file hash
+	fileHash, err := digest.SHA256.FromReader(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+
 	return inventory.Inventory{
 		Packages: []*extractor.Package{
 			{
 				Locations: []string{input.Path},
+				Metadata: &UnknownBinaryMetadata{
+					FileHash: fileHash,
+				},
 			},
 		}}, nil
 }
-
-var _ filesystem.Extractor = &Extractor{}

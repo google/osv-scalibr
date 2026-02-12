@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -30,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -47,7 +48,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = asdf.Extractor{}
+			e, err := asdf.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
@@ -207,7 +211,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extr := asdf.Extractor{}
+			extr, err := asdf.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
 			defer extracttest.CloseTestScanInput(t, scanInput)

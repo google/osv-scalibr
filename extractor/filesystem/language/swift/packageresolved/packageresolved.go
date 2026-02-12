@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,52 +29,37 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "swift/packageresolved"
+
+	// defaultMaxFileSizeBytes is the maximum file size this extractor will process.
+	defaultMaxFileSizeBytes = 10 * units.MiB
 )
-
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will process.
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		Stats:            nil,
-		MaxFileSizeBytes: 10 * units.MiB,
-	}
-}
 
 // Extractor extracts packages from inside a Package.resolved.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
 // New returns a Package.resolved extractor.
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := defaultMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
-
-// Config returns the configuration of the extractor.
-func (e Extractor) Config() Config {
-	return Config{
-		Stats:            e.stats,
-		MaxFileSizeBytes: e.maxFileSizeBytes,
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.SwiftPackageResolvedConfig { return c.GetSwiftPackageResolved() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
 }
 
 // Name of the extractor.
@@ -107,10 +92,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -120,12 +105,12 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 // Extract parses and extracts dependency data from a Package.resolved file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs, err := e.extractFromInput(input)
-	if e.stats != nil {
+	if e.Stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
 			fileSizeBytes = input.Info.Size()
 		}
-		e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+		e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 			Path:          input.Path,
 			Result:        filesystem.ExtractorErrorToFileExtractedResult(err),
 			FileSizeBytes: fileSizeBytes,

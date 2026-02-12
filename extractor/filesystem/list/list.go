@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -54,6 +55,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -93,6 +95,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
+	"github.com/google/osv-scalibr/extractor/filesystem/runtime/mise"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nodeversion"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/nodejs/nvm"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
@@ -110,9 +113,12 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
@@ -126,6 +132,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
+	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -138,11 +145,17 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -170,39 +183,39 @@ var (
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
-		javaarchive.Name: {noCFG(javaarchive.NewDefault)},
+		javaarchive.Name: {javaarchive.New},
 	}
 	// JavascriptSource extractors for Javascript.
 	JavascriptSource = InitMap{
-		packagejson.Name:     {noCFG(packagejson.NewDefault)},
-		packagelockjson.Name: {noCFG(packagelockjson.NewDefault)},
+		packagejson.Name:     {packagejson.New},
+		packagelockjson.Name: {packagelockjson.New},
 		pnpmlock.Name:        {pnpmlock.New},
 		yarnlock.Name:        {yarnlock.New},
 		bunlock.Name:         {bunlock.New},
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name: {noCFG(packagejson.NewDefault)},
+		packagejson.Name: {packagejson.New},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name: {noCFG(requirements.NewDefault)},
-		setup.Name:        {noCFG(setup.NewDefault)},
+		requirements.Name: {requirements.New},
+		setup.Name:        {setup.New},
 		pipfilelock.Name:  {pipfilelock.New},
 		pdmlock.Name:      {pdmlock.New},
 		poetrylock.Name:   {poetrylock.New},
 		pylock.Name:       {pylock.New},
-		condameta.Name:    {noCFG(condameta.NewDefault)},
+		condameta.Name:    {condameta.New},
 		uvlock.Name:       {uvlock.New},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
-		wheelegg.Name: {noCFG(wheelegg.NewDefault)},
+		wheelegg.Name: {wheelegg.New},
 	}
 	// GoSource extractors for Go.
 	GoSource = InitMap{
-		gomod.Name: {noCFG(gomod.New)},
+		gomod.Name: {gomod.New},
 	}
 	// GoArtifact extractors for Go.
 	GoArtifact = InitMap{
@@ -216,18 +229,20 @@ var (
 	NimSource = InitMap{nimble.Name: {nimble.New}}
 	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
+	// OcamlSource extractors for OCaml.
+	OcamlSource = InitMap{opam.Name: {opam.New}}
 	// ElixirSource extractors for Elixir.
-	ElixirSource = InitMap{elixir.Name: {noCFG(elixir.NewDefault)}}
+	ElixirSource = InitMap{elixir.Name: {elixir.New}}
 	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
-		stacklock.Name: {noCFG(stacklock.NewDefault)},
-		cabal.Name:     {noCFG(cabal.NewDefault)},
+		stacklock.Name: {stacklock.New},
+		cabal.Name:     {cabal.New},
 	}
 	// RSource extractors for R source extractors
 	RSource = InitMap{renvlock.Name: {renvlock.New}}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
-		gemspec.Name:     {noCFG(gemspec.NewDefault)},
+		gemspec.Name:     {gemspec.New},
 		gemfilelock.Name: {gemfilelock.New},
 	}
 	// RustSource extractors for Rust.
@@ -237,29 +252,29 @@ var (
 	}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
-		cargoauditable.Name: {noCFG(cargoauditable.NewDefault)},
+		cargoauditable.Name: {cargoauditable.New},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
-		cdx.Name:  {noCFG(cdx.New)},
-		spdx.Name: {noCFG(spdx.New)},
+		cdx.Name:  {cdx.New},
+		spdx.Name: {spdx.New},
 	}
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
-		depsjson.Name:         {noCFG(depsjson.NewDefault)},
-		packagesconfig.Name:   {noCFG(packagesconfig.NewDefault)},
-		packageslockjson.Name: {noCFG(packageslockjson.NewDefault)},
+		depsjson.Name:         {depsjson.New},
+		packagesconfig.Name:   {packagesconfig.New},
+		packageslockjson.Name: {packageslockjson.New},
 	}
 	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
-		dotnetpe.Name: {noCFG(dotnetpe.NewDefault)},
+		dotnetpe.Name: {dotnetpe.New},
 	}
 	// PHPSource extractors for PHP Source extractors.
 	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
-		packageresolved.Name: {noCFG(packageresolved.NewDefault)},
-		podfilelock.Name:     {noCFG(podfilelock.NewDefault)},
+		packageresolved.Name: {packageresolved.New},
+		podfilelock.Name:     {podfilelock.New},
 	}
 
 	// Containers extractors.
@@ -293,14 +308,14 @@ var (
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
-		mysqlmylogin.Name:            {noCFG(mysqlmylogin.New)},
-		pgpass.Name:                  {noCFG(pgpass.New)},
-		onepasswordconnecttoken.Name: {noCFG(onepasswordconnecttoken.New)},
-		mariadb.Name:                 {noCFG(mariadb.NewDefault)},
-		awsaccesskey.Name:            {noCFG(awsaccesskey.New)},
-		codecatalyst.Name:            {noCFG(codecatalyst.New)},
-		codecommit.Name:              {noCFG(codecommit.New)},
-		bitbucket.Name:               {noCFG(bitbucket.New)},
+		mysqlmylogin.Name:            {mysqlmylogin.New},
+		pgpass.Name:                  {pgpass.New},
+		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
+		mariadb.Name:                 {mariadb.New},
+		awsaccesskey.Name:            {awsaccesskey.New},
+		codecatalyst.Name:            {codecatalyst.New},
+		codecommit.Name:              {codecommit.New},
+		bitbucket.Name:               {bitbucket.New},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -308,6 +323,9 @@ var (
 		{anthropicapikey.NewDetector(), "secrets/anthropicapikey", 0},
 		{azuretoken.NewDetector(), "secrets/azuretoken", 0},
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
+		{circleci.NewPersonalAccessTokenDetector(), "secrets/circlecipat", 0},
+		{circleci.NewProjectTokenDetector(), "secrets/circleciproject", 0},
+		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
 		{cratesioapitoken.NewDetector(), "secrets/cratesioapitoken", 0},
@@ -315,6 +333,7 @@ var (
 		{slacktoken.NewAppConfigRefreshTokenDetector(), "secrets/slackappconfigrefreshtoken", 0},
 		{slacktoken.NewAppLevelTokenDetector(), "secrets/slackappleveltoken", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
+		{elasticcloudapikey.NewDetector(), "secrets/elasticcloudapikey", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
 		{gcpsak.NewDetector(), "secrets/gcpsak", 0},
@@ -326,6 +345,7 @@ var (
 		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},
 		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
+		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
@@ -344,6 +364,8 @@ var (
 		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{squareapikey.NewPersonalAccessTokenDetector(), "secrets/squarepersonalaccesstoken", 0},
+		{squareapikey.NewOAuthApplicationSecretDetector(), "secrets/squareoauthapplicationsecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
@@ -356,7 +378,12 @@ var (
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
+		{urlcreds.NewDetector(), "secrets/urlcreds", 0},
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
+		{salesforceoauth2access.NewDetector(), "secrets/salesforceoauth2access", 0},
+		{salesforceoauth2client.NewDetector(), "secrets/salesforceoauth2client", 0},
+		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
+		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
@@ -367,17 +394,18 @@ var (
 
 	// Misc artifact extractors.
 	Misc = InitMap{
-		vscodeextensions.Name: {noCFG(vscodeextensions.New)},
-		wordpressplugins.Name: {noCFG(wordpressplugins.NewDefault)},
-		chromeextensions.Name: {noCFG(chromeextensions.New)},
-		netscaler.Name:        {noCFG(netscaler.New)},
+		vscodeextensions.Name: {vscodeextensions.New},
+		wordpressplugins.Name: {wordpressplugins.New},
+		chromeextensions.Name: {chromeextensions.New},
+		netscaler.Name:        {netscaler.New},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
-		asdf.Name:        {noCFG(asdf.New)},
-		nvm.Name:         {noCFG(nvm.New)},
-		nodeversion.Name: {noCFG(nodeversion.New)},
+		asdf.Name:        {asdf.New},
+		mise.Name:        {mise.New},
+		nvm.Name:         {nvm.New},
+		nodeversion.Name: {nodeversion.New},
 	}
 
 	// EmbeddedFS extractors.
@@ -386,6 +414,11 @@ var (
 		vdi.Name:     {vdi.New},
 		vmdk.Name:    {vmdk.New},
 		ova.Name:     {ova.New},
+	}
+
+	// FFA extractor.
+	FFA = InitMap{
+		unknownbinariesextr.Name: {unknownbinariesextr.New},
 	}
 
 	// Collections of extractors.
@@ -408,6 +441,7 @@ var (
 		DotnetSource,
 		SwiftSource,
 		NimSource,
+		OcamlSource,
 		LuaSource,
 		Secrets,
 		MiscSource,
@@ -428,6 +462,7 @@ var (
 		EmbeddedFS,
 		Containers,
 		Secrets,
+		FFA,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -456,6 +491,7 @@ var (
 		"erlang":     vals(ErlangSource),
 		"lua":        vals(LuaSource),
 		"nim":        vals(NimSource),
+		"ocaml":      vals(OcamlSource),
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
 		"r":          vals(RSource),
@@ -472,6 +508,7 @@ var (
 		"secrets":    vals(Secrets),
 		"misc":       vals(Misc),
 		"miscsource": vals(MiscSource),
+		"ffa":        vals(FFA),
 
 		// Collections.
 		"artifact":           vals(Artifact),
@@ -495,12 +532,6 @@ func concat(initMaps ...InitMap) InitMap {
 
 func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
-}
-
-// Wraps initer functions that don't take any config value to initer functions that do.
-// TODO(b/400910349): Remove once all plugins take config values.
-func noCFG(f func() filesystem.Extractor) InitFn {
-	return func(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return f(), nil }
 }
 
 // ExtractorsFromName returns a list of extractors from a name.
@@ -528,7 +559,7 @@ type velesPlugin struct {
 func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 	result := InitMap{}
 	for _, p := range plugins {
-		result[p.name] = []InitFn{noCFG(convert.FromVelesDetector(p.detector, p.name, p.version))}
+		result[p.name] = []InitFn{convert.FromVelesDetector(p.detector, p.name, p.version)}
 	}
 	return result
 }
