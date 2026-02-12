@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/misc/cronjobprivesc"
 	"github.com/google/osv-scalibr/detector/misc/dockersocket"
+	"github.com/google/osv-scalibr/detector/misc/pammisconfig"
 	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
@@ -85,13 +86,11 @@ var Weakcredentials = InitMap{
 }
 
 // Misc detectors for miscellaneous security issues.
-var Misc = concat(
-	InitMap{
-		cronjobprivesc.Name: {cronjobprivesc.New},
-		dockersocket.Name:   {dockersocket.New},
-	},
-	miscOSSpecific(),
-)
+var Misc = InitMap{
+	cronjobprivesc.Name: {cronjobprivesc.New},
+	dockersocket.Name:   {dockersocket.New},
+	pammisconfig.Name:   {noCFG(pammisconfig.New)},
+}
 
 // CVE for vulnerabilities that have a CVE associated
 var CVE = InitMap{

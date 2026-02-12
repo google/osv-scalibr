@@ -264,7 +264,7 @@ type controlEffect struct {
 type pamEntry struct {
 	moduleType string // auth, account, password, session
 	control    string // required, sufficient, optional, etc.
-	controlEff controlEffect
+	controlEff *controlEffect
 	modulePath string   // e.g., pam_unix.so, pam_permit.so
 	args       []string // module arguments
 }
@@ -316,9 +316,9 @@ func parsePAMLine(line string, isLegacyFormat bool) *pamEntry {
 	// Compute the control effect during parsing so analysis doesn't need to re-parse it.
 	switch {
 	case bypassControls[control]:
-		entry.controlEff = controlEffect{isSufficientLike: true}
+		entry.controlEff = &controlEffect{isSufficientLike: true}
 	case control == "optional":
-		entry.controlEff = controlEffect{isOptionalOnly: true}
+		entry.controlEff = &controlEffect{isOptionalOnly: true}
 	case strings.HasPrefix(control, "[") && strings.HasSuffix(control, "]"):
 		inner := strings.TrimSuffix(strings.TrimPrefix(control, "["), "]")
 		for _, token := range strings.Fields(inner) {
@@ -329,11 +329,11 @@ func parsePAMLine(line string, isLegacyFormat bool) *pamEntry {
 			action := parts[1]
 			switch action {
 			case "ok", "done":
-				entry.controlEff = controlEffect{isSufficientLike: true}
+				entry.controlEff = &controlEffect{isSufficientLike: true}
 				return &entry
 			default:
 				if skip := parseSkipCount(action); skip > 0 {
-					entry.controlEff = controlEffect{skipNext: skip}
+					entry.controlEff = &controlEffect{skipNext: skip}
 					return &entry
 				}
 			}
@@ -362,7 +362,7 @@ func analyzePAMEntry(filePath string, lineNum int, entry *pamEntry) []string {
 	// means any user can authenticate without a valid password.
 	// Reference: https://serverfault.com/questions/890012/pam-accepting-any-password-for-valid-users
 	if isModule(entry.modulePath, "pam_permit.so") {
-		control := entry.controlEff
+		control := parsedControlEffect(entry.controlEff)
 		if control.isSufficientLike || control.skipNext > 0 {
 			issues = append(issues, fmt.Sprintf(
 				"%s:%d: pam_permit.so with '%s' control in %s stack - this module always "+
@@ -376,7 +376,7 @@ func analyzePAMEntry(filePath string, lineNum int, entry *pamEntry) []string {
 	// and when combined with 'sufficient', those users bypass further auth checks.
 	// Reference: https://unix.stackexchange.com/a/767197
 	if isModule(entry.modulePath, "pam_succeed_if.so") {
-		control := entry.controlEff
+		control := parsedControlEffect(entry.controlEff)
 		if control.isSufficientLike || control.skipNext > 0 {
 			condition := extractPAMSucceedIfCondition(entry.args)
 			if condition != "" && isBroadPAMSucceedIfCondition(condition) {
@@ -447,6 +447,13 @@ func isBroadPAMSucceedIfCondition(condition string) bool {
 	return false
 }
 
+func parsedControlEffect(effect *controlEffect) controlEffect {
+	if effect == nil {
+		return controlEffect{}
+	}
+	return *effect
+}
+
 func parseSkipCount(action string) int {
 	if action == "" {
 		return 0
@@ -477,6 +484,10 @@ func bypassImpact(moduleType string) string {
 	return "password authentication"
 }
 
+// checkOptionalOnlyAuth detects an auth stack where every auth entry is optional
+// and at least one of those optional entries is pam_permit.so.
+// In this configuration, no effective non-optional auth module enforces
+// credentials, so authentication can succeed without password verification.
 func checkOptionalOnlyAuth(filePath string, entries []pamEntry) []string {
 	if len(entries) == 0 {
 		return nil
@@ -485,7 +496,7 @@ func checkOptionalOnlyAuth(filePath string, entries []pamEntry) []string {
 	var hasEffectiveNonOptional bool
 	var hasPermitOptional bool
 	for _, entry := range entries {
-		control := entry.controlEff
+		control := parsedControlEffect(entry.controlEff)
 		if !control.isOptionalOnly {
 			hasEffectiveNonOptional = true
 		}
