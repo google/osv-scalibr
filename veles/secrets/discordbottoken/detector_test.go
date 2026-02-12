@@ -29,7 +29,7 @@ import (
 const testToken = "MTIzNDU2Nzg5MDEyMzQ1Njc4.YAaBbC.dEFGhijklMNOPqrSTUVwxyzAB12"
 
 func TestDetector_Acceptance(t *testing.T) {
-	d := discordbottoken.NewDetector()
+	example := `discord ` + testToken
 
 example := `DISCORD_BOT_TOKEN=` + testToken
 
