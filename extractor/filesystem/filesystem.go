@@ -193,10 +193,38 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 			continue
 		}
 
+		// scanRootPath represents the base path within mountedFS from which
+		// the scan should begin. It is set to a temporary extraction directory
+		// if the filesystem materializes contents on disk; otherwise, it
+		// remains empty for virtual filesystems that can be traversed directly.
+		var scanRootPath string
+
+		// Determine the appropriate root path for the mounted filesystem.
+		//
+		// If the filesystem exposes temporary extraction paths, use the first
+		// temporary directory as the scan root. Otherwise, treat it as a
+		// virtual filesystem (i.e., no backing temp directory).
+		//
+		// This design allows future embedded filesystems to be scanned directly
+		// without requiring extraction to a temporary directory.
+		//
+		// Temporary directories and raw extracted files will be collected
+		// after traversal for cleanup.
+		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
+			paths := c.TempPaths()
+
+			// Collect temporary directories and raw files after traversal for removal.
+			embeddedFS.TempPaths = paths
+
+			if len(paths) > 0 {
+				scanRootPath = paths[0]
+			}
+		}
+
 		// Create a new ScanRoot for the mounted filesystem
 		newScanRoot := &scalibrfs.ScanRoot{
 			FS:   mountedFS,
-			Path: "", // Virtual filesystem
+			Path: scanRootPath,
 		}
 
 		// Reuse the existing config, updating only necessary fields
@@ -229,11 +257,6 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		additionalInv.Append(mountedInv)
 		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
-
-		// Collect temporary directories and raw files after traversal for removal.
-		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			embeddedFS.TempPaths = c.TempPaths()
-		}
 	}
 
 	// Combine inventories
