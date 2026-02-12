@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
-	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 // Example Discord bot token (fake but structurally valid: 24.6.27 characters)
