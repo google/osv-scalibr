@@ -103,6 +103,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
@@ -116,7 +117,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
-	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
@@ -330,6 +330,7 @@ var (
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
+		cloudflareapitoken.Name:      {cloudflareapitoken.New},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -348,7 +349,6 @@ var (
 		{slacktoken.NewAppLevelTokenDetector(), "secrets/slackappleveltoken", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 		{elasticcloudapikey.NewDetector(), "secrets/elasticcloudapikey", 0},
-		{cloudflareapitoken.NewDetector(), "secrets/cloudflareapitoken", 0},
 		{denopat.NewUserTokenDetector(), "secrets/denopatuser", 0},
 		{denopat.NewOrgTokenDetector(), "secrets/denopatorg", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
