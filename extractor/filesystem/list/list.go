@@ -151,6 +151,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -363,6 +364,7 @@ var (
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
 		{privatekey.NewDetector(), "secrets/privatekey", 0},
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
+		{sendgrid.NewDetector(), "secrets/sendgrid", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
 		{github.NewAppS2STokenDetector(), "secrets/githubapps2stoken", 0},

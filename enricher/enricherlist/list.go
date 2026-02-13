@@ -68,6 +68,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -113,6 +114,7 @@ var (
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
 		fromVeles(elasticcloudapikey.NewValidator(), "secrets/elasticcloudapikeyvalidate", 0),
 		fromVeles(pypiapitoken.NewValidator(), "secrets/pypiapitokenvalidate", 0),
+		fromVeles(sendgrid.NewValidator(), "secrets/sendgridvalidate", 0),
 		fromVeles(cratesioapitoken.NewValidator(), "secrets/cratesioapitokenvalidate", 0),
 		fromVeles(slacktoken.NewAppLevelTokenValidator(), "secrets/slackappleveltokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigRefreshTokenValidator(), "secrets/slackconfigrefreshtokenvalidate", 0),

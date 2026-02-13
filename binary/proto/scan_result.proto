@@ -797,6 +797,7 @@ message SecretData {
     SquarePersonalAccessToken square_personal_access_token = 69;
     SquareOAuthApplicationSecret square_oauth_application_secret = 70;
     SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
+    SendGridAPIKey sendgrid_api_key = 72;
   }
 
   message GCPSAK {
@@ -1119,6 +1120,10 @@ message SecretData {
   message SalesforceOAuth2AccessToken {
     // Salesforce OAuth2 Access Token
     string token = 1;
+  }
+
+  message SendGridAPIKey {
+    string key = 1;
   }
 
   message SalesforceOAuth2ClientCredentials {

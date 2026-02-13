@@ -159,6 +159,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Postman Collection token                    | `secrets/postmancollectiontoken`       |
 | PEM/OpenSSH Private key                     | `secrets/privatekey`                   |
 | RubyGems API key                            | `secrets/rubygemsapikey`               |
+| Sendgrid API key                            | `secrets/sendgrid`                     |
 | Slack Application Level Token               | `secrets/slackappleveltoken`           |
 | Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`    |
 | Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken`   |

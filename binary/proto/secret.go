@@ -66,6 +66,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velessquareapikey "github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -261,6 +262,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
+	case sendgrid.APIKey:
+		return sendgridAPIKeyToProto(t), nil
 	case velescircleci.PersonalAccessToken:
 		return circleCIPersonalAccessTokenToProto(t), nil
 	case velescircleci.ProjectToken:
@@ -945,6 +948,15 @@ func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) 
 	}
 }
 
+func sendgridAPIKeyToProto(s sendgrid.APIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SendgridApiKey{
+			SendgridApiKey: &spb.SecretData_SendGridAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
 func salesforceOAuth2JWTCredentialsToProto(creds salesforceoauth2jwt.Credentials) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SalesforceOauth2JwtCredentials{
@@ -1255,6 +1267,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
+		}, nil
+	case *spb.SecretData_SendgridApiKey:
+		return sendgrid.APIKey{
+			Key: s.GetSendgridApiKey().GetKey(),
 		}, nil
 	case *spb.SecretData_CircleciPersonalAccessToken:
 		return velescircleci.PersonalAccessToken{
