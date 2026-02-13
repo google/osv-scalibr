@@ -109,7 +109,8 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 	})
 }
 
-// Extract extracts packages from the META.json file.
+// Extract extracts from legacy META.yml file only when its newer counterpart META.json is not present.
+// If both are present, extract only from META.json to avoid duplicates (ref: https://metacpan.org/pod/CPAN::Meta::Spec#SERIALIZATION)
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var pkgs []*extractor.Package
 	var err error
