@@ -798,6 +798,7 @@ message SecretData {
     SquareOAuthApplicationSecret square_oauth_application_secret = 70;
     SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
     SendGridAPIKey sendgrid_api_key = 72;
+    QwenPat qwen__pat = 74;
   }
 
   message GCPSAK {
@@ -1176,6 +1177,9 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+  message QwenPat {
+    string pat = 1;
   }
 }
 
