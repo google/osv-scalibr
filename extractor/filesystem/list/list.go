@@ -313,7 +313,7 @@ var (
 		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
 		mariadb.Name:                 {mariadb.New},
 		awsaccesskey.Name:            {awsaccesskey.New},
-		composerpackagist.Name:       {func(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return composerpackagist.New(), nil }},
+		composerpackagist.Name:       {composerpackagist.New},
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},

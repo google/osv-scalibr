@@ -40,7 +40,7 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := composerpackagist.New().(*composerpackagist.Extractor)
+			e, _ := composerpackagist.New(nil)
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
@@ -119,7 +119,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extr := composerpackagist.New().(*composerpackagist.Extractor)
+			extr, _ := composerpackagist.New(nil)
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
 			defer extracttest.CloseTestScanInput(t, scanInput)

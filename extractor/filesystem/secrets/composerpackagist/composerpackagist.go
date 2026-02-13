@@ -23,6 +23,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -42,8 +44,8 @@ type Credential struct {
 type Extractor struct{}
 
 // New returns a new Composer Packagist extractor.
-func New() filesystem.Extractor {
-	return &Extractor{}
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
 }
 
 // Name returns the extractor name.
@@ -79,11 +81,6 @@ type authJSON struct {
 func (e *Extractor) Extract(ctx context.Context,
 	input *filesystem.ScanInput,
 ) (inventory.Inventory, error) {
-	return e.extractAuthJSON(input)
-}
-
-// extractAuthJSON extracts HTTP Basic credentials from auth.json.
-func (e *Extractor) extractAuthJSON(input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var data authJSON
 	if err := json.NewDecoder(input.Reader).Decode(&data); err != nil {
 		//nolint:nilerr

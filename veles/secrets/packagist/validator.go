@@ -113,12 +113,6 @@ type orgToken interface {
 	getRepoURL() string
 }
 
-func (t OrgReadToken) getToken() string   { return t.Token }
-func (t OrgReadToken) getRepoURL() string { return t.RepoURL }
-
-func (t OrgUpdateToken) getToken() string   { return t.Token }
-func (t OrgUpdateToken) getRepoURL() string { return t.RepoURL }
-
 // newOrgTokenValidator creates a validator for organization tokens.
 // Both read and update tokens use the same validation logic:
 // GET request to repo URL with Basic Auth (token:token).
@@ -148,6 +142,12 @@ func newOrgTokenValidator[T orgToken]() *sv.Validator[T] {
 		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}
 }
+
+func (t OrgReadToken) getToken() string   { return t.Token }
+func (t OrgReadToken) getRepoURL() string { return t.RepoURL }
+
+func (t OrgUpdateToken) getToken() string   { return t.Token }
+func (t OrgUpdateToken) getRepoURL() string { return t.RepoURL }
 
 // NewOrgReadTokenValidator creates a new Packagist Organization Read Token Validator.
 // It performs a GET request to the repo URL with Basic Auth (token:token).
