@@ -798,6 +798,7 @@ message SecretData {
     SquareOAuthApplicationSecret square_oauth_application_secret = 70;
     SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
     SendGridAPIKey sendgrid_api_key = 72;
+    DenoPat deno_pat = 73;
   }
 
   message GCPSAK {
@@ -892,6 +893,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message DenoPat {
+    string pat = 1;
   }
 
   message GitlabPat {
