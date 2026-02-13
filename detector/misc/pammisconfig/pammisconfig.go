@@ -357,12 +357,16 @@ func analyzePAMEntry(filePath string, lineNum int, entry *pamEntry) []string {
 		return issues
 	}
 
+	// Check 1 and Check 2 rely on parsed control semantics (sufficient/optional/skip).
+	// If no parsed control effect is available, skip those checks.
+	hasControlEffect := entry.controlEff != nil
+
 	// Check 1: pam_permit.so in auth/account stack
 	// pam_permit.so ALWAYS returns success, so using it with bypass controls
 	// means any user can authenticate without a valid password.
 	// Reference: https://serverfault.com/questions/890012/pam-accepting-any-password-for-valid-users
-	if isModule(entry.modulePath, "pam_permit.so") {
-		control := parsedControlEffect(entry.controlEff)
+	if hasControlEffect && isModule(entry.modulePath, "pam_permit.so") {
+		control := *entry.controlEff
 		if control.isSufficientLike || control.skipNext > 0 {
 			issues = append(issues, fmt.Sprintf(
 				"%s:%d: pam_permit.so with '%s' control in %s stack - this module always "+
@@ -375,8 +379,8 @@ func analyzePAMEntry(filePath string, lineNum int, entry *pamEntry) []string {
 	// pam_succeed_if.so can match broad user groups (e.g., uid >= 1000),
 	// and when combined with 'sufficient', those users bypass further auth checks.
 	// Reference: https://unix.stackexchange.com/a/767197
-	if isModule(entry.modulePath, "pam_succeed_if.so") {
-		control := parsedControlEffect(entry.controlEff)
+	if hasControlEffect && isModule(entry.modulePath, "pam_succeed_if.so") {
+		control := *entry.controlEff
 		if control.isSufficientLike || control.skipNext > 0 {
 			condition := extractPAMSucceedIfCondition(entry.args)
 			if condition != "" && isBroadPAMSucceedIfCondition(condition) {
