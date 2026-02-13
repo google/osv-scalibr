@@ -38,7 +38,7 @@ var (
 	// optionally surrounded by quotes, followed by a separator (= or :).
 	// Handles env var (KEY=), JSON ("KEY":), and YAML (key:) formats.
 	keywordRe = regexp.MustCompile(
-		`(?i)["']?\b(?:CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CF_API_TOKEN|CF_API_KEY|CLOUDFLARE_TOKEN|CF_TOKEN|CLOUDFLARE_AUTH_KEY|CF_ACCOUNT_ID|api_token)\b["']?\s*[=:]`,
+		`(?i)["']?\b(?:CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CF_API_TOKEN|CF_API_KEY|CLOUDFLARE_TOKEN|CF_TOKEN|CLOUDFLARE_AUTH_KEY|CF_ACCOUNT_ID)\b["']?\s*[=:]`,
 	)
 
 	// tokenRe matches a 40-character alphanumeric token (with underscores and hyphens).

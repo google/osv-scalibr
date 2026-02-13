@@ -150,7 +150,7 @@ func TestDetector_truePositives(t *testing.T) {
 		{
 			name: "YAML format with nested cloudflare config",
 			input: `cloudflare:
-  api_token: "` + testKey + `"`,
+  CLOUDFLARE_API_TOKEN: "` + testKey + `"`,
 			want: []veles.Secret{
 				cloudflareapitoken.CloudflareAPIToken{Token: testKey},
 			},
@@ -184,7 +184,7 @@ CF_API_KEY=` + testKey[:len(testKey)-1] + `a`,
 server:
   port: 8080
 cloudflare:
-  api_token: %s
+  CLOUDFLARE_API_TOKEN: %s
   zone_id: abcd1234
 database:
   host: localhost
