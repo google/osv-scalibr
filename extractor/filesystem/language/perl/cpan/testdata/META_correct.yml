@@ -1,0 +1,12 @@
+--- #YAML:1.0
+name:                Class-Data-Inheritable
+version:             0.08
+abstract:            Inheritable, overridable class data
+license:             perl
+author:              ~
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3
