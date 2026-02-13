@@ -157,7 +157,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Pat      string
 		Username string
 		expected veles.ValidationStatus
-		wantErr  bool
+		wantErr  error
 	}{
 		{
 			name:     "empty_key",
@@ -176,7 +176,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 			Pat:      validatorTestPat,
 			Username: "",
 			expected: veles.ValidationInvalid,
-			wantErr:  true,
+			wantErr:  cmpopts.AnyError,
 		},
 	}
 
@@ -186,17 +186,11 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), usernamePat)
 
-			if tc.wantErr {
-				if err == nil {
-					t.Errorf("Validate() expected error for %s, got nil", tc.name)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-				}
-				if got != tc.expected {
-					t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+			}
+			if got != tc.expected {
+				t.Errorf("Validate() = %v, want %v", got, tc.expected)
 			}
 		})
 	}

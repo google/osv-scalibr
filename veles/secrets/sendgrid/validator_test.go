@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 )
@@ -70,7 +72,7 @@ func TestValidator(t *testing.T) {
 		statusCode        int
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
+		wantErr           error
 	}{
 		{
 			name:              "valid_key_returns_200",
@@ -110,18 +112,10 @@ func TestValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
