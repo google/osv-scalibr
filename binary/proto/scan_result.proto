@@ -801,6 +801,7 @@ message SecretData {
     SendGridAPIKey sendgrid_api_key = 72;
     DenoPat deno_pat = 73;
     HerokuSecretKey heroku_secret_key = 74;
+    QwenPat qwen__pat = 75;
   }
 
   message GCPSAK {
@@ -1196,6 +1197,9 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+  message QwenPat {
+    string pat = 1;
   }
 }
 

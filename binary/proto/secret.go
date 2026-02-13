@@ -76,6 +76,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+        "github.com/google/osv-scalibr/veles/secrets/qwenpat"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -289,7 +290,9 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squarePersonalAccessTokenToProto(t), nil
 	case velessquareapikey.SquareOAuthApplicationSecret:
 		return squareOAuthApplicationSecretToProto(t), nil
-	default:
+	case qwenpat.QwenPAT:
+		return qwenPATToProto(t), nil
+        default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
 }
@@ -1056,6 +1059,18 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+
+func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_QwenPat_{
+			QwenPat: &spb.SecretData_QwenPat{
+				Pat: s.Pat,
+			},
+		},
+	}
+}
+
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1353,6 +1368,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+        case *spb.SecretData_QwenPat_:
+		return qwenPATToStruct(s.GetQwenPat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1671,5 +1688,12 @@ func vapidKeyToProto(t vapid.Key) *spb.SecretData {
 				PublicB64:  t.PublicB64,
 			},
 		},
+	}
+}
+
+
+func qwenPATToStruct(kPB *spb.SecretData_QwenPat) qwenpat.QwenPAT {
+	return qwenpat.QwenPAT{
+		Pat: kPB.GetPat(),
 	}
 }
