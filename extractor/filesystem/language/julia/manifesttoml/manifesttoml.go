@@ -1,0 +1,118 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package manifesttoml extracts Manifest.toml files for Julia projects
+package manifesttoml
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+
+	"github.com/BurntSushi/toml"
+
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+)
+
+const (
+	// Name is the name of the Extractor.
+	Name = "julia/manifesttoml"
+)
+
+type juliaManifestDependency struct {
+	Version     string   `toml:"version"`
+	GitTreeSha1 string   `toml:"git-tree-sha1"`
+	RepoURL     string   `toml:"repo-url"`
+	Deps        []string `toml:"deps"`
+}
+
+type juliaManifestFile struct {
+	Dependencies map[string][]juliaManifestDependency `toml:"deps"`
+}
+
+// Extractor extracts Julia packages from Manifest.toml files.
+type Extractor struct{}
+
+// New returns a new instance of the extractor.
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
+
+// Name of the extractor
+func (e Extractor) Name() string { return Name }
+
+// Version of the extractor
+func (e Extractor) Version() int { return 0 }
+
+// FileRequired returns true if the specified file matches Julia Manifest.toml file patterns.
+func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+	return filepath.Base(api.Path()) == "Manifest.toml"
+}
+
+// Requirements of the extractor
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{}
+}
+
+// Extract extracts packages from Julia Manifest.toml files passed through the scan input.
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	var parsedTomlFile juliaManifestFile
+
+	_, err := toml.NewDecoder(input.Reader).Decode(&parsedTomlFile)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	packages := make([]*extractor.Package, 0, len(parsedTomlFile.Dependencies))
+
+	for name, dependencies := range parsedTomlFile.Dependencies {
+		if err := ctx.Err(); err != nil {
+			return inventory.Inventory{Packages: packages}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+		}
+
+		if len(dependencies) == 0 {
+			continue
+		}
+
+		dependency := dependencies[0]
+		// Skip dependencies that have no version
+		if dependency.Version == "" {
+			continue
+		}
+
+		var srcCode *extractor.SourceCodeIdentifier
+		if dependency.GitTreeSha1 != "" {
+			srcCode = &extractor.SourceCodeIdentifier{
+				Commit: dependency.GitTreeSha1,
+				Repo:   dependency.RepoURL, // Include repo-url if available
+			}
+		}
+
+		packages = append(packages, &extractor.Package{
+			Name:       name,
+			Version:    dependency.Version,
+			PURLType:   purl.TypeJulia,
+			Locations:  []string{input.Path},
+			SourceCode: srcCode,
+		})
+	}
+
+	return inventory.Inventory{Packages: packages}, nil
+}
+
+var _ filesystem.Extractor = Extractor{}

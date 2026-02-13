@@ -68,7 +68,6 @@ func TestAppLevelTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_app_level_token",
@@ -108,15 +107,8 @@ func TestAppLevelTokenValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
 			}
 
 			// Check validation status
@@ -135,7 +127,6 @@ func TestAppConfigAccessTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_access_token",
@@ -167,15 +158,8 @@ func TestAppConfigAccessTokenValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
 			}
 
 			// Check validation status
@@ -194,7 +178,6 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_refresh_token",
@@ -226,15 +209,8 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
 			}
 
 			// Check validation status

@@ -74,7 +74,7 @@ func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor
 func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{Network: plugin.NetworkOffline}
+	return &plugin.Capabilities{}
 }
 
 // FileRequired returns true if the specified file matches Maven POM lockfile patterns.

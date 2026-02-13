@@ -1,0 +1,18 @@
+
+# This file is machine-generated - editing it directly is not advised
+
+manifest_format = "2.0"
+
+[[deps.DataStructures]]
+deps = ["InteractiveUtils", "OrderedCollections"]
+git-tree-sha1 = "0809951a1774dc724da22d26e4289bbaab77809a"
+uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+version = "0.17.0"
+
+[[deps.Unregistered]]
+deps = ["Example"]
+git-tree-sha1 = "cca953732cd949cfe36d70e981a41ac32a5c6ae7"
+repo-url = "https://github.com/00vareladavid/Unregistered.jl"
+uuid = "dcb67f36-efa0-11e8-0cef-2fc465ed98ae"
+version = "0.2.0"
+
