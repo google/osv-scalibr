@@ -115,7 +115,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Secrets
 
 | Type                                        | Extractor Plugin                       |
-| ------------------------------------------- | -------------------------------------- |
+| ------------------------------------------- |----------------------------------------|
 | AWS access key                              | `secrets/awsaccesskey`                 |
 | Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
@@ -146,6 +146,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hugging Face API key                        | `secrets/huggingfaceapikey`            |
 | MariaDB Credentials                         | `secrets/mariadb`                      |
 | Mysql Mylogin                               | `secrets/mysqlmylogin`                 |
+| npmjs Registry Access Tokens                | `secrets/npmjsaccesstoken`             |
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`         |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`      |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`      |
