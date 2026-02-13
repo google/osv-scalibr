@@ -1,0 +1,23 @@
+module(
+    name = "bazel_examples",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_jvm_external", version = "6.3")
+bazel_dep(name = "rules_java", version = "8.14.0")
+bazel_dep(name = "rules_android", version = "0.1.1")
+bazel_dep(name = "rules_kotlin", version = "2.1.9")
+
+load("@rules2_dummy//:defs.bzl", "maven_install")
+
+maven_install(
+    artifacts = [
+        "group6:artifact6:6",
+        "group7:artifact7:7",
+    ],
+    repositories = [
+        "https://maven.google.com",
+        "https://repo1.maven.org/maven2",
+    ],
+)
