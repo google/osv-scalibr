@@ -115,7 +115,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Secrets
 
 | Type                                        | Extractor Plugin                       |
-| ------------------------------------------- | -------------------------------------- |
+|---------------------------------------------|----------------------------------------|
 | AWS access key                              | `secrets/awsaccesskey`                 |
 | Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
@@ -130,6 +130,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
 | Docker hub PAT                              | `secrets/dockerhubpat`                 |
 | Elastic Cloud API key                       | `secrets/elasticcloudapikey`           |
+| Deno User PAT                               | `secrets/denopatuservalidate`          |
+| Deno Organization PAT                       | `secrets/denopatorgvalidate`           |
 | GCP API key                                 | `secrets/gcpapikey`                    |
 | GCP Express Mode API key                    | `secrets/gcpexpressmode`               |
 | GCP service account key                     | `secrets/gcpsak`                       |
@@ -181,7 +183,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Salesforce OAuth 2 JWT Credentials          | `secrets/salesforceoauth2jwt`          |
 | Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
-| Qwen AI API Key 			      | `secrets/qwenpat` 		       |
+| Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
+| Qwen AI API Key 			                      | `secrets/qwenpat` 		                 |
 
 ### Container inventory
 

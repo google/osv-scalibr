@@ -44,7 +44,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"golang.org/x/crypto/ssh"
@@ -58,10 +57,9 @@ func TestValidator(t *testing.T) {
 	sftpAddr := mockSSHServer(t, "sshuser", "sshpass")
 
 	cases := []struct {
-		name    string
-		url     string
-		want    veles.ValidationStatus
-		wantErr error
+		name string
+		url  string
+		want veles.ValidationStatus
 	}{
 		// HTTP Tests
 		{
@@ -123,8 +121,8 @@ func TestValidator(t *testing.T) {
 			v := urlcreds.NewValidator()
 			got, err := v.Validate(t.Context(), urlcreds.Credentials{FullURL: tt.url})
 
-			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
-				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)
+			if err != nil {
+				t.Fatalf("Validate(): %v", err)
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("Validate() diff (-want +got):\n%s", diff)

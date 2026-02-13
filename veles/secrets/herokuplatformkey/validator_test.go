@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package perplexityapikey_test
+package herokuplatformkey_test
 
 import (
 	"context"
@@ -22,13 +22,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	herokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 )
 
-const validatorTestKey = "pplx-test123456789012345678901234567890123456789012345678"
+const (
+	validatorTestKey = "HRKU-AALJCYR7SRzPkj9_BGqhi1jAI1J5P4WfD6ITENvdVydAPCnNcAlrMMahHrTo"
+)
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
@@ -37,7 +37,7 @@ type mockTransport struct {
 
 func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Replace the original URL with our test server URL
-	if req.URL.Host == "api.perplexity.ai" {
+	if req.URL.Host == "api.heroku.com" {
 		testURL, _ := url.Parse(m.testServer.URL)
 		req.URL.Scheme = testURL.Scheme
 		req.URL.Host = testURL.Host
@@ -45,36 +45,34 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-// mockPerplexityServer creates a mock Perplexity API server for testing
-func mockPerplexityServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
+// mockHerokuServer creates a mock Heroku API server for testing
+func mockHerokuServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if it's a GET request to the expected endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/async/chat/completions" {
-			t.Errorf("unexpected request: %s %s, expected: GET /async/chat/completions", r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != "/account" {
+			t.Errorf("unexpected request: %s %s, expected: GET /account", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
-		// Check Authorization header
+		// Check Basic Auth header contains the expected key
 		authHeader := r.Header.Get("Authorization")
-		if !strings.HasSuffix(authHeader, expectedKey) {
-			t.Errorf("expected Authorization header to end with key %s, got: %s", expectedKey, authHeader)
+		if !strings.Contains(authHeader, expectedKey) {
+			t.Errorf("expected Bearer token to be Bearer %s, got: %s", expectedKey, authHeader)
 		}
 
-		// Set response
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 	}))
 }
 
 func TestValidator(t *testing.T) {
 	cases := []struct {
-		name       string
-		statusCode int
-		want       veles.ValidationStatus
-		wantErr    error
+		name        string
+		statusCode  int
+		want        veles.ValidationStatus
+		expectError bool
 	}{
 		{
 			name:       "valid_key",
@@ -87,23 +85,23 @@ func TestValidator(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:       "server_error",
-			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationFailed,
-			wantErr:    cmpopts.AnyError,
+			name:        "server_error",
+			statusCode:  http.StatusInternalServerError,
+			want:        veles.ValidationFailed,
+			expectError: true,
 		},
 		{
-			name:       "bad_gateway",
-			statusCode: http.StatusBadGateway,
-			want:       veles.ValidationFailed,
-			wantErr:    cmpopts.AnyError,
+			name:        "bad_gateway",
+			statusCode:  http.StatusBadGateway,
+			want:        veles.ValidationFailed,
+			expectError: true,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create mock server
-			server := mockPerplexityServer(t, validatorTestKey, tc.statusCode)
+			server := mockHerokuServer(t, validatorTestKey, tc.statusCode)
 			defer server.Close()
 
 			// Create client with custom transport
@@ -112,17 +110,27 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create validator with mock client
-			validator := perplexityapikey.NewValidator()
+			validator := herokuplatformkey.NewValidator()
 			validator.HTTPC = client
 
-			key := perplexityapikey.PerplexityAPIKey{Key: validatorTestKey}
+			// Create test key
+			key := herokuplatformkey.HerokuSecret{Key: validatorTestKey}
 
+			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+			// Check error expectation
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Validate() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Validate() unexpected error: %v", err)
+				}
 			}
 
+			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
@@ -142,10 +150,10 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := perplexityapikey.NewValidator()
+	validator := herokuplatformkey.NewValidator()
 	validator.HTTPC = client
 
-	key := perplexityapikey.PerplexityAPIKey{Key: validatorTestKey}
+	key := herokuplatformkey.HerokuSecret{Key: validatorTestKey}
 
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(t.Context())
@@ -159,53 +167,5 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}
 	if got != veles.ValidationFailed {
 		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
-func TestValidator_InvalidRequest(t *testing.T) {
-	// Create mock server that returns 401 Unauthorized
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-	}))
-	defer server.Close()
-
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := perplexityapikey.NewValidator()
-	validator.HTTPC = client
-
-	testCases := []struct {
-		name     string
-		key      string
-		expected veles.ValidationStatus
-	}{
-		{
-			name:     "empty_key",
-			key:      "",
-			expected: veles.ValidationInvalid,
-		},
-		{
-			name:     "invalid_key_format",
-			key:      "invalid-key-format",
-			expected: veles.ValidationInvalid,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			key := perplexityapikey.PerplexityAPIKey{Key: tc.key}
-
-			got, err := validator.Validate(t.Context(), key)
-
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-			}
-			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
-			}
-		})
 	}
 }
