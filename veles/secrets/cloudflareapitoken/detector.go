@@ -21,76 +21,42 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
-// maxTokenLength is the maximum size of a Cloudflare API Token.
-const maxTokenLength = 40
+const (
+	// maxTokenLength is the maximum length of a Cloudflare API Token (40 chars).
+	maxTokenLength = 40
 
-// envVarRe matches environment variable style assignments.
-// Examples: CLOUDFLARE_API_TOKEN=token, CF_API_KEY="token"
-var envVarRe = regexp.MustCompile(
-	`(?i)(CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CF_API_TOKEN|CF_API_KEY|CLOUDFLARE_TOKEN|CF_TOKEN|CLOUDFLARE_AUTH_KEY|CF_ACCOUNT_ID)\s*=\s*['"]?([A-Za-z0-9_-]{40})\b['"]?`,
+	// maxDistance is the maximum distance between the keyword and the token value.
+	// Accounts for separators like `=`, `:`, whitespace, quotes, and JSON formatting.
+	maxDistance = 20
 )
 
-// jsonRe matches JSON key-value pairs.
-// Examples: "CLOUDFLARE_API_TOKEN": "token", "cloudflare_api_token": "token"
-var jsonRe = regexp.MustCompile(
-	`(?i)"(cloudflare_api_token|cloudflare_api_key|cf_api_token|cf_api_key|cloudflare_token|cf_token|cloudflare_auth_key|cf_account_id)"\s*:\s*"([A-Za-z0-9_-]{40})\b"`,
-)
+var (
+	// keywordRe matches Cloudflare-related context keywords (case-insensitive),
+	// optionally surrounded by quotes, followed by a separator (= or :).
+	// Handles env var (KEY=), JSON ("KEY":), and YAML (key:) formats.
+	keywordRe = regexp.MustCompile(
+		`(?i)["']?\b(?:CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_KEY|CF_API_TOKEN|CF_API_KEY|CLOUDFLARE_TOKEN|CF_TOKEN|CLOUDFLARE_AUTH_KEY|CF_ACCOUNT_ID|api_token)\b["']?\s*[=:]`,
+	)
 
-// yamlRe matches YAML key-value pairs.
-// Examples: cloudflare_api_token: token, api_token: "token"
-var yamlRe = regexp.MustCompile(
-	`(?i)(cloudflare_api_token|cloudflare_api_key|cf_api_token|cf_api_key|cloudflare_token|cf_token|cloudflare_auth_key|cf_account_id|api_token)\s*:\s*['"]?([A-Za-z0-9_-]{40})\b['"]?`,
+	// tokenRe matches a 40-character alphanumeric token (with underscores and hyphens).
+	tokenRe = regexp.MustCompile(`\b[A-Za-z0-9_-]{40}\b`)
 )
 
 var _ veles.Detector = NewDetector()
 
-// detector is a Veles Detector.
-type detector struct{}
-
 // NewDetector returns a new Detector that matches
-// Cloudflare API Tokens.
+// Cloudflare API Tokens by finding a keyword-token pair.
 func NewDetector() veles.Detector {
-	return &detector{}
-}
-
-func (d *detector) MaxSecretLen() uint32 {
-	return maxTokenLength
-}
-
-func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var offsets []int
-	seenTokens := make(map[string]bool)
-
-	// Define all regex patterns to check
-	patterns := []*regexp.Regexp{
-		envVarRe,
-		jsonRe,
-		yamlRe,
+	return &pair.Detector{
+		MaxElementLen: maxTokenLength,
+		MaxDistance:   maxDistance,
+		FindA:         pair.FindAllMatches(keywordRe),
+		FindB:         pair.FindAllMatches(tokenRe),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return CloudflareAPIToken{Token: string(p.B.Value)}, true
+		},
 	}
-
-	// Check each pattern
-	for _, pattern := range patterns {
-		matches := pattern.FindAllSubmatchIndex(content, -1)
-		for _, match := range matches {
-			// match[4] and match[5] contain the start and end indices of the second capture group (the token)
-			if len(match) >= 6 {
-				tokenStart := match[4]
-				tokenEnd := match[5]
-				token := string(content[tokenStart:tokenEnd])
-
-				if !seenTokens[token] {
-					secrets = append(secrets, CloudflareAPIToken{
-						Token: token,
-					})
-					offsets = append(offsets, tokenStart)
-					seenTokens[token] = true
-				}
-			}
-		}
-	}
-
-	return secrets, offsets
 }

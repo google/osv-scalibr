@@ -23,9 +23,19 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `7awgM4jG5SQvxcvmNzhKj8PQjxo7awgM4jG5SQvx`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		cloudflareapitoken.NewDetector(),
+		"CLOUDFLARE_API_TOKEN="+testKey,
+		cloudflareapitoken.CloudflareAPIToken{Token: testKey},
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Cloudflare API Token/s.
@@ -117,8 +127,22 @@ func TestDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name:  "JSON format with CLOUDFLARE_API_TOKEN with whitespaces",
+			input: `{"CLOUDFLARE_API_TOKEN" : " ` + testKey + ` " }`,
+			want: []veles.Secret{
+				cloudflareapitoken.CloudflareAPIToken{Token: testKey},
+			},
+		},
+		{
 			name:  "YAML format with cloudflare_api_token",
 			input: `cloudflare_api_token: "` + testKey + `"`,
+			want: []veles.Secret{
+				cloudflareapitoken.CloudflareAPIToken{Token: testKey},
+			},
+		},
+		{
+			name:  "YAML format with cloudflare_api_token with whitespaces",
+			input: `cloudflare_api_token: " ` + testKey + ` "`,
 			want: []veles.Secret{
 				cloudflareapitoken.CloudflareAPIToken{Token: testKey},
 			},
@@ -150,8 +174,8 @@ func TestDetector_truePositives(t *testing.T) {
 			input: `CLOUDFLARE_API_TOKEN="` + testKey + `"
 CF_API_KEY=` + testKey[:len(testKey)-1] + `a`,
 			want: []veles.Secret{
-				cloudflareapitoken.CloudflareAPIToken{Token: testKey},
 				cloudflareapitoken.CloudflareAPIToken{Token: testKey[:len(testKey)-1] + "a"},
+				cloudflareapitoken.CloudflareAPIToken{Token: testKey},
 			},
 		},
 		{

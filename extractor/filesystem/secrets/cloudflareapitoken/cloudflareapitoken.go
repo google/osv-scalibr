@@ -17,7 +17,6 @@
 package cloudflareapitoken
 
 import (
-	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -37,7 +36,7 @@ const (
 // FileRequired reports whether the plugin should scan the given file.
 // It restricts scanning to paths that contain "cloudflare" in the path or filename.
 func FileRequired(api filesystem.FileAPI) bool {
-	path := strings.ToLower(filepath.ToSlash(api.Path()))
+	path := strings.ToLower(api.Path())
 	return strings.Contains(path, "cloudflare")
 }
 
