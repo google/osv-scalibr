@@ -140,6 +140,13 @@ func TestExtract(t *testing.T) {
 			WantPackages: nil,
 		},
 		{
+			Name: "maven_install not from rules_jvm_external",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/MODULE_NOT_ACTUAL_MAVEN_INSTALL.bazel",
+			},
+			WantPackages: nil,
+		},
+		{
 			Name: "invalid build file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/INVALID.bazel",
