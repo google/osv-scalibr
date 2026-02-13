@@ -220,6 +220,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP Bearer                                 | `secrets/httpbearer`                   |
 | HTTP CSRF Token                             | `secrets/csrftoken`                    |
 | HTTP Cookie                                 | `secrets/httpcookie`                   |
+| Qwen AI API Key                             | `secrets/qwenpat`                      |
 
 ### Sensitive information
 | Type                                           | Extractor Plugin                       |

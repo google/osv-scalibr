@@ -944,6 +944,7 @@ message SecretData {
     HTTPBearer http_bearer = 90;
     HTTPCSRFToken http_csrf_token = 91;
     HTTPCookie http_cookie = 92;
+    QwenPat qwen__pat = 93;
   }
 
   message GCPSAK {
@@ -1422,6 +1423,9 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+  message QwenPat {
+    string pat = 1;
   }
 }
 

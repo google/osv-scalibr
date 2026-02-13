@@ -71,6 +71,7 @@ import (
 	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
+	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
@@ -336,6 +337,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return httpCSRFToProto(t), nil
 	case veleshttp.Cookie:
 		return httpCookieToProto(t), nil
+	case qwenpat.QwenPAT:
+		return qwenPATToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1195,6 +1198,18 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+
+func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_QwenPat_{
+			QwenPat: &spb.SecretData_QwenPat{
+				Pat: s.Pat,
+			},
+		},
+	}
+}
+
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1556,6 +1571,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return veleshttp.Cookie{
 			Values: s.GetHttpCookie().GetValues(),
 		}, nil
+	case *spb.SecretData_QwenPat_:
+		return qwenPATToStruct(s.GetQwenPat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1974,5 +1991,12 @@ func vapidKeyToProto(t vapid.Key) *spb.SecretData {
 				PublicB64:  t.PublicB64,
 			},
 		},
+	}
+}
+
+
+func qwenPATToStruct(kPB *spb.SecretData_QwenPat) qwenpat.QwenPAT {
+	return qwenpat.QwenPAT{
+		Pat: kPB.GetPat(),
 	}
 }

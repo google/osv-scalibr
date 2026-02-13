@@ -491,6 +491,7 @@ var (
 		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
 		{http.NewCookieDetector(), "secrets/httpcookie", 0},
+		{qwenpat.NewDetector(), "secrets/qwenpat", 0},
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
