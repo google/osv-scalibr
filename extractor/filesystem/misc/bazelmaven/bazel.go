@@ -130,68 +130,75 @@ func FindAllMavenDependencies(input []byte) (RuleDependencies, error) {
 
 	// Process all statements
 	for _, stmt := range f.Stmt {
-		if rule, ok := stmt.(*build.CallExpr); ok {
-			r := &build.Rule{Call: rule}
-			// Check the type of rule.X to handle both direct rule names "rule_name(...)" and dot expressions ".rule_name(...)"
-			switch x := rule.X.(type) {
-			case *build.Ident:
-				ruleName := x.Name
-				switch ruleName {
-				case "maven_install":
-					//https://github.com/bazel-contrib/rules_jvm_external/blob/1c5cfbf96de595a3e23cf440fb40380cc28c1aea/docs/api.md#maven_install
-					// Check if maven_install is loaded from "@rules_jvm_external//:defs.bzl"
-					source, exists := loadMapping["maven_install"]
-					isMavenInstallFromRulesJvmExt := exists && source == "@rules_jvm_external//:defs.bzl"
-					if isMavenInstallFromRulesJvmExt {
-						if r.Attr("artifacts") != nil {
-							artifacts := getAttributeArrayValues(r, f, "artifacts")
-							// Add a note about the source in the rule name if it's from rules_jvm_external
-							allDeps["maven_install"] = append(allDeps["maven_install"], ExtractMavenArtifactInfo(artifacts)...)
-						}
-						break
-					}
-				}
-
-			case *build.DotExpr:
-				// Check if this is a dot expression (like variable.install)
-				// and the "variable" is assigned by an extension with known specs
-				ruleName := x.Name
-				if varName, ok := x.X.(*build.Ident); ok {
-					if _, exists := extensionVarsMapping[varName.Name]; exists {
-						// Check if the base variable is from an extension
-						extInfo := extensionVarsMapping[varName.Name]
-						// For maven extension, handle artifacts attribute
-						if extInfo.BzlFile == "@rules_jvm_external//:extensions.bzl" &&
-							extInfo.Name == "maven" {
-							switch ruleName {
-							// https://github.com/bazel-contrib/rules_jvm_external/blob/1c5cfbf96de595a3e23cf440fb40380cc28c1aea/docs/bzlmod-api.md#maven
-							case "install":
-								if artifactsAttr := r.Attr("artifacts"); artifactsAttr != nil {
-									artifacts := getAttributeArrayValues(r, f, "artifacts")
-									allDeps["maven.install"] = append(allDeps["maven.install"], ExtractMavenArtifactInfo(artifacts)...)
-								}
-							case "artifact":
-								// A single artifact
-								if r.Attr("group") != nil && r.Attr("artifact") != nil && r.Attr("version") != nil {
-									group := getAttributeStringValue(r, f, "group")
-									artifact := getAttributeStringValue(r, f, "artifact")
-									version := getAttributeStringValue(r, f, "version")
-									allDeps["maven.artifact"] = append(allDeps["maven.artifact"], bazelmetadata.Metadata{
-										Name:       group + ":" + artifact,
-										GroupID:    group,
-										ArtifactID: artifact,
-										Version:    version,
-									})
-								}
-							}
-						}
-					}
-				}
-			}
+		rule, ok := stmt.(*build.CallExpr)
+		if !ok {
+			continue
+		}
+		r := &build.Rule{Call: rule}
+		// Check the type of rule.X to handle both direct rule names "rule_name(...)" and dot expressions ".rule_name(...)"
+		switch x := rule.X.(type) {
+		case *build.Ident:
+			processIdentRule(x, r, f, loadMapping, allDeps)
+		case *build.DotExpr:
+			processDotExprRule(x, r, f, extensionVarsMapping, allDeps)
 		}
 	}
 
 	return allDeps, nil
+}
+
+// processIdentRule handles direct rule name calls (e.g. "maven_install(...)").
+// It checks whether the rule is loaded from a known source and extracts artifacts accordingly.
+func processIdentRule(x *build.Ident, r *build.Rule, f *build.File, loads loadMapping, allDeps RuleDependencies) {
+	if x.Name == "maven_install" {
+		source, exists := loads["maven_install"]
+		isMavenInstallFromRulesJvmExt := exists && source == "@rules_jvm_external//:defs.bzl"
+		if isMavenInstallFromRulesJvmExt {
+			if r.Attr("artifacts") != nil {
+				artifacts := getAttributeArrayValues(r, f, "artifacts")
+				allDeps["maven_install"] = append(allDeps["maven_install"], ExtractMavenArtifactInfo(artifacts)...)
+			}
+		}
+	}
+}
+
+// processDotExprRule handles dot-expression rule calls (e.g. "maven.install(...)").
+// It resolves the base variable through the extension variable mapping and extracts
+// Maven dependencies for known extension methods like "install" and "artifact".
+func processDotExprRule(x *build.DotExpr, r *build.Rule, f *build.File, extensionVars map[string]extensionInfo, allDeps RuleDependencies) {
+	varName, ok := x.X.(*build.Ident)
+	if !ok {
+		return
+	}
+	extInfo, exists := extensionVars[varName.Name]
+	if !exists {
+		return
+	}
+	// Only handle the maven extension from rules_jvm_external
+	if extInfo.BzlFile != "@rules_jvm_external//:extensions.bzl" || extInfo.Name != "maven" {
+		return
+	}
+
+	switch x.Name {
+	// https://github.com/bazel-contrib/rules_jvm_external/blob/1c5cfbf96de595a3e23cf440fb40380cc28c1aea/docs/bzlmod-api.md#maven
+	case "install":
+		if r.Attr("artifacts") != nil {
+			artifacts := getAttributeArrayValues(r, f, "artifacts")
+			allDeps["maven.install"] = append(allDeps["maven.install"], ExtractMavenArtifactInfo(artifacts)...)
+		}
+	case "artifact":
+		if r.Attr("group") != nil && r.Attr("artifact") != nil && r.Attr("version") != nil {
+			group := getAttributeStringValue(r, f, "group")
+			artifact := getAttributeStringValue(r, f, "artifact")
+			version := getAttributeStringValue(r, f, "version")
+			allDeps["maven.artifact"] = append(allDeps["maven.artifact"], bazelmetadata.Metadata{
+				Name:       group + ":" + artifact,
+				GroupID:    group,
+				ArtifactID: artifact,
+				Version:    version,
+			})
+		}
+	}
 }
 
 // ExtractMavenArtifactInfo extracts Maven coordinates from artifact strings like "org.jetbrains.kotlin:kotlin-stdlib:1.7.10"

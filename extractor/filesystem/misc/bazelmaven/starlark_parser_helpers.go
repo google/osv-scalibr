@@ -197,35 +197,45 @@ func findExtensionVariables(file *build.File) map[string]extensionInfo {
 	extensionVars := make(map[string]extensionInfo)
 
 	for _, stmt := range file.Stmt {
-		if assign, ok := stmt.(*build.AssignExpr); ok {
-			// Check if it's a variable assignment
-			if lhs, ok := assign.LHS.(*build.Ident); ok {
-				// Check if RHS is a use_extension call
-				if call, ok := assign.RHS.(*build.CallExpr); ok {
-					if ident, ok := call.X.(*build.Ident); ok && ident.Name == "use_extension" {
-						// Check if it has at least 2 arguments
-						if len(call.List) >= 2 {
-							// Get the first argument (extension bzlFile)
-							var bzlFile string
-							if pathExpr, ok := call.List[0].(*build.StringExpr); ok {
-								bzlFile = pathExpr.Value
-							}
+		assign, ok := stmt.(*build.AssignExpr)
+		if !ok {
+			continue
+		}
+		// Check if it's a variable assignment
+		lhs, ok := assign.LHS.(*build.Ident)
+		if !ok {
+			continue
+		}
+		// Check if RHS is a use_extension call
+		call, ok := assign.RHS.(*build.CallExpr)
+		if !ok {
+			continue
+		}
+		ident, ok := call.X.(*build.Ident)
+		if !ok || ident.Name != "use_extension" {
+			continue
+		}
+		// Check if it has at least 2 arguments
+		if len(call.List) < 2 {
+			continue
+		}
 
-							// Get the second argument (extension type)
-							var extensionName string
-							if typeExpr, ok := call.List[1].(*build.StringExpr); ok {
-								extensionName = typeExpr.Value
-							}
+		// Get the first argument (extension bzlFile)
+		var bzlFile string
+		if pathExpr, ok := call.List[0].(*build.StringExpr); ok {
+			bzlFile = pathExpr.Value
+		}
 
-							// Record the variable name and its extension info
-							extensionVars[lhs.Name] = extensionInfo{
-								BzlFile: bzlFile,
-								Name:    extensionName,
-							}
-						}
-					}
-				}
-			}
+		// Get the second argument (extension type)
+		var extensionName string
+		if typeExpr, ok := call.List[1].(*build.StringExpr); ok {
+			extensionName = typeExpr.Value
+		}
+
+		// Record the variable name and its extension info
+		extensionVars[lhs.Name] = extensionInfo{
+			BzlFile: bzlFile,
+			Name:    extensionName,
 		}
 	}
 
