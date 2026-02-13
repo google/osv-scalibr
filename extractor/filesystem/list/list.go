@@ -53,8 +53,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/manifesttoml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/projecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -116,6 +119,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
@@ -130,6 +134,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
+	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
@@ -147,8 +152,11 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
@@ -226,6 +234,8 @@ var (
 	NimSource = InitMap{nimble.Name: {nimble.New}}
 	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
+	// OcamlSource extractors for OCaml.
+	OcamlSource = InitMap{opam.Name: {opam.New}}
 	// ElixirSource extractors for Elixir.
 	ElixirSource = InitMap{elixir.Name: {elixir.New}}
 	// HaskellSource extractors for Haskell.
@@ -248,6 +258,15 @@ var (
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.New},
+	}
+	// JuliaSource extractors for Julia.
+	JuliaSource = InitMap{
+		projecttoml.Name:  {projecttoml.New},
+		manifesttoml.Name: {manifesttoml.New},
+	}
+	// JuliaArtifact extractors for Julia.
+	JuliaArtifact = InitMap{
+		manifesttoml.Name: {manifesttoml.New},
 	}
 	// SBOM extractors.
 	SBOM = InitMap{
@@ -329,6 +348,8 @@ var (
 		{slacktoken.NewAppLevelTokenDetector(), "secrets/slackappleveltoken", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
 		{elasticcloudapikey.NewDetector(), "secrets/elasticcloudapikey", 0},
+		{denopat.NewUserTokenDetector(), "secrets/denopatuser", 0},
+		{denopat.NewOrgTokenDetector(), "secrets/denopatorg", 0},
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
 		{gcpsak.NewDetector(), "secrets/gcpsak", 0},
@@ -348,6 +369,7 @@ var (
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
 		{privatekey.NewDetector(), "secrets/privatekey", 0},
 		{rubygemsapikey.NewDetector(), "secrets/rubygemsapikey", 0},
+		{sendgrid.NewDetector(), "secrets/sendgrid", 0},
 		{tinkkeyset.NewDetector(), "secrets/tinkkeyset", 0},
 		{github.NewAppRefreshTokenDetector(), "secrets/githubapprefreshtoken", 0},
 		{github.NewAppS2STokenDetector(), "secrets/githubapps2stoken", 0},
@@ -358,6 +380,8 @@ var (
 		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{squareapikey.NewPersonalAccessTokenDetector(), "secrets/squarepersonalaccesstoken", 0},
+		{squareapikey.NewOAuthApplicationSecretDetector(), "secrets/squareoauthapplicationsecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
 		{gcpoauth2access.NewDetector(), "secrets/gcpoauth2accesstoken", 0},
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
@@ -374,6 +398,8 @@ var (
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 		{salesforceoauth2access.NewDetector(), "secrets/salesforceoauth2access", 0},
 		{salesforceoauth2client.NewDetector(), "secrets/salesforceoauth2client", 0},
+		{herokuplatformkey.NewSecretKeyDetector(), "secrets/herokuplatformkey", 0},
+		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 	})
 
@@ -431,9 +457,11 @@ var (
 		RSource,
 		RubySource,
 		RustSource,
+		JuliaSource,
 		DotnetSource,
 		SwiftSource,
 		NimSource,
+		OcamlSource,
 		LuaSource,
 		Secrets,
 		MiscSource,
@@ -455,6 +483,7 @@ var (
 		Containers,
 		Secrets,
 		FFA,
+		JuliaArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -483,6 +512,7 @@ var (
 		"erlang":     vals(ErlangSource),
 		"lua":        vals(LuaSource),
 		"nim":        vals(NimSource),
+		"ocaml":      vals(OcamlSource),
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
 		"r":          vals(RSource),
@@ -490,6 +520,7 @@ var (
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
+		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
 
 		"sbom":       vals(SBOM),

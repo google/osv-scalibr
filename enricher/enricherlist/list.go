@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/ffa/baseimageattr"
 	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
+	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
@@ -43,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
@@ -56,6 +58,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
+	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
@@ -66,8 +69,11 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
+	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
@@ -111,11 +117,14 @@ var (
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
 		fromVeles(elasticcloudapikey.NewValidator(), "secrets/elasticcloudapikeyvalidate", 0),
 		fromVeles(pypiapitoken.NewValidator(), "secrets/pypiapitokenvalidate", 0),
+		fromVeles(sendgrid.NewValidator(), "secrets/sendgridvalidate", 0),
 		fromVeles(cratesioapitoken.NewValidator(), "secrets/cratesioapitokenvalidate", 0),
 		fromVeles(slacktoken.NewAppLevelTokenValidator(), "secrets/slackappleveltokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigRefreshTokenValidator(), "secrets/slackconfigrefreshtokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigAccessTokenValidator(), "secrets/slackconfigaccesstokenvalidate", 0),
 		fromVeles(dockerhubpat.NewValidator(), "secrets/dockerhubpatvalidate", 0),
+		fromVeles(denopat.NewUserTokenValidator(), "secrets/denopatuservalidate", 0),
+		fromVeles(denopat.NewOrgTokenValidator(), "secrets/denopatorgvalidate", 0),
 		fromVeles(gcpsak.NewValidator(), "secrets/gcpsakvalidate", 0),
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
@@ -140,8 +149,11 @@ var (
 		fromVeles(github.NewFineGrainedPATValidator(), "secrets/githubfinegrainedpatvalidate", 0),
 		fromVeles(stripeapikeys.NewSecretKeyValidator(), "secrets/stripesecretkeyvalidate", 0),
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
+		fromVeles(squareapikey.NewPersonalAccessTokenValidator(), "secrets/squarepersonalaccesstokenvalidate", 0),
+		fromVeles(squareapikey.NewOAuthApplicationSecretValidator(), "secrets/squareoauthapplicationsecretvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
 		fromVeles(paystacksecretkey.NewValidator(), "secrets/paystacksecretkeyvalidate", 0),
+		fromVeles(herokuplatformkey.NewValidator(), "secrets/herokuplatformkeykeyvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
 		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
 		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
@@ -152,12 +164,14 @@ var (
 		fromVeles(salesforceoauth2access.NewValidator(), "secrets/salesforceoauth2accessvalidate", 0),
 		fromVeles(salesforceoauth2client.NewValidator(), "secrets/salesforceoauth2clientvalidate", 0),
 		fromVeles(salesforceoauth2refresh.NewValidator(), "secrets/salesforceoauth2refreshvalidate", 0),
+		fromVeles(salesforceoauth2jwt.NewValidator(), "secrets/salesforceoauth2jwtvalidate", 0),
 		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
 	SecretsEnrich = InitMap{
-		hcpidentity.Name: {noCFG(hcpidentity.New)},
+		hcpidentity.Name:      {noCFG(hcpidentity.New)},
+		herokuexpiration.Name: {noCFG(herokuexpiration.New)},
 	}
 
 	// HuggingfaceMeta enricher.

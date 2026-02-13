@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 )
@@ -79,7 +81,7 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 		serverExpectedToken string
 		serverResponseCode  int
 		want                veles.ValidationStatus
-		expectError         bool
+		wantErr             error
 	}{
 		{
 			name:                "valid_token",
@@ -99,13 +101,13 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 	}
 
@@ -130,15 +132,8 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), token)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
@@ -185,7 +180,7 @@ func TestProjectTokenValidator(t *testing.T) {
 		serverExpectedToken string
 		serverResponseCode  int
 		want                veles.ValidationStatus
-		expectError         bool
+		wantErr             error
 	}{
 		{
 			name:                "valid_token_project_not_found",
@@ -212,13 +207,13 @@ func TestProjectTokenValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 	}
 
@@ -237,24 +232,14 @@ func TestProjectTokenValidator(t *testing.T) {
 			validator := circleci.NewProjectTokenValidator()
 			validator.HTTPC = client
 
-			// Create a test token
 			token := circleci.ProjectToken{Token: tc.token}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), token)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
