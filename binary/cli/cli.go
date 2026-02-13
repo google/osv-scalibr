@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -151,6 +151,7 @@ type Flags struct {
 	StoreAbsolutePath     bool
 	WindowsAllDrives      bool
 	Offline               bool
+	AllowUnsafePlugins    bool
 }
 
 var supportedOutputFormats = []string{
@@ -509,12 +510,12 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 					return err
 				}
 			} else if strings.Contains(oFormat, "spdx23") {
-				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
+				doc := converter.ToSPDX23(result.Inventory, f.GetSPDXConfig())
 				if err := binspdx.Write23(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			} else if strings.Contains(oFormat, "cdx") {
-				doc := converter.ToCDX(result, f.GetCDXConfig())
+				doc := converter.ToCDX(result.Inventory, f.GetCDXConfig())
 				if err := cdx.Write(doc, oPath, oFormat); err != nil {
 					return err
 				}
@@ -665,17 +666,19 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 	if f.RemoteImage != "" {
 		// We're scanning a Linux container image whose filesystem is mounted to the host's disk.
 		return &plugin.Capabilities{
-			OS:            plugin.OSLinux,
-			Network:       network,
-			DirectFS:      true,
-			RunningSystem: false,
+			OS:                 plugin.OSLinux,
+			Network:            network,
+			DirectFS:           true,
+			RunningSystem:      false,
+			AllowUnsafePlugins: f.AllowUnsafePlugins,
 		}
 	}
 	return &plugin.Capabilities{
-		OS:            platform.OS(),
-		Network:       network,
-		DirectFS:      true,
-		RunningSystem: true,
+		OS:                 platform.OS(),
+		Network:            network,
+		DirectFS:           true,
+		RunningSystem:      true,
+		AllowUnsafePlugins: f.AllowUnsafePlugins,
 	}
 }
 
@@ -686,6 +689,8 @@ func filterByCapabilities(plugins []plugin.Plugin, capab *plugin.Capabilities) [
 	for _, p := range plugins {
 		if err := plugin.ValidateRequirements(p, capab); err == nil {
 			fp = append(fp, p)
+		} else {
+			log.Warnf("Disabling plugin %q: %v", p.Name(), err)
 		}
 	}
 	return fp

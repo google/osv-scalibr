@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor
 func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{Network: plugin.NetworkOffline}
+	return &plugin.Capabilities{}
 }
 
 // FileRequired returns true if the specified file matches Maven POM lockfile patterns.

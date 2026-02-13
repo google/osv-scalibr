@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ type InitMap map[string][]InitFn
 
 // CIS scanning related detectors.
 var CIS = InitMap{
-	etcpasswdpermissions.Name: {noCFG(etcpasswdpermissions.New)},
+	etcpasswdpermissions.Name: {etcpasswdpermissions.New},
 }
 
 // Govulncheck detectors.
@@ -63,17 +63,17 @@ var EndOfLife = InitMap{linuxdistro.Name: {noCFG(linuxdistro.New)}}
 // TODO(b/405223999): Add tests.
 var Untested = InitMap{
 	// CVE-2023-38408 OpenSSH detector.
-	cve202338408.Name: {noCFG(cve202338408.New)},
+	cve202338408.Name: {cve202338408.New},
 	// CVE-2022-33891 Spark UI detector.
-	cve202233891.Name: {noCFG(cve202233891.New)},
+	cve202233891.Name: {cve202233891.New},
 	// CVE-2020-16846 Salt detector.
-	cve202016846.Name: {noCFG(cve202016846.New)},
+	cve202016846.Name: {cve202016846.New},
 	// CVE-2023-6019 Ray Dashboard detector.
-	cve20236019.Name: {noCFG(cve20236019.New)},
+	cve20236019.Name: {cve20236019.New},
 	// CVE-2020-11978 Apache Airflow detector.
-	cve202011978.Name: {noCFG(cve202011978.New)},
+	cve202011978.Name: {cve202011978.New},
 	// CVE-2024-2912 BentoML detector.
-	cve20242912.Name: {noCFG(cve20242912.New)},
+	cve20242912.Name: {cve20242912.New},
 }
 
 // Weakcredentials detectors for weak credentials.
@@ -93,7 +93,7 @@ var Misc = InitMap{
 // CVE for vulnerabilities that have a CVE associated
 var CVE = InitMap{
 	// CVE-2025-7775 detector
-	cve20257775.Name: {noCFG(cve20257775.New)},
+	cve20257775.Name: {cve20257775.New},
 }
 
 // Default detectors that are recommended to be enabled.

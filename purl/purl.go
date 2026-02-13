@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ const (
 	TypeCocoapods = "cocoapods"
 	// TypeCargo is a pkg:cargo purl.
 	TypeCargo = "cargo"
+	// TypeJulia is a pkg:julia purl.
+	TypeJulia = "julia"
 	// TypeComposer is a pkg:composer purl.
 	TypeComposer = "composer"
 	// TypeConan is a pkg:conan purl.
@@ -85,6 +87,8 @@ const (
 	TypeNuget = "nuget"
 	// TypeOCI is a pkg:oci purl
 	TypeOCI = "oci"
+	// TypeOpam is a pkg:opam purl.
+	TypeOpam = "opam"
 	// TypeOpkg is a pkg:opkg purl.
 	TypeOpkg = "opkg"
 	// TypePub is a pkg:pub purl.
@@ -213,6 +217,7 @@ func validType(t string) bool {
 		TypeNPM:        true,
 		TypeNuget:      true,
 		TypeOCI:        true,
+		TypeOpam:       true,
 		TypeOpkg:       true,
 		TypePub:        true,
 		TypePortage:    true,

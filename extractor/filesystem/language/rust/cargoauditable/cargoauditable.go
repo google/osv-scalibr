@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,64 +29,49 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/rust-secure-code/go-rustaudit"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "rust/cargoauditable"
+
+	// defaultExtractBuildDependencies is whether to extract build dependencies or only runtime ones.
+	defaultExtractBuildDependencies = false
+
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
 )
-
-// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
-// If Extract gets a bigger file, it will return an error.
-const defaultMaxFileSizeBytes = 0
-
-// defaultExtractBuildDependencies is whether to extract build dependencies or only runtime ones.
-const defaultExtractBuildDependencies = false
-
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
-	// If this limit is greater than zero and a file is encountered that is larger
-	// than this limit, the file is ignored by returning false for `FileRequired`.
-	MaxFileSizeBytes int64
-	// ExtractBuildDependencies is whether to extract build dependencies or only runtime ones.
-	ExtractBuildDependencies bool
-}
 
 // Extractor for extracting dependencies from cargo auditable inside rust binaries.
 type Extractor struct {
-	stats                    stats.Collector
+	Stats                    stats.Collector
 	maxFileSizeBytes         int64
 	extractBuildDependencies bool
 }
 
-// DefaultConfig returns a default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		Stats:                    nil,
-		MaxFileSizeBytes:         defaultMaxFileSizeBytes,
-		ExtractBuildDependencies: defaultExtractBuildDependencies,
-	}
-}
-
 // New returns a Cargo Auditable extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:                    cfg.Stats,
-		maxFileSizeBytes:         cfg.MaxFileSizeBytes,
-		extractBuildDependencies: cfg.ExtractBuildDependencies,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	extractBuildDependencies := defaultExtractBuildDependencies
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.CargoAuditableConfig { return c.GetCargoAuditable() })
+	if specific != nil {
+		if specific.GetMaxFileSizeBytes() > 0 {
+			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+		}
+		extractBuildDependencies = specific.GetExtractBuildDependencies()
+	}
+
+	return &Extractor{
+		maxFileSizeBytes:         maxFileSizeBytes,
+		extractBuildDependencies: extractBuildDependencies,
+	}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -110,14 +95,14 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 
-	sizeLimitExceeded := e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes
+	sizeLimitExceeded := e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes
 	result := stats.FileRequiredResultOK
 	if sizeLimitExceeded {
 		result = stats.FileRequiredResultSizeLimitExceeded
 	}
 
-	if e.stats != nil {
-		e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	if e.Stats != nil {
+		e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 			Path:          path,
 			Result:        result,
 			FileSizeBytes: fileinfo.Size(),
@@ -161,10 +146,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) reportFileExtracted(input *filesystem.ScanInput, result stats.FileExtractedResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+	e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 		Path:          input.Path,
 		Result:        result,
 		FileSizeBytes: input.Info.Size(),
