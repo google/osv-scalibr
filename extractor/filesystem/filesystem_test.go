@@ -352,7 +352,6 @@ func TestRunFS(t *testing.T) {
 		dirsToSkip       []string
 		skipDirGlob      string
 		skipDirRegex     string
-		storeAbsPath     bool
 		maxInodes        int
 		maxFileSizeBytes int
 		wantErr          error
@@ -771,28 +770,6 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Extractors_successful_store_absolute_path_when_requested",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
-				{
-					Name:      name1,
-					Locations: []string{filepath.Join(cwd, path1)},
-					Plugins:   []string{fakeEx1.Name()},
-				},
-				{
-					Name:      name2,
-					Locations: []string{filepath.Join(cwd, path2)},
-					Plugins:   []string{fakeEx2.Name()},
-				},
-			}},
-			storeAbsPath: true,
-			wantStatus: []*plugin.Status{
-				{Name: "ex1", Version: 1, Status: success},
-				{Name: "ex2", Version: 2, Status: success},
-			},
-			wantInodeCount: 6,
-		},
-		{
 			desc: "Extractor_runs_on_directory",
 			ex:   []filesystem.Extractor{fakeEx1, fakeExDirs},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
@@ -847,8 +824,7 @@ func TestRunFS(t *testing.T) {
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},
-				Stats:             fc,
-				StoreAbsolutePath: tc.storeAbsPath,
+				Stats: fc,
 			}
 			wc, err := filesystem.InitWalkContext(
 				t.Context(), config, []*scalibrfs.ScanRoot{{
@@ -1019,8 +995,7 @@ func TestRunFSGitignore(t *testing.T) {
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},
-				Stats:             fc,
-				StoreAbsolutePath: false,
+				Stats: fc,
 			}
 			wc, err := filesystem.InitWalkContext(
 				t.Context(), config, []*scalibrfs.ScanRoot{{

@@ -80,5 +80,9 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 		statuses = append(statuses, plugin.StatusFromErr(extractor, false, nil, nil))
 	}
 
+	for _, p := range inv.Packages {
+		p.ScanRoot = config.ScanRoot.Path
+	}
+
 	return inv, statuses, nil
 }
