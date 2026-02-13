@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
 
@@ -799,6 +800,7 @@ message SecretData {
     SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
     SendGridAPIKey sendgrid_api_key = 72;
     DenoPat deno_pat = 73;
+    HerokuSecretKey heroku_secret_key = 74;
   }
 
   message GCPSAK {
@@ -1116,6 +1118,19 @@ message SecretData {
 
   message PaystackSecretKey {
     string key = 1;
+  }
+
+  message HerokuSecretKey {
+    string key = 1;
+    // Optional enrichment fields populated when available
+    optional HerokuSecretKeyMetadata heroku_secret_key_metadata = 2;
+  }
+
+  message HerokuSecretKeyMetadata {
+    // expire_time is nil if the token doesn't expire, and never_expires becomes
+    // true
+    google.protobuf.Duration expire_time = 1;
+    bool never_expires = 2;
   }
 
   message TelegramBotToken {
