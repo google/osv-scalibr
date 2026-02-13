@@ -204,6 +204,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
+| Qwen AI API Key 			      			  | `secrets/qwenpat` 		               |
 
 ### Container inventory
 
