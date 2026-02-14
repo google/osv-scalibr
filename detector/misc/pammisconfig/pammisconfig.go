@@ -260,6 +260,20 @@ type controlEffect struct {
 	isOptionalOnly   bool
 }
 
+func (c *controlEffect) ShortCircuits() bool {
+	if c == nil {
+		return false
+	}
+	return c.isSufficientLike || c.skipNext > 0
+}
+
+func (c *controlEffect) IsOptionalOnly() bool {
+	if c == nil {
+		return false
+	}
+	return c.isOptionalOnly
+}
+
 // pamEntry represents a parsed PAM configuration line.
 type pamEntry struct {
 	moduleType string // auth, account, password, session
@@ -357,38 +371,28 @@ func analyzePAMEntry(filePath string, lineNum int, entry *pamEntry) []string {
 		return issues
 	}
 
-	// Check 1 and Check 2 rely on parsed control semantics (sufficient/optional/skip).
-	// If no parsed control effect is available, skip those checks.
-	hasControlEffect := entry.controlEff != nil
-
 	// Check 1: pam_permit.so in auth/account stack
 	// pam_permit.so ALWAYS returns success, so using it with bypass controls
 	// means any user can authenticate without a valid password.
 	// Reference: https://serverfault.com/questions/890012/pam-accepting-any-password-for-valid-users
-	if hasControlEffect && isModule(entry.modulePath, "pam_permit.so") {
-		control := *entry.controlEff
-		if control.isSufficientLike || control.skipNext > 0 {
-			issues = append(issues, fmt.Sprintf(
-				"%s:%d: pam_permit.so with '%s' control in %s stack - this module always "+
-					"returns success, allowing %s to be bypassed",
-				filePath, lineNum, entry.control, entry.moduleType, bypassImpact(entry.moduleType)))
-		}
+	if entry.controlEff.ShortCircuits() && isModule(entry.modulePath, "pam_permit.so") {
+		issues = append(issues, fmt.Sprintf(
+			"%s:%d: pam_permit.so with '%s' control in %s stack - this module always "+
+				"returns success, allowing %s to be bypassed",
+			filePath, lineNum, entry.control, entry.moduleType, bypassImpact(entry.moduleType)))
 	}
 
 	// Check 2: pam_succeed_if.so with broad conditions as sufficient
 	// pam_succeed_if.so can match broad user groups (e.g., uid >= 1000),
 	// and when combined with 'sufficient', those users bypass further auth checks.
 	// Reference: https://unix.stackexchange.com/a/767197
-	if hasControlEffect && isModule(entry.modulePath, "pam_succeed_if.so") {
-		control := *entry.controlEff
-		if control.isSufficientLike || control.skipNext > 0 {
-			condition := extractPAMSucceedIfCondition(entry.args)
-			if condition != "" && isBroadPAMSucceedIfCondition(condition) {
-				issues = append(issues, fmt.Sprintf(
-					"%s:%d: pam_succeed_if.so with '%s' control and broad condition '%s' "+
-						"- users matching this condition can bypass %s",
-					filePath, lineNum, entry.control, condition, bypassImpact(entry.moduleType)))
-			}
+	if entry.controlEff.ShortCircuits() && isModule(entry.modulePath, "pam_succeed_if.so") {
+		condition := extractPAMSucceedIfCondition(entry.args)
+		if condition != "" && isBroadPAMSucceedIfCondition(condition) {
+			issues = append(issues, fmt.Sprintf(
+				"%s:%d: pam_succeed_if.so with '%s' control and broad condition '%s' "+
+					"- users matching this condition can bypass %s",
+				filePath, lineNum, entry.control, condition, bypassImpact(entry.moduleType)))
 		}
 	}
 
@@ -451,13 +455,6 @@ func isBroadPAMSucceedIfCondition(condition string) bool {
 	return false
 }
 
-func parsedControlEffect(effect *controlEffect) controlEffect {
-	if effect == nil {
-		return controlEffect{}
-	}
-	return *effect
-}
-
 func parseSkipCount(action string) int {
 	if action == "" {
 		return 0
@@ -500,11 +497,10 @@ func checkOptionalOnlyAuth(filePath string, entries []pamEntry) []string {
 	var hasEffectiveNonOptional bool
 	var hasPermitOptional bool
 	for _, entry := range entries {
-		control := parsedControlEffect(entry.controlEff)
-		if !control.isOptionalOnly {
+		if !entry.controlEff.IsOptionalOnly() {
 			hasEffectiveNonOptional = true
 		}
-		if isModule(entry.modulePath, "pam_permit.so") && control.isOptionalOnly {
+		if isModule(entry.modulePath, "pam_permit.so") && entry.controlEff.IsOptionalOnly() {
 			hasPermitOptional = true
 		}
 	}
