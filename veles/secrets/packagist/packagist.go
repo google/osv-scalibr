@@ -35,11 +35,17 @@ type OrgReadToken struct {
 	RepoURL string // Optional: populated when repo URL is found nearby
 }
 
+func (t OrgReadToken) getToken() string   { return t.Token }
+func (t OrgReadToken) getRepoURL() string { return t.RepoURL }
+
 // OrgUpdateToken is a Veles Secret that holds a Packagist Organization token with update access.
 type OrgUpdateToken struct {
 	Token   string
 	RepoURL string // Optional: populated when repo URL is found nearby
 }
+
+func (t OrgUpdateToken) getToken() string   { return t.Token }
+func (t OrgUpdateToken) getRepoURL() string { return t.RepoURL }
 
 // UserUpdateToken is a Veles Secret that holds a Packagist User token with update access.
 type UserUpdateToken struct {

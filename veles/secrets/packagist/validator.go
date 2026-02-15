@@ -143,12 +143,6 @@ func newOrgTokenValidator[T orgToken]() *sv.Validator[T] {
 	}
 }
 
-func (t OrgReadToken) getToken() string   { return t.Token }
-func (t OrgReadToken) getRepoURL() string { return t.RepoURL }
-
-func (t OrgUpdateToken) getToken() string   { return t.Token }
-func (t OrgUpdateToken) getRepoURL() string { return t.RepoURL }
-
 // NewOrgReadTokenValidator creates a new Packagist Organization Read Token Validator.
 // It performs a GET request to the repo URL with Basic Auth (token:token).
 // The RepoURL should be in the format https://repo.packagist.com/orgname
