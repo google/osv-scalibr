@@ -53,6 +53,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	velesnugetapikey "github.com/google/osv-scalibr/veles/secrets/nugetapikey"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -217,6 +218,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return huggingfaceAPIKeyToProto(t), nil
 	case velesmistralapikey.MistralAPIKey:
 		return mistralAPIKeyToProto(t), nil
+	case velesnugetapikey.NuGetAPIKey:
+		return nugetAPIKeyToProto(t), nil
 	case velesstripeapikeys.StripeSecretKey:
 		return stripeSecretKeyToProto(t), nil
 	case velesstripeapikeys.StripeRestrictedKey:
@@ -339,6 +342,16 @@ func squareOAuthApplicationSecretToProto(s velessquareapikey.SquareOAuthApplicat
 		Secret: &spb.SecretData_SquareOauthApplicationSecret{
 			SquareOauthApplicationSecret: &spb.SecretData_SquareOAuthApplicationSecret{
 				Id:  s.ID,
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func nugetAPIKeyToProto(s velesnugetapikey.NuGetAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_NugetApiKey{
+			NugetApiKey: &spb.SecretData_NuGetAPIKey{
 				Key: s.Key,
 			},
 		},
@@ -1214,6 +1227,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
 	case *spb.SecretData_Hugginface:
 		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
+	case *spb.SecretData_NugetApiKey:
+		return velesnugetapikey.NuGetAPIKey{
+			Key: s.GetNugetApiKey().GetKey(),
+		}, nil
 	case *spb.SecretData_StripeSecretKey_:
 		return velesstripeapikeys.StripeSecretKey{
 			Key: s.GetStripeSecretKey().GetKey(),

@@ -155,6 +155,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | OpenAI API key                              | `secrets/openai`                       |
 | OpenRouter API key                          | `secrets/openrouter`                   |
 | Perplexity API key                          | `secrets/perplexityapikey`             |
+| NuGet.org API key                           | `secrets/nugetapikey`     
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |
 | Postman API key                             | `secrets/postmanapikey`                |
