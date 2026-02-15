@@ -802,6 +802,8 @@ message SecretData {
     DenoPat deno_pat = 73;
     HerokuSecretKey heroku_secret_key = 74;
     NuGetAPIKey nuget_api_key = 78;
+    NuGetProxyCredential nuget_proxy_credential = 79;
+    NuGetPackageSourceCredential nuget_package_source_credential = 80;
 
   }
 
@@ -901,6 +903,19 @@ message SecretData {
 
   message DenoPat {
     string pat = 1;
+  }
+
+  message NuGetProxyCredential {
+    string proxy_url = 1;
+    string username = 2;
+    string password = 3;
+  }
+
+  message NuGetPackageSourceCredential {
+    string source_name = 1;
+    string username = 2;
+    string clear_text_password = 3;
+    string encrypted_password = 4;
   }
 
   message GitlabPat {

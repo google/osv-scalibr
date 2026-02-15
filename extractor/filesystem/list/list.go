@@ -109,6 +109,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/nugetconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
@@ -330,6 +331,7 @@ var (
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
+		nugetconfig.Name:             {nugetconfig.New},
 	}
 
 	// SecretDetectors for Detector interface.
