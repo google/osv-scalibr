@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 )
@@ -80,7 +82,7 @@ func TestValidator(t *testing.T) {
 		serverExpectedKey  string
 		serverResponseCode int
 		want               veles.ValidationStatus
-		expectError        bool
+		wantErr            error
 	}{
 		{
 			name:               "valid_key",
@@ -102,7 +104,7 @@ func TestValidator(t *testing.T) {
 			serverExpectedKey:  validatorTestKey,
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "bad_gateway",
@@ -110,7 +112,7 @@ func TestValidator(t *testing.T) {
 			serverExpectedKey:  validatorTestKey,
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "forbidden_valid_key_no_permissions",
@@ -142,15 +144,8 @@ func TestValidator(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
