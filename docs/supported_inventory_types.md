@@ -103,6 +103,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
+| Perl       | Perl CPAN packages                                | `perl/cpan`                          |
+
 
 ### Language runtime managers
 
