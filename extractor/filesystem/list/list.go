@@ -131,6 +131,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/jdbcurlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
@@ -382,6 +383,7 @@ var (
 		{salesforceoauth2client.NewDetector(), "secrets/salesforceoauth2client", 0},
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
+		{jdbcurlcreds.NewDetector(), "secrets/jdbcurlcreds", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

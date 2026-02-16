@@ -49,6 +49,7 @@ import (
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/jdbcurlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
@@ -257,6 +258,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return elasticCloudAPIKeyToProto(t), nil
 	case urlcreds.Credentials:
 		return urlCredentialsToProto(t), nil
+	case jdbcurlcreds.Credentials:
+		return jdbcUrlCredsToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
@@ -287,6 +290,16 @@ func urlCredentialsToProto(s urlcreds.Credentials) *spb.SecretData {
 		Secret: &spb.SecretData_UrlCredentials{
 			UrlCredentials: &spb.SecretData_URLCredentials{
 				Url: s.FullURL,
+			},
+		},
+	}
+}
+func jdbcUrlCredsToProto(s jdbcurlcreds.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_JdbcUrlCredentials{
+			JdbcUrlCredentials: &spb.SecretData_JDBCURLCredentials{
+				Url:             s.FullURL,
+				IsLocalDatabase: s.IsLocalDB,
 			},
 		},
 	}
@@ -1247,6 +1260,11 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_UrlCredentials:
 		return urlcreds.Credentials{
 			FullURL: s.GetUrlCredentials().GetUrl(),
+		}, nil
+	case *spb.SecretData_JdbcUrlCredentials:
+		return jdbcurlcreds.Credentials{
+			FullURL:   s.GetJdbcUrlCredentials().GetUrl(),
+			IsLocalDB: s.GetJdbcUrlCredentials().GetIsLocalDatabase(),
 		}, nil
 	case *spb.SecretData_PaystackSecretKey_:
 		return velespaystacksecretkey.PaystackSecret{
