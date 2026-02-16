@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
 
@@ -797,6 +798,9 @@ message SecretData {
     SquarePersonalAccessToken square_personal_access_token = 69;
     SquareOAuthApplicationSecret square_oauth_application_secret = 70;
     SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
+    SendGridAPIKey sendgrid_api_key = 72;
+    DenoPat deno_pat = 73;
+    HerokuSecretKey heroku_secret_key = 74;
   }
 
   message GCPSAK {
@@ -891,6 +895,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message DenoPat {
+    string pat = 1;
   }
 
   message GitlabPat {
@@ -1112,6 +1120,19 @@ message SecretData {
     string key = 1;
   }
 
+  message HerokuSecretKey {
+    string key = 1;
+    // Optional enrichment fields populated when available
+    optional HerokuSecretKeyMetadata heroku_secret_key_metadata = 2;
+  }
+
+  message HerokuSecretKeyMetadata {
+    // expire_time is nil if the token doesn't expire, and never_expires becomes
+    // true
+    google.protobuf.Duration expire_time = 1;
+    bool never_expires = 2;
+  }
+
   message TelegramBotToken {
     string token = 1;
   }
@@ -1119,6 +1140,10 @@ message SecretData {
   message SalesforceOAuth2AccessToken {
     // Salesforce OAuth2 Access Token
     string token = 1;
+  }
+
+  message SendGridAPIKey {
+    string key = 1;
   }
 
   message SalesforceOAuth2ClientCredentials {
