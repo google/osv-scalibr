@@ -53,6 +53,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -157,6 +158,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return pypiAPITokenToProto(t), nil
 	case cratesioapitoken.CratesIOAPItoken:
 		return cratesioAPITokenToProto(t), nil
+	case npmjsaccesstoken.NpmJsAccessToken:
+		return npmJSAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -440,6 +443,16 @@ func pypiAPITokenToProto(s pypiapitoken.PyPIAPIToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Pypi{
 			Pypi: &spb.SecretData_PyPIAPIToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func npmJSAccessTokenToProto(s npmjsaccesstoken.NpmJsAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_NpmjsAccessToken{
+			NpmjsAccessToken: &spb.SecretData_NpmJsAccessToken{
 				Token: s.Token,
 			},
 		},
@@ -1154,6 +1167,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return pypiAPITokenToStruct(s.GetPypi()), nil
 	case *spb.SecretData_CratesIoApiToken:
 		return cratesioAPITokenToStruct(s.GetCratesIoApiToken()), nil
+	case *spb.SecretData_NpmjsAccessToken:
+		return npmJSAccessTokenToStruct(s.GetNpmjsAccessToken()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -1372,6 +1387,12 @@ func pypiAPITokenToStruct(kPB *spb.SecretData_PyPIAPIToken) pypiapitoken.PyPIAPI
 
 func cratesioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapitoken.CratesIOAPItoken {
 	return cratesioapitoken.CratesIOAPItoken{
+		Token: kPB.GetToken(),
+	}
+}
+
+func npmJSAccessTokenToStruct(kPB *spb.SecretData_NpmJsAccessToken) npmjsaccesstoken.NpmJsAccessToken {
+	return npmjsaccesstoken.NpmJsAccessToken{
 		Token: kPB.GetToken(),
 	}
 }
