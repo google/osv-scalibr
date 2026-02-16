@@ -801,6 +801,7 @@ message SecretData {
     SendGridAPIKey sendgrid_api_key = 72;
     DenoPat deno_pat = 73;
     HerokuSecretKey heroku_secret_key = 74;
+    NpmJsAccessToken npmjs_access_token = 75;
   }
 
   message GCPSAK {
@@ -934,6 +935,10 @@ message SecretData {
   }
 
   message CratesIOAPIToken {
+    string token = 1;
+  }
+
+  message NpmJsAccessToken {
     string token = 1;
   }
 
