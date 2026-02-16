@@ -105,7 +105,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
 
-
 ### Language runtime managers
 
 | runtime | Details        | Extractor Plugin(s) |
