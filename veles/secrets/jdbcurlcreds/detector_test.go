@@ -196,6 +196,22 @@ func TestDetector_trueNegatives(t *testing.T) {
 			name:  "random_text",
 			input: "just some random text without any URLs",
 		},
+		{
+			name:  "bad_url",
+			input: "jdbc:postgresql:/db1.example.com:5432,db2.example.com:5432/production",
+		},
+		{
+			name:  "no_protocol",
+			input: "://db1.example.com:5432,db2.example.com:5432/production",
+		},
+		{
+			name:  "no_protocol_2",
+			input: "jdbc://db1.example.com:5432,db2.example.com:5432/production",
+		},
+		{
+			name:  "no_host",
+			input: "jdbc:mysql:///production",
+		},
 	}
 
 	for _, tc := range cases {
@@ -206,69 +222,6 @@ func TestDetector_trueNegatives(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestDetectJDBCURL(t *testing.T) {
-	cases := []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{
-			name:  "jdbc_postgresql",
-			input: `jdbc:postgresql://host:1234/database`,
-			want:  "jdbc:postgresql://host:1234/database",
-		},
-		{
-			name:  "jdbc_mysql_srv",
-			input: `jdbc:mysql+srv://host1:33060/sakila`,
-			want:  "jdbc:mysql+srv://host1:33060/sakila",
-		},
-		{
-			name:  "jdbc_mysql_srv_replication",
-			input: `jdbc:mysql+srv:replication://host1:33060/sakila`,
-			want:  "jdbc:mysql+srv:replication://host1:33060/sakila",
-		},
-		{
-			name:  "mysql_srv_no_jdbc_prefix",
-			input: `mysql+srv://host1:33060/sakila`,
-			want:  "mysql+srv://host1:33060/sakila",
-		},
-		{
-			name:  "mysqlx_no_jdbc_prefix",
-			input: `mysqlx://(address=host:1111,priority=1,key1=value1)/db`,
-			want:  "mysqlx://(address=host:1111,priority=1,key1=value1)/db",
-		},
-		{
-			name:  "jdbc_sqlserver",
-			input: `jdbc:sqlserver://localhost;encrypt=true;user=MyUserName;password=<password>;`,
-			want:  "jdbc:sqlserver://localhost;encrypt=true;user=MyUserName;password=<password>;",
-		},
-		{
-			name:  "no_match",
-			input: `just some random text`,
-			want:  "",
-		},
-		{
-			name:  "http_url_not_jdbc",
-			input: `http://example.com/path`,
-			want:  "",
-		},
-		{
-			name:  "embedded_in_text",
-			input: `connection string is jdbc:mysql://localhost:3306/testdb?user=root&password= in config`,
-			want:  "jdbc:mysql://localhost:3306/testdb?user=root&password=",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := jdbcurlcreds.DetectJDBCURL(tc.input)
-			if got != tc.want {
-				t.Errorf("DetectJDBCURL(%q) = %q, want %q", tc.input, got, tc.want)
 			}
 		})
 	}

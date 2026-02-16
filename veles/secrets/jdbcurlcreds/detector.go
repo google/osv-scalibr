@@ -35,8 +35,6 @@ var knownDBProtocols = []string{
 	"mysql", "mysqlx", "mysql\\+srv",
 	"postgresql", "postgres",
 	"sqlserver",
-	"oracle", "mariadb", "db2",
-	"h2", "hsqldb", "derby", "sqlite",
 }
 
 var (
@@ -141,20 +139,18 @@ func parseJDBCHosts(rawURL string) []JDBCHost {
 
 	// Dispatch to protocol-specific parsers.
 	switch baseScheme {
-	case "mysql", "mysqlx", "mariadb":
+	case "mysql", "mysqlx":
 		return parseMySQLHosts(rest)
 	case "sqlserver":
 		return parseSQLServerHosts(rest)
 	case "postgresql", "postgres":
 		return parsePostgresHosts(rest)
 	default:
-		// For other protocols (oracle, db2, h2, hsqldb, derby, sqlite),
-		// use the generic host parser.
-		return parseGenericHosts(rest)
+		return nil
 	}
 }
 
-// parseMySQLHosts parses hosts from a MySQL/MariaDB JDBC URL.
+// parseMySQLHosts parses hosts from a MySQL JDBC URL.
 // MySQL supports several host formats:
 //   - Simple: mysql://host:port/db
 //   - Comma-separated: mysql://host1:port1,host2:port2/db
@@ -243,23 +239,6 @@ func parseSQLServerHosts(rest string) []JDBCHost {
 	return hosts
 }
 
-// parseGenericHosts parses hosts from JDBC URLs for protocols that don't have
-// special syntax (oracle, db2, h2, hsqldb, derby, sqlite, etc.).
-// It handles a simple host:port and comma-separated hosts.
-func parseGenericHosts(rest string) []JDBCHost {
-	// Strip userinfo (user:pass@) if present before host parsing.
-	hostSection := rest
-	if _, after, found := strings.Cut(rest, "@"); found {
-		hostSection = after
-	}
-
-	// Extract the host section (everything before the first "/").
-	hostSection = extractHostSection(hostSection)
-
-	// Split by comma for multiple plain hosts.
-	return parseCommaSeparatedHosts(hostSection)
-}
-
 // parseCommaSeparatedHosts splits a host section by commas and parses each
 // host:port entry.
 func parseCommaSeparatedHosts(hostSection string) []JDBCHost {
@@ -331,10 +310,10 @@ func parseBracketHosts(hostSection string) []JDBCHost {
 
 // parseParenthesizedHosts parses MySQL parenthesized host syntax.
 // Handles:
-//   - address=(host=myhost1)(port=3333)(key1=value1)  — parenthesized key=value pairs
-//   - (host=myhost2,port=3333,key2=value2)  — comma-separated key=value inside parens
-//   - (address=host:1111,priority=1,key1=value1)  — address= with host:port value inside parens
-//   - myhost1:2222,(host=myhost2,port=2222)  — mixed plain and parenthesized
+//   - address=(host=myhost1)(port=3333)(key1=value1) — parenthesized key=value pairs
+//   - (host=myhost2,port=3333,key2=value2) — comma-separated key=value inside parens
+//   - (address=host:1111,priority=1,key1=value1) — address= with host:port value inside parens
+//   - myhost1:2222,(host=myhost2,port=2222) — mixed plain and parenthesized
 func parseParenthesizedHosts(section string) []JDBCHost {
 	var hosts []JDBCHost
 

@@ -14,291 +14,646 @@
 
 package jdbcurlcreds_test
 
-//func TestValidator(t *testing.T) {
-//	basicAuthHTTPSvr := mockBasicAuthHTTPServer(t, "admin", "pass")
-//	digestHTTPSvr := mockDigestHTTPServer(t, "admin", "pass", false)
-//	digestHTTPSvrWithCookies := mockDigestHTTPServer(t, "admin", "pass", true)
-//	ftpAddr := mockFTPServer(t, "user", "pass")
-//	sftpAddr := mockSSHServer(t, "sshuser", "sshpass")
-//
-//	cases := []struct {
-//		name    string
-//		url     string
-//		want    veles.ValidationStatus
-//		wantErr error
-//	}{
-//		// HTTP Tests
-//		{
-//			name: "http_valid",
-//			url:  fmt.Sprintf("http://admin:pass@%s/resource", basicAuthHTTPSvr.Listener.Addr().String()),
-//			want: veles.ValidationValid,
-//		},
-//		{
-//			name: "http_invalid",
-//			url:  fmt.Sprintf("http://admin:wrong@%s/resource", basicAuthHTTPSvr.Listener.Addr().String()),
-//			want: veles.ValidationInvalid,
-//		},
-//		{
-//			name: "http_valid_digest",
-//			url:  fmt.Sprintf("http://admin:pass@%s/resource", digestHTTPSvr.Listener.Addr().String()),
-//			want: veles.ValidationValid,
-//		},
-//		{
-//			name: "http_invalid_digest",
-//			url:  fmt.Sprintf("http://admin:wrong@%s/resource", digestHTTPSvr.Listener.Addr().String()),
-//			want: veles.ValidationInvalid,
-//		},
-//		{
-//			name: "http_valid_digest_with_set_cookie",
-//			url:  fmt.Sprintf("http://admin:pass@%s/resource", digestHTTPSvrWithCookies.Listener.Addr().String()),
-//			want: veles.ValidationValid,
-//		},
-//		{
-//			name: "http_invalid_digest_with_set_cookie",
-//			url:  fmt.Sprintf("http://admin:wrong@%s/resource", digestHTTPSvrWithCookies.Listener.Addr().String()),
-//			want: veles.ValidationInvalid,
-//		},
-//		// FTP Tests
-//		{
-//			name: "ftp_valid",
-//			url:  fmt.Sprintf("ftp://user:pass@%s/files", ftpAddr),
-//			want: veles.ValidationValid,
-//		},
-//		{
-//			name: "ftp_invalid",
-//			url:  fmt.Sprintf("ftp://user:wrong@%s/files", ftpAddr),
-//			want: veles.ValidationInvalid,
-//		},
-//		// SFTP Tests
-//		{
-//			name: "sftp_valid",
-//			url:  "sftp://sshuser:sshpass@" + sftpAddr,
-//			want: veles.ValidationValid,
-//		},
-//		{
-//			name: "sftp_invalid",
-//			url:  "sftp://sshuser:wrong@" + sftpAddr,
-//			want: veles.ValidationInvalid,
-//		},
-//	}
-//
-//	for _, tt := range cases {
-//		t.Run(tt.name, func(t *testing.T) {
-//			v := jdbcurlcreds.NewValidator()
-//			got, err := v.Validate(t.Context(), jdbcurlcreds.Credentials{FullURL: tt.url})
-//
-//			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
-//				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)
-//			}
-//			if diff := cmp.Diff(tt.want, got); diff != "" {
-//				t.Errorf("Validate() diff (-want +got):\n%s", diff)
-//			}
-//		})
-//	}
-//}
-//
-//func mockFTPServer(t *testing.T, validUser, validPass string) string {
-//	t.Helper()
-//	l, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	t.Cleanup(func() { l.Close() })
-//
-//	go func() {
-//		for {
-//			conn, err := l.Accept()
-//			if err != nil {
-//				return // Listener closed by t.Cleanup
-//			}
-//			go func(c net.Conn) {
-//				tc := textproto.NewConn(c)
-//				defer tc.Close()
-//
-//				_ = tc.PrintfLine("220 Welcome")
-//
-//				var user string
-//
-//				for {
-//					line, err := tc.ReadLine()
-//					if err != nil {
-//						return
-//					}
-//
-//					parts := strings.SplitN(strings.TrimSpace(line), " ", 2)
-//					cmd := strings.ToUpper(parts[0])
-//					arg := ""
-//					if len(parts) > 1 {
-//						arg = parts[1]
-//					}
-//
-//					switch cmd {
-//					case "USER":
-//						user = arg
-//						_ = tc.PrintfLine("331 Password required")
-//					case "PASS":
-//						if user == validUser && arg == validPass {
-//							_ = tc.PrintfLine("230 Logged in")
-//						} else {
-//							_ = tc.PrintfLine("530 Login incorrect")
-//						}
-//					case "QUIT":
-//						_ = tc.PrintfLine("221 Goodbye")
-//						return
-//					default:
-//						_ = tc.PrintfLine("502 Command not implemented")
-//					}
-//				}
-//			}(conn)
-//		}
-//	}()
-//	return l.Addr().String()
-//}
-//
-//func mockSSHServer(t *testing.T, validUser, validPass string) string {
-//	t.Helper()
-//	config := &ssh.ServerConfig{
-//		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-//			if c.User() == validUser && string(pass) == validPass {
-//				return nil, nil
-//			}
-//			return nil, errors.New("denied")
-//		},
-//	}
-//
-//	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	signer, err := ssh.NewSignerFromKey(key)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	config.AddHostKey(signer)
-//
-//	l, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	t.Cleanup(func() { l.Close() })
-//
-//	go func() {
-//		for {
-//			conn, err := l.Accept()
-//			if err != nil {
-//				return
-//			}
-//			go func(c net.Conn) {
-//				// Perform the SSH handshake
-//				sConn, _, _, err := ssh.NewServerConn(c, config)
-//				if err == nil {
-//					sConn.Close()
-//				}
-//			}(conn)
-//		}
-//	}()
-//	return l.Addr().String()
-//}
-//
-//func mockBasicAuthHTTPServer(t *testing.T, validUser, validPass string) *httptest.Server {
-//	t.Helper()
-//	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		u, p, ok := r.BasicAuth()
-//		if !ok || !(u == validUser && p == validPass) {
-//			w.WriteHeader(http.StatusUnauthorized)
-//			return
-//		}
-//		w.WriteHeader(http.StatusOK)
-//	}))
-//	t.Cleanup(func() { server.Close() })
-//	return server
-//}
-//
-//// mockDigestHTTPServer creates a test server that enforces Digest Authentication.
-//func mockDigestHTTPServer(t *testing.T, validUser, validPass string, testCookies bool) *httptest.Server {
-//	t.Helper()
-//
-//	sha256Sum := func(text string) string {
-//		hash := sha256.Sum256([]byte(text))
-//		return hex.EncodeToString(hash[:])
-//	}
-//
-//	const (
-//		realm     = "test-realm"
-//		nonce     = "test-nonce"
-//		qop       = "auth"
-//		algorithm = "SHA-256"
-//	)
-//
-//	const (
-//		cookieName  = "test-cookie"
-//		cookieValue = "test-cookie-value"
-//	)
-//
-//	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		authHeader := r.Header.Get("Authorization")
-//
-//		// If no Authorization header, send the Challenge (401)
-//		if authHeader == "" {
-//			w.Header().Set(
-//				"WWW-Authenticate", fmt.Sprintf(
-//					`Digest realm="%s", nonce="%s", algorithm=%s, qop="%s"`,
-//					realm, nonce, algorithm, qop,
-//				),
-//			)
-//			if testCookies {
-//				http.SetCookie(w, &http.Cookie{
-//					Name:  cookieName,
-//					Value: cookieValue,
-//					Path:  "/",
-//				})
-//			}
-//			w.WriteHeader(http.StatusUnauthorized)
-//			return
-//		}
-//
-//		// If  enabled check that the client uses the given cookies
-//		if testCookies {
-//			c, err := r.Cookie(cookieName)
-//			if err != nil || c.Value != cookieValue {
-//				w.WriteHeader(http.StatusForbidden)
-//				return
-//			}
-//		}
-//
-//		// Parse the parameter
-//		content, ok := strings.CutPrefix(authHeader, "Digest ")
-//		if !ok {
-//			w.WriteHeader(http.StatusBadRequest)
-//			return
-//		}
-//		params := make(map[string]string)
-//		for pair := range strings.SplitSeq(content, ",") {
-//			if k, v, ok := strings.Cut(strings.TrimSpace(pair), "="); ok {
-//				params[k] = strings.Trim(v, `"`)
-//			}
-//		}
-//
-//		// Handle login
-//		if params["username"] != validUser || params["realm"] != realm || params["nonce"] != nonce {
-//			w.WriteHeader(http.StatusUnauthorized)
-//			return
-//		}
-//
-//		ha1 := sha256Sum(fmt.Sprintf("%s:%s:%s", validUser, realm, validPass))
-//		ha2 := sha256Sum(fmt.Sprintf("%s:%s", r.Method, params["uri"]))
-//
-//		expectedResponse := sha256Sum(fmt.Sprintf("%s:%s:%s:%s:%s:%s",
-//			ha1, nonce, params["nc"], params["cnonce"], params["qop"], ha2))
-//
-//		if params["response"] != expectedResponse {
-//			w.WriteHeader(http.StatusUnauthorized)
-//			return
-//		}
-//		w.WriteHeader(http.StatusOK)
-//	}))
-//
-//	t.Cleanup(server.Close)
-//	return server
-//}
+import (
+	"database/sql"
+	"errors"
+	"testing"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/veles/secrets/jdbcurlcreds"
+)
+
+func TestExtractJDBCComponents(t *testing.T) {
+	cases := []struct {
+		name    string
+		url     string
+		want    jdbcurlcreds.JDBCParsedURL
+		wantErr bool
+	}{
+		// === PostgreSQL formats ===
+		{
+			name: "postgresql_simple_userinfo",
+			url:  "jdbc:postgresql://postgres:mysecretpassword@localhost:5432/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "5432"}},
+				Username: "postgres",
+				Password: "mysecretpassword",
+				Database: "testdb",
+				FullURL:  "jdbc:postgresql://postgres:mysecretpassword@localhost:5432/testdb",
+			},
+		},
+		{
+			name: "postgresql_trust_auth_no_password",
+			url:  "jdbc:postgresql://postgres@localhost:5433/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "5433"}},
+				Username: "postgres",
+				Password: "",
+				Database: "testdb",
+				FullURL:  "jdbc:postgresql://postgres@localhost:5433/testdb",
+			},
+		},
+		{
+			name: "postgresql_query_param_credentials",
+			url:  "jdbc:postgresql://localhost:5432/testdb?user=postgres&password=mysecretpassword",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "5432"}},
+				Username: "postgres",
+				Password: "mysecretpassword",
+				Database: "testdb",
+				FullURL:  "jdbc:postgresql://localhost:5432/testdb?user=postgres&password=mysecretpassword",
+			},
+		},
+		{
+			name: "postgresql_multi_host",
+			url:  "jdbc:postgresql://postgres:mysecretpassword@localhost:5432,localhost:5433/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts: []jdbcurlcreds.JDBCHost{
+					{Host: "localhost", Port: "5432"},
+					{Host: "localhost", Port: "5433"},
+				},
+				Username: "postgres",
+				Password: "mysecretpassword",
+				Database: "testdb",
+				FullURL:  "jdbc:postgresql://postgres:mysecretpassword@localhost:5432,localhost:5433/testdb",
+			},
+		},
+		{
+			name: "postgresql_no_jdbc_prefix",
+			url:  "postgresql://postgres:mysecretpassword@localhost:5432/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "5432"}},
+				Username: "postgres",
+				Password: "mysecretpassword",
+				Database: "testdb",
+				FullURL:  "postgresql://postgres:mysecretpassword@localhost:5432/testdb",
+			},
+		},
+		{
+			name: "postgresql_ipv6_host",
+			url:  "jdbc:postgresql://postgres:mysecretpassword@[::1]:5432/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "::1", Port: "5432"}},
+				Username: "postgres",
+				Password: "mysecretpassword",
+				Database: "testdb",
+				FullURL:  "jdbc:postgresql://postgres:mysecretpassword@[::1]:5432/testdb",
+			},
+		},
+		// === MySQL formats ===
+		{
+			name: "mysql_simple_userinfo",
+			url:  "jdbc:mysql://username:password@localhost:3306/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://username:password@localhost:3306/testdb",
+			},
+		},
+		{
+			name: "mysql_no_password",
+			url:  "jdbc:mysql://root@localhost:3307/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3307"}},
+				Username: "root",
+				Password: "",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://root@localhost:3307/testdb",
+			},
+		},
+		{
+			name: "mysql_query_param_credentials",
+			url:  "jdbc:mysql://localhost:3306/testdb?user=username&password=password",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://localhost:3306/testdb?user=username&password=password",
+			},
+		},
+		{
+			name: "mysql_address_syntax",
+			url:  "jdbc:mysql://address=(host=localhost)(port=3307)/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3307"}},
+				Username: "",
+				Password: "",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://address=(host=localhost)(port=3307)/testdb",
+			},
+		},
+		{
+			name: "mysql_parenthesized_key_value",
+			url:  "jdbc:mysql://(host=localhost,port=3307)/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3307"}},
+				Username: "",
+				Password: "",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://(host=localhost,port=3307)/testdb",
+			},
+		},
+		{
+			name: "mysql_bracket_multi_host",
+			url:  "jdbc:mysql://username:password@[localhost:3306,localhost:3307]/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts: []jdbcurlcreds.JDBCHost{
+					{Host: "localhost", Port: "3306"},
+					{Host: "localhost", Port: "3307"},
+				},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://username:password@[localhost:3306,localhost:3307]/testdb",
+			},
+		},
+		{
+			name: "mysql_bracket_address_syntax",
+			url:  "jdbc:mysql://username:password@[address=(host=localhost)(port=3306),address=(host=localhost)(port=3307)]/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts: []jdbcurlcreds.JDBCHost{
+					{Host: "localhost", Port: "3306"},
+					{Host: "localhost", Port: "3307"},
+				},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://username:password@[address=(host=localhost)(port=3306),address=(host=localhost)(port=3307)]/testdb",
+			},
+		},
+		{
+			name: "mysql_mixed_plain_and_parenthesized",
+			url:  "jdbc:mysql://root:@localhost:3306,(host=localhost,port=3307)/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts: []jdbcurlcreds.JDBCHost{
+					{Host: "localhost", Port: "3306"},
+					{Host: "localhost", Port: "3307"},
+				},
+				Username: "root",
+				Password: "",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql://root:@localhost:3306,(host=localhost,port=3307)/testdb",
+			},
+		},
+		{
+			name: "mysql_srv_scheme",
+			url:  "jdbc:mysql+srv://username:password@localhost:3306/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql+srv",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql+srv://username:password@localhost:3306/testdb",
+			},
+		},
+		{
+			name: "mysql_srv_replication_sub_protocol",
+			url:  "jdbc:mysql+srv:replication://username:password@localhost:3306/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql+srv",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "jdbc:mysql+srv:replication://username:password@localhost:3306/testdb",
+			},
+		},
+		{
+			name: "mysql_srv_no_jdbc_prefix",
+			url:  "mysql+srv://username:password@localhost:3306/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql+srv",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "mysql+srv://username:password@localhost:3306/testdb",
+			},
+		},
+		{
+			name: "mysqlx_scheme",
+			url:  "mysqlx://username:password@localhost:3306/testdb",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysqlx",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "username",
+				Password: "password",
+				Database: "testdb",
+				FullURL:  "mysqlx://username:password@localhost:3306/testdb",
+			},
+		},
+		// === SQL Server formats ===
+		{
+			name: "sqlserver_semicolon_params_with_port",
+			url:  "jdbc:sqlserver://localhost:1433;databaseName=master;user=sa;password=YourStr0ngP@ss;encrypt=true;trustServerCertificate=true;",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "sqlserver",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "1433"}},
+				Username: "sa",
+				Password: "YourStr0ngP@ss",
+				Database: "master",
+				FullURL:  "jdbc:sqlserver://localhost:1433;databaseName=master;user=sa;password=YourStr0ngP@ss;encrypt=true;trustServerCertificate=true;",
+			},
+		},
+		{
+			name: "sqlserver_without_port",
+			url:  "jdbc:sqlserver://localhost;user=sa;password=YourStr0ngP@ss;encrypt=true;trustServerCertificate=true;",
+			want: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "sqlserver",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: ""}},
+				Username: "sa",
+				Password: "YourStr0ngP@ss",
+				Database: "",
+				FullURL:  "jdbc:sqlserver://localhost;user=sa;password=YourStr0ngP@ss;encrypt=true;trustServerCertificate=true;",
+			},
+		},
+		// === Error cases ===
+		{
+			name:    "invalid_url",
+			url:     "not-a-jdbc-url",
+			wantErr: true,
+		},
+		{
+			name:    "unsupported_protocol",
+			url:     "jdbc:oracle://localhost:1521/testdb",
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := jdbcurlcreds.ExtractJDBCComponents(tc.url)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("ExtractJDBCComponents(%q) expected error, got nil", tc.url)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ExtractJDBCComponents(%q) unexpected error: %v", tc.url, err)
+			}
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("ExtractJDBCComponents(%q) diff (-want +got):\n%s", tc.url, diff)
+			}
+		})
+	}
+}
+
+// newFailingOpenFunc creates an SQLOpenFunc that always returns the given error,
+// simulating a sql.Open failure.
+func newFailingOpenFunc(err error) jdbcurlcreds.SQLOpenFunc {
+	return func(_, _ string) (*sql.DB, error) {
+		return nil, err
+	}
+}
+
+func TestRealSQLDBConnectorConnectSingleHost(t *testing.T) {
+	cases := []struct {
+		name      string
+		parsed    jdbcurlcreds.JDBCParsedURL
+		setupMock func(mock sqlmock.Sqlmock)
+		openFunc  func(db *sql.DB) jdbcurlcreds.SQLOpenFunc
+		wantErr   bool
+		errSubstr string
+	}{
+		{
+			name: "postgresql_ping_success",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "5432"}},
+				Username: "admin",
+				Password: "secret",
+				Database: "testdb",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing()
+			},
+		},
+		{
+			name: "postgresql_ping_failure",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "5432"}},
+				Username: "admin",
+				Password: "wrong",
+				Database: "testdb",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing().WillReturnError(errors.New("authentication failed"))
+			},
+			wantErr:   true,
+			errSubstr: "ping failed",
+		},
+		{
+			name: "postgresql_default_port_and_user",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "dbhost", Port: ""}},
+				Username: "",
+				Password: "secret",
+				Database: "mydb",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing()
+			},
+		},
+		{
+			name: "mysql_ping_success",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "myuser",
+				Password: "mypass",
+				Database: "mydb",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing()
+			},
+		},
+		{
+			name: "mysql_ping_failure",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "3306"}},
+				Username: "myuser",
+				Password: "wrong",
+				Database: "mydb",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing().WillReturnError(errors.New("access denied"))
+			},
+			wantErr:   true,
+			errSubstr: "ping failed",
+		},
+		{
+			name: "mysql_default_port_and_user",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "dbhost", Port: ""}},
+				Username: "",
+				Password: "secret",
+				Database: "mydb",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing()
+			},
+		},
+		{
+			name: "sqlserver_ping_success",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "sqlserver",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "1433"}},
+				Username: "sa",
+				Password: "P@ssw0rd",
+				Database: "master",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing()
+			},
+		},
+		{
+			name: "sqlserver_ping_failure",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "sqlserver",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "1433"}},
+				Username: "sa",
+				Password: "wrong",
+				Database: "master",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing().WillReturnError(errors.New("login failed"))
+			},
+			wantErr:   true,
+			errSubstr: "ping failed",
+		},
+		{
+			name: "sqlserver_default_port",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "sqlserver",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "dbhost", Port: ""}},
+				Username: "sa",
+				Password: "secret",
+				Database: "testdb",
+			},
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectPing()
+			},
+		},
+		{
+			name: "unsupported_protocol",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "oracle",
+				Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "1521"}},
+				Username: "admin",
+				Password: "secret",
+				Database: "testdb",
+			},
+			setupMock: nil, // no mock needed, should fail before sql.Open
+			wantErr:   true,
+			errSubstr: "unsupported protocol",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+
+			// For unsupported protocol, no mock DB is needed.
+			if tc.setupMock == nil {
+				connector := &jdbcurlcreds.SQLDBConnector{
+					OpenFunc: newFailingOpenFunc(errors.New("should not be called")),
+				}
+				err := connector.Connect(ctx, tc.parsed)
+				if !tc.wantErr {
+					t.Fatalf("Connect() unexpected error: %v", err)
+				}
+				if err == nil {
+					t.Fatal("Connect() expected error, got nil")
+				}
+				if !contains(err.Error(), tc.errSubstr) {
+					t.Errorf("Connect() error = %q, want substring %q", err.Error(), tc.errSubstr)
+				}
+				return
+			}
+
+			// Standard single-host tests using go-sqlmock.
+			db, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+			if err != nil {
+				t.Fatalf("failed to create sqlmock: %v", err)
+			}
+			defer func(db *sql.DB) {
+				_ = db.Close()
+			}(db)
+
+			tc.setupMock(mock)
+
+			connector := &jdbcurlcreds.SQLDBConnector{
+				OpenFunc: func(_, _ string) (*sql.DB, error) { return db, nil },
+			}
+
+			err = connector.Connect(ctx, tc.parsed)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("Connect() expected error, got nil")
+				}
+				if tc.errSubstr != "" && !contains(err.Error(), tc.errSubstr) {
+					t.Errorf("Connect() error = %q, want substring %q", err.Error(), tc.errSubstr)
+				}
+			} else if err != nil {
+				t.Fatalf("Connect() unexpected error: %v", err)
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("unfulfilled sqlmock expectations: %v", err)
+			}
+		})
+	}
+}
+
+func TestSQLDBConnectorConnectMultiHost(t *testing.T) {
+	protocols := []struct {
+		name   string
+		parsed jdbcurlcreds.JDBCParsedURL
+	}{
+		{
+			name: "postgresql",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "postgresql",
+				Hosts: []jdbcurlcreds.JDBCHost{
+					{Host: "host1", Port: "5432"},
+					{Host: "host2", Port: "5432"},
+				},
+				Username: "admin",
+				Password: "secret",
+				Database: "testdb",
+			},
+		},
+		{
+			name: "mysql",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "mysql",
+				Hosts: []jdbcurlcreds.JDBCHost{
+					{Host: "host1", Port: "3306"},
+					{Host: "host2", Port: "3306"},
+				},
+				Username: "root",
+				Password: "secret",
+				Database: "testdb",
+			},
+		},
+		{
+			name: "sqlserver",
+			parsed: jdbcurlcreds.JDBCParsedURL{
+				Protocol: "sqlserver",
+				Hosts: []jdbcurlcreds.JDBCHost{
+					{Host: "host1", Port: "1433"},
+					{Host: "host2", Port: "1433"},
+				},
+				Username: "sa",
+				Password: "secret",
+				Database: "master",
+			},
+		},
+	}
+
+	for _, p := range protocols {
+		t.Run(p.name+"/first_fails_second_succeeds", func(t *testing.T) {
+			callCount := 0
+			connector := &jdbcurlcreds.SQLDBConnector{
+				OpenFunc: func(_, _ string) (*sql.DB, error) {
+					callCount++
+					db, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+					if err != nil {
+						t.Fatalf("failed to create sqlmock: %v", err)
+					}
+					if callCount == 1 {
+						mock.ExpectPing().WillReturnError(errors.New("host1 unreachable"))
+					}
+					if callCount == 2 {
+						mock.ExpectPing()
+					}
+					return db, nil
+				},
+			}
+			if err := connector.Connect(t.Context(), p.parsed); err != nil {
+				t.Fatalf("Connect() unexpected error: %v", err)
+			}
+		})
+
+		t.Run(p.name+"/all_fail", func(t *testing.T) {
+			connector := &jdbcurlcreds.SQLDBConnector{
+				OpenFunc: func(_, _ string) (*sql.DB, error) {
+					db, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+					if err != nil {
+						t.Fatalf("failed to create sqlmock: %v", err)
+					}
+					mock.ExpectPing().WillReturnError(errors.New("unreachable"))
+					return db, nil
+				},
+			}
+			err := connector.Connect(t.Context(), p.parsed)
+			if err == nil {
+				t.Fatal("Connect() expected error, got nil")
+			}
+			if !contains(err.Error(), "ping failed") {
+				t.Errorf("Connect() error = %q, want substring %q", err.Error(), "ping failed")
+			}
+		})
+	}
+}
+
+func TestSQLDBConnectorConnectOpenFailure(t *testing.T) {
+	connector := &jdbcurlcreds.SQLDBConnector{
+		OpenFunc: newFailingOpenFunc(errors.New("driver not found")),
+	}
+
+	parsed := jdbcurlcreds.JDBCParsedURL{
+		Protocol: "postgresql",
+		Hosts:    []jdbcurlcreds.JDBCHost{{Host: "localhost", Port: "5432"}},
+		Username: "admin",
+		Password: "secret",
+		Database: "testdb",
+	}
+
+	err := connector.Connect(t.Context(), parsed)
+	if err == nil {
+		t.Fatal("Connect() expected error for sql.Open failure, got nil")
+	}
+	if !contains(err.Error(), "sql.Open failed") {
+		t.Errorf("Connect() error = %q, want substring %q", err.Error(), "sql.Open failed")
+	}
+}
+
+// contains checks if s contains substr.
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && searchSubstring(s, substr)
+}
+
+func searchSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
