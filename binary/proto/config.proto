@@ -243,6 +243,11 @@ message MacAppsConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // Determines if packages should be extracted from directories
+  // other than /Applications.
+  // This can lead to false positives, as apps from some directories
+  // like /Library may not be actually installed.
+  bool allow_custom_directories = 2;
 }
 
 message PodmanConfig {
