@@ -88,77 +88,48 @@ func ParseHTTPSURL(specifier string) *extractor.Package {
 		path = path[1:] // Remove the leading slash
 	}
 
-	// Handle esm.sh imports
-	if host == "esm.sh" {
-		var packageName, packageVersion, purlType string
-
-		// JSR imports (starts with /jsr/)
-		if jsrPath, ok := strings.CutPrefix(path, "jsr/"); ok {
-			// Example: https://esm.sh/jsr/@std/encoding@1.0.0/base64
-			packageName, packageVersion = ParseJSRNameAndVersion(jsrPath)
-			purlType = purl.TypeJSR
-			// GitHub imports (starts with /gh/)
-		} else if ghPath, ok := strings.CutPrefix(path, "gh/"); ok {
-			// Example: https://esm.sh/gh/microsoft/tslib@v2.8.0
-			parts := strings.Split(ghPath, "@")
-			if len(parts) == 2 {
-				packageName = parts[0]
-				packageVersion = parts[1]
-			}
-			purlType = purl.TypeGithub
-			// Default URL is NPM import
-			// (e.g., "https://esm.sh/canvas-confetti@1.6.0")
-		} else {
-			packageName, packageVersion = ParseNPMNameAndVersion(path)
-			purlType = purl.TypeNPM
+	// Handle CDN imports from esm.sh, deno.land/x, and unpkg.com.
+	var packageName, packageVersion, purlType string
+	var metadata *denometadata.DenoMetadata
+	switch {
+	// esm.sh JSR imports (e.g., "https://esm.sh/jsr/@std/encoding@1.0.0/base64")
+	case host == "esm.sh" && strings.HasPrefix(path, "jsr/"):
+		jsrPath, _ := strings.CutPrefix(path, "jsr/")
+		packageName, packageVersion = ParseJSRNameAndVersion(jsrPath)
+		purlType = purl.TypeJSR
+		metadata = &denometadata.DenoMetadata{FromESMCDN: true, URL: specifier}
+	// esm.sh GitHub imports (e.g., "https://esm.sh/gh/microsoft/tslib@v2.8.0")
+	case host == "esm.sh" && strings.HasPrefix(path, "gh/"):
+		ghPath, _ := strings.CutPrefix(path, "gh/")
+		parts := strings.Split(ghPath, "@")
+		if len(parts) == 2 {
+			packageName = parts[0]
+			packageVersion = parts[1]
 		}
-
-		if packageName != "" && packageVersion != "" {
-			return &extractor.Package{
-				Name:     packageName,
-				Version:  packageVersion,
-				PURLType: purlType,
-				Metadata: &denometadata.DenoMetadata{
-					FromESMCDN: true,
-					URL:        specifier,
-				},
-			}
-		}
+		purlType = purl.TypeGithub
+		metadata = &denometadata.DenoMetadata{FromESMCDN: true, URL: specifier}
+	// esm.sh NPM imports (e.g., "https://esm.sh/canvas-confetti@1.6.0")
+	case host == "esm.sh":
+		packageName, packageVersion = ParseNPMNameAndVersion(path)
+		purlType = purl.TypeNPM
+		metadata = &denometadata.DenoMetadata{FromESMCDN: true, URL: specifier}
+	// deno.land/x imports (e.g., "https://deno.land/x/openai@v4.69.0/mod.ts")
+	case host == "deno.land" && strings.HasPrefix(path, "x/"):
+		packageName, packageVersion = ParseNPMNameAndVersion(strings.TrimPrefix(path, "x/"))
+		purlType = purl.TypeNPM
+		metadata = &denometadata.DenoMetadata{FromDenolandCDN: true, URL: specifier}
+	// unpkg.com imports (e.g., "https://unpkg.com/lodash-es@4.17.21/lodash.js")
+	case host == "unpkg.com" && path != "":
+		packageName, packageVersion = ParseNPMNameAndVersion(path)
+		purlType = purl.TypeNPM
+		metadata = &denometadata.DenoMetadata{FromUnpkgCDN: true, URL: specifier}
 	}
-
-	// Handle deno.land/x imports (e.g., "https://deno.land/x/openai@v4.69.0/mod.ts")
-	if host == "deno.land" && strings.HasPrefix(path, "x/") {
-		// Extract the package name and version from a path
-		packageName, packageVersion := ParseNPMNameAndVersion(strings.TrimPrefix(path, "x/"))
-		if packageName != "" && packageVersion != "" {
-			return &extractor.Package{
-				Name:     packageName,
-				Version:  packageVersion,
-				PURLType: purl.TypeNPM,
-				Metadata: &denometadata.DenoMetadata{
-					FromDenolandCDN: true,
-					URL:             specifier,
-				},
-			}
-		}
-	}
-
-	// Handle unpkg.com imports (e.g., "https://unpkg.com/lodash-es@4.17.21/lodash.js")
-	if host == "unpkg.com" {
-		if path == "" {
-			return nil
-		}
-		packageName, packageVersion := ParseNPMNameAndVersion(path)
-		if packageName != "" && packageVersion != "" {
-			return &extractor.Package{
-				Name:     packageName,
-				Version:  packageVersion,
-				PURLType: purl.TypeNPM,
-				Metadata: &denometadata.DenoMetadata{
-					FromUnpkgCDN: true,
-					URL:          specifier,
-				},
-			}
+	if metadata != nil && packageName != "" && packageVersion != "" {
+		return &extractor.Package{
+			Name:     packageName,
+			Version:  packageVersion,
+			PURLType: purlType,
+			Metadata: metadata,
 		}
 	}
 

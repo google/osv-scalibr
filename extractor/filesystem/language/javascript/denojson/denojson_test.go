@@ -120,7 +120,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name         string
 		path         string
-		cfg          denojson.Config
+		cfg          denojson.Extractor
 		wantPackages []*extractor.Package
 		wantErr      error
 	}{
