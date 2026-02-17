@@ -1,0 +1,86 @@
+{
+  "spec": {
+    "_meta": {
+      "version": 5
+    },
+    "nodes": [
+      {
+        "name": "libelf",
+        "version": "0.8.13",
+        "arch": {
+          "platform": "linux",
+          "platform_os": "ubuntu24.04",
+          "target": {
+            "name": "skylake"
+          }
+        },
+        "hash": "dsohcyk45wchbd364rjio7b3sj2bucgc"
+      },
+      {
+        "name": "compiler-wrapper",
+        "version": "1.0",
+        "arch": {
+          "platform": "linux",
+          "platform_os": "ubuntu24.04",
+          "target": {
+            "name": "skylake"
+          }
+        },
+        "hash": "i54t7tjn3prjyb363kdjgrkiawikdvyu"
+      },
+      {
+        "name": "gcc",
+        "version": "13.3.0",
+        "arch": {
+          "platform": "linux",
+          "platform_os": "ubuntu24.04",
+          "target": "x86_64"
+        },
+        "external": {
+          "path": "/usr",
+          "module": null
+        },
+        "hash": "tatt476risw6szrf6q6dfxyxhhlp6ou7"
+      },
+      {
+        "name": "gcc-runtime",
+        "version": "13.3.0",
+        "arch": {
+          "platform": "linux",
+          "platform_os": "ubuntu24.04",
+          "target": {
+            "name": "skylake"
+          }
+        },
+        "hash": "l4tb2r6hhvx2fjqiecaesuf3pdusajjw"
+      },
+      {
+        "name": "glibc",
+        "version": "2.39",
+        "arch": {
+          "platform": "linux",
+          "platform_os": "ubuntu24.04",
+          "target": "x86_64"
+        },
+        "external": {
+          "path": "/usr",
+          "module": null,
+          "extra_attributes": {}
+        },
+        "hash": "thy5vqoaouxdwkh5hofjegtbqsl7r25d"
+      },
+      {
+        "name": "gmake",
+        "version": "4.4.1",
+        "arch": {
+          "platform": "linux",
+          "platform_os": "ubuntu24.04",
+          "target": {
+            "name": "skylake"
+          }
+        },
+        "hash": "e2bq6relcp3zp3cg7zq4ced6obys5bts"
+      }
+    ]
+  }
+}

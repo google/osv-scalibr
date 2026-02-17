@@ -143,6 +143,7 @@ message Package {
     ChocolateyPackageMetadata chocolatey_metadata = 62;
     MiseMetadata mise_metadata = 63;
     UnknownBinaryMetadata unknown_binary_metadata = 64;
+    SpackPackageMetadata Spack_metadata = 65;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -466,6 +467,16 @@ message FlatpakPackageMetadata {
   string os_version_id = 7;
   string os_build_id = 8;
   string developer = 9;
+}
+
+// The additional data found in Spack packages.
+message SpackPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string platform = 3;
+  string platform_os = 4;
+  string platform_architecture = 5;
+  string hash = 6;
 }
 
 // The additional data found in MODULE packages.
