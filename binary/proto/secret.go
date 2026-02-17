@@ -30,6 +30,7 @@ import (
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	velescircleci "github.com/google/osv-scalibr/veles/secrets/circleci"
+	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
@@ -148,6 +149,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return mysqlMyloginSectionToProto(t), nil
 	case dockerhubpat.DockerHubPAT:
 		return dockerHubPATToProto(t), nil
+	case cloudflareapitoken.CloudflareAPIToken:
+		return cloudflareAPITokenToProto(t), nil
 	case denopat.DenoUserPAT:
 		return denoUserPATToProto(t), nil
 	case denopat.DenoOrgPAT:
@@ -424,6 +427,16 @@ func denoOrgPATToProto(s denopat.DenoOrgPAT) *spb.SecretData {
 		Secret: &spb.SecretData_DenoPat_{
 			DenoPat: &spb.SecretData_DenoPat{
 				Pat: s.Pat,
+			},
+		},
+	}
+}
+
+func cloudflareAPITokenToProto(s cloudflareapitoken.CloudflareAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CloudflareApiToken{
+			CloudflareApiToken: &spb.SecretData_CloudflareAPIToken{
+				Token: s.Token,
 			},
 		},
 	}
@@ -1157,6 +1170,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return mysqlMyloginSectionToStruct(s.GetMysqlMyloginSection()), nil
 	case *spb.SecretData_DockerHubPat_:
 		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
+	case *spb.SecretData_CloudflareApiToken:
+		return cloudflareAPITokenToStruct(s.GetCloudflareApiToken()), nil
 	case *spb.SecretData_DenoPat_:
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
@@ -1419,6 +1434,12 @@ func dockerHubPATToStruct(kPB *spb.SecretData_DockerHubPat) dockerhubpat.DockerH
 	return dockerhubpat.DockerHubPAT{
 		Pat:      kPB.GetPat(),
 		Username: kPB.GetUsername(),
+	}
+}
+
+func cloudflareAPITokenToStruct(kPB *spb.SecretData_CloudflareAPIToken) cloudflareapitoken.CloudflareAPIToken {
+	return cloudflareapitoken.CloudflareAPIToken{
+		Token: kPB.GetToken(),
 	}
 }
 

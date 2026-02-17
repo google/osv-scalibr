@@ -103,6 +103,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
@@ -330,6 +331,7 @@ var (
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
+		cloudflareapitoken.Name:      {cloudflareapitoken.New},
 	}
 
 	// SecretDetectors for Detector interface.
