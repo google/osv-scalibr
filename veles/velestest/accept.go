@@ -53,6 +53,31 @@ func WithBackToBack() AcceptDetectorOption {
 	}
 }
 
+// WithPositionAdjust configures AcceptDetector to adjust expected match
+// positions during acceptance testing.
+//
+// By default, AcceptDetector assumes that a Detector returns positions
+// corresponding to the beginning of the full example string provided to
+// the test.
+//
+// Some detectors (e.g., those using capture-group based finders such as
+// ntuple.FindAllMatchesGroup) intentionally return the position of the captured
+// secret value rather than the full contextual match. In such cases, the
+// returned match offsets may differ from the example’s starting index.
+//
+// The provided function receives the example string and should return the
+// offset (relative to the beginning of the example) where the detector is
+// expected to report its first match. This offset is added to all expected
+// positions before comparison.
+//
+// If not specified, no position adjustment is applied and the default
+// behavior is preserved.
+func WithPositionAdjust(f func(string) int) AcceptDetectorOption {
+	return func(r *acceptDetectorRunner) {
+		r.positionAdjust = f
+	}
+}
+
 // AcceptDetector is an acceptance test for Veles Detector implementations.
 // All implementations are expected to run this as part of their unit tests.
 // In addition, all Detectors should also test specific behaviors in dedicated
@@ -78,11 +103,12 @@ func AcceptDetector(t *testing.T, d veles.Detector, example string, secret veles
 }
 
 type acceptDetectorRunner struct {
-	d          veles.Detector
-	example    string
-	secret     veles.Secret
-	pad        string
-	backToBack bool
+	d              veles.Detector
+	example        string
+	secret         veles.Secret
+	pad            string
+	backToBack     bool
+	positionAdjust func(example string) int
 }
 
 func (r acceptDetectorRunner) padInput(s string, pre int, post int) string {
@@ -150,13 +176,24 @@ func (r acceptDetectorRunner) testPositions(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			gotSecrets, gotPositions := r.d.Detect([]byte(tc.input))
+
+			wantPos := make([]int, len(tc.wantPos))
+			copy(wantPos, tc.wantPos)
+
+			if r.positionAdjust != nil {
+				offset := r.positionAdjust(r.example)
+				for i := range wantPos {
+					wantPos[i] += offset
+				}
+			}
+
 			// There is no requirement that the secrets have to be returned in order as long as they correspond to their positions.
 			// However, since we're only testing _the same_ secret here, we're not testing that behavior.
 			if diff := cmp.Diff(tc.wantSecrets, gotSecrets, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() secrets diff (-want +got):\n%s", diff)
 			}
 			// There is no requirement that the positions have to be returned in order!
-			if diff := cmp.Diff(tc.wantPos, gotPositions, cmpopts.EquateEmpty(), cmpopts.SortSlices(func(a, b int) bool { return a < b })); diff != "" {
+			if diff := cmp.Diff(wantPos, gotPositions, cmpopts.EquateEmpty(), cmpopts.SortSlices(func(a, b int) bool { return a < b })); diff != "" {
 				t.Errorf("Detect() positions diff (-want +got):\n%s", diff)
 			}
 		})
