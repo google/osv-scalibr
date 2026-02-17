@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
 	velescircleci "github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
@@ -251,6 +252,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return mariadbCredentialsToProto(t), nil
 	case awsaccesskey.Credentials:
 		return awsAccessKeyCredentialToProto(t), nil
+	case bitwardenoauth2access.Token:
+		return bitwardenTokenToProto(t), nil
 	case vapid.Key:
 		return vapidKeyToProto(t), nil
 	case recaptchakey.Key:
@@ -377,6 +380,16 @@ func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
 			AwsAccessKeyCredentials: &spb.SecretData_AwsAccessKeyCredentials{
 				AccessId: s.AccessID,
 				Secret:   s.Secret,
+			},
+		},
+	}
+}
+func bitwardenTokenToProto(s bitwardenoauth2access.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_BitwardenOauth2AccessToken{
+			BitwardenOauth2AccessToken: &spb.SecretData_BitwardenOAuth2AccessToken{
+				ClientSecret: s.ClientSecret,
+				ClientId:     s.ClientID,
 			},
 		},
 	}
@@ -1309,6 +1322,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return &awsaccesskey.Credentials{
 			AccessID: creds.AccessId,
 			Secret:   creds.Secret,
+		}, nil
+	case *spb.SecretData_BitwardenOauth2AccessToken:
+		creds := s.GetBitwardenOauth2AccessToken()
+		return &bitwardenoauth2access.Token{
+			ClientID:     creds.ClientId,
+			ClientSecret: creds.ClientSecret,
 		}, nil
 	case *spb.SecretData_VapidKey_:
 		t := s.GetVapidKey()
