@@ -42,14 +42,6 @@ type denoJSON struct {
 	Imports map[string]string `json:"imports"`
 }
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
-	// If this limit is greater than zero and a file is encountered that is larger
-	// than this limit, the file is ignored by returning false for `FileRequired`.
-	MaxFileSizeBytes int64
-}
-
 // Extractor extracts javascript packages from deno.json files.
 type Extractor struct {
 	maxFileSizeBytes int64
@@ -57,7 +49,12 @@ type Extractor struct {
 
 // New returns a new deno.json extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	return &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}, nil
+	maxSize := cfg.MaxFileSizeBytes
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.DenoJsonConfig { return c.GetDenojson() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxSize = specific.GetMaxFileSizeBytes()
+	}
+	return &Extractor{maxFileSizeBytes: maxSize}, nil
 }
 
 // Name of the extractor.

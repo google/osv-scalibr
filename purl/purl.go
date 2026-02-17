@@ -79,8 +79,6 @@ const (
 	TypeNix = "nix"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
-	// TypeDENO is a pkg:deno purl.
-	TypeDENO = "deno"
 	// TypeJSR is a pkg:jsr purl.
 	TypeJSR = "jsr"
 	// TypePacman is a pkg:pacman purl.

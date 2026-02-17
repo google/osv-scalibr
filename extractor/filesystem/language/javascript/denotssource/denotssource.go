@@ -47,14 +47,6 @@ var tsExtensions = map[string]bool{
 	".d.ts": true,
 }
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// MaxFileSizeBytes is the maximum size of a file that can be extracted.
-	// If this limit is greater than zero and a file is encountered that is larger
-	// than this limit, the file is ignored by returning false for `FileRequired`.
-	MaxFileSizeBytes int64
-}
-
 // Extractor extracts Deno dependencies from TypeScript source files.
 type Extractor struct {
 	maxFileSizeBytes int64
@@ -62,7 +54,12 @@ type Extractor struct {
 
 // New returns a new TypeScript Deno extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	return &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}, nil
+	maxSize := cfg.MaxFileSizeBytes
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.DenoTSSourceConfig { return c.GetDenotssource() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxSize = specific.GetMaxFileSizeBytes()
+	}
+	return &Extractor{maxFileSizeBytes: maxSize}, nil
 }
 
 // Name of the extractor.
