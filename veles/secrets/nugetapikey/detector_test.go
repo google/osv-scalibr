@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	// Example valid NuGet API key (44 lowercase alphanumeric characters).
-	detectorNuGetKey = "oy2kpfknfvsp4a2a2ocqlktwuog2zefehglys3lr3nbe"
+	// Example valid NuGet API key (46 characters starting with oy2).
+	detectorNuGetKey = "oy2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm"
 )
 
 // TestDetector_truePositives tests NuGet API key detection.

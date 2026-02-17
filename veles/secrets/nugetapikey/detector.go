@@ -27,10 +27,11 @@ var (
 )
 
 // NuGet API Key structure:
-// Pattern: 44 lowercase alphanumeric characters (a-z, 0-9).
-const nugetMaxLen = 44
+// Pattern: Starts with "oy2" followed by 43 lowercase alphanumeric characters (a-z, 0-9).
+// Total length: 46 characters.
+const nugetMaxLen = 46
 
-var nugetRe = regexp.MustCompile(`[a-z0-9]{44}`)
+var nugetRe = regexp.MustCompile(`oy2[a-z0-9]{43}`)
 
 // NewDetector returns a detector for NuGet.org API keys.
 func NewDetector() veles.Detector {
