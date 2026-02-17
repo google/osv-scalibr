@@ -1878,6 +1878,8 @@ type MacAppsConfig struct {
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
 	// Determines if packages should be extracted from directories
 	// other than /Applications.
+	// This can lead to false positives, as apps from some directories
+	// like /Library may not be actually installed.
 	AllowCustomDirectories bool `protobuf:"varint,2,opt,name=allow_custom_directories,json=allowCustomDirectories,proto3" json:"allow_custom_directories,omitempty"`
 }
 
