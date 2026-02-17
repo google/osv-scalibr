@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/binary"
+	"github.com/aead/serpent"
 	"testing"
 )
 
@@ -270,5 +271,123 @@ func TestLUKSDecryptCBCESSIV(t *testing.T) {
 	}
 	if !bytes.Equal(out, plaintext) {
 		t.Fatalf("ESSIV CBC decrypt mismatch")
+	}
+}
+
+func TestLUKSDecryptXTS_AES(t *testing.T) {
+	// XTS requires double-length key (e.g., 32 bytes for AES-128-XTS)
+	key := make([]byte, 32)
+	for i := range key {
+		key[i] = byte(i)
+	}
+
+	xtsCipher, err := initXTS(key, "aes")
+	if err != nil {
+		t.Fatalf("initXTS failed: %v", err)
+	}
+
+	cfg := &luksConfig{
+		masterKey:  key,
+		cipherName: "aes",
+		cipherMode: cipherModeXTS,
+		ivGen:      ivGenPlain64,
+		sectorSize: sectorSize,
+		dataCipher: xtsCipher,
+	}
+
+	plaintext := make([]byte, sectorSize)
+	for i := range plaintext {
+		plaintext[i] = byte(200 - i)
+	}
+
+	// Encrypt manually using XTS
+	ciphertext := make([]byte, sectorSize)
+	xtsCipher.Encrypt(ciphertext, plaintext, 0)
+
+	out, err := cfg.Decrypt(ciphertext, 0)
+	if err != nil {
+		t.Fatalf("decrypt failed: %v", err)
+	}
+
+	if !bytes.Equal(out, plaintext) {
+		t.Fatalf("XTS AES decrypt mismatch")
+	}
+}
+
+func TestLUKSDecryptCBC_Serpent(t *testing.T) {
+	key := make([]byte, 16)
+	for i := range key {
+		key[i] = byte(i + 1)
+	}
+
+	block, err := serpent.NewCipher(key)
+	if err != nil {
+		t.Fatalf("failed to create Serpent cipher: %v", err)
+	}
+
+	cfg := &luksConfig{
+		masterKey:  key,
+		cipherName: "serpent",
+		cipherMode: cipherModeCBC,
+		ivGen:      ivGenPlain64,
+		sectorSize: sectorSize,
+	}
+
+	plaintext := make([]byte, sectorSize)
+	for i := range plaintext {
+		plaintext[i] = byte(i)
+	}
+
+	iv := make([]byte, block.BlockSize())
+	binary.LittleEndian.PutUint64(iv, 0)
+
+	ciphertext := make([]byte, sectorSize)
+	cipher.NewCBCEncrypter(block, iv).CryptBlocks(ciphertext, plaintext)
+
+	out, err := cfg.Decrypt(ciphertext, 0)
+	if err != nil {
+		t.Fatalf("decrypt failed: %v", err)
+	}
+
+	if !bytes.Equal(out, plaintext) {
+		t.Fatalf("Serpent CBC decrypt mismatch")
+	}
+}
+
+func TestLUKSDecryptXTS_Serpent(t *testing.T) {
+	key := make([]byte, 32) // XTS needs double key
+	for i := range key {
+		key[i] = byte(i + 5)
+	}
+
+	xtsCipher, err := initXTS(key, "serpent")
+	if err != nil {
+		t.Fatalf("initXTS failed: %v", err)
+	}
+
+	cfg := &luksConfig{
+		masterKey:  key,
+		cipherName: "serpent",
+		cipherMode: cipherModeXTS,
+		ivGen:      ivGenPlain64,
+		sectorSize: sectorSize,
+		dataCipher: xtsCipher,
+	}
+
+	plaintext := make([]byte, sectorSize)
+	for i := range plaintext {
+		plaintext[i] = byte(255 - i)
+	}
+
+	ciphertext := make([]byte, sectorSize)
+	xtsCipher.Encrypt(ciphertext, plaintext, 0)
+
+	out, err := cfg.Decrypt(ciphertext, 0)
+	if err != nil {
+		t.Fatalf("decrypt failed: %v", err)
+	}
+
+	if !bytes.Equal(out, plaintext) {
+		t.Fatalf("Serpent XTS decrypt mismatch")
 	}
 }
