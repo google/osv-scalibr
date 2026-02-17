@@ -111,7 +111,10 @@ func TestScan(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			det := etcpasswdpermissions.Detector{}
+			det, err := etcpasswdpermissions.New(nil)
+			if err != nil {
+				t.Fatalf("etcpasswdpermissions.New(): %v", err)
+			}
 			got, err := det.Scan(t.Context(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
 			findings := got.GenericFindings
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {

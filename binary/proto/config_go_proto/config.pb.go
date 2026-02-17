@@ -1920,8 +1920,13 @@ type MacAppsConfig struct {
 	// If set, this overrides the global max_file_size_bytes configuration
 	// for this specific plugin.
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Determines if packages should be extracted from directories
+	// other than /Applications.
+	// This can lead to false positives, as apps from some directories
+	// like /Library may not be actually installed.
+	AllowCustomDirectories bool `protobuf:"varint,2,opt,name=allow_custom_directories,json=allowCustomDirectories,proto3" json:"allow_custom_directories,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *MacAppsConfig) Reset() {
@@ -1959,6 +1964,13 @@ func (x *MacAppsConfig) GetMaxFileSizeBytes() int64 {
 		return x.MaxFileSizeBytes
 	}
 	return 0
+}
+
+func (x *MacAppsConfig) GetAllowCustomDirectories() bool {
+	if x != nil {
+		return x.AllowCustomDirectories
+	}
+	return false
 }
 
 type PodmanConfig struct {
@@ -3489,9 +3501,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\rPortageConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\">\n" +
 	"\rFlatpakConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\">\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"x\n" +
 	"\rMacAppsConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"7\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x128\n" +
+	"\x18allow_custom_directories\x18\x02 \x01(\bR\x16allowCustomDirectories\"7\n" +
 	"\fPodmanConfig\x12'\n" +
 	"\x0finclude_stopped\x18\x01 \x01(\bR\x0eincludeStopped\"F\n" +
 	"\x15DockerBaseImageConfig\x12-\n" +
