@@ -44,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databricksserviceprincipalpat"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
@@ -166,6 +167,7 @@ var (
 		fromVeles(salesforceoauth2refresh.NewValidator(), "secrets/salesforceoauth2refreshvalidate", 0),
 		fromVeles(salesforceoauth2jwt.NewValidator(), "secrets/salesforceoauth2jwtvalidate", 0),
 		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
+		fromVeles(databricksserviceprincipalpat.NewValidator(), "secrets/databricksserviceprincipalpatvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
