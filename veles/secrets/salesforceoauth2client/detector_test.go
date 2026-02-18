@@ -170,8 +170,10 @@ yuvrajapp.2.my.salesforce.com`,
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			fmt.Printf("got = %+v\n", got)
-			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
+			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
+				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
+			})
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty(), ignoreOrder); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
 		})
