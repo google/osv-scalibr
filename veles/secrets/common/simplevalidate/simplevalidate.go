@@ -135,12 +135,12 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 			return veles.ValidationFailed, ctx.Err()
 		}
 
-		var bodyReader io.Reader
+		var reqBodyReader io.Reader
 		if len(reqBody) > 0 {
-			bodyReader = strings.NewReader(reqBody)
+			reqBodyReader = strings.NewReader(reqBody)
 		}
 
-		req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, bodyReader)
+		req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, reqBodyReader)
 		if err != nil {
 			return veles.ValidationFailed, fmt.Errorf("http.NewRequestWithContext: %w", err)
 		}
