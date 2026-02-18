@@ -63,7 +63,6 @@ type Validator[S veles.Secret] struct {
 }
 
 // Validate validates a secret with one or multiple HTTP requests.
-// Validate validates a secret with one or multiple HTTP requests.
 func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.ValidationStatus, error) {
 	if v.HTTPC == nil {
 		v.HTTPC = http.DefaultClient
