@@ -122,6 +122,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databricksuseraccountpat"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
@@ -410,6 +411,7 @@ var (
 		{herokuplatformkey.NewSecretKeyDetector(), "secrets/herokuplatformkey", 0},
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
+		{databricksuseraccountpat.NewDetector(), "secrets/databricksuseraccountpat", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

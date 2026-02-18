@@ -188,6 +188,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
+| Databricks User Account PAT                 | `secrets/databricksuseraccountpat`     |
 
 ### Container inventory
 

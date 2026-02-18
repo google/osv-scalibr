@@ -824,6 +824,7 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
+    DatabricksUserAccountPat databricks_user_account_pat = 77;
   }
 
   message GCPSAK {
@@ -1227,6 +1228,13 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+  
+  message DatabricksUserAccountPat {
+    // Databricks User Account PAT
+    string token = 1;
+    // Databricks User Account ID
+    string account_id = 2;
   }
 }
 
