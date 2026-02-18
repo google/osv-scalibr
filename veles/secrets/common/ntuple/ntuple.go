@@ -64,28 +64,15 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 		return nil, nil
 	}
 
-	// Generate all matches
-	all := make([][]Match, len(d.Finders))
-	for i, f := range d.Finders {
-		matches := f(b)
-		if len(matches) == 0 && d.FromPartial == nil {
-			return nil, nil
-		}
-		for j := range matches {
-			matches[j].FinderIndex = i
-		}
-		all[i] = matches
-	}
+	matches := d.generateMatches(b)
+	candidates := collectAllTuples(matches, int(d.MaxDistance))
 
-	candidates := collectAllTuples(all, int(d.MaxDistance))
-
-	// Validate tuples before selecting the best ones
+	// Validate tuples and collect resulting secretes
 	var validCandidates []*Tuple
-	cachedSecrets := make(map[*Tuple]veles.Secret)
-
+	secretsFromTuple := make(map[*Tuple]veles.Secret)
 	for _, t := range candidates {
 		if secret, ok := d.FromTuple(t.Matches); ok {
-			cachedSecrets[t] = secret
+			secretsFromTuple[t] = secret
 			validCandidates = append(validCandidates, t)
 		}
 	}
@@ -103,7 +90,7 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 			})
 
 			for _, t := range selected {
-				out = append(out, cachedSecrets[t])
+				out = append(out, secretsFromTuple[t])
 				pos = append(pos, t.Start)
 			}
 		}
@@ -117,7 +104,7 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	var out []veles.Secret
 	var pos []int
 	var partials []Match
-	for _, list := range all {
+	for _, list := range matches {
 		partials = append(partials, list...)
 	}
 	sort.Slice(partials, func(i, j int) bool {
@@ -134,9 +121,22 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	return out, pos
 }
 
+func (d *Detector) generateMatches(b []byte) [][]Match {
+	all := make([][]Match, len(d.Finders))
+	for i, f := range d.Finders {
+		matches := f(b)
+		if len(matches) == 0 && d.FromPartial == nil {
+			return nil
+		}
+		for j := range matches {
+			matches[j].FinderIndex = i
+		}
+		all[i] = matches
+	}
+	return nil
+}
+
 // buildTuple validates the tuple and sets the Start/End based on physical layout.
-//
-// TODO: i don't like this
 func buildTuple(matches []Match, maxDist int) *Tuple {
 	n := len(matches)
 	if n == 0 {
