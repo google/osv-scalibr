@@ -803,6 +803,7 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
+    BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 77;
   }
 
   message GCPSAK {
@@ -1152,6 +1153,7 @@ message SecretData {
     string token = 1;
   }
 
+
   message SendGridAPIKey {
     string key = 1;
   }
@@ -1181,6 +1183,12 @@ message SecretData {
     string username = 2;
     // Salesforce OAuth2 private key
     string private_key = 3;
+  }
+
+  message BitwardenOAuth2AccessToken {
+    // Bitwarden OAuth2 Access Token
+    string client_id = 1;
+    string client_secret = 2;
   }
 
   message CursorAPIKey {
