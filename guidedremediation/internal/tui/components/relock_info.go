@@ -43,7 +43,7 @@ func NewRelockInfo(patch result.Patch, allVulns []resolution.Vulnerability, deta
 	preamble := strings.Builder{}
 	preamble.WriteString("The following upgrades:\n")
 	for _, pkg := range patch.PackageUpdates {
-		preamble.WriteString(fmt.Sprintf("  %s@%s → @%s\n", pkg.Name, pkg.VersionFrom, pkg.VersionTo))
+		fmt.Fprintf(&preamble, "  %s@%s → @%s\n", pkg.Name, pkg.VersionFrom, pkg.VersionTo)
 	}
 	preamble.WriteString("Will resolve the following:")
 	fixedVulns := make([]resolution.Vulnerability, 0, len(patch.Fixed))
