@@ -168,7 +168,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
-	
+
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
