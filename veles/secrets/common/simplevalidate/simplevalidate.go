@@ -38,6 +38,12 @@ type Validator[S veles.Secret] struct {
 	// Exactly one of Endpoint or EndpointFunc must be provided.
 	// If EndpointFunc returns an error, Validate returns ValidationFailed and the error.
 	EndpointFunc func(S) (string, error)
+	// The API endpoints to query.
+	Endpoints []string
+	// Function that constructs the endpoints for a given secret.
+	// Exactly one of Endpoints or EndpointFuncs must be provided.
+	// If EndpointsFunc returns an error, Validate returns ValidationFailed and the error.
+	EndpointsFunc func(S) ([]string, error)
 	// The HTTP request method to send (e.g. http.MethodGet, http.MethodPost)
 	HTTPMethod string
 	// HTTP headers to set in the query based on the secret.
@@ -56,63 +62,157 @@ type Validator[S veles.Secret] struct {
 	HTTPC *http.Client
 }
 
-// Validate validates a secret with a simple HTTP request.
+// Validate validates a secret with one or multiple HTTP requests.
+// Validate validates a secret with one or multiple HTTP requests.
 func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.ValidationStatus, error) {
 	if v.HTTPC == nil {
 		v.HTTPC = http.DefaultClient
 	}
 
-	if (v.Endpoint == "" && v.EndpointFunc == nil) || (v.Endpoint != "" && v.EndpointFunc != nil) {
-		return veles.ValidationFailed, errors.New("exactly one of Endpoint or EndpointFunc must be specified")
+	// Ensure exactly one endpoint configuration is provided.
+	provided := 0
+	if v.Endpoint != "" {
+		provided++
 	}
-
-	endpoint := v.Endpoint
 	if v.EndpointFunc != nil {
-		endpointURL, err := v.EndpointFunc(secret)
+		provided++
+	}
+	if len(v.Endpoints) > 0 {
+		provided++
+	}
+	if v.EndpointsFunc != nil {
+		provided++
+	}
+	if provided != 1 || provided == 0 {
+		return veles.ValidationFailed,
+			errors.New("exactly one of Endpoint, EndpointFunc, Endpoints, or EndpointsFunc must be specified")
+	}
+
+	// Resolve endpoints
+	var endpoints []string
+
+	switch {
+	case v.Endpoint != "":
+		endpoints = []string{v.Endpoint}
+
+	case v.EndpointFunc != nil:
+		ep, err := v.EndpointFunc(secret)
 		if err != nil {
 			return veles.ValidationFailed, err
 		}
-		endpoint = endpointURL
+		endpoints = []string{ep}
+
+	case len(v.Endpoints) > 0:
+		endpoints = v.Endpoints
+
+	case v.EndpointsFunc != nil:
+		eps, err := v.EndpointsFunc(secret)
+		if err != nil {
+			return veles.ValidationFailed, err
+		}
+		if len(eps) == 0 {
+			return veles.ValidationFailed, errors.New("EndpointsFunc returned no endpoints")
+		}
+		endpoints = eps
 	}
 
-	var reqBodyReader io.Reader
+	// Construct body once
+	var reqBody string
+	var err error
 	if v.Body != nil {
-		reqBody, err := v.Body(secret)
+		reqBody, err = v.Body(secret)
 		if err != nil {
 			return veles.ValidationFailed, err
 		}
-		if len(reqBody) > 0 {
-			reqBodyReader = strings.NewReader(reqBody)
-		}
 	}
-	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, reqBodyReader)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("http.NewRequestWithContext: %w", err)
-	}
-	if v.HTTPHeaders != nil {
-		for key, val := range v.HTTPHeaders(secret) {
-			req.Header.Set(key, val)
-		}
-	}
-	res, err := v.HTTPC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP %s failed: %w", v.HTTPMethod, err)
-	}
-	defer res.Body.Close()
 
-	if slices.Contains(v.ValidResponseCodes, res.StatusCode) {
-		return veles.ValidationValid, nil
+	var sawInvalid bool
+	var endpointErrors []string
+	singleEndpoint := len(endpoints) == 1
+
+	for _, endpoint := range endpoints {
+
+		if ctx.Err() != nil {
+			return veles.ValidationFailed, ctx.Err()
+		}
+
+		var bodyReader io.Reader
+		if len(reqBody) > 0 {
+			bodyReader = strings.NewReader(reqBody)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, bodyReader)
+		if err != nil {
+			return veles.ValidationFailed, fmt.Errorf("http.NewRequestWithContext: %w", err)
+		}
+
+		if v.HTTPHeaders != nil {
+			for key, val := range v.HTTPHeaders(secret) {
+				req.Header.Set(key, val)
+			}
+		}
+
+		res, err := v.HTTPC.Do(req)
+		if err != nil {
+			if ctx.Err() != nil {
+				return veles.ValidationFailed, err
+			}
+			endpointErrors = append(endpointErrors,
+				fmt.Sprintf("%s: HTTP request failed: %v", endpoint, err))
+			continue
+		}
+		defer res.Body.Close()
+
+		// Valid status
+		if slices.Contains(v.ValidResponseCodes, res.StatusCode) {
+			return veles.ValidationValid, nil
+		}
+
+		// Invalid status
+		if slices.Contains(v.InvalidResponseCodes, res.StatusCode) {
+			sawInvalid = true
+			continue
+		}
+
+		// Custom body validation
+		if v.StatusFromResponseBody != nil {
+			status, bodyErr := v.StatusFromResponseBody(res.Body)
+
+			if singleEndpoint {
+				return status, bodyErr
+			}
+
+			if bodyErr != nil {
+				endpointErrors = append(endpointErrors,
+					fmt.Sprintf("%s: body parse failed: %v", endpoint, bodyErr))
+				continue
+			}
+
+			switch status {
+			case veles.ValidationValid:
+				return veles.ValidationValid, nil
+			case veles.ValidationInvalid:
+				sawInvalid = true
+				continue
+			case veles.ValidationFailed:
+				continue
+			}
+		}
+
+		// Unexpected status
+		endpointErrors = append(endpointErrors,
+			fmt.Sprintf("%s: unexpected HTTP status %d", endpoint, res.StatusCode))
 	}
-	if slices.Contains(v.InvalidResponseCodes, res.StatusCode) {
+
+	if sawInvalid {
 		return veles.ValidationInvalid, nil
 	}
 
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
-	}
-	if v.StatusFromResponseBody != nil {
-		return v.StatusFromResponseBody(res.Body)
+	if len(endpointErrors) > 0 {
+		return veles.ValidationFailed,
+			fmt.Errorf("%s", strings.Join(endpointErrors, "; "))
 	}
 
-	return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+	return veles.ValidationFailed,
+		errors.New("no endpoint produced a definitive result")
 }
