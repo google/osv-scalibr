@@ -19,12 +19,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denohelper"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -49,17 +51,22 @@ var tsExtensions = map[string]bool{
 
 // Extractor extracts Deno dependencies from TypeScript source files.
 type Extractor struct {
-	maxFileSizeBytes int64
+	maxFileSizeBytes       int64
+	maxDenoJSONSearchDepth int
 }
 
 // New returns a new TypeScript Deno extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	maxSize := cfg.MaxFileSizeBytes
+	maxDenoJSONSearchDepth := 2
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.DenoTSSourceConfig { return c.GetDenotssource() })
 	if specific.GetMaxFileSizeBytes() > 0 {
 		maxSize = specific.GetMaxFileSizeBytes()
 	}
-	return &Extractor{maxFileSizeBytes: maxSize}, nil
+	if specific.GetDenoJsonSearchDepthLevel() > 0 {
+		maxDenoJSONSearchDepth = int(specific.GetDenoJsonSearchDepthLevel())
+	}
+	return &Extractor{maxFileSizeBytes: maxSize, maxDenoJSONSearchDepth: maxDenoJSONSearchDepth}, nil
 }
 
 // Name of the extractor.
@@ -93,9 +100,14 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	path := input.Path
 
+	// Check if this TypeScript file is part of a Deno project by looking for
+	// deno.json or deno.lock in ancestor directories.
+	if !hasDenoConfigInAncestors(input.FS, path, e.maxDenoJSONSearchDepth) {
+		log.Debugf("Skipping TypeScript file %s: no deno.json or deno.lock found in ancestor directories", path)
+		return inventory.Inventory{}, nil
+	}
+
 	// Parse TypeScript imports
-	// TODO: Why this Typescript file belong to a Deno Project?
-	// It need to be a Deno Project, but I don't know how to do it.
 	pkgs, err := parseTypeScriptFile(ctx, path, input.Reader)
 	if err != nil {
 		return inventory.Inventory{},
@@ -106,6 +118,27 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: pkgs}, nil
+}
+
+// hasDenoConfigInAncestors checks if a deno.json or deno.lock file exists in any
+// ancestor directory of the given path, up to maxDepth levels.
+func hasDenoConfigInAncestors(fsys scalibrfs.FS, path string, maxDepth int) bool {
+	dir := filepath.Dir(path)
+	for range maxDepth {
+		if _, err := fs.Stat(fsys, filepath.Join(dir, "deno.json")); err == nil {
+			return true
+		}
+		if _, err := fs.Stat(fsys, filepath.Join(dir, "deno.lock")); err == nil {
+			return true
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached the root
+			break
+		}
+		dir = parent
+	}
+	return false
 }
 
 func parseTypeScriptFile(ctx context.Context, path string, reader io.Reader) ([]*extractor.Package, error) {

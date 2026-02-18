@@ -16,6 +16,7 @@ package denotssource_test
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -23,10 +24,12 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -225,6 +228,147 @@ func TestExtract(t *testing.T) {
 
 			if diff := cmp.Diff(want, got, cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+		})
+	}
+}
+
+func TestExtractDenoConfigAncestorCheck(t *testing.T) {
+	cowsayTSContent := []byte(`import { cowsay } from "npm:cowsay@1.6.0";`)
+
+	tests := []struct {
+		name         string
+		setup        func(t *testing.T) (rootDir string, tsRelPath string)
+		wantPackages []*extractor.Package
+	}{
+		{
+			name: "no deno.json or deno.lock returns empty inventory",
+			setup: func(t *testing.T) (string, string) {
+				t.Helper()
+				tmpDir := t.TempDir()
+				subDir := filepath.Join(tmpDir, "src")
+				if err := os.MkdirAll(subDir, 0755); err != nil {
+					t.Fatalf("MkdirAll: %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(subDir, "main.ts"), cowsayTSContent, 0644); err != nil {
+					t.Fatalf("WriteFile: %v", err)
+				}
+				return tmpDir, "src/main.ts"
+			},
+			wantPackages: nil,
+		},
+		{
+			name: "deno.lock in parent directory finds packages",
+			setup: func(t *testing.T) (string, string) {
+				t.Helper()
+				tmpDir := t.TempDir()
+				subDir := filepath.Join(tmpDir, "src")
+				if err := os.MkdirAll(subDir, 0755); err != nil {
+					t.Fatalf("MkdirAll: %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(tmpDir, "deno.lock"), []byte(`{}`), 0644); err != nil {
+					t.Fatalf("WriteFile deno.lock: %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(subDir, "main.ts"), cowsayTSContent, 0644); err != nil {
+					t.Fatalf("WriteFile: %v", err)
+				}
+				return tmpDir, "src/main.ts"
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "cowsay",
+					Version:   "1.6.0",
+					Locations: []string{"src/main.ts"},
+					PURLType:  purl.TypeNPM,
+					Metadata:  &denometadata.DenoMetadata{URL: "npm:cowsay@1.6.0"},
+				},
+			},
+		},
+		{
+			name: "deno.json in same directory finds packages",
+			setup: func(t *testing.T) (string, string) {
+				t.Helper()
+				tmpDir := t.TempDir()
+				if err := os.WriteFile(filepath.Join(tmpDir, "deno.json"), []byte(`{"name": "test", "version": "1.0.0"}`), 0644); err != nil {
+					t.Fatalf("WriteFile deno.json: %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(tmpDir, "main.ts"), cowsayTSContent, 0644); err != nil {
+					t.Fatalf("WriteFile: %v", err)
+				}
+				return tmpDir, "main.ts"
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "cowsay",
+					Version:   "1.6.0",
+					Locations: []string{"main.ts"},
+					PURLType:  purl.TypeNPM,
+					Metadata:  &denometadata.DenoMetadata{URL: "npm:cowsay@1.6.0"},
+				},
+			},
+		},
+		{
+			name: "deno.json beyond max search depth returns empty inventory",
+			setup: func(t *testing.T) (string, string) {
+				t.Helper()
+				tmpDir := t.TempDir()
+				deepDir := filepath.Join(tmpDir, "a", "b", "c")
+				if err := os.MkdirAll(deepDir, 0755); err != nil {
+					t.Fatalf("MkdirAll: %v", err)
+				}
+				// deno.json at root, 3 levels up from a/b/c/ — beyond default depth of 2
+				if err := os.WriteFile(filepath.Join(tmpDir, "deno.json"), []byte(`{"name": "test", "version": "1.0.0"}`), 0644); err != nil {
+					t.Fatalf("WriteFile deno.json: %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(deepDir, "main.ts"), cowsayTSContent, 0644); err != nil {
+					t.Fatalf("WriteFile: %v", err)
+				}
+				return tmpDir, "a/b/c/main.ts"
+			},
+			wantPackages: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rootDir, tsRelPath := tt.setup(t)
+
+			f, err := os.Open(filepath.Join(rootDir, tsRelPath))
+			if err != nil {
+				t.Fatalf("Open: %v", err)
+			}
+			defer f.Close()
+
+			info, err := f.Stat()
+			if err != nil {
+				t.Fatalf("Stat: %v", err)
+			}
+
+			e, err := denotssource.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("denotssource.New: %v", err)
+			}
+
+			input := &filesystem.ScanInput{
+				FS:     scalibrfs.DirFS(rootDir),
+				Path:   tsRelPath,
+				Root:   rootDir,
+				Reader: f,
+				Info:   info,
+			}
+
+			got, err := e.Extract(t.Context(), input)
+			if err != nil {
+				t.Fatalf("Extract error: %v", err)
+			}
+
+			var want inventory.Inventory
+			if tt.wantPackages != nil {
+				want = inventory.Inventory{Packages: tt.wantPackages}
+			}
+
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Extract(%s) (-want +got):\n%s", tt.name, diff)
 			}
 		})
 	}

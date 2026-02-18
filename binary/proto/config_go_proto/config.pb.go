@@ -1160,8 +1160,11 @@ type DenoTSSourceConfig struct {
 	// If set, this overrides the global max_file_size_bytes configuration
 	// for this specific plugin.
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// The maximum depth level the plugin will search for deno.json files in the parent directories.
+	// If set, this overrides the default value of 2.
+	DenoJsonSearchDepthLevel int32 `protobuf:"varint,2,opt,name=deno_json_search_depth_level,json=denoJsonSearchDepthLevel,proto3" json:"deno_json_search_depth_level,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *DenoTSSourceConfig) Reset() {
@@ -1197,6 +1200,13 @@ func (*DenoTSSourceConfig) Descriptor() ([]byte, []int) {
 func (x *DenoTSSourceConfig) GetMaxFileSizeBytes() int64 {
 	if x != nil {
 		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+func (x *DenoTSSourceConfig) GetDenoJsonSearchDepthLevel() int32 {
+	if x != nil {
+		return x.DenoJsonSearchDepthLevel
 	}
 	return 0
 }
@@ -3505,9 +3515,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\rArchiveConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"?\n" +
 	"\x0eDenoJsonConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"C\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"\x83\x01\n" +
 	"\x12DenoTSSourceConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\":\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12>\n" +
+	"\x1cdeno_json_search_depth_level\x18\x02 \x01(\x05R\x18denoJsonSearchDepthLevel\":\n" +
 	"\tOVAConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\":\n" +
 	"\tVDIConfig\x12-\n" +

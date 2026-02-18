@@ -130,6 +130,9 @@ message DenoTSSourceConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // The maximum depth level the plugin will search for deno.json files in the parent directories.
+  // If set, this overrides the default value of 2.
+  int32 deno_json_search_depth_level = 2;
 }
 
 message OVAConfig {
