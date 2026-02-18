@@ -157,20 +157,20 @@ func NewUserUpdateTokenDetector() veles.Detector {
 		MaxElementLen: max(usernameMaxLen, tokenMaxLen, repoURLMaxLen),
 		MaxDistance:   maxDistance,
 		Finders: []ntuple.Finder{
-			ntuple.FindAllMatchesGroup(usernameRe),
 			ntuple.FindAllMatches(userUpdateTokenRe),
+			ntuple.FindAllMatchesGroup(usernameRe),
 			ntuple.FindAllMatches(repoURLRe),
 		},
 		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
 			return UserUpdateToken{
-				Username: string(ms[0].Value),
-				Token:    string(ms[1].Value),
+				Token:    string(ms[0].Value),
+				Username: string(ms[1].Value),
 				RepoURL:  string(ms[2].Value),
 			}, true
 		},
 		FromPartial: func(m ntuple.Match) (veles.Secret, bool) {
-			// Only return partial match if it's the token (FinderIndex 1)
-			if m.FinderIndex == 1 {
+			// Only return partial match if it's the token (FinderIndex 0)
+			if m.FinderIndex == 0 {
 				return UserUpdateToken{Token: string(m.Value)}, true
 			}
 			return nil, false
