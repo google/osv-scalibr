@@ -36,9 +36,13 @@ type Validator[S veles.Secret] struct {
 	Endpoint string
 	// Function that constructs the endpoint for a given secret.
 	// Exactly one of Endpoint or EndpointFunc must be provided.
+	// The specificed endpoints get queried in order and the validation is considered valid
+	// if either of them return a valid status.
 	// If EndpointFunc returns an error, Validate returns ValidationFailed and the error.
 	EndpointFunc func(S) (string, error)
 	// The API endpoints to query.
+	// The specificed endpoints get queried in order and the validation is considered valid
+	// if either of them return a valid status.
 	Endpoints []string
 	// Function that constructs the endpoints for a given secret.
 	// Exactly one of Endpoints or EndpointFuncs must be provided.
@@ -90,21 +94,17 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 	// Resolve endpoints
 	var endpoints []string
 
-	switch {
-	case v.Endpoint != "":
+	if v.Endpoint != "" {
 		endpoints = []string{v.Endpoint}
-
-	case v.EndpointFunc != nil:
+	} else if v.EndpointFunc != nil {
 		ep, err := v.EndpointFunc(secret)
 		if err != nil {
 			return veles.ValidationFailed, err
 		}
 		endpoints = []string{ep}
-
-	case len(v.Endpoints) > 0:
+	} else if len(v.Endpoints) > 0 {
 		endpoints = v.Endpoints
-
-	case v.EndpointsFunc != nil:
+	} else if v.EndpointsFunc != nil {
 		eps, err := v.EndpointsFunc(secret)
 		if err != nil {
 			return veles.ValidationFailed, err
@@ -125,9 +125,11 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 		}
 	}
 
+	// sawInvalid is used to keep an eye on Invalid responses.
+	// We return invalid if there was at least one invalid response and no valid ones.
 	var sawInvalid bool
-	var endpointErrors []string
-	singleEndpoint := len(endpoints) == 1
+
+	var endpointErrors []error
 
 	for _, endpoint := range endpoints {
 		if ctx.Err() != nil {
@@ -156,7 +158,7 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 				return veles.ValidationFailed, err
 			}
 			endpointErrors = append(endpointErrors,
-				fmt.Sprintf("%s: HTTP request failed: %v", endpoint, err))
+				fmt.Errorf("%s: HTTP request failed: %w", endpoint, err))
 			continue
 		}
 		defer res.Body.Close()
@@ -176,13 +178,9 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 		if v.StatusFromResponseBody != nil {
 			status, bodyErr := v.StatusFromResponseBody(res.Body)
 
-			if singleEndpoint {
-				return status, bodyErr
-			}
-
 			if bodyErr != nil {
 				endpointErrors = append(endpointErrors,
-					fmt.Sprintf("%s: body parse failed: %v", endpoint, bodyErr))
+					fmt.Errorf("%s: body parse failed: %w", endpoint, bodyErr))
 				continue
 			}
 
@@ -199,7 +197,7 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 
 		// Unexpected status
 		endpointErrors = append(endpointErrors,
-			fmt.Sprintf("%s: unexpected HTTP status %d", endpoint, res.StatusCode))
+			fmt.Errorf("%s: unexpected HTTP status %d", endpoint, res.StatusCode))
 	}
 
 	if sawInvalid {
@@ -207,8 +205,7 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 	}
 
 	if len(endpointErrors) > 0 {
-		return veles.ValidationFailed,
-			fmt.Errorf("%s", strings.Join(endpointErrors, "; "))
+		return veles.ValidationFailed, errors.Join(endpointErrors...)
 	}
 
 	return veles.ValidationFailed,
