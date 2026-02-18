@@ -49,6 +49,7 @@ pkgLoop:
 		// and "other files" field.
 		loc := pkg.Locations[0]
 
+		// todo: we can remove this now I think
 		// If ScanConfig.StoreAbsolutePath is on, this will be an absolute path.
 		// Convert to relative in these cases.
 		// Root starts and ends in a slash while relative paths don't, so this will only

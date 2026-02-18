@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"slices"
@@ -54,8 +55,9 @@ import (
 )
 
 var (
-	errNoScanRoot            = errors.New("no scan root specified")
-	errFilesWithSeveralRoots = errors.New("can't extract specific files with several scan roots")
+	errNoScanRoot                   = errors.New("no scan root specified")
+	errFilesWithSeveralRoots        = errors.New("can't extract specific files with several scan roots")
+	errStoreAbsPathWithSeveralRoots = errors.New("can't store absoluate paths with several scan roots")
 )
 
 // Scanner is the main entry point of the scanner.
@@ -203,6 +205,8 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = errNoScanRoot
 	} else if len(config.PathsToExtract) > 0 && len(config.ScanRoots) > 1 {
 		sro.Err = errFilesWithSeveralRoots
+	} else if config.StoreAbsolutePath && len(config.ScanRoots) > 1 {
+		sro.Err = errStoreAbsPathWithSeveralRoots
 	}
 	if sro.Err != nil {
 		sro.EndTime = time.Now()
@@ -228,7 +232,6 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
-		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 		ErrorOnFSErrors:       config.ErrorOnFSErrors,
 		ExtractorOverride:     config.ExtractorOverride,
@@ -317,8 +320,22 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = multierr.Append(sro.Err, err)
 	}
 
+	if config.StoreAbsolutePath {
+		for _, r := range sro.Inventory.Packages {
+			r.Locations = expandAbsolutePath(sysroot.Path, r.Locations)
+		}
+	}
+
 	sro.EndTime = time.Now()
 	return newScanResult(sro)
+}
+
+func expandAbsolutePath(scanRoot string, paths []string) []string {
+	var locations []string
+	for _, l := range paths {
+		locations = append(locations, filepath.Join(scanRoot, l))
+	}
+	return locations
 }
 
 // ScanContainer scans the provided container image for packages and security findings using the
@@ -339,6 +356,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	}
 
 	storeAbsPath := config.StoreAbsolutePath
+	// todo: is this still needed?
 	// Don't try and store absolute path because on windows it will turn unix paths into
 	// Windows paths.
 	config.StoreAbsolutePath = false
@@ -380,7 +398,6 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
-		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 		ErrorOnFSErrors:       config.ErrorOnFSErrors,
 		ExtractorOverride:     config.ExtractorOverride,
@@ -389,6 +406,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
 
+	// todo: maybe this should go at the end?
 	// Since we skipped storing absolute path in the main Scan function.
 	// Actually convert it to absolute path here.
 	if storeAbsPath {
