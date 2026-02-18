@@ -54,28 +54,24 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	var offsets []int
 
 	// 1. docker login command username and pat detection
-	dockerLoginCmdMatches := dockerLoginCmdRe.FindAllSubmatch(content, -1)
+	dockerLoginCmdMatches := dockerLoginCmdRe.FindAllSubmatchIndex(content, -1)
 	for _, m := range dockerLoginCmdMatches {
 		// Case 1: Username in the first position, PAT in the second position
-		if len(m[1]) > 0 && len(m[4]) > 0 {
+		if m[2] != -1 && m[8] != -1 {
 			secrets = append(secrets, DockerHubPAT{
-				Username: string(m[1]),
-				Pat:      string(m[4]),
+				Username: string(content[m[2]:m[3]]),
+				Pat:      string(content[m[8]:m[9]]),
 			})
-			// Find the offset of this PAT in the content
-			patStart := bytes.Index(content, m[0]) + bytes.LastIndex(m[0], m[4])
-			offsets = append(offsets, patStart)
+			// Append the start index of the whole match
+			offsets = append(offsets, m[0])
 		}
-
-		// Case 2: PAT in first position, Username in second position
-		if len(m[2]) > 0 && len(m[3]) > 0 {
+		// Case 2: PAT in Group 2, Username in Group 3
+		if m[4] != -1 && m[6] != -1 {
 			secrets = append(secrets, DockerHubPAT{
-				Username: string(m[3]),
-				Pat:      string(m[2]),
+				Username: string(content[m[6]:m[7]]),
+				Pat:      string(content[m[4]:m[5]]),
 			})
-			// Find the offset of this PAT in the content
-			patStart := bytes.Index(content, m[0]) + bytes.Index(m[0], m[2])
-			offsets = append(offsets, patStart)
+			offsets = append(offsets, m[0])
 		}
 	}
 
