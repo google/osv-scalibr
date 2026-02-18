@@ -802,6 +802,7 @@ message SecretData {
     DenoPat deno_pat = 73;
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
+    DatabricksServicePrincipalOAuth2ClientCredentials databricks_service_principal_oauth2_client_credentials = 76;
   }
 
   message GCPSAK {
@@ -1201,6 +1202,15 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+
+  message DatabricksServicePrincipalOAuth2ClientCredentials {
+    // Databricks Service Principal Workspace URL
+    string url = 1;
+    // Databricks Service Principal OAuth2 client secret
+    string secret = 2;
+    // Databricks Service Principal OAuth2 client ID
+    string id = 3;
   }
 }
 
