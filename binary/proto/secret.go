@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databricksserviceprincipaloauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -321,6 +322,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case databricksserviceprincipaloauth2client.Credentials:
+		return databricksServicePrincipalOAuth2ClientCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1129,6 +1132,18 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+func databricksServicePrincipalOAuth2ClientCredentialsToProto(creds databricksserviceprincipaloauth2client.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksServicePrincipalOauth2ClientCredentials{
+			DatabricksServicePrincipalOauth2ClientCredentials: &spb.SecretData_DatabricksServicePrincipalOAuth2ClientCredentials{
+				Url:    creds.URL,
+				Secret: creds.Secret,
+				Id:     creds.ID,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1481,6 +1496,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_DatabricksServicePrincipalOauth2ClientCredentials:
+		return databricksServicePrincipalOAuth2ClientCredentialsToStruct(s.GetDatabricksServicePrincipalOauth2ClientCredentials()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1842,6 +1859,14 @@ func packagistConductorUpdateTokenToProto(s velespackagist.ConductorUpdateToken)
 				Token: s.Token,
 			},
 		},
+	}
+}
+
+func databricksServicePrincipalOAuth2ClientCredentialsToStruct(creds *spb.SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) databricksserviceprincipaloauth2client.Credentials {
+	return databricksserviceprincipaloauth2client.Credentials{
+		URL:    creds.GetUrl(),
+		Secret: creds.GetSecret(),
+		ID:     creds.GetId(),
 	}
 }
 
