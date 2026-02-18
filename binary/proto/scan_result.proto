@@ -802,6 +802,7 @@ message SecretData {
     DenoPat deno_pat = 73;
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
+    CloudflareAPIToken cloudflare_api_token = 76;
   }
 
   message GCPSAK {
@@ -896,6 +897,10 @@ message SecretData {
   message DockerHubPat {
     string pat = 1;
     string username = 2;
+  }
+
+  message CloudflareAPIToken {
+    string token = 1;
   }
 
   message DenoPat {

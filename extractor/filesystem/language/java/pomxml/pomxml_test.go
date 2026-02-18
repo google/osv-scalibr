@@ -157,6 +157,26 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "different_encoding",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/encoding.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "junit:junit",
+					Version:   "4.12",
+					PURLType:  purl.TypeMaven,
+					Locations: []string{"testdata/encoding.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "junit",
+						GroupID:      "junit",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "with dependency management",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/with-dependency-management.xml",
