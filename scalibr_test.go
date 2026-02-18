@@ -100,6 +100,13 @@ func TestScan(t *testing.T) {
 	pkg := &extractor.Package{
 		Name:      pkgName,
 		Locations: []string{"file.txt"},
+		ScanRoot:  tmp,
+		Plugins:   []string{fakeExtractor.Name()},
+	}
+	pkgWithAbsolutePath := &extractor.Package{
+		Name:      pkgName,
+		Locations: []string{filepath.Join(tmp, "file.txt")},
+		ScanRoot:  tmp,
 		Plugins:   []string{fakeExtractor.Name()},
 	}
 	withLayerMetadata := func(pkg *extractor.Package, ld *extractor.LayerMetadata) *extractor.Package {
@@ -309,6 +316,24 @@ func TestScan(t *testing.T) {
 				Status: &plugin.ScanStatus{
 					Status:        plugin.ScanStatusFailed,
 					FailureReason: "no scan root specified",
+				},
+			},
+		},
+		{
+			desc: "Store_absolute_paths",
+			cfg: &scalibr.ScanConfig{
+				Plugins:           []plugin.Plugin{fakeExtractor},
+				ScanRoots:         tmpRoot,
+				StoreAbsolutePath: true,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "python/wheelegg", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{pkgWithAbsolutePath},
 				},
 			},
 		},
@@ -722,11 +747,11 @@ func TestScan_ExtractorOverride(t *testing.T) {
 	e4 := fe.NewDirExtractor("e4", 1, []string{"dir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg4"}}})
 	e5 := fe.NewDirExtractor("e5", 1, []string{"notdir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg5"}}})
 
-	pkg1 := &extractor.Package{Name: "pkg1", Locations: []string{"file1"}, Plugins: []string{"e1"}}
-	pkg2 := &extractor.Package{Name: "pkg2", Locations: []string{"file2"}, Plugins: []string{"e2"}}
-	pkg3 := &extractor.Package{Name: "pkg3", Locations: []string{"file2"}, Plugins: []string{"e3"}}
-	pkg4 := &extractor.Package{Name: "pkg4", Locations: []string{"dir"}, Plugins: []string{"e4"}}
-	pkg5 := &extractor.Package{Name: "pkg5", Locations: []string{"dir"}, Plugins: []string{"e5"}}
+	pkg1 := &extractor.Package{Name: "pkg1", Locations: []string{"file1"}, ScanRoot: tmp, Plugins: []string{"e1"}}
+	pkg2 := &extractor.Package{Name: "pkg2", Locations: []string{"file2"}, ScanRoot: tmp, Plugins: []string{"e2"}}
+	pkg3 := &extractor.Package{Name: "pkg3", Locations: []string{"file2"}, ScanRoot: tmp, Plugins: []string{"e3"}}
+	pkg4 := &extractor.Package{Name: "pkg4", Locations: []string{"dir"}, ScanRoot: tmp, Plugins: []string{"e4"}}
+	pkg5 := &extractor.Package{Name: "pkg5", Locations: []string{"dir"}, ScanRoot: tmp, Plugins: []string{"e5"}}
 
 	tests := []struct {
 		name              string
@@ -1108,6 +1133,7 @@ func TestAnnotator(t *testing.T) {
 	wantPkgs := []*extractor.Package{{
 		Name:      pkgName,
 		Locations: []string{"tmp/file.txt"},
+		ScanRoot:  tmp,
 		Plugins:   []string{fakeExtractor.Name()},
 		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 			Plugin:          cachedir.Name,
