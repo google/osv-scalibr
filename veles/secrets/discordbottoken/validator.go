@@ -22,8 +22,16 @@ import (
 
 const discordAPIURL = "https://discord.com/api/v10/users/@me"
 
-// NewValidator creates a new Validator that validates the DiscordBotToken via
-// the /users/@me API endpoint.
+// NewValidator creates a Validator that checks whether a Discord bot token is valid.
+//
+// Validation is performed by calling Discord's REST API endpoint:
+// GET https://discord.com/api/v10/users/@me
+//
+// The request uses the Authorization header in the form:
+// Authorization: Bot <token>
+//
+// Endpoint reference:
+// https://discord.com/developers/docs/resources/user#get-current-user
 func NewValidator() *sv.Validator[DiscordBotToken] {
 	return &sv.Validator[DiscordBotToken]{
 		Endpoint:   discordAPIURL,

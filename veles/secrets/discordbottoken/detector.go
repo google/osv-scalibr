@@ -36,7 +36,14 @@ var (
 	keywordRe = regexp.MustCompile(`(?i)(discord|bot|token|client|authorization)`)
 )
 
-// NewDetector returns a detector that finds Discord bot tokens near relevant keywords.
+// NewDetector returns a detector for Discord bot tokens.
+//
+// Token format reference:
+// https://discord.com/developers/docs/reference#authentication
+//
+// This detector looks for strings matching the typical Discord token structure
+// (including the "mfa." prefix variant) and requires Discord-related keywords
+// nearby to reduce false positives.
 func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: maxTokenLength,
