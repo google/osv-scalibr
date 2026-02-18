@@ -268,7 +268,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
-	case velesdiscordbottoken.DiscordBotToken:
+        case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
 	case velescircleci.PersonalAccessToken:
 		return circleCIPersonalAccessTokenToProto(t), nil
@@ -975,8 +975,8 @@ func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) 
 
 func discordBotTokenToProto(s velesdiscordbottoken.DiscordBotToken) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_DiscordBotToken{
-			DiscordBotToken: &spb.SecretData_DiscordBotTokenMessage{
+		Secret: &spb.SecretData_DiscordBotToken_{
+			DiscordBotToken: &spb.SecretData_DiscordBotToken{
 				Token: s.Token,
 			},
 		},
@@ -1300,6 +1300,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		}, nil
 	case *spb.SecretData_DiscordBotToken:
 		return velesdiscordbottoken.DiscordBotToken{
+        case *spb.SecretData_DiscordBotToken_:
+ 		return velesdiscordbottoken.DiscordBotToken{
 			Token: s.GetDiscordBotToken().GetToken(),
 		}, nil
 	case *spb.SecretData_CircleciPersonalAccessToken:
