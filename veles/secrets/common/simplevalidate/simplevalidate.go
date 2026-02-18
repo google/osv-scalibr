@@ -19,13 +19,11 @@ package simplevalidate
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"slices"
-	"strings"
 
 	"github.com/google/osv-scalibr/veles"
+	nv "github.com/google/osv-scalibr/veles/secrets/common/nvalidate"
 )
 
 // Validator validates a secret of a given type by sending HTTP requests and
@@ -58,61 +56,36 @@ type Validator[S veles.Secret] struct {
 
 // Validate validates a secret with a simple HTTP request.
 func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.ValidationStatus, error) {
-	if v.HTTPC == nil {
-		v.HTTPC = http.DefaultClient
-	}
 
-	if (v.Endpoint == "" && v.EndpointFunc == nil) || (v.Endpoint != "" && v.EndpointFunc != nil) {
+	if (v.Endpoint == "" && v.EndpointFunc == nil) ||
+		(v.Endpoint != "" && v.EndpointFunc != nil) {
 		return veles.ValidationFailed, errors.New("exactly one of Endpoint or EndpointFunc must be specified")
 	}
 
-	endpoint := v.Endpoint
-	if v.EndpointFunc != nil {
-		endpointURL, err := v.EndpointFunc(secret)
-		if err != nil {
-			return veles.ValidationFailed, err
-		}
-		endpoint = endpointURL
+	nvValidator := &nv.Validator[S]{
+		HTTPMethod:             v.HTTPMethod,
+		HTTPHeaders:            v.HTTPHeaders,
+		Body:                   v.Body,
+		ValidResponseCodes:     v.ValidResponseCodes,
+		InvalidResponseCodes:   v.InvalidResponseCodes,
+		StatusFromResponseBody: v.StatusFromResponseBody,
+		HTTPC:                  v.HTTPC,
 	}
 
-	var reqBodyReader io.Reader
-	if v.Body != nil {
-		reqBody, err := v.Body(secret)
-		if err != nil {
-			return veles.ValidationFailed, err
-		}
-		if len(reqBody) > 0 {
-			reqBodyReader = strings.NewReader(reqBody)
-		}
-	}
-	req, err := http.NewRequestWithContext(ctx, v.HTTPMethod, endpoint, reqBodyReader)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("http.NewRequestWithContext: %w", err)
-	}
-	if v.HTTPHeaders != nil {
-		for key, val := range v.HTTPHeaders(secret) {
-			req.Header.Set(key, val)
+	if v.Endpoint != "" {
+		nvValidator.Endpoints = []string{v.Endpoint}
+	} else {
+		nvValidator.EndpointFunc = func(s S) ([]string, error) {
+			endpoint, err := v.EndpointFunc(s)
+			if err != nil {
+				return nil, err
+			}
+			if endpoint == "" {
+				return nil, errors.New("EndpointFunc returned empty endpoint")
+			}
+			return []string{endpoint}, nil
 		}
 	}
-	res, err := v.HTTPC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP %s failed: %w", v.HTTPMethod, err)
-	}
-	defer res.Body.Close()
 
-	if slices.Contains(v.ValidResponseCodes, res.StatusCode) {
-		return veles.ValidationValid, nil
-	}
-	if slices.Contains(v.InvalidResponseCodes, res.StatusCode) {
-		return veles.ValidationInvalid, nil
-	}
-
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("failed to read response body: %w", err)
-	}
-	if v.StatusFromResponseBody != nil {
-		return v.StatusFromResponseBody(res.Body)
-	}
-
-	return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+	return nvValidator.Validate(ctx, secret)
 }
