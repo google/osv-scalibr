@@ -130,7 +130,6 @@ func (v *Validator[S]) Validate(ctx context.Context, secret S) (veles.Validation
 	singleEndpoint := len(endpoints) == 1
 
 	for _, endpoint := range endpoints {
-
 		if ctx.Err() != nil {
 			return veles.ValidationFailed, ctx.Err()
 		}
