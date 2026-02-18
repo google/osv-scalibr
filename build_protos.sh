@@ -16,7 +16,7 @@
 
 
 [ binary/proto/scan_result_go_proto/scan_result.pb.go -ot binary/proto/scan_result.proto ]
-REGEN_RESULT=$?
+REGEN_RESULT=0
 [ binary/proto/config_go_proto/config.pb.go -ot binary/proto/config.proto ]
 REGEN_CONFIG=$?
 

@@ -32,6 +32,7 @@ import (
 	velescircleci "github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databricksuseraccountoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
@@ -289,6 +290,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squarePersonalAccessTokenToProto(t), nil
 	case velessquareapikey.SquareOAuthApplicationSecret:
 		return squareOAuthApplicationSecretToProto(t), nil
+	case databricksuseraccountoauth2client.Credentials:
+		return databricksUserAccountOAuth2ClientCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1056,6 +1059,18 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+func databricksUserAccountOAuth2ClientCredentialsToProto(creds databricksuseraccountoauth2client.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksUserAccountOauth2ClientCredentials{
+			DatabricksUserAccountOauth2ClientCredentials: &spb.SecretData_DatabricksUserAccountOauth2ClientCredentials{
+				Secret:    creds.Secret,
+				Id:        creds.ID,
+				accountId: creds.AccountID,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1353,6 +1368,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_DatabricksUserAccountOauth2ClientCredentials:
+		return databricksUserAccountOAuth2ClientCredentialsToStruct(s.GetDatabricksUserAccountOauth2ClientCredentials()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1607,6 +1624,14 @@ func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatform
 	return velesherokuplatformkey.HerokuSecret{
 		Key:      k.GetKey(),
 		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur, NeverExpires: metadata.GetNeverExpires()},
+	}
+}
+
+func databricksUserAccountOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_DatabricksUserAccountOauth2ClientCredentials) databricksuseraccountoauth2client.Credentials {
+	return databricksuseraccountoauth2client.Credentials{
+		Secret:    credsPB.GetSecret(),
+		ID:        credsPB.GetId(),
+		AccountID: credsPB.GetAccountID(),
 	}
 }
 

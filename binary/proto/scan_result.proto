@@ -801,6 +801,7 @@ message SecretData {
     SendGridAPIKey sendgrid_api_key = 72;
     DenoPat deno_pat = 73;
     HerokuSecretKey heroku_secret_key = 74;
+    DatabricksUserAccountOAuth2ClientCredentials databricks_user_account_oauth2_client_credentials = 75;
   }
 
   message GCPSAK {
@@ -1197,6 +1198,15 @@ message SecretData {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
   }
+}
+
+message DatabricksUserAccountOAuth2ClientCredentials {
+  // Databricks User Account OAuth2 client secret
+  string secret = 1;
+  // Databricks User Account OAuth2 client ID
+  string id = 2;
+  // Databricks User Account ID
+  string account_id = 3;
 }
 
 message SecretStatus {
