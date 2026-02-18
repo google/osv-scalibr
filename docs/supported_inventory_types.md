@@ -73,7 +73,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
-|            | pom.xml                                           | `java/pomxml`                        |
+|            | pom.xml                                           | `java/pomxml`, `java/pomxmlnet`      |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
@@ -81,8 +81,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | yarn.lock                                         | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
 |            | bun.lock                                          | `javascript/bunlock`                 |
-|            | deno.json                                         | `javascript/denojson`                |
-|            | deno TypeScript Source                            | `javascript/denotssource`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -105,7 +103,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
-| Perl       | Perl CPAN packages                                | `perl/cpan`                          |
 
 ### Language runtime managers
 
@@ -126,10 +123,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
-| Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
-| Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
@@ -160,12 +155,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`      |
 | OpenAI API key                              | `secrets/openai`                       |
 | OpenRouter API key                          | `secrets/openrouter`                   |
-| Packagist API Key                           | `secrets/packagistapi`                 |
-| Packagist API Secret                        | `secrets/packagistsecret`              |
-| Packagist Organization Read Token           | `secrets/packagistorgreadtoken`        |
-| Packagist Organization Update Token         | `secrets/packagistorgupdatetoken`      |
-| Packagist User Update Token                 | `secrets/packagistuserupdatetoken`     |
-| Packagist Conductor Update Token            | `secrets/packagistconductorupdatetoken`|
 | Perplexity API key                          | `secrets/perplexityapikey`             |
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |
@@ -182,9 +171,6 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Secret Key                           | `secrets/stripesecretkey`              |
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
-| Supabase PAT                                | `secrets/supabasepat`                  |
-| Supabase Project Secret Key                 | `secrets/supabaseprojectsecretkey`     |
-| Supabase Service Role JWT                   | `secrets/supabaseservicerolejwt`       |
 | Tink keyset                                 | `secrets/tinkkeyset`                   |
 | Paystack Secret Key                         | `secrets/paystacksecretkey`            |
 | Vapid keys                                  | `secrets/vapidkey`                     |
@@ -199,7 +185,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
-| Discord Bot Token                           | `secrets/discordbottoken`              |
+| Clojars Deploy Token                        | `secrets/clojarsdeploytoken`           |
 
 ### Container inventory
 
@@ -220,13 +206,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type                               | Extractor Plugin    |
-|------------------------------------| ------------------- |
-| Wordpress plugins                  | `wordpress/plugins` |
-| VSCode extensions                  | `vscode/extensions` |
-| Chrome extensions                  | `chrome/extensions` |
-| Maven entries in Bazel build files | `os/bazelmaven`     |
-| NetScaler installations            | `netscaler`         |
+| Type                    | Extractor Plugin    |
+| ----------------------- | ------------------- |
+| Wordpress plugins       | `wordpress/plugins` |
+| VSCode extensions       | `vscode/extensions` |
+| Chrome extensions       | `chrome/extensions` |
+| NetScaler installations | `netscaler`         |
 
 ### EmbeddedFS
 
@@ -236,27 +221,25 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | ova     | Extracts .ova files                               | `embeddedfs/ova`     |
 | vdi     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
 | vmdk    | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
-| qcow2   | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/qcow2`   |
 
 ## Detectors
 
-| Description                                                                  | Plugin Name                              |
-| ---------------------------------------------------------------------------- | ---------------------------------------- |
-| Checks for overly permissive permissions on /etc/passwd.                     | `cis/generic-linux/etcpasswdpermissions` |
-| Finds vulns in Go binaries with reachability data using govulncheck.         | `govulncheck/binary`                     |
-| Checks if the Linux distribution is end-of-life.                             | `endoflife/linuxdistro`                  |
-| Detects vulnerability CVE-2023-38408 in OpenSSH.                             | `cve/cve-2023-38408`                     |
-| Detects vulnerability CVE-2022-33891 in Spark UI.                            | `cve/cve-2022-33891`                     |
-| Detects vulnerability CVE-2020-16846 in Salt.                                | `cve/cve-2020-16846`                     |
-| Detects vulnerability CVE-2023-6019 in Ray Dashboard.                        | `cve/cve-2023-6019`                      |
-| Detects vulnerability CVE-2020-11978 in Apache Airflow.                      | `cve/cve-2020-11978`                     |
-| Detects vulnerability CVE-2024-2912 in BentoML.                              | `cve/cve-2024-2912`                      |
-| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway               | `cve/cve-2025-7775`                      |
-| Checks for whether code-server has authentication enabled.                   | `weakcredentials/codeserver`             |
-| Checks for weak passwords in /etc/shadow.                                    | `weakcredentials/etcshadow`              |
-| Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |
-| Checks for weak passwords for local Windows accounts.                        | `weakcredentials/winlocal`               |
-| Detects PAM misconfigurations that allow authentication bypass. (Linux-only) | `misc/pammisconfig`                      |
+| Description                                                          | Plugin Name                              |
+| -------------------------------------------------------------------- | ---------------------------------------- |
+| Checks for overly permissive permissions on /etc/passwd.             | `cis/generic-linux/etcpasswdpermissions` |
+| Finds vulns in Go binaries with reachability data using govulncheck. | `govulncheck/binary`                     |
+| Checks if the Linux distribution is end-of-life.                     | `endoflife/linuxdistro`                  |
+| Detects vulnerability CVE-2023-38408 in OpenSSH.                     | `cve/cve-2023-38408`                     |
+| Detects vulnerability CVE-2022-33891 in Spark UI.                    | `cve/cve-2022-33891`                     |
+| Detects vulnerability CVE-2020-16846 in Salt.                        | `cve/cve-2020-16846`                     |
+| Detects vulnerability CVE-2023-6019 in Ray Dashboard.                | `cve/cve-2023-6019`                      |
+| Detects vulnerability CVE-2020-11978 in Apache Airflow.              | `cve/cve-2020-11978`                     |
+| Detects vulnerability CVE-2024-2912 in BentoML.                      | `cve/cve-2024-2912`                      |
+| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway       | `cve/cve-2025-7775`                      |
+| Checks for whether code-server has authentication enabled.           | `weakcredentials/codeserver`             |
+| Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
+| Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |
+| Checks for weak passwords for local Windows accounts.                | `weakcredentials/winlocal`               |
 
 ## Annotators
 
