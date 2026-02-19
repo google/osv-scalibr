@@ -151,30 +151,36 @@ func (d *Detector) generateTuples(all [][]Match, step int, currentMatches []Matc
 	return res
 }
 
-// buildTuple returns a tuple from the given matches
 func buildTuple(matches []Match, maxGap int) *Tuple {
+	if len(matches) == 0 {
+		return nil
+	}
 
-	sortedMatches := slices.Clone(matches)
-	slices.SortFunc(sortedMatches, func(a, b Match) int {
-		return cmp.Compare(a.Start, b.Start)
+	// Sort indexes instead of cloning matches to avoid allocations
+	idxs := make([]int, len(matches))
+	for i := range idxs {
+		idxs[i] = i
+	}
+	slices.SortFunc(idxs, func(i, j int) int {
+		return cmp.Compare(matches[i].Start, matches[j].Start)
 	})
 
-	start := sortedMatches[0].Start
-	end := sortedMatches[0].End
+	firstIdx := idxs[0]
+	start := matches[firstIdx].Start
+	end := matches[firstIdx].End
 	totalGap := 0
+	for k := 1; k < len(matches); k++ {
+		prev := matches[idxs[k-1]]
+		curr := matches[idxs[k]]
 
-	for i := 0; i < len(matches)-1; i++ {
-		curr := sortedMatches[i]
-		next := sortedMatches[i+1]
-
-		gap := next.Start - curr.End
+		gap := curr.Start - prev.End
 		if gap > maxGap {
 			return nil
 		}
-		totalGap += gap
 
-		if next.End > end {
-			end = next.End
+		totalGap += gap
+		if curr.End > end {
+			end = curr.End
 		}
 	}
 
