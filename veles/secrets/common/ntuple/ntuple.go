@@ -252,22 +252,25 @@ func FindAllMatches(r *regexp.Regexp) Finder {
 // FindAllMatches, but with support for context-aware capture groups.
 //
 // If the provided regexp contains at least one capturing group and that group
-// matches, the span of the *first* capturing group is returned as the Match.
-// Otherwise, the span of the full match is used as a fallback.
+// matches, the Match.Value is set to the *first* capturing group, while
+// Match.Start and Match.End span the entire match (including surrounding
+// context).
 //
-// This is intended for secret-detection use cases where the regex includes
-// surrounding context (e.g. "client_secret", "refresh_token") to reduce false
-// positives, but only the secret value itself should be returned.
+// If no capturing group exists or the first group did not participate in the
+// match, the full match is used both for the span and for Match.Value.
 //
 // For example, given a regexp like:
 //
 //	(?:client_secret\s*[:=]\s*)([A-Za-z0-9]{30,})
 //
-// the full match includes the context, but only the captured secret value
-// ([A-Za-z0-9]{30,}) is returned in Match.Value.
+// and input:
 //
-// This function is fully backward-compatible and opt-in; existing detectors
-// using FindAllMatches are unaffected.
+//	client_secret: ABCDEFGHIJKLMNOPQRSTUVWXYZ1234
+//
+// Match.Start and Match.End will span the entire string
+// "client_secret: ABCDEFGHIJKLMNOPQRSTUVWXYZ1234",
+// while Match.Value will contain only:
+// "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234".
 func FindAllMatchesGroup(r *regexp.Regexp) Finder {
 	return func(b []byte) []Match {
 		idxs := r.FindAllSubmatchIndex(b, -1)
@@ -276,17 +279,22 @@ func FindAllMatchesGroup(r *regexp.Regexp) Finder {
 		for _, idx := range idxs {
 			// idx layout:
 			// [fullStart, fullEnd, g1Start, g1End, g2Start, g2End, ...]
-			start, end := idx[0], idx[1]
+			fullStart, fullEnd := idx[0], idx[1]
 
-			// If group 1 exists and matched, prefer it
+			var value []byte
+
+			// If group 1 exists and matched, use it as Value
 			if len(idx) >= 4 && idx[2] >= 0 && idx[3] >= 0 {
-				start, end = idx[2], idx[3]
+				value = b[idx[2]:idx[3]]
+			} else {
+				// fallback: entire match
+				value = b[fullStart:fullEnd]
 			}
 
 			matches = append(matches, Match{
-				Start: start,
-				End:   end,
-				Value: b[start:end],
+				Start: fullStart, // full match span
+				End:   fullEnd,   // full match span
+				Value: value,     // only subgroup value
 			})
 		}
 		return matches
