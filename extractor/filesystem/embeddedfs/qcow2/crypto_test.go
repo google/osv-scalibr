@@ -5,8 +5,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/binary"
-	"github.com/aead/serpent"
 	"testing"
+
+	"github.com/aead/serpent"
 )
 
 func TestDiffuse(t *testing.T) {
