@@ -30,6 +30,7 @@ import (
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	velescircleci "github.com/google/osv-scalibr/veles/secrets/circleci"
+	clojarsdeploytoken "github.com/google/osv-scalibr/veles/secrets/clojarsdeploytoken"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
@@ -161,6 +162,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return pypiAPITokenToProto(t), nil
 	case cratesioapitoken.CratesIOAPItoken:
 		return cratesioAPITokenToProto(t), nil
+	case clojarsdeploytoken.ClojarsDeployToken:
+		return clojarsDeployTokenToProto(t), nil
 	case npmjsaccesstoken.NpmJsAccessToken:
 		return npmJSAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
@@ -466,6 +469,16 @@ func npmJSAccessTokenToProto(s npmjsaccesstoken.NpmJsAccessToken) *spb.SecretDat
 	return &spb.SecretData{
 		Secret: &spb.SecretData_NpmjsAccessToken{
 			NpmjsAccessToken: &spb.SecretData_NpmJsAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func clojarsDeployTokenToProto(s clojarsdeploytoken.ClojarsDeployToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ClojarsDeployToken_{ // Note: Wrapper usually has trailing underscore or matches Proto field
+			ClojarsDeployToken: &spb.SecretData_ClojarsDeployToken{
 				Token: s.Token,
 			},
 		},
@@ -1182,6 +1195,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return pypiAPITokenToStruct(s.GetPypi()), nil
 	case *spb.SecretData_CratesIoApiToken:
 		return cratesioAPITokenToStruct(s.GetCratesIoApiToken()), nil
+	case *spb.SecretData_ClojarsDeployToken_:
+		return clojarsDeployTokenToStruct(s.GetClojarsDeployToken()), nil
 	case *spb.SecretData_NpmjsAccessToken:
 		return npmJSAccessTokenToStruct(s.GetNpmjsAccessToken()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
@@ -1649,6 +1664,12 @@ func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatform
 	return velesherokuplatformkey.HerokuSecret{
 		Key:      k.GetKey(),
 		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur, NeverExpires: metadata.GetNeverExpires()},
+	}
+}
+
+func clojarsDeployTokenToStruct(kPB *spb.SecretData_ClojarsDeployToken) clojarsdeploytoken.ClojarsDeployToken {
+	return clojarsdeploytoken.ClojarsDeployToken{
+		Token: kPB.GetToken(),
 	}
 }
 

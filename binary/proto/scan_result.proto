@@ -803,6 +803,8 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
+    ClojarsDeployToken clojars_deploy_token = 77;
+    
   }
 
   message GCPSAK {
@@ -828,6 +830,10 @@ message SecretData {
 
   message JWTToken {
     // a generic JWT token
+    string token = 1;
+  }
+
+  message ClojarsDeployToken {
     string token = 1;
   }
 
