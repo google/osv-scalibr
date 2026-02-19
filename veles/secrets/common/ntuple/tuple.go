@@ -20,6 +20,9 @@ import (
 )
 
 // Match describes a single regex match for one element of a tuple.
+// Start and End indicate absolute byte offsets into the input buffer, and
+// Value holds the matched bytes.
+// FinderIndex identifies which Finder produced this match.
 type Match struct {
 	Start       int
 	End         int
@@ -41,7 +44,12 @@ func (m Match) overlaps(other Match) bool {
 	return m.Start < other.End && other.Start < m.End
 }
 
-// Tuple represents a completed grouping of individual matches.
+// Tuple represents a completed grouping of individual matches that together
+// satisfy tuple constraints. A Tuple includes:
+//   - Matches: the ordered list of element matches
+//   - Start:   the minimum starting position among all matched elements
+//   - End:     the maximum starting position among all elements (not End index)
+//   - Dist:    the tuple distance metric = sum of gaps between secrets
 type Tuple struct {
 	Matches []Match
 	Start   int
