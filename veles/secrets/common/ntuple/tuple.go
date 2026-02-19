@@ -16,7 +16,6 @@ package ntuple
 
 import (
 	"fmt"
-	"strings"
 )
 
 // Match describes a single regex match for one element of a tuple.
@@ -55,18 +54,4 @@ type Tuple struct {
 	Start   int
 	End     int
 	Dist    int
-}
-
-// String returns a detailed view of the tuple, its component matches, and its total internal gap.
-func (t *Tuple) String() string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Tuple[%d:%d] (Total Gap: %d):\n", t.Start, t.End, t.Dist))
-
-	for i, m := range t.Matches {
-		sb.WriteString(fmt.Sprintf("  %d: %s", i, m.String()))
-		if i < len(t.Matches)-1 {
-			sb.WriteString("\n")
-		}
-	}
-	return sb.String()
 }
