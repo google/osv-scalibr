@@ -227,7 +227,6 @@ func (d *Detector) selectTuples(candidates []*Tuple) []*Tuple {
 		optTake := state{count: 1, dist: candidates[i].Dist, prev: -1, take: true}
 
 		// Binary search to find the latest tuple that ends before candidates[i] starts
-		// sort.Search returns the smallest index where the condition is true
 		latestNonOverlapping := sort.Search(i, func(j int) bool {
 			return candidates[j].End > candidates[i].Start
 		}) - 1
