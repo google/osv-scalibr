@@ -20,6 +20,7 @@
 package ntuple
 
 import (
+	"cmp"
 	"regexp"
 	"slices"
 	"sort"
@@ -91,12 +92,6 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	// the average distance between matches in tuples
 	selected := d.selectTuples(validTuples)
 
-	// TODO: check if this can be removed
-	// sort tuples
-	sort.Slice(selected, func(i, j int) bool {
-		return selected[i].Start < selected[j].Start
-	})
-
 	var out []veles.Secret
 	var pos []int
 	for _, t := range selected {
@@ -123,7 +118,7 @@ func (d *Detector) collect(b []byte) ([]*Tuple, [][]Match) {
 		prev = append(prev, found...)
 	}
 
-	res := d.generate(all, 0, []Match{})
+	res := d.generateTuples(all, 0, []Match{})
 	return res, all
 }
 
@@ -139,10 +134,9 @@ func filterOverlaps(newMatches, prevMatches []Match) []Match {
 	return filtered
 }
 
-func (d *Detector) generate(all [][]Match, step int, currentMatches []Match) []*Tuple {
+func (d *Detector) generateTuples(all [][]Match, step int, currentMatches []Match) []*Tuple {
 	if step == len(d.Finders) {
-		// We found a complete set of matches
-		t := buildTuple(slices.Clone(currentMatches), int(d.MaxDistance))
+		t := buildTuple(currentMatches, int(d.MaxDistance))
 		if t != nil {
 			return []*Tuple{t}
 		}
@@ -152,42 +146,37 @@ func (d *Detector) generate(all [][]Match, step int, currentMatches []Match) []*
 	var res []*Tuple
 	for _, m := range all[step] {
 		m.FinderIndex = step
-		res = append(res, d.generate(all, step+1, append(currentMatches, m))...)
+		res = append(res, d.generateTuples(all, step+1, append(currentMatches, m))...)
 	}
 	return res
 }
 
-// TODO: i don't like this, too much sorting
+// buildTuple returns a tuple from the given matches
 func buildTuple(matches []Match, maxGap int) *Tuple {
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].Start < matches[j].Start
+
+	sortedMatches := slices.Clone(matches)
+	slices.SortFunc(sortedMatches, func(a, b Match) int {
+		return cmp.Compare(a.Start, b.Start)
 	})
 
-	start := matches[0].Start
-	end := matches[0].End
+	start := sortedMatches[0].Start
+	end := sortedMatches[0].End
 	totalGap := 0
 
-	for i := range len(matches) - 1 {
-		curr := matches[i]
-		next := matches[i+1]
+	for i := 0; i < len(matches)-1; i++ {
+		curr := sortedMatches[i]
+		next := sortedMatches[i+1]
 
-		// Distance constraint check
 		gap := next.Start - curr.End
 		if gap > maxGap {
 			return nil
 		}
 		totalGap += gap
 
-		// Fix: Track the maximum end boundary, not the minimum
 		if next.End > end {
 			end = next.End
 		}
 	}
-
-	// Restore matches to FinderIndex order so FromTuple arguments line up
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].FinderIndex < matches[j].FinderIndex
-	})
 
 	return &Tuple{
 		Matches: matches,
