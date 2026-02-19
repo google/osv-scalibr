@@ -16,6 +16,7 @@ package slacktoken
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -56,7 +57,7 @@ func statusFromResponseBody(body io.Reader) (veles.ValidationStatus, error) {
 	if response.Error == "invalid_auth" {
 		return veles.ValidationInvalid, nil
 	}
-	return veles.ValidationFailed, nil
+	return veles.ValidationFailed, fmt.Errorf("slack API validation failed: %s", response.Error)
 }
 
 // NewAppLevelTokenValidator creates a new Validator for SlackAppLevelToken.
