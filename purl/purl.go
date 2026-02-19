@@ -39,6 +39,8 @@ const (
 	TypeCocoapods = "cocoapods"
 	// TypeCargo is a pkg:cargo purl.
 	TypeCargo = "cargo"
+	// TypeJulia is a pkg:julia purl.
+	TypeJulia = "julia"
 	// TypeComposer is a pkg:composer purl.
 	TypeComposer = "composer"
 	// TypeConan is a pkg:conan purl.
@@ -87,6 +89,8 @@ const (
 	TypeNuget = "nuget"
 	// TypeOCI is a pkg:oci purl
 	TypeOCI = "oci"
+	// TypeOpam is a pkg:opam purl.
+	TypeOpam = "opam"
 	// TypeOpkg is a pkg:opkg purl.
 	TypeOpkg = "opkg"
 	// TypePub is a pkg:pub purl.
@@ -216,6 +220,7 @@ func validType(t string) bool {
 		TypeJSR:        true,
 		TypeNuget:      true,
 		TypeOCI:        true,
+		TypeOpam:       true,
 		TypeOpkg:       true,
 		TypePub:        true,
 		TypePortage:    true,
