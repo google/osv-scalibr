@@ -165,7 +165,6 @@ test@example.com
 		},
 
 		// Test extra noise: detect only valid combinations
-		// SMELL
 		{
 			name: "mixed_valid_and_invalid_blocks",
 			input: `

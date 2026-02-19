@@ -170,7 +170,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 		input: "mistral " + "XXXX" + testKey + "YYYY",
 	}, {
 		name:  "context_too_far_away",
-		input: "mistral" + strings.Repeat(" ", 500) + testKey,
+		input: "mistral" + strings.Repeat(" ", 300) + testKey,
 	}, {
 		name:  "unrelated_context",
 		input: "openai " + testKey,

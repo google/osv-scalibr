@@ -15,7 +15,6 @@
 package salesforceoauth2client_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -170,10 +169,7 @@ yuvrajapp.2.my.salesforce.com`,
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
-				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
-			})
-			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty(), ignoreOrder); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
 		})
