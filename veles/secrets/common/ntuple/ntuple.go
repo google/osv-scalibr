@@ -20,30 +20,18 @@
 package ntuple
 
 import (
-	"math"
 	"regexp"
+	"slices"
 	"sort"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
-// Match describes a single regex match for one element of a tuple.
-type Match struct {
-	Start       int
-	End         int
-	Value       []byte
-	FinderIndex int
-}
-
-// Tuple represents a completed grouping of individual matches.
-type Tuple struct {
-	Matches []Match
-	Start   int
-	End     int
-	Dist    int
-}
-
 var _ veles.Detector = &Detector{}
+
+// Finder abstracts a function that returns all regex matches for one tuple
+// component in the input buffer.
+type Finder func([]byte) []Match
 
 // Detector finds instances of a tuple of keys.
 type Detector struct {
@@ -54,291 +42,269 @@ type Detector struct {
 	FromPartial   func(Match) (veles.Secret, bool)
 }
 
-// Finder abstracts a function that returns all regex matches for one tuple
-// component in the input buffer.
-type Finder func([]byte) []Match
-
 // Detect implements the veles.Detector interface.
 func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	if len(d.Finders) == 0 {
 		return nil, nil
 	}
 
-	matches := d.generateMatches(b)
-	candidates := collectAllTuples(matches, int(d.MaxDistance))
+	tuples, leftovers := d.collect(b)
 
-	// Validate tuples and collect resulting secretes
-	var validCandidates []*Tuple
+	// validate before returning the best tuples (since some may be excluded at this step)
+	var validTuples []*Tuple
 	secretsFromTuple := make(map[*Tuple]veles.Secret)
-	for _, t := range candidates {
+	for _, t := range tuples {
 		if secret, ok := d.FromTuple(t.Matches); ok {
 			secretsFromTuple[t] = secret
-			validCandidates = append(validCandidates, t)
+			validTuples = append(validTuples, t)
 		}
 	}
 
-	if len(validCandidates) > 0 {
-		selected := selectTuples(validCandidates)
+	// if no valid tuple was returned check for partial
+	if len(validTuples) == 0 {
+		if d.FromPartial == nil {
+			return nil, nil
+		}
+
+		var partials []Match
+		for _, list := range leftovers {
+			partials = append(partials, list...)
+		}
+
+		sort.Slice(partials, func(i, j int) bool {
+			return partials[i].Start < partials[j].Start
+		})
 
 		var out []veles.Secret
 		var pos []int
-
-		if len(selected) > 0 {
-			// TODO: remove this if it's needed just for testing
-			sort.Slice(selected, func(i, j int) bool {
-				return selected[i].Start < selected[j].Start
-			})
-
-			for _, t := range selected {
-				out = append(out, secretsFromTuple[t])
-				pos = append(pos, t.Start)
+		for _, m := range partials {
+			if s, ok := d.FromPartial(m); ok {
+				out = append(out, s)
+				pos = append(pos, m.Start)
 			}
 		}
+
 		return out, pos
 	}
 
-	if d.FromPartial == nil {
-		return nil, nil
-	}
+	// from the valid tuples select the ones which minimize
+	// the average distance between matches in tuples
+	selected := d.selectTuples(validTuples)
+
+	// TODO: check if this can be removed
+	// sort tuples
+	sort.Slice(selected, func(i, j int) bool {
+		return selected[i].Start < selected[j].Start
+	})
 
 	var out []veles.Secret
 	var pos []int
-	var partials []Match
-	for _, list := range matches {
-		partials = append(partials, list...)
+	for _, t := range selected {
+		out = append(out, secretsFromTuple[t])
+		pos = append(pos, t.Start)
 	}
-	sort.Slice(partials, func(i, j int) bool {
-		return partials[i].Start < partials[j].Start
-	})
-
-	for _, m := range partials {
-		if s, ok := d.FromPartial(m); ok {
-			out = append(out, s)
-			pos = append(pos, m.Start)
-		}
-	}
-
 	return out, pos
+
 }
 
-func (d *Detector) generateMatches(b []byte) [][]Match {
+func (d *Detector) collect(b []byte) ([]*Tuple, [][]Match) {
+	if len(d.Finders) == 0 {
+		return nil, nil
+	}
 	all := make([][]Match, len(d.Finders))
+	hasFoundNone := false
+	prev := []Match{}
 	for i, f := range d.Finders {
-		matches := f(b)
-		if len(matches) == 0 && d.FromPartial == nil {
-			return nil
+		found := f(b)
+		found = filterOverlaps(found, prev)
+		if len(found) == 0 {
+			hasFoundNone = true
+			if d.FromPartial == nil {
+				break
+			}
 		}
-		for j := range matches {
-			matches[j].FinderIndex = i
-		}
-		all[i] = matches
+		all[i] = found
+		prev = append(prev, found...)
 	}
-	return nil
+
+	if hasFoundNone {
+		return nil, all
+	}
+
+	seekers := make([]*seeker, len(d.Finders))
+	for i, m := range all {
+		info := &seeker{
+			Matches: m,
+			Index:   0,
+		}
+		seekers[i] = info
+	}
+
+	res := []*Tuple{}
+	for {
+		minIdx := -1
+		for i := range seekers {
+			if seekers[i].EOM() {
+				continue
+			}
+			if minIdx == -1 || seekers[i].Start() < seekers[minIdx].Start() {
+				minIdx = i
+			}
+		}
+
+		matches := []Match{}
+		for i, s := range seekers {
+			m := all[i][s.Index]
+			m.FinderIndex = i
+			matches = append(matches, m)
+		}
+
+		tuple := buildTuple(matches, int(d.MaxDistance))
+		if tuple != nil {
+			res = append(res, tuple)
+		}
+		if minIdx == -1 {
+			break
+		}
+		seekers[minIdx].Seek()
+	}
+
+	return res, nil
 }
 
-// buildTuple validates the tuple and sets the Start/End based on physical layout.
-func buildTuple(matches []Match, maxDist int) *Tuple {
-	n := len(matches)
-	if n == 0 {
-		return nil
+// filterOverlaps removes any matches in 'newMatches' that overlap with
+// any of the matches in 'prevMatches'.
+func filterOverlaps(newMatches, prevMatches []Match) []Match {
+	var filtered []Match
+	for _, m := range newMatches {
+		if !slices.ContainsFunc(prevMatches, m.overlaps) {
+			filtered = append(filtered, m)
+		}
 	}
+	return filtered
+}
 
-	// 1. Sort matches by Start position to understand physical layout.
-	// This is required to correctly calculate pair-wise gaps and total span.
+// TODO: i don't like this, too much sorting
+func buildTuple(matches []Match, maxGap int) *Tuple {
 	sort.Slice(matches, func(i, j int) bool {
 		return matches[i].Start < matches[j].Start
 	})
 
-	// 2. Capture MinStart and MaxEnd from the sorted physical layout.
-	minStart := matches[0].Start
-	maxEnd := matches[0].End
+	start := matches[0].Start
+	end := matches[0].End
 	totalGap := 0
 
-	// 3. Iterate to check overlaps and pair-wise distance constraints.
-	for i := range n - 1 {
+	for i := 0; i < len(matches)-1; i++ {
 		curr := matches[i]
 		next := matches[i+1]
 
-		// Overlap Check
-		if rangesOverlap(curr.Start, curr.End, next.Start, next.End) {
-			return nil
-		}
-
-		// Distance Check: Ensure the gap between THIS pair is within limit.
+		// Distance constraint check
 		gap := next.Start - curr.End
-		if gap > maxDist {
+		if gap > maxGap {
 			return nil
 		}
-
 		totalGap += gap
-		if next.End > maxEnd {
-			maxEnd = next.End
+
+		// Fix: Track the maximum end boundary, not the minimum
+		if next.End > end {
+			end = next.End
 		}
 	}
 
-	// 4. Restore FinderIndex order.
-	// The Matches slice in the Tuple must match the order of Finders (0, 1, 2...)
-	// so that FromTuple receives arguments in the expected order.
+	// Restore matches to FinderIndex order so FromTuple arguments line up
 	sort.Slice(matches, func(i, j int) bool {
 		return matches[i].FinderIndex < matches[j].FinderIndex
 	})
 
 	return &Tuple{
 		Matches: matches,
-		Start:   minStart,
-		End:     maxEnd,
+		Start:   start,
+		End:     end,
 		Dist:    totalGap,
 	}
 }
 
-// selectTuples selects the best non-overlapping subset of tuples.
-func selectTuples(candidates []*Tuple) []*Tuple {
+// Implementation of WIS (Weighted Interval Scheduling)
+//
+// Resources:
+// - https://cs-people.bu.edu/januario/teaching/cs330/su23/slides/CS330-Lec10.pdf
+// - https://algocademy.com/blog/job-scheduling-problem-mastering-the-weighted-interval-scheduling-algorithm/
+func (d *Detector) selectTuples(candidates []*Tuple) []*Tuple {
 	if len(candidates) == 0 {
 		return nil
 	}
 
-	type candidateInfo struct {
-		tuple     *Tuple
-		conflicts []int
-		consumed  bool
-	}
+	// Sort by End time to allow for O(log N) lookbacks
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].End < candidates[j].End
+	})
 
-	infos := make([]*candidateInfo, len(candidates))
-	for i := range candidates {
-		infos[i] = &candidateInfo{tuple: candidates[i]}
+	// dp[i] will store the optimal state up to the i-th candidate
+	type state struct {
+		count int
+		dist  int
+		prev  int  // To reconstruct the chosen tuples later
+		take  bool // Did we include the i-th tuple in this optimal state?
 	}
+	dp := make([]state, len(candidates))
 
-	// Build Conflict Graph
-	for i := range infos {
-		for j := i + 1; j < len(infos); j++ {
-			if tuplesOverlap(infos[i].tuple, infos[j].tuple) {
-				infos[i].conflicts = append(infos[i].conflicts, j)
-				infos[j].conflicts = append(infos[j].conflicts, i)
-			}
+	for i := range len(candidates) {
+		// Option A: Skip this tuple (inherit optimal state from i-1)
+		optSkip := state{count: 0, dist: 0, prev: -1, take: false}
+		if i > 0 {
+			optSkip = state{count: dp[i-1].count, dist: dp[i-1].dist, prev: i - 1, take: false}
+		}
+
+		// Option B: Take this tuple
+		optTake := state{count: 1, dist: candidates[i].Dist, prev: -1, take: true}
+
+		// Binary search to find the latest tuple that ends before candidates[i] starts
+		// sort.Search returns the smallest index where the condition is true
+		latestNonOverlapping := sort.Search(i, func(j int) bool {
+			return candidates[j].End > candidates[i].Start
+		}) - 1
+
+		if latestNonOverlapping >= 0 {
+			optTake.count = dp[latestNonOverlapping].count + 1
+			optTake.dist = dp[latestNonOverlapping].dist + candidates[i].Dist
+			optTake.prev = latestNonOverlapping
+		}
+
+		// Choose the best option: Maximize count, then minimize distance
+		if optTake.count > optSkip.count || (optTake.count == optSkip.count && optTake.dist < optSkip.dist) {
+			dp[i] = optTake
+		} else {
+			dp[i] = optSkip
 		}
 	}
 
+	// Reconstruct the optimal path by walking backwards
 	var result []*Tuple
-
-	// Greedy Selection Loop
-	for {
-		bestIdx := -1
-		minConflicts := math.MaxInt32
-		minDist := math.MaxInt32
-
-		activeCount := 0
-
-		for i, info := range infos {
-			if info.consumed {
-				continue
-			}
-			activeCount++
-
-			currentConflicts := 0
-			for _, neighborIdx := range info.conflicts {
-				if !infos[neighborIdx].consumed {
-					currentConflicts++
-				}
-			}
-
-			// Prioritize: Min Conflicts -> Min Distance
-			isBetter := false
-			if currentConflicts < minConflicts {
-				isBetter = true
-			} else if currentConflicts == minConflicts {
-				if info.tuple.Dist < minDist {
-					isBetter = true
-				}
-			}
-
-			if isBetter {
-				bestIdx = i
-				minConflicts = currentConflicts
-				minDist = info.tuple.Dist
-			}
+	curr := len(candidates) - 1
+	for curr >= 0 {
+		if dp[curr].take {
+			result = append(result, candidates[curr])
+			curr = dp[curr].prev
+		} else {
+			curr-- // We skipped this one, just move back
 		}
+	}
 
-		if activeCount == 0 || bestIdx == -1 {
-			break
-		}
-
-		winner := infos[bestIdx]
-		result = append(result, winner.tuple)
-
-		winner.consumed = true
-		for _, neighborIdx := range winner.conflicts {
-			infos[neighborIdx].consumed = true
-		}
+	// Reverse the result since we collected it backwards
+	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+		result[i], result[j] = result[j], result[i]
 	}
 
 	return result
 }
 
-func tuplesOverlap(a, b *Tuple) bool {
-	for _, mA := range a.Matches {
-		for _, mB := range b.Matches {
-			if rangesOverlap(mA.Start, mA.End, mB.Start, mB.End) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func collectAllTuples(all [][]Match, maxDistance int) []*Tuple {
-	if len(all) == 0 {
-		return nil
-	}
-	return generateTuples(all, 0, nil, maxDistance)
-}
-
-func generateTuples(all [][]Match, idx int, current []Match, maxDist int) []*Tuple {
-	if idx == len(all) {
-		// Pass a COPY of current matches to buildTuple to ensure isolation
-		t := buildTuple(append([]Match(nil), current...), maxDist)
-		if t != nil {
-			return []*Tuple{t}
-		}
-		return nil
-	}
-
-	var out []*Tuple
-	for _, m := range all[idx] {
-		tmp := make([]Match, len(current)+1)
-		copy(tmp, current)
-		tmp[len(current)] = m
-
-		sub := generateTuples(all, idx+1, tmp, maxDist)
-		out = append(out, sub...)
-	}
-	return out
-}
-
-func rangesOverlap(a1, a2, b1, b2 int) bool {
-	return a1 < b2 && b1 < a2
-}
-
 // MaxSecretLen returns an upper bound on the total byte-span of a tuple.
-// Each tuple consists of exactly one element from each Finder. We assume
-// each element may be up to MaxElementLen bytes long, so the total possible
-// payload size is MaxElementLen * len(d.Finders).
-//
-// In addition, tuple construction allows the elements to be separated by
-// up to MaxDistance bytes, where MaxDistance is defined as the difference
-// between the latest start position and the earliest end position of the
-// matched elements. This represents a single contiguous gap spanning from
-// the first match to the last match, not one gap per element.
-//
-// Therefore, the maximum total span of a tuple is:
-// MaxElementLen * len(d.Finders) + MaxDistance.
 func (d *Detector) MaxSecretLen() uint32 {
 	numGaps := uint32(len(d.Finders) - 1)
 	return d.MaxElementLen*uint32(len(d.Finders)) + (d.MaxDistance * numGaps)
 }
 
-// FindAllMatches returns a Finder that extracts all non-overlapping regex
-// matches using r.FindAllIndex. Each match is converted into a Match with
-// absolute byte positions.
+// FindAllMatches returns a Finder that extracts all non-overlapping regex matches.
 func FindAllMatches(r *regexp.Regexp) Finder {
 	return func(b []byte) []Match {
 		idxs := r.FindAllIndex(b, -1)
@@ -354,41 +320,17 @@ func FindAllMatches(r *regexp.Regexp) Finder {
 	}
 }
 
-// FindAllMatchesGroup returns a Finder that extracts regex matches similarly to
-// FindAllMatches, but with support for context-aware capture groups.
-//
-// If the provided regexp contains at least one capturing group and that group
-// matches, the span of the *first* capturing group is returned as the Match.
-// Otherwise, the span of the full match is used as a fallback.
-//
-// This is intended for secret-detection use cases where the regex includes
-// surrounding context (e.g. "client_secret", "refresh_token") to reduce false
-// positives, but only the secret value itself should be returned.
-//
-// For example, given a regexp like:
-//
-//	(?:client_secret\s*[:=]\s*)([A-Za-z0-9]{30,})
-//
-// the full match includes the context, but only the captured secret value
-// ([A-Za-z0-9]{30,}) is returned in Match.Value.
-//
-// This function is fully backward-compatible and opt-in; existing detectors
-// using FindAllMatches are unaffected.
+// FindAllMatchesGroup returns a Finder that extracts regex matches with group support.
 func FindAllMatchesGroup(r *regexp.Regexp) Finder {
 	return func(b []byte) []Match {
 		idxs := r.FindAllSubmatchIndex(b, -1)
 		matches := make([]Match, 0, len(idxs))
 
 		for _, idx := range idxs {
-			// idx layout:
-			// [fullStart, fullEnd, g1Start, g1End, g2Start, g2End, ...]
 			start, end := idx[0], idx[1]
-
-			// If group 1 exists and matched, prefer it
 			if len(idx) >= 4 && idx[2] >= 0 && idx[3] >= 0 {
 				start, end = idx[2], idx[3]
 			}
-
 			matches = append(matches, Match{
 				Start: start,
 				End:   end,

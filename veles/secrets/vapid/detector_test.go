@@ -210,6 +210,24 @@ func TestDetector_Detect(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "very bad example",
+			input: `
+			LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4:BEEDPFMgrB5MObgTsdiIh9fQ9Ug5wrLQyk4sDxSYctvqEzFHa9wLGE0-ZDs0A8jXzJHsFVSXshYzDDoLw2YxWGw
+			BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs
+			gIe4zn7y8cgAyxLVk-6NX_mpR-1R_aPx_8CZ1VI0oYg:BEEDPFMgrB5MObgTsdiIh9fQ9Ug5wrLQyk4sDxSYctvqEzFHa9wLGE0-ZDs0A8jXzJHsFVSXshYzDDoLw2YxWGw
+			`,
+			want: []veles.Secret{
+				vapid.Key{
+					PrivateB64: "LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4",
+					PublicB64:  "BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs",
+				},
+				vapid.Key{
+					PrivateB64: "gIe4zn7y8cgAyxLVk-6NX_mpR-1R_aPx_8CZ1VI0oYg",
+					PublicB64:  "BEEDPFMgrB5MObgTsdiIh9fQ9Ug5wrLQyk4sDxSYctvqEzFHa9wLGE0-ZDs0A8jXzJHsFVSXshYzDDoLw2YxWGw",
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
