@@ -84,7 +84,7 @@ func BenchmarkDetector(b *testing.B) {
 	b.Run("Sparse_100KB", func(b *testing.B) {
 		// 100KB payload, injecting a regex match roughly every 5000 bytes.
 		// This simulates standard source code or config files.
-		payload := generatePayload(1024*1024, 5000)
+		payload := generatePayload(100*1024, 5000)
 		b.ResetTimer()
 
 		for b.Loop() {
