@@ -14,12 +14,27 @@
 
 package ntuple
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Match describes a single regex match for one element of a tuple.
 type Match struct {
 	Start       int
 	End         int
 	Value       []byte
 	FinderIndex int
+}
+
+// String returns a readable representation of a single regex match.
+func (m Match) String() string {
+	// Truncate value if it's too long for a single log line
+	val := string(m.Value)
+	if len(val) > 32 {
+		val = val[:29] + "..."
+	}
+	return fmt.Sprintf("[%d:%d](Idx:%d) %q", m.Start, m.End, m.FinderIndex, val)
 }
 
 func (m Match) overlaps(other Match) bool {
@@ -34,13 +49,16 @@ type Tuple struct {
 	Dist    int
 }
 
-func (t *Tuple) overlaps(other *Tuple) bool {
-	for _, mA := range t.Matches {
-		for _, mB := range other.Matches {
-			if mA.Start < mB.End && mB.Start < mA.End {
-				return true
-			}
+// String returns a detailed view of the tuple, its component matches, and its total internal gap.
+func (t *Tuple) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Tuple[%d:%d] (Total Gap: %d):\n", t.Start, t.End, t.Dist))
+
+	for i, m := range t.Matches {
+		sb.WriteString(fmt.Sprintf("  %d: %s", i, m.String()))
+		if i < len(t.Matches)-1 {
+			sb.WriteString("\n")
 		}
 	}
-	return false
+	return sb.String()
 }

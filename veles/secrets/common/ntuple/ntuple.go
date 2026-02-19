@@ -61,11 +61,7 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	}
 
 	// if no valid tuple was returned check for partial
-	if len(validTuples) == 0 {
-		if d.FromPartial == nil {
-			return nil, nil
-		}
-
+	if len(validTuples) == 0 && d.FromPartial != nil {
 		var partials []Match
 		for _, list := range leftovers {
 			partials = append(partials, list...)
@@ -87,6 +83,10 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 		return out, pos
 	}
 
+	if len(validTuples) == 0 {
+		return nil, nil
+	}
+
 	// from the valid tuples select the ones which minimize
 	// the average distance between matches in tuples
 	selected := d.selectTuples(validTuples)
@@ -104,72 +104,27 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 		pos = append(pos, t.Start)
 	}
 	return out, pos
-
 }
 
 func (d *Detector) collect(b []byte) ([]*Tuple, [][]Match) {
 	if len(d.Finders) == 0 {
 		return nil, nil
 	}
+
 	all := make([][]Match, len(d.Finders))
-	hasFoundNone := false
 	prev := []Match{}
 	for i, f := range d.Finders {
 		found := f(b)
 		found = filterOverlaps(found, prev)
-		if len(found) == 0 {
-			hasFoundNone = true
-			if d.FromPartial == nil {
-				break
-			}
+		if len(found) == 0 && d.FromPartial == nil {
+			return nil, nil
 		}
 		all[i] = found
 		prev = append(prev, found...)
 	}
 
-	if hasFoundNone {
-		return nil, all
-	}
-
-	seekers := make([]*seeker, len(d.Finders))
-	for i, m := range all {
-		info := &seeker{
-			Matches: m,
-			Index:   0,
-		}
-		seekers[i] = info
-	}
-
-	res := []*Tuple{}
-	for {
-		minIdx := -1
-		for i := range seekers {
-			if seekers[i].EOM() {
-				continue
-			}
-			if minIdx == -1 || seekers[i].Start() < seekers[minIdx].Start() {
-				minIdx = i
-			}
-		}
-
-		matches := []Match{}
-		for i, s := range seekers {
-			m := all[i][s.Index]
-			m.FinderIndex = i
-			matches = append(matches, m)
-		}
-
-		tuple := buildTuple(matches, int(d.MaxDistance))
-		if tuple != nil {
-			res = append(res, tuple)
-		}
-		if minIdx == -1 {
-			break
-		}
-		seekers[minIdx].Seek()
-	}
-
-	return res, nil
+	res := d.generate(all, 0, []Match{})
+	return res, all
 }
 
 // filterOverlaps removes any matches in 'newMatches' that overlap with
@@ -184,6 +139,24 @@ func filterOverlaps(newMatches, prevMatches []Match) []Match {
 	return filtered
 }
 
+func (d *Detector) generate(all [][]Match, step int, currentMatches []Match) []*Tuple {
+	if step == len(d.Finders) {
+		// We found a complete set of matches
+		t := buildTuple(slices.Clone(currentMatches), int(d.MaxDistance))
+		if t != nil {
+			return []*Tuple{t}
+		}
+		return nil
+	}
+
+	var res []*Tuple
+	for _, m := range all[step] {
+		m.FinderIndex = step
+		res = append(res, d.generate(all, step+1, append(currentMatches, m))...)
+	}
+	return res
+}
+
 // TODO: i don't like this, too much sorting
 func buildTuple(matches []Match, maxGap int) *Tuple {
 	sort.Slice(matches, func(i, j int) bool {
@@ -194,7 +167,7 @@ func buildTuple(matches []Match, maxGap int) *Tuple {
 	end := matches[0].End
 	totalGap := 0
 
-	for i := 0; i < len(matches)-1; i++ {
+	for i := range len(matches) - 1 {
 		curr := matches[i]
 		next := matches[i+1]
 
@@ -248,7 +221,7 @@ func (d *Detector) selectTuples(candidates []*Tuple) []*Tuple {
 	}
 	dp := make([]state, len(candidates))
 
-	for i := range len(candidates) {
+	for i := range candidates {
 		// Option A: Skip this tuple (inherit optimal state from i-1)
 		optSkip := state{count: 0, dist: 0, prev: -1, take: false}
 		if i > 0 {
