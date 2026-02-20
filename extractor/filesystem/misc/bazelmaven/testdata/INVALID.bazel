@@ -1,0 +1,7 @@
+module(
+    name = "invalid_example",
+    version = "0.1.0",
+)
+
+# This is syntactically invalid
+maven_custom_name = use_extension("@rules_jvm_external//:extensions.bzl", "maven"

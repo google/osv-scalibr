@@ -13,6 +13,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
+	github.com/bazelbuild/buildtools v0.0.0-20250826111327-4006b543a694
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.5
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -48,6 +49,7 @@ require (
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
 	github.com/saferwall/pe v1.5.7
 	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82
 	github.com/spdx/tools-golang v0.5.5
 	github.com/thoas/go-funk v0.9.3
 	github.com/tidwall/gjson v1.18.0

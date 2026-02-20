@@ -49,6 +49,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -76,6 +78,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
@@ -196,6 +199,8 @@ var (
 	JavascriptSource = InitMap{
 		packagejson.Name:     {packagejson.New},
 		packagelockjson.Name: {packagelockjson.New},
+		denojson.Name:        {denojson.New},
+		denotssource.Name:    {denotssource.New},
 		pnpmlock.Name:        {pnpmlock.New},
 		yarnlock.Name:        {yarnlock.New},
 		bunlock.Name:         {bunlock.New},
@@ -203,6 +208,7 @@ var (
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
 		packagejson.Name: {packagejson.New},
+		denojson.Name:    {denojson.New},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
@@ -443,6 +449,8 @@ var (
 	// FFA extractor.
 	FFA = InitMap{
 		unknownbinariesextr.Name: {unknownbinariesextr.New},
+		asdf.Name:                {asdf.New},
+		bazelmaven.Name:          {bazelmaven.New},
 	}
 
 	// Collections of extractors.
