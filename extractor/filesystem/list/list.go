@@ -76,6 +76,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/scala/sbt"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
@@ -189,6 +190,10 @@ var (
 		// pom.xml extraction for environments with and without network access.
 		pomxml.Name:    {pomxml.New},
 		pomxmlnet.Name: {pomxmlnet.New},
+	}
+	// ScalaSource extractors for Java.
+	ScalaSource = InitMap{
+		sbt.Name: {sbt.New},
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
@@ -455,6 +460,7 @@ var (
 	SourceCode = concat(
 		CppSource,
 		JavaSource,
+		ScalaSource,
 		JavascriptSource,
 		PythonSource,
 		GoSource,
