@@ -28,6 +28,7 @@ import (
 var (
 
 	// base64Pattern is a generic pattern to detect base64 blobs
+	// TODO: make this more specific
 	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]{60,}=?=?`)
 
 	// jsonPattern matches correctly Tink keyset json strings

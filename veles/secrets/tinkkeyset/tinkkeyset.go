@@ -15,8 +15,28 @@
 // Package tinkkeyset package implements the logic to detect [Tink keyset](https://developers.google.com/tink/design/keysets) stored as plaintext
 package tinkkeyset
 
+import (
+	"encoding/json"
+
+	"github.com/google/go-cmp/cmp"
+)
+
 // TinkKeySet contains information of a [Tink keyset](https://developers.google.com/tink/design/keysets)
 type TinkKeySet struct {
 	// Content is a JSON formatted Tink keyset.
 	Content string
+}
+
+// Equal used just for testing
+//
+// TODO: I don't like this here very much, maybe add cmpopts to the acceptance tests
+func (s TinkKeySet) Equal(other TinkKeySet) bool {
+	var xJSON, yJSON any
+	if err := json.Unmarshal([]byte(s.Content), &xJSON); err != nil {
+		return false
+	}
+	if err := json.Unmarshal([]byte(other.Content), &yJSON); err != nil {
+		return false
+	}
+	return cmp.Equal(xJSON, yJSON)
 }

@@ -15,7 +15,6 @@
 package tinkkeyset_test
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -227,24 +226,13 @@ func TestDetector_truePositives(t *testing.T) {
 		},
 	}
 
-	cmpOpt := cmp.Comparer(func(x, y tinkkeyset.TinkKeySet) bool {
-		var xJSON, yJSON any
-		if err := json.Unmarshal([]byte(x.Content), &xJSON); err != nil {
-			return false
-		}
-		if err := json.Unmarshal([]byte(y.Content), &yJSON); err != nil {
-			return false
-		}
-		return cmp.Equal(xJSON, yJSON)
-	})
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty(), cmpOpt); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
 		})
