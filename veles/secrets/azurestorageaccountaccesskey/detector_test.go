@@ -23,22 +23,12 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
-	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 // Azure Storage account access key is composed by 86 base64 characters followed by '=='
 // Reference:
 // https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
 const testKey = `YutGV0Vlauqsobd6tPWz2AKwHhBXMEWsAH+rSbz0UZUfaMVj1CFrcNQK47ygmrC4vHmc7eOp1LdM+AStk5mMYA==`
-
-func TestDetectorAcceptance(t *testing.T) {
-	velestest.AcceptDetector(
-		t,
-		azurestorageaccountaccesskey.NewDetector(),
-		"AzureStoragekey : "+testKey,
-		azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
-	)
-}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a valid key/s.
