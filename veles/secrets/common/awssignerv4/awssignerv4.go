@@ -101,7 +101,7 @@ func (s *Signer) Sign(req *http.Request, accessID, secret string) error {
 		if len(v) == 0 {
 			return fmt.Errorf("header %q not found", h)
 		}
-		canonicalHeadersB.WriteString(fmt.Sprintf("%s:%s\n", h, v))
+		fmt.Fprintf(&canonicalHeadersB, "%s:%s\n", h, v)
 	}
 	canonicalHeaders := canonicalHeadersB.String()
 	signedHeaders := strings.Join(s.SignedHeaders, ";")
