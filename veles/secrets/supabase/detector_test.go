@@ -319,4 +319,3 @@ func TestSupabaseServiceRoleJWTDetector(t *testing.T) {
 		})
 	}
 }
-

@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
 
@@ -815,9 +816,17 @@ message SecretData {
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
-    SupabasePAT supabase_pat = 69;
-    SupabaseProjectSecretKey supabase_project_secret_key = 70;
-    SupabaseServiceRoleJWT supabase_service_role_jwt = 71;
+    SquarePersonalAccessToken square_personal_access_token = 69;
+    SquareOAuthApplicationSecret square_oauth_application_secret = 70;
+    SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
+    SendGridAPIKey sendgrid_api_key = 72;
+    DenoPat deno_pat = 73;
+    HerokuSecretKey heroku_secret_key = 74;
+    NpmJsAccessToken npmjs_access_token = 75;
+    CloudflareAPIToken cloudflare_api_token = 76;
+    SupabasePAT supabase_pat = 77;
+    SupabaseProjectSecretKey supabase_project_secret_key = 78;
+    SupabaseServiceRoleJWT supabase_service_role_jwt = 79;
   }
 
   message GCPSAK {
@@ -914,6 +923,14 @@ message SecretData {
     string username = 2;
   }
 
+  message CloudflareAPIToken {
+    string token = 1;
+  }
+
+  message DenoPat {
+    string pat = 1;
+  }
+
   message GitlabPat {
     string pat = 1;
   }
@@ -947,6 +964,10 @@ message SecretData {
   }
 
   message CratesIOAPIToken {
+    string token = 1;
+  }
+
+  message NpmJsAccessToken {
     string token = 1;
   }
 
@@ -1031,6 +1052,19 @@ message SecretData {
 
   message StripeWebhookSecret {
     string key = 1;
+  }
+   
+  message SupabasePAT {
+    string token = 1;
+  }
+
+  message SupabaseProjectSecretKey {
+    string key = 1;
+    string project_ref = 2;
+  }
+
+  message SupabaseServiceRoleJWT {
+    string token = 1;
   }
 
   message GCPOAuth2ClientCredentials {
@@ -1133,6 +1167,19 @@ message SecretData {
     string key = 1;
   }
 
+  message HerokuSecretKey {
+    string key = 1;
+    // Optional enrichment fields populated when available
+    optional HerokuSecretKeyMetadata heroku_secret_key_metadata = 2;
+  }
+
+  message HerokuSecretKeyMetadata {
+    // expire_time is nil if the token doesn't expire, and never_expires becomes
+    // true
+    google.protobuf.Duration expire_time = 1;
+    bool never_expires = 2;
+  }
+
   message TelegramBotToken {
     string token = 1;
   }
@@ -1140,6 +1187,10 @@ message SecretData {
   message SalesforceOAuth2AccessToken {
     // Salesforce OAuth2 Access Token
     string token = 1;
+  }
+
+  message SendGridAPIKey {
+    string key = 1;
   }
 
   message SalesforceOAuth2ClientCredentials {
@@ -1160,6 +1211,15 @@ message SecretData {
     string refresh = 3;
   }
 
+  message SalesforceOAuth2JWTCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce username (email)
+    string username = 2;
+    // Salesforce OAuth2 private key
+    string private_key = 3;
+  }
+
   message CursorAPIKey {
     string key = 1;
   }
@@ -1176,19 +1236,14 @@ message SecretData {
     string url = 1;
   }
 
-  message SupabasePAT {
-    string token = 1;
-  }
-
-  message SupabaseProjectSecretKey {
+  message SquarePersonalAccessToken {
     string key = 1;
-    string project_ref = 2;
   }
 
-  message SupabaseServiceRoleJWT {
-    string token = 1;
+  message SquareOAuthApplicationSecret {
+    string id = 1;   // OAuth Application ID (prefix: sq0idp-)
+    string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
   }
-
 }
 
 message SecretStatus {

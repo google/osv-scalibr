@@ -159,4 +159,3 @@ func NewServiceRoleJWTDetector() veles.Detector {
 		},
 	}
 }
-

@@ -139,4 +139,3 @@ func extractProjectRefFromJWT(token string) (string, error) {
 
 	return "", errors.New("ref claim not found or invalid in JWT")
 }
-
