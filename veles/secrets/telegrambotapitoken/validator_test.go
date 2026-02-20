@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 )
@@ -83,10 +85,10 @@ func mockTelegramAPIServer(t *testing.T, expectedToken string, statusCode int) *
 
 func TestValidator(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		want        veles.ValidationStatus
-		expectError bool
+		name       string
+		statusCode int
+		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key",
@@ -99,16 +101,16 @@ func TestValidator(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
-			name:        "bad_gateway",
-			statusCode:  http.StatusBadGateway,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "bad_gateway",
+			statusCode: http.StatusBadGateway,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
@@ -133,15 +135,8 @@ func TestValidator(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status

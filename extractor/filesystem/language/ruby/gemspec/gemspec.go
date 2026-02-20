@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,11 +31,16 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
 	// Name is the unique name of this extractor.
 	Name = "ruby/gemspec"
+
+	// noLimitMaxFileSizeBytes is a sentinel value that indicates no limit.
+	noLimitMaxFileSizeBytes = int64(0)
 )
 
 // Regex expressions used for extracting gemspec package name and version.
@@ -49,44 +54,26 @@ var (
 	reConstAssignment = regexp.MustCompile(`\b([A-Z][A-Za-z0-9_]*)\s*=\s*(?:'([^']+)'|"([^"]+)")(?:\s*\.freeze)?`)
 )
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// Stats is a stats collector for reporting metrics.
-	Stats stats.Collector
-	// MaxFileSizeBytes is the maximum file size this extractor will unmarshal. If
-	// `FileRequired` gets a bigger file, it will return false,
-	MaxFileSizeBytes int64
-}
-
-// DefaultConfig returns the default configuration for the extractor.
-func DefaultConfig() Config {
-	return Config{
-		Stats:            nil,
-		MaxFileSizeBytes: 0,
-	}
-}
-
 // Extractor extracts RubyGem package info from *.gemspec files.
 type Extractor struct {
-	stats            stats.Collector
+	Stats            stats.Collector
 	maxFileSizeBytes int64
 }
 
 // New returns a Ruby gemspec extractor.
-//
-// For most use cases, initialize with:
-// ```
-// e := New(DefaultConfig())
-// ```
-func New(cfg Config) *Extractor {
-	return &Extractor{
-		stats:            cfg.Stats,
-		maxFileSizeBytes: cfg.MaxFileSizeBytes,
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	maxFileSizeBytes := noLimitMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
-}
 
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() filesystem.Extractor { return New(DefaultConfig()) }
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GemspecConfig { return c.GetGemspec() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
+}
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -109,7 +96,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	if err != nil {
 		return false
 	}
-	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
+	if e.maxFileSizeBytes > noLimitMaxFileSizeBytes && fileinfo.Size() > e.maxFileSizeBytes {
 		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
@@ -119,10 +106,10 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
-	e.stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
+	e.Stats.AfterFileRequired(e.Name(), &stats.FileRequiredStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,
@@ -145,14 +132,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, result stats.FileExtractedResult) {
-	if e.stats == nil {
+	if e.Stats == nil {
 		return
 	}
 	var fileSizeBytes int64
 	if fileinfo != nil {
 		fileSizeBytes = fileinfo.Size()
 	}
-	e.stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
+	e.Stats.AfterFileExtracted(e.Name(), &stats.FileExtractedStats{
 		Path:          path,
 		Result:        result,
 		FileSizeBytes: fileSizeBytes,

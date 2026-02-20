@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -157,7 +157,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Pat      string
 		Username string
 		expected veles.ValidationStatus
-		wantErr  bool
+		wantErr  error
 	}{
 		{
 			name:     "empty_key",
@@ -176,7 +176,7 @@ func TestValidator_InvalidRequest(t *testing.T) {
 			Pat:      validatorTestPat,
 			Username: "",
 			expected: veles.ValidationInvalid,
-			wantErr:  true,
+			wantErr:  cmpopts.AnyError,
 		},
 	}
 
@@ -186,17 +186,11 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), usernamePat)
 
-			if tc.wantErr {
-				if err == nil {
-					t.Errorf("Validate() expected error for %s, got nil", tc.name)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-				}
-				if got != tc.expected {
-					t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+			}
+			if got != tc.expected {
+				t.Errorf("Validate() = %v, want %v", got, tc.expected)
 			}
 		})
 	}

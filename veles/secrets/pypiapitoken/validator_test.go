@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 )
@@ -60,7 +62,7 @@ func TestValidator(t *testing.T) {
 		serverExpectedKey  string
 		serverResponseCode int
 		want               veles.ValidationStatus
-		expectError        bool
+		wantErr            error
 	}{
 		{
 			name:               "valid_key",
@@ -80,13 +82,13 @@ func TestValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
-			expectError:        true,
+			wantErr:            cmpopts.AnyError,
 		},
 	}
 
@@ -100,24 +102,14 @@ func TestValidator(t *testing.T) {
 			validator.HTTPC = server.Client()
 			validator.Endpoint = server.URL + "/legacy/"
 
-			// Create a test key
 			key := pypiapitoken.PyPIAPIToken{Token: tc.key}
 
-			// Test validation
 			got, err := validator.Validate(context.Background(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
@@ -164,22 +156,22 @@ func TestValidator_InvalidRequest(t *testing.T) {
 	validator.Endpoint = server.URL + "/legacy/"
 
 	testCases := []struct {
-		name        string
-		key         string
-		expected    veles.ValidationStatus
-		expectError bool
+		name     string
+		key      string
+		expected veles.ValidationStatus
+		wantErr  error
 	}{
 		{
-			name:        "empty_key",
-			key:         "",
-			expected:    veles.ValidationFailed,
-			expectError: true,
+			name:     "empty_key",
+			key:      "",
+			expected: veles.ValidationFailed,
+			wantErr:  cmpopts.AnyError,
 		},
 		{
-			name:        "invalid_key_format",
-			key:         "invalid-key-format",
-			expected:    veles.ValidationFailed,
-			expectError: true,
+			name:     "invalid_key_format",
+			key:      "invalid-key-format",
+			expected: veles.ValidationFailed,
+			wantErr:  cmpopts.AnyError,
 		},
 	}
 
@@ -189,14 +181,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 			got, err := validator.Validate(context.Background(), key)
 
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error for %s, got nil", tc.name)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 			if got != tc.expected {
 				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)

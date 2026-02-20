@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -141,6 +141,26 @@ func TestExtractor_Extract(t *testing.T) {
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "slf4j-log4j12",
 						GroupID:      "org.slf4j",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "different_encoding",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/maven/encoding.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:      "junit:junit",
+					Version:   "4.12",
+					PURLType:  purl.TypeMaven,
+					Locations: []string{"testdata/maven/encoding.xml"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "junit",
+						GroupID:      "junit",
 						IsTransitive: false,
 						DepGroupVals: []string{},
 					},

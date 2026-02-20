@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 )
@@ -83,7 +85,6 @@ func TestValidator(t *testing.T) {
 		key               string
 		serverExpectedKey string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_key",
@@ -114,24 +115,14 @@ func TestValidator(t *testing.T) {
 			validator := cratesioapitoken.NewValidator()
 			validator.HTTPC = client
 
-			// Create a test key
 			key := cratesioapitoken.CratesIOAPItoken{Token: tc.key}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate(): %v", err)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
@@ -186,13 +177,13 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		name     string
 		key      string
 		expected veles.ValidationStatus
-		wantErr  bool
+		wantErr  error
 	}{
 		{
 			name:     "empty_key",
 			key:      "",
 			expected: veles.ValidationFailed,
-			wantErr:  true,
+			wantErr:  cmpopts.AnyError,
 		},
 		{
 			name:     "invalid_key_format",
@@ -206,18 +197,13 @@ func TestValidator_InvalidRequest(t *testing.T) {
 			key := cratesioapitoken.CratesIOAPItoken{Token: tc.key}
 
 			got, err := validator.Validate(t.Context(), key)
-			if tc.wantErr {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-				}
+
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
+				t.Errorf("Validate() = %v, want %v", got, tc.expected)
 			}
 		})
 	}

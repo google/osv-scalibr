@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 )
@@ -68,7 +70,7 @@ func TestAppLevelTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
+		wantErr           error
 	}{
 		{
 			name:              "valid_app_level_token",
@@ -93,6 +95,7 @@ func TestAppLevelTokenValidator(t *testing.T) {
 			responseBody:      `{"ok":false,"error":"server_error"}`,
 			expectedEndpoint:  "/api/auth.test",
 			want:              veles.ValidationFailed,
+			wantErr:           slacktoken.ErrAPIQueryFailed,
 		},
 	}
 
@@ -108,15 +111,8 @@ func TestAppLevelTokenValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
@@ -135,7 +131,6 @@ func TestAppConfigAccessTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_access_token",
@@ -167,15 +162,8 @@ func TestAppConfigAccessTokenValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
 			}
 
 			// Check validation status
@@ -194,7 +182,6 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_refresh_token",
@@ -226,15 +213,8 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
 			}
 
 			// Check validation status

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 )
 
@@ -28,37 +30,34 @@ func TestTokenValidator_Validate(t *testing.T) {
 		name           string
 		statusCode     int
 		expectedStatus veles.ValidationStatus
-		expectError    bool
+		wantErr        error
 	}{
 		{
 			name:           "valid token",
 			statusCode:     http.StatusOK,
 			expectedStatus: veles.ValidationValid,
-			expectError:    false,
 		},
 		{
 			name:           "invalid token - unauthorized",
 			statusCode:     http.StatusUnauthorized,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
 			name:           "invalid token - forbidden",
 			statusCode:     http.StatusForbidden,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
 			name:           "server error",
 			statusCode:     http.StatusInternalServerError,
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 		{
 			name:           "bad gateway",
 			statusCode:     http.StatusBadGateway,
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 	}
 
@@ -87,11 +86,8 @@ func TestTokenValidator_Validate(t *testing.T) {
 			token := Token{Token: "hvs.test-token"}
 			status, err := validator.Validate(t.Context(), token)
 
-			if test.expectError && err == nil {
-				t.Fatal("Expected error, got nil")
-			}
-			if !test.expectError && err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+			if diff := cmp.Diff(test.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			if status != test.expectedStatus {
@@ -107,7 +103,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 		credentials    AppRoleCredentials
 		statusCode     int
 		expectedStatus veles.ValidationStatus
-		expectError    bool
+		wantErr        error
 	}{
 		{
 			name: "valid_credentials",
@@ -117,7 +113,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			},
 			statusCode:     http.StatusOK,
 			expectedStatus: veles.ValidationValid,
-			expectError:    false,
 		},
 		{
 			name: "invalid_credentials_-_unauthorized",
@@ -127,7 +122,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			},
 			statusCode:     http.StatusUnauthorized,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
 			name: "invalid_credentials_-_bad_request",
@@ -137,7 +131,6 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			},
 			statusCode:     http.StatusBadRequest,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
 			name: "server_error",
@@ -147,7 +140,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			},
 			statusCode:     http.StatusInternalServerError,
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 		{
 			name: "missing_role_id",
@@ -157,7 +150,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			},
 			statusCode:     0, // Won't make HTTP request
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 		{
 			name: "missing_secret_id",
@@ -167,7 +160,7 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			},
 			statusCode:     0, // Won't make HTTP request
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 	}
 
@@ -195,15 +188,12 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 
 			status, err := validator.Validate(t.Context(), test.credentials)
 
-			if test.expectError && err == nil {
-				t.Fatal("Expected error, got nil")
-			}
-			if !test.expectError && err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+			if diff := cmp.Diff(test.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			if status != test.expectedStatus {
-				t.Errorf("Expected status %v, got %v", test.expectedStatus, status)
+				t.Errorf("Validate(): Expected status %v, got %v", test.expectedStatus, status)
 			}
 		})
 	}

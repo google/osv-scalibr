@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package pomxml
 
 import (
 	"context"
-	"encoding/xml"
 	"fmt"
 	"maps"
 	"path/filepath"
@@ -27,6 +26,7 @@ import (
 
 	"deps.dev/util/maven"
 
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -74,7 +74,7 @@ func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor
 func (e Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{Network: plugin.NetworkOffline}
+	return &plugin.Capabilities{}
 }
 
 // FileRequired returns true if the specified file matches Maven POM lockfile patterns.
@@ -86,7 +86,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project *maven.Project
 
-	if err := xml.NewDecoder(input.Reader).Decode(&project); err != nil {
+	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		err := fmt.Errorf("could not extract pom from %s: %w", input.Path, err)
 		log.Errorf(err.Error())
 		return inventory.Inventory{}, err

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 )
@@ -86,11 +88,11 @@ func mockManagementServer(t *testing.T, expectedKey string, statusCode int, body
 
 func TestValidatorAPI(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		body        any
-		want        veles.ValidationStatus
-		expectError bool
+		name       string
+		statusCode int
+		body       any
+		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key",
@@ -120,18 +122,18 @@ func TestValidatorAPI(t *testing.T) {
 			want: veles.ValidationInvalid,
 		},
 		{
-			name:        "unauthorized_status",
-			statusCode:  http.StatusUnauthorized,
-			body:        nil,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "unauthorized_status",
+			statusCode: http.StatusUnauthorized,
+			body:       nil,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			body:        nil,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			body:       nil,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
@@ -146,24 +148,14 @@ func TestValidatorAPI(t *testing.T) {
 			validator.HTTPC = server.Client()
 			validator.Endpoint = server.URL + "/v1/api-key"
 
-			// Create test key
 			key := grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
@@ -247,11 +239,11 @@ func TestValidatorAPI_InvalidRequest(t *testing.T) {
 
 func TestValidatorManagement(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		body        any
-		want        veles.ValidationStatus
-		expectError bool
+		name       string
+		statusCode int
+		body       any
+		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key_status_ok",
@@ -284,18 +276,18 @@ func TestValidatorManagement(t *testing.T) {
 			want: veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			body:        nil,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			body:       nil,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
-			name:        "forbidden_bad_json",
-			statusCode:  http.StatusForbidden,
-			body:        "not-a-json", // this will be encoded as a string -> invalid JSON structure for decoding
-			expectError: true,
-			want:        veles.ValidationFailed,
+			name:       "forbidden_bad_json",
+			statusCode: http.StatusForbidden,
+			body:       "not-a-json", // this will be encoded as a string -> invalid JSON structure for decoding
+			wantErr:    cmpopts.AnyError,
+			want:       veles.ValidationFailed,
 		},
 	}
 
@@ -316,15 +308,8 @@ func TestValidatorManagement(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status

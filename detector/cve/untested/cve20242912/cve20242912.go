@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -81,9 +82,7 @@ var (
 type Detector struct{}
 
 // New returns a detector.
-func New() detector.Detector {
-	return &Detector{}
-}
+func New(cfg *cpb.PluginConfig) (detector.Detector, error) { return &Detector{}, nil }
 
 // Name of the detector.
 func (Detector) Name() string { return Name }

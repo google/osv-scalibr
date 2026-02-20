@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ func NewRelockInfo(patch result.Patch, allVulns []resolution.Vulnerability, deta
 	preamble := strings.Builder{}
 	preamble.WriteString("The following upgrades:\n")
 	for _, pkg := range patch.PackageUpdates {
-		preamble.WriteString(fmt.Sprintf("  %s@%s → @%s\n", pkg.Name, pkg.VersionFrom, pkg.VersionTo))
+		fmt.Fprintf(&preamble, "  %s@%s → @%s\n", pkg.Name, pkg.VersionFrom, pkg.VersionTo)
 	}
 	preamble.WriteString("Will resolve the following:")
 	fixedVulns := make([]resolution.Vulnerability, 0, len(patch.Fixed))

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package inventory
 
 import (
 	"context"
+	"errors"
+	"path/filepath"
 
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -89,4 +91,20 @@ func (i Inventory) IsEmpty() bool {
 		return false
 	}
 	return true
+}
+
+// ExpandPathsToAbsolute changes the paths of the inventory
+// items from absolute to relative paths.
+func (i Inventory) ExpandPathsToAbsolute() error {
+	var errs []error
+	for _, p := range i.Packages {
+		for i, l := range p.Locations {
+			absPath, err := filepath.Abs(p.ScanRoot)
+			if err != nil {
+				errs = append(errs, err)
+			}
+			p.Locations[i] = filepath.Join(absPath, l)
+		}
+	}
+	return errors.Join(errs...)
 }

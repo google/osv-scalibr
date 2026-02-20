@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -88,7 +88,6 @@ func TestValidatorSecretKey(t *testing.T) {
 		name       string
 		statusCode int
 		want       veles.ValidationStatus
-		wantErr    error
 	}{
 		{
 			name:       "valid_key",
@@ -133,8 +132,8 @@ func TestValidatorSecretKey(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+			if err != nil {
+				t.Errorf("Validate(): %v", err)
 			}
 
 			// Check validation status
@@ -181,7 +180,6 @@ func TestValidatorRestrictedKey(t *testing.T) {
 		name       string
 		statusCode int
 		want       veles.ValidationStatus
-		wantErr    error
 	}{
 		{
 			name:       "valid_key_ok",
@@ -226,8 +224,8 @@ func TestValidatorRestrictedKey(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
+			if err != nil {
+				t.Errorf("Validate(): %v", err)
 			}
 
 			// Check validation status

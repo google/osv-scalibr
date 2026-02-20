@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@ package slacktoken
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -39,15 +41,20 @@ const (
 	validationTimeout = 10 * time.Second
 )
 
+var (
+	// ErrAPIQueryFailed is returned when there is an error while querying the slack APIs during validation.
+	ErrAPIQueryFailed = errors.New("error while querying Slack API")
+)
+
 func statusFromResponseBody(body io.Reader) (veles.ValidationStatus, error) {
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
-		return veles.ValidationFailed, err
+		return veles.ValidationFailed, fmt.Errorf("%w: %v", ErrAPIQueryFailed, err)
 	}
 
 	var response slackResponse
 	if err := json.Unmarshal(bodyBytes, &response); err != nil {
-		return veles.ValidationFailed, err
+		return veles.ValidationFailed, fmt.Errorf("%w: %v", ErrAPIQueryFailed, err)
 	}
 
 	if response.Ok {
@@ -56,7 +63,7 @@ func statusFromResponseBody(body io.Reader) (veles.ValidationStatus, error) {
 	if response.Error == "invalid_auth" {
 		return veles.ValidationInvalid, nil
 	}
-	return veles.ValidationFailed, nil
+	return veles.ValidationFailed, fmt.Errorf("%w: %v", ErrAPIQueryFailed, response.Error)
 }
 
 // NewAppLevelTokenValidator creates a new Validator for SlackAppLevelToken.

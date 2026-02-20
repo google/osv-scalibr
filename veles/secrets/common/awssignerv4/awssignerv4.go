@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ func (s *Signer) Sign(req *http.Request, accessID, secret string) error {
 		if len(v) == 0 {
 			return fmt.Errorf("header %q not found", h)
 		}
-		canonicalHeadersB.WriteString(fmt.Sprintf("%s:%s\n", h, v))
+		fmt.Fprintf(&canonicalHeadersB, "%s:%s\n", h, v)
 	}
 	canonicalHeaders := canonicalHeadersB.String()
 	signedHeaders := strings.Join(s.SignedHeaders, ";")

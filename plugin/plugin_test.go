@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,6 +93,18 @@ func TestValidateRequirements(t *testing.T) {
 			desc:       "Unix OS satisfied",
 			pluginReqs: &plugin.Capabilities{OS: plugin.OSUnix},
 			capabs:     &plugin.Capabilities{OS: plugin.OSMac},
+			wantErr:    nil,
+		},
+		{
+			desc:       "Unsafe plugins not allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: false},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "Unsafe plugins allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: true},
 			wantErr:    nil,
 		},
 	}

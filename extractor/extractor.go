@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,6 +53,9 @@ type Package struct {
 	SourceCode *SourceCodeIdentifier
 	// Paths or source of files related to the package.
 	Locations []string
+	// The scan root that this package was found in.
+	// TODO(b/400910349): Unify Locations and ScanRoot into a single struct.
+	ScanRoot string
 	// The PURL type of this package, e.g. "pypi". Used for purl generation.
 	PURLType string
 	// The names of the Plugins that found this software instance. Set by the core library.
