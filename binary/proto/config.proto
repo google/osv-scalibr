@@ -45,7 +45,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
-  reserved 48 to 56;
+  reserved 48 to 56, 59 to 61;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
@@ -95,6 +95,7 @@ message PluginSpecificConfig {
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
     OSVLocalConfig osvlocal = 57;
+    CodeServerConfig code_server = 58;
   }
 }
 
@@ -455,4 +456,11 @@ message OSVLocalConfig {
   // The remote host to download zip files from, which will be suffixed with
   // "/<ecosystem>/all.zip"
   string remote_host = 3;
+}
+
+message CodeServerConfig {
+  // The URL of the Code-Server instance to check for authentication.
+  string remote = 1;
+  // Timeout in milliseconds for the HTTP client.
+  int64 client_timeout_millis = 2;
 }
