@@ -1,0 +1,1 @@
+    libraryDependencies += "org.scalatest"
