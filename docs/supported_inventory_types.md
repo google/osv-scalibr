@@ -81,6 +81,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | yarn.lock                                         | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
 |            | bun.lock                                          | `javascript/bunlock`                 |
+|            | deno.json                                         | `javascript/denojson`                |
+|            | deno TypeScript Source                            | `javascript/denotssource`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
