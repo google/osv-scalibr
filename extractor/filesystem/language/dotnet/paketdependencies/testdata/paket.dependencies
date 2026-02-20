@@ -1,0 +1,22 @@
+source https://api.nuget.org/v3/index.json
+
+nuget NUnit ~> 2.6.3
+nuget FSharp.Core >= 4.0.0
+nuget Newtonsoft.Json == 12.0.3
+nuget Microsoft.Extensions.Logging
+
+github fsprojects/Paket
+github fsharp/FAKE:5.20.4
+
+// master branch
+github tpetricek/FSharp.Formatting
+
+// version 2.13.5
+github tpetricek/FSharp.Formatting:2.13.5
+
+// specific commit 30cd5366a4f3f25a443ca4cd62cd592fd16ac69
+github tpetricek/FSharp.Formatting:30cd5366a4f3f25a443ca4cd62cd592fd16ac69
+
+group Build
+  nuget FAKE
+  nuget Paket

@@ -63,6 +63,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | .NET       | packages.lock.json                                | `dotnet/packageslockjson`            |
 |            | packages.config                                   | `dotnet/packagesconfig`              |
 |            | deps.json                                         | `dotnet/depsjson`                    |
+|            | paket.dependencies                                | `dotnet/paketdependencies`           |
+|            | paket.lock                                        | `dotnet/paketlock`                   |
 |            | portable executables                              | `dotnet/pe`                          |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |

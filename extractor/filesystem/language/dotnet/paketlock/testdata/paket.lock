@@ -1,0 +1,16 @@
+NUGET
+  remote: https://api.nuget.org/v3/index.json
+    NUnit (2.6.4)
+      NUnit.Console (>= 3.0.0)
+    FSharp.Core (4.5.0)
+    Newtonsoft.Json (12.0.3)
+    Microsoft.Extensions.Logging (6.0.0)
+      Microsoft.Extensions.Logging.Abstractions (>= 6.0.0)
+    FAKE (5.20.4)
+    Paket (7.0.0)
+
+GITHUB
+  remote: fsprojects/Paket
+    fsprojects/Paket (5.0.0)
+  remote: fsharp/FAKE
+    fsharp/FAKE (5.20.4)
