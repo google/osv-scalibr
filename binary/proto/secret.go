@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
@@ -148,6 +149,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case cloudflareapitoken.CloudflareAPIToken:
 		return cloudflareAPITokenToProto(t), nil
+	case denopat.DenoUserPAT:
+		return denoUserPATToProto(t), nil
+	case denopat.DenoOrgPAT:
+		return denoOrgPATToProto(t), nil
 	case velesdigitalocean.DigitaloceanAPIToken:
 		return digitaloceanAPIKeyToProto(t), nil
 	case pypiapitoken.PyPIAPIToken:
@@ -409,6 +414,34 @@ func cloudflareAPITokenToProto(s cloudflareapitoken.CloudflareAPIToken) *spb.Sec
 		Secret: &spb.SecretData_CloudflareApiToken{
 			CloudflareApiToken: &spb.SecretData_CloudflareAPIToken{
 				Token: s.Token,
+			},
+		},
+	}
+}
+
+func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
+	pat := kPB.GetPat()
+	if len(pat) >= 4 && pat[:4] == "ddp_" {
+		return denopat.DenoUserPAT{Pat: pat}
+	}
+	return denopat.DenoOrgPAT{Pat: pat}
+}
+
+func denoUserPATToProto(s denopat.DenoUserPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DenoPat_{
+			DenoPat: &spb.SecretData_DenoPat{
+				Pat: s.Pat,
+			},
+		},
+	}
+}
+
+func denoOrgPATToProto(s denopat.DenoOrgPAT) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DenoPat_{
+			DenoPat: &spb.SecretData_DenoPat{
+				Pat: s.Pat,
 			},
 		},
 	}
@@ -1119,6 +1152,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return dockerHubPATToStruct(s.GetDockerHubPat()), nil
 	case *spb.SecretData_CloudflareApiToken:
 		return cloudflareAPITokenToStruct(s.GetCloudflareApiToken()), nil
+	case *spb.SecretData_DenoPat_:
+		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
