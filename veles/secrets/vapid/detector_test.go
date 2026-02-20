@@ -211,7 +211,7 @@ func TestDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name: "very bad example",
+			name: "wrong_public_key_between_valid_key_pairs",
 			input: `
 			LieO7JztGnRv11UxRNJlBkdoK97ePceW7rGXQh36c_4:BEEDPFMgrB5MObgTsdiIh9fQ9Ug5wrLQyk4sDxSYctvqEzFHa9wLGE0-ZDs0A8jXzJHsFVSXshYzDDoLw2YxWGw
 			BFEuu_r7cd5hElHB6P9Z1bysARpVxRljjRZEmlrfMTPT2G_GRTGrCOid4WCk4PAnyaFXLPa0sOLMnMMS1sMrMRs
