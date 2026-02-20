@@ -35,6 +35,32 @@ func TestSupabasePATDetectorAcceptance(t *testing.T) {
 	)
 }
 
+func TestSupabaseProjectSecretKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		supabase.NewProjectSecretKeyDetector(),
+		"https://lphyfymaepklpuvaecry.supabase.co\nsb_secret_Ot4elAPTTzLF2SFwFTS6-A_bL775S0X",
+		supabase.ProjectSecretKey{
+			Key:        "sb_secret_Ot4elAPTTzLF2SFwFTS6-A_bL775S0X",
+			ProjectRef: "lphyfymaepklpuvaecry",
+		},
+	)
+}
+
+func TestSupabaseServiceRoleJWTDetectorAcceptance(t *testing.T) {
+	// Valid service_role JWT with iss="supabase" and role="service_role"
+	// Header: {"alg":"HS256","typ":"JWT"}
+	// Payload: {"iss":"supabase","role":"service_role","iat":1234567890}
+	validServiceRoleJWT := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjEyMzQ1Njc4OTB9.signature"
+
+	velestest.AcceptDetector(
+		t,
+		supabase.NewServiceRoleJWTDetector(),
+		validServiceRoleJWT,
+		supabase.ServiceRoleJWT{Token: validServiceRoleJWT},
+	)
+}
+
 func TestSupabasePATDetector(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{supabase.NewPATDetector()})
 	if err != nil {
@@ -293,3 +319,4 @@ func TestSupabaseServiceRoleJWTDetector(t *testing.T) {
 		})
 	}
 }
+
