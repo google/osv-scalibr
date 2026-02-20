@@ -12,11 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package tinkkeyset package implements the logic to detect [Tink keyset](https://developers.google.com/tink/design/keysets) stored as plaintext
 package tinkkeyset
 
-// TinkKeySet contains information of a [Tink keyset](https://developers.google.com/tink/design/keysets)
-type TinkKeySet struct {
-	// Content is a JSON formatted Tink keyset.
-	Content string
+import (
+	"encoding/json"
+
+	"github.com/google/go-cmp/cmp"
+)
+
+// Equal function used to compare TinkKeySet in tests
+func (s TinkKeySet) Equal(other TinkKeySet) bool {
+	var xJSON, yJSON any
+	if err := json.Unmarshal([]byte(s.Content), &xJSON); err != nil {
+		return false
+	}
+	if err := json.Unmarshal([]byte(other.Content), &yJSON); err != nil {
+		return false
+	}
+	return cmp.Equal(xJSON, yJSON)
 }
