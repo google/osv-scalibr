@@ -344,6 +344,12 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		},
 	}
 
+	storeAbsPath := config.StoreAbsolutePath
+	// We want to store absolute paths in the inventory,
+	// but paths should be relative to root of the imagefs
+	// (always '/' as we only support linux containers)
+	config.StoreAbsolutePath = false
+
 	// Suppress running enrichers until after layer details are populated.
 	var enrichers []enricher.Enricher
 	var nonEnricherPlugins []plugin.Plugin
@@ -409,11 +415,13 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		scanResult.Status.FailureReason = err.Error()
 	}
 
-	if config.StoreAbsolutePath {
-		err := scanResult.Inventory.ExpandPathsToAbsolute()
-		if err != nil {
-			scanResult.Status.Status = plugin.ScanStatusFailed
-			scanResult.Status.FailureReason = err.Error()
+	// Since we skipped storing absolute path in the main Scan function.
+	// Actually convert it to absolute path here.
+	if storeAbsPath {
+		for _, pkg := range scanResult.Inventory.Packages {
+			for i := range pkg.Locations {
+				pkg.Locations[i] = "/" + pkg.Locations[i]
+			}
 		}
 	}
 
