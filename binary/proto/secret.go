@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	velesdropboxappaccesstoken "github.com/google/osv-scalibr/veles/secrets/dropboxappaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
@@ -281,6 +282,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return sendgridAPIKeyToProto(t), nil
 	case velescircleci.PersonalAccessToken:
 		return circleCIPersonalAccessTokenToProto(t), nil
+	case velesdropboxappaccesstoken.APIAccessToken:
+		return dropboxAppAccessTokenToProto(t), nil
 	case velescircleci.ProjectToken:
 		return circleCIProjectTokenToProto(t), nil
 	case salesforceoauth2jwt.Credentials:
@@ -837,6 +840,16 @@ func circleCIPersonalAccessTokenToProto(s velescircleci.PersonalAccessToken) *sp
 	}
 }
 
+func dropboxAppAccessTokenToProto(s velesdropboxappaccesstoken.APIAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DropboxAppAccessToken_{
+			DropboxAppAccessToken: &spb.SecretData_DropboxAppAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func circleCIProjectTokenToProto(s velescircleci.ProjectToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_CircleciProjectToken{
@@ -1362,6 +1375,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_CircleciPersonalAccessToken:
 		return velescircleci.PersonalAccessToken{
 			Token: s.GetCircleciPersonalAccessToken().GetToken(),
+		}, nil
+	case *spb.SecretData_DropboxAppAccessToken_:
+		return velesdropboxappaccesstoken.APIAccessToken{
+			Token: s.GetDropboxAppAccessToken().GetToken(),
 		}, nil
 	case *spb.SecretData_CircleciProjectToken:
 		return velescircleci.ProjectToken{

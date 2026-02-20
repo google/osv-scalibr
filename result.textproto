@@ -1,0 +1,47 @@
+version:  "0.4.3"
+start_time:  {
+  seconds:  1771550497
+  nanos:  421631144
+}
+end_time:  {
+  seconds:  1771550497
+  nanos:  947681096
+}
+status:  {
+  status:  SUCCEEDED
+}
+plugin_status:  {
+  name:  "secrets/veles"
+  version:  1
+  status:  {
+    status:  SUCCEEDED
+  }
+}
+plugin_status:  {
+  name:  "secrets/velesvalidate"
+  version:  1
+  status:  {
+    status:  SUCCEEDED
+  }
+}
+inventory:  {
+  secrets:  {
+    secret:  {
+      dropbox_app_access_token:  {
+        token:  "sl.u.AGQkFccg3G7cPbpOG6RVZU6EBz1Uo3vHMhYHUku_13d4xJDq5COZq9NqzYO5mcTOqENdgDCYE8HM9iob1HUuAEAo_bgtHM3JxhgZLHzjc_35ATxGxwxknzEjMb2ouGfYLYhcdb_DU_TxWu8iJFH8dsSvqagX5NF5HrkKL8FAzRpDeAAs-sEPl3M_MB0oSahdamm1UR2NENEk2gTzbw9PySkChAI0jxnP5tg-_xUvgcgZ03tH1jOmwLYFAnC3d_M3c8T1gvx3adt5A4FIkiRbmM3a-Y70VYuDfpWGw0mhSyaEcnQwx5SqTnvUezjzK-i2TxtX_WEPBj41mhZPrKUve6K-DcgJGPM2eSKoClE949nUbcwzrIxeJEuesLzelicyfDX35CExpzobntNl2QmU-JfIMB37OPzPRaVyWbuimJ7ZMegm0BuxCEJnrg3qx1eMzbL4ALocxCb4bR4mbJsijdvjYsHtX3rtrwANksbnN7gww81k0kqh7XjDZU7Ha-LEI9B0FRqnGg0TPuWi-SVzYHLIw2fWFwZCrxAupG5hUeOQEyLrLSesLBHo8eggWe3_vQxmigkozcYsWisfImMYVk8d4dIq1LPAsCy8BN6IqalrngnV-8mF5VtCMOfSIsx6jUSuXo7s6OC5aFAxEKHPXmaJvn_zYrtSKcMqJF7PMskCD3E_APZvALi7eRL4rUEZkNElIhmIL-GHIEvmRQ4Z87ndft8ljdRPVF_l6O8xo-moYCCZu-bVAjG4sSK4ZZowMJhjLv7kuKqWy6JT3vFP1fdRFm62ua2YSzrWN5VjZfLwOyP6gqb70BUmzQLrUCideYb5ZKgh1e2TD91qcNXRfXRol2Zh_dr4eA2f-7hIQs9F14gmDFGZF5NOl59GyhDf90tUPg5YyIYOyJRBkZj_xMi-pBa7bA3yV4SwKKleOR1vrdt9W-XNiOAQ28FO6UyabQQ4bnQZbJraoe-h_Z1N4wYZd1q1ivSWxkhbAu-3NDH92-fChAcUrTdQs9nzmvAb9RpyU97zk9w9KF4DTk5Vg2pUbYW3Toe0-imMczpdfo_-dActLosBGmfo1efga9BWizQIYXQNY-yWhydQZtA8N-XhMZCjMOTFJz__E39yvdfPFvkQmZrjvTK7ebCQOnOjBv6U6dxKMlTdSwId8sJCUUAJsxBLAe6lk2D12mbjMZtRiE1uRdLgIUzKxig74piBVL02Dtm4B-8WeYIsdbXsanMS__x5GuoZv1rDS0gvCU3XRM_Fg81gZUP0f4M48erX-ZuT4vgg5S5LzLumwP0AJiH5wzrDXIUS-pmbHxGZftetYEzS6gw23TxBZ-fW8aSdP3eufdI1kFNfa27Au3I_1SOZl9lbvh5dYtQo6yJEjkk3p2gazyFiAV_CXEtkyXdGWPYl6NGsQLi1f6PJCoj_s_2Ht"
+      }
+    }
+    status:  {
+      status:  INVALID
+      last_updated:  {
+        seconds:  1771550497
+        nanos:  947677052
+      }
+    }
+    locations:  {
+      filepath:  {
+        path:  "file.txt"
+      }
+    }
+  }
+}

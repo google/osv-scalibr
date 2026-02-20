@@ -122,6 +122,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/dropboxappaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
@@ -343,6 +344,7 @@ var (
 		{circleci.NewProjectTokenDetector(), "secrets/circleciproject", 0},
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
+		{dropboxappaccesstoken.NewDetector(), "secrets/dropboxappaccesstoken", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
 		{cratesioapitoken.NewDetector(), "secrets/cratesioapitoken", 0},
 		{npmjsaccesstoken.NewDetector(), "secrets/npmjsaccesstoken", 0},

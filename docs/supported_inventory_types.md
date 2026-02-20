@@ -130,6 +130,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
 | Docker hub PAT                              | `secrets/dockerhubpat`                 |
+| Dropbox App Access Token                    | `secrets/dropboxappaccesstoken`        |
 | Elastic Cloud API key                       | `secrets/elasticcloudapikey`           |
 | Deno User PAT                               | `secrets/denopatuservalidate`          |
 | Deno Organization PAT                       | `secrets/denopatorgvalidate`           |
