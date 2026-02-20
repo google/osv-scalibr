@@ -36,6 +36,8 @@ import (
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
 	"golang.org/x/sys/windows/registry"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 var (
@@ -62,8 +64,8 @@ type Detector struct {
 }
 
 // New returns a detector.
-func New() detector.Detector {
-	return &Detector{}
+func New(_ *cpb.PluginConfig) (detector.Detector, error) {
+	return &Detector{}, nil
 }
 
 // userHashInfo contains the hashes of a user. Note that both hashes represents the same password.

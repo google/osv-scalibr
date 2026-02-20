@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -39,8 +41,8 @@ const (
 type Detector struct{}
 
 // New returns a detector.
-func New() detector.Detector {
-	return &Detector{}
+func New(_ *cpb.PluginConfig) (detector.Detector, error) {
+	return &Detector{}, nil
 }
 
 // Name of the detector.
