@@ -43,7 +43,7 @@ const (
 
 	// maxDistance is the maximum distance between Telegram Bot API token and Telegram keywords to be considered for pairing (repurposed for finding close keywords that might show it is a Telegram Bot API token).
 	// 20 is a good upper bound as we want to search for near keywords.
-	maxDistance = 20
+	maxDistance = 60
 )
 
 var (

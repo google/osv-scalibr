@@ -24,7 +24,7 @@ import (
 )
 
 // maxTokenLength is the maximum size of a PyPI API Token.
-const maxTokenLength = 150
+const maxTokenLength = 200
 
 // keyRe is a regular expression that matches a PyPI API Token.
 // PyPI API Tokens have the form: `pypi-` followed by at least 85
