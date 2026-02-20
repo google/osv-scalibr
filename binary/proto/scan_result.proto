@@ -803,6 +803,7 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
+    IBMCloudUserSecretKey ibm_cloud_secret_key = 77;
   }
 
   message GCPSAK {
@@ -1141,6 +1142,19 @@ message SecretData {
     // true
     google.protobuf.Duration expire_time = 1;
     bool never_expires = 2;
+  }
+
+  message IBMCloudUserSecretKey {
+    string key = 1;
+    // Optional enrichment fields populated when available
+    optional IBMCloudUserSecretKeyMetadata ibm_cloud_secret_key_metadata = 2;
+  }
+
+  message IBMCloudUserSecretKeyMetadata {
+    // expire_time is nil if the token doesn't expire, and never_expires becomes true
+    string expire_time = 1;
+    bool never_expires = 2;
+
   }
 
   message TelegramBotToken {

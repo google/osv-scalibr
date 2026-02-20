@@ -52,6 +52,7 @@ import (
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	velesherokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	velesibmclouduserkey "github.com/google/osv-scalibr/veles/secrets/ibmclouduserkey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
@@ -275,6 +276,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return paystackSecretKeyToProto(t), nil
 	case velesherokuplatformkey.HerokuSecret:
 		return herokuKeyToProto(t), nil
+	case velesibmclouduserkey.IBMCloudUserSecret:
+		return ibmcloudKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
 	case sendgrid.APIKey:
@@ -1017,6 +1020,31 @@ func herokuMetadataToProto(m *velesherokuplatformkey.Metadata) *spb.SecretData_H
 	return meta
 }
 
+func ibmcloudKeyToProto(s velesibmclouduserkey.IBMCloudUserSecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_IbmCloudSecretKey{
+			IbmCloudSecretKey: &spb.SecretData_IBMCloudUserSecretKey{
+				Key:                       s.Key,
+				IbmCloudSecretKeyMetadata: ibmcloudMetadataToProto(s.Metadata),
+			},
+		},
+	}
+}
+
+func ibmcloudMetadataToProto(m *velesibmclouduserkey.Metadata) *spb.SecretData_IBMCloudUserSecretKeyMetadata {
+	if m == nil {
+		return nil
+	}
+
+	meta := &spb.SecretData_IBMCloudUserSecretKeyMetadata{NeverExpires: false}
+	meta.NeverExpires = m.NeverExpires
+	if m.ExpireTime != nil {
+		meta.ExpireTime = *m.ExpireTime
+	}
+
+	return meta
+}
+
 func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_TelegramBotApiToken{
@@ -1351,6 +1379,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		}, nil
 	case *spb.SecretData_HerokuSecretKey_:
 		return herokuSecretToStruct(s.GetHerokuSecretKey()), nil
+	case *spb.SecretData_IbmCloudSecretKey:
+		return ibmCloudSecretToStruct(s.GetIbmCloudSecretKey()), nil
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
@@ -1649,6 +1679,22 @@ func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatform
 	return velesherokuplatformkey.HerokuSecret{
 		Key:      k.GetKey(),
 		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur, NeverExpires: metadata.GetNeverExpires()},
+	}
+}
+
+func ibmCloudSecretToStruct(k *spb.SecretData_IBMCloudUserSecretKey) velesibmclouduserkey.IBMCloudUserSecret {
+	metadata := k.GetIbmCloudSecretKeyMetadata()
+	if metadata == nil {
+		return velesibmclouduserkey.IBMCloudUserSecret{
+			Key: k.GetKey(),
+		}
+	}
+
+	expireTime := metadata.GetExpireTime()
+
+	return velesibmclouduserkey.IBMCloudUserSecret{
+		Key:      k.GetKey(),
+		Metadata: &velesibmclouduserkey.Metadata{ExpireTime: &expireTime, NeverExpires: metadata.GetNeverExpires()},
 	}
 }
 

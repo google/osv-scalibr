@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
+	"github.com/google/osv-scalibr/enricher/ibmcloudexpiration"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
@@ -61,6 +62,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/ibmclouduserkey"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
@@ -170,12 +172,14 @@ var (
 		fromVeles(salesforceoauth2refresh.NewValidator(), "secrets/salesforceoauth2refreshvalidate", 0),
 		fromVeles(salesforceoauth2jwt.NewValidator(), "secrets/salesforceoauth2jwtvalidate", 0),
 		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
+		fromVeles(ibmclouduserkey.NewValidator(), "secrets/ibmclouduserkeyvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
 	SecretsEnrich = InitMap{
-		hcpidentity.Name:      {noCFG(hcpidentity.New)},
-		herokuexpiration.Name: {noCFG(herokuexpiration.New)},
+		hcpidentity.Name:        {noCFG(hcpidentity.New)},
+		herokuexpiration.Name:   {noCFG(herokuexpiration.New)},
+		ibmcloudexpiration.Name: {noCFG(ibmcloudexpiration.New)},
 	}
 
 	// HuggingfaceMeta enricher.
