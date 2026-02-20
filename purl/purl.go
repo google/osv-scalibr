@@ -121,6 +121,8 @@ const (
 	TypeLua = "lua"
 	// TypeChocolatey is pkg:chocolatey purl
 	TypeChocolatey = "chocolatey"
+	// TypeSpack is pkg:spack purl
+	TypeSpack = "spack"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.

@@ -33,7 +33,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### OS packages
 
 | Inventory Type    | Details                        | Extractor Plugin                             |
-| ----------------- | ------------------------------ | -------------------------------------------- |
+|-------------------| ------------------------------ |----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
@@ -47,6 +47,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Kernel archives   | vmlinuz                        | `os/kernel/vmlinuz`                          |
 | Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
 | SNAP              |                                | `os/snap`                                    |
+| Spack             |                                | `os/spack`                                   |
 | Flatpak           |                                | `os/flatpak`                                 |
 | Homebrew          | OS X                           | `os/homebrew`                                |
 | MacPorts          | OS X                           | `os/macports`                                |
