@@ -36,14 +36,31 @@ type Finder func([]byte) []Match
 
 // Detector finds instances of a tuple of keys.
 type Detector struct {
+	// MaxElementLen correspond to the max length a element found by the Finders can have.
 	MaxElementLen uint32
-	MaxDistance   uint32
-	Finders       []Finder
-	FromTuple     func([]Match) (veles.Secret, bool)
-	FromPartial   func(Match) (veles.Secret, bool)
+	// MaxDistance is the maximum distance between two elements of a tuple.
+	MaxDistance uint32
+	// Finders is an ordered list of regex-based match functions.
+	// Each Finder corresponds to one element of the tuple, and a valid N-tuple
+	// requires at least one match from each Finder.
+	//
+	// Finders should be ordered from most specific to most generic. This allows
+	// the search to exit early if a more specific Finder produces no matches
+	// in the file, avoiding unnecessary work by broader matchers.
+	Finders []Finder
+	// FromTuple converts a slice of Matches (one from each Finder) into a
+	// veles.Secret. If returned bool is false, the tuple is ignored.
+	FromTuple func([]Match) (veles.Secret, bool)
+	// FromPartial returns a veles.Secret from a partial Tuple.
+	// FromPartial is used if no full tuples exist. It converts a single Match
+	// into a veles.Secret. If nil, partial results are disabled.
+	FromPartial func(Match) (veles.Secret, bool)
 }
 
-// Detect implements the veles.Detector interface.
+// Detect searches the data using the Finders to generate matches.
+// Then it combines full set of matches into tuples.
+// If tuples are found, it converts them into secrets using FromTuple.
+// If none are found and FromPartial is provided, it converts partial match into secret using it.
 func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	if len(d.Finders) == 0 {
 		return nil, nil
@@ -101,6 +118,9 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 	return out, pos
 }
 
+// collect runs all the Finders on the given payload and returns:
+// - a list of full tuples
+// - a list of partial matches
 func (d *Detector) collect(b []byte) ([]*Tuple, [][]Match) {
 	if len(d.Finders) == 0 {
 		return nil, nil
@@ -134,6 +154,7 @@ func filterOverlaps(newMatches, prevMatches []Match) []Match {
 	return filtered
 }
 
+// generateTuples recursively generate tuples from a set of matches
 func (d *Detector) generateTuples(all [][]Match, step int, currentMatches []Match) []*Tuple {
 	if step == len(d.Finders) {
 		t := buildTuple(currentMatches, int(d.MaxDistance))
@@ -151,6 +172,7 @@ func (d *Detector) generateTuples(all [][]Match, step int, currentMatches []Matc
 	return res
 }
 
+// buildTuple groups a list of matches into a tuple if the distance between them is less then maxGap
 func buildTuple(matches []Match, maxGap int) *Tuple {
 	if len(matches) == 0 {
 		return nil

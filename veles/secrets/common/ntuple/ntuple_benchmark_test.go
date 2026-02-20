@@ -67,16 +67,12 @@ func generatePayload(size, density int) []byte {
 	return buf
 }
 
-// Launch using
+// BenchmarkDetector evaluates the performance of the nutple detectors across files of varying sizes and secret densities.
+//
+// launch using:
 //
 //	```
-//	go test github.com/google/osv-scalibr/veles/secrets/common/ntuple -bench=BenchmarkDetector -benchmem -cpuprofile=cpu.prof -memprofile=mem.prof
-//	```
-//
-// check pprof using
-//
-//	```
-//	go tool pprof -http=:8080 cpu.prof
+//	make test_bench
 //	```
 func BenchmarkDetector(b *testing.B) {
 	detector := setupTestDetector()
