@@ -824,6 +824,7 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
+    DiscordBotToken discord_bot_token = 77;
   }
 
   message GCPSAK {
@@ -1149,6 +1150,10 @@ message SecretData {
 
   message PaystackSecretKey {
     string key = 1;
+  }
+  
+  message DiscordBotToken {
+  string token = 1;
   }
 
   message HerokuSecretKey {

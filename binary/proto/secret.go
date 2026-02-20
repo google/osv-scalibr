@@ -35,6 +35,7 @@ import (
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -50,7 +51,6 @@ import (
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
-	velesherokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
@@ -70,7 +70,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
-	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velessquareapikey "github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	velesstripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
@@ -80,7 +79,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -273,12 +271,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return urlCredentialsToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
-	case velesherokuplatformkey.HerokuSecret:
-		return herokuKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
 		return telegramBotAPITokenToProto(t), nil
-	case sendgrid.APIKey:
-		return sendgridAPIKeyToProto(t), nil
+	case velesdiscordbottoken.DiscordBotToken:
+		return discordBotTokenToProto(t), nil
 	case velescircleci.PersonalAccessToken:
 		return circleCIPersonalAccessTokenToProto(t), nil
 	case velescircleci.ProjectToken:
@@ -412,6 +408,25 @@ func dockerHubPATToProto(s dockerhubpat.DockerHubPAT) *spb.SecretData {
 		},
 	}
 }
+
+func cloudflareAPITokenToProto(s cloudflareapitoken.CloudflareAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_CloudflareApiToken{
+			CloudflareApiToken: &spb.SecretData_CloudflareAPIToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
+	pat := kPB.GetPat()
+	if len(pat) >= 4 && pat[:4] == "ddp_" {
+		return denopat.DenoUserPAT{Pat: pat}
+	}
+	return denopat.DenoOrgPAT{Pat: pat}
+}
+
 func denoUserPATToProto(s denopat.DenoUserPAT) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_DenoPat_{
@@ -427,16 +442,6 @@ func denoOrgPATToProto(s denopat.DenoOrgPAT) *spb.SecretData {
 		Secret: &spb.SecretData_DenoPat_{
 			DenoPat: &spb.SecretData_DenoPat{
 				Pat: s.Pat,
-			},
-		},
-	}
-}
-
-func cloudflareAPITokenToProto(s cloudflareapitoken.CloudflareAPIToken) *spb.SecretData {
-	return &spb.SecretData{
-		Secret: &spb.SecretData_CloudflareApiToken{
-			CloudflareApiToken: &spb.SecretData_CloudflareAPIToken{
-				Token: s.Token,
 			},
 		},
 	}
@@ -992,31 +997,6 @@ func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.Secr
 	}
 }
 
-func herokuKeyToProto(s velesherokuplatformkey.HerokuSecret) *spb.SecretData {
-	return &spb.SecretData{
-		Secret: &spb.SecretData_HerokuSecretKey_{
-			HerokuSecretKey: &spb.SecretData_HerokuSecretKey{
-				Key:                     s.Key,
-				HerokuSecretKeyMetadata: herokuMetadataToProto(s.Metadata),
-			},
-		},
-	}
-}
-
-func herokuMetadataToProto(m *velesherokuplatformkey.Metadata) *spb.SecretData_HerokuSecretKeyMetadata {
-	if m == nil {
-		return nil
-	}
-
-	meta := &spb.SecretData_HerokuSecretKeyMetadata{ExpireTime: nil, NeverExpires: false}
-	meta.NeverExpires = m.NeverExpires
-	if m.ExpireTime != nil {
-		meta.ExpireTime = durationpb.New(*m.ExpireTime)
-	}
-
-	return meta
-}
-
 func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_TelegramBotApiToken{
@@ -1027,15 +1007,16 @@ func telegramBotAPITokenToProto(s velestelegrambotapitoken.TelegramBotAPIToken) 
 	}
 }
 
-func sendgridAPIKeyToProto(s sendgrid.APIKey) *spb.SecretData {
+func discordBotTokenToProto(s velesdiscordbottoken.DiscordBotToken) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_SendgridApiKey{
-			SendgridApiKey: &spb.SecretData_SendGridAPIKey{
-				Key: s.Key,
+		Secret: &spb.SecretData_DiscordBotToken_{
+			DiscordBotToken: &spb.SecretData_DiscordBotToken{
+				Token: s.Token,
 			},
 		},
 	}
 }
+
 func salesforceOAuth2JWTCredentialsToProto(creds salesforceoauth2jwt.Credentials) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_SalesforceOauth2JwtCredentials{
@@ -1349,15 +1330,13 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velespaystacksecretkey.PaystackSecret{
 			Key: s.GetPaystackSecretKey().GetKey(),
 		}, nil
-	case *spb.SecretData_HerokuSecretKey_:
-		return herokuSecretToStruct(s.GetHerokuSecretKey()), nil
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
 		}, nil
-	case *spb.SecretData_SendgridApiKey:
-		return sendgrid.APIKey{
-			Key: s.GetSendgridApiKey().GetKey(),
+	case *spb.SecretData_DiscordBotToken_:
+		return velesdiscordbottoken.DiscordBotToken{
+			Token: s.GetDiscordBotToken().GetToken(),
 		}, nil
 	case *spb.SecretData_CircleciPersonalAccessToken:
 		return velescircleci.PersonalAccessToken{
@@ -1441,14 +1420,6 @@ func cloudflareAPITokenToStruct(kPB *spb.SecretData_CloudflareAPIToken) cloudfla
 	return cloudflareapitoken.CloudflareAPIToken{
 		Token: kPB.GetToken(),
 	}
-}
-
-func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
-	pat := kPB.GetPat()
-	if len(pat) >= 4 && pat[:4] == "ddp_" {
-		return denopat.DenoUserPAT{Pat: pat}
-	}
-	return denopat.DenoOrgPAT{Pat: pat}
 }
 
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
@@ -1629,26 +1600,6 @@ func salesforceOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_Salesforc
 		ID:     credsPB.GetId(),
 		Secret: credsPB.GetSecret(),
 		URL:    credsPB.GetUrl(),
-	}
-}
-
-func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatformkey.HerokuSecret {
-	metadata := k.GetHerokuSecretKeyMetadata()
-	if metadata == nil {
-		return velesherokuplatformkey.HerokuSecret{
-			Key: k.GetKey(),
-		}
-	}
-
-	var dur *time.Duration
-	if metadata.GetExpireTime() != nil {
-		tmp := metadata.GetExpireTime().AsDuration()
-		dur = &tmp
-	}
-
-	return velesherokuplatformkey.HerokuSecret{
-		Key:      k.GetKey(),
-		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur, NeverExpires: metadata.GetNeverExpires()},
 	}
 }
 
