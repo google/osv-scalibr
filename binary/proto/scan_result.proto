@@ -143,6 +143,7 @@ message Package {
     ChocolateyPackageMetadata chocolatey_metadata = 62;
     MiseMetadata mise_metadata = 63;
     UnknownBinaryMetadata unknown_binary_metadata = 64;
+    BazelMavenMetadata bazel_maven_metadata = 65;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -684,6 +685,14 @@ message NvmMetadata {
 
 message NodeVersionMetadata {
   string nodejs_version = 2;
+}
+
+message BazelMavenMetadata {
+  string name = 1;
+  string group_id = 2;
+  string artifact_id = 3;
+  string version = 4;
+  string rule_name = 5;
 }
 
 message DockerPort {

@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	bazelmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
@@ -117,6 +118,9 @@ var (
 		reflect.TypeFor[*spb.Package_MacportsMetadata](): func(p *spb.Package) any {
 			return macportsmeta.ToStruct(p.GetMacportsMetadata())
 		},
+		reflect.TypeFor[*spb.Package_BazelMavenMetadata](): func(p *spb.Package) any {
+			return bazelmeta.ToStruct(p.GetBazelMavenMetadata())
+		},
 		reflect.TypeFor[*spb.Package_WingetMetadata](): func(p *spb.Package) any {
 			return wingetmeta.ToStruct(p.GetWingetMetadata())
 		},
@@ -195,6 +199,7 @@ var (
 		(*misemeta.Metadata)(nil),
 		(*nvmmeta.Metadata)(nil),
 		(*nodeversionmeta.Metadata)(nil),
+		(*bazelmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
 		(*homebrew.Metadata)(nil),

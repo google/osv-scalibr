@@ -76,6 +76,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
@@ -439,6 +440,8 @@ var (
 	// FFA extractor.
 	FFA = InitMap{
 		unknownbinariesextr.Name: {unknownbinariesextr.New},
+		asdf.Name:                {asdf.New},
+		bazelmaven.Name:          {bazelmaven.New},
 	}
 
 	// Collections of extractors.
