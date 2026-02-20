@@ -188,10 +188,10 @@ func (e Extractor) parseDependenciesFile(reader io.Reader, path string) ([]*extr
 		}
 
 		// Parse GitHub dependencies
-		// Format: github owner/repo[:ref] [version/tag/file_path]
+		// Format: github owner/repo[:ref/version] [file_path]
 		// Examples:
 		//   "github fsprojects/Paket" - just repo
-		//   "github fsharp/FAKE v5.20.4" - repo with version
+		//   "github fsharp/FAKE:5.20.4" - repo with version
 		//   "github owner/repo:2.13.5" - repo with version
 		//   "github owner/repo:commit_hash file/path.fs" - repo with commit and file
 		//   "github forki/FsUnit FsUnit.fs" - repo with file path (no commit)
