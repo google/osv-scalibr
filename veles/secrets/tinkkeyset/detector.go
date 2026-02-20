@@ -28,18 +28,14 @@ import (
 var (
 
 	// base64Pattern is a generic pattern to detect base64 blobs
-	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]{20,}=?=?`)
+	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]{60,}=?=?`)
 
 	// jsonPattern matches correctly Tink keyset json strings
 	// thanks to the known `{"primaryKeyId":` start and `]}` ending
-	jsonPattern = regexp.MustCompile(`(?s)\s*\{\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?\]\s*\}`)
+	jsonPattern = regexp.MustCompile(`(?s){\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?\]\s*\}`)
 
 	// tinkTypeURL can be found in both binary and json tink keyset encodings
 	tinkTypeURL = []byte("type.googleapis.com/google.crypto.tink")
-
-	// minBase64Len is an estimate to reduce the number of blobs to decode
-	// note that: len(base64(tinkTypeUrl)) is roughly 50 chars
-	minBase64Len = 60
 )
 
 // Detector is a Veles Detector that finds Tink plaintext keysets.
@@ -64,9 +60,6 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	// search for secrets inside base64 blobs
 	for _, m := range base64Pattern.FindAllIndex(data, -1) {
 		l, r := m[0], m[1]
-		if (r - l) < minBase64Len {
-			continue
-		}
 
 		decoded := make([]byte, base64.StdEncoding.DecodedLen(r-l))
 		n, err := base64.StdEncoding.Decode(decoded, data[l:r])
@@ -84,10 +77,10 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 
 	// search for plain secrets
 	if !bytes.Contains(data, tinkTypeURL) {
-		return res, nil
+		return res, pos
 	}
 
-	plainFound, plainPos := find(data)
+	plainFound, plainPos := findJSON(data)
 	res = append(res, plainFound...)
 	pos = append(pos, plainPos...)
 
