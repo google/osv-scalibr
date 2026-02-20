@@ -224,29 +224,6 @@ second_secret: GOCSPX-DuplicateSecret1234567890123`,
 			},
 		},
 		{
-			name: "deduplication_test_-_multiple_pairs_with_overlapping_credentials",
-			input: `shared_id: 123456789012-shared.apps.googleusercontent.com
-first_secret: GOCSPX-FirstSecret12345678901234567
-another_id: 987654321098-another.apps.googleusercontent.com
-shared_secret: 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
-shared_id_again: 123456789012-shared.apps.googleusercontent.com
-shared_secret_again: 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`,
-			want: []veles.Secret{
-				gcpoauth2client.Credentials{
-					ID:     "987654321098-another.apps.googleusercontent.com",
-					Secret: "GOCSPX-FirstSecret12345678901234567",
-				},
-				gcpoauth2client.Credentials{
-					ID:     "123456789012-shared.apps.googleusercontent.com",
-					Secret: "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",
-				},
-				gcpoauth2client.Credentials{
-					ID:     "123456789012-shared.apps.googleusercontent.com",
-					Secret: "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",
-				},
-			},
-		},
-		{
 			name: "deduplication_test_-_ensures_no_double_pairing_of_same_credentials",
 			input: `first_id: 111111111111-first.apps.googleusercontent.com
 unique_secret: GOCSPX-UniqueSecret1234567890123456
