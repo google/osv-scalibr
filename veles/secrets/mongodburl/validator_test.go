@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/veles"
-	mongodburi "github.com/google/osv-scalibr/veles/secrets/mongodburi"
+	mongodburi "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -34,7 +34,7 @@ const (
 
 // startMongoContainer starts a MongoDB container with authentication enabled.
 // It returns the container and the connection string (without credentials).
-func startMongoContainer(t *testing.T) (*mongodb.MongoDBContainer, string, string) {
+func startMongoContainer(t *testing.T) (string, string) {
 	t.Helper()
 
 	ctx := t.Context()
@@ -72,11 +72,11 @@ func startMongoContainer(t *testing.T) (*mongodb.MongoDBContainer, string, strin
 		t.Fatalf("failed to get connection string: %v", err)
 	}
 
-	return mongoC, fmt.Sprintf("%s:%s", host, port.Port()), connStr
+	return fmt.Sprintf("%s:%s", host, port.Port()), connStr
 }
 
 func TestValidator_ValidCredentials(t *testing.T) {
-	_, hostPort, _ := startMongoContainer(t)
+	hostPort, _ := startMongoContainer(t)
 
 	validator := mongodburi.NewValidator()
 	validator.ConnectTimeout = 10 * time.Second
@@ -94,7 +94,7 @@ func TestValidator_ValidCredentials(t *testing.T) {
 }
 
 func TestValidator_InvalidCredentials(t *testing.T) {
-	_, hostPort, _ := startMongoContainer(t)
+	hostPort, _ := startMongoContainer(t)
 
 	validator := mongodburi.NewValidator()
 	validator.ConnectTimeout = 10 * time.Second
@@ -144,7 +144,7 @@ func TestValidator_InvalidURI(t *testing.T) {
 }
 
 func TestValidator_ContextCancellation(t *testing.T) {
-	_, hostPort, _ := startMongoContainer(t)
+	hostPort, _ := startMongoContainer(t)
 
 	validator := mongodburi.NewValidator()
 	validator.ConnectTimeout = 10 * time.Second
@@ -165,7 +165,7 @@ func TestValidator_ContextCancellation(t *testing.T) {
 }
 
 func TestValidator_ConnectionStringFromContainer(t *testing.T) {
-	_, _, connStr := startMongoContainer(t)
+	_, connStr := startMongoContainer(t)
 
 	validator := mongodburi.NewValidator()
 	validator.ConnectTimeout = 10 * time.Second

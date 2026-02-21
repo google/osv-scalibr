@@ -54,7 +54,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
-	mongodbconnectionurl "github.com/google/osv-scalibr/veles/secrets/mongodburi"
+	mongodbconnectionurl "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"

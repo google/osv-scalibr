@@ -63,9 +63,9 @@ func (v *Validator) Validate(ctx context.Context, secret MongoDBConnectionURL) (
 		// URI parse errors or config errors mean the URL is malformed/invalid.
 		return veles.ValidationInvalid, fmt.Errorf("mongo.Connect: %w", err)
 	}
-	defer func() {
-		_ = client.Disconnect(context.Background())
-	}()
+	defer func(ctx context.Context) {
+		_ = client.Disconnect(ctx)
+	}(ctx)
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
