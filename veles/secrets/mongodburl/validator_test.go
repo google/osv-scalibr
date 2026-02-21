@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/veles"
-	mongodburi "github.com/google/osv-scalibr/veles/secrets/mongodburi"
+	mongodburi "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
 	"github.com/testcontainers/testcontainers-go/wait"

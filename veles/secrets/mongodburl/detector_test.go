@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	mongodburi "github.com/google/osv-scalibr/veles/secrets/mongodburi"
+	mongodburi "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
