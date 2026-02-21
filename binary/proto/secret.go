@@ -54,6 +54,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	mongodbconnectionurl "github.com/google/osv-scalibr/veles/secrets/mongodburi"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
@@ -295,6 +296,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squarePersonalAccessTokenToProto(t), nil
 	case velessquareapikey.SquareOAuthApplicationSecret:
 		return squareOAuthApplicationSecretToProto(t), nil
+	case mongodbconnectionurl.MongoDBConnectionURL:
+		return mongoDBConnectionURIToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -346,6 +349,16 @@ func squareOAuthApplicationSecretToProto(s velessquareapikey.SquareOAuthApplicat
 			SquareOauthApplicationSecret: &spb.SecretData_SquareOAuthApplicationSecret{
 				Id:  s.ID,
 				Key: s.Key,
+			},
+		},
+	}
+}
+
+func mongoDBConnectionURIToProto(s mongodbconnectionurl.MongoDBConnectionURL) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_MongodbConnectionUrl{
+			MongodbConnectionUrl: &spb.SecretData_MongoDBConnectionURL{
+				Url: s.URL,
 			},
 		},
 	}
@@ -1382,6 +1395,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_SquareOauthApplicationSecret:
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
+		}, nil
+	case *spb.SecretData_MongodbConnectionUrl:
+		return mongodbconnectionurl.MongoDBConnectionURL{
+			URL: s.GetMongodbConnectionUrl().GetUrl(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
