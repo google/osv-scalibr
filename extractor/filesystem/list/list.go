@@ -141,6 +141,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	mongodbconnectionurl "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
@@ -410,6 +411,7 @@ var (
 		{herokuplatformkey.NewSecretKeyDetector(), "secrets/herokuplatformkey", 0},
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
+		{mongodbconnectionurl.NewDetector(), "secrets/mongodbconnectionurl", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

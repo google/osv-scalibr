@@ -824,6 +824,7 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
+    MongoDBConnectionURL mongodb_connection_url = 77;
   }
 
   message GCPSAK {
@@ -922,6 +923,10 @@ message SecretData {
 
   message CloudflareAPIToken {
     string token = 1;
+  }
+
+  message MongoDBConnectionURL {
+    string url = 1;
   }
 
   message DenoPat {
