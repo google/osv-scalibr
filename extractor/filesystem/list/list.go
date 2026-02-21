@@ -79,6 +79,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/terraform"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/terraformlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
@@ -419,6 +421,8 @@ var (
 		wordpressplugins.Name: {wordpressplugins.New},
 		chromeextensions.Name: {chromeextensions.New},
 		netscaler.Name:        {netscaler.New},
+		terraform.Name:        {terraform.New},
+		terraformlock.Name:    {terraformlock.New},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.

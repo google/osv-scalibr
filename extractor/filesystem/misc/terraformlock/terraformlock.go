@@ -22,6 +22,7 @@ import (
 	"path"
 	"strings"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/internal/hclparse"
@@ -39,7 +40,9 @@ const (
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
+}
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
