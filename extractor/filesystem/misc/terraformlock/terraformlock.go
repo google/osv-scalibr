@@ -24,11 +24,10 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/internal/hclparse"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
 
 const (
@@ -67,50 +66,55 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	file, diags := hclsyntax.ParseConfig(content, input.Path, hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		return inventory.Inventory{}, fmt.Errorf("failed to parse HCL: %w", diags)
+	tree, root, err := hclparse.ParseHCL(ctx, content, input.Path)
+	if err != nil {
+		return inventory.Inventory{}, err
 	}
+	defer tree.Close()
 
 	var pkgs []*extractor.Package
 
+	// Walk top-level blocks in the body
+	body := hclparse.FindNamedChildByType(root, "body")
+	if body == nil {
+		return inventory.Inventory{Packages: pkgs}, nil
+	}
+
 	// Iterate through the body blocks to find provider blocks
-	for _, block := range file.Body.(*hclsyntax.Body).Blocks {
+	for i := range int(body.NamedChildCount()) {
 		if err := ctx.Err(); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
-		if block.Type != "provider" {
+		child := body.NamedChild(i)
+		if child == nil {
+			continue
+		}
+
+		if child.Type() != "block" || hclparse.GetBlockType(child, content) != "provider" {
 			continue
 		}
 
 		// The provider block has a label which is the provider address
-		if len(block.Labels) == 0 {
+		providerAddress := hclparse.GetBlockLabel(child, content)
+		if providerAddress == "" {
 			continue
 		}
 
-		providerAddress := block.Labels[0]
-		// Extract version from the block attributes
-		version := ""
-		for _, attr := range block.Body.Attributes {
-			if attr.Name == "version" {
-				// Try to extract the version value
-				val, diags := attr.Expr.Value(nil)
-				if !diags.HasErrors() && val.Type().FriendlyName() == "string" {
-					version = val.AsString()
-				}
-			}
+		// Extract version from the block body attributes
+		blockBody := hclparse.FindNamedChildByType(child, "body")
+		if blockBody == nil {
+			continue
 		}
 
+		_, version := hclparse.FindSourceAndVersionValues(blockBody, content)
 		if version == "" {
 			continue
 		}
 
 		// Parse provider address to get the name
 		// Format: registry.terraform.io/hashicorp/aws or just hashicorp/aws
-		name := providerAddress
-		// Remove quotes if present
-		name = strings.Trim(name, "\"")
+		name := strings.Trim(providerAddress, "\"")
 
 		pkgs = append(pkgs, &extractor.Package{
 			Name:      name,
