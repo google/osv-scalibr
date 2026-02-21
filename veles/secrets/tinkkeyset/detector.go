@@ -28,8 +28,7 @@ import (
 var (
 
 	// base64Pattern is a generic pattern to detect base64 blobs
-	// TODO: make this more specific
-	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]{60,}=?=?`)
+	base64Pattern = regexp.MustCompile(Base64SubstringPattern(string(tinkTypeURL)))
 
 	// jsonPattern matches correctly Tink keyset json strings
 	// thanks to the known `{"primaryKeyId":` start and `]}` ending
