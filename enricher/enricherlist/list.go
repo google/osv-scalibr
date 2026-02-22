@@ -62,6 +62,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	mongodbconnectionurl "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -127,6 +128,7 @@ var (
 		fromVeles(slacktoken.NewAppConfigAccessTokenValidator(), "secrets/slackconfigaccesstokenvalidate", 0),
 		fromVeles(dockerhubpat.NewValidator(), "secrets/dockerhubpatvalidate", 0),
 		fromVeles(cloudflareapitoken.NewValidator(), "secrets/cloudflareapitokenvalidate", 0),
+		fromVeles(mongodbconnectionurl.NewValidator(), "secrets/mongodbconnectionurlvalidate", 0),
 		fromVeles(denopat.NewUserTokenValidator(), "secrets/denopatuservalidate", 0),
 		fromVeles(denopat.NewOrgTokenValidator(), "secrets/denopatorgvalidate", 0),
 		fromVeles(gcpsak.NewValidator(), "secrets/gcpsakvalidate", 0),
