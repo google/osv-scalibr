@@ -36,5 +36,5 @@ func Base64SubstringPattern(plaintext string) string {
 		}
 		patterns[i] = encoded[start:end]
 	}
-	return `[A-Za-z0-9+/]*(` + strings.Join(patterns, "|") + `)[A-Za-z0-9+/]*={0,2}`
+	return `[A-Za-z0-9+/]*(?:` + strings.Join(patterns, "|") + `)[A-Za-z0-9+/]*={0,2}`
 }
