@@ -145,6 +145,7 @@ message Package {
     UnknownBinaryMetadata unknown_binary_metadata = 64;
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
+    MCPMetadata mcp_metadata = 67;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -359,6 +360,14 @@ message JavascriptDenoMetadata {
   }
 
   string url = 4;
+}
+
+// The additional data found in MCP configuration files.
+message MCPMetadata {
+  string command = 1;
+  repeated string args = 2;
+  map<string, string> env = 3;
+  string runtime_id = 4;
 }
 
 // The additional data found in APK packages.

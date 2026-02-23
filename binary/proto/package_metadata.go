@@ -57,6 +57,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 
+	mcpmetadata "github.com/google/osv-scalibr/extractor/filesystem/mcp/config/metadata"
+
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
@@ -182,6 +184,9 @@ var (
 		reflect.TypeFor[*spb.Package_DepGroupMetadata](): func(p *spb.Package) any {
 			return osv.DepGroupToStruct(p.GetDepGroupMetadata())
 		},
+		reflect.TypeFor[*spb.Package_McpMetadata](): func(p *spb.Package) any {
+			return mcpmetadata.ToStruct(p.GetMcpMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -225,5 +230,6 @@ var (
 		(*javalockfile.Metadata)(nil),
 		(*chocolateymeta.Metadata)(nil),
 		(*osv.DepGroupMetadata)(nil),
+		(*mcpmetadata.Metadata)(nil),
 	}
 )
