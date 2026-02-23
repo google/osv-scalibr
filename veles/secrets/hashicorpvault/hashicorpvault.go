@@ -26,5 +26,4 @@ type Token struct {
 type AppRoleCredentials struct {
 	RoleID   string
 	SecretID string
-	ID       string // General ID field for uncertain UUID types when context is unclear
 }

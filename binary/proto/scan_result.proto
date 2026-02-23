@@ -125,8 +125,7 @@ message Package {
     SNAPPackageMetadata snap_metadata = 23;
     FlatpakPackageMetadata flatpak_metadata = 24;
     MacAppsMetadata mac_apps_metadata = 34;
-    ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-        25;
+    ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata = 25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
@@ -301,8 +300,8 @@ message GenericFindingAdvisory {
 
 // A unique identifier per advisory.
 message AdvisoryId {
-  string publisher = 1;  // e.g. "CVE".
-  string reference = 2;  // e.g. "CVE-2023-1234".
+  string publisher = 1; // e.g. "CVE".
+  string reference = 2; // e.g. "CVE-2023-1234".
 }
 
 enum SeverityEnum {
@@ -774,8 +773,7 @@ message SecretData {
     GCPOAuth2AccessToken gcp_oauth2_access_token = 26;
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
-    GithubFineGrainedPersonalAccessToken
-        github_fine_grained_personal_access_token = 29;
+    GithubFineGrainedPersonalAccessToken github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
     OpenRouterAPIKey openrouter_api_key = 32;
@@ -811,8 +809,7 @@ message SecretData {
     URLCredentials url_credentials = 62;
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
     SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
-    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials =
-        65;
+    SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials = 65;
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
@@ -830,7 +827,7 @@ message SecretData {
     // Always filled.
     string private_key_id = 1;
     string client_email = 2;
-    bytes signature = 3;  // derived from the private_key for validation
+    bytes signature = 3; // derived from the private_key for validation
 
     // Filled only when explicitly requested.
     string type = 4;
@@ -883,8 +880,8 @@ message SecretData {
   }
 
   message PrivateKey {
-    string block = 1;  // PEM/OpenSSH private key block
-    bytes der = 2;     // DER-encoded key material
+    string block = 1; // PEM/OpenSSH private key block
+    bytes der = 2; // DER-encoded key material
   }
 
   message AzureAccessToken {
@@ -997,7 +994,7 @@ message SecretData {
   }
 
   message TinkKeyset {
-    string content = 1;  // JSON encoded Tink keyset
+    string content = 1; // JSON encoded Tink keyset
   }
 
   message HashiCorpVaultToken {
@@ -1007,8 +1004,8 @@ message SecretData {
   message HashiCorpVaultAppRoleCredentials {
     string role_id = 1;
     string secret_id = 2;
-    string id =
-        3;  // General ID field for uncertain UUID types when context is unclear
+    // General ID field for uncertain UUID types when context is unclear
+    string id = 3 [deprecated = true];
   }
 
   message GCPAPIKey {
@@ -1225,8 +1222,8 @@ message SecretData {
   }
 
   message SquareOAuthApplicationSecret {
-    string id = 1;   // OAuth Application ID (prefix: sq0idp-)
-    string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+    string id = 1; // OAuth Application ID (prefix: sq0idp-)
+    string key = 2; // OAuth Application Secret (prefix: sq0csp-)
   }
 }
 
