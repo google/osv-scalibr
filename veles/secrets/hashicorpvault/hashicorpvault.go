@@ -15,11 +15,6 @@
 // Package hashicorpvault contains Veles Secret types and Detectors for HashiCorp Vault credentials.
 package hashicorpvault
 
-import (
-	"regexp"
-	"strings"
-)
-
 // Token is a Veles Secret that holds relevant information for a HashiCorp Vault token.
 // Vault tokens are used to authenticate to Vault instances and access secrets.
 type Token struct {
@@ -32,24 +27,4 @@ type AppRoleCredentials struct {
 	RoleID   string
 	SecretID string
 	ID       string // General ID field for uncertain UUID types when context is unclear
-}
-
-// uuidPattern matches UUID v4 format commonly used for AppRole credentials
-var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-
-// isVaultToken checks if the given string is a valid Vault token format.
-// Supports both older prefixes (s., b., r.) and newer prefixes (hvs., hvb.).
-func isVaultToken(token string) bool {
-	return strings.HasPrefix(token, "hvs.") || strings.HasPrefix(token, "hvb.") ||
-		strings.HasPrefix(token, "s.") || strings.HasPrefix(token, "b.") || strings.HasPrefix(token, "r.")
-}
-
-// isUUID checks if the given string matches UUID v4 format.
-func isUUID(s string) bool {
-	return uuidPattern.MatchString(s)
-}
-
-// isAppRoleCredential checks if the given string could be an AppRole credential (UUID format).
-func isAppRoleCredential(s string) bool {
-	return isUUID(s)
 }
