@@ -30,11 +30,9 @@ package stripeapikeys
 
 import (
 	"encoding/base64"
-	"io"
 	"net/http"
 	"time"
 
-	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
@@ -49,10 +47,6 @@ func authHeader(key string) map[string]string {
 	}
 }
 
-func alwaysInvalidStatus(body io.Reader) (veles.ValidationStatus, error) {
-	return veles.ValidationInvalid, nil
-}
-
 // NewSecretKeyValidator validates Stripe Secret Keys (sk_live_...) using /v1/accounts.
 //
 // It calls GET https://api.stripe.com/v1/accounts with Basic Auth. If the response
@@ -64,9 +58,9 @@ func NewSecretKeyValidator() *simplevalidate.Validator[StripeSecretKey] {
 		HTTPHeaders: func(k StripeSecretKey) map[string]string {
 			return authHeader(k.Key)
 		},
-		ValidResponseCodes:     []int{http.StatusOK},
-		StatusFromResponseBody: alwaysInvalidStatus,
-		HTTPC:                  &http.Client{Timeout: httpClientTimeout},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
+		HTTPC:                &http.Client{Timeout: httpClientTimeout},
 	}
 }
 
@@ -87,8 +81,8 @@ func NewRestrictedKeyValidator() *simplevalidate.Validator[StripeRestrictedKey] 
 		HTTPHeaders: func(k StripeRestrictedKey) map[string]string {
 			return authHeader(k.Key)
 		},
-		ValidResponseCodes:     []int{http.StatusOK, http.StatusForbidden},
-		StatusFromResponseBody: alwaysInvalidStatus,
-		HTTPC:                  &http.Client{Timeout: httpClientTimeout},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC:                &http.Client{Timeout: httpClientTimeout},
 	}
 }

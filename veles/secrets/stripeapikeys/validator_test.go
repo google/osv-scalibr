@@ -88,6 +88,7 @@ func TestValidatorSecretKey(t *testing.T) {
 		name       string
 		statusCode int
 		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key",
@@ -102,7 +103,8 @@ func TestValidatorSecretKey(t *testing.T) {
 		{
 			name:       "server_error",
 			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
 			name:       "forbidden_error",
@@ -132,8 +134,8 @@ func TestValidatorSecretKey(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			if err != nil {
-				t.Errorf("Validate(): %v", err)
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
@@ -180,6 +182,7 @@ func TestValidatorRestrictedKey(t *testing.T) {
 		name       string
 		statusCode int
 		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key_ok",
@@ -199,7 +202,8 @@ func TestValidatorRestrictedKey(t *testing.T) {
 		{
 			name:       "server_error",
 			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
@@ -223,9 +227,8 @@ func TestValidatorRestrictedKey(t *testing.T) {
 
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
-
-			if err != nil {
-				t.Errorf("Validate(): %v", err)
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
