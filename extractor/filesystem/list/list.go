@@ -83,6 +83,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/chromiumapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
@@ -443,6 +444,7 @@ var (
 
 	// Misc artifact extractors.
 	Misc = InitMap{
+		chromiumapps.Name:     {chromiumapps.New},
 		vscodeextensions.Name: {vscodeextensions.New},
 		wordpressplugins.Name: {wordpressplugins.New},
 		chromeextensions.Name: {chromeextensions.New},
