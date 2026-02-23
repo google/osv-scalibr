@@ -20,8 +20,15 @@ import (
 	"strings"
 )
 
-// Base64SubstringPattern returns a regexp pattern for a base64 blob including a plaintext string
+// Base64SubstringPattern returns a regexp pattern that matches a base64-encoded
+// string containing the given plaintext.
+//
+// Note: base64 encodes 3-byte blocks into 4 characters, the embedded plaintext
+// can have 3 possible byte alignments (shifted by 0, 1, or 2 bytes).
 func Base64SubstringPattern(plaintext string) string {
+	if len(plaintext) < 3 {
+		panic("the plaintext is too short (minimum 2 bytes required)")
+	}
 	patterns := make([]string, 3)
 	for i := range 3 {
 		buf := make([]byte, i+len(plaintext))
@@ -31,9 +38,6 @@ func Base64SubstringPattern(plaintext string) string {
 		// start and end of the actual given plaintext, skipping the padding
 		start := int(math.Ceil(float64(i*8) / 6))
 		end := int(math.Floor(float64((i+len(plaintext))*8) / 6))
-		if start >= end {
-			panic("the plaintext is too short")
-		}
 		patterns[i] = encoded[start:end]
 	}
 	return `[A-Za-z0-9+/]*(?:` + strings.Join(patterns, "|") + `)[A-Za-z0-9+/]*={0,2}`
