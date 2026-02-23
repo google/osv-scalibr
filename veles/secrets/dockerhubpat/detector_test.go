@@ -125,6 +125,45 @@ func TestDetector_truePositives(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "docker login with --username and equals sign",
+			input: `docker login --username=alice -p ` + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "alice"},
+			},
+		},
+		{
+			name:  "docker login with quotes around username",
+			input: `docker login -u "bob_deploy" --password-stdin < ` + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "bob_deploy"},
+			},
+		},
+		{
+			name:  "docker login with single quotes and extra flags",
+			input: `docker login --quiet --username 'ci-runner' -p ` + testKey + ` registry.hub.docker.com`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "ci-runner"},
+			},
+		},
+		{
+			name: "JSON formatted credentials",
+			input: `{
+				"username": "service_account",
+				"registry": "docker.io",
+				"password": "` + testKey + `"
+			}`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "service_account"},
+			},
+		},
+		{
+			name:  "YAML formatted credentials with colon",
+			input: "username: deploy_user\npassword: " + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "deploy_user"},
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

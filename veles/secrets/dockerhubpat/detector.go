@@ -23,8 +23,18 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
-// maxTokenLength is the maximum size of a Docker Hub API key.
-const maxTokenLength = 36
+const (
+	// maxTokenLength is the maximum size of a Docker Hub API key.
+	maxTokenLength = 36
+	// maxUsernameLength is the maximum size of the username field
+	maxUsernameLength = 50
+
+	// maxContextLength is the maximum size of the context
+	maxContextLength = 50
+
+	// maxDistance is the maximum distance between the username and the PAT
+	maxDistance = 100
+)
 
 // patRe is a regular expression that matches a Docker Hub API key.
 // Docker Hub Personal Access Tokens have the form: `dckr_pat_` followed by 27
@@ -45,7 +55,7 @@ var (
 // Docker Hub Personal Access Tokens.
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxElementLen: 100, MaxDistance: 100,
+		MaxElementLen: max(maxTokenLength, maxContextLength+maxUsernameLength), MaxDistance: maxDistance,
 		FindA: pair.FindAllMatches(patRe),
 		FindB: findUsernameMatches(),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
