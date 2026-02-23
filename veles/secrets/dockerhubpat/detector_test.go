@@ -108,6 +108,23 @@ func TestDetector_truePositives(t *testing.T) {
 				dockerhubpat.DockerHubPAT{Pat: testKey},
 			},
 		},
+		{
+			name: "env",
+			input: `
+			AZURE_OPENAI_VERSION="2025-01-01-preview-Placeholder"
+			AZURE_ENDPOINT="https://Placeholder.openai.azure.com/"
+			AZURE_OPENAI_KEY="PlaceholderAPIKey"
+			DOCKERHUB_USERNAME="PlaceholderDockerUser"
+			DOCKERHUB_TOKEN="dckr_pat_PlaceholderTokenPlaceholder"
+			# EMBEDDING_MODEL_NAME_OR_PATH="sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+			`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{
+					Pat:      "dckr_pat_PlaceholderToken",
+					Username: "PlaceholderDockerUser",
+				},
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

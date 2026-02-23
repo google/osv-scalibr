@@ -17,10 +17,10 @@
 package dockerhubpat
 
 import (
-	"bytes"
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
 // maxTokenLength is the maximum size of a Docker Hub API key.
@@ -31,76 +31,43 @@ const maxTokenLength = 36
 // alphanumeric characters.
 var patRe = regexp.MustCompile(`dckr_pat_[A-Za-z0-9-_-]{27}`)
 
-// dockerLoginCmdRe is a regular expression that matches a Docker Hub API key with an email or username used in switches of docker login command.
-// for example, `docker login -u username -p dckr_pat_{27}`.
-var dockerLoginCmdRe = regexp.MustCompile(`docker\s+login\s+(?:(?:(?:-u|--username)[=\s]+(\S+))|(?:(?:-p|--password)[=\s]+(dckr_pat_[a-zA-Z0-9_-]{27})))\s+(?:(?:(?:-u|--username)[=\s]+(\S+))|(?:(?:-p|--password)[=\s]+(dckr_pat_[a-zA-Z0-9_-]{27})))`)
-
-var _ veles.Detector = NewDetector()
-
-// detector is a Veles Detector.
-type detector struct{}
+// usernameRe combines various ways a Docker username might be specified near a token.
+//
+// Matches
+// 1. docker login prefixes: docker login [anything but newline] -u|--username [space/=]
+// 2. Env vars: docker_user=, docker_hub_username=, etc.
+// 3. Generic keys: username:, user:
+var usernameRe = regexp.MustCompile(`(?i)(?:docker\s+login[^\n]*?(?:-u|--username)[=\s]+|docker(?:_hub)?_user(?:name)?\s*[=:]\s*["']?|\b(?:username|user)\b\s*[=:]\s*["']?)([a-z0-9_-]+)`)
 
 // NewDetector returns a new Detector that matches
 // Docker Hub Personal Access Tokens.
 func NewDetector() veles.Detector {
-	return &detector{}
-}
-
-func (d *detector) MaxSecretLen() uint32 {
-	return maxTokenLength
-}
-func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var offsets []int
-
-	// 1. docker login command username and pat detection
-	dockerLoginCmdMatches := dockerLoginCmdRe.FindAllSubmatch(content, -1)
-	for _, m := range dockerLoginCmdMatches {
-		// Case 1: Username in the first position, PAT in the second position
-		if len(m[1]) > 0 && len(m[4]) > 0 {
-			secrets = append(secrets, DockerHubPAT{
-				Username: string(m[1]),
-				Pat:      string(m[4]),
-			})
-			// Find the offset of this PAT in the content
-			patStart := bytes.Index(content, m[0]) + bytes.LastIndex(m[0], m[4])
-			offsets = append(offsets, patStart)
-		}
-
-		// Case 2: PAT in first position, Username in second position
-		if len(m[2]) > 0 && len(m[3]) > 0 {
-			secrets = append(secrets, DockerHubPAT{
-				Username: string(m[3]),
-				Pat:      string(m[2]),
-			})
-			// Find the offset of this PAT in the content
-			patStart := bytes.Index(content, m[0]) + bytes.Index(m[0], m[2])
-			offsets = append(offsets, patStart)
-		}
-	}
-
-	// 2. only pat detection, don't add duplicates from the docker login command
-	patReMatches := patRe.FindAll(content, -1)
-	for _, m := range patReMatches {
-		newPat := string(m)
-		isDuplicate := false
-
-		// Check if this PAT already exists in the secret slice and mapped to a username
-		for _, existingSecret := range secrets {
-			if dhPat, ok := existingSecret.(DockerHubPAT); ok {
-				if dhPat.Username != "" && dhPat.Pat == newPat {
-					isDuplicate = true
-					break
-				}
+	return &pair.Detector{
+		MaxElementLen: 100, MaxDistance: 30,
+		FindA: pair.FindAllMatches(patRe),
+		FindB: findUsernameMatches(),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return DockerHubPAT{Pat: string(p.A.Value), Username: string(p.B.Value)}, true
+		},
+		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
+			if p.A == nil {
+				return nil, false
 			}
-		}
-
-		// Only add if not a duplicate
-		if !isDuplicate {
-			secrets = append(secrets, DockerHubPAT{Username: "", Pat: newPat})
-			offsets = append(offsets, bytes.Index(content, m))
-		}
+			return DockerHubPAT{Pat: string(p.A.Value)}, true
+		},
 	}
+}
 
-	return secrets, offsets
+func findUsernameMatches() func(data []byte) []*pair.Match {
+	return func(data []byte) []*pair.Match {
+		res := []*pair.Match{}
+		dockerLoginCmdMatches := usernameRe.FindAllSubmatchIndex(data, -1)
+		for _, m := range dockerLoginCmdMatches {
+			res = append(res, &pair.Match{
+				Start: m[0],
+				Value: data[m[2]:m[3]],
+			})
+		}
+		return res
+	}
 }
