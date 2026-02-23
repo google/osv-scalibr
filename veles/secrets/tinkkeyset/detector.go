@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"regexp"
+	"slices"
 
 	"github.com/google/osv-scalibr/veles"
 
@@ -70,10 +71,11 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 			continue
 		}
 
-		b64Found, _ := find(decoded[:n])
-		// use the start of the base
-		for _, found := range b64Found {
+		b64FoundJSON, _ := findJSON(decoded[:n])
+		b64FoundBinary, _ := findBinary(decoded[:n])
+		for _, found := range slices.Concat(b64FoundJSON, b64FoundBinary) {
 			res = append(res, found)
+			// use the start of the base64 match as pos
 			pos = append(pos, l)
 		}
 	}
@@ -88,14 +90,6 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	pos = append(pos, plainPos...)
 
 	return res, pos
-}
-
-func find(buf []byte) ([]veles.Secret, []int) {
-	res, pos := findJSON(buf)
-	if len(res) != 0 {
-		return res, pos
-	}
-	return findBinary(buf)
 }
 
 // findBinary extract at most one binary encoded Tink keyset inside the provided buffer
