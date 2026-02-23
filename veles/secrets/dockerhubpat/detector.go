@@ -19,6 +19,8 @@ package dockerhubpat
 import (
 	"regexp"
 
+	"slices"
+
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
@@ -31,19 +33,16 @@ const maxTokenLength = 36
 // alphanumeric characters.
 var patRe = regexp.MustCompile(`dckr_pat_[A-Za-z0-9-_-]{27}`)
 
-// usernameRe combines various ways a Docker username might be specified near a token.
-//
-// Matches
-// 1. docker login prefixes: docker login [anything but newline] -u|--username [space/=]
-// 2. Env vars: docker_user=, docker_hub_username=, etc.
-// 3. Generic keys: username:, user:
-var usernameRe = regexp.MustCompile(`(?i)(?:docker\s+login[^\n]*?(?:-u|--username)[=\s]+|docker(?:_hub)?_user(?:name)?\s*[=:]\s*["']?|\b(?:username|user)\b\s*[=:]\s*["']?)([a-z0-9_-]+)`)
+var (
+	dockerLoginUsernamePattern = regexp.MustCompile(`(?:docker login.*(?:-u|--username)\s+)["']?([^"'\s]+)`)
+	keyValueUsernamePattern    = regexp.MustCompile(`(?i)(?:username["']?\s*[=:]\s*["']?)([^"'\s]+)`)
+)
 
 // NewDetector returns a new Detector that matches
 // Docker Hub Personal Access Tokens.
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxElementLen: 100, MaxDistance: 30,
+		MaxElementLen: 100, MaxDistance: 100,
 		FindA: pair.FindAllMatches(patRe),
 		FindB: findUsernameMatches(),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
@@ -61,8 +60,11 @@ func NewDetector() veles.Detector {
 func findUsernameMatches() func(data []byte) []*pair.Match {
 	return func(data []byte) []*pair.Match {
 		res := []*pair.Match{}
-		dockerLoginCmdMatches := usernameRe.FindAllSubmatchIndex(data, -1)
-		for _, m := range dockerLoginCmdMatches {
+		matches := slices.Concat(
+			dockerLoginUsernamePattern.FindAllSubmatchIndex(data, -1),
+			keyValueUsernamePattern.FindAllSubmatchIndex(data, -1),
+		)
+		for _, m := range matches {
 			res = append(res, &pair.Match{
 				Start: m[0],
 				Value: data[m[2]:m[3]],

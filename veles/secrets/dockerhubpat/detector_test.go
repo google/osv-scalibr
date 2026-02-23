@@ -120,7 +120,7 @@ func TestDetector_truePositives(t *testing.T) {
 			`,
 			want: []veles.Secret{
 				dockerhubpat.DockerHubPAT{
-					Pat:      "dckr_pat_PlaceholderToken",
+					Pat:      "dckr_pat_PlaceholderTokenPlaceholder",
 					Username: "PlaceholderDockerUser",
 				},
 			},
