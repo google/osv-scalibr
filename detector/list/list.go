@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
+	"github.com/google/osv-scalibr/detector/cve/cve20255419"
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
@@ -92,6 +93,7 @@ var Misc = InitMap{
 
 // CVE for vulnerabilities that have a CVE associated
 var CVE = InitMap{
+	cve20255419.Name: {cve20255419.New},
 	// CVE-2025-7775 detector
 	cve20257775.Name: {cve20257775.New},
 }
