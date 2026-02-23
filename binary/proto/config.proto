@@ -98,6 +98,7 @@ message PluginSpecificConfig {
     CodeServerConfig code_server = 58;
     DenoJsonConfig denojson = 62;
     DenoTSSourceConfig denotssource = 63;
+    QCOW2Config qcow2 = 64;
   }
 }
 
@@ -482,4 +483,13 @@ message CodeServerConfig {
   string remote = 1;
   // Timeout in milliseconds for the HTTP client.
   int64 client_timeout_millis = 2;
+}
+
+message QCOW2Config {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // The password the plugin requires to extract the encrypted .qcow2 file
+  string password = 2;
 }
