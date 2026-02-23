@@ -824,6 +824,8 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
+    MongoDBAtlasAccessToken mongodb_atlas_access_token = 77;
+    MongoDBAtlasRefreshToken mongodb_atlas_refresh_token = 78;
   }
 
   message GCPSAK {
@@ -921,6 +923,14 @@ message SecretData {
   }
 
   message CloudflareAPIToken {
+    string token = 1;
+  }
+
+  message MongoDBAtlasAccessToken {
+    string token = 1;
+  }
+
+  message MongoDBAtlasRefreshToken {
     string token = 1;
   }
 

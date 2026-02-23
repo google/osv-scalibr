@@ -112,6 +112,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mongodbatlasaccesstoken"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mongodbatlasrefreshtoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
@@ -329,15 +331,17 @@ var (
 
 	// SecretExtractors for Extractor interface.
 	SecretExtractors = InitMap{
-		mysqlmylogin.Name:            {mysqlmylogin.New},
-		pgpass.Name:                  {pgpass.New},
-		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
-		mariadb.Name:                 {mariadb.New},
-		awsaccesskey.Name:            {awsaccesskey.New},
-		codecatalyst.Name:            {codecatalyst.New},
-		codecommit.Name:              {codecommit.New},
-		bitbucket.Name:               {bitbucket.New},
-		cloudflareapitoken.Name:      {cloudflareapitoken.New},
+		mysqlmylogin.Name:             {mysqlmylogin.New},
+		pgpass.Name:                   {pgpass.New},
+		onepasswordconnecttoken.Name:  {onepasswordconnecttoken.New},
+		mariadb.Name:                  {mariadb.New},
+		awsaccesskey.Name:             {awsaccesskey.New},
+		codecatalyst.Name:             {codecatalyst.New},
+		codecommit.Name:               {codecommit.New},
+		bitbucket.Name:                {bitbucket.New},
+		cloudflareapitoken.Name:       {cloudflareapitoken.New},
+		mongodbatlasaccesstoken.Name:  {mongodbatlasaccesstoken.New},
+		mongodbatlasrefreshtoken.Name: {mongodbatlasrefreshtoken.New},
 	}
 
 	// SecretDetectors for Detector interface.
