@@ -145,6 +145,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/paypal"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -396,6 +397,8 @@ var (
 		{onepasswordkeys.NewSecretKeyDetector(), "secrets/onepasswordsecretkey", 0},
 		{onepasswordkeys.NewServiceTokenDetector(), "secrets/onepasswordservicetoken", 0},
 		{onepasswordkeys.NewRecoveryTokenDetector(), "secrets/onepasswordrecoverycode", 0},
+		{paypal.NewClientIDDetector(), "secrets/paypalclientid", 0},
+		{paypal.NewClientSecretDetector(), "secrets/paypalclientsecret", 0},
 		{paystacksecretkey.NewSecretKeyDetector(), "secrets/paystacksecretkey", 0},
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
