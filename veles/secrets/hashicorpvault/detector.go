@@ -44,12 +44,6 @@ var appRoleRoleIDContextRe = regexp.MustCompile(`(?i)role_id\s*[:\s=]\s*([0-9a-f
 // This matches patterns like "secret_id: uuid"
 var appRoleSecretIDContextRe = regexp.MustCompile(`(?i)secret_id\s*[:\s=]\s*([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})`)
 
-// appRoleDetector implements context-aware AppRole credential detection.
-type appRoleDetector struct {
-	maxUUIDLen    uint32
-	maxContextLen uint32 // Maximum distance to look for context
-}
-
 // NewTokenDetector returns a new simpletoken.Detector that matches HashiCorp Vault tokens.
 func NewTokenDetector() veles.Detector {
 	return simpletoken.Detector{
