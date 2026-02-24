@@ -29,7 +29,6 @@ const (
 	maxUUIDLength = 36
 	// maxContextLength is the maximum allowed distance between context and the secret
 	maxContextLength = 50
-	// TODO: write this better
 )
 
 // vaultTokenRe is a regular expression that matches HashiCorp Vault tokens.
