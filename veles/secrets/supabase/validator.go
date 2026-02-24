@@ -31,6 +31,7 @@ import (
 // If the request returns HTTP 200, the token is considered valid.
 // If 401 Unauthorized, the token is invalid. Other errors return
 // ValidationFailed.
+// Reference : https://supabase.com/docs/reference/api/v1-list-all-projects
 func NewPATValidator() *sv.Validator[PAT] {
 	return &sv.Validator[PAT]{
 		Endpoint:   "https://api.supabase.com/v1/projects",
@@ -48,19 +49,20 @@ func NewPATValidator() *sv.Validator[PAT] {
 // NewProjectSecretKeyValidator creates a new Supabase Project Secret Key
 // Validator. This validator only works when the ProjectSecretKey has both
 // Key and ProjectRef fields populated. It validates by making a GET request
-// to the project-specific Supabase REST endpoint at
-// `https://<project-ref>.supabase.co/rest/v1/` with the secret key in both
+// to the project-specific Supabase Auth endpoint at
+// `https://<project-ref>.supabase.co/auth/v1/user` with the secret key in both
 // the `apikey` and `Authorization` headers. If the request returns HTTP 200,
 // the key is considered valid. If 401 Unauthorized, the key is invalid.
 // If only the Key is present (ProjectRef is empty), validation returns
 // ValidationFailed with an error.
+// Reference: https://supabase.com/docs/guides/auth/jwts#verifying-with-the-legacy-jwt-secret-or-a-shared-secret-signing-key
 func NewProjectSecretKeyValidator() *sv.Validator[ProjectSecretKey] {
 	return &sv.Validator[ProjectSecretKey]{
 		EndpointFunc: func(secret ProjectSecretKey) (string, error) {
 			if secret.ProjectRef == "" {
 				return "", errors.New("project reference not present; cannot validate secret key alone")
 			}
-			return fmt.Sprintf("https://%s.supabase.co/rest/v1/", secret.ProjectRef), nil
+			return fmt.Sprintf("https://%s.supabase.co/auth/v1/user", secret.ProjectRef), nil
 		},
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(secret ProjectSecretKey) map[string]string {
@@ -77,11 +79,12 @@ func NewProjectSecretKeyValidator() *sv.Validator[ProjectSecretKey] {
 // NewServiceRoleJWTValidator creates a new Supabase Service Role JWT
 // Validator. This validator extracts the project reference from the JWT's
 // `ref` claim and validates by making a GET request to the project-specific
-// Supabase REST endpoint at `https://<project-ref>.supabase.co/rest/v1/`
+// Supabase Auth endpoint at `https://<project-ref>.supabase.co/auth/v1/user`
 // with the JWT in both the `apikey` and `Authorization` headers. If the
 // request returns HTTP 200, the token is considered valid. If 401
 // Unauthorized, the token is invalid. If the project reference cannot be
 // extracted from the JWT, validation returns ValidationFailed with an error.
+// Reference: https://supabase.com/docs/guides/auth/jwts#verifying-with-the-legacy-jwt-secret-or-a-shared-secret-signing-key
 func NewServiceRoleJWTValidator() *sv.Validator[ServiceRoleJWT] {
 	return &sv.Validator[ServiceRoleJWT]{
 		EndpointFunc: func(secret ServiceRoleJWT) (string, error) {
@@ -95,7 +98,7 @@ func NewServiceRoleJWTValidator() *sv.Validator[ServiceRoleJWT] {
 				return "", errors.New("project reference not found in JWT; cannot validate without project context")
 			}
 
-			return fmt.Sprintf("https://%s.supabase.co/rest/v1/", projectRef), nil
+			return fmt.Sprintf("https://%s.supabase.co/auth/v1/user", projectRef), nil
 		},
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(secret ServiceRoleJWT) map[string]string {

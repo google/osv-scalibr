@@ -79,8 +79,8 @@ func mockSupabaseProjectServer(t *testing.T, expectedKey string, serverResponseC
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if it's a GET request to the expected endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/rest/v1/" {
-			t.Errorf("unexpected request: %s %s, expected: GET /rest/v1/", r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != "/auth/v1/user" {
+			t.Errorf("unexpected request: %s %s, expected: GET /auth/v1/user", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
