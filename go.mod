@@ -13,8 +13,8 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
-	github.com/bazelbuild/buildtools v0.0.0-20250826111327-4006b543a694
 	github.com/aead/serpent v0.0.0-20160714141033-fba169763ea6
+	github.com/bazelbuild/buildtools v0.0.0-20250826111327-4006b543a694
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.5
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -25,7 +25,6 @@ require (
 	github.com/diskfs/go-diskfs v1.7.0
 	github.com/docker/docker v28.2.2+incompatible
 	github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589
-	github.com/emmansun/gmsm v0.40.1
 	github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/gobwas/glob v0.2.3
