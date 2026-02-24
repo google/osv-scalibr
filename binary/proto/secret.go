@@ -54,6 +54,8 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	"github.com/google/osv-scalibr/veles/secrets/mongodbatlasaccesstoken"
+	"github.com/google/osv-scalibr/veles/secrets/mongodbatlasrefreshtoken"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
@@ -151,6 +153,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return dockerHubPATToProto(t), nil
 	case cloudflareapitoken.CloudflareAPIToken:
 		return cloudflareAPITokenToProto(t), nil
+	case mongodbatlasaccesstoken.MongoDBAtlasAccessToken:
+		return mongoDBAtlasAccessTokenToProto(t), nil
+	case mongodbatlasrefreshtoken.MongoDBAtlasRefreshToken:
+		return mongoDBAtlasRefreshTokenToProto(t), nil
 	case denopat.DenoUserPAT:
 		return denoUserPATToProto(t), nil
 	case denopat.DenoOrgPAT:
@@ -436,6 +442,26 @@ func cloudflareAPITokenToProto(s cloudflareapitoken.CloudflareAPIToken) *spb.Sec
 	return &spb.SecretData{
 		Secret: &spb.SecretData_CloudflareApiToken{
 			CloudflareApiToken: &spb.SecretData_CloudflareAPIToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func mongoDBAtlasAccessTokenToProto(s mongodbatlasaccesstoken.MongoDBAtlasAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_MongodbAtlasAccessToken{
+			MongodbAtlasAccessToken: &spb.SecretData_MongoDBAtlasAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func mongoDBAtlasRefreshTokenToProto(s mongodbatlasrefreshtoken.MongoDBAtlasRefreshToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_MongodbAtlasRefreshToken{
+			MongodbAtlasRefreshToken: &spb.SecretData_MongoDBAtlasRefreshToken{
 				Token: s.Token,
 			},
 		},
@@ -1382,6 +1408,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_SquareOauthApplicationSecret:
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
+		}, nil
+	case *spb.SecretData_MongodbAtlasAccessToken:
+		return mongodbatlasaccesstoken.MongoDBAtlasAccessToken{
+			Token: s.GetMongodbAtlasAccessToken().GetToken(),
+		}, nil
+	case *spb.SecretData_MongodbAtlasRefreshToken:
+		return mongodbatlasrefreshtoken.MongoDBAtlasRefreshToken{
+			Token: s.GetMongodbAtlasRefreshToken().GetToken(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
