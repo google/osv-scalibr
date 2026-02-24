@@ -109,7 +109,8 @@ func TestValidatorSecretKey(t *testing.T) {
 		{
 			name:       "forbidden_error",
 			statusCode: http.StatusForbidden,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
