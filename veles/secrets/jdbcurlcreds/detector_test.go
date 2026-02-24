@@ -473,9 +473,9 @@ func TestIsLocalHost_BoundaryRanges(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := jdbcurlcreds.IsLocalHost(tc.host)
+			got := jdbcurlcreds.IsPrivateHost(tc.host)
 			if got != tc.want {
-				t.Errorf("IsLocalHost(%q) = %v, want %v", tc.host, got, tc.want)
+				t.Errorf("IsPrivateHost(%q) = %v, want %v", tc.host, got, tc.want)
 			}
 		})
 	}

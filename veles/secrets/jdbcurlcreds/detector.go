@@ -76,7 +76,7 @@ func NewDetector() veles.Detector {
 			}
 			isLocal := true
 			for _, h := range hosts {
-				if !IsLocalHost(h.Host) {
+				if !IsPrivateHost(h.Host) {
 					isLocal = false
 					break
 				}
@@ -446,7 +446,7 @@ func parseHostPort(s string) JDBCHost {
 	return JDBCHost{}
 }
 
-// IsLocalHost returns true if the given host string represents a local/private
+// IsPrivateHost returns true if the given host string represents a local/private
 // IP address or localhost hostname. This includes:
 //   - 127.0.0.0/8 (IPv4 loopback)
 //   - ::1 (IPv6 loopback)
@@ -456,7 +456,7 @@ func parseHostPort(s string) JDBCHost {
 //   - fe80::/10 (IPv6 link-local)
 //   - fc00::/7 (IPv6 unique local)
 //   - "localhost" hostname
-func IsLocalHost(host string) bool {
+func IsPrivateHost(host string) bool {
 	// Check for "localhost" hostname (case-insensitive).
 	if strings.EqualFold(host, "localhost") {
 		return true

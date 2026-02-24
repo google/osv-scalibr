@@ -178,6 +178,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Salesforce OAuth 2 JWT Credentials          | `secrets/salesforceoauth2jwt`          |
 | Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
+| JDBC URLs                                   | `secrets/jdbcurlcreds`                 |
 
 ### Container inventory
 
