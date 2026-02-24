@@ -32,9 +32,8 @@ func TestDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		discordbottoken.NewDetector(),
-		[]string{
-			`DISCORD_BOT_TOKEN=` + testToken,
-		},
+		`DISCORD_BOT_TOKEN=`+testToken,
+		discordbottoken.DiscordBotToken{Token: testToken},
 	)
 }
 
