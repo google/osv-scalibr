@@ -59,7 +59,7 @@ func NewSecretKeyValidator() *simplevalidate.Validator[StripeSecretKey] {
 			return authHeader(k.Key)
 		},
 		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 		HTTPC:                &http.Client{Timeout: httpClientTimeout},
 	}
 }
