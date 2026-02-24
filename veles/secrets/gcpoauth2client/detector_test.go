@@ -23,7 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		gcpoauth2client.NewDetector(),
+		`123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
+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`,
+		gcpoauth2client.Credentials{
+			ID:     "123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
+			Secret: "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",
+		},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gcpoauth2client.NewDetector()})

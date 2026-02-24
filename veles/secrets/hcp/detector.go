@@ -67,7 +67,7 @@ func findMatches(re *regexp.Regexp) func(data []byte) []*pair.Match {
 		out := make([]*pair.Match, 0, len(idxs))
 		for _, m := range idxs {
 			// m[0], m[1] are the full-match bounds; m[2], m[3] are the first capture group bounds
-			out = append(out, &pair.Match{Start: m[2], Value: data[m[2]:m[3]]})
+			out = append(out, &pair.Match{Start: m[0], Value: data[m[2]:m[3]]})
 		}
 		return out
 	}
