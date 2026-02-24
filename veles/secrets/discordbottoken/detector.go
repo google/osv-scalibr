@@ -31,7 +31,7 @@ const (
 
 var (
 	// tokenRe matches both standard and MFA Discord bot tokens.
-	tokenRe = regexp.MustCompile(`(?i)\b([MN][A-Za-z\d_-]{23}\.[A-Za-z\d_-]{6}\.[A-Za-z\d_-]{27}|mfa\.[A-Za-z\d_-]{20,})\b`)
+	tokenRe = regexp.MustCompile(`(?i)([MN][A-Za-z\d_-]{23}\.[A-Za-z\d_-]{6}\.[A-Za-z\d_-]{27}|mfa\.[A-Za-z\d_-]{20,})`)
 	// keywordRe matches Discord-related keywords to reduce false positives.
 	keywordRe = regexp.MustCompile(`(?i)(discord|bot|token|client|authorization)`)
 )
