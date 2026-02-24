@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/qcow2"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
@@ -444,6 +445,7 @@ var (
 		vdi.Name:     {vdi.New},
 		vmdk.Name:    {vmdk.New},
 		ova.Name:     {ova.New},
+		qcow2.Name:   {qcow2.New},
 	}
 
 	// FFA extractor.

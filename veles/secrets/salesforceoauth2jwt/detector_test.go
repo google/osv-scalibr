@@ -181,13 +181,13 @@ valid.user@example.org
 ` + privateKeySample,
 			want: []veles.Secret{
 				salesforceoauth2jwt.Credentials{
-					ID:         "3MVGXYZ987654321ABCDEFGHIJKLM",
-					Username:   "valid.user@example.org",
+					ID:         "3MVGABCDE123456789ABCDEFGHIJK",
+					Username:   "test1@example.com",
 					PrivateKey: privateKeySample,
 				},
 				salesforceoauth2jwt.Credentials{
-					ID:         "3MVGABCDE123456789ABCDEFGHIJK",
-					Username:   "test1@example.com",
+					ID:         "3MVGXYZ987654321ABCDEFGHIJKLM",
+					Username:   "valid.user@example.org",
 					PrivateKey: privateKeySample,
 				},
 			},

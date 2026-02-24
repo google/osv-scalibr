@@ -15,7 +15,6 @@
 package salesforceoauth2client_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -170,7 +169,6 @@ yuvrajapp.2.my.salesforce.com`,
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			fmt.Printf("got = %+v\n", got)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
