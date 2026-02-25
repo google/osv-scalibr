@@ -228,7 +228,6 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
-		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 		ErrorOnFSErrors:       config.ErrorOnFSErrors,
 		ExtractorOverride:     config.ExtractorOverride,
@@ -317,6 +316,13 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = multierr.Append(sro.Err, err)
 	}
 
+	if config.StoreAbsolutePath {
+		err := sro.Inventory.ExpandPathsToAbsolute()
+		if err != nil {
+			sro.Err = multierr.Append(sro.Err, err)
+		}
+	}
+
 	sro.EndTime = time.Now()
 	return newScanResult(sro)
 }
@@ -339,8 +345,9 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	}
 
 	storeAbsPath := config.StoreAbsolutePath
-	// Don't try and store absolute path because on windows it will turn unix paths into
-	// Windows paths.
+	// We want to store absolute paths in the inventory,
+	// but paths should be relative to root of the imagefs
+	// (always '/' as we only support linux containers)
 	config.StoreAbsolutePath = false
 
 	// Suppress running enrichers until after layer details are populated.
@@ -380,7 +387,6 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		UseGitignore:          config.UseGitignore,
 		ScanRoots:             config.ScanRoots,
 		MaxInodes:             config.MaxInodes,
-		StoreAbsolutePath:     config.StoreAbsolutePath,
 		PrintDurationAnalysis: config.PrintDurationAnalysis,
 		ErrorOnFSErrors:       config.ErrorOnFSErrors,
 		ExtractorOverride:     config.ExtractorOverride,
@@ -388,16 +394,6 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
-
-	// Since we skipped storing absolute path in the main Scan function.
-	// Actually convert it to absolute path here.
-	if storeAbsPath {
-		for _, pkg := range scanResult.Inventory.Packages {
-			for i := range pkg.Locations {
-				pkg.Locations[i] = "/" + pkg.Locations[i]
-			}
-		}
-	}
 
 	// Run enrichers with the updated inventory.
 	enrichers, err = ce.SetupVelesEnrichers(enrichers)
@@ -417,6 +413,16 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	if err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
+	}
+
+	// Since we skipped storing absolute path in the main Scan function.
+	// Actually convert it to absolute path here.
+	if storeAbsPath {
+		for _, pkg := range scanResult.Inventory.Packages {
+			for i := range pkg.Locations {
+				pkg.Locations[i] = "/" + pkg.Locations[i]
+			}
+		}
 	}
 
 	// Keep the img variable alive till the end incase cleanup is not called on the parent.

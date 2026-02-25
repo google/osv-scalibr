@@ -81,6 +81,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | yarn.lock                                         | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
 |            | bun.lock                                          | `javascript/bunlock`                 |
+|            | deno.json                                         | `javascript/denojson`                |
+|            | deno TypeScript Source                            | `javascript/denotssource`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -126,6 +128,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
+| Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
@@ -206,12 +209,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type                    | Extractor Plugin    |
-| ----------------------- | ------------------- |
-| Wordpress plugins       | `wordpress/plugins` |
-| VSCode extensions       | `vscode/extensions` |
-| Chrome extensions       | `chrome/extensions` |
-| NetScaler installations | `netscaler`         |
+| Type                               | Extractor Plugin    |
+|------------------------------------| ------------------- |
+| Wordpress plugins                  | `wordpress/plugins` |
+| VSCode extensions                  | `vscode/extensions` |
+| Chrome extensions                  | `chrome/extensions` |
+| Maven entries in Bazel build files | `os/bazelmaven`     |
+| NetScaler installations            | `netscaler`         |
 
 ### EmbeddedFS
 
@@ -221,6 +225,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | ova     | Extracts .ova files                               | `embeddedfs/ova`     |
 | vdi     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
 | vmdk    | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
+| qcow2   | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/qcow2`   |
 
 ## Detectors
 

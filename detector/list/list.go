@@ -56,7 +56,7 @@ var CIS = InitMap{
 var Govulncheck = InitMap{binary.Name: {binary.New}}
 
 // EndOfLife detectors.
-var EndOfLife = InitMap{linuxdistro.Name: {noCFG(linuxdistro.New)}}
+var EndOfLife = InitMap{linuxdistro.Name: {linuxdistro.New}}
 
 // Untested CVE scanning related detectors - since they don't have proper testing they
 // might not work as expected in the future.
@@ -78,16 +78,16 @@ var Untested = InitMap{
 
 // Weakcredentials detectors for weak credentials.
 var Weakcredentials = InitMap{
-	codeserver.Name:  {noCFG(codeserver.NewDefault)},
-	etcshadow.Name:   {noCFG(etcshadow.New)},
-	filebrowser.Name: {noCFG(filebrowser.New)},
-	winlocal.Name:    {noCFG(winlocal.New)},
+	codeserver.Name:  {codeserver.New},
+	etcshadow.Name:   {etcshadow.New},
+	filebrowser.Name: {filebrowser.New},
+	winlocal.Name:    {winlocal.New},
 }
 
 // Misc detectors for miscellaneous security issues.
 var Misc = InitMap{
-	cronjobprivesc.Name: {noCFG(cronjobprivesc.New)},
-	dockersocket.Name:   {noCFG(dockersocket.New)},
+	cronjobprivesc.Name: {cronjobprivesc.New},
+	dockersocket.Name:   {dockersocket.New},
 }
 
 // CVE for vulnerabilities that have a CVE associated
@@ -134,12 +134,6 @@ func concat(initMaps ...InitMap) InitMap {
 
 func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
-}
-
-// Wraps initer functions that don't take any config value to initer functions that do.
-// TODO(b/400910349): Remove once all plugins take config values.
-func noCFG(f func() detector.Detector) InitFn {
-	return func(_ *cpb.PluginConfig) (detector.Detector, error) { return f(), nil }
 }
 
 // DetectorsFromName returns a list of detectors from a name.
