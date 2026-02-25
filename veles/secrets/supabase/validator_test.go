@@ -264,7 +264,6 @@ func TestSupabaseProjectSecretKeyValidator(t *testing.T) {
 }
 
 func TestSupabasePATValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
