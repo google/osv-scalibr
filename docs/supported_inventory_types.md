@@ -210,6 +210,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                               | Extractor Plugin    |
 |------------------------------------| ------------------- |
+| Terraform lock file                | `misc/terraformlock`|
+| Terraform providers                | `misc/terraform`    |
 | Wordpress plugins                  | `wordpress/plugins` |
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |
