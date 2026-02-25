@@ -863,7 +863,6 @@ func hashicorpVaultAppRoleCredentialsToProto(s veleshashicorpvault.AppRoleCreden
 			HashicorpVaultAppRoleCredentials: &spb.SecretData_HashiCorpVaultAppRoleCredentials{
 				RoleId:   s.RoleID,
 				SecretId: s.SecretID,
-				Id:       s.ID,
 			},
 		},
 	}
@@ -1598,7 +1597,6 @@ func hashicorpVaultAppRoleCredentialsToStruct(credsPB *spb.SecretData_HashiCorpV
 	return veleshashicorpvault.AppRoleCredentials{
 		RoleID:   credsPB.GetRoleId(),
 		SecretID: credsPB.GetSecretId(),
-		ID:       credsPB.GetId(),
 	}
 }
 

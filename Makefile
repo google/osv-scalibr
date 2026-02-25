@@ -18,6 +18,11 @@ lint-plugger:
 test:
 	CGO_ENABLED=1 go test ./...
 
+test_bench:
+	# add `-benchmem -cpuprofile=cpu.prof -memprofile=mem.prof` to extract cpu and memory profiling
+	# then check check pprof with `go tool pprof -http=:8080 cpu.prof`
+	CGO_ENABLED=1 go test github.com/google/osv-scalibr/veles/secrets/common/ntuple -bench=BenchmarkDetector
+
 protos:
 ifeq ($(OS),Windows_NT)
 	powershell.exe -exec bypass -File .\build_protos.ps1
