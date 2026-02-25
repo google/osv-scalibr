@@ -61,6 +61,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -163,6 +164,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/supabase"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
@@ -263,6 +265,8 @@ var (
 		cargolock.Name: {cargolock.New},
 		cargotoml.Name: {cargotoml.New},
 	}
+	// CPANSource extractors for Perl.
+	CPANSource = InitMap{cpan.Name: {cpan.New}}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.New},
@@ -390,6 +394,9 @@ var (
 		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{supabase.NewPATDetector(), "secrets/supabasepat", 0},
+		{supabase.NewProjectSecretKeyDetector(), "secrets/supabaseprojectsecretkey", 0},
+		{supabase.NewServiceRoleJWTDetector(), "secrets/supabaseservicerolejwt", 0},
 		{squareapikey.NewPersonalAccessTokenDetector(), "secrets/squarepersonalaccesstoken", 0},
 		{squareapikey.NewOAuthApplicationSecretDetector(), "secrets/squareoauthapplicationsecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
@@ -476,6 +483,7 @@ var (
 		LuaSource,
 		Secrets,
 		MiscSource,
+		CPANSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -533,6 +541,7 @@ var (
 		"rust":       vals(concat(RustSource, RustArtifact)),
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
+		"perl":       vals(CPANSource),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
