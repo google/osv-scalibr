@@ -94,13 +94,13 @@ message PluginSpecificConfig {
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
-    PerlCPANConfig cpan = 48;
 
     OSVLocalConfig osvlocal = 57;
     CodeServerConfig code_server = 58;
     DenoJsonConfig denojson = 62;
     DenoTSSourceConfig denotssource = 63;
     QCOW2Config qcow2 = 64;
+    PerlCPANConfig cpan = 65;
   }
 }
 
