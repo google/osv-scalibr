@@ -114,7 +114,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var pkgs []*extractor.Package
 	var err error
-	if shouldSkipYmlIfJSONIsPresent(input) {
+	if shouldSkipYMLIfJSONIsPresent(input) {
 		return inventory.Inventory{}, nil
 	}
 	if strings.HasSuffix(input.Path, ".yml") {
@@ -137,7 +137,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // Some packages have only META.json and some of them have only META.yml
-func shouldSkipYmlIfJSONIsPresent(input *filesystem.ScanInput) bool {
+func shouldSkipYMLIfJSONIsPresent(input *filesystem.ScanInput) bool {
 	basePath, isYml := strings.CutSuffix(input.Path, ".yml")
 	if !isYml {
 		return false

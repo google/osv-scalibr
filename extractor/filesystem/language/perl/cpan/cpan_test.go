@@ -192,6 +192,13 @@ func TestExtract(t *testing.T) {
 			},
 			wantErr: extracttest.ContainsErrStr{Str: "failed to yml decode"},
 		},
+		{
+			name: "skipped yml file",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/META_correct1.yml",
+			},
+			wantPackages: nil,
+		},
 	}
 
 	for _, tt := range tests {
