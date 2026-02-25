@@ -81,7 +81,7 @@ func TestScan(t *testing.T) {
 		{
 			name: "UnknownPackageSkipped",
 			pkgs: []*extractor.Package{
-				{Name: "electron", Version: "30.0.0.0", Locations: []string{"/electron"}},
+				{Name: "unknown-browser", Version: "1.2.3.4", Locations: []string{"/unknown"}},
 			},
 			wantVuln: 0,
 		},
@@ -101,7 +101,86 @@ func TestScan(t *testing.T) {
 			wantVuln: 0,
 		},
 		{
-			name: "ElectronWithChromiumCoreEvaluated",
+			name: "ElectronBackportVersionWithoutChromiumCoreSkipped",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "36.4.0",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ElectronVersion: "36.4.0",
+						VersionSource:   "plist_cf_bundle_version",
+					},
+				},
+			},
+			wantVuln: 0,
+		},
+		{
+			name: "ElectronWithBackportFixedNotReported",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "39.4.0",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ChromiumVersion: "136.0.7103.149",
+						ElectronVersion: "36.4.0",
+						VersionSource:   "chromium_binary",
+					},
+				},
+			},
+			wantVuln: 0,
+		},
+		{
+			name: "ElectronWithBackportBelowFixedReported",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "36.3.0",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ChromiumVersion: "136.0.7103.120",
+						ElectronVersion: "36.3.0",
+						VersionSource:   "chromium_binary",
+					},
+				},
+			},
+			wantVuln: 1,
+		},
+		{
+			name: "ElectronWithBackportPreReleaseFixedNotReported",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "37.0.0-beta.3",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ChromiumVersion: "138.0.7190.0",
+						ElectronVersion: "37.0.0-beta.3",
+						VersionSource:   "chromium_binary",
+					},
+				},
+			},
+			wantVuln: 0,
+		},
+		{
+			name: "ElectronWithBackportPreReleaseBelowFixedReported",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "37.0.0-beta.2",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ChromiumVersion: "138.0.7189.0",
+						ElectronVersion: "37.0.0-beta.2",
+						VersionSource:   "chromium_binary",
+					},
+				},
+			},
+			wantVuln: 1,
+		},
+		{
+			name: "ElectronUnknownMajorFallsBackToChromiumCore",
 			pkgs: []*extractor.Package{
 				{
 					Name:      "electron",
@@ -110,6 +189,22 @@ func TestScan(t *testing.T) {
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7100.1",
 						ElectronVersion: "39.4.0",
+						VersionSource:   "chromium_binary",
+					},
+				},
+			},
+			wantVuln: 1,
+		},
+		{
+			name: "ElectronMalformedVersionFallsBackToChromiumCore",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "36.4.0",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ChromiumVersion: "136.0.7103.120",
+						ElectronVersion: "36.4.0.1",
 						VersionSource:   "chromium_binary",
 					},
 				},
