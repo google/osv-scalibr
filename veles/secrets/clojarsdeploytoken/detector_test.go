@@ -135,6 +135,10 @@ func TestDetector_trueNegatives(t *testing.T) {
 		// Replaced 'c' with 'Z' (non-hex)
 		input: `CLOJARS_Zafe6346d9ef5c39890999e697f99dda6621dd03884705d341a198c6ce75`,
 	}, {
+		name: "uppercase hex characters should not match",
+		// Replaced 'cafe' with 'CAFE' to test strict lowercase enforcement
+		input: `CLOJARS_CAFE6346d9ef5c39890999e697f99dda6621dd03884705d341a198c6ce75`,
+	}, {
 		name:  "incorrect prefix should not match",
 		input: `DLOJARS_cafe6346d9ef5c39890999e697f99dda6621dd03884705d341a198c6ce75`,
 	}, {

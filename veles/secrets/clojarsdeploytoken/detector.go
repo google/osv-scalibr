@@ -28,10 +28,7 @@ import (
 const maxTokenLength = 68
 
 // keyRe matches the strict format: "CLOJARS_" followed by exactly 60 hex characters.
-// A-F in the regex is not required. But to avoid false negatives, I added it.
-// Having it there does not cause any harm since due to prefix of CLOAJARS_ that will not
-// introduce false positives
-var keyRe = regexp.MustCompile(`CLOJARS_[a-fA-F0-9]{60}`)
+var keyRe = regexp.MustCompile(`CLOJARS_[a-f0-9]{60}`)
 
 // NewDetector returns a new simpletoken.Detector that matches
 // Clojars Deploy Tokens.
