@@ -28,9 +28,10 @@ import (
 
 func TestScan(t *testing.T) {
 	tests := []struct {
-		name     string
-		pkgs     []*extractor.Package
-		wantVuln int
+		name      string
+		pkgs      []*extractor.Package
+		wantVuln  int
+		wantFixed string // optional: verify the fixedVersion on the first finding
 	}{
 		{
 			name: "VulnerableChromeAndEdge",
@@ -86,6 +87,34 @@ func TestScan(t *testing.T) {
 			wantVuln: 0,
 		},
 		{
+			// C1: standalone Chrome 131 must report fixedVersion=137.0.7151.68,
+			// NOT the Electron backport floor 132.0.6834.210. The backport floor
+			// only applies to Electron-embedded Chromium, not standalone Chrome.
+			name: "StandaloneChrome131FixedVersionIsUpstream",
+			pkgs: []*extractor.Package{
+				{Name: "google-chrome", Version: "131.0.6778.264", Locations: []string{"/chrome"}},
+			},
+			wantVuln:  1,
+			wantFixed: "137.0.7151.68",
+		},
+		{
+			// C2: "chromium-apps" is not a package name produced by any extractor;
+			// the case was dead code and has been removed. Such a package is skipped.
+			name: "ChromiumAppsPackageNameNotRecognized",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "chromium-apps",
+					Version:   "137.0.7151.67",
+					Locations: []string{"/chromiumapps"},
+					Metadata: &chromiumapps.Metadata{
+						ChromiumVersion: "131.0.6778.264",
+						VersionSource:   "chromium_binary",
+					},
+				},
+			},
+			wantVuln: 0,
+		},
+		{
 			name: "ElectronWithoutChromiumCoreSkipped",
 			pkgs: []*extractor.Package{
 				{
@@ -101,7 +130,7 @@ func TestScan(t *testing.T) {
 			wantVuln: 0,
 		},
 		{
-			name: "ElectronBackportVersionWithoutChromiumCoreSkipped",
+			name: "ElectronBackportVersionWithoutChromiumCoreEvaluated",
 			pkgs: []*extractor.Package{
 				{
 					Name:      "electron",
@@ -114,6 +143,36 @@ func TestScan(t *testing.T) {
 				},
 			},
 			wantVuln: 0,
+		},
+		{
+			name: "ElectronOlderMajorWithoutChromiumCoreReported",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "24.1.3.8",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ElectronVersion: "24.1.3.8",
+						VersionSource:   "plist_cf_bundle_version",
+					},
+				},
+			},
+			wantVuln: 1,
+		},
+		{
+			name: "ElectronBelowBackportFixWithoutChromiumCoreReported",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "36.3.0",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ElectronVersion: "36.3.0",
+						VersionSource:   "plist_cf_bundle_version",
+					},
+				},
+			},
+			wantVuln: 1,
 		},
 		{
 			name: "ElectronWithBackportFixedNotReported",
@@ -196,7 +255,23 @@ func TestScan(t *testing.T) {
 			wantVuln: 1,
 		},
 		{
-			name: "ElectronMalformedVersionFallsBackToChromiumCore",
+			name: "ElectronUnknownMajorWithCoreBelowBackportFloorReported",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "39.4.0",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ChromiumVersion: "131.0.6778.264",
+						ElectronVersion: "39.4.0",
+						VersionSource:   "chromium_binary",
+					},
+				},
+			},
+			wantVuln: 1,
+		},
+		{
+			name: "ElectronFourPartVersionComparedAsNumeric",
 			pkgs: []*extractor.Package{
 				{
 					Name:      "electron",
@@ -209,7 +284,7 @@ func TestScan(t *testing.T) {
 					},
 				},
 			},
-			wantVuln: 1,
+			wantVuln: 0,
 		},
 		{
 			name: "ElectronWithFixedChromiumCoreNotReported",
@@ -226,6 +301,38 @@ func TestScan(t *testing.T) {
 				},
 			},
 			wantVuln: 0,
+		},
+		{
+			// C3: stable "37.0.0" is newer than the fix "37.0.0-beta.3" in semver
+			// (stable > any pre-release of the same version). Previously, the
+			// numeric fast-path in isElectronVulnerable returned an error for this
+			// input because "37.0.0-beta.3" is not a pure-numeric version string,
+			// causing the package to be silently skipped instead of correctly
+			// evaluated as not-vulnerable.
+			name: "ElectronStable37NotVulnerable",
+			pkgs: []*extractor.Package{
+				{
+					Name:      "electron",
+					Version:   "37.0.0",
+					Locations: []string{"/electron"},
+					Metadata: &chromiumapps.Metadata{
+						ElectronVersion: "37.0.0",
+						VersionSource:   "plist_cf_bundle_version",
+					},
+				},
+			},
+			wantVuln: 0,
+		},
+		{
+			// C5: Edge 135 (major <= 136) must be reported as vulnerable.
+			// The previously redundant "v[0] < 136" and "v[0] == 136" switch
+			// cases are now merged into a single "v[0] <= 136" case.
+			name: "EdgeMajor135Reported",
+			pkgs: []*extractor.Package{
+				{Name: "microsoft-edge", Version: "135.0.3100.50", Locations: []string{"/edge"}},
+			},
+			wantVuln:  1,
+			wantFixed: "136.0.3240.115",
 		},
 	}
 
@@ -253,6 +360,12 @@ func TestScan(t *testing.T) {
 				}
 				if v.Package == nil {
 					t.Fatalf("expected vulnerable package attached")
+				}
+			}
+			if tt.wantFixed != "" && len(finding.PackageVulns) > 0 {
+				gotFixed := finding.PackageVulns[0].Vulnerability.Affected[0].Ranges[0].Events[1].Fixed
+				if gotFixed != tt.wantFixed {
+					t.Errorf("fixedVersion=%q want %q", gotFixed, tt.wantFixed)
 				}
 			}
 		})
