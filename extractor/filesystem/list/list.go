@@ -108,6 +108,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/cloudflareapitoken"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
@@ -146,6 +147,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/packagist"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -336,6 +338,7 @@ var (
 		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
 		mariadb.Name:                 {mariadb.New},
 		awsaccesskey.Name:            {awsaccesskey.New},
+		composerpackagist.Name:       {composerpackagist.New},
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
@@ -375,6 +378,11 @@ var (
 		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
+		{packagist.NewAPISecretDetector(), "secrets/packagistsecret", 0},
+		{packagist.NewOrgReadTokenDetector(), "secrets/packagistorgreadtoken", 0},
+		{packagist.NewOrgUpdateTokenDetector(), "secrets/packagistorgupdatetoken", 0},
+		{packagist.NewUserUpdateTokenDetector(), "secrets/packagistuserupdatetoken", 0},
+		{packagist.NewConductorUpdateTokenDetector(), "secrets/packagistconductorupdatetoken", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
