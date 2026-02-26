@@ -58,6 +58,7 @@ var (
 		".der":       true,
 		".cer":       true,
 		".pypirc":    true,
+		".config":    true,
 	}
 )
 
