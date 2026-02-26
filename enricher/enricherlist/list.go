@@ -65,6 +65,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/packagist"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -142,6 +143,11 @@ var (
 		fromVeles(mistralapikey.NewValidator(), "secrets/mistralapikeyvalidate", 0),
 		fromVeles(openai.NewProjectValidator(), "secrets/openaivalidate", 0),
 		fromVeles(openrouter.NewValidator(), "secrets/openroutervalidate", 0),
+		fromVeles(packagist.NewAPIKeyValidator(), "secrets/packagistapikeyvalidate", 0),
+		fromVeles(packagist.NewAPISecretValidator(), "secrets/packagistsecretvalidate", 0),
+		fromVeles(packagist.NewOrgReadTokenValidator(), "secrets/packagistorgreadtokenvalidate", 0),
+		fromVeles(packagist.NewOrgUpdateTokenValidator(), "secrets/packagistorgupdatetokenvalidate", 0),
+		fromVeles(packagist.NewUserUpdateTokenValidator(), "secrets/packagistuserupdatetokenvalidate", 0),
 		fromVeles(circleci.NewPersonalAccessTokenValidator(), "secrets/circlecipatvalidate", 0),
 		fromVeles(circleci.NewProjectTokenValidator(), "secrets/circleciprojectvalidate", 0),
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),

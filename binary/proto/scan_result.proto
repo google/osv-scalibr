@@ -827,6 +827,13 @@ message SecretData {
     SupabasePAT supabase_pat = 77;
     SupabaseProjectSecretKey supabase_project_secret_key = 78;
     SupabaseServiceRoleJWT supabase_service_role_jwt = 79;
+    PackagistAPIKey packagist_api_key = 80;
+    PackagistAPISecret packagist_api_secret = 81;
+    PackagistOrgReadToken packagist_org_read_token = 82;
+    PackagistOrgUpdateToken packagist_org_update_token = 83;
+    PackagistUserUpdateToken packagist_user_update_token = 84;
+    PackagistConductorUpdateToken packagist_conductor_update_token = 85;
+    ComposerPackagistCredentials composer_http_basic_credentials = 86;
   }
 
   message GCPSAK {
@@ -1117,6 +1124,42 @@ message SecretData {
     string verifier_salt = 7;
     // Verifier local hash (verifier.localHash).
     string verifier_local_hash = 8;
+  }
+
+  message ComposerPackagistCredentials {
+    string host = 1;
+    string username = 2;
+    string password = 3;
+  }
+
+  message PackagistAPIKey {
+    string key = 1;
+  }
+
+  message PackagistAPISecret {
+    string secret = 1;
+    string key =
+        2;  // Optional: populated when both key and secret are found together
+  }
+
+  message PackagistOrgReadToken {
+    string token = 1;
+    string repo_url = 2;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistOrgUpdateToken {
+    string token = 1;
+    string repo_url = 2;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistUserUpdateToken {
+    string token = 1;
+    string username = 2;  // Required for validation
+    string repo_url = 3;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistConductorUpdateToken {
+    string token = 1;
   }
 
   message OnePasswordSecretKey {
