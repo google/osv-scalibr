@@ -18,6 +18,7 @@ package requirements
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -26,6 +27,7 @@ import (
 	pypiresolve "deps.dev/util/resolve/pypi"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/resolution"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/internal"
 	"github.com/google/osv-scalibr/extractor"
@@ -70,9 +72,29 @@ func (Enricher) RequiredPlugins() []string {
 
 // New creates a new Enricher.
 func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	upstreamRegistry := ""
+	depsDevRequirements := false
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsTransitiveConfig {
+		return c.GetPythonRequirementsTransitive()
+	})
+	if specific != nil {
+		upstreamRegistry = specific.UpstreamRegistry
+		depsDevRequirements = specific.DepsDevRequirements
+	}
+
+	var depClient resolve.Client
+	var err error
+	if depsDevRequirements {
+		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+		}
+	} else {
+		depClient = resolution.NewPyPIRegistryClient(upstreamRegistry, cfg.LocalRegistry)
+	}
+
 	return &Enricher{
-		// Empty remote registry indicates using the default PyPI registry.
-		Client: resolution.NewPyPIRegistryClient("", cfg.LocalRegistry),
+		Client: depClient,
 	}, nil
 }
 
