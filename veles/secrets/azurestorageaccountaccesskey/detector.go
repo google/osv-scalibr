@@ -37,33 +37,21 @@ var (
 	//
 	// References:
 	// - https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
-	keyRe = regexp.MustCompile(`(?i)KEY.{0,5}?([>'=?#]?[A-Za-z0-9+\/]{86}==)`)
+	keyRe = regexp.MustCompile(`(?:[>'=?#]|\b)[A-Za-z0-9+\/]{86}==`)
 
-	// azureRe matches azure and az
-	azureRe = regexp.MustCompile(`(?i)azure|(?:\baz\b)`)
+	// contextRe matches Azure Storage account access keys context keywords
+	contextRe = regexp.MustCompile(`(?i)(?:\bazure[a-z_-]*key\b)|(?:\baz\b)`)
 )
 
 // NewDetector returns a new pair.Detector
 // that matches Azure Storage Account Access Key and returns the appropriate key type.
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxElementLen: maxLen, MaxDistance: 100,
-		FindA: findAzureStorageAccountKeys,
-		FindB: pair.FindAllMatches(azureRe),
+		MaxElementLen: maxLen, MaxDistance: 150,
+		FindA: pair.FindAllMatches(keyRe),
+		FindB: pair.FindAllMatches(contextRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			return AzureStorageAccountAccessKey{Key: string(p.A.Value)}, true
 		},
 	}
-}
-
-func findAzureStorageAccountKeys(data []byte) []*pair.Match {
-	matches := keyRe.FindAllSubmatchIndex(data, -1)
-	var results []*pair.Match
-	for _, m := range matches {
-		results = append(results, &pair.Match{
-			Start: m[0],
-			Value: data[m[2]:m[3]],
-		})
-	}
-	return results
 }
