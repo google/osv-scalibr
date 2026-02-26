@@ -103,6 +103,18 @@ func TestNewTokenDetector_Detect(t *testing.T) {
 	}
 }
 
+func TestAppRoleDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		NewAppRoleDetector(),
+		"role_id: 87654321-4321-4321-4321-210987654321\nsecret_id: 11111111-2222-3333-4444-555555555555",
+		AppRoleCredentials{
+			RoleID:   "87654321-4321-4321-4321-210987654321",
+			SecretID: "11111111-2222-3333-4444-555555555555",
+		},
+	)
+}
+
 func TestNewAppRoleDetector_Detect(t *testing.T) {
 	tests := []struct {
 		name     string
