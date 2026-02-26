@@ -20,18 +20,20 @@ import (
 	"strings"
 )
 
-// cranVersion is the representation of a version of a package that is held
+// CRANVersion is the representation of a version of a package that is held
 // in the CRAN ecosystem (https://cran.r-project.org/).
 //
 // A version is a sequence of at least two non-negative integers separated by
 // either a period or a dash.
 //
 // See https://astrostatistics.psu.edu/su07/R/html/base/html/package_version.html
-type cranVersion struct {
+type CRANVersion struct {
 	components components
 }
 
-func (v cranVersion) compare(w cranVersion) int {
+var _ Version = CRANVersion{}
+
+func (v CRANVersion) compare(w CRANVersion) int {
 	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
@@ -49,8 +51,17 @@ func (v cranVersion) compare(w cranVersion) int {
 	return -1
 }
 
-func (v cranVersion) CompareStr(str string) (int, error) {
-	w, err := parseCRANVersion(str)
+// Compare compares the given version to the receiver.
+func (v CRANVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(CRANVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v CRANVersion) CompareStr(str string) (int, error) {
+	w, err := ParseCRANVersion(str)
 
 	if err != nil {
 		return 0, err
@@ -59,10 +70,11 @@ func (v cranVersion) CompareStr(str string) (int, error) {
 	return v.compare(w), nil
 }
 
-func parseCRANVersion(str string) (cranVersion, error) {
+// ParseCRANVersion parses the given string as a CRAN version.
+func ParseCRANVersion(str string) (CRANVersion, error) {
 	// for now, treat an empty version string as valid
 	if str == "" {
-		return cranVersion{}, nil
+		return CRANVersion{}, nil
 	}
 
 	// dashes and periods have the same weight, so we can just normalize to periods
@@ -74,11 +86,11 @@ func parseCRANVersion(str string) (cranVersion, error) {
 		v, ok := new(big.Int).SetString(s, 10)
 
 		if !ok {
-			return cranVersion{}, fmt.Errorf("%w: '%s' is not allowed", ErrInvalidVersion, str)
+			return CRANVersion{}, fmt.Errorf("%w: '%s' is not allowed", ErrInvalidVersion, str)
 		}
 
 		comps = append(comps, v)
 	}
 
-	return cranVersion{comps}, nil
+	return CRANVersion{comps}, nil
 }

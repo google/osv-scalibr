@@ -18,11 +18,17 @@ import (
 	"strings"
 )
 
-type redHatVersion struct {
+// RedHatVersion is the representation of a version of a package that is held
+// in the Red Hat ecosystem.
+//
+// See https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/
+type RedHatVersion struct {
 	epoch   string
 	version string
 	release string
 }
+
+var _ Version = RedHatVersion{}
 
 // isOnlyDigits returns true if the given string contains only digits
 func isOnlyDigits(str string) bool {
@@ -187,7 +193,7 @@ func compareRedHatComponents(a, b string) int {
 	return 0
 }
 
-func (v redHatVersion) compare(w redHatVersion) int {
+func (v RedHatVersion) compare(w RedHatVersion) int {
 	if diff := compareRedHatComponents(v.epoch, w.epoch); diff != 0 {
 		return diff
 	}
@@ -201,11 +207,20 @@ func (v redHatVersion) compare(w redHatVersion) int {
 	return 0
 }
 
-func (v redHatVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseRedHatVersion(str)), nil
+// Compare compares the given version to the receiver.
+func (v RedHatVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(RedHatVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
 }
 
-// parseRedHatVersion parses a Red Hat version into a redHatVersion struct.
+// CompareStr compares the given string to the receiver.
+func (v RedHatVersion) CompareStr(str string) (int, error) {
+	return v.compare(ParseRedHatVersion(str)), nil
+}
+
+// ParseRedHatVersion parses a Red Hat version into a redHatVersion struct.
 //
 // A Red Hat version contains the following components:
 // - epoch, represented as "e"
@@ -214,7 +229,7 @@ func (v redHatVersion) CompareStr(str string) (int, error) {
 //
 // When all components are present, the version is represented as "e:v-r",
 // though only the version is actually required.
-func parseRedHatVersion(str string) redHatVersion {
+func ParseRedHatVersion(str string) RedHatVersion {
 	epoch, vr, hasColon := strings.Cut(str, ":")
 
 	// if there's not a colon, or the "epoch" value has characters other than digits,
@@ -234,5 +249,5 @@ func parseRedHatVersion(str string) redHatVersion {
 		epoch = "0"
 	}
 
-	return redHatVersion{epoch, version, release}
+	return RedHatVersion{epoch, version, release}
 }

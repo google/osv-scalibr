@@ -51,71 +51,71 @@ func Parse(str string, ecosystem string) (Version, error) {
 	// TODO(#457): support more ecosystems
 	switch ecosystem {
 	case "AlmaLinux":
-		return parseRedHatVersion(str), nil
+		return ParseRedHatVersion(str), nil
 	case "Alpaquita":
-		return parseAlpineVersion(str)
+		return ParseAlpineVersion(str)
 	case "Alpine":
-		return parseAlpineVersion(str)
+		return ParseAlpineVersion(str)
 	case "BellSoft Hardened Containers":
-		return parseAlpineVersion(str)
+		return ParseAlpineVersion(str)
 	case "Bitnami":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Bioconductor":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Chainguard":
-		return parseAlpineVersion(str)
+		return ParseAlpineVersion(str)
 	case "ConanCenter":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "CRAN":
-		return parseCRANVersion(str)
+		return ParseCRANVersion(str)
 	case "crates.io":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Debian":
-		return parseDebianVersion(str)
+		return ParseDebianVersion(str)
 	case "GHC":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Go":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Hackage":
-		return parseHackageVersion(str)
+		return ParseHackageVersion(str)
 	case "Hex":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Julia":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Mageia":
-		return parseRedHatVersion(str), nil
+		return ParseRedHatVersion(str), nil
 	case "Maven":
-		return parseMavenVersion(str), nil
+		return ParseMavenVersion(str), nil
 	case "MinimOS":
-		return parseAlpineVersion(str)
+		return ParseAlpineVersion(str)
 	case "npm":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "NuGet":
-		return parseNuGetVersion(str), nil
+		return ParseNuGetVersion(str), nil
 	case "openEuler":
-		return parseRedHatVersion(str), nil
+		return ParseRedHatVersion(str), nil
 	case "openSUSE":
-		return parseRedHatVersion(str), nil
+		return ParseRedHatVersion(str), nil
 	case "Packagist":
-		return parsePackagistVersion(str), nil
+		return ParsePackagistVersion(str), nil
 	case "Pub":
-		return parsePubVersion(str), nil
+		return ParsePubVersion(str), nil
 	case "PyPI":
-		return parsePyPIVersion(str)
+		return ParsePyPIVersion(str)
 	case "Red Hat":
-		return parseRedHatVersion(str), nil
+		return ParseRedHatVersion(str), nil
 	case "Rocky Linux":
-		return parseRedHatVersion(str), nil
+		return ParseRedHatVersion(str), nil
 	case "RubyGems":
 		return parseRubyGemsVersion(str), nil
 	case "SUSE":
-		return parseRedHatVersion(str), nil
+		return ParseRedHatVersion(str), nil
 	case "SwiftURL":
-		return parseSemverVersion(str), nil
+		return ParseSemverVersion(str), nil
 	case "Ubuntu":
-		return parseDebianVersion(str)
+		return ParseDebianVersion(str)
 	case "Wolfi":
-		return parseAlpineVersion(str)
+		return ParseAlpineVersion(str)
 	}
 
 	return nil, fmt.Errorf("%w %s", ErrUnsupportedEcosystem, ecosystem)
