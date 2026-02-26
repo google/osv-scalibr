@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build linux
-
 package pammisconfig
 
 import (
@@ -58,7 +56,9 @@ func (Detector) Version() int { return 0 }
 func (Detector) RequiredExtractors() []string { return []string{} }
 
 // Requirements of the Detector.
-func (Detector) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (Detector) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{OS: plugin.OSLinux}
+}
 
 // Scan starts the scan.
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
@@ -169,9 +169,6 @@ func checkPAMDirectory(ctx context.Context, fsys fs.FS, dir string) []string {
 
 	entries, err := fs.ReadDir(fsys, dir)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return issues
-		}
 		return issues
 	}
 
@@ -335,7 +332,7 @@ func parsePAMLine(line string, isLegacyFormat bool) *pamEntry {
 		entry.controlEff = &controlEffect{isOptionalOnly: true}
 	case strings.HasPrefix(control, "[") && strings.HasSuffix(control, "]"):
 		inner := strings.TrimSuffix(strings.TrimPrefix(control, "["), "]")
-		for _, token := range strings.Fields(inner) {
+		for token := range strings.FieldsSeq(inner) {
 			parts := strings.SplitN(token, "=", 2)
 			if len(parts) != 2 || parts[0] != "success" {
 				continue
@@ -507,7 +504,7 @@ func checkOptionalOnlyAuth(filePath string, entries []pamEntry) []string {
 
 	if hasPermitOptional && !hasEffectiveNonOptional {
 		return []string{
-			fmt.Sprintf("%s: pam_permit.so is the only auth module in this stack - optional controls can allow authentication without credential checks", filePath),
+			filePath + ": pam_permit.so is the only auth module in this stack - optional controls can allow authentication without credential checks",
 		}
 	}
 
