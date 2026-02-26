@@ -100,7 +100,7 @@ message PluginSpecificConfig {
     DenoTSSourceConfig denotssource = 63;
     QCOW2Config qcow2 = 64;
     PerlCPANConfig cpan = 65;
-    PythonRequirementsTransitiveConfig python_requirements_transitive = 66;
+    PythonRequirementsTransitiveConfig python_requirements_transitive = 68;
   }
 }
 

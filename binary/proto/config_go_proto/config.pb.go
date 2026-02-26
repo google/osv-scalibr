@@ -922,7 +922,7 @@ type PluginSpecificConfig_Cpan struct {
 }
 
 type PluginSpecificConfig_PythonRequirementsTransitive struct {
-	PythonRequirementsTransitive *PythonRequirementsTransitiveConfig `protobuf:"bytes,66,opt,name=python_requirements_transitive,json=pythonRequirementsTransitive,proto3,oneof"`
+	PythonRequirementsTransitive *PythonRequirementsTransitiveConfig `protobuf:"bytes,68,opt,name=python_requirements_transitive,json=pythonRequirementsTransitive,proto3,oneof"`
 }
 
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
@@ -3736,7 +3736,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xcb\x1b\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xd1\x1b\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -3798,8 +3798,8 @@ const file_proto_config_proto_rawDesc = "" +
 	"\fdenotssource\x18? \x01(\v2\x1b.scalibr.DenoTSSourceConfigH\x00R\fdenotssource\x12,\n" +
 	"\x05qcow2\x18@ \x01(\v2\x14.scalibr.QCOW2ConfigH\x00R\x05qcow2\x12-\n" +
 	"\x04cpan\x18A \x01(\v2\x17.scalibr.PerlCPANConfigH\x00R\x04cpan\x12s\n" +
-	"\x1epython_requirements_transitive\x18B \x01(\v2+.scalibr.PythonRequirementsTransitiveConfigH\x00R\x1cpythonRequirementsTransitiveB\b\n" +
-	"\x06configJ\x04\b0\x109J\x04\b;\x10>\"B\n" +
+	"\x1epython_requirements_transitive\x18D \x01(\v2+.scalibr.PythonRequirementsTransitiveConfigH\x00R\x1cpythonRequirementsTransitiveB\b\n" +
+	"\x06configJ\x04\b0\x109J\x04\b;\x10>J\x04\bB\x10D\"B\n" +
 	"\x0eGoBinaryConfig\x120\n" +
 	"\x14version_from_content\x18\x01 \x01(\bR\x12versionFromContent\"D\n" +
 	"\x11GovulncheckConfig\x12/\n" +
