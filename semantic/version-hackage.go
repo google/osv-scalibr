@@ -19,20 +19,35 @@ import (
 	"strings"
 )
 
-type hackageVersion struct {
+// HackageVersion is the representation of a version of a package that is held
+// in the Hackage ecosystem.
+//
+// See https://hackage-content.haskell.org/package/Cabal-syntax-3.16.1.0/docs/Distribution-Types-Version.html
+type HackageVersion struct {
 	semverLikeVersion
 }
 
-func (v hackageVersion) compare(w hackageVersion) int {
-	if diff := v.Components.Cmp(w.Components); diff != 0 {
+var _ Version = HackageVersion{}
+
+func (v HackageVersion) compare(w HackageVersion) int {
+	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
 
-	return compareBuildComponents(strings.ToLower(v.Build), strings.ToLower(w.Build))
+	return compareBuildComponents(strings.ToLower(v.build), strings.ToLower(w.build))
 }
 
-func (v hackageVersion) CompareStr(str string) (int, error) {
-	w, err := parseHackageVersion(str)
+// Compare compares the given version to the receiver.
+func (v HackageVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(HackageVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v HackageVersion) CompareStr(str string) (int, error) {
+	w, err := ParseHackageVersion(str)
 
 	if err != nil {
 		return 0, err
@@ -42,22 +57,23 @@ func (v hackageVersion) CompareStr(str string) (int, error) {
 		return diff, nil
 	}
 
-	if len(v.Components) > len(w.Components) {
+	if len(v.components) > len(w.components) {
 		return +1, nil
 	}
-	if len(v.Components) < len(w.Components) {
+	if len(v.components) < len(w.components) {
 		return -1, nil
 	}
 
 	return 0, nil
 }
 
-func parseHackageVersion(str string) (hackageVersion, error) {
-	v := hackageVersion{parseSemverLikeVersion(str, -1)}
+// ParseHackageVersion parses the given string as a Hackage version.
+func ParseHackageVersion(str string) (HackageVersion, error) {
+	v := HackageVersion{parseSemverLikeVersion(str, -1)}
 
 	// this is technically possible since we're using the "semver-like" parser
-	if v.Build != "" {
-		return hackageVersion{}, fmt.Errorf("%w: Hackage versions cannot contain a build version", ErrInvalidVersion)
+	if v.build != "" {
+		return HackageVersion{}, fmt.Errorf("%w: Hackage versions cannot contain a build version", ErrInvalidVersion)
 	}
 
 	return v, nil
