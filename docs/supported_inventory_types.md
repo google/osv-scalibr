@@ -240,22 +240,23 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ## Detectors
 
-| Description                                                          | Plugin Name                              |
-| -------------------------------------------------------------------- | ---------------------------------------- |
-| Checks for overly permissive permissions on /etc/passwd.             | `cis/generic-linux/etcpasswdpermissions` |
-| Finds vulns in Go binaries with reachability data using govulncheck. | `govulncheck/binary`                     |
-| Checks if the Linux distribution is end-of-life.                     | `endoflife/linuxdistro`                  |
-| Detects vulnerability CVE-2023-38408 in OpenSSH.                     | `cve/cve-2023-38408`                     |
-| Detects vulnerability CVE-2022-33891 in Spark UI.                    | `cve/cve-2022-33891`                     |
-| Detects vulnerability CVE-2020-16846 in Salt.                        | `cve/cve-2020-16846`                     |
-| Detects vulnerability CVE-2023-6019 in Ray Dashboard.                | `cve/cve-2023-6019`                      |
-| Detects vulnerability CVE-2020-11978 in Apache Airflow.              | `cve/cve-2020-11978`                     |
-| Detects vulnerability CVE-2024-2912 in BentoML.                      | `cve/cve-2024-2912`                      |
-| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway       | `cve/cve-2025-7775`                      |
-| Checks for whether code-server has authentication enabled.           | `weakcredentials/codeserver`             |
-| Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
-| Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |
-| Checks for weak passwords for local Windows accounts.                | `weakcredentials/winlocal`               |
+| Description                                                                  | Plugin Name                              |
+| ---------------------------------------------------------------------------- | ---------------------------------------- |
+| Checks for overly permissive permissions on /etc/passwd.                     | `cis/generic-linux/etcpasswdpermissions` |
+| Finds vulns in Go binaries with reachability data using govulncheck.         | `govulncheck/binary`                     |
+| Checks if the Linux distribution is end-of-life.                             | `endoflife/linuxdistro`                  |
+| Detects vulnerability CVE-2023-38408 in OpenSSH.                             | `cve/cve-2023-38408`                     |
+| Detects vulnerability CVE-2022-33891 in Spark UI.                            | `cve/cve-2022-33891`                     |
+| Detects vulnerability CVE-2020-16846 in Salt.                                | `cve/cve-2020-16846`                     |
+| Detects vulnerability CVE-2023-6019 in Ray Dashboard.                        | `cve/cve-2023-6019`                      |
+| Detects vulnerability CVE-2020-11978 in Apache Airflow.                      | `cve/cve-2020-11978`                     |
+| Detects vulnerability CVE-2024-2912 in BentoML.                              | `cve/cve-2024-2912`                      |
+| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway               | `cve/cve-2025-7775`                      |
+| Checks for whether code-server has authentication enabled.                   | `weakcredentials/codeserver`             |
+| Checks for weak passwords in /etc/shadow.                                    | `weakcredentials/etcshadow`              |
+| Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |
+| Checks for weak passwords for local Windows accounts.                        | `weakcredentials/winlocal`               |
+| Detects PAM misconfigurations that allow authentication bypass. (Linux-only) | `misc/pammisconfig`                      |
 
 ## Annotators
 
