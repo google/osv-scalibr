@@ -45,7 +45,7 @@ const (
 func TestAPIKeyDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
-		packagist.NewAPIKeyDetector(),
+		packagist.NewAPISecretDetector(),
 		testAPIKeyMid,
 		packagist.APIKey{Key: testAPIKeyMid},
 		velestest.WithBackToBack(),
@@ -67,10 +67,10 @@ func TestAPISecretDetectorAcceptance(t *testing.T) {
 	)
 }
 
-// TestAPIKeyDetector tests for cases where we expect the APIKeyDetector
-// to find or not find Packagist API Keys.
+// TestAPIKeyDetector tests for cases where we expect the APISecretDetector
+// to find or not find Packagist API Keys (when no secret is present).
 func TestAPIKeyDetector(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{packagist.NewAPIKeyDetector()})
+	engine, err := veles.NewDetectionEngine([]veles.Detector{packagist.NewAPISecretDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,10 +118,10 @@ func TestAPIKeyDetector(t *testing.T) {
 		},
 		{
 			name: "larger_input_containing_key",
-			input: fmt.Sprintf(`
+			input: `
 :test_api_key: packagist_ack_invalid
-:packagist_api_key: %s 
-		`, testAPIKeyMid),
+:packagist_api_key: ` + testAPIKeyMid + ` 
+		`,
 			want: []veles.Secret{
 				packagist.APIKey{Key: testAPIKeyMid},
 			},
@@ -250,28 +250,39 @@ func TestAPISecretDetector(t *testing.T) {
 		},
 		{
 			name:  "only_key_no_secret",
-			input: testAPIKeyMid, // Pair detector requires both
-			want:  nil,
+			input: testAPIKeyMid, // FromPartialPair returns APIKey when only key is found
+			want: []veles.Secret{
+				packagist.APIKey{Key: testAPIKeyMid},
+			},
 		},
 		{
 			name:  "wrong_prefix",
 			input: testAPIKeyMid + " packagist_ack_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-			want:  nil,
+			want: []veles.Secret{
+				packagist.APIKey{Key: testAPIKeyMid},
+				packagist.APIKey{Key: "packagist_ack_cccccccccccccccccccccccccccccccc"},
+			},
 		},
 		{
 			name:  "secret_too_short",
 			input: testAPIKeyMid + " packagist_acs_ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", // 63 chars, need 64+
-			want:  nil,
+			want: []veles.Secret{
+				packagist.APIKey{Key: testAPIKeyMid},
+			},
 		},
 		{
 			name:  "invalid_characters_uppercase",
 			input: testAPIKeyMid + " packagist_acs_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
-			want:  nil,
+			want: []veles.Secret{
+				packagist.APIKey{Key: testAPIKeyMid},
+			},
 		},
 		{
 			name:  "invalid_characters_special",
 			input: testAPIKeyMid + " packagist_acs_@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
-			want:  nil,
+			want: []veles.Secret{
+				packagist.APIKey{Key: testAPIKeyMid},
+			},
 		},
 	}
 
@@ -371,7 +382,7 @@ func TestAPISecretDetector_OnlySecret(t *testing.T) {
 }
 
 // TestAPISecretDetector_OnlyKey tests that when only the key is found,
-// the pair detector does not match (it requires both).
+// FromPartialPair returns an APIKey.
 func TestAPISecretDetector_OnlyKey(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{packagist.NewAPISecretDetector()})
 	if err != nil {
@@ -383,16 +394,20 @@ func TestAPISecretDetector_OnlyKey(t *testing.T) {
 	if err != nil {
 		t.Errorf("Detect() error: %v, want nil", err)
 	}
-	if len(got) != 0 {
-		t.Errorf("Detect() found %d secrets, want 0 (pair detector requires both key and secret)", len(got))
+
+	want := []veles.Secret{
+		packagist.APIKey{Key: testAPIKeyMid},
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("Detect() diff (-want +got):\n%s", diff)
 	}
 }
 
-// TestAllDetectors_Combined tests that when both detectors are used together,
-// we get the expected combination of results.
+// TestAllDetectors_Combined tests that when the APISecretDetector is used,
+// we get APISecret when both key and secret are present together.
 func TestAllDetectors_Combined(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{
-		packagist.NewAPIKeyDetector(),
 		packagist.NewAPISecretDetector(),
 	})
 	if err != nil {
@@ -407,12 +422,38 @@ PACKAGIST_API_SECRET=%s`, testAPIKeyMid, testAPISecretMid)
 		t.Errorf("Detect() error: %v, want nil", err)
 	}
 
-	// We expect 2 secrets:
-	// 1. APIKey from NewAPIKeyDetector
-	// 2. APISecret (Key=testAPIKeyMid) from NewAPISecretDetector
+	// We expect 1 secret:
+	// APISecret (Key=testAPIKeyMid) from FromPair (when both key and secret are found together)
+	want := []veles.Secret{
+		packagist.APISecret{Secret: testAPISecretMid, Key: testAPIKeyMid},
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("Detect() diff (-want +got):\n%s", diff)
+	}
+}
+
+// TestAPIKeyOnly tests that when only the API key is present (no secret),
+// we get an APIKey from FromPartialPair.
+func TestAPIKeyOnly(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{
+		packagist.NewAPISecretDetector(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	input := `PACKAGIST_API_KEY=` + testAPIKeyMid
+
+	got, err := engine.Detect(t.Context(), strings.NewReader(input))
+	if err != nil {
+		t.Errorf("Detect() error: %v, want nil", err)
+	}
+
+	// We expect 1 secret:
+	// APIKey from FromPartialPair (when only key is found, no secret nearby)
 	want := []veles.Secret{
 		packagist.APIKey{Key: testAPIKeyMid},
-		packagist.APISecret{Secret: testAPISecretMid, Key: testAPIKeyMid},
 	}
 
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {

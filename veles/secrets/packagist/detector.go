@@ -25,7 +25,6 @@ import (
 
 var (
 	// Ensure constructors satisfy the interface at compile time.
-	_ veles.Detector = NewAPIKeyDetector()
 	_ veles.Detector = NewAPISecretDetector()
 	_ veles.Detector = NewOrgReadTokenDetector()
 	_ veles.Detector = NewOrgUpdateTokenDetector()
@@ -73,21 +72,10 @@ var repoURLRe = regexp.MustCompile(`https?://repo\.packagist\.com[/\w\-\.]*`)
 // The capture group extracts just the username value
 var usernameRe = regexp.MustCompile(`(?i)\b(?:username|user|name)\b\s*[:=]?\s*([a-zA-Z0-9_\-]{3,50})\b`)
 
-// NewAPIKeyDetector returns a detector for Packagist API Keys.
-func NewAPIKeyDetector() veles.Detector {
-	return simpletoken.Detector{
-		MaxLen: apiKeyMaxLen,
-		Re:     apiKeyRe,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return APIKey{Key: string(b)}, true
-		},
-	}
-}
-
-// NewAPISecretDetector returns a detector for Packagist API Secrets.
-// This detector finds secrets along with their corresponding API Keys when both are found together.
-// The Key field will be populated, enabling HMAC validation.
-// Note: This detector requires BOTH key and secret to be present (within 10KB distance).
+// NewAPISecretDetector returns a detector for Packagist API Keys and Secrets.
+// When both key and secret are found together (within 10KB distance), it returns an APISecret
+// with both fields populated, enabling HMAC validation.
+// When only the API key is found, it returns an APIKey.
 func NewAPISecretDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: max(apiKeyMaxLen, apiSecretMaxLen),
@@ -99,6 +87,12 @@ func NewAPISecretDetector() veles.Detector {
 				Secret: string(p.B.Value),
 				Key:    string(p.A.Value),
 			}, true
+		},
+		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
+			if p.A != nil {
+				return APIKey{Key: string(p.A.Value)}, true
+			}
+			return nil, false
 		},
 	}
 }

@@ -349,7 +349,6 @@ var (
 		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
-		{packagist.NewAPIKeyDetector(), "secrets/packagist", 0},
 		{packagist.NewAPISecretDetector(), "secrets/packagistsecret", 0},
 		{packagist.NewOrgReadTokenDetector(), "secrets/packagistorgreadtoken", 0},
 		{packagist.NewOrgUpdateTokenDetector(), "secrets/packagistorgupdatetoken", 0},
