@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	velesmysqlmylogin "github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
@@ -35,6 +36,7 @@ import (
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -58,6 +60,7 @@ import (
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
+	velespackagist "github.com/google/osv-scalibr/veles/secrets/packagist"
 	velespaystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -206,6 +209,18 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return openaiAPIKeyToProto(t.Key), nil
 	case velesopenrouter.APIKey:
 		return openrouterAPIKeyToProto(t.Key), nil
+	case velespackagist.APIKey:
+		return packagistAPIKeyToProto(t), nil
+	case velespackagist.APISecret:
+		return packagistAPISecretToProto(t), nil
+	case velespackagist.OrgReadToken:
+		return packagistOrgReadTokenToProto(t), nil
+	case velespackagist.OrgUpdateToken:
+		return packagistOrgUpdateTokenToProto(t), nil
+	case velespackagist.UserUpdateToken:
+		return packagistUserUpdateTokenToProto(t), nil
+	case velespackagist.ConductorUpdateToken:
+		return packagistConductorUpdateTokenToProto(t), nil
 	case velespostmanapikey.PostmanAPIKey:
 		return postmanAPIKeyToProto(t), nil
 	case velespostmanapikey.PostmanCollectionToken:
@@ -268,6 +283,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return codeCommitCredentialsToProto(t), nil
 	case bitbucket.Credentials:
 		return bitbucketCredentialsToProto(t), nil
+	case composerpackagist.Credential:
+		return composerPackagistCredentialToProto(t), nil
 	case elasticcloudapikey.ElasticCloudAPIKey:
 		return elasticCloudAPIKeyToProto(t), nil
 	case urlcreds.Credentials:
@@ -302,6 +319,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squarePersonalAccessTokenToProto(t), nil
 	case velessquareapikey.SquareOAuthApplicationSecret:
 		return squareOAuthApplicationSecretToProto(t), nil
+	case velesdiscordbottoken.DiscordBotToken:
+		return discordBotTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -332,6 +351,18 @@ func bitbucketCredentialsToProto(s bitbucket.Credentials) *spb.SecretData {
 		Secret: &spb.SecretData_BitbucketCredentials{
 			BitbucketCredentials: &spb.SecretData_BitBucketCredentials{
 				Url: s.FullURL,
+			},
+		},
+	}
+}
+
+func composerPackagistCredentialToProto(s composerpackagist.Credential) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ComposerHttpBasicCredentials{
+			ComposerHttpBasicCredentials: &spb.SecretData_ComposerPackagistCredentials{
+				Host:     s.Host,
+				Username: s.Username,
+				Password: s.Password,
 			},
 		},
 	}
@@ -998,6 +1029,16 @@ func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.Secr
 	}
 }
 
+func discordBotTokenToProto(s velesdiscordbottoken.DiscordBotToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DiscordBotToken_{
+			DiscordBotToken: &spb.SecretData_DiscordBotToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func herokuKeyToProto(s velesherokuplatformkey.HerokuSecret) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_HerokuSecretKey_{
@@ -1234,6 +1275,33 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
 	case *spb.SecretData_CursorApiKey:
 		return velescursorapikey.APIKey{Key: s.GetCursorApiKey().GetKey()}, nil
+	case *spb.SecretData_PackagistApiKey:
+		return velespackagist.APIKey{Key: s.GetPackagistApiKey().GetKey()}, nil
+	case *spb.SecretData_PackagistApiSecret:
+		return velespackagist.APISecret{
+			Secret: s.GetPackagistApiSecret().GetSecret(),
+			Key:    s.GetPackagistApiSecret().GetKey(),
+		}, nil
+	case *spb.SecretData_PackagistOrgReadToken_:
+		return velespackagist.OrgReadToken{
+			Token:   s.GetPackagistOrgReadToken().GetToken(),
+			RepoURL: s.GetPackagistOrgReadToken().GetRepoUrl(),
+		}, nil
+	case *spb.SecretData_PackagistOrgUpdateToken_:
+		return velespackagist.OrgUpdateToken{
+			Token:   s.GetPackagistOrgUpdateToken().GetToken(),
+			RepoURL: s.GetPackagistOrgUpdateToken().GetRepoUrl(),
+		}, nil
+	case *spb.SecretData_PackagistUserUpdateToken_:
+		return velespackagist.UserUpdateToken{
+			Token:    s.GetPackagistUserUpdateToken().GetToken(),
+			Username: s.GetPackagistUserUpdateToken().GetUsername(),
+			RepoURL:  s.GetPackagistUserUpdateToken().GetRepoUrl(),
+		}, nil
+	case *spb.SecretData_PackagistConductorUpdateToken_:
+		return velespackagist.ConductorUpdateToken{
+			Token: s.GetPackagistConductorUpdateToken().GetToken(),
+		}, nil
 	case *spb.SecretData_PostmanApiKey:
 		return velespostmanapikey.PostmanAPIKey{
 			Key: s.GetPostmanApiKey().GetKey(),
@@ -1343,6 +1411,13 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return bitbucket.Credentials{
 			FullURL: s.GetBitbucketCredentials().GetUrl(),
 		}, nil
+	case *spb.SecretData_ComposerHttpBasicCredentials:
+		creds := s.GetComposerHttpBasicCredentials()
+		return composerpackagist.Credential{
+			Host:     creds.GetHost(),
+			Username: creds.GetUsername(),
+			Password: creds.GetPassword(),
+		}, nil
 	case *spb.SecretData_ElasticCloudApiKey:
 		return elasticcloudapikey.ElasticCloudAPIKey{
 			Key: s.GetElasticCloudApiKey().GetKey(),
@@ -1360,6 +1435,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
+		}, nil
+	case *spb.SecretData_DiscordBotToken_:
+		return velesdiscordbottoken.DiscordBotToken{
+			Token: s.GetDiscordBotToken().GetToken(),
 		}, nil
 	case *spb.SecretData_SendgridApiKey:
 		return sendgrid.APIKey{
@@ -1698,6 +1777,71 @@ func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatform
 	return velesherokuplatformkey.HerokuSecret{
 		Key:      k.GetKey(),
 		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur, NeverExpires: metadata.GetNeverExpires()},
+	}
+}
+
+func packagistAPIKeyToProto(s velespackagist.APIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistApiKey{
+			PackagistApiKey: &spb.SecretData_PackagistAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func packagistAPISecretToProto(s velespackagist.APISecret) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistApiSecret{
+			PackagistApiSecret: &spb.SecretData_PackagistAPISecret{
+				Secret: s.Secret,
+				Key:    s.Key,
+			},
+		},
+	}
+}
+
+func packagistOrgReadTokenToProto(s velespackagist.OrgReadToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistOrgReadToken_{
+			PackagistOrgReadToken: &spb.SecretData_PackagistOrgReadToken{
+				Token:   s.Token,
+				RepoUrl: s.RepoURL,
+			},
+		},
+	}
+}
+
+func packagistOrgUpdateTokenToProto(s velespackagist.OrgUpdateToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistOrgUpdateToken_{
+			PackagistOrgUpdateToken: &spb.SecretData_PackagistOrgUpdateToken{
+				Token:   s.Token,
+				RepoUrl: s.RepoURL,
+			},
+		},
+	}
+}
+
+func packagistUserUpdateTokenToProto(s velespackagist.UserUpdateToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistUserUpdateToken_{
+			PackagistUserUpdateToken: &spb.SecretData_PackagistUserUpdateToken{
+				Token:    s.Token,
+				Username: s.Username,
+				RepoUrl:  s.RepoURL,
+			},
+		},
+	}
+}
+
+func packagistConductorUpdateTokenToProto(s velespackagist.ConductorUpdateToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PackagistConductorUpdateToken_{
+			PackagistConductorUpdateToken: &spb.SecretData_PackagistConductorUpdateToken{
+				Token: s.Token,
+			},
+		},
 	}
 }
 
