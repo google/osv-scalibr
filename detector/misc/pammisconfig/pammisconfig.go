@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package pammisconfig detects PAM misconfiguration vulnerabilities.
 package pammisconfig
 
 import (
@@ -31,6 +32,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -42,8 +45,8 @@ const (
 type Detector struct{}
 
 // New returns a new PAM misconfiguration detector.
-func New() detector.Detector {
-	return &Detector{}
+func New(_ *cpb.PluginConfig) (detector.Detector, error) {
+	return &Detector{}, nil
 }
 
 // Name of the detector.
@@ -287,9 +290,9 @@ type pamEntry struct {
 func parsePAMLine(line string, isLegacyFormat bool) *pamEntry {
 	fields := strings.Fields(line)
 
-	minFields := 3 // type control module
+	minFields := 3 // type control(start) module
 	if isLegacyFormat {
-		minFields = 4 // service type control module
+		minFields = 4 // service type control(start) module
 	}
 
 	if len(fields) < minFields {
@@ -303,12 +306,34 @@ func parsePAMLine(line string, isLegacyFormat bool) *pamEntry {
 	}
 
 	entry.moduleType = strings.ToLower(fields[offset])
-	control := strings.ToLower(fields[offset+1])
-	entry.control = control
-	entry.modulePath = fields[offset+2]
 
-	if len(fields) > offset+3 {
-		entry.args = fields[offset+3:]
+	// Bracket controls like [success=1 default=ignore] are split across multiple
+	// fields by strings.Fields. Reassemble them into a single token.
+	var control string
+	moduleIdx := offset + 2 // default: control is one token
+	if strings.HasPrefix(fields[offset+1], "[") {
+		var parts []string
+		for i := offset + 1; i < len(fields); i++ {
+			parts = append(parts, fields[i])
+			if strings.HasSuffix(fields[i], "]") {
+				moduleIdx = i + 1
+				break
+			}
+		}
+		control = strings.ToLower(strings.Join(parts, " "))
+	} else {
+		control = strings.ToLower(fields[offset+1])
+	}
+
+	if moduleIdx >= len(fields) {
+		return nil
+	}
+
+	entry.control = control
+	entry.modulePath = fields[moduleIdx]
+
+	if len(fields) > moduleIdx+1 {
+		entry.args = fields[moduleIdx+1:]
 	}
 
 	// Validate module type

@@ -588,7 +588,7 @@ auth required pam_unix.so`,
 }
 
 func TestDetectorInterface(t *testing.T) {
-	d := New()
+	d, _ := New(nil)
 
 	if d.Name() != Name {
 		t.Errorf("Name() = %q, want %q", d.Name(), Name)
