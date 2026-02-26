@@ -16,6 +16,7 @@ package paypal_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -33,7 +34,7 @@ var (
 	detectorClientSecret = "E" + strings.Repeat("KlMnOpQrSt", 7) + "KlMnOpQrS"
 )
 
-func init() {
+func TestMain(m *testing.M) {
 	// Validate lengths are correct.
 	if len(detectorClientID) != 80 {
 		panic("detectorClientID should be 80 chars")
@@ -41,6 +42,7 @@ func init() {
 	if len(detectorClientSecret) != 80 {
 		panic("detectorClientSecret should be 80 chars")
 	}
+	os.Exit(m.Run())
 }
 
 func TestClientIDDetectorAcceptance(t *testing.T) {
