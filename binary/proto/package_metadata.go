@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	bazelmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/chromiumapps"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	chocolateymeta "github.com/google/osv-scalibr/extractor/filesystem/os/chocolatey/metadata"
@@ -182,6 +183,9 @@ var (
 		reflect.TypeFor[*spb.Package_DepGroupMetadata](): func(p *spb.Package) any {
 			return osv.DepGroupToStruct(p.GetDepGroupMetadata())
 		},
+		reflect.TypeFor[*spb.Package_ChromiumAppsMetadata](): func(p *spb.Package) any {
+			return chromiumapps.ToStruct(p.GetChromiumAppsMetadata())
+		},
 	}
 
 	_ = []MetadataProtoSetter{
@@ -225,5 +229,6 @@ var (
 		(*javalockfile.Metadata)(nil),
 		(*chocolateymeta.Metadata)(nil),
 		(*osv.DepGroupMetadata)(nil),
+		(*chromiumapps.Metadata)(nil),
 	}
 )

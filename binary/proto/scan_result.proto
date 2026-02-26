@@ -145,6 +145,7 @@ message Package {
     UnknownBinaryMetadata unknown_binary_metadata = 64;
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
+    ChromiumAppsMetadata chromium_apps_metadata = 67;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -1323,4 +1324,15 @@ message LayerMetadata {
   // The index of the base image match within the
   // ContainerImageMetadata.base_image_chains field.
   int32 base_image_index = 6;
+}
+
+// The additional data found in Chromium-based app packages (Chrome, Edge, Electron).
+message ChromiumAppsMetadata {
+  // The Chromium/Chrome version embedded in the binary (e.g. "137.0.7151.68").
+  string chromium_version = 1;
+  // The Electron version (e.g. "34.5.8"), if the app is Electron-based.
+  string electron_version = 2;
+  // The source used to determine the package version (e.g. "chromium_binary",
+  // "path", "plist_cf_bundle_version").
+  string version_source = 3;
 }
