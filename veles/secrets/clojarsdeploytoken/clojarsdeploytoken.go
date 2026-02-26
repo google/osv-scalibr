@@ -18,5 +18,6 @@ package clojarsdeploytoken
 // Clojars Deploy Token (prefix `CLOJARS_`).
 
 type ClojarsDeployToken struct {
-	Token string
+	Token    string
+	Username string
 }

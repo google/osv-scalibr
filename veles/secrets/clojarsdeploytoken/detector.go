@@ -20,24 +20,66 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
-// maxTokenLength is the fixed size of a Clojars Deploy Token.
-// "CLOJARS_" (8 chars) + 60 hex chars = 68 chars.
-const maxTokenLength = 68
+const (
+	// maxTokenLength is the maximum size of a Clojars deploy token.
+	// "CLOJARS_" (8) + 60 hex characters = 68
+	maxTokenLength = 68
+	// maxUsernameLength is the maximum size of the username field. Since clojars
+	// allows signin with GitLab and GitLab allows a username of max 255 chars
+	maxUsernameLength = 255
 
-// keyRe matches the strict format: "CLOJARS_" followed by exactly 60 hex characters.
-var keyRe = regexp.MustCompile(`CLOJARS_[a-f0-9]{60}`)
+	// maxContextLength is the maximum size of the context
+	maxContextLength = 50
 
-// NewDetector returns a new simpletoken.Detector that matches
+	// maxDistance is the maximum distance between the username and the PAT. Since
+	// maxUsernameLength is 255 to added 200 on top of usual 100 to make it 300
+	maxDistance = 300
+)
+
+var (
+	// patRe matches the strict format: "CLOJARS_" followed by exactly 60 hex characters.
+	patRe = regexp.MustCompile(`CLOJARS_[a-f0-9]{60}`)
+
+	// usernamePattern matches Clojars usernames in various formats.
+	// It handles case-insensitivity for "username" and "clojars_username",
+	// optional spaces, optional colons/equals signs, and optional quotes.
+	usernamePattern = regexp.MustCompile(`(?i:(?:clojars_)?username)["']?\s*[=:]?\s*["']?([^"'\s]+)`)
+)
+
+// NewDetector returns a new Detector that matches
 // Clojars Deploy Tokens.
 func NewDetector() veles.Detector {
-	return &simpletoken.Detector{
-		MaxLen: maxTokenLength,
-		Re:     keyRe,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return ClojarsDeployToken{Token: string(b)}, true
+	return &pair.Detector{
+		MaxElementLen: max(maxTokenLength, maxContextLength+maxUsernameLength), MaxDistance: maxDistance,
+		FindA: pair.FindAllMatches(patRe),
+		FindB: findUsernameMatches(),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return ClojarsDeployToken{Token: string(p.A.Value), Username: string(p.B.Value)}, true
 		},
+		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
+			if p.A == nil {
+				return nil, false
+			}
+			return ClojarsDeployToken{Token: string(p.A.Value)}, true
+		},
+	}
+}
+
+func findUsernameMatches() func(data []byte) []*pair.Match {
+	return func(data []byte) []*pair.Match {
+		res := []*pair.Match{}
+		matches := usernamePattern.FindAllSubmatchIndex(data, -1)
+		for _, m := range matches {
+			res = append(res, &pair.Match{
+				// m[0] is the start index of the entire match
+				Start: m[0],
+				// m[2]:m[3] targets the first capture group (the actual username value)
+				Value: data[m[2]:m[3]],
+			})
+		}
+		return res
 	}
 }

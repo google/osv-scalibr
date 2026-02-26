@@ -99,7 +99,37 @@ func TestDetector_truePositives(t *testing.T) {
 		want: []veles.Secret{
 			clojarsdeploytoken.ClojarsDeployToken{Token: testKey},
 		},
-	}}
+	}, {
+		name: "env",
+		input: `
+		HEROKU_API_KEY="HRKU_2025-01-01-preview-Placeholder"
+		CLOJARS_USERNAME="clojars-placeholder-username"
+		CLOJARS_TOKEN="CLOJARS_cafe6346d9ef5c39890999e697f99dda6621dd03884705d341a198c6ce75"
+		# EMBEDDING_MODEL_NAME_OR_PATH="sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+		`,
+		want: []veles.Secret{
+			clojarsdeploytoken.ClojarsDeployToken{
+				Token:    testKey,
+				Username: "clojars-placeholder-username",
+			},
+		},
+	}, {
+		name: "JSON formatted credentials",
+		input: `{
+			"username": "service_account",
+			"password": "` + testKey + `"
+		}`,
+		want: []veles.Secret{
+			clojarsdeploytoken.ClojarsDeployToken{Token: testKey, Username: "service_account"},
+		},
+	},
+		{
+			name:  "YAML formatted credentials with colon",
+			input: "username: deploy_user\npassword: " + testKey,
+			want: []veles.Secret{
+				clojarsdeploytoken.ClojarsDeployToken{Token: testKey, Username: "deploy_user"},
+			},
+		}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
