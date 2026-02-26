@@ -73,7 +73,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
-|            | pom.xml                                           | `java/pomxml`, `java/pomxmlnet`      |
+|            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
@@ -105,6 +105,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
+| Perl       | Perl CPAN packages                                | `perl/cpan`                          |
 
 ### Language runtime managers
 
@@ -125,6 +126,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
 | Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
@@ -158,6 +160,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`      |
 | OpenAI API key                              | `secrets/openai`                       |
 | OpenRouter API key                          | `secrets/openrouter`                   |
+| Packagist API Key                           | `secrets/packagistapi`                 |
+| Packagist API Secret                        | `secrets/packagistsecret`              |
+| Packagist Organization Read Token           | `secrets/packagistorgreadtoken`        |
+| Packagist Organization Update Token         | `secrets/packagistorgupdatetoken`      |
+| Packagist User Update Token                 | `secrets/packagistuserupdatetoken`     |
+| Packagist Conductor Update Token            | `secrets/packagistconductorupdatetoken`|
 | Perplexity API key                          | `secrets/perplexityapikey`             |
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |
@@ -174,6 +182,9 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Secret Key                           | `secrets/stripesecretkey`              |
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
+| Supabase PAT                                | `secrets/supabasepat`                  |
+| Supabase Project Secret Key                 | `secrets/supabaseprojectsecretkey`     |
+| Supabase Service Role JWT                   | `secrets/supabaseservicerolejwt`       |
 | Tink keyset                                 | `secrets/tinkkeyset`                   |
 | Paystack Secret Key                         | `secrets/paystacksecretkey`            |
 | Vapid keys                                  | `secrets/vapidkey`                     |

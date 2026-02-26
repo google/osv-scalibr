@@ -26,7 +26,7 @@ type Metadata struct {
 	Type         string
 	Classifier   string
 	DepGroupVals []string
-	IsTransitive bool // Only set in pomxmlnet extractor
+	IsTransitive bool // Only set in transitive dependency pomxml enricher
 }
 
 // DepGroups returns the dependency groups for the package.
