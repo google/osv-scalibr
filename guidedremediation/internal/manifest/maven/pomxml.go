@@ -206,7 +206,6 @@ func (r readWriter) SupportedStrategies() []strategy.Strategy {
 
 // Read parses the manifest from the given file.
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
-	// TODO(#472): much of this logic is duplicated with the pomxmlnet extractor.
 	ctx := context.Background()
 	path = filepath.ToSlash(path)
 	f, err := fsys.Open(path)
