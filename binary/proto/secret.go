@@ -36,6 +36,7 @@ import (
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	velesgcpapikey "github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -318,6 +319,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squarePersonalAccessTokenToProto(t), nil
 	case velessquareapikey.SquareOAuthApplicationSecret:
 		return squareOAuthApplicationSecretToProto(t), nil
+	case velesdiscordbottoken.DiscordBotToken:
+		return discordBotTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1026,6 +1029,16 @@ func paystackSecretKeyToProto(s velespaystacksecretkey.PaystackSecret) *spb.Secr
 	}
 }
 
+func discordBotTokenToProto(s velesdiscordbottoken.DiscordBotToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DiscordBotToken_{
+			DiscordBotToken: &spb.SecretData_DiscordBotToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func herokuKeyToProto(s velesherokuplatformkey.HerokuSecret) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_HerokuSecretKey_{
@@ -1422,6 +1435,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_TelegramBotApiToken:
 		return velestelegrambotapitoken.TelegramBotAPIToken{
 			Token: s.GetTelegramBotApiToken().GetToken(),
+		}, nil
+	case *spb.SecretData_DiscordBotToken_:
+		return velesdiscordbottoken.DiscordBotToken{
+			Token: s.GetDiscordBotToken().GetToken(),
 		}, nil
 	case *spb.SecretData_SendgridApiKey:
 		return sendgrid.APIKey{
