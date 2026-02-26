@@ -103,7 +103,7 @@ func (v *Validator) tryEndpoint(ctx context.Context, endpoint string, pair Clien
 	}
 	defer resp.Body.Close()
 	// Consume the body to allow connection reuse.
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	switch resp.StatusCode {
 	case http.StatusOK:
