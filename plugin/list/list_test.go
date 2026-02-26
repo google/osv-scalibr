@@ -94,7 +94,7 @@ func TestEnricherNamesUnique(t *testing.T) {
 func TestFromCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
 	want := []string{"os/snap", "weakcredentials/etcshadow"} // Available for Linux
-	dontWant := []string{"os/homebrew", "windows/dismpatch"} // Not available for Linux
+	dontWant := []string{"windows/dismpatch"}                // Not available for Linux
 	plugins, err := pl.FromCapabilities(capab, &cpb.PluginConfig{})
 	if err != nil {
 		t.Fatalf("pl.FromCapabilities(%v): %v", capab, err)
