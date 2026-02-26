@@ -17,90 +17,69 @@
 package dockerhubpat
 
 import (
-	"bytes"
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
-// maxTokenLength is the maximum size of a Docker Hub API key.
-const maxTokenLength = 36
+const (
+	// maxTokenLength is the maximum size of a Docker Hub API key.
+	maxTokenLength = 36
+	// maxUsernameLength is the maximum size of the username field
+	maxUsernameLength = 50
 
-// patRe is a regular expression that matches a Docker Hub API key.
-// Docker Hub Personal Access Tokens have the form: `dckr_pat_` followed by 27
-// alphanumeric characters.
-var patRe = regexp.MustCompile(`dckr_pat_[A-Za-z0-9-_-]{27}`)
+	// maxContextLength is the maximum size of the context
+	maxContextLength = 50
 
-// dockerLoginCmdRe is a regular expression that matches a Docker Hub API key with an email or username used in switches of docker login command.
-// for example, `docker login -u username -p dckr_pat_{27}`.
-var dockerLoginCmdRe = regexp.MustCompile(`docker\s+login\s+(?:(?:(?:-u|--username)[=\s]+(\S+))|(?:(?:-p|--password)[=\s]+(dckr_pat_[a-zA-Z0-9_-]{27})))\s+(?:(?:(?:-u|--username)[=\s]+(\S+))|(?:(?:-p|--password)[=\s]+(dckr_pat_[a-zA-Z0-9_-]{27})))`)
+	// maxDistance is the maximum distance between the username and the PAT
+	maxDistance = 100
+)
 
-var _ veles.Detector = NewDetector()
+var (
+	// patRe is a regular expression that matches a Docker Hub API key.
+	// Docker Hub Personal Access Tokens have the form: `dckr_pat_` followed by 27
+	// alphanumeric characters.
+	patRe = regexp.MustCompile(`dckr_pat_[A-Za-z0-9_-]{27}`)
 
-// detector is a Veles Detector.
-type detector struct{}
+	// usernamePattern matches:
+	//
+	// - `docker login -u/--username` followed by an username
+	// - an username key (with or without quotes) followed by an username
+	//
+	// The username can be with or without quotes
+	usernamePattern = regexp.MustCompile(`(?:docker login[^\n]*?(?:-u|--username)(?:\s+|=)|(?i:username)["']?\s*[=:]\s*)["']?([^"'\s]+)`)
+)
 
 // NewDetector returns a new Detector that matches
 // Docker Hub Personal Access Tokens.
 func NewDetector() veles.Detector {
-	return &detector{}
-}
-
-func (d *detector) MaxSecretLen() uint32 {
-	return maxTokenLength
-}
-func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
-	var secrets []veles.Secret
-	var offsets []int
-
-	// 1. docker login command username and pat detection
-	dockerLoginCmdMatches := dockerLoginCmdRe.FindAllSubmatch(content, -1)
-	for _, m := range dockerLoginCmdMatches {
-		// Case 1: Username in the first position, PAT in the second position
-		if len(m[1]) > 0 && len(m[4]) > 0 {
-			secrets = append(secrets, DockerHubPAT{
-				Username: string(m[1]),
-				Pat:      string(m[4]),
-			})
-			// Find the offset of this PAT in the content
-			patStart := bytes.Index(content, m[0]) + bytes.LastIndex(m[0], m[4])
-			offsets = append(offsets, patStart)
-		}
-
-		// Case 2: PAT in first position, Username in second position
-		if len(m[2]) > 0 && len(m[3]) > 0 {
-			secrets = append(secrets, DockerHubPAT{
-				Username: string(m[3]),
-				Pat:      string(m[2]),
-			})
-			// Find the offset of this PAT in the content
-			patStart := bytes.Index(content, m[0]) + bytes.Index(m[0], m[2])
-			offsets = append(offsets, patStart)
-		}
-	}
-
-	// 2. only pat detection, don't add duplicates from the docker login command
-	patReMatches := patRe.FindAll(content, -1)
-	for _, m := range patReMatches {
-		newPat := string(m)
-		isDuplicate := false
-
-		// Check if this PAT already exists in the secret slice and mapped to a username
-		for _, existingSecret := range secrets {
-			if dhPat, ok := existingSecret.(DockerHubPAT); ok {
-				if dhPat.Username != "" && dhPat.Pat == newPat {
-					isDuplicate = true
-					break
-				}
+	return &pair.Detector{
+		MaxElementLen: max(maxTokenLength, maxContextLength+maxUsernameLength), MaxDistance: maxDistance,
+		FindA: pair.FindAllMatches(patRe),
+		FindB: findUsernameMatches(),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return DockerHubPAT{Pat: string(p.A.Value), Username: string(p.B.Value)}, true
+		},
+		FromPartialPair: func(p pair.Pair) (veles.Secret, bool) {
+			if p.A == nil {
+				return nil, false
 			}
-		}
-
-		// Only add if not a duplicate
-		if !isDuplicate {
-			secrets = append(secrets, DockerHubPAT{Username: "", Pat: newPat})
-			offsets = append(offsets, bytes.Index(content, m))
-		}
+			return DockerHubPAT{Pat: string(p.A.Value)}, true
+		},
 	}
+}
 
-	return secrets, offsets
+func findUsernameMatches() func(data []byte) []*pair.Match {
+	return func(data []byte) []*pair.Match {
+		res := []*pair.Match{}
+		matches := usernamePattern.FindAllSubmatchIndex(data, -1)
+		for _, m := range matches {
+			res = append(res, &pair.Match{
+				Start: m[0],
+				Value: data[m[2]:m[3]],
+			})
+		}
+		return res
+	}
 }

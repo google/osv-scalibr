@@ -58,49 +58,54 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Language packages
 
-| Language   | Details                                   | Extractor Plugin(s)                  |
-| ---------- | ----------------------------------------- | ------------------------------------ |
-| .NET       | packages.lock.json                        | `dotnet/packageslockjson`            |
-|            | packages.config                           | `dotnet/packagesconfig`              |
-|            | deps.json                                 | `dotnet/depsjson`                    |
-|            | portable executables                      | `dotnet/pe`                          |
-| C++        | Conan packages                            | `cpp/conanlock`                      |
-| Dart       | pubspec.lock                              | `dart/pubspec`                       |
-| Erlang     | mix.lock                                  | `erlang/mixlock`                     |
-| Elixir     | mix.lock                                  | `elixir/mixlock`                     |
-| Go         | Go binaries                               | `go/binary`                          |
-|            | go.mod (OSV)                              | `go/gomod`                           |
-| Haskell    | stack.yaml.lock                           | `haskell/stacklock`                  |
-|            | cabal.project.freeze                      | `haskell/cabal`                      |
-| Java       | Java archives                             | `java/archive`                       |
-|            | pom.xml                                   | `java/pomxml`, `java/pomxmlnet`      |
-|            | gradle.lockfile                           | `java/gradlelockfile`                |
-|            | verification-metadata.xml                 | `java/gradleverificationmetadataxml` |
-| Javascript | Installed NPM packages (package.json)     | `javascript/packagejson`             |
-|            | package-lock.json, npm-shrinkwrap.json    | `javascript/packagelockjson`         |
-|            | yarn.lock                                 | `javascript/yarnlock`                |
-|            | pnpm-lock.yaml                            | `javascript/pnpmlock`                |
-|            | bun.lock                                  | `javascript/bunlock`                 |
-| Lua        | Luarocks modules                          | `lua/luarocks`                       |
-| ObjectiveC | Podfile.lock                              | `swift/podfilelock`                  |
-| PHP        | Composer                                  | `php/composerlock`                   |
-| Python     | Installed PyPI packages (global and venv) | `python/wheelegg`                    |
-|            | requirements.txt                          | `python/requirements`                |
-|            | poetry.lock                               | `python/poetrylock`                  |
-|            | Pipfile.lock                              | `python/pipfilelock`                 |
-|            | pdm.lock                                  | `python/pdmlock`                     |
-|            | Conda packages                            | `python/condameta`                   |
-|            | setup.py                                  | `python/setup`                       |
-|            | uv.lock                                   | `python/uvlock`                      |
-| R          | renv.lock                                 | `r/renvlock`                         |
-| Ruby       | Installed Gem packages                    | `ruby/gemspec`                       |
-|            | Gemfile.lock, gems.locked                 | `ruby/gemfilelock`                   |
-| Rust       | Cargo.lock                                | `rust/cargolock`                     |
-|            | Cargo.toml                                | `rust/cargotoml`                     |
-|            | Rust binaries                             | `rust/cargoauditable`                |
-| Swift      | Podfile.lock                              | `swift/podfilelock`                  |
-|            | Package.resolved                          | `swift/packageresolved`              |
-| Nim        | Nimble packages                           | `nim/nimble`                         |
+| Language   | Details                                           | Extractor Plugin(s)                  |
+|------------|---------------------------------------------------|--------------------------------------|
+| .NET       | packages.lock.json                                | `dotnet/packageslockjson`            |
+|            | packages.config                                   | `dotnet/packagesconfig`              |
+|            | deps.json                                         | `dotnet/depsjson`                    |
+|            | portable executables                              | `dotnet/pe`                          |
+| C++        | Conan packages                                    | `cpp/conanlock`                      |
+| Dart       | pubspec.lock                                      | `dart/pubspec`                       |
+| Erlang     | mix.lock                                          | `erlang/mixlock`                     |
+| Elixir     | mix.lock                                          | `elixir/mixlock`                     |
+| Go         | Go binaries                                       | `go/binary`                          |
+|            | go.mod (OSV)                                      | `go/gomod`                           |
+| Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
+|            | cabal.project.freeze                              | `haskell/cabal`                      |
+| Java       | Java archives                                     | `java/archive`                       |
+|            | pom.xml                                           | `java/pomxml`                        |
+|            | gradle.lockfile                                   | `java/gradlelockfile`                |
+|            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
+| Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
+|            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
+|            | yarn.lock                                         | `javascript/yarnlock`                |
+|            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
+|            | bun.lock                                          | `javascript/bunlock`                 |
+|            | deno.json                                         | `javascript/denojson`                |
+|            | deno TypeScript Source                            | `javascript/denotssource`            |
+| Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
+|            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
+| Lua        | Luarocks modules                                  | `lua/luarocks`                       |
+| ObjectiveC | Podfile.lock                                      | `swift/podfilelock`                  |
+| PHP        | Composer                                          | `php/composerlock`                   |
+| Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
+|            | requirements.txt                                  | `python/requirements`                |
+|            | poetry.lock                                       | `python/poetrylock`                  |
+|            | Pipfile.lock                                      | `python/pipfilelock`                 |
+|            | pdm.lock                                          | `python/pdmlock`                     |
+|            | Conda packages                                    | `python/condameta`                   |
+|            | setup.py                                          | `python/setup`                       |
+|            | uv.lock                                           | `python/uvlock`                      |
+| R          | renv.lock                                         | `r/renvlock`                         |
+| Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
+|            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
+| Rust       | Cargo.lock                                        | `rust/cargolock`                     |
+|            | Cargo.toml                                        | `rust/cargotoml`                     |
+|            | Rust binaries                                     | `rust/cargoauditable`                |
+| Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
+|            | Package.resolved                                  | `swift/packageresolved`              |
+| Nim        | Nimble packages                                   | `nim/nimble`                         |
+| Perl       | Perl CPAN packages                                | `perl/cpan`                          |
 
 ### Language runtime managers
 
@@ -113,7 +118,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Secrets
 
 | Type                                        | Extractor Plugin                       |
-| ------------------------------------------- | -------------------------------------- |
+|---------------------------------------------|----------------------------------------|
 | AWS access key                              | `secrets/awsaccesskey`                 |
 | Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
@@ -124,11 +129,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
+| Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
 | Docker hub PAT                              | `secrets/dockerhubpat`                 |
 | Elastic Cloud API key                       | `secrets/elasticcloudapikey`           |
+| Deno User PAT                               | `secrets/denopatuservalidate`          |
+| Deno Organization PAT                       | `secrets/denopatorgvalidate`           |
 | GCP API key                                 | `secrets/gcpapikey`                    |
 | GCP Express Mode API key                    | `secrets/gcpexpressmode`               |
 | GCP service account key                     | `secrets/gcpsak`                       |
@@ -145,6 +153,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hugging Face API key                        | `secrets/huggingfaceapikey`            |
 | MariaDB Credentials                         | `secrets/mariadb`                      |
 | Mysql Mylogin                               | `secrets/mysqlmylogin`                 |
+| npmjs Registry Access Tokens                | `secrets/npmjsaccesstoken`             |
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`         |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`      |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`      |
@@ -164,6 +173,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Postman Collection token                    | `secrets/postmancollectiontoken`       |
 | PEM/OpenSSH Private key                     | `secrets/privatekey`                   |
 | RubyGems API key                            | `secrets/rubygemsapikey`               |
+| Sendgrid API key                            | `secrets/sendgrid`                     |
 | Slack Application Level Token               | `secrets/slackappleveltoken`           |
 | Slack Configuration Access Token            | `secrets/slackappconfigaccesstoken`    |
 | Slack Configuration Refresh Token           | `secrets/slackappconfigrefreshtoken`   |
@@ -172,6 +182,9 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Secret Key                           | `secrets/stripesecretkey`              |
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
+| Supabase PAT                                | `secrets/supabasepat`                  |
+| Supabase Project Secret Key                 | `secrets/supabaseprojectsecretkey`     |
+| Supabase Service Role JWT                   | `secrets/supabaseservicerolejwt`       |
 | Tink keyset                                 | `secrets/tinkkeyset`                   |
 | Paystack Secret Key                         | `secrets/paystacksecretkey`            |
 | Vapid keys                                  | `secrets/vapidkey`                     |
@@ -182,8 +195,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Telegram Bot API Token                      | `secrets/telegrambottoken`             |
 | Salesforce OAuth2 Access Tokens             | `secrets/salesforceoauth2access`       |
 | Salesforce OAuth 2 Client Credentials       | `secrets/salesforceoauth2client`       |
+| Salesforce OAuth 2 JWT Credentials          | `secrets/salesforceoauth2jwt`          |
 | Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
+| Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 
 ### Container inventory
 
@@ -204,12 +219,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type                    | Extractor Plugin    |
-| ----------------------- | ------------------- |
-| Wordpress plugins       | `wordpress/plugins` |
-| VSCode extensions       | `vscode/extensions` |
-| Chrome extensions       | `chrome/extensions` |
-| NetScaler installations | `netscaler`         |
+| Type                               | Extractor Plugin    |
+|------------------------------------| ------------------- |
+| Wordpress plugins                  | `wordpress/plugins` |
+| VSCode extensions                  | `vscode/extensions` |
+| Chrome extensions                  | `chrome/extensions` |
+| Maven entries in Bazel build files | `os/bazelmaven`     |
+| NetScaler installations            | `netscaler`         |
 
 ### EmbeddedFS
 
@@ -219,6 +235,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | ova     | Extracts .ova files                               | `embeddedfs/ova`     |
 | vdi     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
 | vmdk    | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
+| qcow2   | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/qcow2`   |
 
 ## Detectors
 

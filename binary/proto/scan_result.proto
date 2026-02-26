@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
 
@@ -142,6 +143,8 @@ message Package {
     ChocolateyPackageMetadata chocolatey_metadata = 62;
     MiseMetadata mise_metadata = 63;
     UnknownBinaryMetadata unknown_binary_metadata = 64;
+    BazelMavenMetadata bazel_maven_metadata = 65;
+    JavascriptDenoMetadata deno_metadata = 66;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -345,6 +348,17 @@ enum PackageSource {
   // LOCAL is the local filesystem that stores the package versions.
   // This is used for when the package is locally-developed or -installed.
   LOCAL = 3;
+}
+
+// The additional data of a deno package.
+message JavascriptDenoMetadata {
+  oneof cdn {
+    bool from_denoland_cdn = 1;
+    bool from_unpkg_cdn = 2;
+    bool from_esm_cdn = 3;
+  }
+
+  string url = 4;
 }
 
 // The additional data found in APK packages.
@@ -685,6 +699,14 @@ message NodeVersionMetadata {
   string nodejs_version = 2;
 }
 
+message BazelMavenMetadata {
+  string name = 1;
+  string group_id = 2;
+  string artifact_id = 3;
+  string version = 4;
+  string rule_name = 5;
+}
+
 message DockerPort {
   string ip = 1;
   uint32 private_port = 2;
@@ -796,13 +818,22 @@ message SecretData {
     CircleCIProjectToken circleci_project_token = 68;
     SquarePersonalAccessToken square_personal_access_token = 69;
     SquareOAuthApplicationSecret square_oauth_application_secret = 70;
-    PackagistAPIKey packagist_api_key = 71;
-    PackagistAPISecret packagist_api_secret = 72;
-    PackagistOrgReadToken packagist_org_read_token = 73;
-    PackagistOrgUpdateToken packagist_org_update_token = 74;
-    PackagistUserUpdateToken packagist_user_update_token = 75;
-    PackagistConductorUpdateToken packagist_conductor_update_token = 76;
-    ComposerPackagistCredentials composer_http_basic_credentials = 77;
+    SalesforceOAuth2JWTCredentials salesforce_oauth2_jwt_credentials = 71;
+    SendGridAPIKey sendgrid_api_key = 72;
+    DenoPat deno_pat = 73;
+    HerokuSecretKey heroku_secret_key = 74;
+    NpmJsAccessToken npmjs_access_token = 75;
+    CloudflareAPIToken cloudflare_api_token = 76;
+    SupabasePAT supabase_pat = 77;
+    SupabaseProjectSecretKey supabase_project_secret_key = 78;
+    SupabaseServiceRoleJWT supabase_service_role_jwt = 79;
+    PackagistAPIKey packagist_api_key = 80;
+    PackagistAPISecret packagist_api_secret = 81;
+    PackagistOrgReadToken packagist_org_read_token = 82;
+    PackagistOrgUpdateToken packagist_org_update_token = 83;
+    PackagistUserUpdateToken packagist_user_update_token = 84;
+    PackagistConductorUpdateToken packagist_conductor_update_token = 85;
+    ComposerPackagistCredentials composer_http_basic_credentials = 86;
 
   }
 
@@ -900,6 +931,14 @@ message SecretData {
     string username = 2;
   }
 
+  message CloudflareAPIToken {
+    string token = 1;
+  }
+
+  message DenoPat {
+    string pat = 1;
+  }
+
   message GitlabPat {
     string pat = 1;
   }
@@ -933,6 +972,10 @@ message SecretData {
   }
 
   message CratesIOAPIToken {
+    string token = 1;
+  }
+
+  message NpmJsAccessToken {
     string token = 1;
   }
 
@@ -973,10 +1016,9 @@ message SecretData {
   }
 
   message HashiCorpVaultAppRoleCredentials {
+    reserved 3;
     string role_id = 1;
     string secret_id = 2;
-    string id =
-        3;  // General ID field for uncertain UUID types when context is unclear
   }
 
   message GCPAPIKey {
@@ -1017,6 +1059,19 @@ message SecretData {
 
   message StripeWebhookSecret {
     string key = 1;
+  }
+
+  message SupabasePAT {
+    string token = 1;
+  }
+
+  message SupabaseProjectSecretKey {
+    string key = 1;
+    string project_ref = 2;
+  }
+
+  message SupabaseServiceRoleJWT {
+    string token = 1;
   }
 
   message GCPOAuth2ClientCredentials {
@@ -1156,6 +1211,19 @@ message SecretData {
     string key = 1;
   }
 
+  message HerokuSecretKey {
+    string key = 1;
+    // Optional enrichment fields populated when available
+    optional HerokuSecretKeyMetadata heroku_secret_key_metadata = 2;
+  }
+
+  message HerokuSecretKeyMetadata {
+    // expire_time is nil if the token doesn't expire, and never_expires becomes
+    // true
+    google.protobuf.Duration expire_time = 1;
+    bool never_expires = 2;
+  }
+
   message TelegramBotToken {
     string token = 1;
   }
@@ -1163,6 +1231,10 @@ message SecretData {
   message SalesforceOAuth2AccessToken {
     // Salesforce OAuth2 Access Token
     string token = 1;
+  }
+
+  message SendGridAPIKey {
+    string key = 1;
   }
 
   message SalesforceOAuth2ClientCredentials {
@@ -1181,6 +1253,15 @@ message SecretData {
     string secret = 2;
     // Salesforce OAuth2 Refresh Token
     string refresh = 3;
+  }
+
+  message SalesforceOAuth2JWTCredentials {
+    // Salesforce OAuth2 client ID
+    string id = 1;
+    // Salesforce username (email)
+    string username = 2;
+    // Salesforce OAuth2 private key
+    string private_key = 3;
   }
 
   message CursorAPIKey {

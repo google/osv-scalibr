@@ -22,7 +22,17 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		awsaccesskey.NewDetector(),
+		`AKIA1984R439T439HTH4:32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
+		awsaccesskey.Credentials{AccessID: `AKIA1984R439T439HTH4`, Secret: `32r923jr023rk320rk2a3rkB34tj340r32Ckt433`},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{awsaccesskey.NewDetector()})

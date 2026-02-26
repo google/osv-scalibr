@@ -45,7 +45,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
-  reserved 48 to 56;
+  reserved 48 to 56, 59 to 61;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
@@ -95,6 +95,11 @@ message PluginSpecificConfig {
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
     OSVLocalConfig osvlocal = 57;
+    CodeServerConfig code_server = 58;
+    DenoJsonConfig denojson = 62;
+    DenoTSSourceConfig denotssource = 63;
+    QCOW2Config qcow2 = 64;
+    PerlCPANConfig cpan = 65;
   }
 }
 
@@ -114,6 +119,23 @@ message ArchiveConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message DenoJsonConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message DenoTSSourceConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // The maximum depth level the plugin will search for deno.json files in the
+  // parent directories. If set, this overrides the default value of 2.
+  int32 deno_json_search_depth_level = 2;
 }
 
 message OVAConfig {
@@ -138,6 +160,13 @@ message VMDKConfig {
 }
 
 message ChocolateyConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message PerlCPANConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
@@ -243,6 +272,11 @@ message MacAppsConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // Determines if packages should be extracted from directories
+  // other than /Applications.
+  // This can lead to false positives, as apps from some directories
+  // like /Library may not be actually installed.
+  bool allow_custom_directories = 2;
 }
 
 message PodmanConfig {
@@ -450,4 +484,20 @@ message OSVLocalConfig {
   // The remote host to download zip files from, which will be suffixed with
   // "/<ecosystem>/all.zip"
   string remote_host = 3;
+}
+
+message CodeServerConfig {
+  // The URL of the Code-Server instance to check for authentication.
+  string remote = 1;
+  // Timeout in milliseconds for the HTTP client.
+  int64 client_timeout_millis = 2;
+}
+
+message QCOW2Config {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // The password the plugin requires to extract the encrypted .qcow2 file
+  string password = 2;
 }
