@@ -266,7 +266,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpCloudPlatformTokenToProto(t), nil
 	case mariadb.Credentials:
 		return mariadbCredentialsToProto(t), nil
-velesalibabaaccesskey	case velesalibabaaccesskey.Credentials:
+	case velesalibabaaccesskey.Credentials:
 		return alibabaAccessKeyCredentialToProto(t), nil
 	case awsaccesskey.Credentials:
 		return awsAccessKeyCredentialToProto(t), nil
@@ -415,11 +415,11 @@ func codeCatalystCredentialsToProto(s codecatalyst.Credentials) *spb.SecretData 
 func alibabaAccessKeyCredentialToProto(s velesalibabaaccesskey.Credentials) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AlibabaAccessKey_{
-			AlibabaAccessKey: &spb.AlibabaAccessKey{
+			AlibabaAccessKey: &spb.SecretData_AlibabaAccessKey{
 				AccessId:      s.AccessID,
 				Secret:        s.Secret,
 				IsRamUser:     s.IsRamUser,
-				RootOrRamUser: s.PrincipalName, // Maps Go field to Proto field
+				PrincipalName: s.PrincipalName, // Maps Go field to Proto field
 			},
 		},
 	}
@@ -1400,7 +1400,7 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			AccessID:      creds.GetAccessId(),
 			Secret:        creds.GetSecret(),
 			IsRamUser:     creds.GetIsRamUser(),
-			PrincipalName: creds.GetRootOrRamUser(),
+			PrincipalName: creds.GetPrincipalName(),
 		}, nil
 	case *spb.SecretData_AwsAccessKeyCredentials_:
 		creds := s.GetAwsAccessKeyCredentials()
