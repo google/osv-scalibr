@@ -835,6 +835,7 @@ message SecretData {
     PackagistConductorUpdateToken packagist_conductor_update_token = 85;
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
+    AlibabaAccessKey alibaba_access_key = 88;
   }
 
   message GCPSAK {
@@ -1177,6 +1178,17 @@ message SecretData {
   message AwsAccessKeyCredentials {
     string access_id = 1;
     string secret = 2;
+  }
+
+  message AlibabaAccessKey {
+    string access_id = 1;
+    string secret = 2;
+
+    // True if this is a RAM user, False if it is the Root account
+    bool is_ram_user = 3;
+
+    // The specific name of the user (e.g., "alice-dev" or "root")
+    string principal_name = 4;
   }
 
   message ReCaptchaKey {

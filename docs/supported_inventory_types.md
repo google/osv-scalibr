@@ -119,6 +119,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                                        | Extractor Plugin                       |
 |---------------------------------------------|----------------------------------------|
+| Alibaba access key                          | `secrets/alibabaaccesskey`             |
 | AWS access key                              | `secrets/awsaccesskey`                 |
 | Amazon CodeCommit credentials               | `secrets/codecommitcredentials`        |
 | Amazon CodeCatalyst credentials             | `secrets/codecatalystcredentials`      |
