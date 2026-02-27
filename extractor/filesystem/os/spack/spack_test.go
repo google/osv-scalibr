@@ -15,16 +15,14 @@
 package spack_test
 
 import (
-	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/spack"
 	spackmeta "github.com/google/osv-scalibr/extractor/filesystem/os/spack/metadata"
@@ -32,10 +30,9 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -95,6 +92,11 @@ func TestFileRequired(t *testing.T) {
 			path:         "opt/spack/linux-ubuntu22.04-x86_64/gcc-11.4.0/libelf-0.8.13-abc123/.spack/other.json",
 			wantRequired: false,
 		},
+		{
+			name:         "false-positive for cases like \"asdf.spack/spec.json\"",
+			path:         "asdf.spack/spec.json",
+			wantRequired: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -131,28 +133,26 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name             string
-		path             string
-		cfg              *cpb.PluginConfig
-		wantPackages     []*extractor.Package
-		wantErr          error
-		wantResultMetric stats.FileExtractedResult
+		name         string
+		inputConfig  extracttest.ScanInputMockConfig
+		wantPackages []*extractor.Package
+		wantErr      error
 	}{
 		{
 			name: "valid spec.json extracts non-external packages with metadata",
-			path: "testdata/validspec.json",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/validspec.json",
+			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "libelf",
 					Version:  "0.8.13",
 					PURLType: purl.TypeSpack,
 					Metadata: &spackmeta.Metadata{
-						PackageName:    "libelf",
-						PackageVersion: "0.8.13",
-						Hash:           "dsohcyk45wchbd364rjio7b3sj2bucgc",
-						Platform:       "linux",
-						PlatformOS:     "ubuntu24.04",
-						Architecture:   "skylake",
+						Hash:         "dsohcyk45wchbd364rjio7b3sj2bucgc",
+						Platform:     "linux",
+						PlatformOS:   "ubuntu24.04",
+						Architecture: "skylake",
 					},
 					Locations: []string{"testdata/validspec.json"},
 				},
@@ -161,12 +161,10 @@ func TestExtract(t *testing.T) {
 					Version:  "1.0",
 					PURLType: purl.TypeSpack,
 					Metadata: &spackmeta.Metadata{
-						PackageName:    "compiler-wrapper",
-						PackageVersion: "1.0",
-						Hash:           "i54t7tjn3prjyb363kdjgrkiawikdvyu",
-						Platform:       "linux",
-						PlatformOS:     "ubuntu24.04",
-						Architecture:   "skylake",
+						Hash:         "i54t7tjn3prjyb363kdjgrkiawikdvyu",
+						Platform:     "linux",
+						PlatformOS:   "ubuntu24.04",
+						Architecture: "skylake",
 					},
 					Locations: []string{"testdata/validspec.json"},
 				},
@@ -175,12 +173,10 @@ func TestExtract(t *testing.T) {
 					Version:  "13.3.0",
 					PURLType: purl.TypeSpack,
 					Metadata: &spackmeta.Metadata{
-						PackageName:    "gcc-runtime",
-						PackageVersion: "13.3.0",
-						Hash:           "l4tb2r6hhvx2fjqiecaesuf3pdusajjw",
-						Platform:       "linux",
-						PlatformOS:     "ubuntu24.04",
-						Architecture:   "skylake",
+						Hash:         "l4tb2r6hhvx2fjqiecaesuf3pdusajjw",
+						Platform:     "linux",
+						PlatformOS:   "ubuntu24.04",
+						Architecture: "skylake",
 					},
 					Locations: []string{"testdata/validspec.json"},
 				},
@@ -189,82 +185,47 @@ func TestExtract(t *testing.T) {
 					Version:  "4.4.1",
 					PURLType: purl.TypeSpack,
 					Metadata: &spackmeta.Metadata{
-						PackageName:    "gmake",
-						PackageVersion: "4.4.1",
-						Hash:           "e2bq6relcp3zp3cg7zq4ced6obys5bts",
-						Platform:       "linux",
-						PlatformOS:     "ubuntu24.04",
-						Architecture:   "skylake",
+						Hash:         "e2bq6relcp3zp3cg7zq4ced6obys5bts",
+						Platform:     "linux",
+						PlatformOS:   "ubuntu24.04",
+						Architecture: "skylake",
 					},
 					Locations: []string{"testdata/validspec.json"},
 				},
 			},
-			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:             "empty nodes returns no packages",
-			path:             "testdata/emptynodesspec.json",
-			wantResultMetric: stats.FileExtractedResultSuccess,
+			name: "empty nodes returns no packages",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/emptynodesspec.json",
+			},
 		},
 		{
-			name:             "invalid json returns error",
-			path:             "testdata/invalidspec.json",
-			wantErr:          cmpopts.AnyError,
-			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+			name: "invalid json returns error",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalidspec.jsontest",
+			},
+			wantErr: extracttest.ContainsErrStr{Str: "spack.extract"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector := testcollector.New()
+			extr := spack.Extractor{}
 
-			r, err := os.Open(tt.path)
-			defer func() {
-				if err = r.Close(); err != nil {
-					t.Errorf("Close(): %v", err)
-				}
-			}()
-			if err != nil {
-				t.Fatal(err)
+			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(t.Context(), &scanInput)
+
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.inputConfig.Path, diff)
+				return
 			}
 
-			info, err := os.Stat(tt.path)
-			if err != nil {
-				t.Fatalf("Failed to stat test file: %v", err)
-			}
-
-			input := &filesystem.ScanInput{Path: tt.path, Reader: r, Info: info}
-
-			cfg := tt.cfg
-			if cfg == nil {
-				cfg = &cpb.PluginConfig{}
-			}
-			e, err := spack.New(cfg)
-			if err != nil {
-				t.Fatalf("spack.New: %v", err)
-			}
-			e.(*spack.Extractor).Stats = collector
-			got, err := e.Extract(t.Context(), input)
-			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
-				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
-			}
-
-			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
-				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
-			})
 			wantInv := inventory.Inventory{Packages: tt.wantPackages}
-			if diff := cmp.Diff(wantInv, got, ignoreOrder); diff != "" {
-				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
-			}
-
-			gotResultMetric := collector.FileExtractedResult(tt.path)
-			if tt.wantResultMetric != "" && gotResultMetric != tt.wantResultMetric {
-				t.Errorf("Extract(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
-			}
-
-			gotFileSizeMetric := collector.FileExtractedFileSize(tt.path)
-			if gotFileSizeMetric != info.Size() {
-				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.inputConfig.Path, diff)
 			}
 		})
 	}

@@ -795,12 +795,10 @@ func TestMakePackageURLSpack(t *testing.T) {
 		{
 			desc: "all_fields_present",
 			metadata: &spackmeta.Metadata{
-				PackageName:    pkgName,
-				PackageVersion: pkgVersion,
-				Hash:           "dsohcyk45wchbd364rjio7b3sj2bucgc",
-				Platform:       "linux",
-				PlatformOS:     "ubuntu24.04",
-				Architecture:   "skylake",
+				Hash:         "dsohcyk45wchbd364rjio7b3sj2bucgc",
+				Platform:     "linux",
+				PlatformOS:   "ubuntu24.04",
+				Architecture: "skylake",
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeSpack,
@@ -815,11 +813,9 @@ func TestMakePackageURLSpack(t *testing.T) {
 		{
 			desc: "no_arch",
 			metadata: &spackmeta.Metadata{
-				PackageName:    pkgName,
-				PackageVersion: pkgVersion,
-				Hash:           "dsohcyk45wchbd364rjio7b3sj2bucgc",
-				Platform:       "linux",
-				PlatformOS:     "ubuntu24.04",
+				Hash:       "dsohcyk45wchbd364rjio7b3sj2bucgc",
+				Platform:   "linux",
+				PlatformOS: "ubuntu24.04",
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeSpack,
@@ -831,11 +827,8 @@ func TestMakePackageURLSpack(t *testing.T) {
 			},
 		},
 		{
-			desc: "minimal_fields",
-			metadata: &spackmeta.Metadata{
-				PackageName:    pkgName,
-				PackageVersion: pkgVersion,
-			},
+			desc:     "minimal_fields",
+			metadata: &spackmeta.Metadata{},
 			want: &purl.PackageURL{
 				Type:       purl.TypeSpack,
 				Name:       pkgName,

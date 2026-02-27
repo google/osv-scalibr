@@ -21,12 +21,10 @@ import (
 
 // Metadata holds parsing information for a spack package.
 type Metadata struct {
-	PackageName    string
-	PackageVersion string
-	Hash           string
-	Platform       string
-	PlatformOS     string
-	Architecture   string
+	Hash         string
+	Platform     string
+	PlatformOS   string
+	Architecture string
 }
 
 // SetProto sets the SpackPackageMetadata field in the Package proto.
@@ -40,8 +38,6 @@ func (m *Metadata) SetProto(p *pb.Package) {
 
 	p.Metadata = &pb.Package_SpackMetadata{
 		SpackMetadata: &pb.SpackPackageMetadata{
-			PackageName:          m.PackageName,
-			PackageVersion:       m.PackageVersion,
 			Hash:                 m.Hash,
 			Platform:             m.Platform,
 			PlatformOs:           m.PlatformOS,
@@ -57,11 +53,9 @@ func ToStruct(m *pb.SpackPackageMetadata) *Metadata {
 	}
 
 	return &Metadata{
-		PackageName:    m.GetPackageName(),
-		PackageVersion: m.GetPackageVersion(),
-		Hash:           m.GetHash(),
-		Platform:       m.GetPlatform(),
-		PlatformOS:     m.GetPlatformOs(),
-		Architecture:   m.GetPlatformArchitecture(),
+		Hash:         m.GetHash(),
+		Platform:     m.GetPlatform(),
+		PlatformOS:   m.GetPlatformOs(),
+		Architecture: m.GetPlatformArchitecture(),
 	}
 }

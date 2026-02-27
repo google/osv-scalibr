@@ -40,23 +40,21 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "nil_package",
-			m: &metadata.Metadata{
-				PackageName: "name",
-			},
+			m:    &metadata.Metadata{},
 			p:    nil,
 			want: nil,
 		},
 		{
 			desc: "set_metadata",
 			m: &metadata.Metadata{
-				PackageName: "name",
+				Platform: "linux",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_SpackMetadata{
 					SpackMetadata: &pb.SpackPackageMetadata{
-						PackageName: "name",
+						Platform: "linux",
 					},
 				},
 			},
@@ -64,13 +62,13 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "override_metadata",
 			m: &metadata.Metadata{
-				PackageName: "another-name",
+				Platform: "linux",
 			},
 			p: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_SpackMetadata{
 					SpackMetadata: &pb.SpackPackageMetadata{
-						PackageName: "name",
+						Platform: "linux",
 					},
 				},
 			},
@@ -78,7 +76,7 @@ func TestSetProto(t *testing.T) {
 				Name: "some-package",
 				Metadata: &pb.Package_SpackMetadata{
 					SpackMetadata: &pb.SpackPackageMetadata{
-						PackageName: "another-name",
+						Platform: "linux",
 					},
 				},
 			},
@@ -86,20 +84,16 @@ func TestSetProto(t *testing.T) {
 		{
 			desc: "set_all_fields",
 			m: &metadata.Metadata{
-				PackageName:    "libelf",
-				PackageVersion: "0.8.13",
-				Hash:           "dsohcyk45wchbd364rjio7b3sj2bucgc",
-				Platform:       "linux",
-				PlatformOS:     "ubuntu24.04",
-				Architecture:   "skylake",
+				Hash:         "dsohcyk45wchbd364rjio7b3sj2bucgc",
+				Platform:     "linux",
+				PlatformOS:   "ubuntu24.04",
+				Architecture: "skylake",
 			},
 			p: &pb.Package{Name: "some-package"},
 			want: &pb.Package{
 				Name: "some-package",
 				Metadata: &pb.Package_SpackMetadata{
 					SpackMetadata: &pb.SpackPackageMetadata{
-						PackageName:          "libelf",
-						PackageVersion:       "0.8.13",
 						Hash:                 "dsohcyk45wchbd364rjio7b3sj2bucgc",
 						Platform:             "linux",
 						PlatformOs:           "ubuntu24.04",
@@ -148,29 +142,25 @@ func TestToStruct(t *testing.T) {
 		{
 			desc: "some_fields",
 			m: &pb.SpackPackageMetadata{
-				PackageName: "name",
+				Platform: "linux",
 			},
 			want: &metadata.Metadata{
-				PackageName: "name",
+				Platform: "linux",
 			},
 		},
 		{
 			desc: "all_fields",
 			m: &pb.SpackPackageMetadata{
-				PackageName:          "libelf",
-				PackageVersion:       "0.8.13",
 				Hash:                 "dsohcyk45wchbd364rjio7b3sj2bucgc",
 				Platform:             "linux",
 				PlatformOs:           "ubuntu24.04",
 				PlatformArchitecture: "skylake",
 			},
 			want: &metadata.Metadata{
-				PackageName:    "libelf",
-				PackageVersion: "0.8.13",
-				Hash:           "dsohcyk45wchbd364rjio7b3sj2bucgc",
-				Platform:       "linux",
-				PlatformOS:     "ubuntu24.04",
-				Architecture:   "skylake",
+				Hash:         "dsohcyk45wchbd364rjio7b3sj2bucgc",
+				Platform:     "linux",
+				PlatformOS:   "ubuntu24.04",
+				Architecture: "skylake",
 			},
 		},
 	}

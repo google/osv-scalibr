@@ -126,7 +126,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the .spack/spec.json pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !strings.HasSuffix(path, ".spack/spec.json") {
+	if !strings.HasSuffix(path, "/.spack/spec.json") || path == ".spack/spec.json" {
 		return false
 	}
 
@@ -193,9 +193,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		}
 
 		m := &spackmeta.Metadata{
-			PackageName:    n.Name,
-			PackageVersion: n.Version,
-			Hash:           n.Hash,
+			Hash: n.Hash,
 		}
 
 		if n.Arch != nil {

@@ -94,6 +94,9 @@ var (
 		reflect.TypeFor[*spb.Package_PortageMetadata](): func(p *spb.Package) any {
 			return portagemeta.ToStruct(p.GetPortageMetadata())
 		},
+		reflect.TypeFor[*spb.Package_FlatpakMetadata](): func(p *spb.Package) any {
+			return flatpakmeta.ToStruct(p.GetFlatpakMetadata())
+		},
 		reflect.TypeFor[*spb.SpackPackageMetadata](): func(p *spb.Package) any {
 			return spackmeta.ToStruct(p.GetSpackMetadata())
 		},
