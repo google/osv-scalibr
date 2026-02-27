@@ -15,8 +15,13 @@
 package macapps
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata is the metadata struct for information parsed from the Info.plist file of a Mac App.
 type Metadata struct {
@@ -32,36 +37,27 @@ type Metadata struct {
 	KSUpdateURL                string
 }
 
-// SetProto sets the MacAppsMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_MacAppsMetadata{
-		MacAppsMetadata: &pb.MacAppsMetadata{
-			BundleDisplayName:        m.CFBundleDisplayName,
-			BundleIdentifier:         m.CFBundleIdentifier,
-			BundleShortVersionString: m.CFBundleShortVersionString,
-			BundleExecutable:         m.CFBundleExecutable,
-			BundleName:               m.CFBundleName,
-			BundlePackageType:        m.CFBundlePackageType,
-			BundleSignature:          m.CFBundleSignature,
-			BundleVersion:            m.CFBundleVersion,
-			ProductId:                m.KSProductID,
-			UpdateUrl:                m.KSUpdateURL,
-		},
+// ToProto converts the Metadata struct to a MacAppsMetadata proto.
+func ToProto(m *Metadata) *pb.MacAppsMetadata {
+	return &pb.MacAppsMetadata{
+		BundleDisplayName:        m.CFBundleDisplayName,
+		BundleIdentifier:         m.CFBundleIdentifier,
+		BundleShortVersionString: m.CFBundleShortVersionString,
+		BundleExecutable:         m.CFBundleExecutable,
+		BundleName:               m.CFBundleName,
+		BundlePackageType:        m.CFBundlePackageType,
+		BundleSignature:          m.CFBundleSignature,
+		BundleVersion:            m.CFBundleVersion,
+		ProductId:                m.KSProductID,
+		UpdateUrl:                m.KSUpdateURL,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the MacAppsMetadata proto to a Metadata struct.
 func ToStruct(m *pb.MacAppsMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		CFBundleDisplayName:        m.GetBundleDisplayName(),

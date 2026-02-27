@@ -16,8 +16,13 @@
 package javalockfile
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a Java package.
 type Metadata struct {
@@ -34,31 +39,21 @@ func (m Metadata) DepGroups() []string {
 	return m.DepGroupVals
 }
 
-// SetProto sets the JavaLockfileMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_JavaLockfileMetadata{
-		JavaLockfileMetadata: &pb.JavaLockfileMetadata{
-			ArtifactId:   m.ArtifactID,
-			GroupId:      m.GroupID,
-			DepGroupVals: m.DepGroupVals,
-			IsTransitive: m.IsTransitive,
-		},
+// ToProto converts the Metadata struct to a JavaLockfileMetadata proto.
+func ToProto(m *Metadata) *pb.JavaLockfileMetadata {
+	return &pb.JavaLockfileMetadata{
+		ArtifactId:   m.ArtifactID,
+		GroupId:      m.GroupID,
+		DepGroupVals: m.DepGroupVals,
+		IsTransitive: m.IsTransitive,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the JavaLockfileMetadata proto to a Metadata struct.
 func ToStruct(m *pb.JavaLockfileMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		ArtifactID:   m.GetArtifactId(),
 		GroupID:      m.GetGroupId(),

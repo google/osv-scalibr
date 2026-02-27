@@ -18,8 +18,16 @@ package metadata
 import (
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
+
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
 
 // Metadata holds parsing information for an arch package.
 type Metadata struct {
@@ -49,32 +57,19 @@ func (m *Metadata) ToDistro() string {
 	return ""
 }
 
-// SetProto sets the PACMANPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_PacmanMetadata{
-		PacmanMetadata: &pb.PACMANPackageMetadata{
-			PackageName:         m.PackageName,
-			PackageVersion:      m.PackageVersion,
-			OsId:                m.OSID,
-			OsVersionId:         m.OSVersionID,
-			PackageDependencies: m.PackageDependencies,
-		},
+// ToProto converts the Metadata struct to a PACMANPackageMetadata proto.
+func ToProto(m *Metadata) *pb.PACMANPackageMetadata {
+	return &pb.PACMANPackageMetadata{
+		PackageName:         m.PackageName,
+		PackageVersion:      m.PackageVersion,
+		OsId:                m.OSID,
+		OsVersionId:         m.OSVersionID,
+		PackageDependencies: m.PackageDependencies,
 	}
 }
 
 // ToStruct converts the PACMANPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.PACMANPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:         m.GetPackageName(),
 		PackageVersion:      m.GetPackageVersion(),

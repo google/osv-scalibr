@@ -18,8 +18,13 @@ package metadata
 import (
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a portage package.
 type Metadata struct {
@@ -47,31 +52,21 @@ func (m *Metadata) ToDistro() string {
 	return ""
 }
 
-// SetProto sets the PortagePackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_PortageMetadata{
-		PortageMetadata: &pb.PortagePackageMetadata{
-			PackageName:    m.PackageName,
-			PackageVersion: m.PackageVersion,
-			OsId:           m.OSID,
-			OsVersionId:    m.OSVersionID,
-		},
+// ToProto converts the Metadata struct to a PortagePackageMetadata proto.
+func ToProto(m *Metadata) *pb.PortagePackageMetadata {
+	return &pb.PortagePackageMetadata{
+		PackageName:    m.PackageName,
+		PackageVersion: m.PackageVersion,
+		OsId:           m.OSID,
+		OsVersionId:    m.OSVersionID,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the PortagePackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.PortagePackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:    m.GetPackageName(),
 		PackageVersion: m.GetPackageVersion(),

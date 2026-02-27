@@ -16,8 +16,13 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a Java archive package.
 type Metadata struct {
@@ -26,29 +31,20 @@ type Metadata struct {
 	SHA1       string
 }
 
-// SetProto sets the JavaArchiveMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_JavaArchiveMetadata{
-		JavaArchiveMetadata: &pb.JavaArchiveMetadata{
-			ArtifactId: m.ArtifactID,
-			GroupId:    m.GroupID,
-			Sha1:       m.SHA1,
-		},
+// ToProto converts the Metadata struct to a JavaArchiveMetadata proto.
+func ToProto(m *Metadata) *pb.JavaArchiveMetadata {
+	return &pb.JavaArchiveMetadata{
+		ArtifactId: m.ArtifactID,
+		GroupId:    m.GroupID,
+		Sha1:       m.SHA1,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the JavaArchiveMetadata proto to a Metadata struct.
 func ToStruct(m *pb.JavaArchiveMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		ArtifactID: m.GetArtifactId(),

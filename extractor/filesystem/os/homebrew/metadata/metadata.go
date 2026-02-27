@@ -16,8 +16,16 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
+
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
 
 // Metadata holds parsing information for a Homebrew package.
 type Metadata struct {
@@ -26,30 +34,17 @@ type Metadata struct {
 	Mirrors []string
 }
 
-// SetProto sets the JavaArchiveMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_HomebrewMetadata{
-		HomebrewMetadata: &pb.HomebrewPackageMetadata{
-			Url:     m.URL,
-			Head:    m.Head,
-			Mirrors: m.Mirrors,
-		},
+// ToProto converts the Metadata struct to a HomebrewPackageMetadata proto.
+func ToProto(m *Metadata) *pb.HomebrewPackageMetadata {
+	return &pb.HomebrewPackageMetadata{
+		Url:     m.URL,
+		Head:    m.Head,
+		Mirrors: m.Mirrors,
 	}
 }
 
 // ToStruct converts the HomebrewPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.HomebrewPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		URL:     m.GetUrl(),
 		Head:    m.GetHead(),

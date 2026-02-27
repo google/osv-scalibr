@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/fsmetadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -163,12 +164,12 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 				seen[fs] = struct{}{}
 
 				// Check ns.conf using pkg.Metadata (scalibrfs.FS)
-				fsys, ok := pkg.Metadata.(scalibrfs.FS)
-				if !ok {
+				md, ok := pkg.Metadata.(*fsmetadata.Metadata)
+				if !ok || md.FS == nil {
 					continue
 				}
 
-				f, err := fsys.Open("nsconfig/ns.conf")
+				f, err := md.FS.Open("nsconfig/ns.conf")
 				if err != nil {
 					continue
 				}

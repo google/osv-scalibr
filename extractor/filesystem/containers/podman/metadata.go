@@ -17,9 +17,14 @@ package podman
 import (
 	"time"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata contains podman inventory metadata
 type Metadata struct {
@@ -33,15 +38,8 @@ type Metadata struct {
 	Exited       bool
 }
 
-// SetProto sets the PodmanMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
+// ToProto converts the Metadata struct to a PodmanMetadata proto.
+func ToProto(m *Metadata) *pb.PodmanMetadata {
 	var exposedPorts map[uint32]*pb.Protocol
 	if m.ExposedPorts != nil {
 		exposedPorts = map[uint32]*pb.Protocol{}
@@ -50,25 +48,23 @@ func (m *Metadata) SetProto(p *pb.Package) {
 		exposedPorts[uint32(p)] = &pb.Protocol{Names: protocols}
 	}
 
-	p.Metadata = &pb.Package_PodmanMetadata{
-		PodmanMetadata: &pb.PodmanMetadata{
-			ExposedPorts:  exposedPorts,
-			Pid:           int32(m.PID),
-			NamespaceName: m.NameSpace,
-			StartedTime:   timestamppb.New(m.StartedTime),
-			FinishedTime:  timestamppb.New(m.FinishedTime),
-			Status:        m.Status,
-			ExitCode:      m.ExitCode,
-			Exited:        m.Exited,
-		},
+	return &pb.PodmanMetadata{
+		ExposedPorts:  exposedPorts,
+		Pid:           int32(m.PID),
+		NamespaceName: m.NameSpace,
+		StartedTime:   timestamppb.New(m.StartedTime),
+		FinishedTime:  timestamppb.New(m.FinishedTime),
+		Status:        m.Status,
+		ExitCode:      m.ExitCode,
+		Exited:        m.Exited,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the PodmanMetadata proto to a Metadata struct.
 func ToStruct(m *pb.PodmanMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	var exposedPorts map[uint16][]string
 	if m.GetExposedPorts() != nil {

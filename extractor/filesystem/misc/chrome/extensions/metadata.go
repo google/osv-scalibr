@@ -15,8 +15,13 @@
 package extensions
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata contains metadata for Chrome extensions.
 type Metadata struct {
@@ -30,34 +35,25 @@ type Metadata struct {
 	UpdateURL            string
 }
 
-// SetProto sets the ChromeExtensionsMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_ChromeExtensionsMetadata{
-		ChromeExtensionsMetadata: &pb.ChromeExtensionsMetadata{
-			Name:                 m.Name,
-			Description:          m.Description,
-			AuthorEmail:          m.AuthorEmail,
-			HostPermissions:      m.HostPermissions,
-			ManifestVersion:      int32(m.ManifestVersion),
-			MinimumChromeVersion: m.MinimumChromeVersion,
-			Permissions:          m.Permissions,
-			UpdateUrl:            m.UpdateURL,
-		},
+// ToProto converts the Metadata struct to a ChromeExtensionsMetadata proto.
+func ToProto(m *Metadata) *pb.ChromeExtensionsMetadata {
+	return &pb.ChromeExtensionsMetadata{
+		Name:                 m.Name,
+		Description:          m.Description,
+		AuthorEmail:          m.AuthorEmail,
+		HostPermissions:      m.HostPermissions,
+		ManifestVersion:      int32(m.ManifestVersion),
+		MinimumChromeVersion: m.MinimumChromeVersion,
+		Permissions:          m.Permissions,
+		UpdateUrl:            m.UpdateURL,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the ChromeExtensionsMetadata proto to a Metadata struct.
 func ToStruct(m *pb.ChromeExtensionsMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		Name:                 m.GetName(),

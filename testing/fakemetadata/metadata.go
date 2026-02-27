@@ -12,7 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package proto
+// Package fakemetadata provides a fake metadata implementation for testing.
+package fakemetadata
 
-// This file is intentionally left empty as part of the metadata refactoring.
-// TODO: Remove this file once all references are cleaned up.
+// StringMetadata is a dummy metadata type for testing.
+//
+//nolint:plugger
+type StringMetadata string
+
+// IsMetadata marks the struct as a metadata type.
+func (m StringMetadata) IsMetadata() {}

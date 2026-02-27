@@ -90,7 +90,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 		depGroups := parseGroupsToDepGroups(parsedPKG.Groups)
 
-		pkg.Metadata = osv.DepGroupMetadata{
+		pkg.Metadata = &osv.DepGroupMetadata{
 			DepGroupVals: depGroups,
 		}
 

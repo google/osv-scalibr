@@ -16,8 +16,13 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // OSVersion provides metadata about the OS version.
 type OSVersion struct {
@@ -27,29 +32,19 @@ type OSVersion struct {
 	FullVersion string
 }
 
-// SetProto sets the WindowsOSVersionMetadata field in the Package proto.
-func (m *OSVersion) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_WindowsOsVersionMetadata{
-		WindowsOsVersionMetadata: &pb.WindowsOSVersion{
-			Product:     m.Product,
-			FullVersion: m.FullVersion,
-		},
+// ToProto converts the OSVersion struct to a WindowsOSVersion proto.
+func ToProto(m *OSVersion) *pb.WindowsOSVersion {
+	return &pb.WindowsOSVersion{
+		Product:     m.Product,
+		FullVersion: m.FullVersion,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *OSVersion) IsMetadata() {}
+
 // ToStruct converts the WindowsOSVersion proto to a Metadata struct.
 func ToStruct(m *pb.WindowsOSVersion) *OSVersion {
-	if m == nil {
-		return nil
-	}
-
 	return &OSVersion{
 		Product:     m.GetProduct(),
 		FullVersion: m.GetFullVersion(),

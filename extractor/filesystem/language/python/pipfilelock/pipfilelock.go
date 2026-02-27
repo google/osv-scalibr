@@ -119,7 +119,7 @@ func addPkgDetails(details map[string]*extractor.Package, packages map[string]pi
 				Name:     name,
 				Version:  version,
 				PURLType: purl.TypePyPi,
-				Metadata: osv.DepGroupMetadata{
+				Metadata: &osv.DepGroupMetadata{
 					DepGroupVals: groupSlice,
 				},
 			}

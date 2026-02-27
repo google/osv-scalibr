@@ -113,7 +113,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Version:   lockPackage.Version,
 			PURLType:  purl.TypePyPi,
 			Locations: []string{input.Path},
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: resolveGroups(lockPackage),
 			},
 		}

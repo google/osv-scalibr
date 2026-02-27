@@ -48,7 +48,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -66,7 +66,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package-dev.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -84,7 +84,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -102,7 +102,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -112,7 +112,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -130,7 +130,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -140,7 +140,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -150,7 +150,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -160,7 +160,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -170,7 +170,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -180,7 +180,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -190,7 +190,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -200,7 +200,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -210,7 +210,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -220,7 +220,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -230,7 +230,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -240,7 +240,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -250,7 +250,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-advanced.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -268,7 +268,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/multiple-versions.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -278,7 +278,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/multiple-versions.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -288,7 +288,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/multiple-versions.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -308,7 +308,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "02fa893d619d3da85411acc8fd4e2eea0e95a9d9",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -320,7 +320,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1da1a89f93d1397a24d7413ed15421c139",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -338,7 +338,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/mixed-groups.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -348,7 +348,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/mixed-groups.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -358,7 +358,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/mixed-groups.v9.yaml"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},

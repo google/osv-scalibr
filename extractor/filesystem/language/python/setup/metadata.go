@@ -15,8 +15,13 @@
 package setup
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata contains additional information from a package in a setup.py file.
 type Metadata struct {
@@ -24,27 +29,18 @@ type Metadata struct {
 	VersionComparator string
 }
 
-// SetProto sets the PythonSetupMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_PythonSetupMetadata{
-		PythonSetupMetadata: &pb.PythonSetupMetadata{
-			VersionComparator: m.VersionComparator,
-		},
+// ToProto converts the Metadata struct to a PythonSetupMetadata proto.
+func ToProto(m *Metadata) *pb.PythonSetupMetadata {
+	return &pb.PythonSetupMetadata{
+		VersionComparator: m.VersionComparator,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the PythonSetupMetadata proto to a Metadata struct.
 func ToStruct(m *pb.PythonSetupMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		VersionComparator: m.GetVersionComparator(),

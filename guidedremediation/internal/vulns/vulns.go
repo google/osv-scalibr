@@ -26,6 +26,13 @@ import (
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
+//nolint:plugger
+type systemMetadata struct {
+	System resolve.System
+}
+
+func (m systemMetadata) IsMetadata() {}
+
 // VKToPackage converts a resolve.VersionKey to an *extractor.Package
 func VKToPackage(vk resolve.VersionKey) *extractor.Package {
 	ecosystem := string(util.DepsDevToOSVEcosystem(vk.System))
@@ -33,7 +40,7 @@ func VKToPackage(vk resolve.VersionKey) *extractor.Package {
 		Name:     vk.Name,
 		Version:  vk.Version,
 		PURLType: toPURLType(ecosystem),
-		Metadata: vk.System,
+		Metadata: systemMetadata{System: vk.System},
 	}
 	return p
 }

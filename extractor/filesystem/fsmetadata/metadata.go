@@ -12,45 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package depsjson
+// Package fsmetadata provides a SCALIBR metadata type that wraps a scalibrfs.FS.
+package fsmetadata
 
 import (
 	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/google/osv-scalibr/fs"
 )
 
 func init() {
 	metadataproto.Register(ToStruct, ToProto)
 }
 
-// Metadata holds parsing information for a deps.json package.
+// Metadata wraps a scalibrfs.FS.
+//
+//nolint:plugger
 type Metadata struct {
-	PackageName    string // The name of the package.
-	PackageVersion string // The version of the package.
-	// Type indicates the type of the package. Examples include:
-	// - "package": Represents an external dependency, such as a NuGet package.
-	// - "project": Represents an internal dependency, such as the main application
-	Type string
-}
-
-// ToProto converts the Metadata struct to a DEPSJSONMetadata proto.
-func ToProto(m *Metadata) *pb.DEPSJSONMetadata {
-	return &pb.DEPSJSONMetadata{
-		PackageName:    m.PackageName,
-		PackageVersion: m.PackageVersion,
-		Type:           m.Type,
-	}
+	FS        fs.FS
+	Converted bool
 }
 
 // IsMetadata marks the struct as a metadata type.
 func (m *Metadata) IsMetadata() {}
 
-// ToStruct converts the DEPSJSONMetadata proto to a Metadata struct.
-func ToStruct(m *pb.DEPSJSONMetadata) *Metadata {
+// ToProto returns a placeholder proto.
+func ToProto(m *Metadata) *pb.FSMetadata {
+	return &pb.FSMetadata{HasFs: m.FS != nil}
+}
 
+// ToStruct returns the struct with Converted=true and FS=nil.
+func ToStruct(m *pb.FSMetadata) *Metadata {
 	return &Metadata{
-		PackageName:    m.GetPackageName(),
-		PackageVersion: m.GetPackageVersion(),
-		Type:           m.GetType(),
+		Converted: true,
+		FS:        nil,
 	}
 }

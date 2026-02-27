@@ -109,7 +109,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -126,7 +126,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package-dev.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -143,7 +143,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.2",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -152,7 +152,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -169,7 +169,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.2",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages-alt.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -178,7 +178,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages-alt.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -195,7 +195,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.2",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -204,7 +204,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.0.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -213,7 +213,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.0.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -222,7 +222,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.1.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},

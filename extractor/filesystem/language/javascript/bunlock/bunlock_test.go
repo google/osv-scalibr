@@ -122,7 +122,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -140,7 +140,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package-dev.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -159,7 +159,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/bad-tuple.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -178,7 +178,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/bad-tuple.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -196,7 +196,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/two-packages.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -206,7 +206,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/two-packages.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -224,7 +224,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/same-package-different-groups.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -234,7 +234,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/same-package-different-groups.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -252,7 +252,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -270,7 +270,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -280,7 +280,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -290,7 +290,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -300,7 +300,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -310,7 +310,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -328,7 +328,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -338,7 +338,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -348,7 +348,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -366,7 +366,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-implicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -376,7 +376,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-implicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -394,7 +394,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-explicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -404,7 +404,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/peer-dependencies-explicit.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -422,7 +422,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -432,7 +432,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -442,7 +442,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -452,7 +452,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -462,7 +462,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -472,7 +472,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -482,7 +482,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -492,7 +492,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -502,7 +502,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -520,7 +520,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -530,7 +530,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -540,7 +540,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -550,7 +550,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -560,7 +560,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -570,7 +570,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -580,7 +580,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -598,7 +598,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -608,7 +608,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -618,7 +618,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -628,7 +628,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -646,7 +646,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -656,7 +656,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -666,7 +666,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -676,7 +676,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -686,7 +686,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -698,7 +698,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "527e8ce",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -710,7 +710,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "1ae6dc1267500360b411ec711b8aeac8c68b2246",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -722,7 +722,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -734,7 +734,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac058",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -746,7 +746,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b7aef34",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -756,7 +756,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -766,7 +766,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -776,7 +776,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -786,7 +786,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -796,7 +796,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -808,7 +808,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "91ef2d4",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -820,7 +820,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fc6f7d8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -830,7 +830,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -848,7 +848,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/files.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -858,7 +858,7 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/files.json5"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -878,7 +878,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6609a88",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},

@@ -16,8 +16,13 @@
 package denometadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // DenoMetadata holds repository source information for a deno.json file.
 type DenoMetadata struct {
@@ -27,15 +32,8 @@ type DenoMetadata struct {
 	URL             string
 }
 
-// SetProto sets the DenoMetadata field in the Package proto.
-func (m *DenoMetadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
+// ToProto converts the DenoMetadata struct to a JavascriptDenoMetadata proto.
+func ToProto(m *DenoMetadata) *pb.JavascriptDenoMetadata {
 	denoMetadata := &pb.JavascriptDenoMetadata{
 		Url: m.URL,
 	}
@@ -57,16 +55,14 @@ func (m *DenoMetadata) SetProto(p *pb.Package) {
 		}
 	}
 
-	p.Metadata = &pb.Package_DenoMetadata{
-		DenoMetadata: denoMetadata,
-	}
+	return denoMetadata
 }
+
+// IsMetadata marks the struct as a metadata type.
+func (m *DenoMetadata) IsMetadata() {}
 
 // ToStruct converts the DenoMetadata proto to a Metadata struct.
 func ToStruct(m *pb.JavascriptDenoMetadata) *DenoMetadata {
-	if m == nil {
-		return nil
-	}
 
 	metadata := &DenoMetadata{
 		URL: m.GetUrl(),

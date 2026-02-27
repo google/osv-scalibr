@@ -16,8 +16,13 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a Bazel tool.
 type Metadata struct {
@@ -28,31 +33,22 @@ type Metadata struct {
 	RuleName   string // Bazel rule name
 }
 
-// SetProto sets the BazelMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_BazelMavenMetadata{
-		BazelMavenMetadata: &pb.BazelMavenMetadata{
-			Name:       m.Name,
-			GroupId:    m.GroupID,
-			ArtifactId: m.ArtifactID,
-			Version:    m.Version,
-			RuleName:   m.RuleName,
-		},
+// ToProto converts the Metadata struct to a BazelMavenMetadata proto.
+func ToProto(m *Metadata) *pb.BazelMavenMetadata {
+	return &pb.BazelMavenMetadata{
+		Name:       m.Name,
+		GroupId:    m.GroupID,
+		ArtifactId: m.ArtifactID,
+		Version:    m.Version,
+		RuleName:   m.RuleName,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the BazelMetadata proto to a Metadata struct.
 func ToStruct(m *pb.BazelMavenMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		Name:       m.GetName(),
