@@ -121,7 +121,7 @@ func TestValidateRequirements(t *testing.T) {
 }
 
 func TestFilterByCapabilities(t *testing.T) {
-	capab := &plugin.Capabilities{OS: plugin.OSLinux}
+	capab := &plugin.Capabilities{OS: plugin.OSMac}
 	cfg := &cpb.PluginConfig{}
 	snap, err := snap.New(cfg)
 	if err != nil {
@@ -137,7 +137,7 @@ func TestFilterByCapabilities(t *testing.T) {
 		t.Fatalf("plugin.FilterCapabilities(%v, %v): want 1 plugin, got %d", pls, capab, len(got))
 	}
 	gotName := got[0].Name()
-	wantName := "os/snap" // os/homebrew is for Mac only
+	wantName := "os/homebrew" // os/snap is for Linux only
 	if gotName != wantName {
 		t.Fatalf("plugin.FilterCapabilities(%v, %v): want plugin %q, got %q", pls, capab, wantName, gotName)
 	}
