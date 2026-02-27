@@ -212,7 +212,6 @@ func compareVersion(a, b [4]int) int {
 }
 
 // fixedVersionForEdge returns the fixed Edge version for the installed major.
-// C5: merged the previously redundant "v[0] < 136" and "v[0] == 136" cases.
 func fixedVersionForEdge(evaluatedVersion string) (string, bool, error) {
 	v, err := parseVersion(evaluatedVersion)
 	if err != nil {
@@ -232,11 +231,11 @@ func fixedVersionForEdge(evaluatedVersion string) (string, bool, error) {
 func evaluatePackagePolicy(pkgName string, pkg *extractor.Package) (policyDecision, bool, error) {
 	switch pkgName {
 	case "google-chrome":
-		// C1: standalone Chrome has no backport branches. Always compare
+		// standalone Chrome has no backport branches. Always compare
 		// against chromeFixed (137.0.7151.68) directly.
 		return evaluateStandaloneChromiumPolicy(pkg.Version, chromeFixed)
 	case "chromium":
-		// C1: same as google-chrome — no backport floor applies.
+		// same as google-chrome — no backport floor applies.
 		return evaluateStandaloneChromiumPolicy(pkg.Version, chromiumFixed)
 	case "microsoft-edge":
 		fixedVersion, shouldCheck, err := fixedVersionForEdge(pkg.Version)
@@ -280,7 +279,7 @@ func evaluateElectronPolicy(pkg *extractor.Package) (policyDecision, bool, error
 			major, _ := electronMajorFromVersion(md.ElectronVersion)
 			extra := fmt.Sprintf("evaluated electron %s, core %s", md.ElectronVersion, md.ChromiumVersion)
 			if major < 34 {
-				// C4: EOL Electron branches have no in-branch fix. The comparison
+				// EOL Electron branches have no in-branch fix. The comparison
 				// value "34.5.8" only flags the version as vulnerable; it is NOT
 				// achievable as a same-major patch. Users must upgrade to Electron 34+.
 				extra += "; EOL branch, no in-branch fix available, must upgrade to Electron 34+"
@@ -361,12 +360,6 @@ func electronMajorFromVersion(version string) (int, error) {
 }
 
 // isElectronVulnerable compares two Electron version strings using semver.
-// C3: replaced the previous dual numeric/semver path with a single semver
-// path via normalizeElectronForCompare. The old numeric fast-path caused an
-// error when the installed version was a plain stable string (e.g. "37.0.0")
-// but the fixed version carried a pre-release tag (e.g. "37.0.0-beta.3"),
-// which resulted in the package being silently skipped instead of being
-// correctly evaluated as not-vulnerable (stable > any pre-release in semver).
 func isElectronVulnerable(version, fixedVersion string) (bool, error) {
 	normInstalled, err := normalizeElectronForCompare(version)
 	if err != nil {
@@ -381,10 +374,6 @@ func isElectronVulnerable(version, fixedVersion string) (bool, error) {
 
 // normalizeElectronForCompare converts an Electron version string into a
 // canonical "vMAJOR.MINOR.PATCH[-pre]" semver string suitable for comparison.
-// Four-part numeric versions (e.g. "36.4.0.1") have their fourth segment
-// stripped (producing "v36.4.0") so that semver.Compare treats them as equal
-// to or later than the three-part release ("36.4.0 >= 36.4.0" → not vulnerable).
-// Pre-release labels are preserved unchanged (e.g. "37.0.0-beta.3").
 func normalizeElectronForCompare(version string) (string, error) {
 	trimmed := strings.TrimSpace(strings.TrimPrefix(version, "v"))
 	if trimmed == "" {
