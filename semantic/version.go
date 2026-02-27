@@ -15,11 +15,24 @@
 package semantic
 
 import (
+	"errors"
 	"math/big"
 )
 
+// ErrNotSameEcosystem is returned when comparing two versions of different ecosystems.
+var ErrNotSameEcosystem = errors.New("version is not of the same ecosystem")
+
 // Version provides an interface for sortable version strings.
 type Version interface {
+	// Compare returns an integer representing the sort order of the given Version
+	// relative to the subject Version.
+	//
+	// The result will be 0 if v == w, -1 if v < w, or +1 if v > w.
+	//
+	// ErrNotSameEcosystem is returned if the given Version is not of the same
+	// ecosystem as the subject Version.
+	Compare(v Version) (int, error)
+
 	// CompareStr returns an integer representing the sort order of the given string
 	// when parsed as the concrete Version relative to the subject Version.
 	//
