@@ -120,7 +120,6 @@ func TestValidator(t *testing.T) {
 			want:          veles.ValidationValid,
 			wantIsRam:     false,
 			wantPrincipal: "root",
-			// We need a specific mock server for root to return the root ARN
 			server: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusOK)
@@ -151,7 +150,6 @@ func TestValidator(t *testing.T) {
 			validator := alibabaaccesskey.NewValidator()
 			validator.SetHTTPClient(client)
 
-			// We pass a pointer (&tc.key) so Validate can update the fields
 			got, err := validator.Validate(t.Context(), &tc.key)
 
 			if err != nil {
@@ -161,7 +159,6 @@ func TestValidator(t *testing.T) {
 				t.Errorf("Validate() status = %v, want %v", got, tc.want)
 			}
 
-			// Verify the enriched metadata
 			if got == veles.ValidationValid {
 				if tc.key.IsRamUser != tc.wantIsRam {
 					t.Errorf("IsRamUser = %v, want %v", tc.key.IsRamUser, tc.wantIsRam)

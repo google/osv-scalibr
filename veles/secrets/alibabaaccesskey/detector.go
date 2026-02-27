@@ -46,7 +46,7 @@ func NewDetector() veles.Detector {
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			// The framework natively enforces that the ID and Secret are found
 			// within a 200-character radius of each other.
-			return Credentials{AccessID: string(p.A.Value), Secret: string(p.B.Value)}, true
+			return &Credentials{AccessID: string(p.A.Value), Secret: string(p.B.Value)}, true
 		},
 	}
 }
