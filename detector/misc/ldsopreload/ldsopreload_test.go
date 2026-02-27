@@ -481,7 +481,7 @@ type statErrorFS struct {
 }
 
 func (fsys statErrorFS) Open(name string) (fs.File, error) {
-	return statErrorFile{statErr: fsys.statErr}, nil
+	return statErrorFile(fsys), nil
 }
 
 func (fsys statErrorFS) Stat(name string) (fs.FileInfo, error) {
