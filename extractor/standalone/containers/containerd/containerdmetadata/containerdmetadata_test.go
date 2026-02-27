@@ -19,64 +19,23 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	metadata "github.com/google/osv-scalibr/extractor/standalone/containers/containerd/containerdmetadata"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *metadata.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.ContainerdRuntimeContainerMetadata
 	}{{
-		desc: "nil metadata",
-		m:    nil,
-		p:    &pb.Package{Name: "some-package"},
-		want: &pb.Package{Name: "some-package"},
-	}, {
-		desc: "nil package",
-		m: &metadata.Metadata{
-			Namespace: "some-namespace",
-		},
-		p:    nil,
-		want: nil,
-	}, {
 		desc: "set metadata",
 		m: &metadata.Metadata{
 			Namespace: "some-namespace",
 		},
-		p: &pb.Package{Name: "some-package"},
-		want: &pb.Package{
-			Name: "some-package",
-			Metadata: &pb.Package_ContainerdRuntimeContainerMetadata{
-				ContainerdRuntimeContainerMetadata: &pb.ContainerdRuntimeContainerMetadata{
-					NamespaceName: "some-namespace",
-				},
-			},
-		},
-	}, {
-		desc: "override metadata",
-		m: &metadata.Metadata{
-			Namespace: "some-namespace",
-		},
-		p: &pb.Package{
-			Name: "some-package",
-			Metadata: &pb.Package_ContainerdRuntimeContainerMetadata{
-				ContainerdRuntimeContainerMetadata: &pb.ContainerdRuntimeContainerMetadata{
-					NamespaceName: "some-other-namespace",
-				},
-			},
-		},
-		want: &pb.Package{
-			Name: "some-package",
-			Metadata: &pb.Package_ContainerdRuntimeContainerMetadata{
-				ContainerdRuntimeContainerMetadata: &pb.ContainerdRuntimeContainerMetadata{
-					NamespaceName: "some-namespace",
-				},
-			},
+		want: &pb.ContainerdRuntimeContainerMetadata{
+			NamespaceName: "some-namespace",
 		},
 	}, {
 		desc: "set all fields",
@@ -89,41 +48,31 @@ func TestSetProto(t *testing.T) {
 			PID:         123,
 			RootFS:      "/some/root/fs",
 		},
-		p: &pb.Package{Name: "some-package"},
-		want: &pb.Package{
-			Name: "some-package",
-			Metadata: &pb.Package_ContainerdRuntimeContainerMetadata{
-				ContainerdRuntimeContainerMetadata: &pb.ContainerdRuntimeContainerMetadata{
-					NamespaceName: "namespace",
-					ImageName:     "image-name",
-					ImageDigest:   "image-digest",
-					Runtime:       "runtime",
-					Id:            "id",
-					Pid:           123,
-					RootfsPath:    "/some/root/fs",
-				},
-			},
+		want: &pb.ContainerdRuntimeContainerMetadata{
+			NamespaceName: "namespace",
+			ImageName:     "image-name",
+			ImageDigest:   "image-digest",
+			Runtime:       "runtime",
+			Id:            "id",
+			Pid:           123,
+			RootfsPath:    "/some/root/fs",
 		},
 	}}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := metadata.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metadata{%+v}.SetProto(%+v) returned diff (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("Metadata.ToProto(%+v) returned diff (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-			if tc.m == nil || p == nil {
-				return
-			}
-			got := metadata.ToStruct(p.GetContainerdRuntimeContainerMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v) returned diff (-want +got):\n%s", p, diff)
+			gotStruct := metadata.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -135,11 +84,6 @@ func TestToStruct(t *testing.T) {
 		m    *pb.ContainerdRuntimeContainerMetadata
 		want *metadata.Metadata
 	}{
-		{
-			name: "nil",
-			m:    nil,
-			want: nil,
-		},
 		{
 			name: "some fields",
 			m: &pb.ContainerdRuntimeContainerMetadata{
@@ -184,18 +128,12 @@ func TestToStruct(t *testing.T) {
 			}
 
 			// Test the reverse conversion for completeness.
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_ContainerdRuntimeContainerMetadata{
-					ContainerdRuntimeContainerMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := metadata.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("Metatadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
