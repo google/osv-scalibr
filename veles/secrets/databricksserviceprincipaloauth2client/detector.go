@@ -50,7 +50,7 @@ var (
 	// A real word demonstration on youtube suggests its an UUID-like string:
 	// https://youtu.be/4wFygEnkUZw?t=271&si=HOwcCVSWh2PxtPjg
 	// Since it's an UUID-like string, it is possible that hypens are not present in the string (edge case).
-	// Therefore, I have choosen 32 as the minimum length.
+	// Therefore, I have chosen 32 as the minimum length.
 	clientIDRe = regexp.MustCompile(`(?i)\bclient[_-]?id\b\s*[:=]?\s*([A-Za-z0-9\-]{32,36})\b`)
 
 	// clientSecretRe is a regular expression that matches Databricks Service Principal OAuth2 Client Secrets.
