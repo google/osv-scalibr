@@ -63,8 +63,8 @@ func mockDatabricksServer(t *testing.T, expectedClientID string, expectedClientS
 			return
 		}
 
-		clientIDHeader := r.Header.Get("client_id")
-		clientSecretHeader := r.Header.Get("client_secret")
+		clientIDHeader := r.Header.Get("Client_id")
+		clientSecretHeader := r.Header.Get("Client_secret")
 
 		// Read request body
 		bodyBytes, err := io.ReadAll(r.Body)
