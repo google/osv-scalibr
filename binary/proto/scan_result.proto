@@ -835,6 +835,7 @@ message SecretData {
     PackagistConductorUpdateToken packagist_conductor_update_token = 85;
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
+    DatabricksUserAccountOAuth2ClientCredentials databricks_user_account_oauth2_client_credentials = 88;
   }
 
   message GCPSAK {
@@ -1290,6 +1291,15 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+
+  message DatabricksUserAccountOAuth2ClientCredentials {
+    // Databricks User Account OAuth2 client ID
+    string id = 1;
+    // Databricks User Account OAuth2 client secret
+    string secret = 2;
+    // Databricks User Account ID
+    string account_id = 3;
   }
 }
 

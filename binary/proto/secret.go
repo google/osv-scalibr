@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databricksuseraccountoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -321,6 +322,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case databricksuseraccountoauth2client.Credentials:
+		return databricksUserAccountOAuth2ClientCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1129,6 +1132,18 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+func databricksUserAccountOAuth2ClientCredentialsToProto(creds databricksuseraccountoauth2client.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksUserAccountOauth2ClientCredentials{
+			DatabricksUserAccountOauth2ClientCredentials: &spb.SecretData_DatabricksUserAccountOAuth2ClientCredentials{
+				Id:        creds.ID,
+				Secret:    creds.Secret,
+				AccountId: creds.AccountID,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1481,6 +1496,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_DatabricksUserAccountOauth2ClientCredentials:
+		return databricksUserAccountOAuth2ClientCredentialsToStruct(s.GetDatabricksUserAccountOauth2ClientCredentials()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1842,6 +1859,18 @@ func packagistConductorUpdateTokenToProto(s velespackagist.ConductorUpdateToken)
 				Token: s.Token,
 			},
 		},
+	}
+}
+
+func databricksUserAccountOAuth2ClientCredentialsToStruct(creds *spb.SecretData_DatabricksUserAccountOAuth2ClientCredentials) databricksuseraccountoauth2client.Credentials {
+	if creds == nil {
+		return databricksuseraccountoauth2client.Credentials{}
+	}
+
+	return databricksuseraccountoauth2client.Credentials{
+		ID:        creds.GetId(),
+		Secret:    creds.GetSecret(),
+		AccountID: creds.GetAccountId(),
 	}
 }
 
