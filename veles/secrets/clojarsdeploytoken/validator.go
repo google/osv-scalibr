@@ -32,9 +32,13 @@ type Validator struct {
 }
 
 // Validate checks if a Clojars Deploy Token is active.
-// It attempts a PUT request to a protected namespace.
-// HTTP 403 (Forbidden) indicates the token is valid but unauthorized for that specific path.
-// HTTP 401 (Unauthorized) indicates the token/username pair is invalid.
+// It uses a "canary" logic by attempting a non-destructive PUT request
+// to a core namespace (e.g., /clojure/clojure).
+// This ensures we verify the token without actually modifying any packages.
+//
+// Returns:
+// - veles.ValidationValid if HTTP 403 (Authenticated, but restricted).
+// - veles.ValidationInvalid if HTTP 401 (Unauthenticated).
 func (v *Validator) Validate(ctx context.Context, k ClojarsDeployToken) (veles.ValidationStatus, error) {
 	if k.Username == "" {
 		return veles.ValidationInvalid, errors.New("username is empty")
@@ -43,9 +47,7 @@ func (v *Validator) Validate(ctx context.Context, k ClojarsDeployToken) (veles.V
 	sv := &simplevalidate.Validator[ClojarsDeployToken]{
 		Endpoint:   v.Endpoint,
 		HTTPMethod: http.MethodPut,
-		Body: func(k ClojarsDeployToken) (string, error) {
-			return "test", nil
-		},
+		// Body is removed per reviewer feedback as curl confirmed it's not required for 403/401.
 		HTTPHeaders: func(k ClojarsDeployToken) map[string]string {
 			// Clojars uses Basic Auth: base64(username:token)
 			auth := k.Username + ":" + k.Token

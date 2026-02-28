@@ -31,8 +31,8 @@ import (
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	velescircleci "github.com/google/osv-scalibr/veles/secrets/circleci"
-	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	clojarsdeploytoken "github.com/google/osv-scalibr/veles/secrets/clojarsdeploytoken"
+	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
@@ -515,7 +515,7 @@ func npmJSAccessTokenToProto(s npmjsaccesstoken.NpmJsAccessToken) *spb.SecretDat
 
 func clojarsDeployTokenToProto(s clojarsdeploytoken.ClojarsDeployToken) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_ClojarsDeployToken_{ // Note: Wrapper usually has trailing underscore or matches Proto field
+		Secret: &spb.SecretData_ClojarsDeployToken_{
 			ClojarsDeployToken: &spb.SecretData_ClojarsDeployToken{
 				Token: s.Token,
 			},

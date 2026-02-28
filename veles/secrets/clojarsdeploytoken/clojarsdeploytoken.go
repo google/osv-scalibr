@@ -16,7 +16,6 @@ package clojarsdeploytoken
 
 // ClojarsDeployToken is a Veles Secret that holds relevant information for a
 // Clojars Deploy Token (prefix `CLOJARS_`).
-
 type ClojarsDeployToken struct {
 	Token    string
 	Username string
