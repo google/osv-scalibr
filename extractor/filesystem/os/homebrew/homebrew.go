@@ -68,7 +68,9 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSMac} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{OS: plugin.OSUnix}
+}
 
 // FileRequired returns true if the specified file path matches the homebrew path.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {

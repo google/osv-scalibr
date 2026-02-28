@@ -45,7 +45,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
-  reserved 48 to 56, 59 to 61;
+  reserved 48 to 56, 59 to 61, 66 to 67;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
@@ -98,6 +98,9 @@ message PluginSpecificConfig {
     CodeServerConfig code_server = 58;
     DenoJsonConfig denojson = 62;
     DenoTSSourceConfig denotssource = 63;
+    QCOW2Config qcow2 = 64;
+    PerlCPANConfig cpan = 65;
+    PythonRequirementsTransitiveConfig python_requirements_transitive = 68;
   }
 }
 
@@ -164,6 +167,13 @@ message ChocolateyConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message PerlCPANConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
 message HashiCorpVaultValidatorConfig {
   // The URL of the Vault server to connect to.
   // https://developer.hashicorp.com/vault
@@ -182,6 +192,14 @@ message POMXMLNetConfig {
   // If true, use deps.dev requirements API for dependency resolution.
   bool deps_dev_requirements = 2;
 }
+
+message PythonRequirementsTransitiveConfig {
+  // The URL of the upstream PyPI registry.
+  string upstream_registry = 1;
+  // If true, use deps.dev requirements API for dependency resolution.
+  bool deps_dev_requirements = 2;
+}
+
 
 message DpkgConfig {
   // Includes packages that are not installed
@@ -482,4 +500,13 @@ message CodeServerConfig {
   string remote = 1;
   // Timeout in milliseconds for the HTTP client.
   int64 client_timeout_millis = 2;
+}
+
+message QCOW2Config {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // The password the plugin requires to extract the encrypted .qcow2 file
+  string password = 2;
 }

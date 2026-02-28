@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/qcow2"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
@@ -47,7 +48,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -107,6 +108,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/cloudflareapitoken"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
@@ -125,6 +127,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/databricksuseraccountpat"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -146,6 +149,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/packagist"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -163,6 +167,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/supabase"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
@@ -187,9 +192,7 @@ var (
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
-		// pom.xml extraction for environments with and without network access.
-		pomxml.Name:    {pomxml.New},
-		pomxmlnet.Name: {pomxmlnet.New},
+		pomxml.Name:                        {pomxml.New},
 	}
 	// JavaArtifact extractors for Java.
 	JavaArtifact = InitMap{
@@ -263,6 +266,8 @@ var (
 		cargolock.Name: {cargolock.New},
 		cargotoml.Name: {cargotoml.New},
 	}
+	// CPANSource extractors for Perl.
+	CPANSource = InitMap{cpan.Name: {cpan.New}}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.New},
@@ -335,6 +340,7 @@ var (
 		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
 		mariadb.Name:                 {mariadb.New},
 		awsaccesskey.Name:            {awsaccesskey.New},
+		composerpackagist.Name:       {composerpackagist.New},
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
@@ -374,6 +380,11 @@ var (
 		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
+		{packagist.NewAPISecretDetector(), "secrets/packagistsecret", 0},
+		{packagist.NewOrgReadTokenDetector(), "secrets/packagistorgreadtoken", 0},
+		{packagist.NewOrgUpdateTokenDetector(), "secrets/packagistorgupdatetoken", 0},
+		{packagist.NewUserUpdateTokenDetector(), "secrets/packagistuserupdatetoken", 0},
+		{packagist.NewConductorUpdateTokenDetector(), "secrets/packagistconductorupdatetoken", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
@@ -390,6 +401,9 @@ var (
 		{stripeapikeys.NewSecretKeyDetector(), "secrets/stripesecretkey", 0},
 		{stripeapikeys.NewRestrictedKeyDetector(), "secrets/striperestrictedkey", 0},
 		{stripeapikeys.NewWebhookSecretDetector(), "secrets/stripewebhooksecret", 0},
+		{supabase.NewPATDetector(), "secrets/supabasepat", 0},
+		{supabase.NewProjectSecretKeyDetector(), "secrets/supabaseprojectsecretkey", 0},
+		{supabase.NewServiceRoleJWTDetector(), "secrets/supabaseservicerolejwt", 0},
 		{squareapikey.NewPersonalAccessTokenDetector(), "secrets/squarepersonalaccesstoken", 0},
 		{squareapikey.NewOAuthApplicationSecretDetector(), "secrets/squareoauthapplicationsecret", 0},
 		{gcpoauth2client.NewDetector(), "secrets/gcpoauth2clientcredentials", 0},
@@ -411,6 +425,7 @@ var (
 		{herokuplatformkey.NewSecretKeyDetector(), "secrets/herokuplatformkey", 0},
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
+		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
 		{databricksuseraccountpat.NewDetector(), "secrets/databricksuseraccountpat", 0},
 	})
 
@@ -442,6 +457,7 @@ var (
 		vdi.Name:     {vdi.New},
 		vmdk.Name:    {vmdk.New},
 		ova.Name:     {ova.New},
+		qcow2.Name:   {qcow2.New},
 	}
 
 	// FFA extractor.
@@ -476,6 +492,7 @@ var (
 		LuaSource,
 		Secrets,
 		MiscSource,
+		CPANSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -533,6 +550,7 @@ var (
 		"rust":       vals(concat(RustSource, RustArtifact)),
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
+		"perl":       vals(CPANSource),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),

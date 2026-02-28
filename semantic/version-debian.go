@@ -143,13 +143,18 @@ func compareDebianVersions(a, b string) (int, error) {
 	return 0, nil
 }
 
-type debianVersion struct {
+// DebianVersion represents a version of a Debian package.
+//
+// See https://man7.org/linux/man-pages/man7/deb-version.7.html
+type DebianVersion struct {
 	epoch    *big.Int
 	upstream string
 	revision string
 }
 
-func (v debianVersion) compare(w debianVersion) (int, error) {
+var _ Version = DebianVersion{}
+
+func (v DebianVersion) compare(w DebianVersion) (int, error) {
 	if diff := v.epoch.Cmp(w.epoch); diff != 0 {
 		return diff, nil
 	}
@@ -171,8 +176,17 @@ func (v debianVersion) compare(w debianVersion) (int, error) {
 	return 0, nil
 }
 
-func (v debianVersion) CompareStr(str string) (int, error) {
-	w, err := parseDebianVersion(str)
+// Compare compares the given version to the receiver.
+func (v DebianVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(DebianVersion); ok {
+		return v.compare(w)
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v DebianVersion) CompareStr(str string) (int, error) {
+	w, err := ParseDebianVersion(str)
 
 	if err != nil {
 		return 0, err
@@ -181,7 +195,8 @@ func (v debianVersion) CompareStr(str string) (int, error) {
 	return v.compare(w)
 }
 
-func parseDebianVersion(str string) (debianVersion, error) {
+// ParseDebianVersion parses the given string as a Debian version.
+func ParseDebianVersion(str string) (DebianVersion, error) {
 	var upstream, revision string
 
 	str = strings.TrimSpace(str)
@@ -193,7 +208,7 @@ func parseDebianVersion(str string) (debianVersion, error) {
 		e, str = splitAround(str, ":", false)
 
 		if epoch, err = convertToBigInt(e); err != nil {
-			return debianVersion{}, err
+			return DebianVersion{}, err
 		}
 	}
 
@@ -204,5 +219,5 @@ func parseDebianVersion(str string) (debianVersion, error) {
 		revision = "0"
 	}
 
-	return debianVersion{epoch, upstream, revision}, nil
+	return DebianVersion{epoch, upstream, revision}, nil
 }
