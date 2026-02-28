@@ -266,7 +266,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpCloudPlatformTokenToProto(t), nil
 	case mariadb.Credentials:
 		return mariadbCredentialsToProto(t), nil
-	case velesalibabaaccesskey.Credentials:
+	case *velesalibabaaccesskey.Credentials:
 		return alibabaAccessKeyCredentialToProto(t), nil
 	case awsaccesskey.Credentials:
 		return awsAccessKeyCredentialToProto(t), nil
@@ -412,7 +412,7 @@ func codeCatalystCredentialsToProto(s codecatalyst.Credentials) *spb.SecretData 
 	}
 }
 
-func alibabaAccessKeyCredentialToProto(s velesalibabaaccesskey.Credentials) *spb.SecretData {
+func alibabaAccessKeyCredentialToProto(s *velesalibabaaccesskey.Credentials) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_AlibabaAccessKey_{
 			AlibabaAccessKey: &spb.SecretData_AlibabaAccessKey{

@@ -104,13 +104,15 @@ func (v *Validator) Validate(ctx context.Context, key *Credentials) (veles.Valid
 	}
 	defer rsp.Body.Close()
 
+	// Intercept the raw body before parsing
+	bodyBytes, _ := io.ReadAll(rsp.Body)
+
 	// 5. Evaluate the HTTP Response
 	if rsp.StatusCode == http.StatusOK {
 		// Parse the identity from the success response
 		var success struct {
 			Arn string `json:"Arn"`
 		}
-		bodyBytes, _ := io.ReadAll(rsp.Body)
 		if err := json.Unmarshal(bodyBytes, &success); err == nil {
 			// Logic to determine Root vs RAM and extract name
 			if strings.HasSuffix(success.Arn, ":root") {
@@ -134,7 +136,6 @@ func (v *Validator) Validate(ctx context.Context, key *Credentials) (veles.Valid
 		Message string `json:"Message"`
 	}
 
-	bodyBytes, _ := io.ReadAll(rsp.Body)
 	var errResp errorResponse
 	if err := json.Unmarshal(bodyBytes, &errResp); err != nil {
 		return veles.ValidationFailed, fmt.Errorf("failed to parse response body (status %d): %w", rsp.StatusCode, err)
@@ -142,14 +143,10 @@ func (v *Validator) Validate(ctx context.Context, key *Credentials) (veles.Valid
 
 	switch errResp.Code {
 	case CodeInvalidAccessKeyId, CodeSignatureMismatch:
-		// The keys do not exist or the secret is wrong
 		return veles.ValidationInvalid, nil
 	case CodeNoPermission:
-		// The signature was mathematically correct (meaning the keys are real),
-		// but the IAM user is blocked from calling GetCallerIdentity.
 		return veles.ValidationValid, nil
 	default:
-		// Network errors, throttling, or unexpected API changes
 		return veles.ValidationFailed, fmt.Errorf("unknown API error code: %q - %s", errResp.Code, errResp.Message)
 	}
 }
