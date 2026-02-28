@@ -122,6 +122,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
+	"github.com/google/osv-scalibr/veles/secrets/clojarsdeploytoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
@@ -353,6 +354,7 @@ var (
 		{azurestorageaccountaccesskey.NewDetector(), "secrets/azurestorageaccountaccesskey", 0},
 		{circleci.NewPersonalAccessTokenDetector(), "secrets/circlecipat", 0},
 		{circleci.NewProjectTokenDetector(), "secrets/circleciproject", 0},
+		{clojarsdeploytoken.NewDetector(), "secrets/clojarsdeploytoken", 0},
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},

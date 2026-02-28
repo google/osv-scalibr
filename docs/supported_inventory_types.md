@@ -199,6 +199,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Salesforce OAuth 2 Refresh Credentials      | `secrets/salesforceoauth2refresh`      |
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
+| Clojars Deploy Token                        | `secrets/clojarsdeploytoken`           |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
 
 ### Container inventory
@@ -221,7 +222,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Misc
 
 | Type                               | Extractor Plugin    |
-|------------------------------------| ------------------- |
+| -----------------------            | ------------------- |
 | Wordpress plugins                  | `wordpress/plugins` |
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |

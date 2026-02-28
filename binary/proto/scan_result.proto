@@ -835,6 +835,7 @@ message SecretData {
     PackagistConductorUpdateToken packagist_conductor_update_token = 85;
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
+    ClojarsDeployToken clojars_deploy_token = 88;
   }
 
   message GCPSAK {
@@ -860,6 +861,10 @@ message SecretData {
 
   message JWTToken {
     // a generic JWT token
+    string token = 1;
+  }
+
+  message ClojarsDeployToken {
     string token = 1;
   }
 
