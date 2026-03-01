@@ -17,17 +17,14 @@ package csproj
 
 import (
 	"context"
-	"encoding/xml"
 	"path/filepath"
 	"strings"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/common"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -100,7 +97,7 @@ func (e Extractor) reportFileRequired(path string, result stats.FileRequiredResu
 
 // Extract parses the .csproj file to extract .NET package dependencies.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	packages, err := e.extractFromInput(input)
+	packages, err := common.ExtractPackagesFromMSBuildXML(input.Reader, input.Path)
 	if e.Stats != nil {
 		var fileSizeBytes int64
 		if input.Info != nil {
@@ -113,46 +110,4 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		})
 	}
 	return inventory.Inventory{Packages: packages}, err
-}
-
-type packageReference struct {
-	Include string `xml:"Include,attr"`
-	Version string `xml:"Version,attr"`
-}
-
-type itemGroup struct {
-	PackageReferences []packageReference `xml:"PackageReference"`
-}
-
-type project struct {
-	XMLName    xml.Name    `xml:"Project"`
-	ItemGroups []itemGroup `xml:"ItemGroup"`
-}
-
-func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	var proj project
-	decoder := xml.NewDecoder(input.Reader)
-	if err := decoder.Decode(&proj); err != nil {
-		log.Errorf("Error parsing .csproj file: %v", err)
-		return nil, err
-	}
-
-	var result []*extractor.Package
-	for _, ig := range proj.ItemGroups {
-		for _, pkg := range ig.PackageReferences {
-			if pkg.Include == "" || pkg.Version == "" {
-				log.Warnf("Skipping package with missing name or version: %+v", pkg)
-				continue
-			}
-
-			result = append(result, &extractor.Package{
-				Name:      pkg.Include,
-				Version:   pkg.Version,
-				PURLType:  purl.TypeNuget,
-				Locations: []string{input.Path},
-			})
-		}
-	}
-
-	return result, nil
 }
