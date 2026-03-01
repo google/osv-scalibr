@@ -125,6 +125,8 @@ const (
 	TypeChocolatey = "chocolatey"
 	// TypeCPAN is pkg:cpan purl
 	TypeCPAN = "cpan"
+	// TypeZig is pkg:zig purl
+	TypeZig = "zig"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -237,6 +239,7 @@ func validType(t string) bool {
 		TypeChocolatey: true,
 		TypeMise:       true,
 		TypeCPAN:       true,
+		TypeZig:        true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

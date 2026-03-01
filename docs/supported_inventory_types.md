@@ -106,6 +106,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
+| Zig        | Zig build.zig.zon packages                        | `zig/buildzigzon`                    |
 
 ### Language runtime managers
 
