@@ -95,12 +95,10 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name             string
-		path             string
-		content          string
-		wantSecretFound  bool
-		wantClientID     string
-		wantClientSecret string
+		name          string
+		path          string
+		content       string
+		wantInventory inventory.Inventory
 	}{
 		{
 			name: "Bitwarden data.json with apiKeyClientSecret",
@@ -110,9 +108,17 @@ func TestExtract(t *testing.T) {
   "user_d351d93b-adb0-4714-bbef-a11100fff9cc_token_apiKeyClientSecret": "N8N2xWg4FV8lusbl5CHBb5XRil6kOa",
   "user_d351d93b-adb0-4714-bbef-a11100fff9cc_token_refreshToken": "someRefreshToken"
 }`,
-			wantSecretFound:  true,
-			wantClientID:     "d351d93b-adb0-4714-bbef-a11100fff9cc",
-			wantClientSecret: "N8N2xWg4FV8lusbl5CHBb5XRil6kOa",
+			wantInventory: inventory.Inventory{
+				Secrets: []*inventory.Secret{
+					{
+						Location: "data.json",
+						Secret: velesbitwarden.Token{
+							ClientID:     "d351d93b-adb0-4714-bbef-a11100fff9cc",
+							ClientSecret: "N8N2xWg4FV8lusbl5CHBb5XRil6kOa",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "Bitwarden data.json with different UUID",
@@ -120,9 +126,17 @@ func TestExtract(t *testing.T) {
 			content: `{
   "user_a1b2c3d4-e5f6-7890-abcd-ef1234567890_token_apiKeyClientSecret": "AbCdEfGhIjKlMnOpQrStUvWxYz123456"
 }`,
-			wantSecretFound:  true,
-			wantClientID:     "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-			wantClientSecret: "AbCdEfGhIjKlMnOpQrStUvWxYz123456",
+			wantInventory: inventory.Inventory{
+				Secrets: []*inventory.Secret{
+					{
+						Location: "data.json",
+						Secret: velesbitwarden.Token{
+							ClientID:     "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+							ClientSecret: "AbCdEfGhIjKlMnOpQrStUvWxYz123456",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "No apiKeyClientSecret in file",
@@ -131,13 +145,11 @@ func TestExtract(t *testing.T) {
   "user_d351d93b-adb0-4714-bbef-a11100fff9cc_token_accessToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjMwMDA...",
   "someOtherKey": "someValue"
 }`,
-			wantSecretFound: false,
 		},
 		{
-			name:            "Empty file",
-			path:            "data.json",
-			content:         `{}`,
-			wantSecretFound: false,
+			name:    "Empty file",
+			path:    "data.json",
+			content: `{}`,
 		},
 	}
 
@@ -162,34 +174,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Extract() error = %v", err)
 			}
 
-			if !tt.wantSecretFound {
-				// Expecting no secrets found
-				if len(got.Secrets) != 0 {
-					t.Errorf("Extract() found %d secrets, want 0", len(got.Secrets))
-				}
-				return
-			}
-
-			// Expecting at least one secret
-			if len(got.Secrets) == 0 {
-				t.Errorf("Extract() found no secrets, want at least 1")
-				return
-			}
-
-			// Check that we have a secret with the correct location and secret value
-			wantInventory := inventory.Inventory{
-				Secrets: []*inventory.Secret{
-					{
-						Location: tt.path,
-						Secret: velesbitwarden.Token{
-							ClientID:     tt.wantClientID,
-							ClientSecret: tt.wantClientSecret,
-						},
-					},
-				},
-			}
-
-			if diff := cmp.Diff(wantInventory, got); diff != "" {
+			if diff := cmp.Diff(tt.wantInventory, got); diff != "" {
 				t.Errorf("Extract() mismatch (-want +got):\n%s", diff)
 			}
 		})
