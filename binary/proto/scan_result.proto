@@ -844,6 +844,7 @@ message SecretData {
     PackagistConductorUpdateToken packagist_conductor_update_token = 85;
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
+    BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
   }
 
   message GCPSAK {
@@ -1274,6 +1275,12 @@ message SecretData {
     string username = 2;
     // Salesforce OAuth2 private key
     string private_key = 3;
+  }
+
+  message BitwardenOAuth2AccessToken {
+    // Bitwarden OAuth2 Access Token
+    string client_id = 1;
+    string client_secret = 2;
   }
 
   message CursorAPIKey {
