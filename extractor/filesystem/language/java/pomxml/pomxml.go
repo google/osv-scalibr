@@ -17,7 +17,6 @@ package pomxml
 
 import (
 	"context"
-	"encoding/xml"
 	"fmt"
 	"maps"
 	"path/filepath"
@@ -27,6 +26,7 @@ import (
 
 	"deps.dev/util/maven"
 
+	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
@@ -86,7 +86,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project *maven.Project
 
-	if err := xml.NewDecoder(input.Reader).Decode(&project); err != nil {
+	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		err := fmt.Errorf("could not extract pom from %s: %w", input.Path, err)
 		log.Errorf(err.Error())
 		return inventory.Inventory{}, err

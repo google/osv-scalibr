@@ -30,6 +30,18 @@ func TestAccessTokenDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(t, hcp.NewAccessTokenDetector(), jwt, hcp.AccessToken{Token: jwt})
 }
 
+func TestPairDetectorAcceptance(t *testing.T) {
+	id := "53au9oDSqR8SBzIy6QJASHnyC1SMQxE2"                                  // 32 chars
+	sec := "GGoNkaj1uVBWLO5Lk0-G3duEBK2Mi-w8kUpIJfX7u93fgWqnbMiaKYJgKrO2F6Vc" // 64 chars
+
+	velestest.AcceptDetector(
+		t,
+		hcp.NewPairDetector(),
+		"hcp_client_id="+id+"\nhcp_client_secret="+sec,
+		hcp.ClientCredentials{ClientID: id, ClientSecret: sec},
+	)
+}
+
 func TestPairDetector(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{hcp.NewPairDetector()})
 	if err != nil {

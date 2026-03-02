@@ -55,7 +55,7 @@ func (Annotator) Version() int { return 0 }
 
 // Requirements returns the requirements of the annotator.
 func (Annotator) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{}
+	return &plugin.Capabilities{OS: plugin.OSUnix}
 }
 
 // Annotate adds repository source code identifiers for extracted Homebrew packages.

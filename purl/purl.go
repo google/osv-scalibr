@@ -81,6 +81,8 @@ const (
 	TypeNix = "nix"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
+	// TypeJSR is a pkg:jsr purl.
+	TypeJSR = "jsr"
 	// TypePacman is a pkg:pacman purl.
 	TypePacman = "pacman"
 	// TypeNuget is a pkg:nuget purl.
@@ -123,6 +125,8 @@ const (
 	TypeChocolatey = "chocolatey"
 	// TypeSpack is pkg:spack purl
 	TypeSpack = "spack"
+	// TypeCPAN is pkg:cpan purl
+	TypeCPAN = "cpan"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -217,6 +221,7 @@ func validType(t string) bool {
 		TypeMaven:      true,
 		TypeNix:        true,
 		TypeNPM:        true,
+		TypeJSR:        true,
 		TypeNuget:      true,
 		TypeOCI:        true,
 		TypeOpam:       true,
@@ -233,6 +238,7 @@ func validType(t string) bool {
 		TypeWinget:     true,
 		TypeChocolatey: true,
 		TypeMise:       true,
+		TypeCPAN:       true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

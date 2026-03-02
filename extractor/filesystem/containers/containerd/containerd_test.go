@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -222,6 +223,38 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name:              "metadb valid gcfs linux",
+			path:              "testdata/meta_linux_gcfs.db",
+			snapshotterdbpath: "testdata/metadata_gcfs.db",
+			statusFilePath:    "testdata/status_gcfs",
+			namespace:         "default",
+			containerdID:      "b78cb75dd155d2c76a4b9957b6aad88448966914c80c88cb6dc9b746fd13484f", // riptide-verif-1-... nginx pod
+			maxFileSizeBytes:  500 * units.MiB,
+			onGoos:            "linux",
+			wantPackages: []*extractor.Package{
+				{
+					Name:    "us-central1-docker.pkg.dev/my-project-test-001/riptide-streaming-repo/nginx:latest",
+					Version: "sha256:4a027e20a3f6606ecdc4a5e412ac16c636d1cdb4b390d92a8265047b6873174c",
+					Metadata: &containerd.Metadata{
+						Namespace:    "k8s.io",
+						ImageName:    "us-central1-docker.pkg.dev/my-project-test-001/riptide-streaming-repo/nginx:latest",
+						ImageDigest:  "sha256:4a027e20a3f6606ecdc4a5e412ac16c636d1cdb4b390d92a8265047b6873174c",
+						Runtime:      "io.containerd.runc.v2",
+						ID:           "b78cb75dd155d2c76a4b9957b6aad88448966914c80c88cb6dc9b746fd13484f",
+						PID:          23047, // from testdata/status_gcfs
+						PodName:      "nginx-test-pod",
+						PodNamespace: "default",
+						Snapshotter:  "gcfs",
+						SnapshotKey:  "b78cb75dd155d2c76a4b9957b6aad88448966914c80c88cb6dc9b746fd13484f",
+						LowerDir:     "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=4952de04fe7e4a2b63ed8ac879f7bb23cefa98d6005677c59ebd01fe27d02ba2:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=627c009aa11539cb60bc61ce3709ab81059b224674abd8e06f27b26798969155:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=b9390f60b84fa6b5e7772d3c32dd1e141eb12f34e4cd98dd03da87e7552d76fe:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=bced0e9a39b0302b03e79b279a5de8394544197578327bfe3108a989b4a7154e:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=18b09c39ca9f595897956456d144ca812ba219cfe72cee888945b7050fc53b38:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=edcb98f6af683f89a724d9da7bf8927059c91c86db4723a42201cd227340d7b5:/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=a8ff6f8cbdfd6741c10dd183560df7212db666db046768b0f05bbc3904515f03",
+						UpperDir:     "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/404/fs",
+						WorkDir:      "/tmp/TestExtractmetadb_valid_linux1567346986/001/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/404/work",
+					},
+					Locations: []string{"var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"},
+				},
+			},
+		},
+		{
 			name:            "invalid shim pid",
 			path:            "testdata/meta_windows.db",
 			shimPIDFilePath: "testdata/state.json",
@@ -245,7 +278,16 @@ func TestExtract(t *testing.T) {
 			if tt.onGoos == "linux" {
 				containerStatusPath := filepath.Join("var/lib/containerd/io.containerd.grpc.v1.cri/containers/", tt.containerdID)
 				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt", "meta.db", tt.path)
-				createFileFromTestData(t, d, "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs", "metadata.db", tt.snapshotterdbpath)
+
+				if strings.Contains(tt.path, "gcfs") {
+					createFileFromTestData(t, d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter", "metadata.db", tt.snapshotterdbpath)
+					// Copy mock content store
+					createFileFromTestData(t, d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256", "4a027e20a3f6606ecdc4a5e412ac16c636d1cdb4b390d92a8265047b6873174c", "testdata/mock_content_store/4a027e20a3f6606ecdc4a5e412ac16c636d1cdb4b390d92a8265047b6873174c")
+					createFileFromTestData(t, d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256", "5cdef4ac3335f68428701c14c5f12992f5e3669ce8ab7309257d263eb7a856b1", "testdata/mock_content_store/5cdef4ac3335f68428701c14c5f12992f5e3669ce8ab7309257d263eb7a856b1")
+				} else {
+					createFileFromTestData(t, d, "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs", "metadata.db", tt.snapshotterdbpath)
+				}
+
 				createFileFromTestData(t, d, containerStatusPath, "status", tt.statusFilePath)
 				input = createScanInput(t, d, "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db")
 			}
