@@ -99,6 +99,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/spack"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/mise"
@@ -325,6 +326,7 @@ var (
 		pacman.Name:     {pacman.New},
 		portage.Name:    {portage.New},
 		flatpak.Name:    {flatpak.New},
+		spack.Name:      {spack.New},
 		homebrew.Name:   {homebrew.New},
 		macapps.Name:    {macapps.New},
 		macports.Name:   {macports.New},

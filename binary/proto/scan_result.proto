@@ -145,6 +145,7 @@ message Package {
     UnknownBinaryMetadata unknown_binary_metadata = 64;
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
+    SpackPackageMetadata spack_metadata = 67;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -479,6 +480,14 @@ message FlatpakPackageMetadata {
   string os_version_id = 7;
   string os_build_id = 8;
   string developer = 9;
+}
+
+// The additional data found in Spack packages.
+message SpackPackageMetadata {
+  string platform = 1;
+  string platform_os = 2;
+  string platform_architecture = 3;
+  string hash = 4;
 }
 
 // The additional data found in MODULE packages.
