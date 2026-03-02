@@ -119,6 +119,7 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemMinimOS,
 		osvconstants.EcosystemNPM,
 		osvconstants.EcosystemNuGet,
+		osvconstants.EcosystemOpam,
 		osvconstants.EcosystemOpenEuler,
 		osvconstants.EcosystemOpenSUSE,
 		osvconstants.EcosystemOSSFuzz,

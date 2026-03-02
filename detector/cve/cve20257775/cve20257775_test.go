@@ -24,6 +24,8 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestScan(t *testing.T) {
@@ -101,7 +103,10 @@ func runScan(t *testing.T, dir string, pkgs []*extractor.Package) inventory.Find
 	if err != nil {
 		t.Fatalf("packageindex.New() returned error: %v", err)
 	}
-	detector := cve20257775.New()
+	detector, err := cve20257775.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("cve20257775.New() returned error: %v", err)
+	}
 	findings, err := detector.Scan(t.Context(), scalibrfs.RealFSScanRoot(dir), px)
 	if err != nil {
 		t.Fatalf("Scan() returned error: %v", err)

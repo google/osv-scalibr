@@ -59,6 +59,15 @@ const (
 	// The path for the metadata.db file which will be used to parse the mapping between folders and container's mount points.
 	snapshotterMetadataDBPath = "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/metadata.db"
 
+	// Prefix of the path for snapshotter gcfs folders.
+	gcfsSnapshotsPath = "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots"
+	gcfsLayersPath    = "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers"
+	// The path for the metadata.db file for gcfs.
+	gcfsMetadataDBPath = "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/metadata.db"
+
+	// Content store blobs path.
+	contentBlobsPath = "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256"
+
 	// The path for the meta.db file which will be used to parse container metadata on Linux systems.
 	linuxMetaDBPath = "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
 	// Prefix of the path for runhcs state files, used to check if a container is running by runhcs.
@@ -126,17 +135,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	defer metaDB.Close()
 
-	var snapshotsMetadata []SnapshotMetadata
-	// If it's linux, parse the default overlayfs snapshotter metadata.db file.
-	if input.Path == linuxMetaDBPath {
-		fullMetadataDBPath := filepath.Join(input.Root, snapshotterMetadataDBPath)
-		snapshotsMetadata, err = snapshotsMetadataFromDB(fullMetadataDBPath, e.maxMetaDBFileSize, "overlayfs")
-		if err != nil {
-			return inventory.Inventory{}, fmt.Errorf("could not collect snapshots metadata from DB: %w", err)
-		}
-	}
-
-	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root, snapshotsMetadata)
+	ctrMetadata, err := containersFromMetaDB(ctx, metaDB, input.Root, e.maxMetaDBFileSize, input.Path)
 	if err != nil {
 		log.Errorf("Could not get container package from the containerd metadb file: %v", err)
 		return inventory.Inventory{}, err
@@ -187,8 +186,30 @@ func namespacesFromMetaDB(ctx context.Context, metaDB *bolt.DB) ([]string, error
 	return namespaces, nil
 }
 
-func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string, snapshotsMetadata []SnapshotMetadata) ([]Metadata, error) {
+func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string, maxMetaDBFileSize int64, dbPath string) ([]Metadata, error) {
 	var containersMetadata []Metadata
+	snapshotMetadataCache := make(map[string][]SnapshotMetadata)
+
+	if dbPath == linuxMetaDBPath {
+		fullMetadataDBPath := filepath.Join(scanRoot, snapshotterMetadataDBPath)
+		if _, statErr := os.Stat(fullMetadataDBPath); statErr == nil {
+			parsedMetadata, err := snapshotsMetadataFromDB(fullMetadataDBPath, maxMetaDBFileSize, "overlayfs")
+			if err != nil {
+				log.Errorf("could not collect snapshots metadata from DB %s: %v", fullMetadataDBPath, err)
+			}
+			snapshotMetadataCache["overlayfs"] = parsedMetadata
+		}
+
+		fullGcfsMetadataDBPath := filepath.Join(scanRoot, gcfsMetadataDBPath)
+		if _, statErr := os.Stat(fullGcfsMetadataDBPath); statErr == nil {
+			parsedMetadata, err := snapshotsMetadataFromDB(fullGcfsMetadataDBPath, maxMetaDBFileSize, "gcfs")
+			if err != nil {
+				log.Errorf("could not collect snapshots metadata from DB %s: %v", fullGcfsMetadataDBPath, err)
+			}
+			snapshotMetadataCache["gcfs"] = parsedMetadata
+		}
+	}
+
 	// Get list of namespaces from the containerd metadb file.
 	nss, err := namespacesFromMetaDB(ctx, metaDB)
 	if err != nil {
@@ -220,9 +241,12 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 			}
 
 			var lowerDir, upperDir, workDir string
+
 			// If the filesystem is overlayfs, then parse overlayfs metadata.db
 			if ctr.Snapshotter == "overlayfs" {
-				lowerDir, upperDir, workDir = collectDirs(scanRoot, snapshotsMetadata, ctr.SnapshotKey)
+				lowerDir, upperDir, workDir = collectOverlayFSDirs(scanRoot, snapshotMetadataCache[ctr.Snapshotter], ctr.SnapshotKey)
+			} else if ctr.Snapshotter == "gcfs" {
+				lowerDir, upperDir, workDir = collectGcfsDirs(scanRoot, snapshotMetadataCache[ctr.Snapshotter], ctr.SnapshotKey, img.Target.Digest.String(), id)
 			}
 
 			containersMetadata = append(containersMetadata,
@@ -263,7 +287,7 @@ func digestSnapshotInfoMapping(snapshotsMetadata []SnapshotMetadata) map[string]
 }
 
 // Format the lowerDir, upperDir and workDir for the container.
-func collectDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshotKey string) (string, string, string) {
+func collectOverlayFSDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshotKey string) (string, string, string) {
 	var lowerDirs []string
 	var parentSnapshotIDs []uint64
 	parentSnapshotIDs = getParentSnapshotIDByDigest(snapshotsMetadata, snapshotKey, parentSnapshotIDs)
@@ -272,14 +296,139 @@ func collectDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshot
 	}
 	// Sample lowerDir: lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs
 	lowerDir := strings.Join(lowerDirs, ":")
-	for _, snapshotMetadata := range snapshotsMetadata {
-		if strings.Contains(snapshotMetadata.Digest, snapshotKey) {
-			upperDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.FormatUint(snapshotMetadata.ID, 10), "fs")
-			workDir := filepath.Join(scanRoot, overlayfsSnapshotsPath, strconv.FormatUint(snapshotMetadata.ID, 10), "work")
-			return lowerDir, upperDir, workDir
+	upperDir, workDir := getUpperAndWorkDirs(scanRoot, snapshotKey, overlayfsSnapshotsPath, snapshotsMetadata)
+	return lowerDir, upperDir, workDir
+}
+
+// getImageDiffIDs extracts the layer DiffIDs from the image configuration blob in the content store.
+//
+// References:
+//   - OCI Image Spec for Layer DiffID: https://github.com/opencontainers/image-spec/blob/v1.1.0/config.md#layer-diffid
+//     The image configuration JSON specifies a `rootfs` object with a `diff_ids` array. A layer DiffID is the
+//     digest over the layer's uncompressed tar archive.
+//   - Containerd Content Store: Containerd downloads and retains the raw manifest and configuration blobs in its
+//     content store (`var/lib/containerd/io.containerd.content.v1.content/blobs/sha256/`) locally on the GKE node.
+//   - GCFS (Image Streaming): The GKE image streaming daemon (gcfs) mounts read-only layer contents directly via
+//     their uncompressed DiffID strings in `/var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=<Layer-DiffID>`.
+func getImageDiffIDs(scanRoot string, manifestDigest string) ([]string, error) {
+	manifestHash := strings.TrimPrefix(manifestDigest, "sha256:")
+	manifestPath := filepath.Join(scanRoot, contentBlobsPath, manifestHash)
+
+	manifestBytes, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not read manifest blob: %w", err)
+	}
+
+	// First try to parse as an Index/ManifestList
+	var index struct {
+		Manifests []struct {
+			Digest   string `json:"digest"`
+			Platform struct {
+				Architecture string `json:"architecture"`
+				OS           string `json:"os"`
+			} `json:"platform"`
+		} `json:"manifests"`
+	}
+	// Try parsing as manifest directly
+	var manifest struct {
+		Config struct {
+			Digest string `json:"digest"`
+		} `json:"config"`
+	}
+
+	errIndex := json.Unmarshal(manifestBytes, &index)
+	errManifest := json.Unmarshal(manifestBytes, &manifest)
+
+	if errIndex != nil && errManifest != nil {
+		return nil, fmt.Errorf("could not parse blob as either index or manifest: %w, %w", errIndex, errManifest)
+	}
+
+	// If there is no config digest, it might be an index
+	if manifest.Config.Digest == "" && len(index.Manifests) > 0 {
+		var selectedManifestDigest string
+		// Default to amd64 linux
+		// Note: GKE nodes mostly use linux/amd64, but can support Windows.
+		// Currently, only linux/amd64 is actively supported for extracting DiffIDs from manifest lists.
+		for _, m := range index.Manifests {
+			if m.Platform.OS == "linux" && m.Platform.Architecture == "amd64" {
+				selectedManifestDigest = m.Digest
+				break
+			}
+		}
+		// Fallback to the first one if amd64 linux is not found
+		if selectedManifestDigest == "" {
+			selectedManifestDigest = index.Manifests[0].Digest
+		}
+
+		// Read the actual manifest
+		manifestHash = strings.TrimPrefix(selectedManifestDigest, "sha256:")
+		manifestPath = filepath.Join(scanRoot, contentBlobsPath, manifestHash)
+		manifestBytes, err = os.ReadFile(manifestPath)
+		if err != nil {
+			return nil, fmt.Errorf("could not read inner manifest blob: %w", err)
+		}
+		if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+			return nil, fmt.Errorf("could not parse inner manifest blob: %w", err)
 		}
 	}
-	return lowerDir, "", ""
+
+	configHash := strings.TrimPrefix(manifest.Config.Digest, "sha256:")
+	if configHash == "" {
+		return nil, errors.New("empty config digest in manifest")
+	}
+
+	configPath := filepath.Join(scanRoot, contentBlobsPath, configHash)
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not read config blob: %w", err)
+	}
+
+	var config struct {
+		RootFS struct {
+			DiffIDs []string `json:"diff_ids"`
+		} `json:"rootfs"`
+	}
+	if err := json.Unmarshal(configBytes, &config); err != nil {
+		return nil, fmt.Errorf("could not parse config blob: %w", err)
+	}
+
+	return config.RootFS.DiffIDs, nil
+}
+
+// collectGcfsDirs constructs the lower, upper, and work dirs for a gcfs container.
+func collectGcfsDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshotKey string, manifestDigest string, containerID string) (string, string, string) {
+	if manifestDigest == "" {
+		return "", "", ""
+	}
+	diffIDs, err := getImageDiffIDs(scanRoot, manifestDigest)
+	if err != nil {
+		log.Errorf("Failed to get DiffIDs for container %v: %v", containerID, err)
+		return "", "", ""
+	}
+
+	var lowerDirs []string
+	// diff_ids are ordered base layer to top layer.
+	// For gcfs, lowerDirs points to the read-only unpacked layers.
+	for i := len(diffIDs) - 1; i >= 0; i-- {
+		diffIDHash := strings.TrimPrefix(diffIDs[i], "sha256:")
+		lowerDirs = append(lowerDirs, filepath.Join(scanRoot, gcfsLayersPath, "sha256="+diffIDHash))
+	}
+	lowerDir := strings.Join(lowerDirs, ":")
+
+	upperDir, workDir := getUpperAndWorkDirs(scanRoot, snapshotKey, gcfsSnapshotsPath, snapshotsMetadata)
+	return lowerDir, upperDir, workDir
+}
+
+// getUpperAndWorkDirs finds the active snapshot ID for the container's snapshotKey to build upper/work dirs.
+func getUpperAndWorkDirs(scanRoot string, snapshotKey string, snapshotsPath string, snapshotsMetadata []SnapshotMetadata) (string, string) {
+	for _, snapshotMetadata := range snapshotsMetadata {
+		if strings.Contains(snapshotMetadata.Digest, snapshotKey) {
+			upperDir := filepath.Join(scanRoot, snapshotsPath, strconv.FormatUint(snapshotMetadata.ID, 10), "fs")
+			workDir := filepath.Join(scanRoot, snapshotsPath, strconv.FormatUint(snapshotMetadata.ID, 10), "work")
+			return upperDir, workDir
+		}
+	}
+	return "", ""
 }
 
 // Collect the parent snapshot ids of the given snapshot.

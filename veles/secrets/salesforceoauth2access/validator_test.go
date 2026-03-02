@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 )
@@ -73,7 +75,7 @@ func TestValidator(t *testing.T) {
 		statusCode    int
 		cancelContext bool
 		want          veles.ValidationStatus
-		expectError   bool
+		wantErr       error
 	}{
 		{
 			name:       "valid_token",
@@ -86,23 +88,23 @@ func TestValidator(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
-			name:        "bad_gateway",
-			statusCode:  http.StatusBadGateway,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "bad_gateway",
+			statusCode: http.StatusBadGateway,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
 			name:          "context cancelled",
 			statusCode:    http.StatusInternalServerError,
 			cancelContext: true,
 			want:          veles.ValidationFailed,
-			expectError:   true,
+			wantErr:       cmpopts.AnyError,
 		},
 	}
 
@@ -133,14 +135,12 @@ func TestValidator(t *testing.T) {
 			// Test validation
 			got, err := validator.Validate(ctx, token)
 
-			if tt.expectError && err == nil {
-				t.Fatalf("expected error, got nil")
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
-			if !tt.expectError && err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+
 			if got != tt.want {
-				t.Fatalf("expected %v, got %v", tt.want, got)
+				t.Fatalf("Validate(): expected %v, got %v", tt.want, got)
 			}
 		})
 	}

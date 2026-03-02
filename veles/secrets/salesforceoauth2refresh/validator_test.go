@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 )
@@ -82,7 +84,7 @@ func TestValidator(t *testing.T) {
 		serverResponseCode       int
 		cancelContext            bool
 		want                     veles.ValidationStatus
-		expectError              bool
+		wantErr                  error
 		useServer                bool
 	}{
 		{
@@ -146,7 +148,7 @@ func TestValidator(t *testing.T) {
 			serverResponseCode:       http.StatusOK,
 			cancelContext:            true,
 			want:                     veles.ValidationFailed,
-			expectError:              true,
+			wantErr:                  cmpopts.AnyError,
 		},
 	}
 
@@ -178,14 +180,12 @@ func TestValidator(t *testing.T) {
 
 			got, err := validator.Validate(ctx, cred)
 
-			if tt.expectError && err == nil {
-				t.Fatalf("expected error, got nil")
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
-			if !tt.expectError && err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+
 			if got != tt.want {
-				t.Fatalf("expected %v, got %v", tt.want, got)
+				t.Fatalf("Validate: expected %v, got %v", tt.want, got)
 			}
 		})
 	}

@@ -43,8 +43,9 @@ const (
 
 // Extractor extracts Mac Apps from /Applications Directory.
 type Extractor struct {
-	Stats            stats.Collector
-	maxFileSizeBytes int64
+	Stats                  stats.Collector
+	maxFileSizeBytes       int64
+	allowCustomDirectories bool
 }
 
 // New returns a Mac App extractor.
@@ -64,7 +65,10 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxSize = specific.GetMaxFileSizeBytes()
 	}
 
-	return &Extractor{maxFileSizeBytes: maxSize}, nil
+	return &Extractor{
+		maxFileSizeBytes:       maxSize,
+		allowCustomDirectories: specific.GetAllowCustomDirectories(),
+	}, nil
 }
 
 // Name of the extractor.
@@ -79,8 +83,12 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches the Info.plist file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	// Check for the "/Applications" prefix and ".plist" suffix first.
-	if !strings.HasPrefix(path, "Applications/") || !strings.HasSuffix(path, "/Contents/Info.plist") {
+	// Check for the "/Applications" prefix if custom directories are not allowed.
+	if !e.allowCustomDirectories && !strings.HasPrefix(path, "Applications/") {
+		return false
+	}
+
+	if !strings.HasSuffix(path, "/Contents/Info.plist") {
 		return false
 	}
 

@@ -72,10 +72,7 @@ func appRoleBody(creds AppRoleCredentials) (string, error) {
 	if creds.RoleID == "" || creds.SecretID == "" {
 		return "", fmt.Errorf("both role_id and secret_id are required for AppRole validation. Actual creds %v", creds)
 	}
-	body := AppRoleLoginRequest{
-		RoleID:   creds.RoleID,
-		SecretID: creds.SecretID,
-	}
+	body := AppRoleLoginRequest(creds)
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal AppRoleLoginRequest: %w", err)

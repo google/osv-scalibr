@@ -40,12 +40,13 @@ import (
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
-		name             string
-		path             string
-		fileSizeBytes    int64
-		maxFileSizeBytes int64
-		wantRequired     bool
-		wantResultMetric stats.FileRequiredResult
+		name                   string
+		path                   string
+		fileSizeBytes          int64
+		maxFileSizeBytes       int64
+		allowCustomDirectories bool
+		wantRequired           bool
+		wantResultMetric       stats.FileRequiredResult
 	}{
 		{
 			name:             "Valid_File_Path_for_Info.plist",
@@ -97,12 +98,30 @@ func TestFileRequired(t *testing.T) {
 			wantRequired:     false,
 			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
 		},
+		{
+			name:                   "Custom_dir_Info.plist_file_required_if_allow_custom_directories_is_true",
+			path:                   "/Users/Shared/GoogleChrome.app/Contents/Info.plist",
+			allowCustomDirectories: true,
+			wantRequired:           true,
+			wantResultMetric:       stats.FileRequiredResultOK,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e, err := macapps.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			e, err := macapps.New(&cpb.PluginConfig{
+				MaxFileSizeBytes: tt.maxFileSizeBytes,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_Macapps{
+							Macapps: &cpb.MacAppsConfig{
+								AllowCustomDirectories: tt.allowCustomDirectories,
+							},
+						},
+					},
+				},
+			})
 			if err != nil {
 				t.Fatalf("macapps.New: %v", err)
 			}

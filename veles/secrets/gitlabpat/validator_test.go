@@ -68,7 +68,7 @@ func TestValidator(t *testing.T) {
 		pat        string
 		httpStatus int
 		want       veles.ValidationStatus
-		wantErr    bool
+		wantErr    error
 	}{
 		{
 			name:       "valid pat",
@@ -87,7 +87,7 @@ func TestValidator(t *testing.T) {
 			pat:        validatorTestPat,
 			httpStatus: http.StatusNotFound,
 			want:       veles.ValidationFailed,
-			wantErr:    true,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
 			name:       "empty pat",
@@ -116,8 +116,8 @@ func TestValidator(t *testing.T) {
 			pat := gitlabpat.GitlabPAT{Pat: tc.pat}
 			got, err := v.Validate(ctx, pat)
 
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("v.Validate() error = %v, wantErr %v", err, tc.wantErr)
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {

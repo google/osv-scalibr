@@ -103,12 +103,14 @@ func TestValidatorSecretKey(t *testing.T) {
 		{
 			name:       "server_error",
 			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
 			name:       "forbidden_error",
 			statusCode: http.StatusForbidden,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
@@ -201,7 +203,8 @@ func TestValidatorRestrictedKey(t *testing.T) {
 		{
 			name:       "server_error",
 			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
@@ -225,7 +228,6 @@ func TestValidatorRestrictedKey(t *testing.T) {
 
 			// Test validation
 			got, err := validator.Validate(t.Context(), key)
-
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
