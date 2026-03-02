@@ -20,7 +20,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -226,10 +225,7 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 }
 
 func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response significantly
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Sleep longer than the context timeout to trigger cancellation
-		time.Sleep(100 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"ok":true"}`))
@@ -242,9 +238,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		key := slacktoken.SlackAppLevelToken{Token: testAppLevelToken}
 
-		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
-		defer cancel()
+		// Create a cancelled context
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
 
 		// Test validation with cancelled context
 		got, err := validator.Validate(ctx, key)
@@ -263,8 +259,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		validator.HTTPC = server.Client()
 		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		key := slacktoken.SlackAppConfigAccessToken{Token: testAppConfigAccessToken}
-		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
-		defer cancel()
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
 
 		// Test validation with cancelled context
 		got, err := validator.Validate(ctx, key)
@@ -284,9 +280,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		key := slacktoken.SlackAppConfigRefreshToken{Token: testAppConfigRefreshToken}
 
-		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
-		defer cancel()
+		// Create a cancelled context
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
 
 		// Test validation with cancelled context
 		got, err := validator.Validate(ctx, key)
