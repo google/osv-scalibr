@@ -65,6 +65,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | packages.config                                   | `dotnet/packagesconfig`              |
 |            | deps.json                                         | `dotnet/depsjson`                    |
 |            | portable executables                              | `dotnet/pe`                          |
+|            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
+|            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
