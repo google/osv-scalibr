@@ -183,7 +183,8 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 
 	var pkgs []*extractor.Package
 	for _, n := range spec.Spec.Nodes {
-		// Skip nodes with an "external" field.
+		// Skip nodes with an "external" field as these have been installed outside of Spack.
+		// https://spack.readthedocs.io/en/latest/packages_yaml.html#external-packages
 		if n.External != nil {
 			continue
 		}
