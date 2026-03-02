@@ -305,10 +305,10 @@ func TestExtract(t *testing.T) {
 
 func getPackage(path, pkgName, origin, version, osID, osVersionID, maintainer, arch, license string, commit string) *extractor.Package {
 	p := &extractor.Package{
-		Locations: []string{path},
-		Name:      pkgName,
-		Version:   version,
-		PURLType:  purl.TypeApk,
+		Location: extractor.LocationFromPath(path),
+		Name:     pkgName,
+		Version:  version,
+		PURLType: purl.TypeApk,
 		Metadata: &apkmeta.Metadata{
 			PackageName:  pkgName,
 			OriginName:   origin,

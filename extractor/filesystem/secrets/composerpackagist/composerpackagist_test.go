@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
 )
 
@@ -66,7 +67,7 @@ func TestExtract(t *testing.T) {
 						Username: "testuser",
 						Password: "testpass123",
 					},
-					Location: "testdata/valid/auth.json",
+					Location: location.FromPath("testdata/valid/auth.json"),
 				},
 			},
 		},
@@ -110,7 +111,7 @@ func TestExtract(t *testing.T) {
 						Username: "user1",
 						Password: "pass1",
 					},
-					Location: "testdata/multiple_hosts/auth.json",
+					Location: location.FromPath("testdata/multiple_hosts/auth.json"),
 				},
 				{
 					Secret: composerpackagist.Credential{
@@ -118,7 +119,7 @@ func TestExtract(t *testing.T) {
 						Username: "user2",
 						Password: "pass2",
 					},
-					Location: "testdata/multiple_hosts/auth.json",
+					Location: location.FromPath("testdata/multiple_hosts/auth.json"),
 				},
 			},
 		},

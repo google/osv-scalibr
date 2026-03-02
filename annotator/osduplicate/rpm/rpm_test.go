@@ -60,14 +60,14 @@ func TestAnnotate(t *testing.T) {
 			desc: "no_rpm_dbs",
 			packages: []*extractor.Package{
 				{
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 				},
 			},
 		},
@@ -78,18 +78,18 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          rpm.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -97,8 +97,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 		},
@@ -109,18 +109,18 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "cracklib",
-					Locations: []string{"usr/sbin/cracklib-check"},
+					Name:     "cracklib",
+					Location: extractor.LocationFromPath("usr/sbin/cracklib-check"),
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "cracklib",
-					Locations: []string{"usr/sbin/cracklib-check"},
+					Name:     "cracklib",
+					Location: extractor.LocationFromPath("usr/sbin/cracklib-check"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          rpm.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -128,8 +128,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 		},
@@ -140,18 +140,18 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "python3-gpg",
-					Locations: []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
+					Name:     "python3-gpg",
+					Location: extractor.LocationFromPath("usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"),
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "python3-gpg",
-					Locations: []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
+					Name:     "python3-gpg",
+					Location: extractor.LocationFromPath("usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          rpm.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -159,8 +159,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 		},
@@ -174,28 +174,28 @@ func TestAnnotate(t *testing.T) {
 			packages: []*extractor.Package{
 				{
 					// From Packages
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 				},
 				{
 					// From Packages.db
-					Name:      "cracklib",
-					Locations: []string{"usr/sbin/cracklib-check"},
+					Name:     "cracklib",
+					Location: extractor.LocationFromPath("usr/sbin/cracklib-check"),
 				},
 				{
 					// From rpmdb.sqlite
-					Name:      "python3-gpg",
-					Locations: []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
+					Name:     "python3-gpg",
+					Location: extractor.LocationFromPath("usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"),
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          rpm.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -203,8 +203,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "cracklib",
-					Locations: []string{"usr/sbin/cracklib-check"},
+					Name:     "cracklib",
+					Location: extractor.LocationFromPath("usr/sbin/cracklib-check"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          rpm.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -212,8 +212,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "python3-gpg",
-					Locations: []string{"usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"},
+					Name:     "python3-gpg",
+					Location: extractor.LocationFromPath("usr/lib64/python3.9/site-packages/gpg-1.15.1-py3.9.egg-info"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          rpm.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -221,8 +221,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 		},
@@ -234,14 +234,14 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "pyxattr",
-					Locations: []string{"usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"},
+					Name:     "pyxattr",
+					Location: extractor.LocationFromPath("usr/lib64/python2.7/site-packages/pyxattr-0.5.1-py2.7.egg-info"),
 					// No annotations
 				},
 			},

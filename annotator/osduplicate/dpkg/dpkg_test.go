@@ -64,14 +64,14 @@ func TestAnnotate(t *testing.T) {
 			infoContents: map[string]string{},
 			packages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 		},
@@ -83,18 +83,18 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "file-in-info",
-					Locations: []string{"path/to/file-in-info"},
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
 				},
 				{
-					Name:      "file-not-in-info",
-					Locations: []string{"path/to/file-not-in-info"},
+					Name:     "file-not-in-info",
+					Location: extractor.LocationFromPath("path/to/file-not-in-info"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file-in-info",
-					Locations: []string{"path/to/file-in-info"},
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          dpkg.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -102,8 +102,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "file-not-in-info",
-					Locations: []string{"path/to/file-not-in-info"},
+					Name:     "file-not-in-info",
+					Location: extractor.LocationFromPath("path/to/file-not-in-info"),
 				},
 			},
 		},
@@ -114,14 +114,14 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 					// No exploitability signals
 				},
 			},
@@ -142,14 +142,14 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 					// No exploitability signals
 				},
 			},

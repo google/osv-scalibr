@@ -87,10 +87,10 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			continue
 		}
 
-		if len(pkg.Locations) == 0 {
+		if pkg.Location.Descriptor == nil || pkg.Location.Descriptor.File == nil {
 			continue
 		}
-		loc := pkg.Locations[0]
+		loc := pkg.Location.Descriptor.File.Path
 		// Annotate non-OS (e.g. language) packages as OS duplicates if:
 		// They're in the OS package installation directory
 		if strings.HasPrefix(loc, cosPkgDir) ||

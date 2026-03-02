@@ -233,7 +233,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	pkgs := parseConanLock(*parsedLockfile)
 
 	for i := range pkgs {
-		pkgs[i].Locations = []string{input.Path}
+		pkgs[i].Location = extractor.LocationFromPath(input.Path)
 	}
 
 	return inventory.Inventory{Packages: pkgs}, nil
