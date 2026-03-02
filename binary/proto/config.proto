@@ -95,16 +95,13 @@ message PluginSpecificConfig {
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
     OSVLocalConfig osvlocal = 57;
-<<<<<<< spack_extractor
-    SpackConfig specjson = 58;
-=======
     CodeServerConfig code_server = 58;
     DenoJsonConfig denojson = 62;
     DenoTSSourceConfig denotssource = 63;
     QCOW2Config qcow2 = 64;
     PerlCPANConfig cpan = 65;
     PythonRequirementsTransitiveConfig python_requirements_transitive = 68;
->>>>>>> main
+    SpackConfig spack = 69;
   }
 }
 
