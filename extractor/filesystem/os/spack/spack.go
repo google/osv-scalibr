@@ -106,7 +106,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
 
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.SpackConfig { return c.GetSpecjson() })
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.SpackConfig { return c.GetSpack() })
 	if specific.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
