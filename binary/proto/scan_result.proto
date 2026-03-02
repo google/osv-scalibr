@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
@@ -79,7 +80,6 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
-  reserved 17 to 20, 29, 32, 43, 59;
   // Unique identifier for the package.
   string id = 60;
   // Human-readable name of the software, to be used for things like logging.
@@ -100,53 +100,10 @@ message Package {
   // core library.
   repeated string plugins = 49;
   // The additional data found in the package.
-  // LINT.IfChange
-  oneof metadata {
-    PythonPackageMetadata python_metadata = 5;
-    JavascriptPackageJSONMetadata javascript_metadata = 6;
-    APKPackageMetadata apk_metadata = 7;
-    DPKGPackageMetadata dpkg_metadata = 8;
-    RPMPackageMetadata rpm_metadata = 9;
-    COSPackageMetadata cos_metadata = 13;
-    DEPSJSONMetadata depsjson_metadata = 40;
-    SPDXPackageMetadata spdx_metadata = 14;
-    JavaArchiveMetadata java_archive_metadata = 15;
-    JavaLockfileMetadata java_lockfile_metadata = 31;
-    PACMANPackageMetadata pacman_metadata = 36;
-    NixPackageMetadata nix_metadata = 37;
-    KernelModuleMetadata kernel_module_metadata = 38;
-    VmlinuzMetadata vmlinuz_metadata = 39;
-    PortagePackageMetadata portage_metadata = 41;
-    OSVPackageMetadata osv_metadata = 16;
-    NetportsMetadata netports_metadata = 45;
-    PythonRequirementsMetadata python_requirements_metadata = 21;
-    PythonSetupMetadata python_setup_metadata = 44;
-    ContainerdContainerMetadata containerd_container_metadata = 22;
-    SNAPPackageMetadata snap_metadata = 23;
-    FlatpakPackageMetadata flatpak_metadata = 24;
-    MacAppsMetadata mac_apps_metadata = 34;
-    ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-        25;
-    CDXPackageMetadata cdx_metadata = 30;
-    WindowsOSVersion windows_os_version_metadata = 33;
-    HomebrewPackageMetadata homebrew_metadata = 42;
-    ChromeExtensionsMetadata chrome_extensions_metadata = 47;
-    VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
-    PodmanMetadata podman_metadata = 50;
-    DockerContainersMetadata docker_containers_metadata = 48;
-    MacportsPackageMetadata macports_metadata = 53;
-    WingetPackageMetadata winget_metadata = 54;
-    AsdfMetadata asdf_metadata = 55;
-    NvmMetadata nvm_metadata = 56;
-    NodeVersionMetadata nodeversion_metadata = 58;
-    DepGroupMetadata dep_group_metadata = 61;
-    ChocolateyPackageMetadata chocolatey_metadata = 62;
-    MiseMetadata mise_metadata = 63;
-    UnknownBinaryMetadata unknown_binary_metadata = 64;
-    BazelMavenMetadata bazel_maven_metadata = 65;
-    JavascriptDenoMetadata deno_metadata = 66;
-  }
-  // LINT.ThenChange(/binary/proto/package_metadata.go)
+  optional google.protobuf.Any metadata = 67;
+
+  // Reservations for the old metadata field.
+  reserved 5 to 9, 13 to 25, 29 to 34, 36 to 48, 50, 53 to 56, 58, 59, 61 to 66;
 
   // Signals to indicate that specific vulnerabilities are not applicable to
   // this package.
@@ -342,7 +299,7 @@ enum PackageSource {
   UNKNOWN = 0;
   // PUBLIC_REGISTRY is the public NPM registry.
   PUBLIC_REGISTRY = 1;
-  // OTHER is any other remote or private source (e.g. Github).
+  // OTHER is any other remote or private source (e.g. GitHub).
   // This is used for packages that are not found in the public NPM registry.
   OTHER = 2;
   // LOCAL is the local filesystem that stores the package versions.
@@ -578,6 +535,11 @@ message PythonRequirementsMetadata {
 
 message PythonSetupMetadata {
   string version_comparator = 2;
+}
+
+// Used for holding a non-serializable filesystem.
+message FSMetadata {
+  bool has_fs = 1;
 }
 
 // Used to report open ports on a system.

@@ -16,8 +16,14 @@
 package osv
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+	metadataproto.Register(DepGroupToStruct, DepGroupToProto)
+}
 
 // Metadata holds parsing information for packages extracted by an OSV extractor wrapper.
 type Metadata struct {
@@ -27,31 +33,21 @@ type Metadata struct {
 	CompareAs string
 }
 
-// SetProto sets the OSVPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_OsvMetadata{
-		OsvMetadata: &pb.OSVPackageMetadata{
-			PurlType:  m.PURLType,
-			Commit:    m.Commit,
-			Ecosystem: m.Ecosystem,
-			CompareAs: m.CompareAs,
-		},
+// ToProto converts the Metadata struct to an OSVPackageMetadata proto.
+func ToProto(m *Metadata) *pb.OSVPackageMetadata {
+	return &pb.OSVPackageMetadata{
+		PurlType:  m.PURLType,
+		Commit:    m.Commit,
+		Ecosystem: m.Ecosystem,
+		CompareAs: m.CompareAs,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the OSVPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.OSVPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PURLType:  m.GetPurlType(),
 		Commit:    m.GetCommit(),
@@ -79,23 +75,18 @@ func (dgm DepGroupMetadata) DepGroups() []string {
 	return dgm.DepGroupVals
 }
 
-// SetProto sets the DepGroupMetadata field in the Package proto.
-func (dgm DepGroupMetadata) SetProto(p *pb.Package) {
-	if len(dgm.DepGroupVals) == 0 {
-		return
-	}
-	p.Metadata = &pb.Package_DepGroupMetadata{
-		DepGroupMetadata: &pb.DepGroupMetadata{
-			DepGroupVals: dgm.DepGroupVals,
-		},
+// DepGroupToProto converts the DepGroupMetadata struct to a DepGroupMetadata proto.
+func DepGroupToProto(dgm *DepGroupMetadata) *pb.DepGroupMetadata {
+	return &pb.DepGroupMetadata{
+		DepGroupVals: dgm.DepGroupVals,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (dgm *DepGroupMetadata) IsMetadata() {}
+
 // DepGroupToStruct converts the DepGroupMetadata proto to a DepGroupMetadata struct.
 func DepGroupToStruct(m *pb.DepGroupMetadata) *DepGroupMetadata {
-	if m == nil {
-		return nil
-	}
 	return &DepGroupMetadata{
 		DepGroupVals: m.GetDepGroupVals(),
 	}

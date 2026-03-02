@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/fsmetadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
@@ -41,7 +42,7 @@ func TestScan(t *testing.T) {
 			Locations: []string{
 				filepath.Join(dir, "testdata", "valid.vmdk:1:flash", "boot", "loader.conf"),
 			},
-			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
+			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
 		},
 		{
 			Name:    "NetScaler",
@@ -49,7 +50,7 @@ func TestScan(t *testing.T) {
 			Locations: []string{
 				filepath.Join(dir, "testdata", "valid.vmdk:2:flash", "boot", "loader.conf"),
 			},
-			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
+			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
 		},
 		{
 			Name:    "NetScaler",
@@ -57,7 +58,7 @@ func TestScan(t *testing.T) {
 			Locations: []string{
 				filepath.Join(dir, "testdata", "valid.vmdk:3:ns-13.1-59.21.gz"),
 			},
-			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
+			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
 		},
 		{
 			Name:    "NetScaler",
@@ -65,7 +66,7 @@ func TestScan(t *testing.T) {
 			Locations: []string{
 				filepath.Join(dir, "testdata", "valid.vmdk:4:ns-13.1-59.22.gz"),
 			},
-			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
+			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
 		},
 		{
 			Name:    "NetScaler",
@@ -73,7 +74,7 @@ func TestScan(t *testing.T) {
 			Locations: []string{
 				filepath.Join(dir, "testdata", "valid.vmdk:5:nsversion"),
 			},
-			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
+			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
 		},
 		{
 			Name:    "NetScaler",
@@ -81,7 +82,7 @@ func TestScan(t *testing.T) {
 			Locations: []string{
 				filepath.Join(dir, "testdata", "valid.vmdk:6:nsversion"),
 			},
-			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
+			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
 		},
 	}
 

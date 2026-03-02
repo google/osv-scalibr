@@ -18,8 +18,16 @@ package metadata
 import (
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
+
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
 
 // Metadata holds parsing information for a SNAP package.
 type Metadata struct {
@@ -57,35 +65,22 @@ func (m *Metadata) ToDistro() string {
 	return ""
 }
 
-// SetProto sets the SNAPPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_SnapMetadata{
-		SnapMetadata: &pb.SNAPPackageMetadata{
-			Name:              m.Name,
-			Version:           m.Version,
-			Grade:             m.Grade,
-			Type:              m.Type,
-			Architectures:     m.Architectures,
-			OsId:              m.OSID,
-			OsVersionCodename: m.OSVersionCodename,
-			OsVersionId:       m.OSVersionID,
-		},
+// ToProto converts the Metadata struct to a SNAPPackageMetadata proto.
+func ToProto(m *Metadata) *pb.SNAPPackageMetadata {
+	return &pb.SNAPPackageMetadata{
+		Name:              m.Name,
+		Version:           m.Version,
+		Grade:             m.Grade,
+		Type:              m.Type,
+		Architectures:     m.Architectures,
+		OsId:              m.OSID,
+		OsVersionCodename: m.OSVersionCodename,
+		OsVersionId:       m.OSVersionID,
 	}
 }
 
 // ToStruct converts the SNAPPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.SNAPPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		Name:              m.GetName(),
 		Version:           m.GetVersion(),

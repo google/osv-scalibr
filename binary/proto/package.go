@@ -16,13 +16,12 @@ package proto
 
 import (
 	"fmt"
-	"io/fs"
-	"reflect"
 
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
@@ -30,11 +29,6 @@ import (
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
-
-// MetadataProtoSetter is an interface for metadata structs that can set themselves on a Package proto.
-type MetadataProtoSetter interface {
-	SetProto(p *spb.Package)
-}
 
 // --- Struct to Proto
 
@@ -82,8 +76,8 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		ExploitabilitySignals:         exps,
 		ContainerImageMetadataIndexes: cii,
 		Licenses:                      pkg.Licenses,
+		Metadata:                      metadataproto.StructToProto(pkg.Metadata),
 	}
-	setProtoMetadata(pkg.Metadata, packageProto)
 	return packageProto, nil
 }
 
@@ -95,32 +89,6 @@ func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceC
 		Repo:   s.Repo,
 		Commit: s.Commit,
 	}
-}
-
-func setProtoMetadata(meta any, p *spb.Package) {
-	if meta == nil {
-		return
-	}
-
-	if p == nil {
-		return
-	}
-
-	if m, ok := meta.(MetadataProtoSetter); ok {
-		m.SetProto(p)
-		return
-	}
-
-	// input.FS is passed from Extractors to Detectors, but it represents a
-	// runtime filesystem interface rather than a serializable data structure.
-	// Attempting to serialize it would be invalid and unsafe.
-	// This check explicitly excludes it from metadata serialization to prevent
-	// type assertion and proto conversion errors.
-	if _, ok := meta.(fs.FS); ok {
-		return
-	}
-
-	log.Errorf("Failed to convert metadata of type %T to proto: %+v", meta, meta)
 }
 
 // --- Proto to Struct
@@ -158,7 +126,7 @@ func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 		PURLType:              ptype,
 		Plugins:               pkgProto.GetPlugins(),
 		ExploitabilitySignals: exps,
-		Metadata:              metadataToStruct(pkgProto),
+		Metadata:              metadataproto.ProtoToStruct(pkgProto.Metadata),
 		Licenses:              pkgProto.GetLicenses(),
 	}
 	return pkg, nil
@@ -172,18 +140,4 @@ func sourceCodeIdentifierToStruct(s *spb.SourceCodeIdentifier) *extractor.Source
 		Repo:   s.Repo,
 		Commit: s.Commit,
 	}
-}
-
-func metadataToStruct(md *spb.Package) any {
-	if md.GetMetadata() == nil {
-		return nil
-	}
-
-	t := reflect.TypeOf(md.GetMetadata())
-	if converter, ok := metadataTypeToStructConverter[t]; ok {
-		return converter(md)
-	}
-
-	log.Errorf("Failed to convert metadata of type %T to struct: %+v", md.GetMetadata(), md.GetMetadata())
-	return nil
 }

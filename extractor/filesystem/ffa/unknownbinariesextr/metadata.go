@@ -15,6 +15,7 @@
 package unknownbinariesextr
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/opencontainers/go-digest"
 )
@@ -33,31 +34,26 @@ type Attribution struct {
 	BaseImage bool `json:"baseImage"`
 }
 
-// SetProto sets the metadata for a package.
-func (m *UnknownBinaryMetadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-
-	attribution := &pb.UnknownBinaryAttribution{
-		LocalFilesystem: m.Attribution.LocalFilesystem,
-		BaseImage:       m.Attribution.BaseImage,
-	}
-
-	p.Metadata = &pb.Package_UnknownBinaryMetadata{
-		UnknownBinaryMetadata: &pb.UnknownBinaryMetadata{
-			FileHash:    string(m.FileHash),
-			Attribution: attribution,
+// ToProto converts the metadata to a proto.
+func (m *UnknownBinaryMetadata) ToProto() *pb.UnknownBinaryMetadata {
+	return &pb.UnknownBinaryMetadata{
+		FileHash: string(m.FileHash),
+		Attribution: &pb.UnknownBinaryAttribution{
+			LocalFilesystem: m.Attribution.LocalFilesystem,
+			BaseImage:       m.Attribution.BaseImage,
 		},
 	}
 }
 
+// IsMetadata signals that this struct is a metadata struct.
+func (m *UnknownBinaryMetadata) IsMetadata() {}
+
+func init() {
+	metadataproto.Register(ToStruct, (*UnknownBinaryMetadata).ToProto)
+}
+
 // ToStruct converts the metadata to a struct.
 func ToStruct(ubm *pb.UnknownBinaryMetadata) *UnknownBinaryMetadata {
-	if ubm == nil {
-		return nil
-	}
-
 	attr := ubm.GetAttribution()
 
 	return &UnknownBinaryMetadata{

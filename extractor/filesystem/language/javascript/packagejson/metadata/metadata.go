@@ -23,8 +23,13 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Person represents a person field in a javascript package.json file.
 type Person struct {
@@ -41,7 +46,7 @@ const (
 	Unknown NPMPackageSource = "UNKNOWN"
 	// PublicRegistry is the public NPM registry.
 	PublicRegistry NPMPackageSource = "PUBLIC_REGISTRY"
-	// Other is any other remote or private source (e.g. Github).
+	// Other is any other remote or private source (e.g. GitHub).
 	// This is used for packages that are not found in the public NPM registry.
 	Other NPMPackageSource = "OTHER"
 	// Local is the local filesystem that stores the package versions.
@@ -128,31 +133,21 @@ type JavascriptPackageJSONMetadata struct {
 	Source NPMPackageSource
 }
 
-// SetProto sets the JavascriptMetadata field in the Package proto.
-func (m *JavascriptPackageJSONMetadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_JavascriptMetadata{
-		JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
-			Author:       m.Author.PersonString(),
-			Contributors: personsToProto(m.Contributors),
-			Maintainers:  personsToProto(m.Maintainers),
-			Source:       m.Source.ToProto(),
-		},
+// ToProto converts the Metadata struct to a JavascriptPackageJSONMetadata proto.
+func ToProto(m *JavascriptPackageJSONMetadata) *pb.JavascriptPackageJSONMetadata {
+	return &pb.JavascriptPackageJSONMetadata{
+		Author:       m.Author.PersonString(),
+		Contributors: personsToProto(m.Contributors),
+		Maintainers:  personsToProto(m.Maintainers),
+		Source:       m.Source.ToProto(),
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *JavascriptPackageJSONMetadata) IsMetadata() {}
+
 // ToStruct converts the JavascriptPackageJSONMetadata proto to a Metadata struct.
 func ToStruct(m *pb.JavascriptPackageJSONMetadata) *JavascriptPackageJSONMetadata {
-	if m == nil {
-		return nil
-	}
-
 	var author *Person
 	if m.GetAuthor() != "" {
 		author = PersonFromString(m.GetAuthor())

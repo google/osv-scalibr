@@ -88,7 +88,7 @@ func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []str
 		SourceCode: &extractor.SourceCodeIdentifier{
 			Commit: commit,
 		},
-		Metadata: osv.DepGroupMetadata{
+		Metadata: &osv.DepGroupMetadata{
 			DepGroupVals: groups,
 		},
 	}

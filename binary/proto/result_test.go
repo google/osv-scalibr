@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/proto"
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	transitivedependencypomxml "github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/extractor"
 	ctrdfs "github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
@@ -106,16 +107,14 @@ var (
 			},
 		},
 		Ecosystem: "Debian",
-		Metadata: &spb.Package_DpkgMetadata{
-			DpkgMetadata: &spb.DPKGPackageMetadata{
-				PackageName:       "software",
-				PackageVersion:    "1.0.0",
-				OsId:              "debian",
-				OsVersionCodename: "jammy",
-				Maintainer:        "maintainer",
-				Architecture:      "amd64",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&dpkgmeta.Metadata{
+			PackageName:       "software",
+			PackageVersion:    "1.0.0",
+			OSID:              "debian",
+			OSVersionCodename: "jammy",
+			Maintainer:        "maintainer",
+			Architecture:      "amd64",
+		}),
 		Locations: []string{"/file1"},
 		// TODO(b/400910349): Remove once integrators stop using these fields.
 		Plugins: []string{"os/dpkg"},
@@ -219,13 +218,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "NuGet",
 		Locations: []string{"/file1"},
 		Plugins:   []string{"dotnet/depsjson"},
-		Metadata: &spb.Package_DepsjsonMetadata{
-			DepsjsonMetadata: &spb.DEPSJSONMetadata{
-				PackageName:    "software",
-				PackageVersion: "1.0.0",
-				Type:           "type",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&depsjson.Metadata{
+			PackageName:    "software",
+			PackageVersion: "1.0.0",
+			Type:           "type",
+		}),
 	}
 
 	windowsPackage := &extractor.Package{
@@ -254,16 +251,14 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "Debian",
-		Metadata: &spb.Package_DpkgMetadata{
-			DpkgMetadata: &spb.DPKGPackageMetadata{
-				PackageName:       "software",
-				PackageVersion:    "1.0.0",
-				OsId:              "debian",
-				OsVersionCodename: "jammy",
-				Maintainer:        "maintainer",
-				Architecture:      "amd64",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&dpkgmeta.Metadata{
+			PackageName:       "software",
+			PackageVersion:    "1.0.0",
+			OSID:              "debian",
+			OSVersionCodename: "jammy",
+			Maintainer:        "maintainer",
+			Architecture:      "amd64",
+		}),
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/dpkg"},
 	}
@@ -279,12 +274,10 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "PyPI",
 		Locations: []string{"/file1"},
 		Plugins:   []string{"python/wheelegg"},
-		Metadata: &spb.Package_PythonMetadata{
-			PythonMetadata: &spb.PythonPackageMetadata{
-				Author:      "author",
-				AuthorEmail: "author@corp.com",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&wheelegg.PythonPackageMetadata{
+			Author:      "author",
+			AuthorEmail: "author@corp.com",
+		}),
 	}
 	pythonRequirementsPackageProto := &spb.Package{
 		Name:    "foo",
@@ -298,13 +291,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "PyPI",
 		Locations: []string{"/file1"},
 		Plugins:   []string{"python/requirements"},
-		Metadata: &spb.Package_PythonRequirementsMetadata{
-			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
-				HashCheckingModeValues: []string{"sha256:123"},
-				VersionComparator:      ">=",
-				Requirement:            "foo>=1.0",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&requirements.Metadata{
+			HashCheckingModeValues: []string{"sha256:123"},
+			VersionComparator:      ">=",
+			Requirement:            "foo>=1.0",
+		}),
 	}
 	purlJavascriptPackageProto := &spb.Package{
 		Name:    "software",
@@ -318,15 +309,20 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "npm",
 		Locations: []string{"/file1"},
 		Plugins:   []string{"javascript/packagejson"},
-		Metadata: &spb.Package_JavascriptMetadata{
-			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
-				Source: spb.PackageSource_UNKNOWN,
-				Maintainers: []string{
-					"maintainer1 <maintainer1@corp.com> (https://blog.maintainer1.com)",
-					"maintainer2 <maintainer2@corp.com>",
+		Metadata: metadataproto.StructToProto(&javascriptmeta.JavascriptPackageJSONMetadata{
+			Source: javascriptmeta.Unknown,
+			Maintainers: []*javascriptmeta.Person{
+				{
+					Name:  "maintainer1",
+					Email: "maintainer1@corp.com",
+					URL:   "https://blog.maintainer1.com",
+				},
+				{
+					Name:  "maintainer2",
+					Email: "maintainer2@corp.com",
 				},
 			},
-		},
+		}),
 	}
 	cdxPackage := &extractor.Package{
 		Name:     "openssl",
@@ -352,16 +348,13 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "openssl",
 			Version: "1.1.1",
 		},
-		Metadata: &spb.Package_CdxMetadata{
-			CdxMetadata: &spb.CDXPackageMetadata{
-				Purl: &spb.Purl{
-					Purl:    "pkg:npm/openssl@1.1.1",
-					Type:    purl.TypeNPM,
-					Name:    "openssl",
-					Version: "1.1.1",
-				},
+		Metadata: metadataproto.StructToProto(&cdxmeta.Metadata{
+			PURL: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "openssl",
+				Version: "1.1.1",
 			},
-		},
+		}),
 		Locations: []string{"/openssl"},
 		Plugins:   []string{"sbom/cdx"},
 	}
@@ -402,19 +395,17 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Licenses:  []string{"BSD"},
 		Ecosystem: "Red Hat",
-		Metadata: &spb.Package_RpmMetadata{
-			RpmMetadata: &spb.RPMPackageMetadata{
-				PackageName:  "openssh-clients",
-				SourceRpm:    "openssh-5.3p1-124.el6_10.src.rpm",
-				Epoch:        2,
-				OsId:         "rhel",
-				OsVersionId:  "8.9",
-				OsBuildId:    "",
-				OsName:       "Red Hat Enterprise Linux",
-				Vendor:       "CentOS",
-				Architecture: "x86_64",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&rpmmeta.Metadata{
+			PackageName:  "openssh-clients",
+			SourceRPM:    "openssh-5.3p1-124.el6_10.src.rpm",
+			Epoch:        2,
+			OSID:         "rhel",
+			OSVersionID:  "8.9",
+			OSBuildID:    "",
+			OSName:       "Red Hat Enterprise Linux",
+			Vendor:       "CentOS",
+			Architecture: "x86_64",
+		}),
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/rpm"},
 	}
@@ -445,14 +436,12 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "",
-		Metadata: &spb.Package_PacmanMetadata{
-			PacmanMetadata: &spb.PACMANPackageMetadata{
-				PackageName:    "zstd",
-				PackageVersion: "1.5.6-1",
-				OsId:           "arch",
-				OsVersionId:    "20241201.0.284684",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&pacmanmeta.Metadata{
+			PackageName:    "zstd",
+			PackageVersion: "1.5.6-1",
+			OSID:           "arch",
+			OSVersionID:    "20241201.0.284684",
+		}),
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/pacman"},
 	}
@@ -483,14 +472,12 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "",
-		Metadata: &spb.Package_PortageMetadata{
-			PortageMetadata: &spb.PortagePackageMetadata{
-				PackageName:    "Capture-Tiny",
-				PackageVersion: "0.480.0-r1",
-				OsId:           "gentoo",
-				OsVersionId:    "2.17",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&portagemeta.Metadata{
+			PackageName:    "Capture-Tiny",
+			PackageVersion: "0.480.0-r1",
+			OSID:           "gentoo",
+			OSVersionID:    "2.17",
+		}),
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/portage"},
 	}
@@ -521,15 +508,13 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "",
-		Metadata: &spb.Package_NixMetadata{
-			NixMetadata: &spb.NixPackageMetadata{
-				PackageName:       "attr",
-				PackageVersion:    "2.5.2",
-				OsId:              "nixos",
-				OsVersionCodename: "vicuna",
-				OsVersionId:       "24.11",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&nixmeta.Metadata{
+			PackageName:       "attr",
+			PackageVersion:    "2.5.2",
+			OSID:              "nixos",
+			OSVersionCodename: "vicuna",
+			OSVersionID:       "24.11",
+		}),
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/nix"},
 	}
@@ -577,17 +562,15 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "Git.Git",
 			Version: "2.50.1",
 		},
-		Metadata: &spb.Package_WingetMetadata{
-			WingetMetadata: &spb.WingetPackageMetadata{
-				Name:     "Git",
-				Id:       "Git.Git",
-				Version:  "2.50.1",
-				Moniker:  "git",
-				Channel:  "",
-				Tags:     []string{"git", "vcs"},
-				Commands: []string{"git"},
-			},
-		},
+		Metadata: metadataproto.StructToProto(&wingetmeta.Metadata{
+			Name:     "Git",
+			ID:       "Git.Git",
+			Version:  "2.50.1",
+			Moniker:  "git",
+			Channel:  "",
+			Tags:     []string{"git", "vcs"},
+			Commands: []string{"git"},
+		}),
 		Locations: []string{"/file1"},
 		Plugins:   []string{"os/winget"},
 	}
@@ -613,20 +596,18 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Ecosystem: "",
-		Metadata: &spb.Package_ContainerdContainerMetadata{
-			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
-				NamespaceName: "default",
-				ImageName:     "gcr.io/google-samples/hello-app:1.0",
-				ImageDigest:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
-				Runtime:       "io.containerd.runc.v2",
-				Pid:           8915,
-				Snapshotter:   "overlayfs",
-				SnapshotKey:   "abcweraweroiuojgawer1",
-				LowerDir:      "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs",
-				UpperDir:      "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs",
-				WorkDir:       "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/work",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&ctrdfs.Metadata{
+			Namespace:   "default",
+			ImageName:   "gcr.io/google-samples/hello-app:1.0",
+			ImageDigest: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+			Runtime:     "io.containerd.runc.v2",
+			PID:         8915,
+			Snapshotter: "overlayfs",
+			SnapshotKey: "abcweraweroiuojgawer1",
+			LowerDir:    "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs",
+			UpperDir:    "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs",
+			WorkDir:     "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/work",
+		}),
 		Locations: []string{"/file4"},
 		Plugins:   []string{"containers/containerd"},
 	}
@@ -649,29 +630,25 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Ecosystem: "",
-		Metadata: &spb.Package_ContainerdRuntimeContainerMetadata{
-			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
-				NamespaceName: "default",
-				ImageName:     "gcr.io/google-samples/hello-app:1.0",
-				ImageDigest:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
-				Runtime:       "io.containerd.runc.v2",
-				Id:            "1234567890",
-				Pid:           8915,
-				RootfsPath:    "/run/containerd/io.containerd.runtime.v2.task/default/1234567890/rootfs",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&ctrdruntimemd.Metadata{
+			Namespace:   "default",
+			ImageName:   "gcr.io/google-samples/hello-app:1.0",
+			ImageDigest: "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
+			Runtime:     "io.containerd.runc.v2",
+			ID:          "1234567890",
+			PID:         8915,
+			RootFS:      "/run/containerd/io.containerd.runtime.v2.task/default/1234567890/rootfs",
+		}),
 		Locations: []string{"/file7"},
 		Plugins:   []string{"containers/containerd-runtime"},
 	}
 	windowsPackageProto := &spb.Package{
 		Name:    "windows_server_2019",
 		Version: "10.0.17763.3406",
-		Metadata: &spb.Package_WindowsOsVersionMetadata{
-			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
-				Product:     "windows_server_2019",
-				FullVersion: "10.0.17763.3406",
-			},
-		},
+		Metadata: metadataproto.StructToProto(&winmetadata.OSVersion{
+			Product:     "windows_server_2019",
+			FullVersion: "10.0.17763.3406",
+		}),
 		Purl: &spb.Purl{
 			Purl:      "pkg:generic/microsoft/windows_server_2019@10.0.17763.3406?buildnumber=10.0.17763.3406",
 			Type:      purl.TypeGeneric,
@@ -712,13 +689,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Locations: []string{"/pom.xml"},
 		Plugins:   []string{pomxml.Name, transitivedependencypomxml.Name},
-		Metadata: &spb.Package_JavaLockfileMetadata{
-			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
-				ArtifactId:   "xyz",
-				GroupId:      "abc",
-				IsTransitive: true,
-			},
-		},
+		Metadata: metadataproto.StructToProto(&javalockfile.Metadata{
+			ArtifactID:   "xyz",
+			GroupID:      "abc",
+			IsTransitive: true,
+		}),
 	}
 
 	podmanPackage := &extractor.Package{
@@ -739,18 +714,16 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 	podmanPackageProto := &spb.Package{
 		Name:    "docker.io/redis",
 		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
-		Metadata: &spb.Package_PodmanMetadata{
-			PodmanMetadata: &spb.PodmanMetadata{
-				ExposedPorts:  map[uint32]*spb.Protocol{6379: {Names: []string{"tcp"}}},
-				Pid:           4232,
-				NamespaceName: "",
-				StartedTime:   timestamppb.New(endTime.Add(-10 * time.Minute)),
-				FinishedTime:  timestamppb.New(endTime.Add(-5 * time.Minute)),
-				Status:        "running",
-				ExitCode:      0,
-				Exited:        false,
-			},
-		},
+		Metadata: metadataproto.StructToProto(&podman.Metadata{
+			ExposedPorts: map[uint16][]string{6379: {"tcp"}},
+			PID:          4232,
+			NameSpace:    "",
+			StartedTime:  endTime.Add(-10 * time.Minute),
+			FinishedTime: endTime.Add(-5 * time.Minute),
+			Status:       "running",
+			ExitCode:     0,
+			Exited:       false,
+		}),
 		Plugins: []string{"containers/podman"},
 	}
 
@@ -862,16 +835,14 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 	dockerPackageProto := &spb.Package{
 		Name:    "redis",
 		Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
-		Metadata: &spb.Package_DockerContainersMetadata{
-			DockerContainersMetadata: &spb.DockerContainersMetadata{
-				ImageName:   "redis",
-				ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
-				Id:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
-				Ports: []*spb.DockerPort{
-					{Ip: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"},
-				},
+		Metadata: metadataproto.StructToProto(&docker.Metadata{
+			ImageName:   "redis",
+			ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+			ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
+			Ports: []container.Port{
+				{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"},
 			},
-		},
+		}),
 		Plugins: []string{"containers/docker"},
 	}
 

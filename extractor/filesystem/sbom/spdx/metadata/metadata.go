@@ -19,8 +19,13 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for packages extracted from SPDX files.
 type Metadata struct {
@@ -28,24 +33,19 @@ type Metadata struct {
 	CPEs []string
 }
 
-// SetProto sets the SPDX metadata on the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil || p == nil {
-		return
-	}
-	p.Metadata = &pb.Package_SpdxMetadata{
-		SpdxMetadata: &pb.SPDXPackageMetadata{
-			Purl: purlproto.ToProto(m.PURL),
-			Cpes: m.CPEs,
-		},
+// ToProto converts the SPDX metadata struct to the SPDXPackageMetadata proto.
+func ToProto(m *Metadata) *pb.SPDXPackageMetadata {
+	return &pb.SPDXPackageMetadata{
+		Purl: purlproto.ToProto(m.PURL),
+		Cpes: m.CPEs,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the SPDX metadata proto to the Metadata struct.
 func ToStruct(m *pb.SPDXPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 	return &Metadata{
 		PURL: purlproto.FromProto(m.GetPurl()),
 		CPEs: m.GetCpes(),

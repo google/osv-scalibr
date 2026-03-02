@@ -21,8 +21,13 @@ import (
 
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for an apk package.
 type Metadata struct {
@@ -65,33 +70,23 @@ func (Metadata) TrimDistroVersion(distro string) string {
 	return fmt.Sprintf("v%s.%s", parts[0], parts[1])
 }
 
-// SetProto sets the ApkMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_ApkMetadata{
-		ApkMetadata: &pb.APKPackageMetadata{
-			PackageName:  m.PackageName,
-			OriginName:   m.OriginName,
-			OsId:         m.OSID,
-			OsVersionId:  m.OSVersionID,
-			Maintainer:   m.Maintainer,
-			Architecture: m.Architecture,
-		},
+// ToProto converts the Metadata struct to an APKPackageMetadata proto.
+func ToProto(m *Metadata) *pb.APKPackageMetadata {
+	return &pb.APKPackageMetadata{
+		PackageName:  m.PackageName,
+		OriginName:   m.OriginName,
+		OsId:         m.OSID,
+		OsVersionId:  m.OSVersionID,
+		Maintainer:   m.Maintainer,
+		Architecture: m.Architecture,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the APKPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.APKPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:  m.GetPackageName(),
 		OriginName:   m.GetOriginName(),

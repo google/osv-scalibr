@@ -16,8 +16,13 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a winget package.
 type Metadata struct {
@@ -30,33 +35,24 @@ type Metadata struct {
 	Commands []string
 }
 
-// SetProto sets the WingetMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_WingetMetadata{
-		WingetMetadata: &pb.WingetPackageMetadata{
-			Name:     m.Name,
-			Id:       m.ID,
-			Version:  m.Version,
-			Moniker:  m.Moniker,
-			Channel:  m.Channel,
-			Tags:     m.Tags,
-			Commands: m.Commands,
-		},
+// ToProto converts the Metadata struct to a WingetPackageMetadata proto.
+func ToProto(m *Metadata) *pb.WingetPackageMetadata {
+	return &pb.WingetPackageMetadata{
+		Name:     m.Name,
+		Id:       m.ID,
+		Version:  m.Version,
+		Moniker:  m.Moniker,
+		Channel:  m.Channel,
+		Tags:     m.Tags,
+		Commands: m.Commands,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the WingetPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.WingetPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		Name:     m.GetName(),

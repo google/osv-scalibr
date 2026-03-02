@@ -218,7 +218,7 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: depGroups,
 			},
 		})

@@ -15,8 +15,13 @@
 package containerd
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata contains metadata about a containerd container.
 type Metadata struct {
@@ -37,35 +42,30 @@ type Metadata struct {
 	WorkDir     string
 }
 
-// SetProto sets the containerd container metadata on the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil || p == nil {
-		return
-	}
-	p.Metadata = &pb.Package_ContainerdContainerMetadata{
-		ContainerdContainerMetadata: &pb.ContainerdContainerMetadata{
-			NamespaceName: m.Namespace,
-			ImageName:     m.ImageName,
-			ImageDigest:   m.ImageDigest,
-			Runtime:       m.Runtime,
-			Id:            m.ID,
-			PodName:       m.PodName,
-			PodNamespace:  m.PodNamespace,
-			Pid:           int32(m.PID),
-			Snapshotter:   m.Snapshotter,
-			SnapshotKey:   m.SnapshotKey,
-			LowerDir:      m.LowerDir,
-			UpperDir:      m.UpperDir,
-			WorkDir:       m.WorkDir,
-		},
+// ToProto converts the Metadata struct to a ContainerdContainerMetadata proto.
+func ToProto(m *Metadata) *pb.ContainerdContainerMetadata {
+	return &pb.ContainerdContainerMetadata{
+		NamespaceName: m.Namespace,
+		ImageName:     m.ImageName,
+		ImageDigest:   m.ImageDigest,
+		Runtime:       m.Runtime,
+		Id:            m.ID,
+		PodName:       m.PodName,
+		PodNamespace:  m.PodNamespace,
+		Pid:           int32(m.PID),
+		Snapshotter:   m.Snapshotter,
+		SnapshotKey:   m.SnapshotKey,
+		LowerDir:      m.LowerDir,
+		UpperDir:      m.UpperDir,
+		WorkDir:       m.WorkDir,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the containerd container metadata proto to the Metadata struct.
 func ToStruct(m *pb.ContainerdContainerMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 	return &Metadata{
 		Namespace:    m.GetNamespaceName(),
 		ImageName:    m.GetImageName(),

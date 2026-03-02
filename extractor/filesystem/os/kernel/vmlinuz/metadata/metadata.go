@@ -18,8 +18,13 @@ package metadata
 import (
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a kernel vmlinuz file.
 type Metadata struct {
@@ -37,34 +42,29 @@ type Metadata struct {
 	RWRootFS          bool
 }
 
-// SetProto sets the vmlinuz metadata on the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil || p == nil {
-		return
-	}
-	p.Metadata = &pb.Package_VmlinuzMetadata{
-		VmlinuzMetadata: &pb.VmlinuzMetadata{
-			Name:              m.Name,
-			Version:           m.Version,
-			Architecture:      m.Architecture,
-			ExtendedVersion:   m.ExtendedVersion,
-			Format:            m.Format,
-			SwapDevice:        m.SwapDevice,
-			RootDevice:        m.RootDevice,
-			VideoMode:         m.VideoMode,
-			OsId:              m.OSID,
-			OsVersionCodename: m.OSVersionCodename,
-			OsVersionId:       m.OSVersionID,
-			RwRootFs:          m.RWRootFS,
-		},
+// ToProto converts the Metadata struct to a VmlinuzMetadata proto.
+func ToProto(m *Metadata) *pb.VmlinuzMetadata {
+	return &pb.VmlinuzMetadata{
+		Name:              m.Name,
+		Version:           m.Version,
+		Architecture:      m.Architecture,
+		ExtendedVersion:   m.ExtendedVersion,
+		Format:            m.Format,
+		SwapDevice:        m.SwapDevice,
+		RootDevice:        m.RootDevice,
+		VideoMode:         m.VideoMode,
+		OsId:              m.OSID,
+		OsVersionCodename: m.OSVersionCodename,
+		OsVersionId:       m.OSVersionID,
+		RwRootFs:          m.RWRootFS,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts a Package proto to a vmlinuz metadata struct.
 func ToStruct(m *pb.VmlinuzMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		Name:              m.GetName(),

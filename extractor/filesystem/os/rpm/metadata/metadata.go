@@ -22,8 +22,13 @@ import (
 
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 var (
 	// pattern to match: openEuler version (qualifier)
@@ -77,38 +82,28 @@ func (m *Metadata) ToDistro() string {
 	return fmt.Sprintf("%s-%s", id, v)
 }
 
-// SetProto sets the RPMPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_RpmMetadata{
-		RpmMetadata: &pb.RPMPackageMetadata{
-			PackageName:  m.PackageName,
-			SourceRpm:    m.SourceRPM,
-			Epoch:        int32(m.Epoch),
-			OsName:       m.OSName,
-			OsCpeName:    m.OSCPEName,
-			OsPrettyName: m.OSPrettyName,
-			OsId:         m.OSID,
-			OsVersionId:  m.OSVersionID,
-			OsBuildId:    m.OSBuildID,
-			Vendor:       m.Vendor,
-			Architecture: m.Architecture,
-		},
+// ToProto converts the Metadata struct to a RPMPackageMetadata proto.
+func ToProto(m *Metadata) *pb.RPMPackageMetadata {
+	return &pb.RPMPackageMetadata{
+		PackageName:  m.PackageName,
+		SourceRpm:    m.SourceRPM,
+		Epoch:        int32(m.Epoch),
+		OsName:       m.OSName,
+		OsCpeName:    m.OSCPEName,
+		OsPrettyName: m.OSPrettyName,
+		OsId:         m.OSID,
+		OsVersionId:  m.OSVersionID,
+		OsBuildId:    m.OSBuildID,
+		Vendor:       m.Vendor,
+		Architecture: m.Architecture,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the RPMPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:  m.GetPackageName(),
 		SourceRPM:    m.GetSourceRpm(),

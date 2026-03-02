@@ -18,8 +18,13 @@ package metadata
 import (
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a dpkg package.
 type Metadata struct {
@@ -61,38 +66,28 @@ func (m *Metadata) ToDistro() string {
 	return ""
 }
 
-// SetProto sets the DPKGPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_DpkgMetadata{
-		DpkgMetadata: &pb.DPKGPackageMetadata{
-			PackageName:       m.PackageName,
-			Status:            m.Status,
-			SourceName:        m.SourceName,
-			SourceVersion:     m.SourceVersion,
-			PackageSource:     m.PackageSource,
-			PackageVersion:    m.PackageVersion,
-			OsId:              m.OSID,
-			OsVersionCodename: m.OSVersionCodename,
-			OsVersionId:       m.OSVersionID,
-			Maintainer:        m.Maintainer,
-			Architecture:      m.Architecture,
-		},
+// ToProto converts the Metadata struct to a DPKGPackageMetadata proto.
+func ToProto(m *Metadata) *pb.DPKGPackageMetadata {
+	return &pb.DPKGPackageMetadata{
+		PackageName:       m.PackageName,
+		Status:            m.Status,
+		SourceName:        m.SourceName,
+		SourceVersion:     m.SourceVersion,
+		PackageSource:     m.PackageSource,
+		PackageVersion:    m.PackageVersion,
+		OsId:              m.OSID,
+		OsVersionCodename: m.OSVersionCodename,
+		OsVersionId:       m.OSVersionID,
+		Maintainer:        m.Maintainer,
+		Architecture:      m.Architecture,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the DPKGPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.DPKGPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:       m.GetPackageName(),
 		Status:            m.GetStatus(),

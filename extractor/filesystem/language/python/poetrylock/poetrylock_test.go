@@ -109,7 +109,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.23.3",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -126,7 +126,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.22.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -135,7 +135,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "4.21.5",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/two-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -152,7 +152,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.0.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/one-package-with-metadata.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -172,7 +172,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "cd66602cd29f61a2d2e7fb995fef1e61708c034d",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -189,7 +189,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.4.4",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/source-legacy.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -206,7 +206,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.23.3",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/optional-package.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
@@ -223,7 +223,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "5.0.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
@@ -232,7 +232,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "3.3.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -241,7 +241,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "33.3.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
@@ -250,7 +250,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.22.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -259,7 +259,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.23.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -268,7 +268,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "4.25.5",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -277,7 +277,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.9.0.post0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
@@ -286,7 +286,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "1.17.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -295,7 +295,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "4.12.2",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
@@ -304,7 +304,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "2.3.0",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -313,7 +313,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:   "5.2.1",
 					PURLType:  purl.TypePyPi,
 					Locations: []string{"testdata/multiple-packages.v2.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},

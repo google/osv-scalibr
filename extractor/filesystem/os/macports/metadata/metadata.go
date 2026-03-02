@@ -16,8 +16,13 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadataproto"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for an Macports package.
 type Metadata struct {
@@ -26,29 +31,20 @@ type Metadata struct {
 	PackageRevision string
 }
 
-// SetProto sets the MacportsPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_MacportsMetadata{
-		MacportsMetadata: &pb.MacportsPackageMetadata{
-			PackageName:     m.PackageName,
-			PackageVersion:  m.PackageVersion,
-			PackageRevision: m.PackageRevision,
-		},
+// ToProto converts the Metadata struct to a MacportsPackageMetadata proto.
+func ToProto(m *Metadata) *pb.MacportsPackageMetadata {
+	return &pb.MacportsPackageMetadata{
+		PackageName:     m.PackageName,
+		PackageVersion:  m.PackageVersion,
+		PackageRevision: m.PackageRevision,
 	}
 }
 
+// IsMetadata marks the struct as a metadata type.
+func (m *Metadata) IsMetadata() {}
+
 // ToStruct converts the MacportsPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.MacportsPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
 
 	return &Metadata{
 		PackageName:     m.GetPackageName(),
