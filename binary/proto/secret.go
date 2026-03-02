@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databricksserviceprincipalpat"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -321,6 +322,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case databricksserviceprincipalpat.Credentials:
+		return databricksServicePrincipalPATToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1129,6 +1132,17 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+func databricksServicePrincipalPATToProto(creds databricksserviceprincipalpat.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksServicePrincipalPat_{
+			DatabricksServicePrincipalPat: &spb.SecretData_DatabricksServicePrincipalPat{
+				Token: creds.Token,
+				Url:   creds.URL,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1481,6 +1495,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_DatabricksServicePrincipalPat_:
+		return databricksServicePrincipalPATToStruct(s.GetDatabricksServicePrincipalPat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1757,6 +1773,13 @@ func salesforceOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_Salesforc
 		ID:     credsPB.GetId(),
 		Secret: credsPB.GetSecret(),
 		URL:    credsPB.GetUrl(),
+	}
+}
+
+func databricksServicePrincipalPATToStruct(creds *spb.SecretData_DatabricksServicePrincipalPat) databricksserviceprincipalpat.Credentials {
+	return databricksserviceprincipalpat.Credentials{
+		Token: creds.GetToken(),
+		URL:   creds.GetUrl(),
 	}
 }
 
