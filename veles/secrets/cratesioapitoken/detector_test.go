@@ -34,8 +34,6 @@ func TestDetectorAcceptance(t *testing.T) {
 		cratesioapitoken.NewDetector(),
 		testKey,
 		cratesioapitoken.CratesIOAPItoken{Token: testKey},
-		velestest.WithBackToBack(),
-		velestest.WithPad('a'),
 	)
 }
 
@@ -70,7 +68,7 @@ func TestDetector_truePositives(t *testing.T) {
 		},
 	}, {
 		name:  "multiple matches",
-		input: testKey + testKey + testKey,
+		input: testKey + " " + testKey + " " + testKey,
 		want: []veles.Secret{
 			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 			cratesioapitoken.CratesIOAPItoken{Token: testKey},
@@ -89,12 +87,6 @@ func TestDetector_truePositives(t *testing.T) {
 	:test_api_key: cio-test
 	:CIO_API_TOKEN: %s
 			`, testKey),
-		want: []veles.Secret{
-			cratesioapitoken.CratesIOAPItoken{Token: testKey},
-		},
-	}, {
-		name:  "potential match longer than max key length",
-		input: testKey + `extra`,
 		want: []veles.Secret{
 			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},

@@ -75,7 +75,7 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{pomxml.Name}
 }
 
-// Config is the configuration for the pomxmlnet Extractor.
+// Config is the configuration for the pomxml Enricher.
 type Config struct {
 	*datasource.MavenRegistryAPIClient
 

@@ -54,6 +54,37 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	}, m.err
 }
 
+type multiRoundTripper struct {
+	wantRequests []*http.Request
+	statusCodes  []int
+	respBodies   [][]byte
+	callCount    int
+	t            *testing.T
+}
+
+func (m *multiRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if m.callCount >= len(m.wantRequests) {
+		m.t.Fatalf("unexpected extra request: %v", req.URL)
+	}
+
+	opts := []cmp.Option{
+		cmpopts.IgnoreUnexported(http.Request{}),
+		cmpopts.IgnoreFields(http.Request{}, "Proto", "ProtoMajor", "ProtoMinor", "GetBody", "Header"),
+	}
+
+	if diff := cmp.Diff(m.wantRequests[m.callCount], req, opts...); diff != "" {
+		m.t.Fatalf("unexpected request (-want +got):\n%s", diff)
+	}
+
+	resp := &http.Response{
+		StatusCode: m.statusCodes[m.callCount],
+		Body:       io.NopCloser(bytes.NewReader(m.respBodies[m.callCount])),
+	}
+
+	m.callCount++
+	return resp, nil
+}
+
 // mustParse is used for creating URLs in a "single-value" context.
 // It panics if the URL is invalid.
 func mustParse(s string) *url.URL {
@@ -72,14 +103,16 @@ func TestValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("url.Parse(%q): %v", testURLStr, err)
 	}
+	url1 := "https://endpoint1"
+	url2 := "https://endpoint2"
 
 	tests := []struct {
-		desc         string
-		validator    *sv.Validator[velestest.FakeStringSecret]
-		secret       string
-		roundTripper *mockRoundTripper
-		want         veles.ValidationStatus
-		wantErr      error
+		desc      string
+		validator *sv.Validator[velestest.FakeStringSecret]
+		secret    string
+		transport http.RoundTripper
+		want      veles.ValidationStatus
+		wantErr   error
 	}{
 		{
 			desc: "valid_response",
@@ -92,7 +125,7 @@ func TestValidate(t *testing.T) {
 				ValidResponseCodes: []int{http.StatusOK},
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				want: &http.Request{
 					Method: http.MethodGet,
 					URL:    testURL,
@@ -116,7 +149,7 @@ func TestValidate(t *testing.T) {
 				InvalidResponseCodes: []int{http.StatusUnauthorized},
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				want: &http.Request{
 					Method: http.MethodGet,
 					URL:    testURL,
@@ -140,7 +173,7 @@ func TestValidate(t *testing.T) {
 				InvalidResponseCodes: []int{http.StatusUnauthorized},
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				want: &http.Request{
 					Method: http.MethodGet,
 					URL:    testURL,
@@ -172,7 +205,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				want: &http.Request{
 					Method: http.MethodGet,
 					URL:    testURL,
@@ -204,7 +237,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				want: &http.Request{
 					Method: http.MethodGet,
 					URL:    testURL,
@@ -227,7 +260,7 @@ func TestValidate(t *testing.T) {
 				ValidResponseCodes: []int{http.StatusOK},
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				want: &http.Request{
 					Method: http.MethodGet,
 					URL:    mustParse(testURLStr + "?token=" + testSecret),
@@ -249,7 +282,7 @@ func TestValidate(t *testing.T) {
 				HTTPMethod: http.MethodGet,
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				t: t,
 			},
 			want:    veles.ValidationFailed,
@@ -261,7 +294,7 @@ func TestValidate(t *testing.T) {
 				HTTPMethod: http.MethodGet,
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				t: t,
 			},
 			want:    veles.ValidationFailed,
@@ -277,7 +310,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				t: t,
 			},
 			want:    veles.ValidationFailed,
@@ -292,17 +325,216 @@ func TestValidate(t *testing.T) {
 				HTTPMethod: http.MethodGet,
 			},
 			secret: testSecret,
-			roundTripper: &mockRoundTripper{
+			transport: &mockRoundTripper{
 				t: t,
 			},
 			want:    veles.ValidationFailed,
 			wantErr: cmpopts.AnyError,
 		},
+		{
+			desc: "multiple_endpoints_second_valid",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoints:            []string{url1, url2},
+				HTTPMethod:           http.MethodGet,
+				ValidResponseCodes:   []int{http.StatusOK},
+				InvalidResponseCodes: []int{http.StatusUnauthorized},
+			},
+			secret: testSecret,
+			transport: &multiRoundTripper{
+				wantRequests: []*http.Request{
+					{
+						Method: http.MethodGet,
+						URL:    mustParse(url1),
+						Host:   "endpoint1",
+					},
+					{
+						Method: http.MethodGet,
+						URL:    mustParse(url2),
+						Host:   "endpoint2",
+					},
+				},
+				statusCodes: []int{
+					http.StatusUnauthorized,
+					http.StatusOK,
+				},
+				respBodies: [][]byte{{}, {}},
+				t:          t,
+			},
+			want: veles.ValidationValid,
+		},
+		{
+			desc: "multiple_endpoints_all_invalid",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoints:            []string{url1, url2},
+				HTTPMethod:           http.MethodGet,
+				ValidResponseCodes:   []int{http.StatusOK},
+				InvalidResponseCodes: []int{http.StatusUnauthorized},
+			},
+			secret: testSecret,
+			transport: &multiRoundTripper{
+				wantRequests: []*http.Request{
+					{
+						Method: http.MethodGet,
+						URL:    mustParse(url1),
+						Host:   "endpoint1",
+					},
+					{
+						Method: http.MethodGet,
+						URL:    mustParse(url2),
+						Host:   "endpoint2",
+					},
+				},
+				statusCodes: []int{
+					http.StatusUnauthorized,
+					http.StatusUnauthorized,
+				},
+				respBodies: [][]byte{{}, {}},
+				t:          t,
+			},
+			want: veles.ValidationInvalid,
+		},
+		{
+			desc: "multiple_endpoints_first_valid_stops_early",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoints:          []string{url1, url2},
+				HTTPMethod:         http.MethodGet,
+				ValidResponseCodes: []int{http.StatusOK},
+			},
+			secret: testSecret,
+			transport: &multiRoundTripper{
+				wantRequests: []*http.Request{
+					{
+						Method: http.MethodGet,
+						URL:    mustParse(url1),
+						Host:   "endpoint1",
+					},
+				},
+				statusCodes: []int{http.StatusOK},
+				respBodies:  [][]byte{{}},
+				t:           t,
+			},
+			want: veles.ValidationValid,
+		},
+		{
+			desc: "endpointsfunc_returns_multiple",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				EndpointsFunc: func(s velestest.FakeStringSecret) ([]string, error) {
+					return []string{url1, url2}, nil
+				},
+				HTTPMethod:         http.MethodGet,
+				ValidResponseCodes: []int{http.StatusOK},
+			},
+			secret: testSecret,
+			transport: &multiRoundTripper{
+				wantRequests: []*http.Request{
+					{
+						Method: http.MethodGet,
+						URL:    mustParse(url1),
+						Host:   "endpoint1",
+					},
+				},
+				statusCodes: []int{http.StatusOK},
+				respBodies:  [][]byte{{}},
+				t:           t,
+			},
+			want: veles.ValidationValid,
+		},
+		{
+			desc: "endpoints_and_endpointfuncs_provided",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoints: []string{url1},
+				EndpointsFunc: func(s velestest.FakeStringSecret) ([]string, error) {
+					return []string{url2}, nil
+				},
+				HTTPMethod: http.MethodGet,
+			},
+			secret:  testSecret,
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "endpoint_and_endpoints_provided",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint:   testURLStr,
+				Endpoints:  []string{url1},
+				HTTPMethod: http.MethodGet,
+			},
+			secret:  testSecret,
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "endpoint_and_endpointfuncs_provided",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				Endpoint: testURLStr,
+				EndpointsFunc: func(s velestest.FakeStringSecret) ([]string, error) {
+					return []string{url1}, nil
+				},
+				HTTPMethod: http.MethodGet,
+			},
+			secret:  testSecret,
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "endpointsfunc_returns_error",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				EndpointsFunc: func(s velestest.FakeStringSecret) ([]string, error) {
+					return nil, errors.New("failed to build endpoints")
+				},
+				HTTPMethod: http.MethodGet,
+			},
+			secret:  testSecret,
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "no_endpoints_or_endpointsfunc_provided",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				HTTPMethod: http.MethodGet,
+			},
+			secret:  testSecret,
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc:      "no_endpoint_or_endpointfunc_or_endpoints_or_endpointsfunc_provided",
+			validator: &sv.Validator[velestest.FakeStringSecret]{},
+			secret:    testSecret,
+			want:      veles.ValidationFailed,
+			wantErr:   cmpopts.AnyError,
+		},
+		{
+			desc: "valid_response_with_endpointsfunc",
+			validator: &sv.Validator[velestest.FakeStringSecret]{
+				EndpointsFunc: func(s velestest.FakeStringSecret) ([]string, error) {
+					return []string{url1}, nil
+				},
+				HTTPMethod:         http.MethodGet,
+				ValidResponseCodes: []int{http.StatusOK},
+			},
+			secret: testSecret,
+			transport: &multiRoundTripper{
+				wantRequests: []*http.Request{
+					{
+						Method: http.MethodGet,
+						URL:    mustParse(url1),
+						Host:   "endpoint1",
+					},
+				},
+				statusCodes: []int{http.StatusOK},
+				respBodies:  [][]byte{{}},
+				t:           t,
+			},
+			want: veles.ValidationValid,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			tc.validator.HTTPC = &http.Client{Transport: tc.roundTripper}
+			if tc.transport != nil {
+				tc.validator.HTTPC = &http.Client{Transport: tc.transport}
+			}
 
 			secret := velestest.FakeStringSecret{Value: tc.secret}
 			got, err := tc.validator.Validate(t.Context(), secret)
