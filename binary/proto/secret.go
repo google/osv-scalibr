@@ -259,7 +259,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 	case urlcreds.Credentials:
 		return urlCredentialsToProto(t), nil
 	case jdbcurlcreds.Credentials:
-		return jdbcUrlCredsToProto(t), nil
+		return jdbcURLCredsToProto(t), nil
 	case velespaystacksecretkey.PaystackSecret:
 		return paystackSecretKeyToProto(t), nil
 	case velestelegrambotapitoken.TelegramBotAPIToken:
@@ -294,7 +294,7 @@ func urlCredentialsToProto(s urlcreds.Credentials) *spb.SecretData {
 		},
 	}
 }
-func jdbcUrlCredsToProto(s jdbcurlcreds.Credentials) *spb.SecretData {
+func jdbcURLCredsToProto(s jdbcurlcreds.Credentials) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_JdbcUrlCredentials{
 			JdbcUrlCredentials: &spb.SecretData_JDBCURLCredentials{
