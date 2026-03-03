@@ -166,6 +166,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sap"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
@@ -433,6 +434,14 @@ var (
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
+		{sap.NewSAPAribaOAuth2ClientCredentialsDetector(), "secrets/saparibaoauth2clientcredentials", 0},
+		{sap.NewBTPAccessTokenDetector(), "secrets/btpaccesstoken", 0},
+		{sap.NewBTPXSUAAAccessTokenDetector(), "secrets/btpxsuaaaccesstoken", 0},
+		{sap.NewBTPOAuth2ClientCredentialsDetector(), "secrets/btpoauth2clientcredentials", 0},
+		{sap.NewBTPXSUAAOAuth2ClientCredentialsDetector(), "secrets/btpxsuaaoauth2clientcredentials", 0},
+		{sap.NewSAPSuccessFactorsAccessTokenDetector(), "secrets/sapsuccessfactorsaccesstoken", 0},
+		{sap.NewSAPConcurAccessTokenDetector(), "secrets/sapconcuraccesstoken", 0},
+		{sap.NewSAPConcurRefreshTokenDetector(), "secrets/sapconcurrefreshtoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

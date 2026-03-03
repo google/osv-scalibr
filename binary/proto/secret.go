@@ -74,6 +74,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sap"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velessquareapikey "github.com/google/osv-scalibr/veles/secrets/squareapikey"
@@ -324,6 +325,18 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case sap.AccessToken:
+		return sapAccessTokenToProto(t), nil
+	case sap.SuccessFactorsAccessToken:
+		return sapSuccessFactorsAccessTokenToProto(t), nil
+	case sap.AribaOAuth2ClientCredentials:
+		return sapAribaOAuth2ClientCredentialsToProto(t), nil
+	case sap.BTPOAuth2ClientCredentials:
+		return sapBTPOAuth2ClientCredentialsToProto(t), nil
+	case sap.ConcurAccessToken:
+		return sapConcurAccessTokenToProto(t), nil
+	case sap.ConcurRefreshToken:
+		return sapConcurRefreshTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1142,6 +1155,71 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+func sapAccessTokenToProto(s sap.AccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SapAccessToken{
+			SapAccessToken: &spb.SecretData_SAPAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func sapSuccessFactorsAccessTokenToProto(s sap.SuccessFactorsAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SapSuccessFactorsAccessToken{
+			SapSuccessFactorsAccessToken: &spb.SecretData_SAPSuccessFactorsAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func sapAribaOAuth2ClientCredentialsToProto(s sap.AribaOAuth2ClientCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SapAribaOauth2ClientCredentials{
+			SapAribaOauth2ClientCredentials: &spb.SecretData_SAPAribaOAuth2ClientCredentials{
+				Id:     s.ID,
+				Secret: s.Secret,
+			},
+		},
+	}
+}
+
+func sapBTPOAuth2ClientCredentialsToProto(s sap.BTPOAuth2ClientCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SapBtpOauth2ClientCredentials{
+			SapBtpOauth2ClientCredentials: &spb.SecretData_SAPBTPOAuth2ClientCredentials{
+				Id:       s.ID,
+				Secret:   s.Secret,
+				TokenUrl: s.TokenURL,
+			},
+		},
+	}
+}
+
+func sapConcurAccessTokenToProto(s sap.ConcurAccessToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SapConcurAccessToken{
+			SapConcurAccessToken: &spb.SecretData_SAPConcurAccessToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
+func sapConcurRefreshTokenToProto(s sap.ConcurRefreshToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SapConcurRefreshToken{
+			SapConcurRefreshToken: &spb.SecretData_SAPConcurRefreshToken{
+				Id:     s.ID,
+				Secret: s.Secret,
+				Token:  s.Token,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1500,6 +1578,18 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_SapAccessToken:
+		return sapAccessTokenToStruct(s.GetSapAccessToken()), nil
+	case *spb.SecretData_SapSuccessFactorsAccessToken:
+		return sapSuccessFactorsAccessTokenToStruct(s.GetSapSuccessFactorsAccessToken()), nil
+	case *spb.SecretData_SapAribaOauth2ClientCredentials:
+		return sapAribaOAuth2ClientCredentialsToStruct(s.GetSapAribaOauth2ClientCredentials()), nil
+	case *spb.SecretData_SapBtpOauth2ClientCredentials:
+		return sapBTPOAuth2ClientCredentialsToStruct(s.GetSapBtpOauth2ClientCredentials()), nil
+	case *spb.SecretData_SapConcurAccessToken:
+		return sapConcurAccessTokenToStruct(s.GetSapConcurAccessToken()), nil
+	case *spb.SecretData_SapConcurRefreshToken:
+		return sapConcurRefreshTokenToStruct(s.GetSapConcurRefreshToken()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1776,6 +1866,48 @@ func salesforceOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_Salesforc
 		ID:     credsPB.GetId(),
 		Secret: credsPB.GetSecret(),
 		URL:    credsPB.GetUrl(),
+	}
+}
+
+func sapAccessTokenToStruct(credsPB *spb.SecretData_SAPAccessToken) sap.AccessToken {
+	return sap.AccessToken{
+		Token: credsPB.GetToken(),
+		URL:   credsPB.GetUrl(),
+	}
+}
+
+func sapSuccessFactorsAccessTokenToStruct(credsPB *spb.SecretData_SAPSuccessFactorsAccessToken) sap.SuccessFactorsAccessToken {
+	return sap.SuccessFactorsAccessToken{
+		Token: credsPB.GetToken(),
+	}
+}
+
+func sapAribaOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_SAPAribaOAuth2ClientCredentials) sap.AribaOAuth2ClientCredentials {
+	return sap.AribaOAuth2ClientCredentials{
+		ID:     credsPB.GetId(),
+		Secret: credsPB.GetSecret(),
+	}
+}
+
+func sapBTPOAuth2ClientCredentialsToStruct(credsPB *spb.SecretData_SAPBTPOAuth2ClientCredentials) sap.BTPOAuth2ClientCredentials {
+	return sap.BTPOAuth2ClientCredentials{
+		ID:       credsPB.GetId(),
+		Secret:   credsPB.GetSecret(),
+		TokenURL: credsPB.GetTokenUrl(),
+	}
+}
+
+func sapConcurAccessTokenToStruct(credsPB *spb.SecretData_SAPConcurAccessToken) sap.ConcurAccessToken {
+	return sap.ConcurAccessToken{
+		Token: credsPB.GetToken(),
+	}
+}
+
+func sapConcurRefreshTokenToStruct(credsPB *spb.SecretData_SAPConcurRefreshToken) sap.ConcurRefreshToken {
+	return sap.ConcurRefreshToken{
+		ID:     credsPB.GetId(),
+		Secret: credsPB.GetSecret(),
+		Token:  credsPB.GetToken(),
 	}
 }
 

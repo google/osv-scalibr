@@ -76,6 +76,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sap"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
@@ -184,6 +185,11 @@ var (
 		fromVeles(salesforceoauth2refresh.NewValidator(), "secrets/salesforceoauth2refreshvalidate", 0),
 		fromVeles(salesforceoauth2jwt.NewValidator(), "secrets/salesforceoauth2jwtvalidate", 0),
 		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
+		fromVeles(sap.NewSAPAribaOAuth2ClientCredentialsValidator(), "secrets/saparibaoauth2clientvalidate", 0),
+		fromVeles(sap.NewSAPSuccessFactorsAccessTokenValidator(), "secrets/sapsuccessfactorsaccesstokenvalidate", 0),
+		fromVeles(sap.NewBTPOAuth2ClientCredentialsValidator(), "secrets/btpoauth2clientcredentialsvalidate", 0),
+		fromVeles(sap.NewSAPConcurAccessTokenValidator(), "secrets/sapconcuraccesstokenvalidate", 0),
+		fromVeles(sap.NewSAPConcurRefreshTokenValidator(), "secrets/sapconcurrefreshtokenalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
