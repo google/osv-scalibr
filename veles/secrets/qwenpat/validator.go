@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,74 +15,33 @@
 package qwenpat
 
 import (
-	"context"
-	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates Qwen PATs via the Qwen API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
+const (
+	// dashScopeModels is the API endpoint for DashScope model list.
+	dashScopeModels = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models"
+)
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
-//
-// By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
-	}
-}
-
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given QwenPAT is valid.
+// NewValidator creates a new Validator checks whether the given QwenPAT is valid via the DashScope API. 
 //
 // It performs a GET request to the appropriate Qwen API endpoint
-// based on the token prefix. For tokens starting with "sk-", it uses
-// https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models URL
 // If the request returns HTTP 200, the key is considered valid.
 // If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, pat QwenPAT) (veles.ValidationStatus, error) {
-	var url string
-	if strings.HasPrefix(pat.Pat, "sk-") {
-		url = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models"
-	} else {
-		return veles.ValidationInvalid, nil
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+pat.Pat)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+func NewValidator() *sv.Validator[QwenPAT] {
+	return &sv.Validator[QwenPAT]{
+		Endpoint:   dashScopeModels,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(s QwenPAT) map[string]string {
+			return map[string]string{"Authorization": "Bearer " + s.Pat}
+		},
+		// 200 OK: Request succeeded (implies valid auth)
+		// 400 Bad Request: Auth succeeded, but request parameters were invalid (implies valid auth)
+		ValidResponseCodes: []int{http.StatusOK, http.StatusBadRequest},
+		// 401 Unauthorized: Invalid API Key
+		// 403 Forbidden: API Key valid format but permission denied/invalid
+		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}
 }
