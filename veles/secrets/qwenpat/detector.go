@@ -17,11 +17,12 @@
 package qwenpat
 
 import (
-        "regexp"
+	"regexp"
 
-        "github.com/google/osv-scalibr/veles"
-        "github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
+
 // maxTokenLength is the maximum size of a Qwen PAT.
 const maxTokenLength = 35
 
@@ -30,7 +31,6 @@ const maxTokenLength = 35
 // alphanumeric characters.
 var patRe = regexp.MustCompile(`sk-[A-Za-z0-9]{32}`)
 
-
 // NewDetector returns a new simpletoken.Detector that matches OpenAI API keys
 // (both legacy and project-scoped formats).
 func NewDetector() veles.Detector {
@@ -38,7 +38,7 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     patRe,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return APIKey{Key: string(b)}, true
+			return QwenPAT{Pat: string(b)}, true
 		},
 	}
 }

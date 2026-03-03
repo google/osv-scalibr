@@ -25,8 +25,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
 )
 
-const testQwenAPIKey = `sk-8jxqzgqkdv4xvpmhczrjq7k` // 32 characters long
-
+const testQwenAPIKey = `sk-8jxq8jxq8jxq8jxq8jxq8jxq8jxq8jxq` // 32 characters long
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Qwen PAT/s.
@@ -41,7 +40,7 @@ func TestDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name:  "simple matching string with qdp_ prefix",
+			name:  "simple matching string with sk- prefix",
 			input: testQwenAPIKey,
 			want: []veles.Secret{
 				qwenpat.QwenPAT{Pat: testQwenAPIKey},

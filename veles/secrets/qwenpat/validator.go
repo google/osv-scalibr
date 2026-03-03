@@ -17,7 +17,7 @@ package qwenpat
 import (
 	"net/http"
 
-	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
 const (
@@ -25,13 +25,13 @@ const (
 	dashScopeModels = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models"
 )
 
-// NewValidator creates a new Validator checks whether the given QwenPAT is valid via the DashScope API. 
+// NewValidator creates a new Validator checks whether the given QwenPAT is valid via the DashScope API.
 //
 // It performs a GET request to the appropriate Qwen API endpoint
 // If the request returns HTTP 200, the key is considered valid.
 // If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
-func NewValidator() *sv.Validator[QwenPAT] {
-	return &sv.Validator[QwenPAT]{
+func NewValidator() *simplevalidate.Validator[QwenPAT] {
+	return &simplevalidate.Validator[QwenPAT]{
 		Endpoint:   dashScopeModels,
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(s QwenPAT) map[string]string {
