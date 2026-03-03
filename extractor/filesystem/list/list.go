@@ -188,6 +188,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sap"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
@@ -516,6 +517,14 @@ var (
 		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
 		{http.NewCookieDetector(), "secrets/httpcookie", 0},
+		{sap.NewSAPAribaOAuth2ClientCredentialsDetector(), "secrets/saparibaoauth2clientcredentials", 0},
+		{sap.NewBTPAccessTokenDetector(), "secrets/btpaccesstoken", 0},
+		{sap.NewBTPXSUAAAccessTokenDetector(), "secrets/btpxsuaaaccesstoken", 0},
+		{sap.NewBTPOAuth2ClientCredentialsDetector(), "secrets/btpoauth2clientcredentials", 0},
+		{sap.NewBTPXSUAAOAuth2ClientCredentialsDetector(), "secrets/btpxsuaaoauth2clientcredentials", 0},
+		{sap.NewSAPSuccessFactorsAccessTokenDetector(), "secrets/sapsuccessfactorsaccesstoken", 0},
+		{sap.NewSAPConcurAccessTokenDetector(), "secrets/sapconcuraccesstoken", 0},
+		{sap.NewSAPConcurRefreshTokenDetector(), "secrets/sapconcurrefreshtoken", 0},
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{

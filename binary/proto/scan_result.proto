@@ -957,6 +957,12 @@ message SecretData {
     HTTPBearer http_bearer = 90;
     HTTPCSRFToken http_csrf_token = 91;
     HTTPCookie http_cookie = 92;
+    SAPAccessToken sap_access_token = 93;
+    SAPSuccessFactorsAccessToken sap_success_factors_access_token = 94;
+    SAPAribaOAuth2ClientCredentials sap_ariba_oauth2_client_credentials = 95;
+    SAPBTPOAuth2ClientCredentials sap_btp_oauth2_client_credentials = 96; 
+    SAPConcurAccessToken sap_concur_access_token = 97;
+    SAPConcurRefreshToken sap_concur_refresh_token = 98;
   }
 
   message GCPSAK {
@@ -1387,6 +1393,36 @@ message SecretData {
     string username = 2;
     // Salesforce OAuth2 private key
     string private_key = 3;
+  }
+
+  message SAPAccessToken {
+    string token = 1;
+    string url = 2;
+  }
+
+  message SAPSuccessFactorsAccessToken {
+    string token = 1;
+  }
+  
+  message SAPAribaOAuth2ClientCredentials {
+    string id = 1;
+    string secret = 2;
+  }
+
+  message SAPBTPOAuth2ClientCredentials {
+    string id = 1;
+    string secret = 2;
+    string token_url = 3;
+  } 
+
+  message SAPConcurAccessToken {
+    string token = 1;
+  }
+
+  message SAPConcurRefreshToken {
+    string id = 1;
+    string secret = 2;
+    string token = 3;
   }
 
   message BitwardenOAuth2AccessToken {
