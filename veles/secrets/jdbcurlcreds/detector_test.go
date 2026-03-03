@@ -22,7 +22,17 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/jdbcurlcreds"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		jdbcurlcreds.NewDetector(),
+		"jdbc:postgresql://host1:3306,host2:3307/database",
+		jdbcurlcreds.Credentials{FullURL: "jdbc:postgresql://host1:3306,host2:3307/database", IsLocalDB: false},
+	)
+}
 
 func TestDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{jdbcurlcreds.NewDetector()})
