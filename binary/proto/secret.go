@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
+	velesgitlabdeploytoken "github.com/google/osv-scalibr/veles/secrets/gitlabdeploytoken"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -198,6 +199,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubOAuthTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
+	case velesgitlabdeploytoken.GitlabDeployToken:
+		return gitlabDeployTokenToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
 		return azureAccessTokenToProto(t), nil
 	case velesazuretoken.AzureIdentityToken:
@@ -721,6 +724,18 @@ func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	}
 }
 
+func gitlabDeployTokenToProto(s velesgitlabdeploytoken.GitlabDeployToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabDeployToken_{
+			GitlabDeployToken: &spb.SecretData_GitlabDeployToken{
+				Token:    s.Token,
+				Username: s.Username,
+				RepoUrl:  s.RepoURL,
+			},
+		},
+	}
+}
+
 func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PostmanApiKey{
@@ -1236,6 +1251,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
+	case *spb.SecretData_GitlabDeployToken_:
+		return gitlabDeployTokenToStruct(s.GetGitlabDeployToken()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_Pypi:
@@ -1571,6 +1588,14 @@ func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
+	}
+}
+
+func gitlabDeployTokenToStruct(kPB *spb.SecretData_GitlabDeployToken) velesgitlabdeploytoken.GitlabDeployToken {
+	return velesgitlabdeploytoken.GitlabDeployToken{
+		Token:    kPB.GetToken(),
+		Username: kPB.GetUsername(),
+		RepoURL:  kPB.GetRepoUrl(),
 	}
 }
 

@@ -845,6 +845,7 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    GitlabDeployToken gitlab_deploy_token = 89;
   }
 
   message GCPSAK {
@@ -1224,7 +1225,13 @@ message SecretData {
     string token = 1;
   }
 
-  message HerokuSecretKey {
+  message GitlabDeployToken {
+    string token = 1;
+    string username = 2;
+    string repo_url = 3;
+  }
+
+    message HerokuSecretKey {
     string key = 1;
     // Optional enrichment fields populated when available
     optional HerokuSecretKeyMetadata heroku_secret_key_metadata = 2;
