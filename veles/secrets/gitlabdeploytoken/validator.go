@@ -17,6 +17,7 @@ package gitlabdeploytoken
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -55,7 +56,7 @@ func NewValidator() *Validator {
 			EndpointFunc: func(secret GitlabDeployToken) (string, error) {
 				// Validation requires a repository URL to construct the endpoint
 				if secret.RepoURL == "" {
-					return "", fmt.Errorf("RepoURL is required for validation")
+					return "", errors.New("RepoURL is required for validation")
 				}
 
 				// Parse the repository URL to extract hostname, namespace (group), and project.

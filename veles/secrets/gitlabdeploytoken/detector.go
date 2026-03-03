@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gitlabdeploytoken contains a Veles Secret type and a Detector for
-// GitLab Deploy Tokens (prefix `gldt-`).
 package gitlabdeploytoken
 
 import (
