@@ -33,7 +33,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### OS packages
 
 | Inventory Type    | Details                        | Extractor Plugin                             |
-| ----------------- | ------------------------------ | -------------------------------------------- |
+|-------------------| ------------------------------ |----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
@@ -47,6 +47,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Kernel archives   | vmlinuz                        | `os/kernel/vmlinuz`                          |
 | Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
 | SNAP              |                                | `os/snap`                                    |
+| Spack             |                                | `os/spack`                                   |
 | Flatpak           |                                | `os/flatpak`                                 |
 | Homebrew          | OS X                           | `os/homebrew`                                |
 | MacPorts          | OS X                           | `os/macports`                                |
@@ -64,6 +65,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | packages.config                                   | `dotnet/packagesconfig`              |
 |            | deps.json                                         | `dotnet/depsjson`                    |
 |            | portable executables                              | `dotnet/pe`                          |
+|            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
+|            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
@@ -126,6 +129,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Bitwarden OAuth2 access token               | `secrets/bitwardenoauth2access`        |
 | Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
