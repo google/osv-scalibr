@@ -724,7 +724,6 @@ func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	}
 }
 
-
 func gitlabIncomingEmailTokenToProto(s gitlabincomingemailtoken.GitlabIncomingEmailToken) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GitlabIncomingEmailToken_{
@@ -1589,7 +1588,6 @@ func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 		Pat: kPB.GetPat(),
 	}
 }
-
 
 func gitlabIncomingEmailTokenToStruct(kPB *spb.SecretData_GitlabIncomingEmailToken) gitlabincomingemailtoken.GitlabIncomingEmailToken {
 	return gitlabincomingemailtoken.GitlabIncomingEmailToken{
