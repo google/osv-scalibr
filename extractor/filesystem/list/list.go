@@ -166,6 +166,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sapoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
@@ -433,6 +434,7 @@ var (
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
+		{sapoauth2client.NewDetector(), "secrets/sapoauth2client", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
