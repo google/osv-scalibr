@@ -56,9 +56,9 @@ func mockDatabricksServer(t *testing.T, expectedClientID string, expectedClientS
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check if it's a POST request to the expected endpoint
-		if r.Method != http.MethodPost || r.URL.Path != "/api/2.0/token/create" {
-			t.Errorf("unexpected request: %s %s, expected: POST /api/2.0/token/create", r.Method, r.URL.Path)
+		// Check if it's a GET request to the expected endpoint
+		if r.Method != http.MethodGet || r.URL.Path != "/api/2.0/token/list" {
+			t.Errorf("unexpected request: %s %s, expected: POST /api/2.0/token/list", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -215,8 +215,8 @@ func TestValidate_MultipleEndpoints(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 
-		if r.Method != http.MethodPost ||
-			r.URL.Path != "/api/2.0/token/create" {
+		if r.Method != http.MethodGet ||
+			r.URL.Path != "/api/2.0/token/list" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

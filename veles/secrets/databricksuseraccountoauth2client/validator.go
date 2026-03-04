@@ -22,19 +22,19 @@ import (
 )
 
 // NewValidator creates a new Databricks User Account OAuth2 Client Credentials Validator.
-// It performs POST requests to the Databricks endpoints
-// with discovered credentials.
+// It performs GET requests to the Databricks endpoints with discovered credentials.
 //
 // Validation logic:
-// - HTTP Status 200, 403, and 404: Token is valid and authenticated
-// - HTTP Status 400 and 401: Token is invalid
+// - HTTP Status 200: Token is valid and authenticated
+// - HTTP Status 401: Token is invalid
 // - Other status codes: Validation failed
 // See the error codes here:
 // https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
+// https://docs.databricks.com/api/gcp/workspace/tokens/list
 func NewValidator() *sv.Validator[Credentials] {
 	return &sv.Validator[Credentials]{
-		Endpoints:  []string{"https://accounts.cloud.databricks.com/api/2.0/token/create", "https://accounts.gcp.databricks.com/api/2.0/token/create", "https://accounts.azuredatabricks.net/api/2.0/token/create"},
-		HTTPMethod: http.MethodPost,
+		Endpoints:  []string{"https://accounts.cloud.databricks.com/api/2.0/token/list", "https://accounts.gcp.databricks.com/api/2.0/token/list", "https://accounts.azuredatabricks.net/api/2.0/token/list"},
+		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(creds Credentials) map[string]string {
 			return map[string]string{
 				"client_id":     creds.ID,
@@ -46,7 +46,7 @@ func NewValidator() *sv.Validator[Credentials] {
 			// Databricks Account level operations require accound id in body
 			return fmt.Sprintf(`{"account_id": "%s"}`, creds.AccountID), nil
 		},
-		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden, http.StatusNotFound},
-		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusBadRequest},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }
