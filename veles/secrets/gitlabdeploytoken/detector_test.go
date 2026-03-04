@@ -37,7 +37,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			`,
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
-					Username: "gitlab+deploy-token-12535871",
+					Username: "username = gitlab+deploy-token-12535871",
 					Token:    "gldt-W6xaS96Cxzb87K5XsdAh",
 					RepoURL:  "https://gitlab.com/repo.git",
 				},
@@ -52,7 +52,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			`,
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
-					Username: "gitlab+deploy-token-12535871",
+					Username: "username = gitlab+deploy-token-12535871",
 					Token:    "gldt-W6xaS96Cxzb87K5XsdAh",
 					RepoURL:  "https://gitlab.com/test4701309/test-project.git",
 				},
@@ -67,7 +67,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			`,
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
-					Username: "testusername",
+					Username: "username: testusername",
 					Token:    "gldt-k3tx_ycYvssk_8FLUHju",
 					RepoURL:  "https://gitlab.example.com/org/backend/api-service.git",
 				},
@@ -82,7 +82,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			`,
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
-					Username: "myusername",
+					Username: "username: myusername",
 					Token:    "gldt-AbCdEfGhIjKlMnOpQrStUvWxYz123",
 					RepoURL:  "git@gitlab.com:mygroup/myproject.git",
 				},
@@ -97,7 +97,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			`,
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
-					Username: "deploy_username",
+					Username: "username: deploy_username",
 					Token:    "gldt-W6xaS96Cxzb87K5XsdAh",
 					RepoURL:  "git@gitlab.example.com:org/team/backend/service.git",
 				},
@@ -136,7 +136,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			`,
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
-					Username: "gitlab+deploy-token-99999999",
+					Username: "username: gitlab+deploy-token-99999999",
 					Token:    "gldt-AbCdEfGhIjKlMnOpQrStUvWxYz123",
 					RepoURL:  "https://gitlab.example.com/testgroup/testproject.git",
 				},
@@ -286,7 +286,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
 					Token:    "gldt-123456789abcdef",
-					Username: "myusername",
+					Username: "username: myusername",
 					RepoURL:  "https://gitlab.com/test/repo.git",
 				},
 			},
@@ -301,7 +301,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
 					Token:    "gldt-AbC_DeF_123_XyZ_456",
-					Username: "myusername",
+					Username: "user: myusername",
 					RepoURL:  "https://gitlab.com/test/repo.git",
 				},
 			},
@@ -318,7 +318,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
 					Token:    "gldt-TokenShouldMatchClosest",
-					Username: "testusername",
+					Username: "username=testusername",
 					RepoURL:  "https://gitlab.com/close/repo.git",
 				},
 			},
@@ -333,7 +333,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 			want: []veles.Secret{
 				gitlabdeploytoken.GitlabDeployToken{
 					Token:    "gldt-SSHUrlStyleToken123",
-					Username: "gitlab+deploy-token-12345",
+					Username: "username: gitlab+deploy-token-12345",
 					RepoURL:  "ssh://git@gitlab.com/mygroup/myproject.git",
 				},
 			},

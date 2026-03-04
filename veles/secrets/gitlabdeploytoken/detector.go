@@ -45,10 +45,10 @@ var tokenRe = regexp.MustCompile(`gldt-[A-Za-z0-9_]{15,}`)
 // usernameRe matches GitLab Deploy Token usernames in two formats:
 //  1. Official: gitlab+deploy-token-{numbers} (e.g., gitlab+deploy-token-12535871)
 //  2. Generic: key-value patterns like username: value, username=value, or username="value"
-//     Captures only the value after username/user/login/account keywords
+//     Matches the entire pattern including the keyword
 //
-// Examples: username: myuser, username="deploy_token", login=testuser
-var usernameRe = regexp.MustCompile(`gitlab\+deploy-token-\d+|(?i:username|user|login|account)["']?\s*[=:]\s*["']?([^"'\s]+)`)
+// Examples: gitlab+deploy-token-12535871, username: myuser, username="deploy_token", login=testuser
+var usernameRe = regexp.MustCompile(`(?:gitlab\+deploy-token-\d+|(?i:username|user|login|account)["']?\s*[=:]\s*["']?[^"'\s]+)`)
 
 // repoURLRe matches GitLab repository URLs in HTTPS, HTTP, and SSH formats
 // Examples: https://gitlab.com/org/project.git, git@gitlab.com:org/project.git
@@ -64,7 +64,7 @@ func NewDetector() veles.Detector {
 		MaxDistance:   maxDistance,
 		Finders: []ntuple.Finder{
 			ntuple.FindAllMatches(tokenRe),
-			ntuple.FindAllMatchesGroup(usernameRe),
+			ntuple.FindAllMatches(usernameRe),
 			ntuple.FindAllMatches(repoURLRe),
 		},
 		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
