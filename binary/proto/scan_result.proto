@@ -845,6 +845,9 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    NuGetAPIKey nuget_api_key = 89;
+    NuGetProxyCredential nuget_proxy_credential = 90;
+    NuGetPackageSourceCredential nuget_package_source_credential = 91;
   }
 
   message GCPSAK {
@@ -947,6 +950,19 @@ message SecretData {
 
   message DenoPat {
     string pat = 1;
+  }
+
+  message NuGetProxyCredential {
+    string proxy_url = 1;
+    string username = 2;
+    string password = 3;
+  }
+
+  message NuGetPackageSourceCredential {
+    string source_name = 1;
+    string username = 2;
+    string clear_text_password = 3;
+    string encrypted_password = 4;
   }
 
   message GitlabPat {
@@ -1303,6 +1319,9 @@ message SecretData {
     string key = 1;
   }
 
+  message NuGetAPIKey {
+    string key = 1;
+  }
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)

@@ -171,6 +171,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Packagist User Update Token                 | `secrets/packagistuserupdatetoken`     |
 | Packagist Conductor Update Token            | `secrets/packagistconductorupdatetoken`|
 | Perplexity API key                          | `secrets/perplexityapikey`             |
+| NuGet.org API key                           | `secrets/nugetapikey`                  |
+| NuGet.config credentials                    | `secrets/nugetconfig`                  |
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |
 | Postman API key                             | `secrets/postmanapikey`                |

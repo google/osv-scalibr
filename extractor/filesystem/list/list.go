@@ -119,6 +119,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/nugetconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
@@ -149,6 +150,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
+	"github.com/google/osv-scalibr/veles/secrets/nugetapikey"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -350,6 +352,7 @@ var (
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
+		nugetconfig.Name:             {nugetconfig.New},
 		cloudflareapitoken.Name:      {cloudflareapitoken.New},
 		bitwardenoauth2access.Name:   {bitwardenoauth2access.New},
 	}
@@ -385,6 +388,7 @@ var (
 		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
+		{nugetapikey.NewDetector(), "secrets/nugetapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
 		{packagist.NewAPISecretDetector(), "secrets/packagistsecret", 0},

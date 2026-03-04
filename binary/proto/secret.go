@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	velesmysqlmylogin "github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
+	velesnugetconfig "github.com/google/osv-scalibr/extractor/filesystem/secrets/nugetconfig"
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/inventory"
@@ -58,6 +59,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
+	velesnugetapikey "github.com/google/osv-scalibr/veles/secrets/nugetapikey"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -236,10 +238,16 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return gcpAPIKeyToProto(t.Key), nil
 	case velespgpass.Pgpass:
 		return pgpassToProto(t), nil
+	case velesnugetconfig.ProxyCredential:
+		return nugetProxyCredentialToProto(t), nil
+	case velesnugetconfig.PackageSourceCredential:
+		return nugetPackageSourceCredentialToProto(t), nil
 	case huggingfaceapikey.HuggingfaceAPIKey:
 		return huggingfaceAPIKeyToProto(t), nil
 	case velesmistralapikey.MistralAPIKey:
 		return mistralAPIKeyToProto(t), nil
+	case velesnugetapikey.NuGetAPIKey:
+		return nugetAPIKeyToProto(t), nil
 	case velesstripeapikeys.StripeSecretKey:
 		return stripeSecretKeyToProto(t), nil
 	case velesstripeapikeys.StripeRestrictedKey:
@@ -387,6 +395,41 @@ func squareOAuthApplicationSecretToProto(s velessquareapikey.SquareOAuthApplicat
 			SquareOauthApplicationSecret: &spb.SecretData_SquareOAuthApplicationSecret{
 				Id:  s.ID,
 				Key: s.Key,
+			},
+		},
+	}
+}
+
+func nugetAPIKeyToProto(s velesnugetapikey.NuGetAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_NugetApiKey{
+			NugetApiKey: &spb.SecretData_NuGetAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func nugetProxyCredentialToProto(s velesnugetconfig.ProxyCredential) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_NugetProxyCredential{
+			NugetProxyCredential: &spb.SecretData_NuGetProxyCredential{
+				ProxyUrl: s.ProxyURL,
+				Username: s.Username,
+				Password: s.Password,
+			},
+		},
+	}
+}
+
+func nugetPackageSourceCredentialToProto(s velesnugetconfig.PackageSourceCredential) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_NugetPackageSourceCredential{
+			NugetPackageSourceCredential: &spb.SecretData_NuGetPackageSourceCredential{
+				SourceName:        s.SourceName,
+				Username:          s.Username,
+				ClearTextPassword: s.ClearTextPassword,
+				EncryptedPassword: s.EncryptedPassword,
 			},
 		},
 	}
@@ -1331,6 +1374,17 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesgcpapikey.GCPAPIKey{Key: s.GetGcpApiKey().GetKey()}, nil
 	case *spb.SecretData_Hugginface:
 		return huggingfaceAPIKeyToStruct(s.GetHugginface()), nil
+	case *spb.SecretData_NugetApiKey:
+		return velesnugetapikey.NuGetAPIKey{
+			Key: s.GetNugetApiKey().GetKey(),
+		}, nil
+	case *spb.SecretData_NugetPackageSourceCredential:
+		return velesnugetconfig.PackageSourceCredential{
+			SourceName:        s.GetNugetPackageSourceCredential().GetSourceName(),
+			Username:          s.GetNugetPackageSourceCredential().GetUsername(),
+			ClearTextPassword: s.GetNugetPackageSourceCredential().GetClearTextPassword(),
+			EncryptedPassword: s.GetNugetPackageSourceCredential().GetEncryptedPassword(),
+		}, nil
 	case *spb.SecretData_StripeSecretKey_:
 		return velesstripeapikeys.StripeSecretKey{
 			Key: s.GetStripeSecretKey().GetKey(),
