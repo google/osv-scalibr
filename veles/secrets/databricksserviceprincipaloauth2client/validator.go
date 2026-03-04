@@ -38,7 +38,7 @@ func NewValidator() *nv.Validator[Credentials] {
 			if creds.URL == "" {
 				return "", errors.New("OAuth2 url is empty")
 			}
-			return fmt.Sprintf("https://%s/api/2.0/token/create", creds.URL), nil
+			return fmt.Sprintf("https://%s/api/2.0/token/list", creds.URL), nil
 		},
 		HTTPMethod: http.MethodPost,
 		HTTPHeaders: func(creds Credentials) map[string]string {
