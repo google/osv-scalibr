@@ -74,6 +74,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/secrets/sapoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	velesslacktoken "github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	velessquareapikey "github.com/google/osv-scalibr/veles/secrets/squareapikey"
@@ -324,6 +325,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case sapoauth2client.Credentials:
+		return sapOAuth2ClientCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1142,6 +1145,19 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+func sapOAuth2ClientCredentialsToProto(creds sapoauth2client.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_SapOauth2ClientCredentials{
+			SapOauth2ClientCredentials: &spb.SecretData_SAPOAuth2ClientCredentials{
+				Id:       creds.ID,
+				Secret:   creds.Secret,
+				TokenUrl: creds.TokenURL,
+				Url:      creds.URL,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1500,6 +1516,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_SapOauth2ClientCredentials:
+		return sapOAuth2ClientCredentialsToStruct(s.GetSapOauth2ClientCredentials()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1796,6 +1814,15 @@ func herokuSecretToStruct(k *spb.SecretData_HerokuSecretKey) velesherokuplatform
 	return velesherokuplatformkey.HerokuSecret{
 		Key:      k.GetKey(),
 		Metadata: &velesherokuplatformkey.Metadata{ExpireTime: dur, NeverExpires: metadata.GetNeverExpires()},
+	}
+}
+
+func sapOAuth2ClientCredentialsToStruct(creds *spb.SecretData_SAPOAuth2ClientCredentials) sapoauth2client.Credentials {
+	return sapoauth2client.Credentials{
+		ID:       creds.GetId(),
+		Secret:   creds.GetSecret(),
+		TokenURL: creds.GetTokenUrl(),
+		URL:      creds.GetUrl(),
 	}
 }
 
