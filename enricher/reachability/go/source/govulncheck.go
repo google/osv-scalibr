@@ -25,7 +25,7 @@ import (
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
-	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
+	"github.com/google/osv-scalibr/enricher/reachability/go/source/internal"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/inventory"

@@ -33,19 +33,17 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
-	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
-	vulnpb "github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"github.com/google/osv-scalibr/enricher"
+	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
+	vulnpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const testProjPath = "./testdata/goproj"
