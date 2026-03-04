@@ -89,6 +89,55 @@ func ExtractTokens(data []byte) ([]Token, []int) {
 	return tokens, positions
 }
 
+// ExtractTokensWithContext scans input data using a context-aware regexp.
+//
+// The provided regexp should contain at least one capturing group where the
+// first group represents the JWT value. The returned Token is parsed from
+// that first capturing group, while the returned position corresponds to the
+// start of the full regex match (including surrounding context).
+//
+// Example regexp:
+//
+//	(?i)\baccess[_-]?token\b\s*[:=]?\s*(eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b
+//
+// For input:
+//
+//	access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+//
+// The returned position will point to the beginning of "access_token",
+// while the parsed token will be extracted only from the captured JWT.
+func ExtractTokensWithContext(data []byte, r *regexp.Regexp) ([]Token, []int) {
+	var tokens []Token
+	var positions []int
+
+	matches := r.FindAllSubmatchIndex(data, -1)
+
+	// idx layout:
+	// [fullStart, fullEnd, g1Start, g1End, g2Start, g2End, ...]
+	for _, idx := range matches {
+		// Ensure first capturing group exists and matched
+		if len(idx) < 4 || idx[2] < 0 || idx[3] < 0 {
+			continue
+		}
+
+		// Extract JWT from first capturing group
+		jwtBytes := data[idx[2]:idx[3]]
+		if len(jwtBytes) > MaxTokenLength {
+			continue
+		}
+
+		token := parseToken(string(jwtBytes))
+		if !token.isValid() {
+			continue
+		}
+
+		tokens = append(tokens, token)
+		positions = append(positions, idx[0]) // full context span start
+	}
+
+	return tokens, positions
+}
+
 // parseToken splits and decode a JWT string into a Token.
 func parseToken(token string) Token {
 	sections := strings.Split(token, ".")
