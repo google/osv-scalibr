@@ -67,8 +67,9 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 
 	aptCache, err := extractAptCache(input.ScanRoot)
 	if err != nil {
-		// if the apt cache folder is missing do not add any ExploitabilitySignals
-		if errors.Is(err, errorMissingAptCache) {
+		// If the apt cache is empty do not add any ExploitabilitySignals since they would
+		// result in false negatives
+		if errors.Is(err, ErrMissingAptCache) {
 			return nil
 		}
 		return fmt.Errorf("failed to read the apt cache folder: %w", err)

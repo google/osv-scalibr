@@ -30,7 +30,8 @@ import (
 	"github.com/pierrec/lz4/v4"
 )
 
-var mainRepoPattern = regexp.MustCompile(`[a-zA-Z]*_dists_[a-zA-Z]*_main_[a-zA-Z]*_Packages(?:\.[a-zA-Z]*)?`)
+// mainRepoPattern matches files containing main OS repositories indexes
+var mainRepoPattern = regexp.MustCompile(`[\w.]*(?:-[a-zA-Z]+)?_dists_[\w-]+_main_binary-[a-zA-Z0-9]*_Packages(?:\.gz|.lz4|.zst)?$`)
 
 const aptListDir = "var/lib/apt/lists"
 
@@ -44,30 +45,30 @@ func (a *aptCache) isFromMainOSRepo(pkg *extractor.Package) bool {
 	return exists
 }
 
-var errorMissingAptCache = errors.New("missing apt cache folder: " + aptListDir)
+// ErrMissingAptCache is returned if the cache folder is missing or empty
+var ErrMissingAptCache = errors.New("missing apt cache folder: " + aptListDir)
 
 // extractAptCache extracts main repositories information from the var/lib/apt/lists folder
 // if the var/lib/apt/lists folder is empty or doesn't exists it returns errorMissingAptCache
 func extractAptCache(root *fs.ScanRoot) (*aptCache, error) {
 	entries, err := iofs.ReadDir(root.FS, aptListDir)
 	if err != nil {
-		// if the `var/lib/apt/lists` doesn't exists return an empty cache, this could happen for 2 reasons:
+		// if the `var/lib/apt/lists` doesn't exists which could happen for 2 reasons:
 		// - the folder was deleted after installation
 		// - apt is not installed
 		if errors.Is(err, iofs.ErrNotExist) {
-			return nil, errorMissingAptCache
+			return nil, ErrMissingAptCache
 		}
 		return nil, err
 	}
 
 	if len(entries) == 0 {
-		return nil, nil
+		return nil, ErrMissingAptCache
 	}
 
 	cache := &aptCache{
 		value: make(map[string]struct{}),
 	}
-
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
