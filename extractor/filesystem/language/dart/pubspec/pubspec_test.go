@@ -111,7 +111,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -129,7 +129,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -149,7 +149,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:      "shelf_web_socket",
@@ -159,7 +159,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -177,7 +177,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:      "build_runner",
@@ -187,7 +187,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -199,7 +199,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:      "shelf_web_socket",
@@ -209,7 +209,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -227,7 +227,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "e5adce55eea0b74d3680e66a2c5252edf17b07e1",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:      "screen_retriever",
@@ -237,7 +237,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "406b9b038b2c1d779f1e7bf609c8c248be247372",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:      "tray_manager",
@@ -247,7 +247,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3aa37c86e47ea748e7b5507cbe59f2c54ebdb23a",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:      "window_manager",
@@ -257,7 +257,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "88487257cbafc501599ab4f82ec343b46acec020",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:      "toggle_switch",
@@ -267,7 +267,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -285,7 +285,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -303,7 +303,7 @@ func TestExtractor_Extract(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},

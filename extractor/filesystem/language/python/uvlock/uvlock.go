@@ -138,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 		sort.Strings(depGroupVals)
 
-		pkgDetails.Metadata = osv.DepGroupMetadata{
+		pkgDetails.Metadata = &osv.DepGroupMetadata{
 			DepGroupVals: depGroupVals,
 		}
 		packages = append(packages, pkgDetails)

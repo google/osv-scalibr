@@ -12,48 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata defines a metadata struct for Bazel Tools.
-package metadata
+// Package fsmetadata provides a SCALIBR metadata type that wraps a scalibrfs.FS.
+package fsmetadata
 
 import (
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/google/osv-scalibr/fs"
 )
 
 func init() {
 	metadata.Register(ToStruct, ToProto)
 }
 
-// Metadata holds parsing information for a Bazel tool.
+// Metadata wraps a scalibrfs.FS.
+//
+//nolint:plugger
 type Metadata struct {
-	Name       string // Full Name of the dependency
-	GroupID    string // Maven group ID
-	ArtifactID string // Maven artifact ID
-	Version    string // Maven version
-	RuleName   string // Bazel rule name
-}
-
-// ToProto converts the Metadata struct to a BazelMavenMetadata proto.
-func ToProto(m *Metadata) *pb.BazelMavenMetadata {
-	return &pb.BazelMavenMetadata{
-		Name:       m.Name,
-		GroupId:    m.GroupID,
-		ArtifactId: m.ArtifactID,
-		Version:    m.Version,
-		RuleName:   m.RuleName,
-	}
+	FS        fs.FS
+	Converted bool
 }
 
 // IsProtoable marks the struct as a metadata type.
 func (m *Metadata) IsProtoable() {}
 
-// ToStruct converts the BazelMetadata proto to a Metadata struct.
-func ToStruct(m *pb.BazelMavenMetadata) *Metadata {
+// ToProto returns a placeholder proto.
+func ToProto(m *Metadata) *pb.FSMetadata {
+	// m.FS is passed from Extractors to Detectors, but it represents a
+	// runtime filesystem interface rather than a serializable data structure.
+	// Attempting to serialize it would be invalid and unsafe.
+	// We will convert it, but when deserialized it will be nil and cannot be used.
+	return &pb.FSMetadata{HasFs: m.FS != nil}
+}
+
+// ToStruct returns the struct with Converted=true and FS=nil.
+func ToStruct(m *pb.FSMetadata) *Metadata {
 	return &Metadata{
-		Name:       m.GetName(),
-		GroupID:    m.GetGroupId(),
-		ArtifactID: m.GetArtifactId(),
-		Version:    m.GetVersion(),
-		RuleName:   m.GetRuleName(),
+		Converted: true,
+		FS:        nil,
 	}
 }

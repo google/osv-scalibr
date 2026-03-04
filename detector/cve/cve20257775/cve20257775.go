@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/fsmetadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -163,8 +164,13 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 				seen[fs] = struct{}{}
 
 				// Check ns.conf using pkg.Metadata (scalibrfs.FS)
-				fsys, ok := pkg.Metadata.(scalibrfs.FS)
-				if !ok {
+				var fsys scalibrfs.FS
+				if meta, ok := pkg.Metadata.(*fsmetadata.Metadata); ok {
+					fsys = meta.FS
+				} else if fs, ok := pkg.Metadata.(scalibrfs.FS); ok {
+					// Fallback for older metadata format if any
+					fsys = fs
+				} else {
 					continue
 				}
 
