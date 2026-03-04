@@ -151,7 +151,7 @@ func (e *Enricher) fetchExpiration(ctx context.Context, apiKey string) (*ibmclou
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+bearerToken)
-	//nolint // This header is set as "IAM-Apikey" exactly as documented by IBM.
+	//nolint:canonicalheader // This header is set as "IAM-Apikey" exactly as documented by IBM.
 	req.Header.Set("IAM-Apikey", apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
