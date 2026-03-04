@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
+	"github.com/google/osv-scalibr/enricher/reachability/go/source/internal"
 	vulnpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 

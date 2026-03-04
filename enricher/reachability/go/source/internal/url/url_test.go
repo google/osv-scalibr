@@ -24,7 +24,7 @@ package url_test
 import (
 	"testing"
 
-	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal/url"
+	"github.com/google/osv-scalibr/enricher/reachability/go/source/internal/url"
 )
 
 // Code copied from https://github.com/golang/go/blob/7c2b69080a0b9e35174cc9c93497b6e7176f8275/src/cmd/go/internal/web/url_test.go
