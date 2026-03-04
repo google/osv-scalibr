@@ -192,3 +192,55 @@ func TestEnricher_Enrich(t *testing.T) {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enricher.Name(), diff)
 	}
 }
+
+func TestNewEnricher(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *cpb.PluginConfig
+	}{
+		{
+			name: "empty config",
+			cfg:  &cpb.PluginConfig{},
+		},
+		{
+			name: "depsdev enabled",
+			cfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_PythonRequirementsTransitive{
+							PythonRequirementsTransitive: &cpb.PythonRequirementsTransitiveConfig{
+								DepsDevRequirements: true,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "upstream registry",
+			cfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_PythonRequirementsTransitive{
+							PythonRequirementsTransitive: &cpb.PythonRequirementsTransitiveConfig{
+								UpstreamRegistry: "https://my-registry.com",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := requirements.New(tt.cfg)
+			if err != nil {
+				t.Fatalf("New(%v) error = %v", tt.cfg, err)
+			}
+			if got == nil {
+				t.Errorf("New(%v) got = nil, want non-nil", tt.cfg)
+			}
+		})
+	}
+}

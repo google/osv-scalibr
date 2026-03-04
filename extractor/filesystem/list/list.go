@@ -34,8 +34,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/nugetcpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
@@ -99,6 +101,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/spack"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/mise"
@@ -107,7 +110,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/bitwardenoauth2access"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/cloudflareapitoken"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
@@ -126,6 +131,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
@@ -148,6 +154,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/packagist"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -287,6 +294,8 @@ var (
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
 		depsjson.Name:         {depsjson.New},
+		csproj.Name:           {csproj.New},
+		nugetcpm.Name:         {nugetcpm.New},
 		packagesconfig.Name:   {packagesconfig.New},
 		packageslockjson.Name: {packageslockjson.New},
 	}
@@ -324,6 +333,7 @@ var (
 		pacman.Name:     {pacman.New},
 		portage.Name:    {portage.New},
 		flatpak.Name:    {flatpak.New},
+		spack.Name:      {spack.New},
 		homebrew.Name:   {homebrew.New},
 		macapps.Name:    {macapps.New},
 		macports.Name:   {macports.New},
@@ -338,11 +348,13 @@ var (
 		onepasswordconnecttoken.Name: {onepasswordconnecttoken.New},
 		mariadb.Name:                 {mariadb.New},
 		awsaccesskey.Name:            {awsaccesskey.New},
+		composerpackagist.Name:       {composerpackagist.New},
 		codecatalyst.Name:            {codecatalyst.New},
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
 		nugetconfig.Name:             {nugetconfig.New},
 		cloudflareapitoken.Name:      {cloudflareapitoken.New},
+		bitwardenoauth2access.Name:   {bitwardenoauth2access.New},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -379,6 +391,11 @@ var (
 		{nugetapikey.NewDetector(), "secrets/nugetapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
+		{packagist.NewAPISecretDetector(), "secrets/packagistsecret", 0},
+		{packagist.NewOrgReadTokenDetector(), "secrets/packagistorgreadtoken", 0},
+		{packagist.NewOrgUpdateTokenDetector(), "secrets/packagistorgupdatetoken", 0},
+		{packagist.NewUserUpdateTokenDetector(), "secrets/packagistuserupdatetoken", 0},
+		{packagist.NewConductorUpdateTokenDetector(), "secrets/packagistconductorupdatetoken", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
@@ -419,6 +436,7 @@ var (
 		{herokuplatformkey.NewSecretKeyDetector(), "secrets/herokuplatformkey", 0},
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
+		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

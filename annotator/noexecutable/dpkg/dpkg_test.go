@@ -67,10 +67,10 @@ func TestAnnotate(t *testing.T) {
 			desc:         "empty_info_dir",
 			infoContents: map[string]string{},
 			packages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{}},
 			},
 			wantPackages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{}},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -81,10 +81,10 @@ func TestAnnotate(t *testing.T) {
 				"curl.list": "/usr/\n/usr/bin/\n/usr/bin/curl\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
 			},
 			packages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{}},
 			},
 			wantPackages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{}},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -94,10 +94,10 @@ func TestAnnotate(t *testing.T) {
 				"curl.list": "/usr/\n/usr/bin/\n/usr/bin/curl\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
 			},
 			packages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{}},
 			},
 			wantPackages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{}},
 			},
 		},
 		{
@@ -106,12 +106,12 @@ func TestAnnotate(t *testing.T) {
 				"curl.list": "/usr/\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
 			},
 			packages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{}},
 			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "curl",
-					Metadata: dpkgmetadata.Metadata{},
+					Metadata: &dpkgmetadata.Metadata{},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{
 						{
 							Plugin:          dpkg.Name,
@@ -127,12 +127,12 @@ func TestAnnotate(t *testing.T) {
 				"curl:arm64.list": "/usr/\n/usr/share/\n/usr/share/doc/\n/usr/share/doc/curl/\n/usr/share/doc/curl/README.Debian\n/usr/share/doc/curl/changelog.Debian.gz",
 			},
 			packages: []*extractor.Package{
-				{Name: "curl", Metadata: dpkgmetadata.Metadata{Architecture: "arm64"}},
+				{Name: "curl", Metadata: &dpkgmetadata.Metadata{Architecture: "arm64"}},
 			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "curl",
-					Metadata: dpkgmetadata.Metadata{Architecture: "arm64"},
+					Metadata: &dpkgmetadata.Metadata{Architecture: "arm64"},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{
 						{
 							Plugin:          dpkg.Name,
