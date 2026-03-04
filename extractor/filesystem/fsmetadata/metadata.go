@@ -12,36 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata defines a metadata struct for NVM Node.js versions.
-package metadata
+// Package fsmetadata provides a SCALIBR metadata type that wraps a scalibrfs.FS.
+package fsmetadata
 
 import (
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/google/osv-scalibr/fs"
 )
 
 func init() {
 	metadata.Register(ToStruct, ToProto)
 }
 
-// Metadata holds parsing information for an NVM Node.js version.
+// Metadata wraps a scalibrfs.FS.
+//
+//nolint:plugger
 type Metadata struct {
-	NodeJsVersion string
-}
-
-// ToProto converts the Metadata struct to a NvmMetadata proto.
-func ToProto(m *Metadata) *pb.NvmMetadata {
-	return &pb.NvmMetadata{
-		NodejsVersion: m.NodeJsVersion,
-	}
+	FS        fs.FS
+	Converted bool
 }
 
 // IsMetadata marks the struct as a metadata type.
 func (m *Metadata) IsMetadata() {}
 
-// ToStruct converts the NvmMetadata proto to a Metadata struct.
-func ToStruct(m *pb.NvmMetadata) *Metadata {
+// ToProto returns a placeholder proto.
+func ToProto(m *Metadata) *pb.FSMetadata {
+	return &pb.FSMetadata{HasFs: m.FS != nil}
+}
+
+// ToStruct returns the struct with Converted=true and FS=nil.
+func ToStruct(m *pb.FSMetadata) *Metadata {
 	return &Metadata{
-		NodeJsVersion: m.GetNodejsVersion(),
+		Converted: true,
+		FS:        nil,
 	}
 }
