@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package source
+// Package bitwardenoauth2access contains a Veles Secret type, Detector, and Validator
+// for Bitwarden OAuth2 access tokens. Detects client ID (UUID) and client secret
+// from Bitwarden CLI data.json files with key pattern:
+// "user_<UUID>_token_apiKeyClientSecret": "<secret>"
+package bitwardenoauth2access
 
-import (
-	"context"
-
-	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
-	vulnpb "github.com/ossf/osv-schema/bindings/go/osvschema"
-)
-
-// GovulncheckClient is an interface for running govulncheck on a Go module.
-type GovulncheckClient interface {
-	RunGovulncheck(ctx context.Context, absModDir string, vulns []*vulnpb.Vulnerability, goVersion string) (map[string][]*internal.Finding, error)
-	GoToolchainAvailable(ctx context.Context) bool
+// Token is a Veles Secret that holds relevant information for a
+// Bitwarden OAuth2 access token, including the client ID (UUID extracted
+// from the JSON key) and the client secret (the JSON value).
+type Token struct {
+	ClientID     string
+	ClientSecret string
 }

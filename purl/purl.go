@@ -123,6 +123,8 @@ const (
 	TypeLua = "lua"
 	// TypeChocolatey is pkg:chocolatey purl
 	TypeChocolatey = "chocolatey"
+	// TypeSpack is pkg:spack purl
+	TypeSpack = "spack"
 	// TypeCPAN is pkg:cpan purl
 	TypeCPAN = "cpan"
 )
