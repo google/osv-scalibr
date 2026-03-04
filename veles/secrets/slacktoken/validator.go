@@ -49,12 +49,12 @@ var (
 func statusFromResponseBody(body io.Reader) (veles.ValidationStatus, error) {
 	bodyBytes, err := io.ReadAll(body)
 	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("%w: %v", ErrAPIQueryFailed, err)
+		return veles.ValidationFailed, fmt.Errorf("%w: %w", ErrAPIQueryFailed, err)
 	}
 
 	var response slackResponse
 	if err := json.Unmarshal(bodyBytes, &response); err != nil {
-		return veles.ValidationFailed, fmt.Errorf("%w: %v", ErrAPIQueryFailed, err)
+		return veles.ValidationFailed, fmt.Errorf("%w: %w", ErrAPIQueryFailed, err)
 	}
 
 	if response.Ok {
@@ -63,7 +63,7 @@ func statusFromResponseBody(body io.Reader) (veles.ValidationStatus, error) {
 	if response.Error == "invalid_auth" {
 		return veles.ValidationInvalid, nil
 	}
-	return veles.ValidationFailed, fmt.Errorf("%w: %v", ErrAPIQueryFailed, response.Error)
+	return veles.ValidationFailed, fmt.Errorf("%w: %s", ErrAPIQueryFailed, response.Error)
 }
 
 // NewAppLevelTokenValidator creates a new Validator for SlackAppLevelToken.

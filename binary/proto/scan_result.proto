@@ -143,6 +143,9 @@ message Package {
     ChocolateyPackageMetadata chocolatey_metadata = 62;
     MiseMetadata mise_metadata = 63;
     UnknownBinaryMetadata unknown_binary_metadata = 64;
+    BazelMavenMetadata bazel_maven_metadata = 65;
+    JavascriptDenoMetadata deno_metadata = 66;
+    SpackPackageMetadata spack_metadata = 67;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -348,6 +351,17 @@ enum PackageSource {
   LOCAL = 3;
 }
 
+// The additional data of a deno package.
+message JavascriptDenoMetadata {
+  oneof cdn {
+    bool from_denoland_cdn = 1;
+    bool from_unpkg_cdn = 2;
+    bool from_esm_cdn = 3;
+  }
+
+  string url = 4;
+}
+
 // The additional data found in APK packages.
 message APKPackageMetadata {
   reserved 7;
@@ -466,6 +480,14 @@ message FlatpakPackageMetadata {
   string os_version_id = 7;
   string os_build_id = 8;
   string developer = 9;
+}
+
+// The additional data found in Spack packages.
+message SpackPackageMetadata {
+  string platform = 1;
+  string platform_os = 2;
+  string platform_architecture = 3;
+  string hash = 4;
 }
 
 // The additional data found in MODULE packages.
@@ -686,6 +708,14 @@ message NodeVersionMetadata {
   string nodejs_version = 2;
 }
 
+message BazelMavenMetadata {
+  string name = 1;
+  string group_id = 2;
+  string artifact_id = 3;
+  string version = 4;
+  string rule_name = 5;
+}
+
 message DockerPort {
   string ip = 1;
   uint32 private_port = 2;
@@ -803,7 +833,19 @@ message SecretData {
     HerokuSecretKey heroku_secret_key = 74;
     NpmJsAccessToken npmjs_access_token = 75;
     CloudflareAPIToken cloudflare_api_token = 76;
-    IBMCloudUserSecretKey ibm_cloud_secret_key = 77;
+    IBMCloudUserSecretKey ibm_cloud_secret_key = 89;
+    SupabasePAT supabase_pat = 77;
+    SupabaseProjectSecretKey supabase_project_secret_key = 78;
+    SupabaseServiceRoleJWT supabase_service_role_jwt = 79;
+    PackagistAPIKey packagist_api_key = 80;
+    PackagistAPISecret packagist_api_secret = 81;
+    PackagistOrgReadToken packagist_org_read_token = 82;
+    PackagistOrgUpdateToken packagist_org_update_token = 83;
+    PackagistUserUpdateToken packagist_user_update_token = 84;
+    PackagistConductorUpdateToken packagist_conductor_update_token = 85;
+    ComposerPackagistCredentials composer_http_basic_credentials = 86;
+    DiscordBotToken discord_bot_token = 87;
+    BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
   }
 
   message GCPSAK {
@@ -985,10 +1027,9 @@ message SecretData {
   }
 
   message HashiCorpVaultAppRoleCredentials {
+    reserved 3;
     string role_id = 1;
     string secret_id = 2;
-    string id =
-        3;  // General ID field for uncertain UUID types when context is unclear
   }
 
   message GCPAPIKey {
@@ -1029,6 +1070,19 @@ message SecretData {
 
   message StripeWebhookSecret {
     string key = 1;
+  }
+
+  message SupabasePAT {
+    string token = 1;
+  }
+
+  message SupabaseProjectSecretKey {
+    string key = 1;
+    string project_ref = 2;
+  }
+
+  message SupabaseServiceRoleJWT {
+    string token = 1;
   }
 
   message GCPOAuth2ClientCredentials {
@@ -1084,6 +1138,42 @@ message SecretData {
     string verifier_local_hash = 8;
   }
 
+  message ComposerPackagistCredentials {
+    string host = 1;
+    string username = 2;
+    string password = 3;
+  }
+
+  message PackagistAPIKey {
+    string key = 1;
+  }
+
+  message PackagistAPISecret {
+    string secret = 1;
+    string key =
+        2;  // Optional: populated when both key and secret are found together
+  }
+
+  message PackagistOrgReadToken {
+    string token = 1;
+    string repo_url = 2;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistOrgUpdateToken {
+    string token = 1;
+    string repo_url = 2;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistUserUpdateToken {
+    string token = 1;
+    string username = 2;  // Required for validation
+    string repo_url = 3;  // Optional: populated when repo URL is found nearby
+  }
+
+  message PackagistConductorUpdateToken {
+    string token = 1;
+  }
+
   message OnePasswordSecretKey {
     string key = 1;
   }
@@ -1129,6 +1219,10 @@ message SecretData {
 
   message PaystackSecretKey {
     string key = 1;
+  }
+
+  message DiscordBotToken {
+    string token = 1;
   }
 
   message HerokuSecretKey {
@@ -1195,6 +1289,12 @@ message SecretData {
     string username = 2;
     // Salesforce OAuth2 private key
     string private_key = 3;
+  }
+
+  message BitwardenOAuth2AccessToken {
+    // Bitwarden OAuth2 Access Token
+    string client_id = 1;
+    string client_secret = 2;
   }
 
   message CursorAPIKey {

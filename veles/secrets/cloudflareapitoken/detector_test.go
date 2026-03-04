@@ -174,8 +174,8 @@ func TestDetector_truePositives(t *testing.T) {
 			input: `CLOUDFLARE_API_TOKEN="` + testKey + `"
 CF_API_KEY=` + testKey[:len(testKey)-1] + `a`,
 			want: []veles.Secret{
-				cloudflareapitoken.CloudflareAPIToken{Token: testKey[:len(testKey)-1] + "a"},
 				cloudflareapitoken.CloudflareAPIToken{Token: testKey},
+				cloudflareapitoken.CloudflareAPIToken{Token: testKey[:len(testKey)-1] + "a"},
 			},
 		},
 		{

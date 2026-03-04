@@ -21,6 +21,7 @@ import (
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
+	bazelmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -113,6 +114,20 @@ func TestMakePackageURL(t *testing.T) {
 					"classifier": "classifier",
 					"type":       "type",
 				}),
+			},
+		},
+		{
+			desc:    "bazelmaven_metadata",
+			version: "1.0.0",
+			metadata: &bazelmavenmeta.Metadata{
+				GroupID:    "com.example",
+				ArtifactID: "my-artifact",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeMaven,
+				Namespace: "com.example",
+				Name:      "my-artifact",
+				Version:   "1.0.0",
 			},
 		},
 	}

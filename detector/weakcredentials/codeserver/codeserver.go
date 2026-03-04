@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 /*
@@ -78,43 +80,34 @@ var (
 	authDisabledPattern2 = `globalThis._VSCODE_FILE_ROOT`
 )
 
-// Config for this detector.
-type Config struct {
-	Remote        string
-	ClientTimeout time.Duration
-}
-
 // Detector is a SCALIBR Detector for weak/guessable passwords for the Code-Server service.
 type Detector struct {
-	config Config
-}
-
-// DefaultConfig returns the default config for this detector.
-func DefaultConfig() Config {
-	return defaultConfigWithOS(runtime.GOOS)
-}
-
-func defaultConfigWithOS(os string) Config {
-	address := defaultAddress
-	if os == "darwin" {
-		address = defaultMacOSAddress
-	}
-	return Config{
-		Remote:        "http://" + net.JoinHostPort(address, strconv.Itoa(defaultPort)),
-		ClientTimeout: defaultClientTimeout,
-	}
+	remote        string
+	clientTimeout time.Duration
 }
 
 // New returns a detector.
-func New(cfg Config) detector.Detector {
-	return &Detector{
-		config: cfg,
+func New(cfg *cpb.PluginConfig) (detector.Detector, error) {
+	address := defaultAddress
+	if runtime.GOOS == "darwin" {
+		address = defaultMacOSAddress
 	}
-}
+	remote := "http://" + net.JoinHostPort(address, strconv.Itoa(defaultPort))
+	clientTimeout := defaultClientTimeout
 
-// NewDefault returns a detector with the default config settings.
-func NewDefault() detector.Detector {
-	return New(DefaultConfig())
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.CodeServerConfig { return c.GetCodeServer() })
+	if specific != nil {
+		if specific.GetRemote() != "" {
+			remote = specific.GetRemote()
+		}
+		if specific.GetClientTimeoutMillis() > 0 {
+			clientTimeout = time.Duration(specific.GetClientTimeoutMillis()) * time.Millisecond
+		}
+	}
+	return &Detector{
+		remote:        remote,
+		clientTimeout: clientTimeout,
+	}, nil
 }
 
 // Name of the detector.
@@ -165,14 +158,14 @@ func (d Detector) Scan(ctx context.Context, _ *scalibrfs.ScanRoot, _ *packageind
 	}
 
 	client := &http.Client{
-		Timeout: d.config.ClientTimeout,
+		Timeout: d.clientTimeout,
 		Jar:     jar,
 	}
-	timeout := d.config.ClientTimeout*numRequests + 100*time.Millisecond
+	timeout := d.clientTimeout*numRequests + 100*time.Millisecond
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	vuln, err := checkAuth(ctx, client, d.config.Remote)
+	vuln, err := checkAuth(ctx, client, d.remote)
 	if err != nil {
 		return inventory.Finding{}, err
 	}

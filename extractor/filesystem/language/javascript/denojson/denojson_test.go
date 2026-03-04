@@ -1,0 +1,184 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package denojson_test
+
+import (
+	"io/fs"
+	"path/filepath"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/extracttest"
+	"github.com/google/osv-scalibr/testing/fakefs"
+)
+
+func TestFileRequired(t *testing.T) {
+	tests := []struct {
+		name             string
+		path             string
+		fileSizeBytes    int64
+		maxFileSizeBytes int64
+		wantRequired     bool
+	}{
+		{
+			name:         "deno.json at root",
+			path:         "deno.json",
+			wantRequired: true,
+		},
+		{
+			name:         "top level deno.json",
+			path:         "testdata/deno.json",
+			wantRequired: true,
+		},
+		{
+			name:         "not deno.json",
+			path:         "testdata/test.js",
+			wantRequired: false,
+		},
+		{
+			name:         "TypeScript file not required",
+			path:         "test.ts",
+			wantRequired: false,
+		},
+		{
+			name:             "deno.json required if size less than maxFileSizeBytes",
+			path:             "deno.json",
+			fileSizeBytes:    1000 * units.MiB,
+			maxFileSizeBytes: 2000 * units.MiB,
+			wantRequired:     true,
+		},
+		{
+			name:             "deno.json required if size equal to maxFileSizeBytes",
+			path:             "deno.json",
+			fileSizeBytes:    1000 * units.MiB,
+			maxFileSizeBytes: 1000 * units.MiB,
+			wantRequired:     true,
+		},
+		{
+			name:             "deno.json not required if size greater than maxFileSizeBytes",
+			path:             "deno.json",
+			fileSizeBytes:    10000 * units.MiB,
+			maxFileSizeBytes: 1000 * units.MiB,
+			wantRequired:     false,
+		},
+		{
+			name:             "deno.json required if maxFileSizeBytes explicitly set to 0",
+			path:             "deno.json",
+			fileSizeBytes:    1000 * units.MiB,
+			maxFileSizeBytes: 0,
+			wantRequired:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		// Note the subtest here
+		t.Run(tt.name, func(t *testing.T) {
+			e, err := denojson.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("denojson.New: %v", err)
+			}
+			// Set a default file size if not specified.
+			fileSizeBytes := tt.fileSizeBytes
+			if fileSizeBytes == 0 {
+				fileSizeBytes = 1 * units.KiB
+			}
+
+			isRequired := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
+			}))
+			if isRequired != tt.wantRequired {
+				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
+			}
+		})
+	}
+}
+
+func TestExtract(t *testing.T) {
+	tests := []struct {
+		name         string
+		path         string
+		cfg          denojson.Extractor
+		wantPackages []*extractor.Package
+		wantErr      error
+	}{
+		{
+			name: "deno.json with basic fields",
+			path: "testdata/deno.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "chalk",
+					Version:   "1.0.0",
+					Locations: []string{"testdata/deno.json"},
+					PURLType:  purl.TypeNPM,
+					Metadata: &denometadata.DenoMetadata{
+						URL: "npm:chalk@1",
+					},
+				},
+				{
+					Name:      "std1/path1",
+					Version:   "^1",
+					PURLType:  purl.TypeJSR,
+					Locations: []string{"testdata/deno.json"},
+					Metadata: &denometadata.DenoMetadata{
+						URL: "jsr:@std1/path1@^1",
+					},
+				},
+			},
+		},
+		{
+			name:    "invalid deno.json, json parse error",
+			path:    "testdata/invalid.jsontest",
+			wantErr: cmpopts.AnyError,
+		},
+	}
+
+	for _, tt := range tests {
+		// Note the subtest here
+		t.Run(tt.name, func(t *testing.T) {
+			scanInput := extracttest.GenerateScanInputMock(t,
+				extracttest.ScanInputMockConfig{
+					Path: tt.path,
+				})
+			e, err := denojson.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("denojson.New: %v", err)
+			}
+			got, err := e.Extract(t.Context(), &scanInput)
+			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
+				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
+			}
+
+			var want inventory.Inventory
+			if tt.wantPackages != nil {
+				want = inventory.Inventory{Packages: tt.wantPackages}
+			}
+
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+		})
+	}
+}

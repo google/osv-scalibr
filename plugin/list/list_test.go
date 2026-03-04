@@ -94,7 +94,7 @@ func TestEnricherNamesUnique(t *testing.T) {
 func TestFromCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
 	want := []string{"os/snap", "weakcredentials/etcshadow"} // Available for Linux
-	dontWant := []string{"os/homebrew", "windows/dismpatch"} // Not available for Linux
+	dontWant := []string{"windows/dismpatch"}                // Not available for Linux
 	plugins, err := pl.FromCapabilities(capab, &cpb.PluginConfig{})
 	if err != nil {
 		t.Fatalf("pl.FromCapabilities(%v): %v", capab, err)
@@ -130,8 +130,8 @@ func TestFromNames(t *testing.T) {
 	}{
 		{
 			desc:      "Find_all_Plugins_of_a_type",
-			names:     []string{"python", "windows", "cis", "vex", "layerdetails"},
-			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "vex/cachedir", "vex/filter", "vex/os-duplicate/apk", "vex/os-duplicate/cos", "vex/os-duplicate/dpkg", "vex/os-duplicate/rpm", "vex/no-executable/dpkg", "baseimage"},
+			names:     []string{"python", "windows", "cis", "layerdetails"},
+			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "baseimage"},
 		},
 		{
 			desc:      "Remove_duplicates",

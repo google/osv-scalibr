@@ -17,12 +17,26 @@ package codeserver
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
+
+func defaultConfigWithOS(goos string) *cpb.CodeServerConfig {
+	address := "127.0.0.2"
+	if goos == "darwin" {
+		address = "localhost"
+	}
+	return &cpb.CodeServerConfig{
+		Remote: "http://" + net.JoinHostPort(address, strconv.Itoa(49363)),
+	}
+}
 
 func TestScan(t *testing.T) {
 	tests := []struct {
@@ -55,10 +69,20 @@ func TestScan(t *testing.T) {
 			srv := httptest.NewServer(tc.handler)
 			defer srv.Close()
 
-			cfg := DefaultConfig()
-			cfg.Remote = srv.URL
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_CodeServer{
+						CodeServer: &cpb.CodeServerConfig{
+							Remote: srv.URL,
+						},
+					}},
+				},
+			}
 
-			d := New(cfg)
+			d, err := New(cfg)
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 			invs, _ := d.Scan(t.Context(), nil, nil)
 
 			gotVulns := len(invs.GenericFindings) > 0
@@ -93,11 +117,21 @@ func TestScanWithTimeouts(t *testing.T) {
 			srv := httptest.NewServer(tc.handler)
 			defer srv.Close()
 
-			cfg := DefaultConfig()
-			cfg.Remote = srv.URL
-			cfg.ClientTimeout = tc.clientTimeout
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_CodeServer{
+						CodeServer: &cpb.CodeServerConfig{
+							Remote:              srv.URL,
+							ClientTimeoutMillis: tc.clientTimeout.Milliseconds(),
+						},
+					}},
+				},
+			}
 
-			d := New(cfg)
+			d, err := New(cfg)
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 			start := time.Now()
 			invs, err := d.Scan(t.Context(), nil, nil)
 			end := time.Now()

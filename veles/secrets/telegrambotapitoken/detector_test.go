@@ -36,7 +36,17 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		telegrambotapitoken.NewDetector(),
+		`tgram://4839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcA`,
+		telegrambotapitoken.TelegramBotAPIToken{Token: "4839574812:AAFD39kkdpWt3ywyRZergyOLMaJhac60qcA"},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{telegrambotapitoken.NewDetector()})

@@ -1,0 +1,47 @@
+---
+abstract: 'Various portability utilities for module builders'
+author:
+  - 'Ken Williams <kwilliams@cpan.org>'
+  - 'Leon Timmermans <leont@cpan.org>'
+build_requires:
+  Cwd: '0'
+  Test::More: '0'
+  lib: '0'
+configure_requires:
+  ExtUtils::MakeMaker: '0'
+dynamic_config: 1
+generated_by: 'Dist::Zilla version 6.031, CPAN::Meta::Converter version 2.150010'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+name: ExtUtils-Helpers
+provides:
+  ExtUtils::Helpers:
+    file: lib/ExtUtils/Helpers.pm
+    version: '0.028'
+  ExtUtils::Helpers::Unix:
+    file: lib/ExtUtils/Helpers/Unix.pm
+    version: '0.028'
+  ExtUtils::Helpers::VMS:
+    file: lib/ExtUtils/Helpers/VMS.pm
+    version: '0.028'
+  ExtUtils::Helpers::Windows:
+    file: lib/ExtUtils/Helpers/Windows.pm
+    version: '0.028'
+requires:
+  Carp: '0'
+  Exporter: '5.57'
+  File::Basename: '0'
+  File::Copy: '0'
+  File::Spec::Functions: '0'
+  Text::ParseWords: '3.24'
+  strict: '0'
+  warnings: '0'
+resources:
+  bugtracker: https://github.com/Perl-Toolchain-Gang/extutils-helpers/issues
+  repository: git://github.com/Perl-Toolchain-Gang/extutils-helpers.git
+version: '0.028'
+x_generated_by_perl: v5.38.0
+x_serialization_backend: 'YAML::Tiny version 1.74'
+x_spdx_expression: 'Artistic-1.0-Perl OR GPL-1.0-or-later'

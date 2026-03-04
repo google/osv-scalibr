@@ -123,22 +123,36 @@ func comparePackagistComponents(a, b []string) int {
 	return 0
 }
 
-type packagistVersion struct {
-	Original   string
-	Components []string
+// PackagistVersion is the representation of a version of a package that is held
+// in the Packagist ecosystem.
+type PackagistVersion struct {
+	original   string
+	components []string
 }
 
-func parsePackagistVersion(str string) packagistVersion {
-	return packagistVersion{
+var _ Version = PackagistVersion{}
+
+// ParsePackagistVersion parses the given string as a Packagist version.
+func ParsePackagistVersion(str string) PackagistVersion {
+	return PackagistVersion{
 		str,
 		strings.Split(canonicalizePackagistVersion(str), "."),
 	}
 }
 
-func (v packagistVersion) compare(w packagistVersion) int {
-	return comparePackagistComponents(v.Components, w.Components)
+func (v PackagistVersion) compare(w PackagistVersion) int {
+	return comparePackagistComponents(v.components, w.components)
 }
 
-func (v packagistVersion) CompareStr(str string) (int, error) {
-	return v.compare(parsePackagistVersion(str)), nil
+// Compare compares the given version to the receiver.
+func (v PackagistVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(PackagistVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v PackagistVersion) CompareStr(str string) (int, error) {
+	return v.compare(ParsePackagistVersion(str)), nil
 }

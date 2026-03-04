@@ -28,6 +28,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Helper functions for generating expected test issues
@@ -707,7 +709,10 @@ func TestScanFS_Integration(t *testing.T) {
 }
 
 func TestDetectorInterface(t *testing.T) {
-	d := New()
+	d, err := New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
 
 	if d.Name() != Name {
 		t.Errorf("Name() = %q, want %q", d.Name(), Name)
