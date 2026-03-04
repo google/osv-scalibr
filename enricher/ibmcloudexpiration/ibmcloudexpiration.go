@@ -151,6 +151,7 @@ func (e *Enricher) fetchExpiration(ctx context.Context, apiKey string) (*ibmclou
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+bearerToken)
+	//nolint // This header is set as "IAM-Apikey" exactly as documented by IBM.
 	req.Header.Set("IAM-Apikey", apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -178,7 +179,7 @@ func (e *Enricher) fetchExpiration(ctx context.Context, apiKey string) (*ibmclou
 	metadataPtr := &ibmclouduserkey.Metadata{NeverExpires: false}
 	timeStruct, err := time.Parse(layout, *resp.ExpiresAt)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("time parse error: %w", err)
 	}
 	metadataPtr.ExpireTime = &timeStruct
 	return metadataPtr, nil
