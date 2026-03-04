@@ -1099,7 +1099,7 @@ func ibmcloudMetadataToProto(m *velesibmclouduserkey.Metadata) *spb.SecretData_I
 	meta := &spb.SecretData_IBMCloudUserSecretKeyMetadata{NeverExpires: false}
 	meta.NeverExpires = m.NeverExpires
 	if m.ExpireTime != nil {
-		meta.ExpireTime = *m.ExpireTime
+		meta.ExpireTime = timestamppb.New(*m.ExpireTime)
 	}
 
 	return meta
@@ -1838,10 +1838,10 @@ func ibmCloudSecretToStruct(k *spb.SecretData_IBMCloudUserSecretKey) velesibmclo
 	}
 
 	expireTime := metadata.GetExpireTime()
-
+	expireTimeAsTime := expireTime.AsTime()
 	return velesibmclouduserkey.IBMCloudUserSecret{
 		Key:      k.GetKey(),
-		Metadata: &velesibmclouduserkey.Metadata{ExpireTime: &expireTime, NeverExpires: metadata.GetNeverExpires()},
+		Metadata: &velesibmclouduserkey.Metadata{ExpireTime: &expireTimeAsTime, NeverExpires: metadata.GetNeverExpires()},
 	}
 }
 

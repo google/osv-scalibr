@@ -1246,7 +1246,7 @@ message SecretData {
 
   message IBMCloudUserSecretKeyMetadata {
     // expire_time is nil if the token doesn't expire, and never_expires becomes true
-    string expire_time = 1;
+    google.protobuf.Timestamp expire_time = 1;
     bool never_expires = 2;
 
   }

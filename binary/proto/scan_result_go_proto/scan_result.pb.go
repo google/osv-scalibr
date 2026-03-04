@@ -12001,8 +12001,8 @@ func (x *SecretData_IBMCloudUserSecretKey) GetIbmCloudSecretKeyMetadata() *Secre
 type SecretData_IBMCloudUserSecretKeyMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// expire_time is nil if the token doesn't expire, and never_expires becomes true
-	ExpireTime    string `protobuf:"bytes,1,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
-	NeverExpires  bool   `protobuf:"varint,2,opt,name=never_expires,json=neverExpires,proto3" json:"never_expires,omitempty"`
+	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	NeverExpires  bool                   `protobuf:"varint,2,opt,name=never_expires,json=neverExpires,proto3" json:"never_expires,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12037,11 +12037,11 @@ func (*SecretData_IBMCloudUserSecretKeyMetadata) Descriptor() ([]byte, []int) {
 	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 77}
 }
 
-func (x *SecretData_IBMCloudUserSecretKeyMetadata) GetExpireTime() string {
+func (x *SecretData_IBMCloudUserSecretKeyMetadata) GetExpireTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ExpireTime
 	}
-	return ""
+	return nil
 }
 
 func (x *SecretData_IBMCloudUserSecretKeyMetadata) GetNeverExpires() bool {
@@ -13175,7 +13175,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xd8t\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xf5t\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -13506,9 +13506,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x15IBMCloudUserSecretKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12x\n" +
 	"\x1dibm_cloud_secret_key_metadata\x18\x02 \x01(\v21.scalibr.SecretData.IBMCloudUserSecretKeyMetadataH\x00R\x19ibmCloudSecretKeyMetadata\x88\x01\x01B \n" +
-	"\x1e_ibm_cloud_secret_key_metadata\x1ae\n" +
-	"\x1dIBMCloudUserSecretKeyMetadata\x12\x1f\n" +
-	"\vexpire_time\x18\x01 \x01(\tR\n" +
+	"\x1e_ibm_cloud_secret_key_metadata\x1a\x81\x01\n" +
+	"\x1dIBMCloudUserSecretKeyMetadata\x12;\n" +
+	"\vexpire_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"expireTime\x12#\n" +
 	"\rnever_expires\x18\x02 \x01(\bR\fneverExpires\x1a(\n" +
 	"\x10TelegramBotToken\x12\x14\n" +
@@ -14001,11 +14001,12 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	158, // 183: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
 	177, // 184: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
 	160, // 185: scalibr.SecretData.IBMCloudUserSecretKey.ibm_cloud_secret_key_metadata:type_name -> scalibr.SecretData.IBMCloudUserSecretKeyMetadata
-	186, // [186:186] is the sub-list for method output_type
-	186, // [186:186] is the sub-list for method input_type
-	186, // [186:186] is the sub-list for extension type_name
-	186, // [186:186] is the sub-list for extension extendee
-	0,   // [0:186] is the sub-list for field type_name
+	175, // 186: scalibr.SecretData.IBMCloudUserSecretKeyMetadata.expire_time:type_name -> google.protobuf.Timestamp
+	187, // [187:187] is the sub-list for method output_type
+	187, // [187:187] is the sub-list for method input_type
+	187, // [187:187] is the sub-list for extension type_name
+	187, // [187:187] is the sub-list for extension extendee
+	0,   // [0:187] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }

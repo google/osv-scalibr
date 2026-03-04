@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
@@ -139,6 +140,7 @@ func (e *Enricher) getBearerToken(ctx context.Context, apiKey string) (string, e
 }
 
 func (e *Enricher) fetchExpiration(ctx context.Context, apiKey string) (*ibmclouduserkey.Metadata, error) {
+	layout := "2006-01-02T15:04-0700"
 	bearerToken, err := e.getBearerToken(ctx, apiKey)
 	if err != nil || bearerToken == "" {
 		return nil, err
@@ -174,6 +176,10 @@ func (e *Enricher) fetchExpiration(ctx context.Context, apiKey string) (*ibmclou
 		return metadataPtr, nil
 	}
 	metadataPtr := &ibmclouduserkey.Metadata{NeverExpires: false}
-	metadataPtr.ExpireTime = resp.ExpiresAt
+	timeStruct, err := time.Parse(layout, *resp.ExpiresAt)
+	if err != nil {
+		panic(err)
+	}
+	metadataPtr.ExpireTime = &timeStruct
 	return metadataPtr, nil
 }

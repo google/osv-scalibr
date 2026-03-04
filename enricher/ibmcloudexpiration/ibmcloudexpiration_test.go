@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
@@ -55,7 +56,13 @@ func TestEnrich_DefiniteExpireTime(t *testing.T) {
 	if !ok {
 		t.Fatalf("unexpected type: %T", inv.Secrets[0].Secret)
 	}
-	if *tok.Metadata.ExpireTime != "2026-03-21T18:59+0000" || tok.Metadata.NeverExpires != false {
+	layout := "2006-01-02T15:04-0700"
+	expireStr := "2026-03-21T18:59+0000"
+	parsedExpire, err := time.Parse(layout, expireStr)
+	if err != nil {
+		t.Fatalf("unexpected time conversation: %v", err)
+	}
+	if !tok.Metadata.ExpireTime.Equal(parsedExpire) || tok.Metadata.NeverExpires != false {
 		t.Errorf("unexpected lifetime: %s", *tok.Metadata.ExpireTime)
 	}
 }

@@ -15,6 +15,8 @@
 // Package ibmclouduserkey contains a Veles Secret type and a Detector for IBM Cloud User API Keys (https://cloud.ibm.com/docs/account?topic=account-userapikey&interface=ui#manage-user-keys).
 package ibmclouduserkey
 
+import "time"
+
 // IBMCloudUserSecret is a Veles Secret that holds relevant information for a IBM Cloud User API Key (https://cloud.ibm.com/iam/apikeys).
 type IBMCloudUserSecret struct {
 	Key string
@@ -25,7 +27,7 @@ type IBMCloudUserSecret struct {
 // Metadata is a Veles Secret Metadata that holds ExpireTime attribute populated by enrichers.
 type Metadata struct {
 	// ExpireTime is nil if the token doesn't expire
-	ExpireTime *string
+	ExpireTime *time.Time
 	// NeverExpires indicates whether token expires or not
 	NeverExpires bool
 }
