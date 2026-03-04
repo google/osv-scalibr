@@ -50,6 +50,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
+	"github.com/google/osv-scalibr/veles/secrets/grafana"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
@@ -324,6 +325,10 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case grafana.ServiceAccountToken:
+		return grafanaServiceAccountTokenToProto(t), nil
+	case grafana.CloudToken:
+		return grafanaCloudTokenToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1052,6 +1057,27 @@ func discordBotTokenToProto(s velesdiscordbottoken.DiscordBotToken) *spb.SecretD
 	}
 }
 
+func grafanaServiceAccountTokenToProto(s grafana.ServiceAccountToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GrafanaServiceAccountToken_{
+			GrafanaServiceAccountToken: &spb.SecretData_GrafanaServiceAccountToken{
+				Token: s.Token,
+				Stack: s.Stack,
+			},
+		},
+	}
+}
+
+func grafanaCloudTokenToProto(s grafana.CloudToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GrafanaCloudToken_{
+			GrafanaCloudToken: &spb.SecretData_GrafanaCloudToken{
+				Token: s.Token,
+			},
+		},
+	}
+}
+
 func herokuKeyToProto(s velesherokuplatformkey.HerokuSecret) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_HerokuSecretKey_{
@@ -1458,6 +1484,15 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_DiscordBotToken_:
 		return velesdiscordbottoken.DiscordBotToken{
 			Token: s.GetDiscordBotToken().GetToken(),
+		}, nil
+	case *spb.SecretData_GrafanaServiceAccountToken_:
+		return grafana.ServiceAccountToken{
+			Token: s.GetGrafanaServiceAccountToken().GetToken(),
+			Stack: s.GetGrafanaServiceAccountToken().GetStack(),
+		}, nil
+	case *spb.SecretData_GrafanaCloudToken_:
+		return grafana.CloudToken{
+			Token: s.GetGrafanaCloudToken().GetToken(),
 		}, nil
 	case *spb.SecretData_SendgridApiKey:
 		return sendgrid.APIKey{

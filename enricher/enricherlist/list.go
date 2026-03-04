@@ -59,6 +59,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
+	"github.com/google/osv-scalibr/veles/secrets/grafana"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
@@ -184,6 +185,8 @@ var (
 		fromVeles(salesforceoauth2refresh.NewValidator(), "secrets/salesforceoauth2refreshvalidate", 0),
 		fromVeles(salesforceoauth2jwt.NewValidator(), "secrets/salesforceoauth2jwtvalidate", 0),
 		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
+		fromVeles(grafana.NewServiceAccountTokenValidator(), "secrets/grafanaserviceaccounttokenvalidate", 0),
+		fromVeles(grafana.NewCloudTokenValidator(), "secrets/grafanacloudtokenvalidate", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
