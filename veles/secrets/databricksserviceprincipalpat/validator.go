@@ -23,24 +23,24 @@ import (
 )
 
 // NewValidator creates a new Databricks Service Principal PAT credentials Validator.
-// It performs POST requests to the Databricks endpoints
-// with discovered credentials.
+// It performs GET requests to the Databricks endpoints with discovered credentials.
 //
 // Validation logic:
-// - HTTP Status 200, 403, and 404: Token is valid and authenticated
-// - HTTP Status 400 and 401: Token is invalid
+// - HTTP Status 200: Token is valid and authenticated
+// - HTTP Status 401: Token is invalid
 // - Other status codes: Validation failed
 // See the error codes here:
 // https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
+// https://docs.databricks.com/api/gcp/workspace/tokens/list
 func NewValidator() *sv.Validator[Credentials] {
 	return &sv.Validator[Credentials]{
 		EndpointFunc: func(creds Credentials) (string, error) {
 			if creds.Token == "" || creds.URL == "" {
 				return "", errors.New("OAuth2 token or url is empty")
 			}
-			return fmt.Sprintf("https://%s/api/2.0/token/create", creds.URL), nil
+			return fmt.Sprintf("https://%s/api/2.0/token/list", creds.URL), nil
 		},
-		HTTPMethod: http.MethodPost,
+		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(creds Credentials) map[string]string {
 			return map[string]string{
 				"Authorization": "Bearer " + creds.Token,
