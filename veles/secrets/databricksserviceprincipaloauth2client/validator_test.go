@@ -55,15 +55,15 @@ func mockDatabricksServer(t *testing.T, expectedClientID string, expectedClientS
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check if it's a POST request to the expected endpoint
-		if r.Method != http.MethodPost || r.URL.Path != "/api/2.0/token/create" {
-			t.Errorf("unexpected request: %s %s, expected: POST /api/2.0/token/create", r.Method, r.URL.Path)
+		// Check if it's a GET request to the expected endpoint
+		if r.Method != http.MethodGet || r.URL.Path != "/api/2.0/token/list" {
+			t.Errorf("unexpected request: %s %s, expected: POST /api/2.0/token/list", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
-		clientIDHeader := r.Header.Get("client_id")
-		clientSecretHeader := r.Header.Get("client_secret")
+		clientIDHeader := r.Header.Get("Client_id")
+		clientSecretHeader := r.Header.Get("Client_secret")
 
 		// Check Authorization header and Account-Id
 		if !strings.Contains(clientIDHeader, expectedClientID) || !strings.Contains(clientSecretHeader, expectedClientSecret) {

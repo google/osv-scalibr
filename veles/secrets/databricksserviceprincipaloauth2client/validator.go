@@ -23,15 +23,15 @@ import (
 )
 
 // NewValidator creates a new Databricks Service Principal OAuth2 Client Credentials Validator.
-// It performs POST requests to the Databricks endpoints
-// with discovered credentials.
+// It performs GET requests to the Databricks endpoints with discovered credentials.
 //
 // Validation logic:
-// - HTTP Status 200, 403, and 404: Token is valid and authenticated
-// - HTTP Status 400 and 401: Token is invalid
+// - HTTP Status 200: Token is valid and authenticated
+// - HTTP Status 401: Token is invalid
 // - Other status codes: Validation failed
 // See the error codes here:
 // https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
+// https://docs.databricks.com/api/gcp/workspace/tokens/list
 func NewValidator() *nv.Validator[Credentials] {
 	return &nv.Validator[Credentials]{
 		EndpointFunc: func(creds Credentials) (string, error) {
@@ -40,14 +40,14 @@ func NewValidator() *nv.Validator[Credentials] {
 			}
 			return fmt.Sprintf("https://%s/api/2.0/token/list", creds.URL), nil
 		},
-		HTTPMethod: http.MethodPost,
+		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(creds Credentials) map[string]string {
 			return map[string]string{
 				"client_id":     creds.ID,
 				"client_secret": creds.Secret,
 			}
 		},
-		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden, http.StatusNotFound},
-		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusBadRequest},
+		ValidResponseCodes:   []int{http.StatusOK},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }
