@@ -18,7 +18,6 @@ package nugetconfig
 import (
 	"context"
 	"encoding/xml"
-	"io"
 	"path"
 	"strings"
 
@@ -92,7 +91,12 @@ type apiKeysSection struct {
 }
 
 type packageSourceCredsSection struct {
-	InnerXML string `xml:",innerxml"`
+	Sources []packageSource `xml:",any"`
+}
+
+type packageSource struct {
+	XMLName xml.Name
+	Add     []keyValuePair `xml:"add"`
 }
 
 type keyValuePair struct {
@@ -102,14 +106,10 @@ type keyValuePair struct {
 
 // Extract extracts NuGet configuration secrets from NuGet.config files.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	data, err := io.ReadAll(input.Reader)
-	if err != nil {
-		//nolint:nilerr
-		return inventory.Inventory{}, nil
-	}
+	decoder := xml.NewDecoder(input.Reader)
 
 	var config nugetConfig
-	if err := xml.Unmarshal(data, &config); err != nil {
+	if err := decoder.Decode(&config); err != nil {
 		//nolint:nilerr
 		return inventory.Inventory{}, nil
 	}
@@ -157,64 +157,30 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	// Extract package source credentials
-	if config.PackageSourceCreds.InnerXML != "" {
-		// Parse the inner XML to extract source credentials
-		decoder := xml.NewDecoder(strings.NewReader(config.PackageSourceCreds.InnerXML))
-		var currentSource string
-		var currentCreds map[string]string
-		depth := 0
+	for _, source := range config.PackageSourceCreds.Sources {
+		sourceName := source.XMLName.Local
+		creds := make(map[string]string)
 
-		for {
-			token, err := decoder.Token()
-			if err != nil {
-				break
+		for _, item := range source.Add {
+			if item.Key != "" && item.Value != "" {
+				creds[strings.ToLower(item.Key)] = item.Value
 			}
+		}
 
-			switch elem := token.(type) {
-			case xml.StartElement:
-				if depth == 0 {
-					// This is a source name element (top level under packageSourceCredentials)
-					currentSource = elem.Name.Local
-					currentCreds = make(map[string]string)
-					depth++
-				} else if elem.Name.Local == "add" {
-					// This is an add element with key/value attributes
-					var key, value string
-					for _, attr := range elem.Attr {
-						if attr.Name.Local == "key" {
-							key = attr.Value
-						} else if attr.Name.Local == "value" {
-							value = attr.Value
-						}
-					}
-					if key != "" && value != "" {
-						currentCreds[strings.ToLower(key)] = value
-					}
-				}
-			case xml.EndElement:
-				if depth == 1 && elem.Name.Local == currentSource {
-					// End of a source element, process the credentials
-					username := currentCreds["username"]
-					clearTextPassword := currentCreds["cleartextpassword"]
-					encryptedPassword := currentCreds["password"]
+		username := creds["username"]
+		clearTextPassword := creds["cleartextpassword"]
+		encryptedPassword := creds["password"]
 
-					if username != "" && (clearTextPassword != "" || encryptedPassword != "") {
-						secrets = append(secrets, &inventory.Secret{
-							Secret: PackageSourceCredential{
-								SourceName:        currentSource,
-								Username:          username,
-								ClearTextPassword: clearTextPassword,
-								EncryptedPassword: encryptedPassword,
-							},
-							Location: input.Path,
-						})
-					}
-
-					currentSource = ""
-					currentCreds = nil
-					depth--
-				}
-			}
+		if username != "" && (clearTextPassword != "" || encryptedPassword != "") {
+			secrets = append(secrets, &inventory.Secret{
+				Secret: PackageSourceCredential{
+					SourceName:        sourceName,
+					Username:          username,
+					ClearTextPassword: clearTextPassword,
+					EncryptedPassword: encryptedPassword,
+				},
+				Location: input.Path,
+			})
 		}
 	}
 

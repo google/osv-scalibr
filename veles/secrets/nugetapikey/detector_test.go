@@ -23,12 +23,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	nugetapikey "github.com/google/osv-scalibr/veles/secrets/nugetapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	// Example valid NuGet API key (46 characters starting with oy2).
 	detectorNuGetKey = "oy2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t, nugetapikey.NewDetector(),
+		detectorNuGetKey,
+		nugetapikey.NuGetAPIKey{Key: detectorNuGetKey},
+		velestest.WithPad(' '),
+	)
+}
 
 // TestDetector_truePositives tests NuGet API key detection.
 func TestDetector_truePositives(t *testing.T) {
@@ -76,8 +86,20 @@ func TestDetector_truePositives(t *testing.T) {
 			nugetapikey.NuGetAPIKey{Key: detectorNuGetKey},
 		},
 	}, {
-		name:  "potential_match_longer_than_max_key_length",
-		input: detectorNuGetKey + "EXTRA",
+		name:  "key_with_word_boundary_at_start",
+		input: " " + detectorNuGetKey,
+		want: []veles.Secret{
+			nugetapikey.NuGetAPIKey{Key: detectorNuGetKey},
+		},
+	}, {
+		name:  "key_with_word_boundary_at_end",
+		input: detectorNuGetKey + " ",
+		want: []veles.Secret{
+			nugetapikey.NuGetAPIKey{Key: detectorNuGetKey},
+		},
+	}, {
+		name:  "key_with_punctuation_boundaries",
+		input: "," + detectorNuGetKey + ".",
 		want: []veles.Secret{
 			nugetapikey.NuGetAPIKey{Key: detectorNuGetKey},
 		},
@@ -124,6 +146,18 @@ func TestDetector_trueNegatives(t *testing.T) {
 	}, {
 		name:  "special_character_in_key_should_not_match",
 		input: strings.ReplaceAll(detectorNuGetKey, "a", "-"),
+	}, {
+		name:  "key_embedded_in_alphanumeric_prefix_should_not_match",
+		input: "x" + detectorNuGetKey,
+	}, {
+		name:  "key_embedded_in_alphanumeric_suffix_should_not_match",
+		input: detectorNuGetKey + "x",
+	}, {
+		name:  "key_embedded_in_alphanumeric_both_sides_should_not_match",
+		input: "prefix" + detectorNuGetKey + "suffix",
+	}, {
+		name:  "uppercase_prefix_should_not_match",
+		input: "OY2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm",
 	}}
 
 	for _, tc := range cases {

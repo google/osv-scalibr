@@ -116,8 +116,8 @@ func TestExtract(t *testing.T) {
     </Artifactory>
   </packageSourceCredentials>
   <apikeys>
-    <add key="https://api.nuget.org/v3/index.json" value="oy2k4q9qmzverylo1234567890abcdef1234567890ab" />
-    <add key="https://contoso.jfrog.io/artifactory/api/nuget/nuget-local" value="jfrog9d8f7a6b5c4e3d2c1b0a1234567890abcdef12" />
+    <add key="https://api.nuget.org/v3/index.json" value="oy2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm" />
+    <add key="https://contoso.jfrog.io/artifactory/api/nuget/nuget-local" value="oy2onxwnxf3vyp4ejesa4udglckgadjunpuil7thlk3gzu" />
   </apikeys>
 </configuration>`,
 			want: inventory.Inventory{
@@ -132,13 +132,13 @@ func TestExtract(t *testing.T) {
 					},
 					{
 						Secret: velesnugetapikey.NuGetAPIKey{
-							Key: "oy2k4q9qmzverylo1234567890abcdef1234567890ab",
+							Key: "oy2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm",
 						},
 						Location: "/path/to/nuget.config",
 					},
 					{
 						Secret: velesnugetapikey.NuGetAPIKey{
-							Key: "jfrog9d8f7a6b5c4e3d2c1b0a1234567890abcdef12",
+							Key: "oy2onxwnxf3vyp4ejesa4udglckgadjunpuil7thlk3gzu",
 						},
 						Location: "/path/to/nuget.config",
 					},
@@ -175,14 +175,14 @@ func TestExtract(t *testing.T) {
 			content: `<?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <apikeys>
-    <add key="https://api.nuget.org/v3/index.json" value="oy2k4q9qmzverylo1234567890abcdef1234567890ab" />
+    <add key="https://api.nuget.org/v3/index.json" value="oy2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm" />
   </apikeys>
 </configuration>`,
 			want: inventory.Inventory{
 				Secrets: []*inventory.Secret{
 					{
 						Secret: velesnugetapikey.NuGetAPIKey{
-							Key: "oy2k4q9qmzverylo1234567890abcdef1234567890ab",
+							Key: "oy2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm",
 						},
 						Location: "/path/to/nuget.config",
 					},
@@ -360,8 +360,8 @@ func TestExtract_RealWorldExample(t *testing.T) {
   
   <!-- Publish API keys -->
   <apikeys>
-    <add key="https://api.nuget.org/v3/index.json" value="oy2k4q9qmzverylo1234567890abcdef1234567890ab" />
-    <add key="https://contoso.jfrog.io/artifactory/api/nuget/nuget-local" value="jfrog9d8f7a6b5c4e3d2c1b0a1234567890abcdef12" />
+    <add key="https://api.nuget.org/v3/index.json" value="oy2nshvzu4qqwr7gglwqk3ndyyjrlf2e3krcuamdpgjtlm" />
+    <add key="https://contoso.jfrog.io/artifactory/api/nuget/nuget-local" value="oy2onxwnxf3vyp4ejesa4udglckgadjunpuil7thlk3gzu" />
   </apikeys>
   
   <!-- Trusted signers -->

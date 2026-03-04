@@ -31,7 +31,7 @@ var (
 // Total length: 46 characters.
 const nugetMaxLen = 46
 
-var nugetRe = regexp.MustCompile(`oy2[a-z0-9]{43}`)
+var nugetRe = regexp.MustCompile(`\boy2[a-z0-9]{43}\b`)
 
 // NewDetector returns a detector for NuGet.org API keys.
 func NewDetector() veles.Detector {
