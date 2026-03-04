@@ -22,7 +22,17 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/ibmclouduserkey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		ibmclouduserkey.NewDetector(),
+		`ibm xGS5JUV2Atr4-nBYM9AAYG91y-1234-sFAAKtsbuafff`,
+		ibmclouduserkey.IBMCloudUserSecret{Key: `xGS5JUV2Atr4-nBYM9AAYG91y-1234-sFAAKtsbuafff`},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{ibmclouduserkey.NewDetector()})
