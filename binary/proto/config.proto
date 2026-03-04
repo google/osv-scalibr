@@ -101,6 +101,9 @@ message PluginSpecificConfig {
     QCOW2Config qcow2 = 64;
     PerlCPANConfig cpan = 65;
     PythonRequirementsTransitiveConfig python_requirements_transitive = 68;
+    SpackConfig spack = 69;
+    CsProjConfig csproj = 70;
+    NugetCPMConfig nuget_cpm = 71;
   }
 }
 
@@ -200,7 +203,6 @@ message PythonRequirementsTransitiveConfig {
   bool deps_dev_requirements = 2;
 }
 
-
 message DpkgConfig {
   // Includes packages that are not installed
   // (e.g. `deinstall`, `purge`, and those missing a status field).
@@ -276,6 +278,13 @@ message FlatpakConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message SpackConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
 message MacAppsConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
@@ -323,6 +332,20 @@ message K8sImageConfig {
 }
 
 message DotnetDepsJsonConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message CsProjConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message NugetCPMConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
