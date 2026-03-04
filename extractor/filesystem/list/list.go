@@ -141,6 +141,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
+	"github.com/google/osv-scalibr/veles/secrets/grafana"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
@@ -433,6 +434,8 @@ var (
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
+		{grafana.NewServiceAccountTokenDetector(), "secrets/grafanaserviceaccounttoken", 0},
+		{grafana.NewCloudTokenDetector(), "secrets/grafanacloudtoken", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
