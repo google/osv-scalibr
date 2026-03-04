@@ -22,19 +22,19 @@ import (
 )
 
 // NewValidator creates a new Databricks User Account PAT credentials Validator.
-// It performs POST requests to the Databricks endpoints
-// with discovered credentials.
+// It performs GET requests to the Databricks endpoints with discovered credentials.
 //
 // Validation logic:
-// - HTTP Status 200, 403, and 404: Token is valid and authenticated
-// - HTTP Status 400 and 401: Token is invalid
+// - HTTP Status 200: Token is valid and authenticated
+// - HTTP Status 401: Token is invalid
 // - Other status codes: Validation failed
 // See the error codes here:
 // https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
+// https://docs.databricks.com/api/gcp/workspace/tokens/list
 func NewValidator() *sv.Validator[Credentials] {
 	return &sv.Validator[Credentials]{
-		Endpoints:  []string{"https://accounts.cloud.databricks.com/api/2.0/token/create", "https://accounts.gcp.databricks.com/api/2.0/token/create", "https://accounts.azuredatabricks.net/api/2.0/token/create"},
-		HTTPMethod: http.MethodPost,
+		Endpoints:  []string{"https://accounts.cloud.databricks.com/api/2.0/token/list", "https://accounts.gcp.databricks.com/api/2.0/token/list", "https://accounts.azuredatabricks.net/api/2.0/token/list"},
+		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(creds Credentials) map[string]string {
 			return map[string]string{
 				"Authorization": "Bearer " + creds.Token,
