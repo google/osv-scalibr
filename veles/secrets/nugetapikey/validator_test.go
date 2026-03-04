@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	validatorTestAPIKey = "oy2kpfknfvsp4a2a2ocqlktwuog2zefehglys3lr3nbe"
+	validatorTestAPIKey = "oy2onxwnxf3vyp4ejesa4udglckgadjunpuil7thlk3gzu"
 )
 
 // mockTransport redirects requests to the test server for the configured hosts.
@@ -59,16 +59,16 @@ func mockNuGetServer(t *testing.T, expectedKey string, statusCode int) *httptest
 		}
 
 		// Check X-NuGet-ApiKey header contains the expected key
-		apiKeyHeader := r.Header.Get("X-NuGet-ApiKey")
+		apiKeyHeader := r.Header.Get("X-Nuget-Apikey")
 		if expectedKey != "" && apiKeyHeader != expectedKey {
-			t.Errorf("expected X-NuGet-ApiKey header to be %s, got: %s",
+			t.Errorf("expected X-Nuget-Apikey header to be %s, got: %s",
 				expectedKey, apiKeyHeader)
 		}
 
 		// Verify required headers are present
-		if r.Header.Get("X-NuGet-Protocol-Version") != "4.1.0" {
-			t.Errorf("expected X-NuGet-Protocol-Version header to be 4.1.0, got: %s",
-				r.Header.Get("X-NuGet-Protocol-Version"))
+		if r.Header.Get("X-Nuget-Protocol-Version") != "4.1.0" {
+			t.Errorf("expected X-Nuget-Protocol-Version header to be 4.1.0, got: %s",
+				r.Header.Get("X-Nuget-Protocol-Version"))
 		}
 		if r.Header.Get("Content-Type") != "application/octet-stream" {
 			t.Errorf("expected Content-Type header to be application/octet-stream, got: %s",

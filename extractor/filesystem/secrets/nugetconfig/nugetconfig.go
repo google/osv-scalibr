@@ -43,8 +43,8 @@ type ProxyCredential struct {
 
 // PackageSourceCredential represents credentials for a private NuGet feed.
 type PackageSourceCredential struct {
-	SourceName        string
-	Username          string
+	SourceName       string
+	Username         string
 	ClearTextPassword string
 	EncryptedPassword string
 }
@@ -107,8 +107,9 @@ type keyValuePair struct {
 // Extract extracts NuGet configuration secrets from NuGet.config files.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	decoder := xml.NewDecoder(input.Reader)
-
+	
 	var config nugetConfig
+	//nolint:musttag // XML tags are defined on the struct fields
 	if err := decoder.Decode(&config); err != nil {
 		//nolint:nilerr
 		return inventory.Inventory{}, nil
@@ -160,17 +161,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	for _, source := range config.PackageSourceCreds.Sources {
 		sourceName := source.XMLName.Local
 		creds := make(map[string]string)
-
+		
 		for _, item := range source.Add {
 			if item.Key != "" && item.Value != "" {
 				creds[strings.ToLower(item.Key)] = item.Value
 			}
 		}
-
+		
 		username := creds["username"]
 		clearTextPassword := creds["cleartextpassword"]
 		encryptedPassword := creds["password"]
-
+		
 		if username != "" && (clearTextPassword != "" || encryptedPassword != "") {
 			secrets = append(secrets, &inventory.Secret{
 				Secret: PackageSourceCredential{

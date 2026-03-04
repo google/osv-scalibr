@@ -367,7 +367,7 @@ func TestExtract_RealWorldExample(t *testing.T) {
   <!-- Trusted signers -->
   <trustedSigners>
     <author name="Contoso">
-      <certificate fingerprint="‎3F9001EA9F9DCE9F1A21A1E01B6F5C1D4B9E8C2A" hashAlgorithm="SHA256" allowUntrustedRoot="false" />
+      <certificate fingerprint="3F9001EA9F9DCE9F1A21A1E01B6F5C1D4B9E8C2A" hashAlgorithm="SHA256" allowUntrustedRoot="false" />
     </author>
   </trustedSigners>
 </configuration>`
