@@ -6033,6 +6033,9 @@ type SecretData struct {
 	//	*SecretData_ComposerHttpBasicCredentials
 	//	*SecretData_DiscordBotToken_
 	//	*SecretData_BitwardenOauth2AccessToken
+	//	*SecretData_DatabricksUserAccountPat_
+	//	*SecretData_DatabricksServicePrincipalPat_
+	//	*SecretData_DatabricksUserAccountOauth2ClientCredentials
 	//	*SecretData_DatabricksServicePrincipalOauth2ClientCredentials
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
@@ -6868,6 +6871,33 @@ func (x *SecretData) GetBitwardenOauth2AccessToken() *SecretData_BitwardenOAuth2
 	return nil
 }
 
+func (x *SecretData) GetDatabricksUserAccountPat() *SecretData_DatabricksUserAccountPat {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_DatabricksUserAccountPat_); ok {
+			return x.DatabricksUserAccountPat
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetDatabricksServicePrincipalPat() *SecretData_DatabricksServicePrincipalPat {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_DatabricksServicePrincipalPat_); ok {
+			return x.DatabricksServicePrincipalPat
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetDatabricksUserAccountOauth2ClientCredentials() *SecretData_DatabricksUserAccountOAuth2ClientCredentials {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_DatabricksUserAccountOauth2ClientCredentials); ok {
+			return x.DatabricksUserAccountOauth2ClientCredentials
+		}
+	}
+	return nil
+}
+
 func (x *SecretData) GetDatabricksServicePrincipalOauth2ClientCredentials() *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials {
 	if x != nil {
 		if x, ok := x.Secret.(*SecretData_DatabricksServicePrincipalOauth2ClientCredentials); ok {
@@ -7233,8 +7263,20 @@ type SecretData_BitwardenOauth2AccessToken struct {
 	BitwardenOauth2AccessToken *SecretData_BitwardenOAuth2AccessToken `protobuf:"bytes,88,opt,name=bitwarden_oauth2_access_token,json=bitwardenOauth2AccessToken,proto3,oneof"`
 }
 
+type SecretData_DatabricksUserAccountPat_ struct {
+	DatabricksUserAccountPat *SecretData_DatabricksUserAccountPat `protobuf:"bytes,89,opt,name=databricks_user_account_pat,json=databricksUserAccountPat,proto3,oneof"`
+}
+
+type SecretData_DatabricksServicePrincipalPat_ struct {
+	DatabricksServicePrincipalPat *SecretData_DatabricksServicePrincipalPat `protobuf:"bytes,90,opt,name=databricks_service_principal_pat,json=databricksServicePrincipalPat,proto3,oneof"`
+}
+
+type SecretData_DatabricksUserAccountOauth2ClientCredentials struct {
+	DatabricksUserAccountOauth2ClientCredentials *SecretData_DatabricksUserAccountOAuth2ClientCredentials `protobuf:"bytes,91,opt,name=databricks_user_account_oauth2_client_credentials,json=databricksUserAccountOauth2ClientCredentials,proto3,oneof"`
+}
+
 type SecretData_DatabricksServicePrincipalOauth2ClientCredentials struct {
-	DatabricksServicePrincipalOauth2ClientCredentials *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials `protobuf:"bytes,89,opt,name=databricks_service_principal_oauth2_client_credentials,json=databricksServicePrincipalOauth2ClientCredentials,proto3,oneof"`
+	DatabricksServicePrincipalOauth2ClientCredentials *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials `protobuf:"bytes,92,opt,name=databricks_service_principal_oauth2_client_credentials,json=databricksServicePrincipalOauth2ClientCredentials,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -7412,6 +7454,12 @@ func (*SecretData_ComposerHttpBasicCredentials) isSecretData_Secret() {}
 func (*SecretData_DiscordBotToken_) isSecretData_Secret() {}
 
 func (*SecretData_BitwardenOauth2AccessToken) isSecretData_Secret() {}
+
+func (*SecretData_DatabricksUserAccountPat_) isSecretData_Secret() {}
+
+func (*SecretData_DatabricksServicePrincipalPat_) isSecretData_Secret() {}
+
+func (*SecretData_DatabricksUserAccountOauth2ClientCredentials) isSecretData_Secret() {}
 
 func (*SecretData_DatabricksServicePrincipalOauth2ClientCredentials) isSecretData_Secret() {}
 
@@ -12592,6 +12640,177 @@ func (x *SecretData_SquareOAuthApplicationSecret) GetKey() string {
 	return ""
 }
 
+type SecretData_DatabricksUserAccountPat struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Databricks User Account PAT
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	// Databricks User Account ID
+	AccountId     string `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_DatabricksUserAccountPat) Reset() {
+	*x = SecretData_DatabricksUserAccountPat{}
+	mi := &file_proto_scan_result_proto_msgTypes[167]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_DatabricksUserAccountPat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_DatabricksUserAccountPat) ProtoMessage() {}
+
+func (x *SecretData_DatabricksUserAccountPat) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[167]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_DatabricksUserAccountPat.ProtoReflect.Descriptor instead.
+func (*SecretData_DatabricksUserAccountPat) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 89}
+}
+
+func (x *SecretData_DatabricksUserAccountPat) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SecretData_DatabricksUserAccountPat) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+type SecretData_DatabricksServicePrincipalPat struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Databricks Service Principal PAT
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	// Databricks Service Principal ID
+	Url           string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_DatabricksServicePrincipalPat) Reset() {
+	*x = SecretData_DatabricksServicePrincipalPat{}
+	mi := &file_proto_scan_result_proto_msgTypes[168]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_DatabricksServicePrincipalPat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_DatabricksServicePrincipalPat) ProtoMessage() {}
+
+func (x *SecretData_DatabricksServicePrincipalPat) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[168]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_DatabricksServicePrincipalPat.ProtoReflect.Descriptor instead.
+func (*SecretData_DatabricksServicePrincipalPat) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 90}
+}
+
+func (x *SecretData_DatabricksServicePrincipalPat) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SecretData_DatabricksServicePrincipalPat) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+type SecretData_DatabricksUserAccountOAuth2ClientCredentials struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Databricks User Account OAuth2 client ID
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Databricks User Account OAuth2 client secret
+	Secret string `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
+	// Databricks User Account ID
+	AccountId     string `protobuf:"bytes,3,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_DatabricksUserAccountOAuth2ClientCredentials) Reset() {
+	*x = SecretData_DatabricksUserAccountOAuth2ClientCredentials{}
+	mi := &file_proto_scan_result_proto_msgTypes[169]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_DatabricksUserAccountOAuth2ClientCredentials) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_DatabricksUserAccountOAuth2ClientCredentials) ProtoMessage() {}
+
+func (x *SecretData_DatabricksUserAccountOAuth2ClientCredentials) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[169]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_DatabricksUserAccountOAuth2ClientCredentials.ProtoReflect.Descriptor instead.
+func (*SecretData_DatabricksUserAccountOAuth2ClientCredentials) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 91}
+}
+
+func (x *SecretData_DatabricksUserAccountOAuth2ClientCredentials) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SecretData_DatabricksUserAccountOAuth2ClientCredentials) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *SecretData_DatabricksUserAccountOAuth2ClientCredentials) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
 type SecretData_DatabricksServicePrincipalOAuth2ClientCredentials struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Databricks Service Principal Workspace URL
@@ -12606,7 +12825,7 @@ type SecretData_DatabricksServicePrincipalOAuth2ClientCredentials struct {
 
 func (x *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) Reset() {
 	*x = SecretData_DatabricksServicePrincipalOAuth2ClientCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[167]
+	mi := &file_proto_scan_result_proto_msgTypes[170]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12618,7 +12837,7 @@ func (x *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) String() 
 func (*SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) ProtoMessage() {}
 
 func (x *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[167]
+	mi := &file_proto_scan_result_proto_msgTypes[170]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12631,7 +12850,7 @@ func (x *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) ProtoRefl
 
 // Deprecated: Use SecretData_DatabricksServicePrincipalOAuth2ClientCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 89}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 92}
 }
 
 func (x *SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) GetUrl() string {
@@ -13132,7 +13351,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xf7s\n" +
+	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xa3y\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -13233,8 +13452,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	" packagist_conductor_update_token\x18U \x01(\v21.scalibr.SecretData.PackagistConductorUpdateTokenH\x00R\x1dpackagistConductorUpdateToken\x12y\n" +
 	"\x1fcomposer_http_basic_credentials\x18V \x01(\v20.scalibr.SecretData.ComposerPackagistCredentialsH\x00R\x1ccomposerHttpBasicCredentials\x12Q\n" +
 	"\x11discord_bot_token\x18W \x01(\v2#.scalibr.SecretData.DiscordBotTokenH\x00R\x0fdiscordBotToken\x12s\n" +
-	"\x1dbitwarden_oauth2_access_token\x18X \x01(\v2..scalibr.SecretData.BitwardenOAuth2AccessTokenH\x00R\x1abitwardenOauth2AccessToken\x12\xba\x01\n" +
-	"6databricks_service_principal_oauth2_client_credentials\x18Y \x01(\v2E.scalibr.SecretData.DatabricksServicePrincipalOAuth2ClientCredentialsH\x00R1databricksServicePrincipalOauth2ClientCredentials\x1a\xb0\x03\n" +
+	"\x1dbitwarden_oauth2_access_token\x18X \x01(\v2..scalibr.SecretData.BitwardenOAuth2AccessTokenH\x00R\x1abitwardenOauth2AccessToken\x12m\n" +
+	"\x1bdatabricks_user_account_pat\x18Y \x01(\v2,.scalibr.SecretData.DatabricksUserAccountPatH\x00R\x18databricksUserAccountPat\x12|\n" +
+	" databricks_service_principal_pat\x18Z \x01(\v21.scalibr.SecretData.DatabricksServicePrincipalPatH\x00R\x1ddatabricksServicePrincipalPat\x12\xab\x01\n" +
+	"1databricks_user_account_oauth2_client_credentials\x18[ \x01(\v2@.scalibr.SecretData.DatabricksUserAccountOAuth2ClientCredentialsH\x00R,databricksUserAccountOauth2ClientCredentials\x12\xba\x01\n" +
+	"6databricks_service_principal_oauth2_client_credentials\x18\\ \x01(\v2E.scalibr.SecretData.DatabricksServicePrincipalOAuth2ClientCredentialsH\x00R1databricksServicePrincipalOauth2ClientCredentials\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -13494,7 +13716,19 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a@\n" +
 	"\x1cSquareOAuthApplicationSecret\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\tR\x03key\x1am\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x1aO\n" +
+	"\x18DatabricksUserAccountPat\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x02 \x01(\tR\taccountId\x1aG\n" +
+	"\x1dDatabricksServicePrincipalPat\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x1au\n" +
+	",DatabricksUserAccountOAuth2ClientCredentials\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06secret\x18\x02 \x01(\tR\x06secret\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x03 \x01(\tR\taccountId\x1am\n" +
 	"1DatabricksServicePrincipalOAuth2ClientCredentials\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
 	"\x06secret\x18\x02 \x01(\tR\x06secret\x12\x0e\n" +
@@ -13586,7 +13820,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 169)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 172)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                         // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                             // 1: scalibr.SeverityEnum
@@ -13760,15 +13994,18 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_URLCredentials)(nil),                                    // 169: scalibr.SecretData.URLCredentials
 	(*SecretData_SquarePersonalAccessToken)(nil),                         // 170: scalibr.SecretData.SquarePersonalAccessToken
 	(*SecretData_SquareOAuthApplicationSecret)(nil),                      // 171: scalibr.SecretData.SquareOAuthApplicationSecret
-	(*SecretData_DatabricksServicePrincipalOAuth2ClientCredentials)(nil), // 172: scalibr.SecretData.DatabricksServicePrincipalOAuth2ClientCredentials
-	nil,                             // 173: scalibr.ContainerImageMetadata.OsInfoEntry
-	(*timestamppb.Timestamp)(nil),   // 174: google.protobuf.Timestamp
-	(*osvschema.Vulnerability)(nil), // 175: osv.Vulnerability
-	(*durationpb.Duration)(nil),     // 176: google.protobuf.Duration
+	(*SecretData_DatabricksUserAccountPat)(nil),                          // 172: scalibr.SecretData.DatabricksUserAccountPat
+	(*SecretData_DatabricksServicePrincipalPat)(nil),                     // 173: scalibr.SecretData.DatabricksServicePrincipalPat
+	(*SecretData_DatabricksUserAccountOAuth2ClientCredentials)(nil),      // 174: scalibr.SecretData.DatabricksUserAccountOAuth2ClientCredentials
+	(*SecretData_DatabricksServicePrincipalOAuth2ClientCredentials)(nil), // 175: scalibr.SecretData.DatabricksServicePrincipalOAuth2ClientCredentials
+	nil,                             // 176: scalibr.ContainerImageMetadata.OsInfoEntry
+	(*timestamppb.Timestamp)(nil),   // 177: google.protobuf.Timestamp
+	(*osvschema.Vulnerability)(nil), // 178: osv.Vulnerability
+	(*durationpb.Duration)(nil),     // 179: google.protobuf.Duration
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	174, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	174, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	177, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	177, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	6,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
@@ -13831,7 +14068,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	14,  // 61: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
 	0,   // 62: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
 	17,  // 63: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	175, // 64: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
+	178, // 64: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
 	15,  // 65: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
 	20,  // 66: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
 	22,  // 67: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
@@ -13842,8 +14079,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	16,  // 72: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	16,  // 73: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
 	82,  // 74: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	174, // 75: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	174, // 76: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	177, // 75: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	177, // 76: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	65,  // 77: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	68,  // 78: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
 	70,  // 79: scalibr.Secret.secret:type_name -> scalibr.SecretData
@@ -13937,26 +14174,29 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	137, // 167: scalibr.SecretData.composer_http_basic_credentials:type_name -> scalibr.SecretData.ComposerPackagistCredentials
 	156, // 168: scalibr.SecretData.discord_bot_token:type_name -> scalibr.SecretData.DiscordBotToken
 	165, // 169: scalibr.SecretData.bitwarden_oauth2_access_token:type_name -> scalibr.SecretData.BitwardenOAuth2AccessToken
-	172, // 170: scalibr.SecretData.databricks_service_principal_oauth2_client_credentials:type_name -> scalibr.SecretData.DatabricksServicePrincipalOAuth2ClientCredentials
-	4,   // 171: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	174, // 172: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	73,  // 173: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	74,  // 174: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	75,  // 175: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	76,  // 176: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	12,  // 177: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	80,  // 178: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	78,  // 179: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	173, // 180: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	79,  // 181: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	58,  // 182: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	158, // 183: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
-	176, // 184: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
-	185, // [185:185] is the sub-list for method output_type
-	185, // [185:185] is the sub-list for method input_type
-	185, // [185:185] is the sub-list for extension type_name
-	185, // [185:185] is the sub-list for extension extendee
-	0,   // [0:185] is the sub-list for field type_name
+	172, // 170: scalibr.SecretData.databricks_user_account_pat:type_name -> scalibr.SecretData.DatabricksUserAccountPat
+	173, // 171: scalibr.SecretData.databricks_service_principal_pat:type_name -> scalibr.SecretData.DatabricksServicePrincipalPat
+	174, // 172: scalibr.SecretData.databricks_user_account_oauth2_client_credentials:type_name -> scalibr.SecretData.DatabricksUserAccountOAuth2ClientCredentials
+	175, // 173: scalibr.SecretData.databricks_service_principal_oauth2_client_credentials:type_name -> scalibr.SecretData.DatabricksServicePrincipalOAuth2ClientCredentials
+	4,   // 174: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	177, // 175: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	73,  // 176: scalibr.Location.filepath:type_name -> scalibr.Filepath
+	74,  // 177: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	75,  // 178: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
+	76,  // 179: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
+	12,  // 180: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	80,  // 181: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	78,  // 182: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	176, // 183: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	79,  // 184: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	58,  // 185: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	158, // 186: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
+	179, // 187: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
+	188, // [188:188] is the sub-list for method output_type
+	188, // [188:188] is the sub-list for method input_type
+	188, // [188:188] is the sub-list for extension type_name
+	188, // [188:188] is the sub-list for extension extendee
+	0,   // [0:188] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -14107,6 +14347,9 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_ComposerHttpBasicCredentials)(nil),
 		(*SecretData_DiscordBotToken_)(nil),
 		(*SecretData_BitwardenOauth2AccessToken)(nil),
+		(*SecretData_DatabricksUserAccountPat_)(nil),
+		(*SecretData_DatabricksServicePrincipalPat_)(nil),
+		(*SecretData_DatabricksUserAccountOauth2ClientCredentials)(nil),
 		(*SecretData_DatabricksServicePrincipalOauth2ClientCredentials)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[67].OneofWrappers = []any{
@@ -14122,7 +14365,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   169,
+			NumMessages:   172,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package databricksserviceprincipaloauth2client
+package databricks
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
 
-	nv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// NewValidator creates a new Databricks Service Principal OAuth2 Client Credentials Validator.
+// NewSPPATValidator creates a new Databricks Service Principal PAT credentials Validator.
 // It performs GET requests to the Databricks endpoints with discovered credentials.
 //
 // Validation logic:
@@ -32,19 +32,18 @@ import (
 // See the error codes here:
 // https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
 // https://docs.databricks.com/api/gcp/workspace/tokens/list
-func NewValidator() *nv.Validator[Credentials] {
-	return &nv.Validator[Credentials]{
-		EndpointFunc: func(creds Credentials) (string, error) {
-			if creds.URL == "" {
-				return "", errors.New("OAuth2 url is empty")
+func NewSPPATValidator() *sv.Validator[SPPATCredentials] {
+	return &sv.Validator[SPPATCredentials]{
+		EndpointFunc: func(creds SPPATCredentials) (string, error) {
+			if creds.Token == "" || creds.URL == "" {
+				return "", errors.New("OAuth2 token or url is empty")
 			}
 			return fmt.Sprintf("https://%s/api/2.0/token/list", creds.URL), nil
 		},
 		HTTPMethod: http.MethodGet,
-		HTTPHeaders: func(creds Credentials) map[string]string {
+		HTTPHeaders: func(creds SPPATCredentials) map[string]string {
 			return map[string]string{
-				"client_id":     creds.ID,
-				"client_secret": creds.Secret,
+				"Authorization": "Bearer " + creds.Token,
 			}
 		},
 		ValidResponseCodes:   []int{http.StatusOK},

@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package databricksserviceprincipaloauth2client_test
+package databricks_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,24 +26,22 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/databricksserviceprincipaloauth2client"
+	"github.com/google/osv-scalibr/veles/secrets/databricks"
 )
 
 const (
-	validatorTestClientID     = "client_id: 7603a2a8-8220-485f-b2a5-58fa7b60a932"
-	expectedTestClientID      = "7603a2a8-8220-485f-b2a5-58fa7b60a932"
-	validatorTestClientSecret = "dose7d9f306280a357544b0655ed81ef06c9"
-	validatorTestURL          = "adb-myworkspace.1233322.azuredatabricks.net"
+	validatorTestAccountID = "account_id: bd59efba-4444-4444-443f-44444449203"
+	expectedTestAccountID  = "bd59efba-4444-4444-443f-44444449203"
 )
 
-// mockTransport redirects requests to the test server
-type mockTransport struct {
+// mockUAOAuth2ClientTransport redirects requests to the test server
+type mockUAOAuth2ClientTransport struct {
 	testServer *httptest.Server
 }
 
-func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (m *mockUAOAuth2ClientTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Replace the original URL with our test server URL
-	if strings.Contains(req.URL.Host, "adb-myworkspace.1233322.azuredatabricks.net") {
+	if req.URL.Host == "accounts.cloud.databricks.com" || req.URL.Host == "accounts.gcp.databricks.com" || req.URL.Host == "accounts.azuredatabricks.net" {
 		testURL, _ := url.Parse(m.testServer.URL)
 		req.URL.Scheme = testURL.Scheme
 		req.URL.Host = testURL.Host
@@ -50,8 +49,8 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-// mockDatabricksServer creates a mock Databricks server for testing
-func mockDatabricksServer(t *testing.T, expectedClientID string, expectedClientSecret string, serverResponseCode int) *httptest.Server {
+// mockUAOAuth2ClientDatabricksServer creates a mock Databricks server for testing
+func mockUAOAuth2ClientDatabricksServer(t *testing.T, expectedClientID string, expectedClientSecret string, expectedAccountID string, serverResponseCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -65,8 +64,18 @@ func mockDatabricksServer(t *testing.T, expectedClientID string, expectedClientS
 		clientIDHeader := r.Header.Get("Client_id")
 		clientSecretHeader := r.Header.Get("Client_secret")
 
+		// Read request body
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("failed reading body: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		body := string(bodyBytes)
+		defer r.Body.Close()
+
 		// Check Authorization header and Account-Id
-		if !strings.Contains(clientIDHeader, expectedClientID) || !strings.Contains(clientSecretHeader, expectedClientSecret) {
+		if !strings.Contains(clientIDHeader, expectedClientID) || !strings.Contains(clientSecretHeader, expectedClientSecret) || !strings.Contains(body, expectedAccountID) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -78,12 +87,12 @@ func mockDatabricksServer(t *testing.T, expectedClientID string, expectedClientS
 	}))
 }
 
-func TestValidator(t *testing.T) {
+func TestUAOAuth2ClientValidator(t *testing.T) {
 	tests := []struct {
 		name               string
 		id                 string
 		secret             string
-		url                string
+		accountID          string
 		serverResponseCode int
 		cancelContext      bool
 		want               veles.ValidationStatus
@@ -94,7 +103,7 @@ func TestValidator(t *testing.T) {
 			name:               "valid creds",
 			id:                 validatorTestClientID,
 			secret:             validatorTestClientSecret,
-			url:                validatorTestURL,
+			accountID:          validatorTestAccountID,
 			serverResponseCode: http.StatusOK,
 			want:               veles.ValidationValid,
 		},
@@ -102,7 +111,7 @@ func TestValidator(t *testing.T) {
 			name:               "invalid creds - Client ID",
 			id:                 "YUVRAJ SAXENA",
 			secret:             validatorTestClientSecret,
-			url:                validatorTestURL,
+			accountID:          validatorTestAccountID,
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
@@ -110,24 +119,23 @@ func TestValidator(t *testing.T) {
 			name:               "invalid creds - Client Secret",
 			id:                 validatorTestClientID,
 			secret:             "YUVRAJ SAXENA",
-			url:                validatorTestURL,
+			accountID:          validatorTestAccountID,
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "invalid creds - URL",
+			name:               "invalid creds - Account ID",
 			id:                 validatorTestClientID,
 			secret:             validatorTestClientSecret,
-			url:                "YUVRAJ SAXENA",
+			accountID:          "YUVRAJ SAXENA",
 			serverResponseCode: http.StatusUnauthorized,
-			want:               veles.ValidationFailed,
-			wantErr:            cmpopts.AnyError,
+			want:               veles.ValidationInvalid,
 		},
 		{
 			name:               "empty Client ID",
 			id:                 "",
 			secret:             validatorTestClientSecret,
-			url:                validatorTestURL,
+			accountID:          validatorTestAccountID,
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
@@ -135,24 +143,23 @@ func TestValidator(t *testing.T) {
 			name:               "empty Client Secret",
 			id:                 validatorTestClientID,
 			secret:             "",
-			url:                validatorTestURL,
+			accountID:          validatorTestAccountID,
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty URL",
+			name:               "empty Account ID",
 			id:                 validatorTestClientID,
 			secret:             validatorTestClientSecret,
-			url:                "",
+			accountID:          "",
 			serverResponseCode: http.StatusUnauthorized,
-			want:               veles.ValidationFailed,
-			wantErr:            cmpopts.AnyError,
+			want:               veles.ValidationInvalid,
 		},
 		{
 			name:               "context cancelled",
 			id:                 validatorTestClientID,
 			secret:             validatorTestClientSecret,
-			url:                validatorTestURL,
+			accountID:          validatorTestAccountID,
 			serverResponseCode: http.StatusOK,
 			cancelContext:      true,
 			want:               veles.ValidationFailed,
@@ -164,7 +171,7 @@ func TestValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
 
-			server := mockDatabricksServer(t, expectedTestClientID, validatorTestClientSecret, tt.serverResponseCode)
+			server := mockUAOAuth2ClientDatabricksServer(t, expectedTestClientID, validatorTestClientSecret, expectedTestAccountID, tt.serverResponseCode)
 			defer server.Close()
 
 			if tt.cancelContext {
@@ -173,17 +180,17 @@ func TestValidator(t *testing.T) {
 				cancel()
 			}
 
-			validator := databricksserviceprincipaloauth2client.NewValidator()
+			validator := databricks.NewUAOAuth2ClientValidator()
 			if server != nil {
 				validator.HTTPC = &http.Client{
-					Transport: &mockTransport{testServer: server},
+					Transport: &mockUAOAuth2ClientTransport{testServer: server},
 				}
 			}
 
-			cred := databricksserviceprincipaloauth2client.Credentials{
-				URL:    tt.url,
-				Secret: tt.secret,
-				ID:     tt.id,
+			cred := databricks.UAOAuth2ClientCredentials{
+				Secret:    tt.secret,
+				ID:        tt.id,
+				AccountID: tt.accountID,
 			}
 
 			got, err := validator.Validate(ctx, cred)
@@ -196,5 +203,55 @@ func TestValidator(t *testing.T) {
 				t.Fatalf("Validate: expected %v, got %v", tt.want, got)
 			}
 		})
+	}
+}
+
+func TestUAOAuth2ClientValidate_MultipleEndpoints(t *testing.T) {
+	callCount := 0
+	ctx := t.Context()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+
+		if r.Method != http.MethodGet ||
+			r.URL.Path != "/api/2.0/token/list" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		// Simulate:
+		// 1st endpoint -> Unauthorized
+		// 2nd endpoint -> OK
+		if callCount == 1 {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	validator := databricks.NewUAOAuth2ClientValidator()
+	validator.HTTPC = &http.Client{
+		Transport: &mockUAOAuth2ClientTransport{testServer: server},
+	}
+
+	cred := databricks.UAOAuth2ClientCredentials{
+		Secret:    validatorTestClientSecret,
+		AccountID: validatorTestAccountID,
+		ID:        validatorTestClientID,
+	}
+
+	got, err := validator.Validate(ctx, cred)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got != veles.ValidationValid {
+		t.Fatalf("expected ValidationValid, got %v", got)
+	}
+
+	if callCount != 2 {
+		t.Fatalf("expected 2 endpoint attempts, got %d", callCount)
 	}
 }
