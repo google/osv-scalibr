@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno/internal/filter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
+	"github.com/google/osv-scalibr/testing/fakemetadata"
 )
 
 func TestAttributePackage(t *testing.T) {
@@ -74,13 +75,13 @@ func TestAttributePackage(t *testing.T) {
 			name: "Wrong metadata type",
 			initialSet: map[string]*extractor.Package{
 				"usr/bin/ls": {
-					Metadata: "not a UnknownBinaryMetadata type",
+					Metadata: fakemetadata.StringMetadata("not a UnknownBinaryMetadata type"),
 				},
 			},
 			path: "usr/bin/ls",
 			wantSet: map[string]*extractor.Package{
 				"usr/bin/ls": {
-					Metadata: "not a UnknownBinaryMetadata type",
+					Metadata: fakemetadata.StringMetadata("not a UnknownBinaryMetadata type"),
 				},
 			},
 		},

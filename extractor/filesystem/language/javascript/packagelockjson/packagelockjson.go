@@ -314,7 +314,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			},
 			Version:  pkg.Version,
 			PURLType: purl.TypeNPM,
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: pkg.DepGroups,
 			},
 			Locations: []string{input.Path},

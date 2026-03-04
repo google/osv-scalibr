@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/fsmetadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -76,7 +77,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "NetScaler",
 					Version:   "14.1-36.5",
 					Locations: []string{"testdata/valid/loader.conf"},
-					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
+					Metadata:  &fsmetadata.Metadata{FS: os.DirFS(wdir).(scalibrfs.FS)},
 				},
 			},
 		},
@@ -90,7 +91,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "NetScaler",
 					Version:   "13.1-59.21",
 					Locations: []string{"testdata/valid/nsversion"},
-					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
+					Metadata:  &fsmetadata.Metadata{FS: os.DirFS(wdir).(scalibrfs.FS)},
 				},
 			},
 		},
@@ -104,7 +105,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "NetScaler",
 					Version:   "12.1-55.329",
 					Locations: []string{"testdata/valid/ns.conf"},
-					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
+					Metadata:  &fsmetadata.Metadata{FS: os.DirFS(wdir).(scalibrfs.FS)},
 				},
 			},
 		},
