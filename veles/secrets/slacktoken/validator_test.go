@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 )
@@ -68,6 +70,7 @@ func TestAppLevelTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
+		wantErr           error
 	}{
 		{
 			name:              "valid_app_level_token",
@@ -92,6 +95,7 @@ func TestAppLevelTokenValidator(t *testing.T) {
 			responseBody:      `{"ok":false,"error":"server_error"}`,
 			expectedEndpoint:  "/api/auth.test",
 			want:              veles.ValidationFailed,
+			wantErr:           slacktoken.ErrAPIQueryFailed,
 		},
 	}
 
@@ -107,8 +111,8 @@ func TestAppLevelTokenValidator(t *testing.T) {
 
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			if err != nil {
-				t.Errorf("Validate() unexpected error: %v", err)
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status

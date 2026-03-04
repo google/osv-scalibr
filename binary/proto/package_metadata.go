@@ -22,10 +22,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+	denometa "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	bazelmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
@@ -68,6 +70,9 @@ var (
 		},
 		reflect.TypeFor[*spb.Package_DepsjsonMetadata](): func(p *spb.Package) any {
 			return depsjson.ToStruct(p.GetDepsjsonMetadata())
+		},
+		reflect.TypeFor[*spb.Package_DenoMetadata](): func(p *spb.Package) any {
+			return denometa.ToStruct(p.GetDenoMetadata())
 		},
 		reflect.TypeFor[*spb.Package_NetportsMetadata](): func(p *spb.Package) any {
 			return netports.ToStruct(p.GetNetportsMetadata())
@@ -116,6 +121,9 @@ var (
 		},
 		reflect.TypeFor[*spb.Package_MacportsMetadata](): func(p *spb.Package) any {
 			return macportsmeta.ToStruct(p.GetMacportsMetadata())
+		},
+		reflect.TypeFor[*spb.Package_BazelMavenMetadata](): func(p *spb.Package) any {
+			return bazelmeta.ToStruct(p.GetBazelMavenMetadata())
 		},
 		reflect.TypeFor[*spb.Package_WingetMetadata](): func(p *spb.Package) any {
 			return wingetmeta.ToStruct(p.GetWingetMetadata())
@@ -179,6 +187,7 @@ var (
 	_ = []MetadataProtoSetter{
 		(*wheelegg.PythonPackageMetadata)(nil),
 		(*javascriptmeta.JavascriptPackageJSONMetadata)(nil),
+		(*denometa.DenoMetadata)(nil),
 		(*depsjson.Metadata)(nil),
 		(*netports.Metadata)(nil),
 		(*apkmeta.Metadata)(nil),
@@ -195,6 +204,7 @@ var (
 		(*misemeta.Metadata)(nil),
 		(*nvmmeta.Metadata)(nil),
 		(*nodeversionmeta.Metadata)(nil),
+		(*bazelmeta.Metadata)(nil),
 		(*macportsmeta.Metadata)(nil),
 		(*wingetmeta.Metadata)(nil),
 		(*homebrew.Metadata)(nil),

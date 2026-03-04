@@ -73,7 +73,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
-|            | pom.xml                                           | `java/pomxml`, `java/pomxmlnet`      |
+|            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
@@ -81,6 +81,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | yarn.lock                                         | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
 |            | bun.lock                                          | `javascript/bunlock`                 |
+|            | deno.json                                         | `javascript/denojson`                |
+|            | deno TypeScript Source                            | `javascript/denotssource`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -103,6 +105,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
+| Perl       | Perl CPAN packages                                | `perl/cpan`                          |
 
 ### Language runtime managers
 
@@ -125,6 +128,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
+| Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
@@ -148,6 +152,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hugging Face API key                        | `secrets/huggingfaceapikey`            |
 | MariaDB Credentials                         | `secrets/mariadb`                      |
 | Mysql Mylogin                               | `secrets/mysqlmylogin`                 |
+| npmjs Registry Access Tokens                | `secrets/npmjsaccesstoken`             |
 | 1Password Secret Key                        | `secrets/onepasswordsecretkey`         |
 | 1Password Service Token                     | `secrets/onepasswordservicetoken`      |
 | 1Password Recovery Code                     | `secrets/onepasswordrecoverycode`      |
@@ -172,6 +177,9 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Stripe Secret Key                           | `secrets/stripesecretkey`              |
 | Stripe Restricted Key                       | `secrets/striperestrictedkey`          |
 | Stripe Webhook Secret                       | `secrets/stripewebhooksecret`          |
+| Supabase PAT                                | `secrets/supabasepat`                  |
+| Supabase Project Secret Key                 | `secrets/supabaseprojectsecretkey`     |
+| Supabase Service Role JWT                   | `secrets/supabaseservicerolejwt`       |
 | Tink keyset                                 | `secrets/tinkkeyset`                   |
 | Paystack Secret Key                         | `secrets/paystacksecretkey`            |
 | Vapid keys                                  | `secrets/vapidkey`                     |
@@ -206,12 +214,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type                    | Extractor Plugin    |
-| ----------------------- | ------------------- |
-| Wordpress plugins       | `wordpress/plugins` |
-| VSCode extensions       | `vscode/extensions` |
-| Chrome extensions       | `chrome/extensions` |
-| NetScaler installations | `netscaler`         |
+| Type                               | Extractor Plugin    |
+|------------------------------------| ------------------- |
+| Wordpress plugins                  | `wordpress/plugins` |
+| VSCode extensions                  | `vscode/extensions` |
+| Chrome extensions                  | `chrome/extensions` |
+| Maven entries in Bazel build files | `os/bazelmaven`     |
+| NetScaler installations            | `netscaler`         |
 
 ### EmbeddedFS
 
@@ -221,6 +230,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | ova     | Extracts .ova files                               | `embeddedfs/ova`     |
 | vdi     | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vdi`     |
 | vmdk    | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/vmdk`    |
+| qcow2   | Supports Ext4, ExFAT, FAT32, and NTFS filesystems | `embeddedfs/qcow2`   |
 
 ## Detectors
 
