@@ -35,6 +35,7 @@ var mainRepoPattern = regexp.MustCompile(`[\w.]*(?:-[a-zA-Z]+)?_dists_[\w-]+_mai
 
 const aptListDir = "var/lib/apt/lists"
 
+// aptCache contains the set of packages listed in main OS repositories indexes
 type aptCache struct {
 	value map[string]struct{}
 }
