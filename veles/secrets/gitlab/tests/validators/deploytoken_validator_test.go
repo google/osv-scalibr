@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gitlabdeploytoken_test
+package gitlab_test
 
 import (
 	"context"
@@ -23,20 +23,20 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/gitlab"
-	"github.com/google/osv-scalibr/veles/secrets/gitlabdeploytoken"
+	gitlabsecrets "github.com/google/osv-scalibr/veles/secrets/gitlab"
 )
 
 func TestValidator_Validate(t *testing.T) {
 	tests := []struct {
 		name           string
-		token          gitlabdeploytoken.GitlabDeployToken
+		token          gitlabsecrets.DeployToken
 		serverResponse int
 		wantStatus     veles.ValidationStatus
 		wantErr        bool
 	}{
 		{
 			name: "valid_token_with_200_OK",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "https://gitlab.example.com/testgroup/testproject.git",
@@ -47,7 +47,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "valid_token_with_403_Forbidden",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "https://gitlab.example.com/testgroup/testproject.git",
@@ -58,7 +58,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid_token_with_401_Unauthorized",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-invalidtoken123",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "https://gitlab.example.com/testgroup/testproject.git",
@@ -69,7 +69,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "repository_not_found_with_404",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "https://gitlab.example.com/nonexistent/project.git",
@@ -80,7 +80,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "missing_RepoURL",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 			},
@@ -89,7 +89,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid_RepoURL_format",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "not-a-valid-url",
@@ -99,7 +99,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "RepoURL_with_only_one_path_segment",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "https://gitlab.example.com/onlyone.git",
@@ -109,7 +109,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "SSH_scp-style_URL_validation",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "git@gitlab.example.com:testgroup/testproject.git",
@@ -120,7 +120,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "nested_subgroups_validation",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "https://gitlab.example.com/org/team/backend/service.git",
@@ -131,7 +131,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "SSH_URL-style_validation",
-			token: gitlabdeploytoken.GitlabDeployToken{
+			token: gitlabsecrets.DeployToken{
 				Token:    "gldt-validtoken123456",
 				Username: "gitlab+deploy-token-12345",
 				RepoURL:  "ssh://git@gitlab.example.com/group/project.git",
@@ -179,7 +179,7 @@ func TestValidator_Validate(t *testing.T) {
 				}
 			}
 
-			validator := gitlabdeploytoken.NewValidator()
+			validator := gitlabsecrets.NewDeployTokenValidator()
 			status, err := validator.Validate(context.Background(), tt.token)
 
 			if (err != nil) != tt.wantErr {
