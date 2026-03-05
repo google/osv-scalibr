@@ -214,6 +214,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:      "org.transitive:chuck",
 				Version:   "1.1.1",
 				PURLType:  purl.TypeMaven,
+				ScanRoot:  "testdata",
 				Locations: []string{"testdata/transitive.xml"},
 				Plugins:   []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
@@ -227,6 +228,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:      "org.transitive:dave",
 				Version:   "2.2.2",
 				PURLType:  purl.TypeMaven,
+				ScanRoot:  "testdata",
 				Locations: []string{"testdata/transitive.xml"},
 				Plugins:   []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
@@ -240,6 +242,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:      "org.transitive:eve",
 				Version:   "3.3.3",
 				PURLType:  purl.TypeMaven,
+				ScanRoot:  "testdata",
 				Locations: []string{"testdata/transitive.xml"},
 				Plugins:   []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
@@ -253,6 +256,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:      "org.transitive:frank",
 				Version:   "4.4.4",
 				PURLType:  purl.TypeMaven,
+				ScanRoot:  "testdata",
 				Locations: []string{"testdata/transitive.xml"},
 				Plugins:   []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
