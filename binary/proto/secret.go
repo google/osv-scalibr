@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -196,6 +197,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubAppUserToServerTokenToProto(t.Token), nil
 	case velesgithub.OAuthToken:
 		return githubOAuthTokenToProto(t.Token), nil
+	case gitlab.FeedToken:
+		return gitlabFeedTokenToProto(t), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -721,6 +724,17 @@ func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	}
 }
 
+func gitlabFeedTokenToProto(s gitlab.FeedToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabFeedToken_{
+			GitlabFeedToken: &spb.SecretData_GitlabFeedToken{
+				Token:    s.Token,
+				Hostname: s.Hostname,
+			},
+		},
+	}
+}
+
 func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PostmanApiKey{
@@ -1236,6 +1250,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
+	case *spb.SecretData_GitlabFeedToken_:
+		return gitlabFeedTokenToStruct(s.GetGitlabFeedToken()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_Pypi:
@@ -1571,6 +1587,13 @@ func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
+	}
+}
+
+func gitlabFeedTokenToStruct(kPB *spb.SecretData_GitlabFeedToken) gitlab.FeedToken {
+	return gitlab.FeedToken{
+		Token:    kPB.GetToken(),
+		Hostname: kPB.GetHostname(),
 	}
 }
 
