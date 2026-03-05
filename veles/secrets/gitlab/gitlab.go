@@ -33,3 +33,7 @@ type CIJobToken struct {
 	Username  string
 	ProjectID int64
 }
+git rm enricher/govulncheck/source/gvcinterface.go
+git add veles/secrets/gitlab/gitlab.go
+git commit -m "Add gitlab secret file"
+git push
