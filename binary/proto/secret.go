@@ -1252,7 +1252,7 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
-	case *spb.SecretData_GitlabDeployToken:
+	case *spb.SecretData_GitlabDeployToken_:
 		return gitlabDeployTokenToStruct(s.GetGitlabDeployToken()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
