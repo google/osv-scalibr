@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/osv-scalibr/veles"
@@ -35,10 +36,9 @@ var (
 // info/refs endpoint, which is the same endpoint used by Git clients during clone/fetch.
 // This validates both token authenticity and repository access permissions.
 //
-// The validator makes a GET request to:
-// https://{hostname}/{namespace}/{project}.git/info/refs?service=git-upload-pack
-//
-// Expected responses:
+// Validation approach:
+//   - Constructs URL: {scheme}://{hostname}/{namespace}/{project}.git/info/refs?service=git-upload-pack
+//   - Sends HTTP GET with Basic Auth (username:token)
 //   - 200 OK = valid token with read access
 //   - 403 Forbidden = valid token but no access to this repo
 //   - 401 Unauthorized = invalid token or credentials
@@ -67,18 +67,29 @@ func NewDeployTokenValidator() *DeployTokenValidator {
 					return "", fmt.Errorf("failed to parse repository URL: %q", secret.RepoURL)
 				}
 
-				// Construct the validation endpoint URL
-				// Format: https://{hostname}/{namespace}/{project}.git/info/refs?service=git-upload-pack
-				// Example: https://gitlab.com/mygroup/myproject.git/info/refs?service=git-upload-pack
-				return fmt.Sprintf(
-					"https://%s/%s/%s.git/info/refs?service=git-upload-pack",
-					info.Host,
-					info.Namespace,
-					info.Project,
-				), nil
+				// Determine the appropriate scheme (http vs https).
+				// For production GitLab instances, use https.
+				// For localhost/127.0.0.1 (testing), use http.
+				scheme := info.Scheme
+				if scheme == "https" || scheme == "http" {
+					// Keep the original scheme, but override for localhost testing
+					if strings.HasPrefix(info.Host, "127.0.0.1:") || strings.HasPrefix(info.Host, "localhost:") {
+						scheme = "http"
+					}
+				} else {
+					// For git/ssh schemes, default to https for production
+					scheme = "https"
+					if strings.HasPrefix(info.Host, "127.0.0.1:") || strings.HasPrefix(info.Host, "localhost:") {
+						scheme = "http"
+					}
+				}
+
+				// Construct the GitLab repository validation URL.
+				// This endpoint returns Git protocol information and requires authentication.
+				// Format: {scheme}://{hostname}/{namespace}/{project}.git/info/refs?service=git-upload-pack
+				return fmt.Sprintf("%s://%s/%s/%s.git/info/refs?service=git-upload-pack",
+					scheme, info.Host, info.Namespace, info.Project), nil
 			},
-			// HTTPMethod specifies the HTTP method for the validation request.
-			// Git uses GET for info/refs requests.
 			HTTPMethod: http.MethodGet,
 			// HTTPHeaders sets up Basic Authentication using the deploy token credentials.
 			// GitLab expects the Authorization header in the format: "Basic base64(username:token)"
@@ -87,27 +98,36 @@ func NewDeployTokenValidator() *DeployTokenValidator {
 					"Authorization": "Basic " + basicAuth(secret.Username, secret.Token),
 				}
 			},
-			// Use a custom HTTP client with timeout instead of a dedicated timeout field.
-			HTTPC: &http.Client{Timeout: 10 * time.Second},
-			// Response codes that indicate a valid token.
-			ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
+			// ValidResponseCodes: Both 200 and 403 indicate the token is valid.
+			// - 200 OK: Token is valid and has read access to the repository
+			// - 403 Forbidden: Token is valid but lacks permissions for this specific repository
+			//   (still considered valid because the token exists and is recognized by GitLab)
+			ValidResponseCodes: []int{http.StatusOK, http.StatusForbidden},
+			// InvalidResponseCodes: 401 indicates invalid credentials.
+			// - 401 Unauthorized: Token doesn't exist or username/token combination is incorrect
 			InvalidResponseCodes: []int{http.StatusUnauthorized},
+			HTTPC: &http.Client{
+				Timeout: 10 * time.Second,
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			},
 		},
 	}
 }
 
-// Validate checks if the GitLab Deploy Token is valid by attempting to access the repository.
+// Validate checks if the GitLab Deploy Token is valid by attempting to access
+// the repository's info/refs endpoint with the provided credentials.
+//
 // Returns:
 //   - veles.ValidationStatusValid: Token is valid (200 OK or 403 Forbidden)
 //   - veles.ValidationStatusInvalid: Token is invalid (401 Unauthorized)
 //   - error: Network errors or other validation failures
 func (v *DeployTokenValidator) Validate(ctx context.Context, secret DeployToken) (veles.ValidationStatus, error) {
-	status, err := v.validator.Validate(ctx, secret)
-	return status, err
+	return v.validator.Validate(ctx, secret)
 }
 
-// basicAuth encodes username and password in the format required for HTTP Basic Authentication.
-// Returns base64-encoded string of "username:password"
+// basicAuth returns the base64 encoded username:password for basic auth
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))

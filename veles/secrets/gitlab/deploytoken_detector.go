@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,23 +27,30 @@ var (
 )
 
 const (
-	// Maximum length for each component
-	maxTokenLength    = 50
+	// maxTokenLength is the maximum length of a GitLab Deploy Token
+	maxTokenLength = 100
+	// maxUsernameLength is the maximum length of a username
 	maxUsernameLength = 100
-	maxRepoURLLength  = 500
-
-	// Maximum distance between token, username, and repository URL in bytes
-	maxDistance = 1000
+	// maxRepoURLLength is the maximum length of a repository URL
+	maxRepoURLLength = 500
+	// maxDistance is the maximum distance between elements to be considered for pairing.
+	// 10 KiB is a good upper bound as credentials are typically close together in config files.
+	maxDistance = 10 * 1 << 10 // 10 KiB
 )
 
-// Token pattern: gldt- followed by 20-30 alphanumeric characters and underscores
-var tokenRe = regexp.MustCompile(`gldt-[a-zA-Z0-9_]{20,30}`)
+// tokenRe matches GitLab Deploy Tokens starting with gldt- followed by alphanumeric and underscores
+// Example: gldt-W6xaS96Cxzb87K5XsdAh, gldt-k3tx_ycYvssk_8FLUHju
+var tokenRe = regexp.MustCompile(`gldt-[A-Za-z0-9_]{15,}`)
 
-// Username pattern: gitlab+deploy-token-{id} or common username field patterns
-// Examples: gitlab+deploy-token-12345, username: myuser, user: deploy_user
-var usernameRe = regexp.MustCompile(`(?:gitlab\+deploy-token-\d+|(?i:username|user|login)\s*[:=]\s*[a-zA-Z0-9_+-]+)`)
+// usernameRe matches GitLab Deploy Token usernames in two formats:
+//  1. Official: gitlab+deploy-token-{numbers} (e.g., gitlab+deploy-token-12535871)
+//  2. Generic: key-value patterns like username: value, username=value, or username="value"
+//     Matches the entire pattern including the keyword
+//
+// Examples: gitlab+deploy-token-12535871, username: myuser, username="deploy_token", login=testuser
+var usernameRe = regexp.MustCompile(`(?:gitlab\+deploy-token-\d+|(?i:username|user|login|account)["']?\s*[=:]\s*["']?[^"'\s]+)`)
 
-// Repository URL pattern: Matches both HTTPS and SSH (scp-style) GitLab URLs
+// repoURLRe matches GitLab repository URLs in HTTPS, HTTP, and SSH formats
 // Examples: https://gitlab.com/org/project.git, git@gitlab.com:org/project.git
 var repoURLRe = regexp.MustCompile(`(?:(?:https?|ssh)://(?:git@)?[a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9]/[a-zA-Z0-9_./+-]+\.git|git@[a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9]:[a-zA-Z0-9_./+-]+\.git)`)
 
