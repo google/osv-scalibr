@@ -200,7 +200,7 @@ func parseVersion(version string) ([4]int, error) {
 }
 
 func compareVersion(a, b [4]int) int {
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		switch {
 		case a[i] < b[i]:
 			return -1
@@ -246,7 +246,7 @@ func evaluatePackagePolicy(pkgName string, pkg *extractor.Package) (policyDecisi
 			evaluatedVersion: pkg.Version,
 			fixedVersion:     fixedVersion,
 			compare:          isVulnerable,
-			extra:            fmt.Sprintf("evaluated core %s", pkg.Version),
+			extra:            "evaluated core " + pkg.Version,
 		}, true, nil
 	case "electron":
 		return evaluateElectronPolicy(pkg)
@@ -263,7 +263,7 @@ func evaluateStandaloneChromiumPolicy(version, fixedVersion string) (policyDecis
 		evaluatedVersion: version,
 		fixedVersion:     fixedVersion,
 		compare:          isVulnerable,
-		extra:            fmt.Sprintf("evaluated core %s", version),
+		extra:            "evaluated core " + version,
 	}, true, nil
 }
 
@@ -322,7 +322,7 @@ func evaluateElectronChromiumCorePolicy(installedVersion, fixedVersion string) (
 		evaluatedVersion: installedVersion,
 		fixedVersion:     fixedVersion,
 		compare:          isVulnerable,
-		extra:            fmt.Sprintf("evaluated core %s", installedVersion),
+		extra:            "evaluated core " + installedVersion,
 	}, true, nil
 }
 
