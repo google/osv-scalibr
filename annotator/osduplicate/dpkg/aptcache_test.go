@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"io/fs"
+	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -77,6 +78,10 @@ func prepareMapFS(t *testing.T, txt string, emptyDir bool) fstest.MapFS {
 }
 
 func TestExtractAptCache(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	tests := []struct {
 		name     string
 		txt      string

@@ -66,12 +66,8 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	defer it.Close()
 
 	aptCache, err := extractAptCache(input.ScanRoot)
-	if err != nil {
-		// If the apt cache is empty do not add any ExploitabilitySignals since they would
-		// result in false negatives
-		if errors.Is(err, ErrMissingAptCache) {
-			return nil
-		}
+	isAptCacheEmpty := errors.Is(err, ErrMissingAptCache)
+	if err != nil && !isAptCacheEmpty {
 		return fmt.Errorf("failed to read the apt cache folder: %w", err)
 	}
 
@@ -97,7 +93,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		for _, pkg := range pkgs {
 			// Do not add duplication annotation on packages which are from non-main repos
 			// since vuln matching can happen only on packages hosted on main repos
-			if !aptCache.isFromMainOSRepo(pkg) {
+			if !isAptCacheEmpty && !aptCache.isFromMainOSRepo(pkg) {
 				continue
 			}
 
