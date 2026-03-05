@@ -1,0 +1,73 @@
+# Minimal K8s test file focusing on unique structural paths to container images
+# Only includes truly different YAML path structures
+
+# Pod - Direct spec paths
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  initContainers:
+    - name: init-container
+      image: tag1@sha256:b692a91e4e531d2a9cd8e8c3b1e6d5c7f9d2e5a3b1c8d7f4e6a9b2c5d8f1e4a7
+  containers:
+    - name: main-container
+      image: tag2:2.0.0
+
+---
+# Deployment - Template-based spec paths (covers Deployment, StatefulSet, ReplicaSet, DaemonSet)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-deployment
+  template:
+    metadata:
+      labels:
+        app: test-deployment
+    spec:
+      initContainers:
+        - name: template-init
+          image: tag3:3.0.0
+      containers:
+        - name: template-container
+          image: tag4.io/prometheus/node-exporter:v4.0.0
+
+---
+# CronJob - JobTemplate-based spec paths
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: test-cronjob
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          initContainers:
+            - name: cron-init
+              image: tag5:5.0.0
+          containers:
+            - name: cron-container
+              image: tag6:6.0.0
+          restartPolicy: OnFailure
+
+---
+# Edge cases pod with various image formats
+apiVersion: v1
+kind: Pod
+metadata:
+  name: edge-cases-pod
+spec:
+  containers:
+    # Registry with port
+    - name: registry-port
+      image: tag7:5000/my-app:dev
+    # No tag (defaults to latest)
+    - name: no-tag
+      image: centos

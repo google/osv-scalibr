@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,75 +14,47 @@
 
 package binary
 
+import (
+	"encoding/json"
+
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
+)
+
 // govulncheckMessage contains the relevant parts of the json output of govulncheck.
 type govulncheckMessage struct {
-	OSV *osvEntry `json:"osv,omitempty"`
+	OSV     *osvpb.Vulnerability `json:"osv,omitempty"`
+	Finding *govulncheckFinding  `json:"finding,omitempty"`
 }
 
-// osvEntry represents a vulnerability in the Go OSV format, documented
-// in https://go.dev/security/vuln/database#schema.
-type osvEntry struct {
-	// ID is a unique identifier for the vulnerability.
-	ID string
-	// Aliases is a list of IDs for the same vulnerability in other
-	// databases (CVE, GSHA)
-	Aliases []string
-	// Summary gives a one-line, English textual summary of the vulnerability.
-	// It is recommended that this field be kept short, on the order of no more
-	// than 120 characters.
-	Summary string
-	// Details contains additional English textual details about the vulnerability.
-	Details string
-	// Affected contains information on the modules and versions
-	// affected by the vulnerability.
-	Affected []affected
-}
-type affected struct {
-	// The affected Go module. Required.
-	// Note that this field is called "package" in the OSV specification.
-	Module module `json:"package"`
-	// The module version ranges affected by the vulnerability.
-	Ranges []vulnRange `json:"ranges,omitempty"`
-	// Details on the affected packages and symbols within the module.
-	EcosystemSpecific ecosystemSpecific `json:"ecosystem_specific"`
-}
-type module struct {
-	// The Go module path.
-	Path string `json:"name"`
+// UnmarshalJSON unmarshals the govulncheck message. The OSV field is a proto
+// message, so it needs to be unmarshaled with protojson.
+func (m *govulncheckMessage) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if osv, ok := raw["osv"]; ok {
+		m.OSV = &osvpb.Vulnerability{}
+		if err := protojson.Unmarshal(osv, m.OSV); err != nil {
+			return err
+		}
+	}
+	if finding, ok := raw["finding"]; ok {
+		if err := json.Unmarshal(finding, &m.Finding); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// The affected versions of the vulnerable module.
-type vulnRange struct {
-	// Events is a list of versions representing the ranges in which
-	// the module is vulnerable.
-	Events []rangeEvent `json:"events"`
+// govulncheckFinding is a trimmed down version of govulncheck finding.
+type govulncheckFinding struct {
+	OSV   string              `json:"osv,omitempty"`
+	Trace []*govulncheckFrame `json:"trace,omitempty"`
 }
 
-// rangeEvent describes a single module version that either
-// introduces or fixes a vulnerability.
-type rangeEvent struct {
-	// Introduced is a version that introduces the vulnerability.
-	Introduced string `json:"introduced,omitempty"`
-	// Fixed is a version that fixes the vulnerability.
-	Fixed string `json:"fixed,omitempty"`
-}
-
-// ecosystemSpecific contains additional information about the vulnerable
-// module for the Go ecosystem.
-type ecosystemSpecific struct {
-	// Packages is the list of affected packages within the module.
-	Packages []affectedPackage `json:"imports,omitempty"`
-}
-
-// affectedPackage contains additional information about an affected package.
-type affectedPackage struct {
-	// Path is the package import path.
-	Path string `json:"path,omitempty"`
-	// GOOS is the execution operating system where the symbols appear.
-	GOOS []string `json:"goos,omitempty"`
-	// GOARCH specifies the execution architecture where the symbols appear.
-	GOARCH []string `json:"goarch,omitempty"`
-	// Symbols is a list of function and method names affected by
-	// this vulnerability.
-	Symbols []string `json:"symbols,omitempty"`
+type govulncheckFrame struct {
+	// Function is the detected symbol.
+	Function string `json:"function,omitempty"`
 }

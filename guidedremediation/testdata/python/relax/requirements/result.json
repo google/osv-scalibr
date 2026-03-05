@@ -1,0 +1,138 @@
+{
+  "ecosystem": "PyPI",
+  "strategy": "relax",
+  "vulnerabilities": [
+    {
+      "id": "OSV-000-001",
+      "packages": [
+        {
+          "name": "bad1",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-002",
+      "packages": [
+        {
+          "name": "bad2",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-003",
+      "packages": [
+        {
+          "name": "bad3",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-004",
+      "packages": [
+        {
+          "name": "nofix",
+          "version": "1.0.0"
+        }
+      ],
+      "unactionable": true
+    }
+  ],
+  "patches": [
+    {
+      "packageUpdates": [
+        {
+          "name": "direct2",
+          "versionFrom": ">=1.0.0,<2.0.0",
+          "versionTo": ">=2.0.0,<3.0.0",
+          "transitive": false
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-002",
+          "packages": [
+            {
+              "name": "bad2",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageUpdates": [
+        {
+          "name": "direct4",
+          "versionFrom": "~=1.0.0",
+          "versionTo": ">=2.0.0,<3.0.0",
+          "transitive": false
+        },
+        {
+          "name": "direct5",
+          "versionFrom": "~=1.0.0",
+          "versionTo": ">=3.0.0,<4.0.0",
+          "transitive": false
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-003",
+          "packages": [
+            {
+              "name": "bad3",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageUpdates": [
+        {
+          "name": "direct1",
+          "versionFrom": "==1.0.0",
+          "versionTo": "==2.0.0",
+          "transitive": false
+        },
+        {
+          "name": "direct10",
+          "versionFrom": "~=1.0.0",
+          "versionTo": ">=2.0.0,<3.0.0",
+          "transitive": false
+        },
+        {
+          "name": "direct6",
+          "versionFrom": "== 1.0.0",
+          "versionTo": "==1.0.1",
+          "transitive": false
+        },
+        {
+          "name": "direct7",
+          "versionFrom": ">=1.0.0,<2.0.0",
+          "versionTo": ">=2.0.0,<3.0.0",
+          "transitive": false
+        },
+        {
+          "name": "direct9",
+          "versionFrom": "~=1.0.0",
+          "versionTo": ">=2.0.0,<3.0.0",
+          "transitive": false
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-001",
+          "packages": [
+            {
+              "name": "bad1",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

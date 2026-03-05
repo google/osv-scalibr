@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 # Build SCALIBR and copy it into the tmp dir.
 touch "$tmp/scalibr-result.textproto"
-make scalibr
+make scalibr-static
 cp -f scalibr "$tmp/scalibr"
 chmod -R 777 $tmp
 
@@ -25,5 +25,3 @@ docker run --entrypoint "" -v "$tmp:/scalibr_working_dir:rw" "$1" /scalibr_worki
 
 # Move the results to the CWD.
 cp $tmp/scalibr-result.textproto scalibr-result.textproto
-
-

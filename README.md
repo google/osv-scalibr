@@ -1,102 +1,204 @@
 # OSV-SCALIBR
 
-**Note:** The code in this repo is subject to change in the near future as we're merging SCALIBR with [OSV-scanner](https://github.com/google/osv-scanner) to provide a single tool that unifies the two scanners' extraction and vuln scanning capabilities.
+[![Go Reference](https://pkg.go.dev/badge/github.com/google/osv-scalibr.svg)](https://pkg.go.dev/github.com/google/osv-scalibr)
 
-SCALIBR (Software Composition Analysis Library) is an extensible file system scanner used to extract software inventory data (e.g. installed language packages) and detect vulnerabilities.
+OSV-SCALIBR (Software Composition Analysis Library) is an extensible library
+providing:
 
-The scanner can either be used as a standalone binary to scan the local machine or as a library with a custom wrapper to perform scans on e.g. container images or remote hosts. It comes with built-in plugins for inventory extraction and vulnerability detection and it also allows users to run their custom plugins.
+- File system scanner used to extract software inventory data (e.g.
+installed language packages) and detect known vulnerabilities or generate SBOMs.
+See the
+[list of currently supported software inventory types](docs/supported_inventory_types.md).
+- Container analysis functionality (e.g. layer-based extraction)
+- Guided Remediation (generating upgrade patches for transitive vulnerabilities)
+- And more!
 
-See [here](docs/supported_inventory_types.md) for the list of currently supported software inventory types.
+This can be used as a library with a custom wrapper to perform scans on e.g.
+container images (only linux-based currently) or remote hosts, or via the
+[OSV-Scanner CLI](https://github.com/google/osv-scanner). It comes with built-in
+plugins for inventory extraction and vulnerability detection and it also allows
+users to run their custom plugins.
 
 ## Prerequisites
 
-To build SCALIBR in open source, you'll need to have the following installed:
-
-* `go`: Follow https://go.dev/doc/install
-* `protoc`: Install the appropriate package, e.g. `apt install protobuf-compiler`
-* `protoc-gen-go`: Run `go install google.golang.org/protobuf/cmd/protoc-gen-go`
-
+To build OSV-SCALIBR, you'll need to have `go` installed. Follow
+https://go.dev/doc/install.
 
 ## How to use
 
-### As a standalone binary
+### Via the OSV-Scanner CLI
 
-1. `make`
-1. `./scalibr --result=result.textproto`
+If your use case is known vulnerability scanning and extraction in a CLI
+context, check out the
+[OSV-Scanner usage guide](https://google.github.io/osv-scanner/usage/).
 
-See the [result proto definition](binary/proto/scan_result.proto) for details about the scan result format.
+**Note:** Not all OSV-SCALIBR functionality is available via OSV-Scanner yet.
+Check out [this migration guide](https://google.github.io/osv-scanner/migrating-from-scalibr.html)
+for more information.
 
-Run `./scalibr --help` for a list of additional CLI args.
+### Via the OSV-SCALIBR wrapper binary
+
+1. `go install github.com/google/osv-scalibr/binary/scalibr@latest`
+1. `scalibr --result=result.textproto`
+
+See the [result proto definition](/binary/proto/scan_result.proto) for details
+about the scan result format.
+
+Run `scalibr --help` for a list of additional CLI args.
 
 ### As a library:
-1. Import `github.com/google/osv-scalibr` into your Go project
-1. Write a custom implementation for the `fs.FS` interface, or use an existing one like `os.DirFS`
-1. Create a new [scalibr.ScanConfig](scalibr.go#L36) struct, configure the extraction and detection plugins to run
-1. Call `scalibr.New().Scan()` with the config and the FS implementation
-1. Parse the returned [scalibr.ScanResults](scalibr.go#L50)
+
+1.  Import `github.com/google/osv-scalibr` into your Go project
+1.  Create a new [scalibr.ScanConfig](/scalibr.go#L36) struct, configure the
+    extraction and detection plugins to run
+1.  Call `scalibr.New().Scan()` with the config
+1.  Parse the returned [scalibr.ScanResults](/scalibr.go#L50)
 
 See below for an example code snippet.
 
 ### On a container image
 
-See the [run_scalibr_on_image.sh](run_scalibr_on_image.sh) script for an example of how to run SCALIBR on container images.
+Add the `--remote-image` flag to scan a remote container image. Example:
+
+```
+scalibr --result=result.textproto --remote-image=alpine@sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5
+```
+
+Or the `--image-tarball` flag to scan a locally saved image tarball like ones
+produced with `docker save my-image > my-image.tar`. Example:
+
+```
+scalibr --result=result.textproto --image-tarball=my-image.tar
+```
+
+Note: As mentioned previously only linux-based container images are supported
+currently. Follow issue [#953](https://github.com/google/osv-scalibr/issues/953)
+for tracking Windows image container scanning support.
 
 ### SPDX generation
 
-SCALIBR supports generating the result of inventory extraction as an SPDX v2.3 file in json, yaml or tag-value format. Example usage:
+OSV-SCALIBR supports generating the result of inventory extraction as an SPDX
+v2.3 file in json, yaml or tag-value format. Example usage:
 
 ```
-./scalibr -o spdx23-json=result.spdx.json
+scalibr -o spdx23-json=result.spdx.json
 ```
 
 Some fields in the generated SPDX can be overwritten:
 
 ```
-./scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-namespace" --spdx-creators=Organization:Google -o spdx23-json=result.spdx.json
+scalibr -spdx-document-name="Custom name" --spdx-document-namespace="Custom-namespace" --spdx-creators=Organization:Google -o spdx23-json=result.spdx.json
 ```
 
 ## Running built-in plugins
 
 ### With the standalone binary
-The binary runs SCALIBR's "recommended" internal plugins by default. You can enable more plugins with the `--extractors=` and `--detectors=` flags. See the the definition files for a list of all built-in plugins and their CLI flags ([extractors](extractor/list/list.go#L26), [detectors](detector/list/list.go#L26)).
+
+The binary runs SCALIBR's "recommended" internal plugins by default. You can
+enable more plugins with the `--plugins=` flags. See the
+definition files for a list of all built-in plugins and their CLI flags
+([extractors (fs)](/extractor/filesystem/list/list.go),
+[extractors (standalone)](/extractor/filesystem/list/list.go),
+[detectors](/detector/list/list.go),
+[annotators](/annotator/list/list.go),
+[enrichers](/enricher/enricherlist/list.go)).
 
 ### With the library
-A collection of all built-in plugin modules can be found in the definition files ([extractors](extractor/list/list.go#L26), [detectors](detector/list/list.go#L26)). To enable them, just import the module and add the appropriate plugins to the scan config, e.g.
+
+A collection of all built-in plugin modules can be found in the definition files
+([extractors (fs)](/extractor/filesystem/list/list.go),
+[extractors (standalone)](/extractor/filesystem/list/list.go),
+[detectors](/detector/list/list.go),
+[annotators](/annotator/list/list.go),
+[enrichers](/enricher/enricherlist/list.go)).
+To enable them, just import plugin/list and add the appropriate plugin names
+to the scan config, e.g.
+```
+import (
+  "context"
+  scalibr "github.com/google/osv-scalibr"
+  pl "github.com/google/osv-scalibr/plugin/list"
+  scalibrfs "github.com/google/osv-scalibr/fs"
+)
+plugins, _ := pl.FromNames([]string{"os", "cis", "vex"})
+cfg := &scalibr.ScanConfig{
+  ScanRoots: scalibrfs.RealFSScanRoots("/"),
+  Plugins:   plugins,
+}
+results := scalibr.New().Scan(context.Background(), cfg)
+```
+
+You can also specify your scanning host's capabilities to only enable plugins
+whose requirements are satisfied (e.g. network access, OS-specific plugins):
 
 ```
 import (
-  scalibr "github.com/google/osv-scalibr"
-  el "github.com/google/osv-scalibr/extractor/list"
-  dl "github.com/google/osv-scalibr/detector/list"
+  ...
+  "github.com/google/osv-scalibr/plugin"
 )
-cfg := &scalibr.ScanConfig{
-  FS:                  os.DirFS("/"),
-  InventoryExtractors: el.Python,
-  Detectors:           dl.CIS,
+capab := &plugin.Capabilities{
+  OS:            plugin.OSLinux,
+  Network:       plugin.NetworkOnline,
+  DirectFS:      true,
+  RunningSystem: true,
 }
-results := scalibr.New().Scan(context.Background(), cfg)
+...
+cfg := &scalibr.ScanConfig{
+  ScanRoots: scalibrfs.RealFSScanRoots("/"),
+  Plugins:   plugin.FilterByCapabilities(plugins, capab),
+}
+...
 ```
 
 ## Creating + running custom plugins
-Custom plugins can only be run when using SCALIBR as a library.
 
-1. Create an implementation of the SCALIBR [Extractor](extractor/extractor.go#L30) or [Detector](detector/detector.go#L28) interface.
-2. Add the newly created struct to the scan config and run the scan, e.g.
+Custom plugins can only be run when using OSV-SCALIBR as a library.
+
+1.  Create an implementation of the OSV-SCALIBR
+    [Extractor](/extractor/filesystem/extractor.go#L30) or
+    [Detector](/detector/detector.go#L28) interface.
+2.  Add the newly created struct to the scan config and run the scan, e.g.
 
 ```
 import (
-  "github.com/google/osv-scalibr/extractor"
+  "github.com/google/osv-scalibr/plugin"
   scalibr "github.com/google/osv-scalibr"
 )
 cfg := &scalibr.ScanConfig{
-  FS:                  os.DirFS("/"),
-  InventoryExtractors: []extractor.InventoryExtractor{&myExtractor{}},
+  Root:                 "/",
+  Plugins: []plugin.Plugin{&myExtractor{}},
 }
 results := scalibr.New().Scan(context.Background(), cfg)
 ```
 
+### A note on cross-platform
+
+OSV-SCALIBR is compatible with Linux and has experimental support for Windows
+and Mac. When a new plugin is implemented for OSV-SCALIBR, we need to ensure
+that it will not break other platforms. Our runners will generally catch
+compatibility issues, but to ensure everything is easy when implementing a
+plugin, here are a few recommendations to keep in mind:
+
+*   Ensure you work with file paths using the `filepath` library. For example,
+    avoid using `/my/path` but prefer `filepath.Join('my', 'path')` instead.
+*   If the plugin can only support one system (e.g. a windows-specific
+    detector), the layout will generally be to have two versions of the file:
+    *   `file_system.go`: where `system` is the targeted system (e.g.
+        `file_windows.go`) that contains the code specific to the target system.
+        It must also contain the adequate go build constraint.
+    *   `file_dummy.go`: contains the code for every other system. It generally
+        does nothing and just ensures that the code compiles on that system;
+*   Because of the way our internal automation works, we generally require unit
+    tests to be defined for every platform and be filtered out dynamically if
+    not compatible. In other words, a test should be filtered in/out using `if
+    runtime.GOOS` rather than a `//go:build` constraint. Here is an
+    [example](https://github.com/google/osv-scalibr/commit/7a87679f5c688e7bac4527d29c1823597a52bb40#diff-72efad005e0fbfe34c60e496dfb55ec15fc50f4b12be0934f08a3acaf7733616L79).
+
 ## Custom logging
-You can make the  SCALIBR library log using your own custom logger by passing an implementation of the [`log.Logger`](log/log.go#L22) interface to `log.SetLogger()`:
+
+You can make the OSV-SCALIBR library log using your own custom logger by passing
+an implementation of the [`log.Logger`](/log/log.go#L22) interface to
+`log.SetLogger()`:
 
 ```
 import (
@@ -104,14 +206,34 @@ import (
   "github.com/google/osv-scalibr/log"
   scalibr "github.com/google/osv-scalibr"
 )
-cfg := &scalibr.ScanConfig{FS: os.DirFS("/")}
+cfg := &scalibr.ScanConfig{ScanRoot: "/"}
 log.SetLogger(&customlog.Logger{})
 results := scalibr.New().Scan(context.Background(), cfg)
 log.Info(results)
 ```
 
 ## Contributing
-Read how to [contribute to SCALIBR](CONTRIBUTING.md).
+
+Read how to [contribute to OSV-SCALIBR](CONTRIBUTING.md).
+
+Look for any [open issues](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20-label%3APRP)
+or [unowned Patch Reward work](https://github.com/google/osv-scalibr/issues?q=is%3Aissue%20state%3Aopen%20label%3APRP%3AInactive)
+you'd like to contribute to.
+
+To build and test your local changes, run `make` and `make test`. A local
+`scalibr` binary will be generated in the repo base.
+
+Some of your code contributions might require regenerating protos. This can
+happen when, say, you want to contribute a new inventory type. For such cases,
+you'll need to install a few dependencies:
+
+*   `protoc`: Install the appropriate
+    [precompiled protoc binary](https://protobuf.dev/installation/).
+*   `protoc-gen-go`: Run `go install
+    google.golang.org/protobuf/cmd/protoc-gen-go`
+
+and then run `make protos` or `./build_protos.sh`.
 
 ## Disclaimers
-SCALIBR is not an official Google product.
+
+OSV-SCALIBR is not an official Google product.

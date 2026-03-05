@@ -1,0 +1,15 @@
+Package: runit-systemd
+Status: install ok installed
+Priority: optional
+Section: oldlibs
+Installed-Size: 20
+Maintainer: Lorenzo Puliti <plorenzo@disroot.org>
+Architecture: all
+Source: runit
+Version: 2.1.2-54+usrmerge
+Breaks: runit (<< 2.1.2-37)
+Description: transitional [package] for runit-systemd users
+ This is a transitional empty package to smooth the transition from
+ runit-systemd to runit-run. See #976187 for details. When runit-run
+ is successfully installed this package can be removed.
+Homepage: http://smarden.org/runit/

@@ -1,0 +1,147 @@
+# TODO(#274): this should match the configuration of osv-scanner for the most part
+#   currently it does not because using that config raises type errors,
+#   in addition to some of the rules having violations that need addressing,
+#   so the current focus is on getting as many linters as possible running
+version: "2"
+
+linters:
+  default: all
+  disable:
+    - cyclop           #
+    - depguard         #
+    - dupl             # Some interfaces end up having several lines of similar code as others
+    - err113           #
+    - exhaustruct      #
+    - exhaustive       # TODO(#1225): work on enabling this
+    - forcetypeassert  #
+    - funcorder        #
+    - funlen           #
+    - gochecknoglobals #
+    - gocognit         #
+    - goconst          #
+    - gocyclo          #
+    - godot            #
+    - godox            #
+    - gosec            # TODO(#274): work on enabling this
+    - ireturn          #
+    - lll              #
+    - maintidx         #
+    - mnd              # Not every number is magic
+    - nestif           #
+    - nilnesserr       # TODO(#274): work on enabling this
+    - nilnil           # We consider this a valid pattern to use sometimes
+    - nlreturn         # Not feasible until it's supported by the internal linter
+    - noinlineerr      #
+    - nonamedreturns   #
+    - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - prealloc         # We don't want to preallocate all the time
+    - protogetter      # TODO(#274): work on enabling this
+    - recvcheck        # TODO(#274): work on enabling this
+    - tagliatelle      #
+    - testpackage      #
+    - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
+    - varnamelen       #
+    - wrapcheck        #
+    - wsl              #
+    - wsl_v5           #
+  settings:
+    forbidigo:
+      forbid:
+        # Parallel tests mixes up log lines of multiple tests in the internal test runner
+        - pattern: ^testing.T.Parallel$
+          pkg: ^testing$
+      analyze-types: true
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+    revive:
+      rules:
+        - name: blank-imports
+          disabled: false
+        - name: context-as-argument
+          disabled: false
+        - name: context-keys-type
+          disabled: false
+        - name: dot-imports
+          disabled: false
+        - name: empty-block
+          disabled: false
+        - name: error-naming
+          disabled: false
+        - name: error-return
+          disabled: false
+        - name: error-strings
+          disabled: false
+        - name: errorf
+          disabled: false
+        - name: exported
+          disabled: false
+        - name: import-alias-naming
+          disabled: false
+        - name: indent-error-flow
+          disabled: false
+        - name: package-comments
+          disabled: false
+        - name: range
+          disabled: false
+        - name: receiver-naming
+          disabled: false
+        - name: redefines-builtin-id
+          disabled: false
+        - name: superfluous-else
+          disabled: false
+        - name: time-naming
+          disabled: false
+        - name: unreachable-code
+          disabled: false
+        - name: use-any
+          disabled: false
+        - name: var-declaration
+          disabled: false
+        - name: var-naming
+          disabled: false
+          arguments:
+            - [] # AllowList
+            - [] # DenyList
+            - - skip-package-name-checks: true
+    staticcheck:
+      checks:
+        - all
+        - -SA5011 # seems prone to false positives in tests
+        - -QF1001 # apply De Morgan's law
+        - -QF1003 # use tagged switch on prefix
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: veles/
+        linters:
+          - forbidigo  # Parallel tests are fine and in some places needed for Veles.
+      - path: velestest/
+        linters:
+          - forbidigo  # Parallel tests are fine and in some places needed for Veles.
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: false
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

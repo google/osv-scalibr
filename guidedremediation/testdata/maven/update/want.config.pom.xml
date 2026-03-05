@@ -1,0 +1,27 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>basic</groupId>
+  <artifactId>basic</artifactId>
+  <version>1</version>
+
+  <parent>
+    <groupId>pkg</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.0</version>
+    <relativePath>./parent.xml</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>pkg</groupId>
+      <artifactId>d</artifactId>
+      <version>3.0.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>pkg</groupId>
+      <artifactId>e</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+  </dependencies>
+</project>

@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,18 +17,23 @@ package fakeextractor_test
 import (
 	"context"
 	"io/fs"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	scalibrextractor "github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/testing/fakeextractor"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestName(t *testing.T) {
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		want      string
 	}{
 		{
@@ -56,7 +61,7 @@ func TestName(t *testing.T) {
 func TestVersion(t *testing.T) {
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		want      int
 	}{
 		{
@@ -89,7 +94,7 @@ func TestFileRequired(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		args      args
 		want      bool
 	}{
@@ -115,7 +120,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.extractor.FileRequired(test.args.path, test.args.mode)
+			got := test.extractor.FileRequired(simplefileapi.New(test.args.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(test.args.path),
+				FileMode: test.args.mode,
+			}))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Fatalf("extractor.FileRequired(%v, %v) returned unexpected result; diff (-want +got):\n%s", test.args.path, test.args.mode, diff)
 			}
@@ -126,49 +134,48 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	name1 := "package"
 	name2 := "another package"
-	multipleInventories := []*scalibrextractor.Inventory{&scalibrextractor.Inventory{
+	multiplePackages := []*extractor.Package{{
 		Name:      name1,
 		Locations: []string{"some path"},
-		Extractor: "extractor name",
-	}, &scalibrextractor.Inventory{
+	}, {
 		Name:      name2,
 		Locations: []string{"some path"},
-		Extractor: "extractor name",
 	}}
 
 	type args struct {
+		//nolint:containedctx
 		ctx   context.Context
-		input *scalibrextractor.ScanInput
+		input *filesystem.ScanInput
 	}
 	tests := []struct {
 		name      string
-		extractor scalibrextractor.InventoryExtractor
+		extractor filesystem.Extractor
 		args      args
-		want      []*scalibrextractor.Inventory
+		want      []*extractor.Package
 		wantErr   error
 	}{
 		{
-			name: "no results",
+			name: "no_results",
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
-				"some path": fakeextractor.NamesErr{nil, nil},
+				"some path": {nil, nil},
 			}),
-			args: args{context.Background(), &scalibrextractor.ScanInput{Path: "some path"}},
-			want: []*scalibrextractor.Inventory{},
+			args: args{t.Context(), &filesystem.ScanInput{Path: "some path"}},
+			want: []*extractor.Package{},
 		},
 		{
-			name: "multiple results",
+			name: "multiple_results",
 			extractor: fakeextractor.New("extractor name", 1, nil, map[string]fakeextractor.NamesErr{
-				"some path": fakeextractor.NamesErr{[]string{name1, name2}, nil},
+				"some path": {[]string{name1, name2}, nil},
 			}),
-			args: args{context.Background(), &scalibrextractor.ScanInput{Path: "some path"}},
-			want: multipleInventories,
+			args: args{t.Context(), &filesystem.ScanInput{Path: "some path"}},
+			want: multiplePackages,
 		},
 		{
-			name: "unrecognized path throws an error",
+			name: "unrecognized_path_throws_an_error",
 			extractor: fakeextractor.New("", 1, nil, map[string]fakeextractor.NamesErr{
-				"some path": fakeextractor.NamesErr{nil, nil},
+				"some path": {nil, nil},
 			}),
-			args:    args{context.Background(), &scalibrextractor.ScanInput{Path: "another path"}},
+			args:    args{t.Context(), &filesystem.ScanInput{Path: "another path"}},
 			wantErr: cmpopts.AnyError,
 		},
 	}
@@ -179,7 +186,8 @@ func TestExtract(t *testing.T) {
 			if !cmp.Equal(err, test.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("extractor.Extract(%v, %+v) got error: %v, want: %v\n", test.args.ctx, test.args.input, err, test.wantErr)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			wantInv := inventory.Inventory{Packages: test.want}
+			if diff := cmp.Diff(wantInv, got); diff != "" {
 				t.Fatalf("extractor.Extract(%v, %+v) returned unexpected result; diff (-want +got):\n%s", test.args.ctx, test.args.input, diff)
 			}
 		})

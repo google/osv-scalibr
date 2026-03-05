@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,5 +62,5 @@ func writeSPDX23YAML(doc *v2_3.Document, w io.Writer) error {
 }
 
 func writeSPDX23JSON(doc *v2_3.Document, w io.Writer) error {
-	return json.Write(doc, w)
+	return json.Write(doc, w, json.Indent("  "))
 }

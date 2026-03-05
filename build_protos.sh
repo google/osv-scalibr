@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2024 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,49 @@
 # limitations under the License.
 
 
-rm -rf binary/proto/*_go_proto
 
-# Compile protos.
-protoc -I=binary --go_out=binary/proto binary/proto/*.proto
+REGEN_RESULT=0
+REGEN_CONFIG=0
 
-# Clean up.
-mv binary/proto/github.com/google/scalibr/binary/proto/* binary/proto/
-rm -r binary/proto/github.com
+# Check if proto files need regeneration
+if [ ! -f binary/proto/scan_result_go_proto/scan_result.pb.go ] || [ binary/proto/scan_result_go_proto/scan_result.pb.go -ot binary/proto/scan_result.proto ]; then
+  REGEN_RESULT=0
+else
+  REGEN_RESULT=1
+fi
+
+if [ ! -f binary/proto/config_go_proto/config.pb.go ] || [ binary/proto/config_go_proto/config.pb.go -ot binary/proto/config.proto ]; then
+  REGEN_CONFIG=0
+else
+  REGEN_CONFIG=1
+fi
+
+# Install and prepare osv-schema protos.
+if [ "$REGEN_RESULT" -eq 0 ] || [ "$REGEN_CONFIG" -eq 0 ]; then
+  OSV_SCHEMA_VERSION="1.7.4"
+  wget --no-verbose https://github.com/ossf/osv-schema/archive/refs/tags/v$OSV_SCHEMA_VERSION.tar.gz
+  tar -xf v$OSV_SCHEMA_VERSION.tar.gz
+  mv osv-schema-$OSV_SCHEMA_VERSION/proto/vulnerability.proto binary/proto/vulnerability.proto
+  rm -r v$OSV_SCHEMA_VERSION.tar.gz osv-schema-$OSV_SCHEMA_VERSION
+fi
+
+# Compile scan_result.proto if it changed.
+if [ "$REGEN_RESULT" -eq 0 ]; then
+  rm -rf binary/proto/scan_result_go_proto
+  protoc -I=binary --go_out=binary/proto binary/proto/scan_result.proto
+  if [ -d "binary/proto/github.com" ]; then
+    mv binary/proto/github.com/google/osv-scalibr/binary/proto/scan_result_go_proto binary/proto/
+  fi
+fi
+
+# Compile config.proto if it changed.
+if [ "$REGEN_CONFIG" -eq 0 ]; then
+  rm -rf binary/proto/config_go_proto
+  protoc -I=binary --go_out=binary/proto binary/proto/config.proto
+  if [ -d "binary/proto/github.com" ]; then
+    mv binary/proto/github.com/google/osv-scalibr/binary/proto/config_go_proto binary/proto/
+  fi
+fi
+
+# Clean up
+rm -rf binary/proto/github.com binary/proto/vulnerability.proto

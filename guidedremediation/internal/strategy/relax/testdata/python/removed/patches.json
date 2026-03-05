@@ -1,0 +1,23 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "direct6",
+        "versionFrom": "==1.0.0",
+        "versionTo": "==1.0.1",
+        "transitive": false
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-001",
+        "packages": [
+          {
+            "name": "bad1",
+            "version": "1.0.0"
+          }
+        ]
+      }
+    ]
+  }
+]

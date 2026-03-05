@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.3.1",
+  "id": "GO-2024-2887",
+  "modified": "0001-01-01T00:00:00Z",
+  "published": "0001-01-01T00:00:00Z",
+  "aliases": [
+    "CVE-2024-24790"
+  ],
+  "summary": "Unexpected behavior from Is methods for IPv4-mapped IPv6 addresses in net/netip",
+  "details": "The various Is methods (IsPrivate, IsLoopback, etc) did not work as expected for IPv4-mapped IPv6 addresses, returning false for addresses which would return true in their traditional IPv4 forms.",
+  "affected": [
+    {
+      "package": {
+        "name": "stdlib",
+        "ecosystem": "Go"
+      },
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "1.21.11"
+            },
+            {
+              "introduced": "1.22.0-0"
+            },
+            {
+              "fixed": "1.22.4"
+            }
+          ]
+        }
+      ],
+      "ecosystem_specific": {
+        "imports": [
+          {
+            "path": "net/netip",
+            "symbols": [
+              "Addr.IsGlobalUnicast",
+              "Addr.IsInterfaceLocalMulticast",
+              "Addr.IsLinkLocalMulticast",
+              "Addr.IsLoopback",
+              "Addr.IsMulticast",
+              "Addr.IsPrivate"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "references": [
+    {
+      "type": "FIX",
+      "url": "https://go.dev/cl/590316"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://go.dev/issue/67680"
+    },
+    {
+      "type": "WEB",
+      "url": "https://groups.google.com/g/golang-announce/c/XbxouI9gY7k/m/TuoGEhxIEwAJ"
+    }
+  ],
+  "credits": [
+    {
+      "name": "Enze Wang of Alioth (@zer0yu)"
+    },
+    {
+      "name": "Jianjun Chen of Zhongguancun Lab (@chenjj)"
+    }
+  ],
+  "database_specific": {
+    "url": "https://pkg.go.dev/vuln/GO-2024-2887",
+    "review_status": "REVIEWED"
+  }
+}

@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,9 +26,31 @@ import (
 // different metric backends to enable monitoring of Scalibr.
 type Collector interface {
 	AfterInodeVisited(path string)
-	AfterExtractorRun(name string, runtime time.Duration, err error)
+	AfterExtractorRun(pluginName string, extractorstats *AfterExtractorStats)
 	AfterDetectorRun(name string, runtime time.Duration, err error)
 	AfterScan(runtime time.Duration, status *plugin.ScanStatus)
+
+	// AfterResultsExported is called after results have been exported. destination should merely be
+	// a category of where the result was written to (e.g. 'file', 'http'), not the precise location.
+	AfterResultsExported(destination string, bytes int, err error)
+
+	// AfterFileRequired may be called by individual plugins after the
+	// `FileRequired` method is called on a file. This allows plugins to report
+	// why a certain file may have been skipped. Note that in general, extractor
+	// plugins will not record a metric if a file was skipped because it is deemed
+	// completely irrelevant (e.g. the Python extractor will not report that it
+	// skipped a JAR file).
+	AfterFileRequired(pluginName string, filestats *FileRequiredStats)
+
+	// AfterFileExtracted may be called by individual plugins after a file was seen in
+	// the `Extract` method, as opposed to `AfterExtractorRun`, which is called by
+	// the filesystem handling code. This allows plugins to report internal state
+	// for metric collection.
+	AfterFileExtracted(pluginName string, filestats *FileExtractedStats)
+
+	// MaxRSS is called when the scan is finished. It is used to report the maximum resident
+	// memory usage of the scan.
+	MaxRSS(maxRSS int64)
 }
 
 // NoopCollector implements Collector by doing nothing.
@@ -38,10 +60,22 @@ type NoopCollector struct{}
 func (c NoopCollector) AfterInodeVisited(path string) {}
 
 // AfterExtractorRun implements Collector by doing nothing.
-func (c NoopCollector) AfterExtractorRun(name string, runtime time.Duration, err error) {}
+func (c NoopCollector) AfterExtractorRun(pluginName string, extractorstats *AfterExtractorStats) {}
 
 // AfterDetectorRun implements Collector by doing nothing.
 func (c NoopCollector) AfterDetectorRun(name string, runtime time.Duration, err error) {}
 
 // AfterScan implements Collector by doing nothing.
 func (c NoopCollector) AfterScan(runtime time.Duration, status *plugin.ScanStatus) {}
+
+// AfterResultsExported implements Collector by doing nothing.
+func (c NoopCollector) AfterResultsExported(destination string, bytes int, err error) {}
+
+// AfterFileRequired implements Collector by doing nothing.
+func (c NoopCollector) AfterFileRequired(pluginName string, filestats *FileRequiredStats) {}
+
+// AfterFileExtracted implements Collector by doing nothing.
+func (c NoopCollector) AfterFileExtracted(pluginName string, filestats *FileExtractedStats) {}
+
+// MaxRSS implements Collector by doing nothing.
+func (c NoopCollector) MaxRSS(maxRSS int64) {}

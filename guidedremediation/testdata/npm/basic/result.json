@@ -1,0 +1,68 @@
+{
+  "ecosystem": "npm",
+  "strategy": "in-place",
+  "vulnerabilities": [
+    {
+      "id": "OSV-000-000",
+      "packages": [
+        {
+          "name": "baz",
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "OSV-000-000",
+      "packages": [
+        {
+          "name": "baz",
+          "version": "2.0.0"
+        }
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "packageUpdates": [
+        {
+          "name": "baz",
+          "versionFrom": "1.0.0",
+          "versionTo": "1.0.1",
+          "transitive": true
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-000",
+          "packages": [
+            {
+              "name": "baz",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "packageUpdates": [
+        {
+          "name": "baz",
+          "versionFrom": "2.0.0",
+          "versionTo": "2.0.1",
+          "transitive": true
+        }
+      ],
+      "fixed": [
+        {
+          "id": "OSV-000-000",
+          "packages": [
+            {
+              "name": "baz",
+              "version": "2.0.0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>cmake</id>
+    <version>4.1.1</version>
+    <title>CMake</title>
+    <authors>Andy Cedilnik, Bill Hoffman, Brad King, Ken Martin, Alexander Neundorf</authors>
+    <owners>chocolatey-community, dtgm</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://gitlab.kitware.com/cmake/cmake/blob/master/Copyright.txt</licenseUrl>
+    <projectUrl>https://www.cmake.org/</projectUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/chocolatey-community/chocolatey-packages@5633c4413a8b71f75f379190546a0047c0e0b12b/icons/cmake.png</iconUrl>
+    <description>CMake is an open-source, cross-platform family of tools designed to build, test and package software. CMake is used to control the software compilation process using simple platform and compiler independent configuration files, and generate native makefiles and workspaces that can be used in the compiler environment of your choice. The suite of CMake tools were created by Kitware in response to the need for a powerful, cross-platform build environment for open-source projects such as ITK and VTK.
+
+[Development](https://www.cmake.org/developer-resources/)
+
+#### MSI Properties
+
+`ADD_CMAKE_TO_PATH`
+- `0` = Do not add CMake to PATH
+- `1` = Add CMake to system PATH for __all users__ (default)
+
+`DESKTOP_SHORTCUT_REQUESTED`
+- `0` = Do not create desktop icon (default)
+- `1` = Create CMake desktop icon
+
+`ALLUSERS`
+- `0` = Install for the current user only
+- `1` = Install for all users (default)
+
+For example: `choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --apply-install-arguments-to-dependencies`
+
+## Notes
+
+- **If the package is out of date please check [Version History](#versionhistory) for the latest submitted version. If you have a question, please ask it in [Chocolatey Community Package Discussions](https://github.com/chocolatey-community/chocolatey-packages/discussions) or raise an issue on the [Chocolatey Community Packages Repository](https://github.com/chocolatey-community/chocolatey-packages/issues) if you have problems with the package. Disqus comments will generally not be responded to.**</description>
+    <summary>Cross-platform, open-source build system including CMake, CTest, CPack, and CMake-GUI</summary>
+    <releaseNotes>#### Program
+* [News](https://blog.kitware.com/tag/CMake/)
+* [Changelog](https://www.cmake.org/download/#latest)</releaseNotes>
+    <copyright>© 2000 Kitware Inc</copyright>
+    <projectSourceUrl>https://gitlab.kitware.com/cmake/cmake</projectSourceUrl>
+    <packageSourceUrl>https://github.com/chocolatey-community/chocolatey-packages/tree/master/automatic/cmake</packageSourceUrl>
+    <docsUrl>https://www.cmake.org/documentation/</docsUrl>
+    <mailingListUrl>https://cmake.org/mailing-lists/</mailingListUrl>
+    <bugTrackerUrl>https://gitlab.kitware.com/cmake/cmake/issues</bugTrackerUrl>
+    <dependencies>
+      <dependency id="cmake.install" version="[4.1.1]" />
+    </dependencies>
+  </metadata>
+</package>

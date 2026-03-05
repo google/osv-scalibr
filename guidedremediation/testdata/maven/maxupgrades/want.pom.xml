@@ -1,0 +1,29 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>basic</groupId>
+  <artifactId>basic</artifactId>
+  <version>1</version>
+
+  <dependencies>
+    <dependency>
+      <groupId>pkg</groupId>
+      <artifactId>b</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>pkg</groupId>
+      <artifactId>d</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>pkg</groupId>
+        <artifactId>a</artifactId>
+        <version>1.1.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>

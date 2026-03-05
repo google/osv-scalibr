@@ -1,0 +1,23 @@
+layers:
+  # Add foo.txt lockfile
+  - files:
+      foo.txt:
+        # With the package foo
+        - foo
+      bar.txt:
+        - bar
+  # Delete the bar lockfile
+  - files:
+      ~bar.txt:
+  - files:
+      baz.txt:
+        - baz
+      # Readd bar
+  - files:
+      bar.txt:
+        - bar
+  # Edit the same file in place
+  - files:
+      foo.txt:
+        - foo
+        - foo2

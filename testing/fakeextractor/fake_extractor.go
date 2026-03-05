@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,37 +13,46 @@
 // limitations under the License.
 
 // Package fakeextractor provides a Extractor implementation to be used in tests.
+//
+//nolint:plugger // This package contains test only mocks
 package fakeextractor
 
 import (
 	"context"
 	"errors"
-	"io/fs"
+	"path/filepath"
 
-	scalibrextractor "github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/purl"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/plugin"
 )
 
-// NamesErr is a list of Inventory names and an error.
+// NamesErr is a list of Package names and an error.
 type NamesErr struct {
 	Names []string
 	Err   error
 }
 
-// extractor is an Extractor implementation to be used in tests.
-type extractor struct {
+// fakeExtractor is an Extractor implementation to be used in tests.
+type fakeExtractor struct {
 	name           string
 	version        int
 	requiredFiles  map[string]bool
 	pathToNamesErr map[string]NamesErr
+	dirExtractor   bool
 }
 
-// New returns a fake extractor.
-//
-// The extractor returns FileRequired(path) = true for any path in requiredFiles.
-// The extractor returns the inventory and error from pathToNamesErr given the same path to Extract(...).
-func New(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) scalibrextractor.InventoryExtractor {
+// AllowUnexported is a utility function to be used with cmp.Diff to
+// compare structs that contain the fake extractor.
+var AllowUnexported = cmp.AllowUnexported(fakeExtractor{})
 
+// New returns a fake fakeExtractor.
+//
+// The fakeExtractor returns FileRequired(path) = true for any path in requiredFiles.
+// The fakeExtractor returns the package and error from pathToNamesErr given the same path to Extract(...).
+func New(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) filesystem.Extractor {
 	rfs := map[string]bool{}
 	for _, path := range requiredFiles {
 		rfs[path] = true
@@ -54,60 +63,67 @@ func New(name string, version int, requiredFiles []string, pathToNamesErr map[st
 		pathToNamesErr = map[string]NamesErr{}
 	}
 
-	return &extractor{
+	return &fakeExtractor{
 		name:           name,
 		version:        version,
 		requiredFiles:  rfs,
 		pathToNamesErr: pathToNamesErr,
+		dirExtractor:   false,
 	}
 }
 
+// NewDirExtractor returns a fake fakeExtractor designed for extracting directories.
+//
+// The fakeExtractor returns FileRequired(path) = true for any path in requiredFiles.
+// The fakeExtractor returns the package and error from pathToNamesErr given the same path to Extract(...).
+func NewDirExtractor(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr) filesystem.Extractor {
+	ext := New(name, version, requiredFiles, pathToNamesErr).(*fakeExtractor)
+	ext.dirExtractor = true
+	return ext
+}
+
 // Name returns the extractor's name.
-func (e *extractor) Name() string { return e.name }
+func (e *fakeExtractor) Name() string { return e.name }
 
 // Version returns the extractor's version.
-func (e *extractor) Version() int { return e.version }
+func (e *fakeExtractor) Version() int { return e.version }
+
+// Requirements returns the extractor's requirements.
+func (e *fakeExtractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{
+		ExtractFromDirs: e.dirExtractor,
+	}
+}
 
 // FileRequired should return true if the file described by path and mode is
 // relevant for the extractor.
 //
 // FileRequired returns true if the path was in requiredFiles and its value is true during
 // construction in New(..., requiredFiles, ...) and false otherwise.
-func (e *extractor) FileRequired(path string, mode fs.FileMode) bool {
-	return e.requiredFiles[path]
+// Note: because mapfs forces all paths to slash, we have to align with it here.
+func (e *fakeExtractor) FileRequired(api filesystem.FileAPI) bool {
+	return e.requiredFiles[filepath.ToSlash(api.Path())]
 }
 
-// Extract extracts inventory data relevant for the extractor from a given file.
+// Extract extracts package data relevant for the extractor from a given file.
 //
-// Extract returns the inventory list and error associated with input.Path from the pathToInventoryErr map used
-// during construction in NewExtractor(..., pathToInventoryErr, ...).
-func (e *extractor) Extract(ctx context.Context, input *scalibrextractor.ScanInput) ([]*scalibrextractor.Inventory, error) {
-
-	namesErr, ok := e.pathToNamesErr[input.Path]
+// Extract returns the package list and error associated with input.Path from the pathToPackageErr map used
+// during construction in NewExtractor(..., pathToPackageErr, ...).
+// Note: because mapfs forces all paths to slash, we have to align with it here.
+func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	path := filepath.ToSlash(input.Path)
+	namesErr, ok := e.pathToNamesErr[path]
 	if !ok {
-		return nil, errors.New("unrecognized path")
+		return inventory.Inventory{}, errors.New("unrecognized path")
 	}
 
-	invs := []*scalibrextractor.Inventory{}
+	pkgs := []*extractor.Package{}
 	for _, name := range namesErr.Names {
-		invs = append(invs, &scalibrextractor.Inventory{
+		pkgs = append(pkgs, &extractor.Package{
 			Name:      name,
-			Locations: []string{input.Path},
-			Extractor: e.Name(),
+			Locations: []string{path},
 		})
 	}
 
-	return invs, namesErr.Err
+	return inventory.Inventory{Packages: pkgs}, namesErr.Err
 }
-
-// ToPURL returns a fake PURL based on the inventory name+version.
-func (e *extractor) ToPURL(i *scalibrextractor.Inventory) (*purl.PackageURL, error) {
-	return &purl.PackageURL{
-		Type:    purl.TypePyPi,
-		Name:    i.Name,
-		Version: i.Version,
-	}, nil
-}
-
-// ToCPEs always returns an empty array.
-func (e *extractor) ToCPEs(i *scalibrextractor.Inventory) ([]string, error) { return []string{}, nil }

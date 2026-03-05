@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,131 @@ package plugin_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
+
+type fakePlugin struct {
+	reqs *plugin.Capabilities
+}
+
+func (fakePlugin) Name() string                         { return "fake-plugin" }
+func (fakePlugin) Version() int                         { return 0 }
+func (p fakePlugin) Requirements() *plugin.Capabilities { return p.reqs }
+
+func TestValidateRequirements(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		pluginReqs *plugin.Capabilities
+		capabs     *plugin.Capabilities
+		wantErr    error
+	}{
+		{
+			desc:       "No requirements",
+			pluginReqs: &plugin.Capabilities{},
+			capabs:     &plugin.Capabilities{},
+			wantErr:    nil,
+		},
+		{
+			desc:       "All requirements satisfied",
+			pluginReqs: &plugin.Capabilities{Network: plugin.NetworkOnline, DirectFS: true},
+			capabs:     &plugin.Capabilities{Network: plugin.NetworkOnline, DirectFS: true},
+			wantErr:    nil,
+		},
+		{
+			desc:       "One requirement not satisfied",
+			pluginReqs: &plugin.Capabilities{Network: plugin.NetworkOnline, DirectFS: true},
+			capabs:     &plugin.Capabilities{Network: plugin.NetworkOnline, DirectFS: false},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "No requirement satisfied",
+			pluginReqs: &plugin.Capabilities{Network: plugin.NetworkOnline, DirectFS: true},
+			capabs:     &plugin.Capabilities{Network: plugin.NetworkOffline, DirectFS: false},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "Any network 1",
+			pluginReqs: &plugin.Capabilities{Network: plugin.NetworkAny},
+			capabs:     &plugin.Capabilities{Network: plugin.NetworkOffline},
+			wantErr:    nil,
+		},
+		{
+			desc:       "Any network 2",
+			pluginReqs: &plugin.Capabilities{Network: plugin.NetworkAny},
+			capabs:     &plugin.Capabilities{Network: plugin.NetworkOnline},
+			wantErr:    nil,
+		},
+		{
+			desc:       "Wrong OS",
+			pluginReqs: &plugin.Capabilities{OS: plugin.OSLinux},
+			capabs:     &plugin.Capabilities{OS: plugin.OSWindows},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "Unix OS not satisfied",
+			pluginReqs: &plugin.Capabilities{OS: plugin.OSUnix},
+			capabs:     &plugin.Capabilities{OS: plugin.OSWindows},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "Unix OS satisfied",
+			pluginReqs: &plugin.Capabilities{OS: plugin.OSUnix},
+			capabs:     &plugin.Capabilities{OS: plugin.OSMac},
+			wantErr:    nil,
+		},
+		{
+			desc:       "Unsafe plugins not allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: false},
+			wantErr:    cmpopts.AnyError,
+		},
+		{
+			desc:       "Unsafe plugins allowed",
+			pluginReqs: &plugin.Capabilities{AllowUnsafePlugins: true},
+			capabs:     &plugin.Capabilities{AllowUnsafePlugins: true},
+			wantErr:    nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			p := fakePlugin{reqs: tc.pluginReqs}
+			err := plugin.ValidateRequirements(p, tc.capabs)
+			if !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
+				t.Fatalf("plugin.ValidateRequirements(%v, %v) got error: %v, want: %v\n", tc.pluginReqs, tc.capabs, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestFilterByCapabilities(t *testing.T) {
+	capab := &plugin.Capabilities{OS: plugin.OSMac}
+	cfg := &cpb.PluginConfig{}
+	snap, err := snap.New(cfg)
+	if err != nil {
+		t.Fatalf("snap.New(%v) failed: %v", cfg, err)
+	}
+	homebrew, err := homebrew.New(cfg)
+	if err != nil {
+		t.Fatalf("homebrew.New(%v) failed: %v", cfg, err)
+	}
+	pls := []plugin.Plugin{snap, homebrew}
+	got := plugin.FilterByCapabilities(pls, capab)
+	if len(got) != 1 {
+		t.Fatalf("plugin.FilterCapabilities(%v, %v): want 1 plugin, got %d", pls, capab, len(got))
+	}
+	gotName := got[0].Name()
+	wantName := "os/homebrew" // os/snap is for Linux only
+	if gotName != wantName {
+		t.Fatalf("plugin.FilterCapabilities(%v, %v): want plugin %q, got %q", pls, capab, wantName, gotName)
+	}
+}
 
 func TestString(t *testing.T) {
 	testCases := []struct {
@@ -27,22 +150,22 @@ func TestString(t *testing.T) {
 		want string
 	}{
 		{
-			desc: "Successful scan",
+			desc: "Successful_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
 			want: "SUCCEEDED",
 		},
 		{
-			desc: "Partially successful scan",
+			desc: "Partially_successful_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusPartiallySucceeded},
 			want: "PARTIALLY_SUCCEEDED",
 		},
 		{
-			desc: "Failed scan",
+			desc: "Failed_scan",
 			s:    &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "failure"},
 			want: "FAILED: failure",
 		},
 		{
-			desc: "Unspecified status",
+			desc: "Unspecified_status",
 			s:    &plugin.ScanStatus{},
 			want: "UNSPECIFIED",
 		},
@@ -53,6 +176,183 @@ func TestString(t *testing.T) {
 			got := tc.s.String()
 			if got != tc.want {
 				t.Errorf("%v.String(): Got %s, want %s", tc.s, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDedupeStatuses(t *testing.T) {
+	testCases := []struct {
+		desc string
+		s    []*plugin.Status
+		want []*plugin.Status
+	}{
+		{
+			desc: "Separate_plugins",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name:   "plugin2",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name:   "plugin2",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+		},
+		{
+			desc: "Both_successful",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+		},
+		{
+			desc: "One_success_one_partial_success",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusPartiallySucceeded,
+						FailureReason: "reason",
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusPartiallySucceeded,
+						FailureReason: "reason",
+					},
+				},
+			},
+		},
+		{
+			desc: "One_success_one_failure",
+			s: []*plugin.Status{
+				{
+					Name:   "plugin1",
+					Status: &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason",
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason",
+					},
+				},
+			},
+		},
+		{
+			desc: "One_partial_success_one_failure",
+			s: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusPartiallySucceeded,
+						FailureReason: "reason1",
+					},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason2",
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "reason1\nreason2",
+					},
+				},
+			},
+		},
+		{
+			desc: "File_errors_combined",
+			s: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+						FileErrors: []*plugin.FileError{
+							{FilePath: "file1", ErrorMessage: "msg1"},
+						},
+					},
+				},
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+						FileErrors: []*plugin.FileError{
+							{FilePath: "file2", ErrorMessage: "msg2"},
+						},
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name: "plugin1",
+					Status: &plugin.ScanStatus{
+						Status:        plugin.ScanStatusFailed,
+						FailureReason: "encountered 2 error(s) while running plugin; check file-specific errors for details",
+						FileErrors: []*plugin.FileError{
+							{FilePath: "file1", ErrorMessage: "msg1"},
+							{FilePath: "file2", ErrorMessage: "msg2"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := plugin.DedupeStatuses(tc.s)
+			sort := func(a, b *plugin.Status) bool { return a.Name < b.Name }
+			if diff := cmp.Diff(tc.want, got, cmpopts.SortSlices(sort)); diff != "" {
+				t.Fatalf("plugin.DedupeStatuses(%v) (-want +got):\n%s", tc.s, diff)
 			}
 		})
 	}

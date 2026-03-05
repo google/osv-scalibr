@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,18 +17,19 @@ package spdx_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 	"github.com/google/osv-scalibr/binary/spdx"
+	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 )
 
 var doc = &v2_3.Document{
 	SPDXVersion:    "SPDX-2.3",
 	DataLicense:    "CC0-1.0",
-	SPDXIdentifier: "Document",
+	SPDXIdentifier: "DOCUMENT",
 	DocumentName:   "Document name",
 	CreationInfo: &v2_3.CreationInfo{
 		Created: "2006-01-02T15:04:05Z",
@@ -75,8 +76,13 @@ func TestWrite23(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error while reading %s: %v", tc.want, err)
 			}
-			wantStr := strings.Trim(string(want), "\n")
-			gotStr := strings.Trim(string(got), "\n")
+			wantStr := strings.TrimSpace(string(want))
+			gotStr := strings.TrimSpace(string(got))
+			if runtime.GOOS == "windows" {
+				wantStr = strings.ReplaceAll(wantStr, "\r", "")
+				gotStr = strings.ReplaceAll(gotStr, "\r", "")
+			}
+
 			if diff := cmp.Diff(wantStr, gotStr); diff != "" {
 				t.Errorf("spdx.Write23(%v, %s, %s) produced unexpected results, diff (-want +got):\n%s", doc, fullPath, tc.format, diff)
 			}

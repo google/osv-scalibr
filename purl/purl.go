@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,17 +33,21 @@ const (
 	TypeApk = "apk"
 	// TypeBitbucket is a pkg:bitbucket purl.
 	TypeBitbucket = "bitbucket"
+	// TypeBrew is a pkg:brew purl.
+	TypeBrew = "brew"
 	// TypeCocoapods is a pkg:cocoapods purl.
 	TypeCocoapods = "cocoapods"
 	// TypeCargo is a pkg:cargo purl.
 	TypeCargo = "cargo"
+	// TypeJulia is a pkg:julia purl.
+	TypeJulia = "julia"
 	// TypeComposer is a pkg:composer purl.
 	TypeComposer = "composer"
 	// TypeConan is a pkg:conan purl.
 	TypeConan = "conan"
 	// TypeConda is a pkg:conda purl.
 	TypeConda = "conda"
-	// COS is the pkg:cos purl
+	// TypeCOS is the pkg:cos purl
 	TypeCOS = "cos"
 	// TypeCran is a pkg:cran purl.
 	TypeCran = "cran"
@@ -51,6 +55,10 @@ const (
 	TypeDebian = "deb"
 	// TypeDocker is a pkg:docker purl.
 	TypeDocker = "docker"
+	// TypeK8s is a pkg:k8s purl.
+	TypeK8s = "k8s"
+	// TypeFlatpak is a pkg:flatpak purl.
+	TypeFlatpak = "flatpak"
 	// TypeGem is a pkg:gem purl.
 	TypeGem = "gem"
 	// TypeGeneric is a pkg:generic purl.
@@ -61,24 +69,64 @@ const (
 	TypeGolang = "golang"
 	// TypeHackage is a pkg:hackage purl.
 	TypeHackage = "hackage"
+	// TypeHaskell is a pkg:haskell purl.
+	TypeHaskell = "haskell"
+	// TypeMacApps is a pkg:macapps purl.
+	TypeMacApps = "macapps"
 	// TypeHex is a pkg:hex purl.
 	TypeHex = "hex"
 	// TypeMaven is a pkg:maven purl.
 	TypeMaven = "maven"
+	// TypeNix is a pkg:nix purl.
+	TypeNix = "nix"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
+	// TypeJSR is a pkg:jsr purl.
+	TypeJSR = "jsr"
+	// TypePacman is a pkg:pacman purl.
+	TypePacman = "pacman"
 	// TypeNuget is a pkg:nuget purl.
 	TypeNuget = "nuget"
 	// TypeOCI is a pkg:oci purl
 	TypeOCI = "oci"
+	// TypeOpam is a pkg:opam purl.
+	TypeOpam = "opam"
+	// TypeOpkg is a pkg:opkg purl.
+	TypeOpkg = "opkg"
 	// TypePub is a pkg:pub purl.
 	TypePub = "pub"
+	// TypePortage is a pkg:portage purl.
+	TypePortage = "portage"
 	// TypePyPi is a pkg:pypi purl.
 	TypePyPi = "pypi"
 	// TypeRPM is a pkg:rpm purl.
 	TypeRPM = "rpm"
+	// TypeSnap is a pkg:snap purl.
+	TypeSnap = "snap"
 	// TypeSwift is pkg:swift purl
 	TypeSwift = "swift"
+	// TypeGooget is pkg:googet purl
+	TypeGooget = "googet"
+	// TypeWordpress is pkg:wordpress purl
+	TypeWordpress = "wordpress"
+	// TypeAsdf is pkg:asdf purl
+	TypeAsdf = "asdf"
+	// TypeMise is pkg:mise purl
+	TypeMise = "mise"
+	// TypeMacports is pkg:macports purl
+	TypeMacports = "macports"
+	// TypeWinget is pkg:winget purl
+	TypeWinget = "winget"
+	// TypeNim is pkg:nim purl
+	TypeNim = "nim"
+	// TypeLua is pkg:lua purl
+	TypeLua = "lua"
+	// TypeChocolatey is pkg:chocolatey purl
+	TypeChocolatey = "chocolatey"
+	// TypeSpack is pkg:spack purl
+	TypeSpack = "spack"
+	// TypeCPAN is pkg:cpan purl
+	TypeCPAN = "cpan"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -102,6 +150,13 @@ type Qualifiers packageurl.Qualifiers
 // deterministic qualifier order (despite maps not providing any iteration order
 // guarantees) the returned Qualifiers are sorted in increasing order of key.
 func QualifiersFromMap(mm map[string]string) Qualifiers {
+	for key, value := range mm {
+		// Empty value strings are invalid qualifiers according to the purl spec
+		// so we filter them out.
+		if value == "" {
+			delete(mm, key)
+		}
+	}
 	return Qualifiers(packageurl.QualifiersFromMap(mm))
 }
 
@@ -138,32 +193,52 @@ func FromString(purl string) (PackageURL, error) {
 
 func validType(t string) bool {
 	types := map[string]bool{
-		TypeAlpm:      true,
-		TypeApk:       true,
-		TypeBitbucket: true,
-		TypeCargo:     true,
-		TypeCocoapods: true,
-		TypeComposer:  true,
-		TypeConan:     true,
-		TypeConda:     true,
-		TypeCOS:       true,
-		TypeCran:      true,
-		TypeDebian:    true,
-		TypeDocker:    true,
-		TypeGem:       true,
-		TypeGeneric:   true,
-		TypeGithub:    true,
-		TypeGolang:    true,
-		TypeHackage:   true,
-		TypeHex:       true,
-		TypeMaven:     true,
-		TypeNPM:       true,
-		TypeNuget:     true,
-		TypeOCI:       true,
-		TypePub:       true,
-		TypePyPi:      true,
-		TypeRPM:       true,
-		TypeSwift:     true,
+		TypeAlpm:       true,
+		TypeApk:        true,
+		TypeBitbucket:  true,
+		TypeBrew:       true,
+		TypeCargo:      true,
+		TypeCocoapods:  true,
+		TypeComposer:   true,
+		TypeConan:      true,
+		TypeConda:      true,
+		TypeCOS:        true,
+		TypeCran:       true,
+		TypeDebian:     true,
+		TypePacman:     true,
+		TypeDocker:     true,
+		TypeFlatpak:    true,
+		TypeGem:        true,
+		TypeGeneric:    true,
+		TypeGithub:     true,
+		TypeGolang:     true,
+		TypeHackage:    true,
+		TypeHaskell:    true,
+		TypeNim:        true,
+		TypeLua:        true,
+		TypeHex:        true,
+		TypeMacApps:    true,
+		TypeMaven:      true,
+		TypeNix:        true,
+		TypeNPM:        true,
+		TypeJSR:        true,
+		TypeNuget:      true,
+		TypeOCI:        true,
+		TypeOpam:       true,
+		TypeOpkg:       true,
+		TypePub:        true,
+		TypePortage:    true,
+		TypePyPi:       true,
+		TypeRPM:        true,
+		TypeSwift:      true,
+		TypeGooget:     true,
+		TypeWordpress:  true,
+		TypeAsdf:       true,
+		TypeMacports:   true,
+		TypeWinget:     true,
+		TypeChocolatey: true,
+		TypeMise:       true,
+		TypeCPAN:       true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case
@@ -174,10 +249,15 @@ func validType(t string) bool {
 
 // Qualifier names.
 const (
-	Distro = "distro"
-	Epoch  = "epoch"
-	Arch   = "arch"
-	Origin = "origin"
-	Source = "source"
-	SourceRPM = "sourcerpm"
+	Distro              = "distro"
+	Epoch               = "epoch"
+	Arch                = "arch"
+	Origin              = "origin"
+	Source              = "source"
+	SourceVersion       = "sourceversion"
+	SourceRPM           = "sourcerpm"
+	BuildNumber         = "buildnumber"
+	PackageDependencies = "packagedependencies"
+	Classifier          = "classifier" // Maven specific qualifier
+	Type                = "type"       // Maven specific qualifier
 )

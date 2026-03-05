@@ -1,0 +1,17 @@
+{
+    "version": "3.1.12",
+    "build_string": "py39hf3db000",
+    "build_number": 1,
+    "channel": "https://repo.anaconda.com/pkgs/main",
+    "subdir": "linux-64",
+    "depends": [
+      "jupyterlab_server >=2.3.0,<3.0a0",
+      "nbclassic >=0.2.8",
+      "python >=3.9,<3.10.0a0",
+      "tornado >=6.1"
+    ],
+    "license": "BSD-3-Clause",
+    "size": 38124560,
+    "timestamp": 1632188200000,
+    "md5": "d3f84c3f9b3e0db65cb2ed8c9b50c2b1"
+  }

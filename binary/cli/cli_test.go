@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,17 +15,22 @@
 package cli_test
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/binary/cli"
-	"github.com/google/osv-scalibr/detector/govulncheck/binary"
-	"github.com/google/osv-scalibr/plugin"
 	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/osv-scalibr/binary/cli"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	"github.com/google/osv-scalibr/plugin"
+	"google.golang.org/protobuf/testing/protocmp"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestValidateFlags(t *testing.T) {
@@ -40,17 +45,18 @@ func TestValidateFlags(t *testing.T) {
 				Root:            "/",
 				ResultFile:      "result.textproto",
 				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
-				ExtractorsToRun: "java,python",
-				DetectorsToRun:  "cve,cis",
-				DirsToSkip:      "path1,path2",
+				ExtractorsToRun: []string{"java,python", "javascript"},
+				DetectorsToRun:  []string{"weakcredentials,cis"},
+				PluginsToRun:    []string{"vex"},
+				DirsToSkip:      []string{"path1,path2", "path3"},
 				SPDXCreators:    "Tool:SCALIBR,Organization:Google",
 			},
 			wantErr: nil,
 		},
 		{
-			desc:    "Root missing",
-			flags:   &cli.Flags{ResultFile: "result.textproto"},
-			wantErr: cmpopts.AnyError,
+			desc:    "Only --version set",
+			flags:   &cli.Flags{PrintVersion: true},
+			wantErr: nil,
 		},
 		{
 			desc:    "Either output flag missing",
@@ -103,7 +109,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
-				ExtractorsToRun: ",python",
+				ExtractorsToRun: []string{",python"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -112,7 +118,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
-				ExtractorsToRun: "asdf",
+				ExtractorsToRun: []string{"asdf"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -121,7 +127,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:           "/",
 				ResultFile:     "result.textproto",
-				DetectorsToRun: "cve,",
+				DetectorsToRun: []string{"cve,"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -130,26 +136,35 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:           "/",
 				ResultFile:     "result.textproto",
-				DetectorsToRun: "asdf",
+				DetectorsToRun: []string{"asdf"},
 			},
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "Detector with missing extractor dependency",
+			desc: "Detector with missing extractor dependency (enabled automatically)",
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
-				ExtractorsToRun: "python,javascript",
-				DetectorsToRun:  "govulncheck", // Needs the Go binary extractor.
+				ExtractorsToRun: []string{"python,javascript"},
+				DetectorsToRun:  []string{"govulncheck"}, // Needs the Go binary extractor.
 			},
-			wantErr: cmpopts.AnyError,
+			wantErr: nil,
 		},
 		{
 			desc: "Invalid paths to skip",
 			flags: &cli.Flags{
 				Root:       "/",
 				ResultFile: "result.textproto",
-				DirsToSkip: "path1,,path3",
+				DirsToSkip: []string{"path1,,path3"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Invalid glob for skipping directories",
+			flags: &cli.Flags{
+				Root:        "/",
+				ResultFile:  "result.textproto",
+				SkipDirGlob: "[",
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -158,6 +173,75 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:         "/",
 				SPDXCreators: "invalid:creator:format",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Image Platform without Remote Image",
+			flags: &cli.Flags{
+				ImagePlatform: "linux/amd64",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Image Platform with Remote Image",
+			flags: &cli.Flags{
+				RemoteImage:   "docker",
+				ImagePlatform: "linux/amd64",
+				ResultFile:    "result.textproto",
+			},
+			wantErr: nil,
+		},
+		{
+			desc: "Remote Image with Image Tarball",
+			flags: &cli.Flags{
+				RemoteImage:  "docker",
+				ImageTarball: "image.tar",
+				ResultFile:   "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "Local Docker Image",
+			flags: &cli.Flags{
+				ImageLocal: "nginx:latest",
+				ResultFile: "result.textproto",
+			},
+			wantErr: nil,
+		},
+		{
+			desc: "Local Image with Image Tarball",
+			flags: &cli.Flags{
+				ImageLocal:   "nginx:latest",
+				ImageTarball: "image.tar",
+				ResultFile:   "result.textproto",
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "valid extractor override",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+			},
+			wantErr: nil,
+		},
+		{
+			desc: "extractor override invalid format",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg"},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "extractor override invalid glob",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:["},
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -171,34 +255,106 @@ func TestValidateFlags(t *testing.T) {
 	}
 }
 
-func TestGetScanConfig_DirsToSkip(t *testing.T) {
+func TestGetScanConfig_ScanRoots(t *testing.T) {
 	for _, tc := range []struct {
-		desc           string
-		flags          *cli.Flags
-		wantDirsToSkip []string
+		desc          string
+		flags         map[string]*cli.Flags
+		wantScanRoots map[string][]string
 	}{
 		{
-			desc: "Skip default dirs",
-			flags: &cli.Flags{
-				Root: "/",
+			desc: "Default scan roots",
+			flags: map[string]*cli.Flags{
+				"darwin":  {},
+				"linux":   {},
+				"windows": {},
 			},
-			wantDirsToSkip: []string{"dev", "proc", "sys"},
+			wantScanRoots: map[string][]string{
+				"darwin":  {"/"},
+				"linux":   {"/"},
+				"windows": {"C:\\"},
+			},
 		},
 		{
-			desc: "Skip additional dirs",
-			flags: &cli.Flags{
-				Root:       "/",
-				DirsToSkip: "/boot,/mnt",
+			desc: "Scan root are provided and used",
+			flags: map[string]*cli.Flags{
+				"darwin":  {Root: "/root"},
+				"linux":   {Root: "/root"},
+				"windows": {Root: "C:\\myroot"},
 			},
-			wantDirsToSkip: []string{"dev", "proc", "sys", "boot", "mnt"},
+			wantScanRoots: map[string][]string{
+				"darwin":  {"/root"},
+				"linux":   {"/root"},
+				"windows": {"C:\\myroot"},
+			},
 		},
 		{
-			desc: "Ignore paths outside root",
-			flags: &cli.Flags{
-				Root:       "/root",
-				DirsToSkip: "/root/dir1,/dir2",
+			desc: "Scan root is null if image tarball is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {ImageTarball: "image.tar"},
+				"linux":   {ImageTarball: "image.tar"},
+				"windows": {ImageTarball: "image.tar"},
 			},
-			wantDirsToSkip: []string{"dir1"},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
+		{
+			desc: "Scan root is null if local image is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {ImageLocal: "nginx:latest"},
+				"linux":   {ImageLocal: "nginx:latest"},
+				"windows": {ImageLocal: "nginx:latest"},
+			},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			wantScanRoots, ok := tc.wantScanRoots[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			flags, ok := tc.flags[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			cfg, err := flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", flags, err)
+			}
+			var gotScanRoots []string
+			for _, r := range cfg.ScanRoots {
+				gotScanRoots = append(gotScanRoots, r.Path)
+			}
+			if diff := cmp.Diff(wantScanRoots, gotScanRoots); diff != "" {
+				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_NetworkCapabilities(t *testing.T) {
+	for _, tc := range []struct {
+		desc        string
+		flags       cli.Flags
+		wantNetwork plugin.Network
+	}{
+		{
+			desc:        "online_if_nothing_set",
+			flags:       cli.Flags{},
+			wantNetwork: plugin.NetworkOnline,
+		},
+		{
+			desc:        "offline_if_offline_flag_set",
+			flags:       cli.Flags{Offline: true},
+			wantNetwork: plugin.NetworkOffline,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -206,8 +362,123 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 			if err != nil {
 				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
 			}
-			if diff := cmp.Diff(tc.wantDirsToSkip, cfg.DirsToSkip); diff != "" {
-				t.Errorf("%v.GetScanConfig() dirsToSkip got diff (-want +got):\n%s", tc.flags, diff)
+			if tc.wantNetwork != cfg.Capabilities.Network {
+				t.Errorf("%v.GetScanConfig(): want %v, got %v", tc.flags, tc.wantNetwork, cfg.Capabilities.Network)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_AllowUnsafePlugins(t *testing.T) {
+	for _, tc := range []struct {
+		desc                   string
+		flags                  cli.Flags
+		wantAllowUnsafePlugins bool
+	}{
+		{
+			desc:                   "false_if_nothing_set",
+			flags:                  cli.Flags{},
+			wantAllowUnsafePlugins: false,
+		},
+		{
+			desc:                   "true_if_set_to_true",
+			flags:                  cli.Flags{AllowUnsafePlugins: true},
+			wantAllowUnsafePlugins: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if tc.wantAllowUnsafePlugins != cfg.Capabilities.AllowUnsafePlugins {
+				t.Errorf("%v.GetScanConfig(): want %v, got %v", tc.flags, tc.wantAllowUnsafePlugins, cfg.Capabilities.AllowUnsafePlugins)
+			}
+		})
+	}
+}
+
+func TestGetScanConfig_DirsToSkip(t *testing.T) {
+	for _, tc := range []struct {
+		desc           string
+		flags          map[string]*cli.Flags
+		wantDirsToSkip map[string][]string
+	}{
+		{
+			desc: "Skip default dirs",
+			flags: map[string]*cli.Flags{
+				"darwin":  {Root: "/"},
+				"linux":   {Root: "/"},
+				"windows": {Root: "C:\\"},
+			},
+			wantDirsToSkip: map[string][]string{
+				"darwin":  {"/dev", "/proc", "/sys"},
+				"linux":   {"/dev", "/proc", "/sys"},
+				"windows": {"C:\\Windows"},
+			},
+		},
+		{
+			desc: "Skip additional dirs",
+			flags: map[string]*cli.Flags{
+				"darwin": {
+					Root:       "/",
+					DirsToSkip: []string{"/boot,/mnt,C:\\boot", "C:\\mnt"},
+				},
+				"linux": {
+					Root:       "/",
+					DirsToSkip: []string{"/boot,/mnt", "C:\\boot,C:\\mnt"},
+				},
+				"windows": {
+					Root:       "C:\\",
+					DirsToSkip: []string{"C:\\boot,C:\\mnt"},
+				},
+			},
+			wantDirsToSkip: map[string][]string{
+				"darwin":  {"/dev", "/proc", "/sys", "/boot", "/mnt"},
+				"linux":   {"/dev", "/proc", "/sys", "/boot", "/mnt"},
+				"windows": {"C:\\Windows", "C:\\boot", "C:\\mnt"},
+			},
+		},
+		{
+			desc: "Ignore paths outside root",
+			flags: map[string]*cli.Flags{
+				"darwin": {
+					Root:       "/root",
+					DirsToSkip: []string{"/root/dir1,/dir2"},
+				},
+				"linux": {
+					Root:       "/root",
+					DirsToSkip: []string{"/root/dir1,/dir2"},
+				},
+				"windows": {
+					Root:       "C:\\root",
+					DirsToSkip: []string{"C:\\root\\dir1,c:\\dir2"},
+				},
+			},
+			wantDirsToSkip: map[string][]string{
+				"darwin":  {"/root/dir1"},
+				"linux":   {"/root/dir1"},
+				"windows": {"C:\\root\\dir1"},
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			wantDirsToSkip, ok := tc.wantDirsToSkip[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			flags, ok := tc.flags[runtime.GOOS]
+			if !ok {
+				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			cfg, err := flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", flags, err)
+			}
+			if diff := cmp.Diff(wantDirsToSkip, cfg.DirsToSkip); diff != "" {
+				t.Errorf("%v.GetScanConfig() dirsToSkip got diff (-want +got):\n%s", flags, diff)
 			}
 		})
 	}
@@ -253,24 +524,44 @@ func TestGetScanConfig_SkipDirRegex(t *testing.T) {
 
 func TestGetScanConfig_CreatePlugins(t *testing.T) {
 	for _, tc := range []struct {
-		desc               string
-		flags              *cli.Flags
-		wantExtractorCount int
-		wantDetectorCount  int
+		desc            string
+		flags           *cli.Flags
+		wantPluginCount int
 	}{
 		{
 			desc: "Create an extractor",
 			flags: &cli.Flags{
-				ExtractorsToRun: "python/wheelegg",
+				PluginsToRun: []string{"python/wheelegg"},
 			},
-			wantExtractorCount: 1,
+			wantPluginCount: 1,
 		},
 		{
-			desc: "Create a detector",
+			desc: "Create an extractor - legacy field",
 			flags: &cli.Flags{
-				DetectorsToRun: "cis",
+				ExtractorsToRun: []string{"python/wheelegg"},
 			},
-			wantDetectorCount: 1,
+			wantPluginCount: 1,
+		},
+		{
+			desc: "Create a detector - legacy field",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"cis"},
+			},
+			wantPluginCount: 1,
+		},
+		{
+			desc: "Create a detector - legacy field",
+			flags: &cli.Flags{
+				DetectorsToRun: []string{"cis"},
+			},
+			wantPluginCount: 1,
+		},
+		{
+			desc: "Create an annotator",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"vex/cachedir"},
+			},
+			wantPluginCount: 1,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -278,34 +569,335 @@ func TestGetScanConfig_CreatePlugins(t *testing.T) {
 			if err != nil {
 				t.Errorf("%v.GetScanConfig(): %v", tc.flags, err)
 			}
-			if len(cfg.Detectors) != tc.wantDetectorCount {
-				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
-			}
-			if len(cfg.InventoryExtractors) != tc.wantExtractorCount {
-				t.Errorf("%v.GetScanConfig() want detector count %d got %d", tc.flags, tc.wantDetectorCount, len(cfg.Detectors))
+			if len(cfg.Plugins) != tc.wantPluginCount {
+				t.Errorf("%v.GetScanConfig() want plugin count %d got %d", tc.flags, tc.wantPluginCount, len(cfg.Plugins))
 			}
 		})
 	}
 }
 
-func TestGetScanConfig_GovulncheckParams(t *testing.T) {
-	dbPath := "path/to/db"
-	flags := &cli.Flags{
-		ExtractorsToRun:   "go",
-		DetectorsToRun:    binary.Detector{}.Name(),
-		GovulncheckDBPath: dbPath,
-	}
+func TestGetScanConfig_PluginConfig(t *testing.T) {
+	for _, tc := range []struct {
+		desc                   string
+		cfgFlags               []string
+		wantCFG                *cpb.PluginConfig
+		wantMaxFileSizeBytes   int64
+		wantVersionFromContent bool
+	}{
+		{
+			desc:     "single_setting_in_one_flag",
+			cfgFlags: []string{"max_file_size_bytes:1234"},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+			},
+			wantMaxFileSizeBytes: 1234,
+		},
+		{
+			desc:     "multiple_settings_in_one_flag",
+			cfgFlags: []string{"max_file_size_bytes:1234 plugin_specific:{go_binary:{version_from_content:true}}"},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantMaxFileSizeBytes:   1234,
+			wantVersionFromContent: true,
+		},
+		{
+			desc: "multiple_settings_in_multiple_flags",
+			cfgFlags: []string{
+				"max_file_size_bytes:1234",
+				"plugin_specific:{go_binary:{version_from_content:true}}",
+			},
+			wantCFG: &cpb.PluginConfig{
+				MaxFileSizeBytes: 1234,
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantMaxFileSizeBytes:   1234,
+			wantVersionFromContent: true,
+		},
+		{
+			desc:     "plugin_specific_config_short_version",
+			cfgFlags: []string{"go_binary:{version_from_content:true}"},
+			wantCFG: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_GoBinary{GoBinary: &cpb.GoBinaryConfig{VersionFromContent: true}}},
+				},
+			},
+			wantVersionFromContent: true,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			flags := &cli.Flags{
+				ExtractorsToRun: []string{gobinary.Name},
+				PluginCFG:       tc.cfgFlags,
+			}
 
-	cfg, err := flags.GetScanConfig()
-	if err != nil {
-		t.Errorf("%v.GetScanConfig(): %v", flags, err)
+			scanConfig, err := flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%v.GetScanConfig(): %v", flags, err)
+			}
+
+			if diff := cmp.Diff(tc.wantCFG, scanConfig.RequiredPluginConfig, protocmp.Transform()); diff != "" {
+				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
+			}
+			if len(scanConfig.Plugins) != 1 {
+				t.Fatalf("%v.GetScanConfig(): Got %d plugins, want 1", flags, len(scanConfig.Plugins))
+			}
+
+			ext, ok := scanConfig.Plugins[0].(*gobinary.Extractor)
+			if !ok {
+				t.Fatalf("%v.GetScanConfig(): Got wrong plugin type", flags)
+			}
+
+			maxFileSizeBytes := ext.MaxFileSizeBytes()
+			if tc.wantMaxFileSizeBytes != maxFileSizeBytes {
+				t.Errorf("%v.GetScanConfig(): Want maxFileSizeBytes %d, got %d", flags, tc.wantMaxFileSizeBytes, maxFileSizeBytes)
+			}
+
+			versionFromContent := ext.VersionFromContent()
+			if tc.wantVersionFromContent != versionFromContent {
+				t.Errorf("%v.GetScanConfig(): Want versionFromContent %t, got %t", flags, tc.wantVersionFromContent, versionFromContent)
+			}
+		})
 	}
-	if len(cfg.Detectors) != 1 {
-		t.Fatalf("%v.GetScanConfig() want 1 detector got %d", flags, len(cfg.Detectors))
+}
+
+func TestGetScanConfig_MaxFileSize(t *testing.T) {
+	for _, tc := range []struct {
+		desc            string
+		flags           *cli.Flags
+		wantMaxFileSize int
+	}{
+		{
+			desc: "max file size unset",
+			flags: &cli.Flags{
+				MaxFileSize: 0,
+			},
+			wantMaxFileSize: 0,
+		},
+		{
+			desc: "max file size set",
+			flags: &cli.Flags{
+				MaxFileSize: 100,
+			},
+			wantMaxFileSize: 100,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			if cfg.MaxFileSize != tc.wantMaxFileSize {
+				t.Errorf("%+v.GetScanConfig() got max file size %d, want %d", tc.flags, cfg.MaxFileSize, tc.wantMaxFileSize)
+			}
+		})
 	}
-	got := cfg.Detectors[0].(*binary.Detector).OfflineVulnDBPath
-	if got != dbPath {
-		t.Errorf("%v.GetScanConfig() want govulncheck detector with DB path %q got %q", flags, dbPath, got)
+}
+
+func TestGetScanConfig_PluginGroups(t *testing.T) {
+	for _, tc := range []struct {
+		desc            string
+		flags           *cli.Flags
+		wantPlugins     []string
+		dontWantPlugins []string
+	}{
+		{
+			desc:  "default_plugins_if_nothing_is_specified",
+			flags: &cli.Flags{},
+			wantPlugins: []string{
+				"python/wheelegg",
+				"windows/dismpatch",
+				"vex/cachedir",
+			},
+			dontWantPlugins: []string{
+				// Not default plugins
+				"govulncheck/binary",
+				"vscode/extensions",
+				"baseimage",
+			},
+		},
+		{
+			desc: "default_extractors_legacy",
+			flags: &cli.Flags{
+				ExtractorsToRun: []string{"default"},
+			},
+			wantPlugins: []string{
+				// Filesystem Extractor
+				"python/wheelegg",
+				// Standalone Extractor
+				"windows/dismpatch",
+			},
+			dontWantPlugins: []string{
+				// Not a default Extractor
+				"vscode/extensions",
+				// Not an Extractor
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "all_extractors_legacy",
+			flags: &cli.Flags{
+				ExtractorsToRun: []string{"all"},
+			},
+			wantPlugins: []string{
+				// Filesystem Extractor
+				"vscode/extensions",
+				// Standalone Extractor
+				"windows/dismpatch",
+			},
+			dontWantPlugins: []string{
+				// Not an Extractor
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "default_detectors_legacy",
+			flags: &cli.Flags{
+				DetectorsToRun: []string{"default"},
+			},
+			// There are no default Detectors at the moment.
+			dontWantPlugins: []string{
+				// Not a default Detector
+				"govulncheck/binary",
+				// Not a Detector
+				"python/wheelegg",
+			},
+		},
+		{
+			desc: "all_detectors_legacy",
+			flags: &cli.Flags{
+				DetectorsToRun: []string{"all"},
+			},
+			wantPlugins: []string{
+				"govulncheck/binary",
+			},
+			dontWantPlugins: []string{
+				// Not Detectors
+				"python/wheelegg",
+				"vex/cachedir",
+			},
+		},
+		{
+			desc: "all_extractors",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"extractors/all"},
+			},
+			wantPlugins: []string{
+				// Filesystem Extractor
+				"vscode/extensions",
+				// Standalone Extractor
+				"windows/dismpatch",
+			},
+			dontWantPlugins: []string{
+				// Not an Extractor
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "all_detectors",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"detectors/all"},
+			},
+			wantPlugins: []string{
+				"govulncheck/binary",
+			},
+			dontWantPlugins: []string{
+				// Not Detectors
+				"python/wheelegg",
+				"vex/cachedir",
+			},
+		},
+		{
+			desc: "all_annotators",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"annotators/all"},
+			},
+			wantPlugins: []string{
+				"vex/cachedir",
+			},
+			dontWantPlugins: []string{
+				// Not Annotators
+				"python/wheelegg",
+				"govulncheck/binary",
+			},
+		},
+		{
+			desc: "all_enrichers",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"enrichers/all"},
+			},
+			wantPlugins: []string{
+				"baseimage",
+			},
+			dontWantPlugins: []string{
+				// Not Enrichers
+				"python/wheelegg",
+				"govulncheck/binary",
+				"vex/cachedir",
+			},
+		},
+		{
+			desc: "default_plugins",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"default"},
+			},
+			wantPlugins: []string{
+				"python/wheelegg",
+				"windows/dismpatch",
+				"vex/cachedir",
+			},
+			dontWantPlugins: []string{
+				// Not default plugins
+				"govulncheck/binary",
+				"vscode/extensions",
+				"baseimage",
+			},
+		},
+		{
+			desc: "all_plugins",
+			flags: &cli.Flags{
+				PluginsToRun: []string{"all"},
+			},
+			wantPlugins: []string{
+				"python/wheelegg",
+				"windows/dismpatch",
+				"govulncheck/binary",
+				"vex/cachedir",
+				"baseimage",
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg, err := tc.flags.GetScanConfig()
+			if err != nil {
+				t.Errorf("%+v.GetScanConfig(): %v", tc.flags, err)
+			}
+			for _, name := range tc.wantPlugins {
+				found := false
+				for _, p := range cfg.Plugins {
+					if p.Name() == name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("%+v.GetScanConfig() didn't find wanted plugin %q in config", tc.flags, name)
+				}
+			}
+			for _, name := range tc.dontWantPlugins {
+				for _, p := range cfg.Plugins {
+					if p.Name() == name {
+						t.Errorf("%+v.GetScanConfig() found unwanted plugin %q in config", tc.flags, name)
+						break
+					}
+				}
+			}
+		})
 	}
 }
 
@@ -345,6 +937,14 @@ func TestWriteScanResults(t *testing.T) {
 			wantFilename:      "result.spdx",
 			wantContentPrefix: "SPDXVersion: SPDX-2.3",
 		},
+		{
+			desc: "Create CDX",
+			flags: &cli.Flags{
+				Output: []string{"cdx-json=" + filepath.Join(testDirPath, "result.cyclonedx.json")},
+			},
+			wantFilename:      "result.cyclonedx.json",
+			wantContentPrefix: "{\n  \"$schema\": \"http://cyclonedx.org/schema/bom-1.6.schema.json\"",
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			if err := tc.flags.WriteScanResults(result); err != nil {
@@ -360,6 +960,104 @@ func TestWriteScanResults(t *testing.T) {
 
 			if !strings.HasPrefix(gotStr, tc.wantContentPrefix) {
 				t.Errorf("%v.WriteScanResults(%v) want file with content prefix %q, got %q", tc.flags, result, tc.wantContentPrefix, gotStr)
+			}
+		})
+	}
+}
+
+type fakeFileAPI struct {
+	path string
+}
+
+func (f *fakeFileAPI) Path() string {
+	return f.path
+}
+
+func (f *fakeFileAPI) Stat() (fs.FileInfo, error) {
+	return nil, nil
+}
+
+func TestGetScanConfig_ExtractorOverride(t *testing.T) {
+	tests := []struct {
+		name              string
+		flags             *cli.Flags
+		fileAPI           *fakeFileAPI
+		wantExtractorName string
+		wantNumExtractors int
+		wantErr           error
+	}{
+		{
+			name: "no_override",
+			flags: &cli.Flags{
+				Root:       "/",
+				ResultFile: "result.textproto",
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantNumExtractors: 0,
+			wantErr:           nil,
+		},
+		{
+			name: "extractor_override_plugin_not_found",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"nonexistent/plugin:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantNumExtractors: 0,
+			wantErr:           cmpopts.AnyError,
+		},
+		{
+			name: "override_matches",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "foo.py"},
+			wantExtractorName: "python/wheelegg",
+			wantNumExtractors: 1,
+			wantErr:           nil,
+		},
+		{
+			name: "override_does_not_match",
+			flags: &cli.Flags{
+				Root:              "/",
+				ResultFile:        "result.textproto",
+				ExtractorOverride: []string{"python/wheelegg:*.py"},
+				PluginsToRun:      []string{"python/wheelegg"},
+			},
+			fileAPI:           &fakeFileAPI{path: "abc/efg/foo.go"},
+			wantNumExtractors: 0,
+			wantErr:           nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := tt.flags.GetScanConfig()
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("GetScanConfig() error got diff (-want +got):\n%s", diff)
+			}
+
+			// If an error was expected, the rest of the checks are not necessary.
+			if tt.wantErr != nil {
+				return
+			}
+
+			if cfg.ExtractorOverride == nil && tt.wantNumExtractors > 0 {
+				t.Fatalf("ExtractorOverride is nil, want non-nil")
+			}
+			if cfg.ExtractorOverride != nil {
+				extractors := cfg.ExtractorOverride(tt.fileAPI)
+				if len(extractors) != tt.wantNumExtractors {
+					t.Fatalf("ExtractorOverride() returned %d extractors, want %d", len(extractors), tt.wantNumExtractors)
+				}
+				if tt.wantNumExtractors == 1 && extractors[0].Name() != tt.wantExtractorName {
+					t.Errorf("ExtractorOverride() returned extractor %q, want %q", extractors[0].Name(), tt.wantExtractorName)
+				}
 			}
 		})
 	}

@@ -1,0 +1,44 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "direct1",
+        "versionFrom": "==1.0.0",
+        "versionTo": "==2.0.0",
+        "transitive": false
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-001",
+        "packages": [
+          {
+            "name": "bad1",
+            "version": "1.0.0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageUpdates": [
+      {
+        "name": "direct2",
+        "versionFrom": ">=1.0.0,<2.0.0",
+        "versionTo": ">=2.0.0,<3.0.0",
+        "transitive": false
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-002",
+        "packages": [
+          {
+            "name": "bad2",
+            "version": "1.0.0"
+          }
+        ]
+      }
+    ]
+  }
+]

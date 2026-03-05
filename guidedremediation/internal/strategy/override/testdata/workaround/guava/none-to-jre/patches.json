@@ -1,0 +1,23 @@
+[
+  {
+    "packageUpdates": [
+      {
+        "name": "com.google.guava:guava",
+        "versionFrom": "20.0",
+        "versionTo": "24.0-jre",
+        "transitive": false
+      }
+    ],
+    "fixed": [
+      {
+        "id": "OSV-000-000",
+        "packages": [
+          {
+            "name": "com.google.guava:guava",
+            "version": "20.0"
+          }
+        ]
+      }
+    ]
+  }
+]

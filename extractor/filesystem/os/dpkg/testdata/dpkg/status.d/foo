@@ -1,0 +1,8 @@
+Package: foo
+Architecture: amd64
+Maintainer: someone
+Version: 1.2.3
+
+Package: bar
+Status: deinstall ok config-files
+Version: 1.0

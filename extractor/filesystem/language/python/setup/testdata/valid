@@ -1,0 +1,33 @@
+import re
+
+from glob import glob
+from setuptools import setup
+
+def readme():
+    with open('README.md') as f:
+        return f.read()
+
+_src_folder = 'src'
+_pkg_name = 'test'
+
+with open(f'src/{_pkg_name}/__init__.py', 'r') as fd:
+    VERSION = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
+setup(
+    name=_pkg_name,
+    install_requires=[
+        'pysaml2==6.5.1',
+        'xmlschema==1.7.1',
+        'requests==2.25.1',
+        'lxml>=4.6.2',
+        'Jinja2==2.11.3',
+        " pkg1 == 0.1.1", ' pkg2== 0.1.2',
+        "foo>=2.20,<3.0",
+        "pydantic>=1.8.2,<2.0",
+        "certifi>=2017.4.17",
+        "pkg3<= 1.2.3",
+        # 'sslyze>=4.0.4', # todo,
+        "foo"
+      ],
+    )

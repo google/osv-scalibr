@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,15 +18,22 @@ package scanrunner
 import (
 	"context"
 
+	scalibr "github.com/google/osv-scalibr"
+	scalibrlayerimage "github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/osv-scalibr/version"
 )
 
 // RunScan executes the scan with the given CLI flags
 // and returns the exit code passed to os.Exit() in the main binary.
 func RunScan(flags *cli.Flags) int {
+	if flags.PrintVersion {
+		log.Infof("OSV-SCALIBR v%s", version.ScannerVersion)
+		return 0
+	}
+
 	if flags.Verbose {
 		log.SetLogger(&log.DefaultLogger{Verbose: true})
 	}
@@ -37,12 +44,70 @@ func RunScan(flags *cli.Flags) int {
 		return 1
 	}
 
-	log.Infof("Running scan with %d extractors and %d detectors", len(cfg.InventoryExtractors), len(cfg.Detectors))
-	log.Infof("Scan root: %s", cfg.ScanRoot)
-	result := scalibr.New().Scan(context.Background(), cfg)
+	log.Infof("Running scan with %d plugins", len(cfg.Plugins))
+	if len(cfg.PathsToExtract) > 0 {
+		log.Infof("Paths to extract: %s", cfg.PathsToExtract)
+	}
+
+	var result *scalibr.ScanResult
+	if flags.ImageTarball != "" {
+		layerCfg := scalibrlayerimage.DefaultConfig()
+		log.Infof("Scanning image tarball: %s", flags.ImageTarball)
+		img, err := scalibrlayerimage.FromTarball(flags.ImageTarball, layerCfg)
+		if err != nil {
+			log.Errorf("Failed to create image from tarball: %v", err)
+			return 1
+		}
+		defer func() {
+			if tmpErr := img.CleanUp(); tmpErr != nil {
+				log.Errorf("Failed to clean up image: %v", tmpErr)
+			}
+		}()
+		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+
+		cleanupErr := img.CleanUp()
+		if cleanupErr != nil {
+			log.Errorf("failed to clean up image: %s", err)
+		}
+
+		if err != nil {
+			log.Errorf("Failed to scan tarball: %v", err)
+			return 1
+		}
+	} else if flags.ImageLocal != "" { // We will scan an image in the local hard disk
+		layerCfg := scalibrlayerimage.DefaultConfig()
+		log.Infof("Scanning local image: %s", flags.ImageLocal)
+		img, err := scalibrlayerimage.FromLocalDockerImage(flags.ImageLocal, layerCfg)
+		if err != nil {
+			log.Errorf("Failed to scan local image: %v", err)
+			return 1
+		}
+		defer func() {
+			if tmpErr := img.CleanUp(); tmpErr != nil {
+				log.Errorf("Failed to clean up image: %v", tmpErr)
+			}
+		}()
+		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+		if err != nil {
+			log.Errorf("Failed to scan container: %v", err)
+			return 1
+		}
+	} else {
+		log.Infof("Scan roots: %s", cfg.ScanRoots)
+		result = scalibr.New().Scan(context.Background(), cfg)
+	}
 
 	log.Infof("Scan status: %v", result.Status)
-	log.Infof("Found %d software inventories, %d security findings", len(result.Inventories), len(result.Findings))
+	for _, p := range result.PluginStatus {
+		if p.Status.Status != plugin.ScanStatusSucceeded {
+			log.Warnf("Plugin '%s' did not succeed. Status: %v, Reason: %s", p.Name, p.Status, p.Status.FailureReason)
+		}
+	}
+	log.Infof(
+		"Found %d software packages, %d security findings",
+		len(result.Inventory.Packages),
+		len(result.Inventory.PackageVulns)+len(result.Inventory.GenericFindings),
+	)
 
 	if err := flags.WriteScanResults(result); err != nil {
 		log.Errorf("Error writing scan results: %v", err)
