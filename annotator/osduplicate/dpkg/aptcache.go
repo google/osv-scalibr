@@ -31,7 +31,7 @@ import (
 )
 
 // mainRepoPattern matches files containing main OS repositories indexes
-var mainRepoPattern = regexp.MustCompile(`[\w.]*(?:-[a-zA-Z]+)?_dists_[\w-]+_main_binary-[a-zA-Z0-9]*_Packages(?:\.gz|.lz4|.zst)?$`)
+var mainRepoPattern = regexp.MustCompile(`[\w.]+(?:-[\w%-]+)?_dists_[\w-]+_main_binary-\w+_Packages(?:\.gz|.lz4|.zst)?$`)
 
 const aptListDir = "var/lib/apt/lists"
 
