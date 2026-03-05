@@ -23,12 +23,13 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/ffa/baseimageattr"
-	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
+	"github.com/google/osv-scalibr/enricher/gitlabjobtoken"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
+	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
@@ -58,6 +59,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
@@ -136,6 +138,7 @@ var (
 		fromVeles(denopat.NewOrgTokenValidator(), "secrets/denopatorgvalidate", 0),
 		fromVeles(gcpsak.NewValidator(), "secrets/gcpsakvalidate", 0),
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
+		fromVeles(gitlab.NewCIJobTokenValidator(), "secrets/gitlab/cijobtokenvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
 		fromVeles(grokxaiapikey.NewManagementAPIValidator(), "secrets/grokxaimanagementkeyvalidate", 0),
 		fromVelesWithCfg(hashicorp.NewTokenValidatorEnricher, "secrets/hashicorpvaulttokenvalidate"),
@@ -190,6 +193,7 @@ var (
 	SecretsEnrich = InitMap{
 		hcpidentity.Name:      {noCFG(hcpidentity.New)},
 		herokuexpiration.Name: {noCFG(herokuexpiration.New)},
+		gitlabjobtoken.Name:   {noCFG(gitlabjobtoken.New)},
 	}
 
 	// HuggingfaceMeta enricher.

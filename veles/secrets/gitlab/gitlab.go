@@ -12,17 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package source
+// Package gitlab implements the logic to detect GitLab tokens
+package gitlab
 
-import (
-	"context"
+import "time"
 
-	"github.com/google/osv-scalibr/enricher/govulncheck/source/internal"
-	vulnpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+const (
+	// validationTimeout is timeout for API validation requests.
+	validationTimeout = 10 * time.Second
 )
 
-// GovulncheckClient is an interface for running govulncheck on a Go module.
-type GovulncheckClient interface {
-	RunGovulncheck(ctx context.Context, absModDir string, vulns []*vulnpb.Vulnerability, goVersion string) (map[string][]*internal.Finding, error)
-	GoToolchainAvailable(ctx context.Context) bool
+// CIJobToken is a Veles Secret that holds relevant information for a
+// GitLab CI/CD Job Token (prefix `glcbt-`).
+type CIJobToken struct {
+	Token    string
+	Hostname string
+	// Enriched metadata (populated by enricher)
+	JobID     int64
+	Status    string
+	Username  string
+	ProjectID int64
 }
