@@ -38,8 +38,9 @@ var feedTokenRe = regexp.MustCompile(`glft-[a-zA-Z0-9_-]{20}`)
 
 // hostnameRe matches hostnames in URLs
 // Each domain component is limited to 63 chars (DNS standard)
-// TLD is limited to 2-4 letters to avoid matching excessive padding
-var hostnameRe = regexp.MustCompile(`https?://([a-zA-Z0-9][-a-zA-Z0-9]{0,62}(?:\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*\.[a-zA-Z]{2,4})(?:[^a-zA-Z]|$)`)
+// TLD is limited to 2-6 letters (covers most common TLDs like .com, .org, .museum)
+// The regex matches an optional non-letter after the TLD to ensure proper boundary
+var hostnameRe = regexp.MustCompile(`https?://([a-zA-Z0-9][-a-zA-Z0-9]{0,62}(?:\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*\.[a-zA-Z]{2,6})([^a-zA-Z]|$)`)
 
 // NewFeedTokenDetector returns a new Detector that matches GitLab Feed Tokens.
 // It uses pair detection to find both the token and the associated GitLab hostname.
@@ -77,9 +78,11 @@ func findHostnames(data []byte) []*pair.Match {
 	var results []*pair.Match
 	for _, m := range matches {
 		if len(m) >= 4 {
-			// m[2] and m[3] are the start and end of the first capture group (hostname)
+			// m[0] and m[1] are the start and end of the full match (including https://)
+			// m[2] and m[3] are the start and end of the first capture group (hostname only)
+			// Use the full match start position but extract only the hostname value
 			results = append(results, &pair.Match{
-				Start: m[2],
+				Start: m[0],
 				Value: data[m[2]:m[3]],
 			})
 		}

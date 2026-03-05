@@ -76,8 +76,7 @@ func TestFeedTokenDetectorAcceptance(t *testing.T) {
 				d,
 				tc.input,
 				tc.secret,
-				velestest.WithBackToBack(),
-				velestest.WithPad('a'),
+				velestest.WithPad(' '), // Use space padding to avoid interfering with URL matching
 			)
 		})
 	}
