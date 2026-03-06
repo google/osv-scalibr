@@ -99,7 +99,7 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 			comp.CPE = cpes[0]
 		}
 		if len(pkg.Locations) > 0 {
-			occ := make([]cyclonedx.EvidenceOccurrence, 0, len((pkg.Locations)))
+			occ := make([]cyclonedx.EvidenceOccurrence, 0, len(pkg.Locations))
 			for _, loc := range pkg.Locations {
 				occ = append(occ, cyclonedx.EvidenceOccurrence{
 					Location: loc,
