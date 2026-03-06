@@ -1,23 +1,11 @@
-// Copyright 2026 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package fakefs
 
 import (
 	"io/fs"
 	"testing"
 	"testing/fstest"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestPrepareFS(t *testing.T) {
@@ -26,6 +14,7 @@ func TestPrepareFS(t *testing.T) {
 		txt      string
 		mod      FileModifier
 		wantErr  bool
+		expected []string
 		validate func(t *testing.T, fsys fs.FS)
 	}{
 		{
@@ -36,31 +25,41 @@ content1
 -- dir/file2.txt --
 content2
 `,
+			expected: []string{"file1.txt", "dir", "dir/file2.txt"},
 			validate: func(t *testing.T, fsys fs.FS) {
 				t.Helper()
-				data, err := fs.ReadFile(fsys, "file1.txt")
-				if err != nil || string(data) != "content1" {
-					t.Errorf("ReadFile(file1.txt) = %q, %v; want 'content1', nil", data, err)
+
+				data1, err := fs.ReadFile(fsys, "file1.txt")
+				if err != nil {
+					t.Fatalf("failed to read file1.txt: %v", err)
 				}
-				data, err = fs.ReadFile(fsys, "file2.txt")
-				if err != nil || string(data) != "content2" {
-					t.Errorf("ReadFile(file1.txt) = %q, %v; want 'content1', nil", data, err)
+				if diff := cmp.Diff("content1\n", string(data1)); diff != "" {
+					t.Errorf("file1.txt content mismatch (-want +got):\n%s", diff)
+				}
+				data2, err := fs.ReadFile(fsys, "dir/file2.txt")
+				if err != nil {
+					t.Fatalf("failed to read dir/file2.txt: %v", err)
+				}
+				if diff := cmp.Diff("content2\n", string(data2)); diff != "" {
+					t.Errorf("dir/file2.txt content mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
 		{
-			name: "empty_directory_detection",
+			name: "empty_directory",
 			txt: `
 -- empty-dir/ --
 `,
+			expected: []string{"empty-dir"},
 			validate: func(t *testing.T, fsys fs.FS) {
 				t.Helper()
+
 				info, err := fs.Stat(fsys, "empty-dir")
 				if err != nil {
 					t.Fatalf("Stat(empty-dir) failed: %v", err)
 				}
 				if !info.IsDir() {
-					t.Error("expected empty-dir to be a directory")
+					t.Error("expected empty-dir to be a directory, but IsDir() is false")
 				}
 			},
 		},
@@ -70,6 +69,7 @@ content2
 -- secret.txt --
 plain
 `,
+			expected: []string{"secret.txt"},
 			mod: func(name string, f *fstest.MapFile) error {
 				if name == "secret.txt" {
 					f.Data = []byte("encrypted")
@@ -78,9 +78,12 @@ plain
 			},
 			validate: func(t *testing.T, fsys fs.FS) {
 				t.Helper()
-				data, _ := fs.ReadFile(fsys, "secret.txt")
-				if string(data) != "encrypted" {
-					t.Errorf("Modifier did not apply, got %q", data)
+				data, err := fs.ReadFile(fsys, "secret.txt")
+				if err != nil {
+					t.Fatalf("failed to read secret.txt: %v", err)
+				}
+				if diff := cmp.Diff("encrypted", string(data)); diff != "" {
+					t.Errorf("modifier not applied (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -102,8 +105,7 @@ plain
 				tt.validate(t, fsys)
 			}
 
-			// Native Go check: verifies the FS is valid according to io/fs rules.
-			if err := fstest.TestFS(fsys); err != nil {
+			if err := fstest.TestFS(fsys, tt.expected...); err != nil {
 				t.Errorf("fstest.TestFS validation failed: %v", err)
 			}
 		})
