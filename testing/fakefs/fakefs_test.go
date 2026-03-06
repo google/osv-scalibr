@@ -37,6 +37,7 @@ content1
 content2
 `,
 			validate: func(t *testing.T, fsys fs.FS) {
+				t.Helper()
 				data, err := fs.ReadFile(fsys, "file1.txt")
 				if err != nil || string(data) != "content1" {
 					t.Errorf("ReadFile(file1.txt) = %q, %v; want 'content1', nil", data, err)
@@ -53,6 +54,7 @@ content2
 -- empty-dir/ --
 `,
 			validate: func(t *testing.T, fsys fs.FS) {
+				t.Helper()
 				info, err := fs.Stat(fsys, "empty-dir")
 				if err != nil {
 					t.Fatalf("Stat(empty-dir) failed: %v", err)
@@ -75,6 +77,7 @@ plain
 				return nil
 			},
 			validate: func(t *testing.T, fsys fs.FS) {
+				t.Helper()
 				data, _ := fs.ReadFile(fsys, "secret.txt")
 				if string(data) != "encrypted" {
 					t.Errorf("Modifier did not apply, got %q", data)
