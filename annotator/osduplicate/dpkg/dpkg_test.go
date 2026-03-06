@@ -16,7 +16,6 @@ package dpkg_test
 
 import (
 	"context"
-	"io/fs"
 	"runtime"
 	"testing"
 
@@ -30,20 +29,9 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
-	"golang.org/x/tools/txtar"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"google.golang.org/protobuf/proto"
 )
-
-type scalibrAdapter struct {
-	fs.FS
-}
-
-func (a scalibrAdapter) ReadDir(name string) ([]fs.DirEntry, error) {
-	return fs.ReadDir(a.FS, name)
-}
-func (a scalibrAdapter) Stat(name string) (fs.FileInfo, error) {
-	return fs.Stat(a.FS, name)
-}
 
 func TestAnnotate(t *testing.T) {
 	if runtime.GOOS != "linux" {
@@ -231,14 +219,12 @@ Package: file-in-info
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			mfs, err := txtar.FS(txtar.Parse([]byte(tt.txt)))
+			fs, err := fakefs.PrepareFS(tt.txt)
 			if err != nil {
 				t.Fatal(err)
 			}
 			input := &annotator.ScanInput{
-				ScanRoot: &scalibrfs.ScanRoot{
-					FS: scalibrAdapter{FS: mfs},
-				},
+				ScanRoot: &scalibrfs.ScanRoot{FS: fs},
 			}
 
 			// Ensure context is never nil (default to test context)

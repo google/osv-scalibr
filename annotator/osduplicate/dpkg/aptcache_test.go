@@ -19,7 +19,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
-	"io/fs"
 	"runtime"
 	"strings"
 	"testing"
@@ -28,56 +27,41 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pierrec/lz4/v4"
-	"golang.org/x/tools/txtar"
 )
 
-type nopWriteCloser struct {
-	io.Writer
-}
+// compressModifier is passed to fakefs.PrepareFS to modify the file contents according to their extension
+func compressModifier(name string, f *fstest.MapFile) error {
+	var (
+		b bytes.Buffer
+		w io.WriteCloser
+	)
 
-func (nopWriteCloser) Close() error {
+	// Automatically compress based on the file extension
+	switch {
+	case strings.HasSuffix(name, ".gz"):
+		w = gzip.NewWriter(&b)
+	case strings.HasSuffix(name, ".zst"):
+		var err error
+		w, err = zstd.NewWriter(&b)
+		if err != nil {
+			return err
+		}
+	case strings.HasSuffix(name, ".lz4"):
+		w = lz4.NewWriter(&b)
+	default:
+		return nil
+	}
+	if _, err := w.Write(f.Data); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+	f.Data = b.Bytes()
 	return nil
-}
-
-// prepareMapFS builds an in-memory file system from a txtar string adding compression capabilities
-func prepareMapFS(t *testing.T, txt string, emptyDir bool) fstest.MapFS {
-	t.Helper()
-	mfs := make(fstest.MapFS)
-
-	if emptyDir {
-		mfs[aptListDir] = &fstest.MapFile{Mode: fs.ModeDir}
-	}
-
-	for _, f := range txtar.Parse([]byte(txt)).Files {
-		var (
-			b bytes.Buffer
-			w io.WriteCloser
-		)
-		// Automatically compress based on the file extension
-		switch {
-		case strings.HasSuffix(f.Name, ".gz"):
-			w = gzip.NewWriter(&b)
-		case strings.HasSuffix(f.Name, ".zst"):
-			var err error
-			w, err = zstd.NewWriter(&b)
-			if err != nil {
-				t.Fatal(err)
-			}
-		case strings.HasSuffix(f.Name, ".lz4"):
-			w = lz4.NewWriter(&b)
-		default:
-			w = nopWriteCloser{Writer: &b}
-		}
-		if _, err := w.Write(f.Data); err != nil {
-			t.Fatal(err)
-		}
-		w.Close()
-		mfs[f.Name] = &fstest.MapFile{Data: b.Bytes(), Mode: 0644}
-	}
-
-	return mfs
 }
 
 func TestExtractAptCache(t *testing.T) {
@@ -86,11 +70,10 @@ func TestExtractAptCache(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		txt      string
-		emptyDir bool
-		want     *aptCache
-		wantErr  error
+		name    string
+		txt     string
+		want    *aptCache
+		wantErr error
 	}{
 		{
 			name:    "missing_apt_cache_folder_entirely",
@@ -98,10 +81,11 @@ func TestExtractAptCache(t *testing.T) {
 			wantErr: ErrMissingAptCache,
 		},
 		{
-			name:     "empty apt cache directory",
-			txt:      ``,
-			emptyDir: true,
-			wantErr:  ErrMissingAptCache,
+			name: "empty apt cache directory",
+			txt: `
+-- var/lib/apt/lists/ --
+`,
+			wantErr: ErrMissingAptCache,
 		},
 		{
 			name: "valid_apt_cache_with_matching_and_non-matching_files",
@@ -171,11 +155,13 @@ Package: test2
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mfs := prepareMapFS(t, tt.txt, tt.emptyDir)
+			mfs, err := fakefs.PrepareFS(tt.txt, compressModifier)
+			if err != nil {
+				t.Fatal(err)
+			}
 			root := &scalibrfs.ScanRoot{FS: mfs}
 
 			got, err := extractAptCache(root)
-
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("extractAptCache() error = %v, wantErr %v", err, tt.wantErr)
 				return
