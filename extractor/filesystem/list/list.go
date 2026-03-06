@@ -128,6 +128,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databricks"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -433,6 +434,10 @@ var (
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
+		{databricks.NewSPOAuth2ClientDetector(), "secrets/databricksserviceprincipaloauth2client", 0},
+		{databricks.NewSPPATDetector(), "secrets/databricksserviceprincipalpat", 0},
+		{databricks.NewUAOAuth2ClientDetector(), "secrets/databricksuseraccountoauth2client", 0},
+		{databricks.NewUAPATDetector(), "secrets/databricksuseraccountpat", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

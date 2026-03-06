@@ -845,6 +845,10 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    DatabricksUserAccountPat databricks_user_account_pat = 89;
+    DatabricksServicePrincipalPat databricks_service_principal_pat = 90;
+    DatabricksUserAccountOAuth2ClientCredentials databricks_user_account_oauth2_client_credentials = 91;
+    DatabricksServicePrincipalOAuth2ClientCredentials databricks_service_principal_oauth2_client_credentials = 92;
   }
 
   message GCPSAK {
@@ -1306,6 +1310,38 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+
+  message DatabricksUserAccountPat {
+    // Databricks User Account PAT
+    string token = 1;
+    // Databricks User Account ID
+    string account_id = 2;
+  }
+
+  message DatabricksServicePrincipalPat {
+    // Databricks Service Principal PAT
+    string token = 1;
+    // Databricks Service Principal ID
+    string url = 2;
+  }
+
+  message DatabricksUserAccountOAuth2ClientCredentials {
+    // Databricks User Account OAuth2 client ID
+    string id = 1;
+    // Databricks User Account OAuth2 client secret
+    string secret = 2;
+    // Databricks User Account ID
+    string account_id = 3;
+  }
+
+  message DatabricksServicePrincipalOAuth2ClientCredentials {
+    // Databricks Service Principal Workspace URL
+    string url = 1;
+    // Databricks Service Principal OAuth2 client secret
+    string secret = 2;
+    // Databricks Service Principal OAuth2 client ID
+    string id = 3;
   }
 }
 

@@ -204,6 +204,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
+| Databricks User Account PAT                 | `secrets/databricksuseraccountpat`     |
+| Databricks Service Principal PAT            | `secrets/databricksserviceprincipalpat` |
+| Databricks User Account OAuth 2 Client Credentials | `secrets/databricksuseraccountoauth2client` |
+| Databricks Service Principal OAuth 2 Client Credentials | `secrets/databricksserviceprincipaloauth2client` |
 
 ### Container inventory
 

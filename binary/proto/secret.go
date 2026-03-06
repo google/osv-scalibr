@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	velesdatabricks "github.com/google/osv-scalibr/veles/secrets/databricks"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -324,6 +325,14 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case velesdatabricks.UAPATCredentials:
+		return databricksUAPATCredentialsToProto(t), nil
+	case velesdatabricks.SPPATCredentials:
+		return databricksSPPATCredentialsToProto(t), nil
+	case velesdatabricks.UAOAuth2ClientCredentials:
+		return databricksUAOAuth2ClientCredentialsToProto(t), nil
+	case velesdatabricks.SPOAuth2ClientCredentials:
+		return databricksSPOAuth2ClientCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -1142,6 +1151,52 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
+func databricksUAPATCredentialsToProto(creds velesdatabricks.UAPATCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksUserAccountPat_{
+			DatabricksUserAccountPat: &spb.SecretData_DatabricksUserAccountPat{
+				Token:     creds.Token,
+				AccountId: creds.AccountID,
+			},
+		},
+	}
+}
+
+func databricksSPPATCredentialsToProto(creds velesdatabricks.SPPATCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksServicePrincipalPat_{
+			DatabricksServicePrincipalPat: &spb.SecretData_DatabricksServicePrincipalPat{
+				Token: creds.Token,
+				Url:   creds.URL,
+			},
+		},
+	}
+}
+
+func databricksUAOAuth2ClientCredentialsToProto(creds velesdatabricks.UAOAuth2ClientCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksUserAccountOauth2ClientCredentials{
+			DatabricksUserAccountOauth2ClientCredentials: &spb.SecretData_DatabricksUserAccountOAuth2ClientCredentials{
+				Id:        creds.ID,
+				Secret:    creds.Secret,
+				AccountId: creds.AccountID,
+			},
+		},
+	}
+}
+
+func databricksSPOAuth2ClientCredentialsToProto(creds velesdatabricks.SPOAuth2ClientCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksServicePrincipalOauth2ClientCredentials{
+			DatabricksServicePrincipalOauth2ClientCredentials: &spb.SecretData_DatabricksServicePrincipalOAuth2ClientCredentials{
+				Url:    creds.URL,
+				Secret: creds.Secret,
+				Id:     creds.ID,
+			},
+		},
+	}
+}
+
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
 	if err != nil {
@@ -1500,6 +1555,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_DatabricksUserAccountPat_:
+		return databricksUAPATToStruct(s.GetDatabricksUserAccountPat()), nil
+	case *spb.SecretData_DatabricksServicePrincipalPat_:
+		return databricksSPPATToStruct(s.GetDatabricksServicePrincipalPat()), nil
+	case *spb.SecretData_DatabricksUserAccountOauth2ClientCredentials:
+		return databricksUAOAuth2ClientCredentialsToStruct(s.GetDatabricksUserAccountOauth2ClientCredentials()), nil
+	case *spb.SecretData_DatabricksServicePrincipalOauth2ClientCredentials:
+		return databricksSPOAuth2ClientCredentialsToStruct(s.GetDatabricksServicePrincipalOauth2ClientCredentials()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1861,6 +1924,40 @@ func packagistConductorUpdateTokenToProto(s velespackagist.ConductorUpdateToken)
 				Token: s.Token,
 			},
 		},
+	}
+}
+
+func databricksUAPATToStruct(creds *spb.SecretData_DatabricksUserAccountPat) velesdatabricks.UAPATCredentials {
+	return velesdatabricks.UAPATCredentials{
+		Token:     creds.GetToken(),
+		AccountID: creds.GetAccountId(),
+	}
+}
+
+func databricksSPPATToStruct(creds *spb.SecretData_DatabricksServicePrincipalPat) velesdatabricks.SPPATCredentials {
+	return velesdatabricks.SPPATCredentials{
+		Token: creds.GetToken(),
+		URL:   creds.GetUrl(),
+	}
+}
+
+func databricksUAOAuth2ClientCredentialsToStruct(creds *spb.SecretData_DatabricksUserAccountOAuth2ClientCredentials) velesdatabricks.UAOAuth2ClientCredentials {
+	if creds == nil {
+		return velesdatabricks.UAOAuth2ClientCredentials{}
+	}
+
+	return velesdatabricks.UAOAuth2ClientCredentials{
+		ID:        creds.GetId(),
+		Secret:    creds.GetSecret(),
+		AccountID: creds.GetAccountId(),
+	}
+}
+
+func databricksSPOAuth2ClientCredentialsToStruct(creds *spb.SecretData_DatabricksServicePrincipalOAuth2ClientCredentials) velesdatabricks.SPOAuth2ClientCredentials {
+	return velesdatabricks.SPOAuth2ClientCredentials{
+		URL:    creds.GetUrl(),
+		Secret: creds.GetSecret(),
+		ID:     creds.GetId(),
 	}
 }
 
