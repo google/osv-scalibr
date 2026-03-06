@@ -94,7 +94,7 @@ func (i Inventory) IsEmpty() bool {
 }
 
 // ExpandPathsToAbsolute changes the paths of the inventory
-// items from absolute to relative paths.
+// items from relative to absolute paths.
 func (i Inventory) ExpandPathsToAbsolute() error {
 	var errs []error
 	for _, p := range i.Packages {
