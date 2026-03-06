@@ -15,7 +15,6 @@
 package databricks
 
 import (
-	"fmt"
 	"net/http"
 
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
@@ -29,21 +28,21 @@ import (
 // - HTTP Status 401: Token is invalid
 // - Other status codes: Validation failed
 // See the error codes here:
-// https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
-// https://docs.databricks.com/api/gcp/workspace/tokens/list
+// https://docs.databricks.com/api/account/accountusers/list
 func NewUAPATValidator() *sv.Validator[UAPATCredentials] {
 	return &sv.Validator[UAPATCredentials]{
-		Endpoints:  []string{"https://accounts.cloud.databricks.com/api/2.0/token/list", "https://accounts.gcp.databricks.com/api/2.0/token/list", "https://accounts.azuredatabricks.net/api/2.0/token/list"},
+		EndpointsFunc: func(creds UAPATCredentials) ([]string, error) {
+			return []string{
+				"https://accounts.cloud.databricks.com/api/2.0/accounts/" + creds.AccountID + "/scim/v2/Users",
+				"https://accounts.gcp.databricks.com/api/2.0/accounts/" + creds.AccountID + "/scim/v2/Users",
+				"https://accounts.azuredatabricks.net/api/2.0/accounts/" + creds.AccountID + "/scim/v2/Users",
+			}, nil
+		},
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(creds UAPATCredentials) map[string]string {
 			return map[string]string{
 				"Authorization": "Bearer " + creds.Token,
-				"Content-Type":  "application/json",
 			}
-		},
-		Body: func(creds UAPATCredentials) (string, error) {
-			// Databricks Account level operations require accound id in body
-			return fmt.Sprintf(`{"account_id": "%s"}`, creds.AccountID), nil
 		},
 		ValidResponseCodes:   []int{http.StatusOK},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},

@@ -16,7 +16,6 @@ package databricks_test
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -50,26 +49,16 @@ func mockUAPATDatabricksServer(t *testing.T, expectedToken string, expectedTestA
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if it's a GET request to the expected endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/api/2.0/token/list" {
-			t.Errorf("unexpected request: %s %s, expected: GET /api/2.0/token/list", r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || (!strings.HasPrefix(r.URL.Path, "/api/2.0/accounts/") && !strings.HasSuffix(r.URL.Path, "/scim/v2/users")) {
+			t.Errorf("unexpected request: %s %s, expected: GET /api/2.0/accounts/*/scim/v2/users", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
-		// Read request body
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("failed reading body: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		body := string(bodyBytes)
-		defer r.Body.Close()
-
 		authHeader := r.Header.Get("Authorization")
 
 		// Check Authorization header and AccountID
-		if !strings.Contains(authHeader, expectedToken) || !strings.Contains(body, expectedTestAccountID) {
+		if !strings.Contains(authHeader, expectedToken) || !strings.Contains(r.URL.Path, expectedTestAccountID) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -184,7 +173,7 @@ func TestUAPATValidate_MultipleEndpoints(t *testing.T) {
 		callCount++
 
 		if r.Method != http.MethodGet ||
-			r.URL.Path != "/api/2.0/token/list" {
+			(!strings.HasPrefix(r.URL.Path, "/api/2.0/accounts/") && !strings.HasSuffix(r.URL.Path, "/scim/v2/users")) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
