@@ -17,6 +17,7 @@ package dpkg_test
 import (
 	"context"
 	"io/fs"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -45,10 +46,9 @@ func (a scalibrAdapter) Stat(name string) (fs.FileInfo, error) {
 }
 
 func TestAnnotate(t *testing.T) {
-	// TODO: de-comment this
-	// if runtime.GOOS != "linux" {
-	// 	t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	// }
+	if runtime.GOOS != "linux" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
 
 	cancelledContext, cancel := context.WithCancel(t.Context())
 	cancel()
@@ -126,6 +126,57 @@ func TestAnnotate(t *testing.T) {
 			},
 		},
 		{
+			desc: "some_pkgs_found_in_info_but_not_in_main_repo",
+			txt: `
+-- var/lib/dpkg/info/some.list --
+/some/path
+/path/to/file-in-info
+/some/other/path
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
+Package: curl
+`,
+			packages: []*extractor.Package{
+				{
+					Name:      "file-in-info",
+					Locations: []string{"path/to/file-in-info"},
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "file-in-info",
+					Locations: []string{"path/to/file-in-info"},
+				},
+			},
+		},
+		{
+			desc: "some_pkgs_found_in_info_and_in_main_repo",
+			txt: `
+-- var/lib/dpkg/info/some.list --
+/some/path
+/path/to/file-in-info
+/some/other/path
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
+Package: file-in-info
+`,
+			packages: []*extractor.Package{
+				{
+					Name:      "file-in-info",
+					Locations: []string{"path/to/file-in-info"},
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "file-in-info",
+					Locations: []string{"path/to/file-in-info"},
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
+				},
+			},
+		},
+		{
 			desc: "pkg_found_in_file_with_wrong_extension",
 			txt: `
 -- var/lib/dpkg/info/some.notlist --
@@ -180,9 +231,7 @@ func TestAnnotate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			// Parse from memory instead of ParseFile
-			archive := txtar.Parse([]byte(tt.txt))
-			mfs, err := txtar.FS(archive)
+			mfs, err := txtar.FS(txtar.Parse([]byte(tt.txt)))
 			if err != nil {
 				t.Fatal(err)
 			}
