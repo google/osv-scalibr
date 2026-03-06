@@ -64,12 +64,12 @@ func TestExtractor_FileRequired(t *testing.T) {
 			want:      false,
 		},
 	}
+	e, err := sbt.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("sbt.New: %v", err)
+	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-			e, err := sbt.New(&cpb.PluginConfig{})
-			if err != nil {
-				t.Fatalf("sbt.New: %v", err)
-			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -141,6 +141,28 @@ func TestExtractor_Extract(t *testing.T) {
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "pekko-testkit",
 						GroupID:      "org.apache.pekko",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.dep1:toolkit",
+					Version:   "1.2.3",
+					PURLType:  purl.TypeMaven,
+					Locations: []string{"testdata/valid.sbt"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "toolkit",
+						GroupID:      "org.dep1",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:      "org.dep2:toolkit",
+					Version:   "4.5.6",
+					PURLType:  purl.TypeMaven,
+					Locations: []string{"testdata/valid.sbt"},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "toolkit",
+						GroupID:      "org.dep2",
 						DepGroupVals: []string{},
 					},
 				},

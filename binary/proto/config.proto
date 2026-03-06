@@ -95,6 +95,7 @@ message PluginSpecificConfig {
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
     OSVLocalConfig osvlocal = 57;
+    SBT sbt = 58;
   }
 }
 
@@ -445,6 +446,12 @@ message MariadbConfig {
   int64 max_file_size_bytes = 1;
   // Tells the extractor to follow the include or not.
   optional bool follow_include = 2;
+}
+message SBT {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
 }
 
 message OSVLocalConfig {
