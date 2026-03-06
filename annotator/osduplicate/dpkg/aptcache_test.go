@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"io"
 	"io/fs"
 	"runtime"
 	"strings"
@@ -32,6 +33,14 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error {
+	return nil
+}
+
 // prepareMapFS builds an in-memory file system from a txtar string adding compression capabilities
 func prepareMapFS(t *testing.T, txt string, emptyDir bool) fstest.MapFS {
 	t.Helper()
@@ -42,35 +51,29 @@ func prepareMapFS(t *testing.T, txt string, emptyDir bool) fstest.MapFS {
 	}
 
 	for _, f := range txtar.Parse([]byte(txt)).Files {
-		var b bytes.Buffer
-
+		var (
+			b bytes.Buffer
+			w io.WriteCloser
+		)
 		// Automatically compress based on the file extension
 		switch {
 		case strings.HasSuffix(f.Name, ".gz"):
-			w := gzip.NewWriter(&b)
-			if _, err := w.Write(f.Data); err != nil {
-				t.Fatal(err)
-			}
-			w.Close()
+			w = gzip.NewWriter(&b)
 		case strings.HasSuffix(f.Name, ".zst"):
-			w, err := zstd.NewWriter(&b)
+			var err error
+			w, err = zstd.NewWriter(&b)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := w.Write(f.Data); err != nil {
-				t.Fatal(err)
-			}
-			w.Close()
 		case strings.HasSuffix(f.Name, ".lz4"):
-			w := lz4.NewWriter(&b)
-			if _, err := w.Write(f.Data); err != nil {
-				t.Fatal(err)
-			}
-			w.Close()
+			w = lz4.NewWriter(&b)
 		default:
-			b.Write(f.Data)
+			w = nopWriteCloser{Writer: &b}
 		}
-
+		if _, err := w.Write(f.Data); err != nil {
+			t.Fatal(err)
+		}
+		w.Close()
 		mfs[f.Name] = &fstest.MapFile{Data: b.Bytes(), Mode: 0644}
 	}
 
