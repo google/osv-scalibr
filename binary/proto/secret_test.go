@@ -62,9 +62,9 @@ var (
 			Status:      spb.SecretStatus_INVALID,
 			LastUpdated: timestamppb.New(secretAt1),
 		},
-		Locations: []*spb.Location{
-			&spb.Location{
-				Location: &spb.Location_Filepath{
+		Locations: []*spb.LocationLegacy{
+			&spb.LocationLegacy{
+				Location: &spb.LocationLegacy_Filepath{
 					Filepath: &spb.Filepath{
 						Path: "/foo/bar/baz.json",
 					},
@@ -86,9 +86,9 @@ var (
 				},
 			},
 		},
-		Locations: []*spb.Location{
-			&spb.Location{
-				Location: &spb.Location_Filepath{
+		Locations: []*spb.LocationLegacy{
+			&spb.LocationLegacy{
+				Location: &spb.LocationLegacy_Filepath{
 					Filepath: &spb.Filepath{
 						Path: "/foo/bar/baz.json",
 					},
@@ -113,9 +113,9 @@ var (
 				},
 			},
 		},
-		Locations: []*spb.Location{
-			&spb.Location{
-				Location: &spb.Location_Filepath{
+		Locations: []*spb.LocationLegacy{
+			&spb.LocationLegacy{
+				Location: &spb.LocationLegacy_Filepath{
 					Filepath: &spb.Filepath{
 						Path: "/foo/bar/baz.json",
 					},

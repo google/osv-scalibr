@@ -780,9 +780,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Status:      spb.SecretStatus_INVALID,
 			LastUpdated: timestamppb.New(startTime),
 		},
-		Locations: []*spb.Location{
-			&spb.Location{
-				Location: &spb.Location_Filepath{
+		Locations: []*spb.LocationLegacy{
+			&spb.LocationLegacy{
+				Location: &spb.LocationLegacy_Filepath{
 					Filepath: &spb.Filepath{
 						Path: "/foo/bar/baz.json",
 					},
@@ -836,9 +836,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Status:      spb.SecretStatus_INVALID,
 			LastUpdated: timestamppb.New(startTime),
 		},
-		Locations: []*spb.Location{
-			&spb.Location{
-				Location: &spb.Location_Filepath{
+		Locations: []*spb.LocationLegacy{
+			&spb.LocationLegacy{
+				Location: &spb.LocationLegacy_Filepath{
 					Filepath: &spb.Filepath{
 						Path: "/foo/bar/baz.json",
 					},

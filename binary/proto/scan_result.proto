@@ -95,7 +95,10 @@ message Package {
   // value, e.g. PyPI.
   string ecosystem = 27;
   // Paths or source of files related to the package.
+  // This will soon be deprecated in favor of |location|.
   repeated string locations = 2;
+  // TODO(b/400910349): Start populating this and deprecate |locations|.
+  PackageLocation location = 68;
   // The names of the plugins that found this software. Set by the
   // core library.
   repeated string plugins = 49;
@@ -165,6 +168,15 @@ message Package {
   }
 
   optional ContainerImageMetadataIndexes container_image_metadata_indexes = 57;
+}
+
+// Paths or source of files related to an extracted package.
+message PackageLocation {
+  // Main descriptor this package was extracted from (if applicable).
+  Location desc = 1;
+  // Other locations related to this package, e.g. files installed by the OS
+  // package.
+  repeated Location related = 2;
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).
@@ -750,7 +762,9 @@ message UnknownBinaryAttribution {
 message Secret {
   SecretData secret = 1;
   SecretStatus status = 2;
-  repeated Location locations = 3;
+  repeated LocationLegacy locations = 3;
+  // TODO(b/400910349): Start populating this and deprecate |locations|.
+  Location location = 4;
 }
 
 message SecretData {
@@ -1330,7 +1344,9 @@ message SecretStatus {
   }
 }
 
-message Location {
+// The old Location message type used for secrets and sensitive data.
+// TODO(b/400910349): Deprecate this in favor of the Location message.
+message LocationLegacy {
   oneof location {
     Filepath filepath = 1;
     FilepathWithLayerDetails filepath_with_layer_details = 2;
@@ -1354,6 +1370,16 @@ message EnvironmentVariable {
 
 message ContainerCommand {
   string command = 1;
+}
+
+message Location {
+  File file = 1;
+}
+
+message File {
+  string path = 1;
+  // The specific position of the inventory item inside the file
+  optional int32 line_number = 2;
 }
 
 message ContainerImageMetadata {

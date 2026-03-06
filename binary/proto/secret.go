@@ -1172,10 +1172,10 @@ func validationStatusToProto(s veles.ValidationStatus) (spb.SecretStatus_SecretS
 	return v, nil
 }
 
-func secretLocationToProto(filepath string) []*spb.Location {
-	return []*spb.Location{
+func secretLocationToProto(filepath string) []*spb.LocationLegacy {
+	return []*spb.LocationLegacy{
 		{
-			Location: &spb.Location_Filepath{
+			Location: &spb.LocationLegacy_Filepath{
 				Filepath: &spb.Filepath{
 					Path: filepath,
 				},
@@ -1698,7 +1698,7 @@ func validationStatusToStruct(s spb.SecretStatus_SecretStatusEnum) (veles.Valida
 	return v, nil
 }
 
-func secretLocationToStruct(location *spb.Location) string {
+func secretLocationToStruct(location *spb.LocationLegacy) string {
 	if location.GetFilepath() != nil {
 		return location.GetFilepath().GetPath()
 	}
