@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
@@ -101,6 +102,8 @@ message Package {
   repeated string plugins = 49;
   // The additional data found in the package.
   // LINT.IfChange
+  optional google.protobuf.Any metadata_any = 68;
+  // Deprecated: use metadata_any instead.
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
@@ -1402,4 +1405,8 @@ message LayerMetadata {
   // The index of the base image match within the
   // ContainerImageMetadata.base_image_chains field.
   int32 base_image_index = 6;
+}
+
+message FSMetadata {
+  bool has_fs = 1;
 }

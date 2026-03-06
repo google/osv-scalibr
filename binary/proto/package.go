@@ -16,9 +16,8 @@ package proto
 
 import (
 	"fmt"
-	"io/fs"
-	"reflect"
 
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
@@ -27,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -97,27 +97,34 @@ func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceC
 	}
 }
 
-func setProtoMetadata(meta any, p *spb.Package) {
+func setProtoMetadata(meta metadata.Protoable, p *spb.Package) {
 	if meta == nil {
 		return
 	}
-
 	if p == nil {
 		return
 	}
 
-	if m, ok := meta.(MetadataProtoSetter); ok {
-		m.SetProto(p)
+	anyMsg := metadata.StructToProto(meta)
+	p.MetadataAny = anyMsg
+
+	// Backfill old metadata field for backward compatibility.
+	// TODO: Remove once the migration is complete.
+	msg, err := anyMsg.UnmarshalNew()
+	if err != nil {
+		log.Errorf("Failed to unmarshal metadata for backfill: %v", err)
 		return
 	}
 
-	// input.FS is passed from Extractors to Detectors, but it represents a
-	// runtime filesystem interface rather than a serializable data structure.
-	// Attempting to serialize it would be invalid and unsafe.
-	// This check explicitly excludes it from metadata serialization to prevent
-	// type assertion and proto conversion errors.
-	if _, ok := meta.(fs.FS); ok {
-		return
+	md := p.ProtoReflect().Descriptor().Oneofs().ByName("metadata")
+	if md != nil {
+		for i := range md.Fields().Len() {
+			fd := md.Fields().Get(i)
+			if fd.Message() != nil && fd.Message().FullName() == msg.ProtoReflect().Descriptor().FullName() {
+				p.ProtoReflect().Set(fd, protoreflect.ValueOfMessage(msg.ProtoReflect()))
+				return
+			}
+		}
 	}
 
 	log.Errorf("Failed to convert metadata of type %T to proto: %+v", meta, meta)
@@ -174,16 +181,24 @@ func sourceCodeIdentifierToStruct(s *spb.SourceCodeIdentifier) *extractor.Source
 	}
 }
 
-func metadataToStruct(md *spb.Package) any {
-	if md.GetMetadata() == nil {
+func metadataToStruct(pkg *spb.Package) metadata.Protoable {
+	if pkg.GetMetadataAny() != nil {
+		return metadata.ProtoToStruct(pkg.GetMetadataAny())
+	}
+
+	// Fallback to old metadata field [deprecated]
+	// TODO(b/489562435): Remove this once the migration is complete.
+	md := pkg.ProtoReflect().Descriptor().Oneofs().ByName("metadata")
+	if md == nil {
 		return nil
 	}
 
-	t := reflect.TypeOf(md.GetMetadata())
-	if converter, ok := metadataTypeToStructConverter[t]; ok {
-		return converter(md)
+	which := pkg.ProtoReflect().WhichOneof(md)
+	if which == nil {
+		return nil
 	}
 
-	log.Errorf("Failed to convert metadata of type %T to struct: %+v", md.GetMetadata(), md.GetMetadata())
-	return nil
+	// getting the message
+	msg := pkg.ProtoReflect().Get(which).Message().Interface()
+	return metadata.MessageToStruct(msg)
 }

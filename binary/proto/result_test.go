@@ -65,6 +65,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -126,6 +127,19 @@ var (
 		}},
 	}
 )
+
+func mustNewAny(m protobuf.Message) *anypb.Any {
+	a, err := anypb.New(m)
+	if err != nil {
+		panic(err)
+	}
+	return a
+}
+
+func init() {
+	// This needs to be done init because it's being used by other test files
+	purlDPKGAnnotationPackageProto.MetadataAny = mustNewAny(purlDPKGAnnotationPackageProto.GetDpkgMetadata())
+}
 
 func TestScanResultToProtoAndBack(t *testing.T) {
 	endTime := time.Now()
@@ -885,6 +899,24 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Version:  "4.17.1",
 		Licenses: []string{"MIT"},
 	}
+
+	purlDotnetDepsJSONPackageProto.MetadataAny = mustNewAny(purlDotnetDepsJSONPackageProto.GetDepsjsonMetadata())
+	purlDPKGPackageProto.MetadataAny = mustNewAny(purlDPKGPackageProto.GetDpkgMetadata())
+	purlPythonPackageProto.MetadataAny = mustNewAny(purlPythonPackageProto.GetPythonMetadata())
+	pythonRequirementsPackageProto.MetadataAny = mustNewAny(pythonRequirementsPackageProto.GetPythonRequirementsMetadata())
+	purlJavascriptPackageProto.MetadataAny = mustNewAny(purlJavascriptPackageProto.GetJavascriptMetadata())
+	cdxPackageProto.MetadataAny = mustNewAny(cdxPackageProto.GetCdxMetadata())
+	purlRPMPackageProto.MetadataAny = mustNewAny(purlRPMPackageProto.GetRpmMetadata())
+	purlPACMANPackageProto.MetadataAny = mustNewAny(purlPACMANPackageProto.GetPacmanMetadata())
+	purlPORTAGEPackageProto.MetadataAny = mustNewAny(purlPORTAGEPackageProto.GetPortageMetadata())
+	purlNixPackageProto.MetadataAny = mustNewAny(purlNixPackageProto.GetNixMetadata())
+	containerdPackageProto.MetadataAny = mustNewAny(containerdPackageProto.GetContainerdContainerMetadata())
+	containerdRuntimePackageProto.MetadataAny = mustNewAny(containerdRuntimePackageProto.GetContainerdRuntimeContainerMetadata())
+	windowsPackageProto.MetadataAny = mustNewAny(windowsPackageProto.GetWindowsOsVersionMetadata())
+	mavenPackageProto.MetadataAny = mustNewAny(mavenPackageProto.GetJavaLockfileMetadata())
+	podmanPackageProto.MetadataAny = mustNewAny(podmanPackageProto.GetPodmanMetadata())
+	dockerPackageProto.MetadataAny = mustNewAny(dockerPackageProto.GetDockerContainersMetadata())
+	purlWingetPackageProto.MetadataAny = mustNewAny(purlWingetPackageProto.GetWingetMetadata())
 
 	testCases := []struct {
 		desc         string
