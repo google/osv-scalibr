@@ -16,6 +16,7 @@ package jwt_test
 
 import (
 	"encoding/base64"
+	"regexp"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -161,6 +162,130 @@ func TestExtractTokens_invalidTokens(t *testing.T) {
 
 			if len(gotPos) != 0 {
 				t.Errorf("ExtractTokens(): diff returned %d positions; want 0", len(gotPos))
+			}
+		})
+	}
+}
+
+// TestExtractTokensWithContext_validTokens tests context-aware extraction
+// where the JWT is captured as group 1 but the position spans the full match.
+func TestExtractTokensWithContext_validTokens(t *testing.T) {
+	re := regexp.MustCompile(
+		`(?i)\baccess[_-]?token\b\s*[:=]?\s*(eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b`,
+	)
+
+	cases := []struct {
+		name        string
+		input       []byte
+		wantRaw     []string
+		wantPayload []map[string]any
+		wantPos     []int
+	}{
+		{
+			name: "single_match_with_prefix_suffix",
+			input: []byte("prefix access_token: " +
+				"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
+				"eyJzdWIiOiIxMjMifQ.signature suffix"),
+			wantRaw: []string{
+				"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
+					"eyJzdWIiOiIxMjMifQ.signature",
+			},
+			wantPayload: []map[string]any{
+				{"sub": "123"},
+			},
+			wantPos: []int{7}, // start of "access_token"
+		},
+		{
+			name: "multiple_matches",
+			input: []byte(
+				"access_token=" +
+					"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
+					"eyJmb28iOiJiYXIifQ.sig1" +
+					"\naccess_token=" +
+					"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
+					"eyJiYXoiOiJxdXgifQ.sig2",
+			),
+			wantRaw: []string{
+				"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
+					"eyJmb28iOiJiYXIifQ.sig1",
+				"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
+					"eyJiYXoiOiJxdXgifQ.sig2",
+			},
+			wantPayload: []map[string]any{
+				{"foo": "bar"},
+				{"baz": "qux"},
+			},
+			wantPos: []int{
+				0, // first "access_token"
+				len("access_token=" +
+					"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
+					"eyJmb28iOiJiYXIifQ.sig1\n"),
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotTokens, gotPos := jwt.ExtractTokensWithContext(tc.input, re)
+
+			if diff := cmp.Diff(tc.wantPos, gotPos); diff != "" {
+				t.Errorf("ExtractTokensWithContext(): position mismatch (-want +got):\n%s", diff)
+			}
+
+			if len(gotTokens) != len(tc.wantRaw) {
+				t.Fatalf("ExtractTokensWithContext(): got %d tokens, want %d",
+					len(gotTokens), len(tc.wantRaw))
+			}
+
+			for i, got := range gotTokens {
+				if got.Raw() != tc.wantRaw[i] {
+					t.Errorf("ExtractTokensWithContext(): %d Raw() = %q; want %q",
+						i, got.Raw(), tc.wantRaw[i])
+				}
+
+				if diff := cmp.Diff(tc.wantPayload[i], got.Payload(), cmpopts.EquateEmpty()); diff != "" {
+					t.Errorf("ExtractTokensWithContext(): %d Payload mismatch (-want +got):\n%s",
+						i, diff)
+				}
+			}
+		})
+	}
+}
+
+// TestExtractTokensWithContext_invalidCases ensures invalid captures are ignored.
+func TestExtractTokensWithContext_invalidCases(t *testing.T) {
+	re := regexp.MustCompile(
+		`(?i)\baccess_token\b\s*[:=]?\s*(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b`,
+	)
+
+	cases := []struct {
+		name  string
+		input []byte
+	}{
+		{
+			name:  "no capture group match",
+			input: []byte("access_token: not_a_jwt"),
+		},
+		{
+			name:  "invalid base64 payload",
+			input: []byte("access_token: eyJhbGciOiJSUzI1NiJ9.invalid!.sig"),
+		},
+		{
+			name:  "missing token completely",
+			input: []byte("nothing here"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotTokens, gotPos := jwt.ExtractTokensWithContext(tc.input, re)
+
+			if len(gotTokens) != 0 {
+				t.Errorf("ExtractTokensWithContext(): got %d tokens, want 0", len(gotTokens))
+			}
+
+			if len(gotPos) != 0 {
+				t.Errorf("ExtractTokensWithContext(): got %d positions, want 0", len(gotPos))
 			}
 		})
 	}
