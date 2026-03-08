@@ -95,7 +95,7 @@ type packageSourceCredsSection struct {
 }
 
 type packageSource struct {
-	XMLName xml.Name
+	XMLName xml.Name       `xml:"packageSource"`
 	Add     []keyValuePair `xml:"add"`
 }
 
@@ -109,7 +109,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	decoder := xml.NewDecoder(input.Reader)
 
 	var config nugetConfig
-	//nolint:musttag // XML tags are defined on the struct fields
 	if err := decoder.Decode(&config); err != nil {
 		//nolint:nilerr
 		return inventory.Inventory{}, nil
