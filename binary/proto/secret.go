@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
+	velesgitlab "github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -196,6 +197,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubAppUserToServerTokenToProto(t.Token), nil
 	case velesgithub.OAuthToken:
 		return githubOAuthTokenToProto(t.Token), nil
+	case velesgitlab.OAuthCredentials:
+		return gitlabOAuthCredentialsToProto(t), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -711,6 +714,19 @@ func grokXAIManagementKeyToProto(s velesgrokxaiapikey.GrokXAIManagementKey) *spb
 		},
 	}
 }
+
+func gitlabOAuthCredentialsToProto(s velesgitlab.OAuthCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabOauth{
+			GitlabOauth: &spb.SecretData_GitlabOAuthCredentials{
+				ClientId:     s.ClientID,
+				ClientSecret: s.ClientSecret,
+				Hostname:     s.Hostname,
+			},
+		},
+	}
+}
+
 func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GitlabPat_{
@@ -1234,6 +1250,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return cloudflareAPITokenToStruct(s.GetCloudflareApiToken()), nil
 	case *spb.SecretData_DenoPat_:
 		return denoPATToStruct(s.GetDenoPat()), nil
+	case *spb.SecretData_GitlabOauth:
+		return gitlabOAuthCredentialsToStruct(s.GetGitlabOauth()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
 	case *spb.SecretData_Digitalocean:
@@ -1566,6 +1584,14 @@ func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
 		return denopat.DenoUserPAT{Pat: pat}
 	}
 	return denopat.DenoOrgPAT{Pat: pat}
+}
+
+func gitlabOAuthCredentialsToStruct(kPB *spb.SecretData_GitlabOAuthCredentials) velesgitlab.OAuthCredentials {
+	return velesgitlab.OAuthCredentials{
+		ClientID:     kPB.GetClientId(),
+		ClientSecret: kPB.GetClientSecret(),
+		Hostname:     kPB.GetHostname(),
+	}
 }
 
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
