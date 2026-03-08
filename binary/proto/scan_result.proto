@@ -845,6 +845,7 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    GitlabFeatureFlagsClientToken gitlab_feature_flags_client_token = 89;
   }
 
   message GCPSAK {
@@ -1044,6 +1045,11 @@ message SecretData {
   message HashiCorpCloudPlatformCredentials {
     string client_id = 1;
     string client_secret = 2;
+  }
+
+  message GitlabFeatureFlagsClientToken {
+    string token = 1;
+    string endpoint = 2;
   }
 
   message HashiCorpCloudPlatformToken {
