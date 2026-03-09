@@ -20,7 +20,7 @@ import (
 
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	bazelmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
+	bazelmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/os/bazel/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -30,7 +30,7 @@ import (
 // - Artifact ID is lowercased and stored as the name
 func MakePackageURL(version string, metadata any) *purl.PackageURL {
 	switch m := metadata.(type) {
-	case *bazelmavenmeta.Metadata:
+	case *bazelmavenmeta.MavenMetadata:
 		return &purl.PackageURL{
 			Type:      purl.TypeMaven,
 			Namespace: strings.ToLower(m.GroupID),

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bazelmaven extracts maven packages from bazel build files.
-package bazelmaven
+// Package bazel extracts packages from bazel build files.
+package bazel
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	bazelmetadata "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
+	bazelmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/bazel/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -36,10 +36,10 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "os/bazelmaven"
+	Name = "os/bazel"
 )
 
-// Extractor extracts maven packages from bazel build files.
+// Extractor extracts packages from bazel build files.
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
@@ -61,7 +61,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return slices.Contains([]string{"BUILD.bazel", "MODULE.bazel", "WORKSPACE"}, path.Base(api.Path()))
 }
 
-// Extract extracts maven packages from the bazel build file.
+// Extract extracts packages from the bazel build file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Check for context cancellation
 	if err := ctx.Err(); err != nil {
@@ -74,27 +74,48 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("error reading input file: %w", err)
 	}
 
-	// Use FindAllMavenDependencies to parse the Bazel file and extract Maven dependencies
-	dependencies, err := FindAllMavenDependencies(data)
+	// Parse the Bazel file once for all extractors
+	f, err := build.Parse("default", data)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("error parsing Bazel file: %w", err)
+		return inventory.Inventory{}, fmt.Errorf("failed to parse Bazel file: %w", err)
 	}
 
 	var pkgs []*extractor.Package
 
-	// Convert the dependencies to extractor.Package objects
+	// Extract Maven dependencies
+	mavenPkgs, err := extractMavenPackages(ctx, e, f, input)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+	pkgs = append(pkgs, mavenPkgs...)
+
+	// Extract Go dependencies
+	goPkgs, err := extractGoPackages(ctx, e, f, input)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+	pkgs = append(pkgs, goPkgs...)
+
+	return inventory.Inventory{Packages: pkgs}, nil
+}
+
+// extractMavenPackages extracts Maven packages from the parsed Bazel file.
+func extractMavenPackages(ctx context.Context, e Extractor, f *build.File, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	dependencies := findAllMavenDependenciesFromFile(f)
+
+	var pkgs []*extractor.Package
+
 	for ruleName, mavenDeps := range dependencies {
 		if err := ctx.Err(); err != nil {
-			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+			return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 		for _, dep := range mavenDeps {
-			// Create a package for each Maven dependency
 			pkg := &extractor.Package{
 				Name:      dep.Name,
 				Version:   dep.Version,
 				PURLType:  purl.TypeMaven,
 				Locations: []string{input.Path},
-				Metadata: &bazelmetadata.Metadata{
+				Metadata: &bazelmetadata.MavenMetadata{
 					Name:       dep.Name,
 					GroupID:    dep.GroupID,
 					ArtifactID: dep.ArtifactID,
@@ -106,22 +127,59 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 	}
 
-	return inventory.Inventory{Packages: pkgs}, nil
+	return pkgs, nil
+}
+
+// goRuleLoadPaths lists the known load paths for rules_go rule definitions.
+var goRuleLoadPaths = []string{
+	"@rules_go//go:def.bzl",
+	"@rules_go//docs/go/core:rules.bzl",
+}
+
+// goRulesWithDeps lists the rules_go rule names that have a "deps" attribute
+// containing Go dependency labels.
+var goRulesWithDeps = []string{"go_library", "go_binary", "go_test", "go_path", "go_source"}
+
+// extractGoPackages extracts Go packages from rules loaded via rules_go load paths.
+// It looks for go_library, go_binary, go_test, go_path, and go_source rules
+// and extracts their "deps" attribute values.
+func extractGoPackages(ctx context.Context, e Extractor, f *build.File, input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+	}
+
+	var pkgs []*extractor.Package
+
+	for _, loadPath := range goRuleLoadPaths {
+		results := FindLoadedRuleAttributesFromFile(f, loadPath, "deps")
+		for _, result := range results {
+			if !slices.Contains(goRulesWithDeps, result.RuleName) {
+				continue
+			}
+			for _, dep := range result.Values {
+				pkg := &extractor.Package{
+					Name:      dep,
+					PURLType:  purl.TypeGolang,
+					Locations: []string{input.Path},
+					Metadata: &bazelmetadata.GoMetadata{
+						RuleName: result.RuleName,
+					},
+				}
+				pkgs = append(pkgs, pkg)
+			}
+		}
+	}
+
+	return pkgs, nil
 }
 
 // RuleDependencies maps rule types to their dependencies
-type RuleDependencies map[string][]bazelmetadata.Metadata
+type RuleDependencies map[string][]bazelmetadata.MavenMetadata
 
-// FindAllMavenDependencies parses all file sources and returns dependencies by rule type
-func FindAllMavenDependencies(input []byte) (RuleDependencies, error) {
+// findAllMavenDependenciesFromFile extracts Maven dependencies from an already-parsed Bazel file.
+func findAllMavenDependenciesFromFile(f *build.File) RuleDependencies {
 	// Create a map to hold dependencies by rule type
 	allDeps := make(RuleDependencies)
-
-	// Parse the combined file
-	f, err := build.Parse("default", input)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse Bazel file: %w", err)
-	}
 
 	// Find all load statements to track rule sources
 	loadMapping := findLoadStatements(f)
@@ -145,7 +203,7 @@ func FindAllMavenDependencies(input []byte) (RuleDependencies, error) {
 		}
 	}
 
-	return allDeps, nil
+	return allDeps
 }
 
 // processIdentRule handles direct rule name calls (e.g. "maven_install(...)").
@@ -192,7 +250,7 @@ func processDotExprRule(x *build.DotExpr, r *build.Rule, f *build.File, extensio
 			group := getAttributeStringValue(r, f, "group")
 			artifact := getAttributeStringValue(r, f, "artifact")
 			version := getAttributeStringValue(r, f, "version")
-			allDeps["maven.artifact"] = append(allDeps["maven.artifact"], bazelmetadata.Metadata{
+			allDeps["maven.artifact"] = append(allDeps["maven.artifact"], bazelmetadata.MavenMetadata{
 				Name:       group + ":" + artifact,
 				GroupID:    group,
 				ArtifactID: artifact,
@@ -203,13 +261,13 @@ func processDotExprRule(x *build.DotExpr, r *build.Rule, f *build.File, extensio
 }
 
 // ExtractMavenArtifactInfo extracts Maven coordinates from artifact strings like "org.jetbrains.kotlin:kotlin-stdlib:1.7.10"
-func ExtractMavenArtifactInfo(artifacts []string) []bazelmetadata.Metadata {
-	var deps []bazelmetadata.Metadata
+func ExtractMavenArtifactInfo(artifacts []string) []bazelmetadata.MavenMetadata {
+	var deps []bazelmetadata.MavenMetadata
 
 	for _, artifact := range artifacts {
 		parts := strings.Split(artifact, ":")
 
-		dep := bazelmetadata.Metadata{}
+		dep := bazelmetadata.MavenMetadata{}
 		dep.Name = parts[0] + ":" + parts[1]
 
 		if len(parts) >= 3 {

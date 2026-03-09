@@ -129,7 +129,7 @@ message Package {
     FlatpakPackageMetadata flatpak_metadata = 24;
     MacAppsMetadata mac_apps_metadata = 34;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-        25;
+      25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
@@ -147,8 +147,9 @@ message Package {
     MiseMetadata mise_metadata = 63;
     UnknownBinaryMetadata unknown_binary_metadata = 64;
     BazelMavenMetadata bazel_maven_metadata = 65;
-    JavascriptDenoMetadata deno_metadata = 66;
-    SpackPackageMetadata spack_metadata = 67;
+    BazelGoMetadata bazel_go_metadata = 66;
+    JavascriptDenoMetadata deno_metadata = 67;
+    SpackPackageMetadata spack_metadata = 69;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -728,6 +729,10 @@ message BazelMavenMetadata {
   string rule_name = 5;
 }
 
+message BazelGoMetadata {
+  string rule_name = 1;
+}
+
 message DockerPort {
   string ip = 1;
   uint32 private_port = 2;
@@ -798,7 +803,7 @@ message SecretData {
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
     GithubFineGrainedPersonalAccessToken
-        github_fine_grained_personal_access_token = 29;
+      github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
     OpenRouterAPIKey openrouter_api_key = 32;
@@ -835,7 +840,7 @@ message SecretData {
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
     SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
     SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials =
-        65;
+      65;
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
@@ -1164,7 +1169,7 @@ message SecretData {
   message PackagistAPISecret {
     string secret = 1;
     string key =
-        2;  // Optional: populated when both key and secret are found together
+      2;  // Optional: populated when both key and secret are found together
   }
 
   message PackagistOrgReadToken {

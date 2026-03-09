@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bazelmaven
+package bazel
 
 import (
 	"io/fs"
@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	bazelmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
+	bazelmeta "github.com/google/osv-scalibr/extractor/filesystem/os/bazel/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -43,7 +43,7 @@ func TestExtract(t *testing.T) {
 					Name:     "group1:artifact1",
 					Version:  "1",
 					PURLType: purl.TypeMaven,
-					Metadata: &bazelmavenmeta.Metadata{
+					Metadata: &bazelmeta.MavenMetadata{
 						Name:       "group1:artifact1",
 						GroupID:    "group1",
 						ArtifactID: "artifact1",
@@ -56,7 +56,7 @@ func TestExtract(t *testing.T) {
 					Name:     "group2:artifact2",
 					Version:  "2",
 					PURLType: purl.TypeMaven,
-					Metadata: &bazelmavenmeta.Metadata{
+					Metadata: &bazelmeta.MavenMetadata{
 						Name:       "group2:artifact2",
 						GroupID:    "group2",
 						ArtifactID: "artifact2",
@@ -69,7 +69,7 @@ func TestExtract(t *testing.T) {
 					Name:     "group3:artifact3",
 					Version:  "3",
 					PURLType: purl.TypeMaven,
-					Metadata: &bazelmavenmeta.Metadata{
+					Metadata: &bazelmeta.MavenMetadata{
 						Name:       "group3:artifact3",
 						GroupID:    "group3",
 						ArtifactID: "artifact3",
@@ -82,7 +82,7 @@ func TestExtract(t *testing.T) {
 					Name:     "group4:artifact4",
 					Version:  "4",
 					PURLType: purl.TypeMaven,
-					Metadata: &bazelmavenmeta.Metadata{
+					Metadata: &bazelmeta.MavenMetadata{
 						Name:       "group4:artifact4",
 						GroupID:    "group4",
 						ArtifactID: "artifact4",
@@ -95,7 +95,7 @@ func TestExtract(t *testing.T) {
 					Name:     "group5:artifact5",
 					Version:  "5",
 					PURLType: purl.TypeMaven,
-					Metadata: &bazelmavenmeta.Metadata{
+					Metadata: &bazelmeta.MavenMetadata{
 						Name:       "group5:artifact5",
 						GroupID:    "group5",
 						ArtifactID: "artifact5",
@@ -108,7 +108,7 @@ func TestExtract(t *testing.T) {
 					Name:     "group6:artifact6",
 					Version:  "6",
 					PURLType: purl.TypeMaven,
-					Metadata: &bazelmavenmeta.Metadata{
+					Metadata: &bazelmeta.MavenMetadata{
 						Name:       "group6:artifact6",
 						GroupID:    "group6",
 						ArtifactID: "artifact6",
@@ -121,7 +121,7 @@ func TestExtract(t *testing.T) {
 					Name:     "group7:artifact7",
 					Version:  "7",
 					PURLType: purl.TypeMaven,
-					Metadata: &bazelmavenmeta.Metadata{
+					Metadata: &bazelmeta.MavenMetadata{
 						Name:       "group7:artifact7",
 						GroupID:    "group7",
 						ArtifactID: "artifact7",
@@ -152,6 +152,54 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/INVALID.bazel",
 			},
 			WantErr: extracttest.ContainsErrStr{Str: "failed to parse Bazel file"},
+		},
+		{
+			Name: "go rules_go dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/MODULE_GO.bazel",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "@org_golang_x_net//html",
+					PURLType: purl.TypeGolang,
+					Metadata: &bazelmeta.GoMetadata{
+						RuleName: "go_library",
+					},
+					Locations: []string{"testdata/MODULE_GO.bazel"},
+				},
+				{
+					Name:     "@org_golang_x_net//html/atom",
+					PURLType: purl.TypeGolang,
+					Metadata: &bazelmeta.GoMetadata{
+						RuleName: "go_library",
+					},
+					Locations: []string{"testdata/MODULE_GO.bazel"},
+				},
+				{
+					Name:     "@com_github_google_go_cmp//cmp",
+					PURLType: purl.TypeGolang,
+					Metadata: &bazelmeta.GoMetadata{
+						RuleName: "go_test",
+					},
+					Locations: []string{"testdata/MODULE_GO.bazel"},
+				},
+				{
+					Name:     "@org_golang_x_text//language",
+					PURLType: purl.TypeGolang,
+					Metadata: &bazelmeta.GoMetadata{
+						RuleName: "go_source",
+					},
+					Locations: []string{"testdata/MODULE_GO.bazel"},
+				},
+				{
+					Name:     "@org_golang_x_crypto//ssh",
+					PURLType: purl.TypeGolang,
+					Metadata: &bazelmeta.GoMetadata{
+						RuleName: "go_path",
+					},
+					Locations: []string{"testdata/MODULE_GO.bazel"},
+				},
+			},
 		},
 	}
 

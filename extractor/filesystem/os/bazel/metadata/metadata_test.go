@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/bazel/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -28,7 +28,7 @@ import (
 func TestSetProto(t *testing.T) {
 	testCases := []struct {
 		desc string
-		m    *metadata.Metadata
+		m    *metadata.MavenMetadata
 		p    *pb.Package
 		want *pb.Package
 	}{
@@ -40,7 +40,7 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "nil package",
-			m: &metadata.Metadata{
+			m: &metadata.MavenMetadata{
 				Name: "name",
 			},
 			p:    nil,
@@ -48,7 +48,7 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "set metadata",
-			m: &metadata.Metadata{
+			m: &metadata.MavenMetadata{
 				Name: "name",
 			},
 			p: &pb.Package{Name: "some-package"},
@@ -63,7 +63,7 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "override metadata",
-			m: &metadata.Metadata{
+			m: &metadata.MavenMetadata{
 				Name: "another-name",
 			},
 			p: &pb.Package{
@@ -85,7 +85,7 @@ func TestSetProto(t *testing.T) {
 		},
 		{
 			desc: "set all fields",
-			m: &metadata.Metadata{
+			m: &metadata.MavenMetadata{
 				Name:       "name",
 				Version:    "version",
 				ArtifactID: "artifactid",
@@ -123,7 +123,7 @@ func TestSetProto(t *testing.T) {
 				return
 			}
 
-			got := metadata.ToStruct(p.GetBazelMavenMetadata())
+			got := metadata.MavenToStruct(p.GetBazelMavenMetadata())
 			if diff := cmp.Diff(tc.m, got); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetBazelMavenMetadata(), diff)
 			}
@@ -131,11 +131,11 @@ func TestSetProto(t *testing.T) {
 	}
 }
 
-func TestToStruct(t *testing.T) {
+func TestMavenToStruct(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *pb.BazelMavenMetadata
-		want *metadata.Metadata
+		want *metadata.MavenMetadata
 	}{
 		{
 			desc: "nil",
@@ -147,7 +147,7 @@ func TestToStruct(t *testing.T) {
 			m: &pb.BazelMavenMetadata{
 				Name: "name",
 			},
-			want: &metadata.Metadata{
+			want: &metadata.MavenMetadata{
 				Name: "name",
 			},
 		},
@@ -159,7 +159,7 @@ func TestToStruct(t *testing.T) {
 				ArtifactId: "artifactid",
 				GroupId:    "groupid",
 			},
-			want: &metadata.Metadata{
+			want: &metadata.MavenMetadata{
 				Name:       "name",
 				Version:    "version",
 				ArtifactID: "artifactid",
@@ -170,7 +170,7 @@ func TestToStruct(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := metadata.ToStruct(tc.m)
+			got := metadata.MavenToStruct(tc.m)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}
