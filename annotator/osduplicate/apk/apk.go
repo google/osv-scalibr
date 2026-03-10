@@ -70,6 +70,12 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	}
 	defer f.Close()
 
+	apkCache, err := extractApkCache(input.ScanRoot)
+	missingApkCache := errors.Is(err, ErrMissingApkCache)
+	if err != nil && !missingApkCache {
+		return fmt.Errorf("failed to read the apk cache: %w", err)
+	}
+
 	errs := []error{}
 
 	scanner := apkutil.NewScanner(f)
@@ -92,14 +98,15 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 
 		filePath := path.Join(folder, filename)
 
-		if pkgs, ok := locationToPKGs[filePath]; ok {
-			for _, pkg := range pkgs {
-				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-					Plugin:          Name,
-					Justification:   vex.ComponentNotPresent,
-					MatchesAllVulns: true,
-				})
+		for _, pkg := range locationToPKGs[filePath] {
+			if !missingApkCache && !apkCache.isFromMainOSRepo(pkg) {
+				continue
 			}
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 	}
 
