@@ -43,3 +43,14 @@ Z:Q184DyzCylUa5WvMjPTw5XlThxdPA=
 aarch64
 -- etc/apk/repositories --
 https://dl-cdn.alpinelinux.org/alpine/v3.23/community
+-- var/cache/apk/APKINDEX.ee9ee731.tar.gz --
+== APKINDEX ==
+C:Q1c2f3...
+P:libstdc++
+V:8.1.2-r0
+
+C:Q4d5e6...
+P:openssl
+V:3.1.0-r0
+== DESCRIPTION ==
+v3.23.3-260-gd483e0429d3
