@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	iofs "io/fs"
@@ -40,9 +41,12 @@ const (
 
 var (
 	// ErrMissingApkCache is returned if the cache folder is missing or empty
-	ErrMissingApkCache = errors.New("missing apk cache folder: " + apkCacheDir)
+	ErrMissingApkCache = errors.New("missing apk cache: " + apkCacheDir)
 	// ErrMissingApkRepoIndex is returned if a main OS cache entry is missing
 	ErrMissingApkRepoIndex = errors.New("missing apk repository index")
+
+	// alpineRepoRegex matches the strict path structure of an official Alpine OS repo
+	alpineRepoRegex = regexp.MustCompile(`\/alpine\/(v\d+\.\d+|edge)\/(main|community|testing)\/?$`)
 )
 
 // apkCache contains the set of packages listed in main OS repositories indexes
@@ -120,8 +124,7 @@ func listMainRepositories(root *fs.ScanRoot) ([]string, error) {
 		}
 
 		// Check if it looks like a standard Alpine OS repository.
-		// TODO: recheck this
-		if !(strings.Contains(line, "/alpine/") && (strings.HasSuffix(line, "/main") || strings.HasSuffix(line, "/community"))) {
+		if !alpineRepoRegex.MatchString(line) {
 			continue
 		}
 
