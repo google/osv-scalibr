@@ -16,6 +16,7 @@ package apk
 
 import (
 	"maps"
+	"runtime"
 	"slices"
 	"testing"
 
@@ -26,6 +27,9 @@ import (
 )
 
 func TestExtractApkCache(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
 	tests := []struct {
 		name string
 		// fakeFS tarballs inner structure is represented using nested txtar
