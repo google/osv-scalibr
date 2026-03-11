@@ -67,6 +67,9 @@ func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network:  plugin.NetworkOnline,
 		DirectFS: true,
+		// This enricher follows registries defined in pom.xml, which can be risky if
+		// they point to malicious registries.
+		AllowUnsafePlugins: true,
 	}
 }
 

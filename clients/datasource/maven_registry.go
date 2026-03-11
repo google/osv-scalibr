@@ -167,6 +167,7 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 	if err != nil {
 		return err
 	}
+	log.Infof("The default Maven registry is being overwritten from %s to %s", m.defaultRegistry.URL, registry.URL)
 	registry.Parsed = u
 	m.defaultRegistry = registry
 	if registry.Parsed.Scheme == artifactRegistryScheme {
