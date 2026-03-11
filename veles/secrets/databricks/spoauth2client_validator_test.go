@@ -30,9 +30,9 @@ import (
 
 const (
 	validatorTestClientID          = "client_id: 7603a2a8-8220-485f-b2a5-58fa7b60a932"
-	expectedTestClientID           = "7603a2a8-8220-485f-b2a5-58fa7b60a932"
 	validatorTestClientSecret      = "dose7d9f306280a357544b0655ed81ef06c9"
 	validatorSPOAuth2ClientTestURL = "adb-myworkspace.1233322.azuredatabricks.net"
+	expectedBase64Data             = "Y2xpZW50X2lkOiA3NjAzYTJhOC04MjIwLTQ4NWYtYjJhNS01OGZhN2I2MGE5MzI6ZG9zZTdkOWYzMDYyODBhMzU3NTQ0YjA2NTVlZDgxZWYwNmM5"
 )
 
 // mockSPOAuth2ClientTransport redirects requests to the test server
@@ -51,29 +51,26 @@ func (m *mockSPOAuth2ClientTransport) RoundTrip(req *http.Request) (*http.Respon
 }
 
 // mockSPOAuth2ClientDatabricksServer creates a mock Databricks server for testing
-func mockSPOAuth2ClientDatabricksServer(t *testing.T, expectedClientID string, expectedClientSecret string, serverResponseCode int) *httptest.Server {
+func mockSPOAuth2ClientDatabricksServer(t *testing.T, expectedBase64Data string, serverResponseCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check if it's a GET request to the expected endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/api/2.0/token/list" {
-			t.Errorf("unexpected request: %s %s, expected: POST /api/2.0/token/list", r.Method, r.URL.Path)
+		// Check if it's a POST request to the expected endpoint
+		if r.Method != http.MethodPost || r.URL.Path != "/oidc/v1/token" {
+			t.Errorf("unexpected request: %s %s, expected: POST /oidc/v1/token", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
-		clientIDHeader := r.Header.Get("Client_id")
-		clientSecretHeader := r.Header.Get("Client_secret")
+		authHeader := r.Header.Get("Authorization")
 
 		// Check Authorization header and Account-Id
-		if !strings.Contains(clientIDHeader, expectedClientID) || !strings.Contains(clientSecretHeader, expectedClientSecret) {
-			w.Header().Set("Content-Type", "application/json")
+		if !strings.Contains(authHeader, expectedBase64Data) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		// Set response
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(serverResponseCode)
 	}))
 }
@@ -164,7 +161,7 @@ func TestSPOAuth2ClientValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
 
-			server := mockSPOAuth2ClientDatabricksServer(t, expectedTestClientID, validatorTestClientSecret, tt.serverResponseCode)
+			server := mockSPOAuth2ClientDatabricksServer(t, expectedBase64Data, tt.serverResponseCode)
 			defer server.Close()
 
 			if tt.cancelContext {

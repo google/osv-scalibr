@@ -15,36 +15,46 @@
 package databricks
 
 import (
-	"fmt"
+	"encoding/base64"
 	"net/http"
+	"net/url"
 
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
 // NewUAOAuth2ClientValidator creates a new Databricks User Account OAuth2 Client Credentials Validator.
-// It performs GET requests to the Databricks endpoints with discovered credentials.
+// It performs POST requests to the Databricks endpoints with discovered credentials.
 //
 // Validation logic:
 // - HTTP Status 200: Token is valid and authenticated
 // - HTTP Status 401: Token is invalid
 // - Other status codes: Validation failed
-// See the error codes here:
-// https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
-// https://docs.databricks.com/api/gcp/workspace/tokens/list
+// Reference:
+// https://docs.databricks.com/aws/en/dev-tools/auth/oauth-m2m
 func NewUAOAuth2ClientValidator() *sv.Validator[UAOAuth2ClientCredentials] {
 	return &sv.Validator[UAOAuth2ClientCredentials]{
-		Endpoints:  []string{"https://accounts.cloud.databricks.com/api/2.0/token/list", "https://accounts.gcp.databricks.com/api/2.0/token/list", "https://accounts.azuredatabricks.net/api/2.0/token/list"},
-		HTTPMethod: http.MethodGet,
+		EndpointsFunc: func(creds UAOAuth2ClientCredentials) ([]string, error) {
+			return []string{
+				"https://accounts.cloud.databricks.com/oidc/accounts/" + creds.AccountID + "/v1/token",
+				"https://accounts.gcp.databricks.com/oidc/accounts/" + creds.AccountID + "/v1/token",
+				"https://accounts.azuredatabricks.net/oidc/accounts/" + creds.AccountID + "/v1/token",
+			}, nil
+		},
+		HTTPMethod: http.MethodPost,
 		HTTPHeaders: func(creds UAOAuth2ClientCredentials) map[string]string {
+			raw := creds.ID + ":" + creds.Secret
+			encoded := base64.StdEncoding.EncodeToString([]byte(raw))
 			return map[string]string{
-				"client_id":     creds.ID,
-				"client_secret": creds.Secret,
-				"Content-Type":  "application/json",
+				"Authorization": "Basic " + encoded,
+				"Content-Type":  "application/x-www-form-urlencoded",
 			}
 		},
 		Body: func(creds UAOAuth2ClientCredentials) (string, error) {
-			// Databricks Account level operations require accound id in body
-			return fmt.Sprintf(`{"account_id": "%s"}`, creds.AccountID), nil
+			form := url.Values{}
+			form.Set("grant_type", "client_credentials")
+			form.Set("scope", "all-apis")
+
+			return form.Encode(), nil
 		},
 		ValidResponseCodes:   []int{http.StatusOK},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},

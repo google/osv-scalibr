@@ -16,7 +16,6 @@ package databricks_test
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -50,39 +49,26 @@ func (m *mockUAOAuth2ClientTransport) RoundTrip(req *http.Request) (*http.Respon
 }
 
 // mockUAOAuth2ClientDatabricksServer creates a mock Databricks server for testing
-func mockUAOAuth2ClientDatabricksServer(t *testing.T, expectedClientID string, expectedClientSecret string, expectedAccountID string, serverResponseCode int) *httptest.Server {
+func mockUAOAuth2ClientDatabricksServer(t *testing.T, expectedBase64Data string, expectedAccountID string, serverResponseCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check if it's a GET request to the expected endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/api/2.0/token/list" {
-			t.Errorf("unexpected request: %s %s, expected: POST /api/2.0/token/list", r.Method, r.URL.Path)
+		// Check if it's a POST request to the expected endpoint
+		if r.Method != http.MethodPost || (!strings.HasPrefix(r.URL.Path, "/oidc/accounts/") && !strings.HasSuffix(r.URL.Path, "/v1/token")) {
+			t.Errorf("unexpected request: %s %s, expected: POST /oidc/accounts/*/v1/token", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
-		clientIDHeader := r.Header.Get("Client_id")
-		clientSecretHeader := r.Header.Get("Client_secret")
+		authHeader := r.Header.Get("Authorization")
 
-		// Read request body
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("failed reading body: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		body := string(bodyBytes)
-		defer r.Body.Close()
-
-		// Check Authorization header and Account-Id
-		if !strings.Contains(clientIDHeader, expectedClientID) || !strings.Contains(clientSecretHeader, expectedClientSecret) || !strings.Contains(body, expectedAccountID) {
-			w.Header().Set("Content-Type", "application/json")
+		// Check Authorization header for Base64 data and URL path for Account-Id
+		if !strings.Contains(authHeader, expectedBase64Data) || !strings.Contains(r.URL.Path, expectedAccountID) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		// Set response
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(serverResponseCode)
 	}))
 }
@@ -171,7 +157,7 @@ func TestUAOAuth2ClientValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
 
-			server := mockUAOAuth2ClientDatabricksServer(t, expectedTestClientID, validatorTestClientSecret, expectedTestAccountID, tt.serverResponseCode)
+			server := mockUAOAuth2ClientDatabricksServer(t, expectedBase64Data, expectedTestAccountID, tt.serverResponseCode)
 			defer server.Close()
 
 			if tt.cancelContext {
@@ -213,8 +199,8 @@ func TestUAOAuth2ClientValidate_MultipleEndpoints(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 
-		if r.Method != http.MethodGet ||
-			r.URL.Path != "/api/2.0/token/list" {
+		if r.Method != http.MethodPost ||
+			(!strings.HasPrefix(r.URL.Path, "/oidc/accounts/") && !strings.HasSuffix(r.URL.Path, "/v1/token")) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

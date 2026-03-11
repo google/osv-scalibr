@@ -48,7 +48,10 @@ const (
 	// maxAccountIDLength is the maximum length of a valid Databricks User Account ID.
 	// There is not documented length but we can guess it from the following official demonstration:
 	// https://docs.databricks.com/aws/en/admin/account-settings#account-id
-	maxAccountIDLength = 35
+	// We can also signup for a free trial and can verify
+	// It's exactly 36 in length but if hypens are not include, it'd be 32.
+	// We're selecting 50 as the upperbound for contextual matches
+	maxAccountIDLength = 50
 
 	// maxURLLength is the maximum length of a valid Databricks Workspace URL.
 	// There is not documented length but 100 is a good upper bound.
@@ -82,7 +85,7 @@ var (
 
 	// accountIDRe is a regular expression that matches Databricks User Account ID.
 	// Reference: https://docs.databricks.com/aws/en/admin/account-settings#account-id
-	accountIDRe = regexp.MustCompile(`(?i)\baccount[_-]?id\b\s*[:=]?\s*([A-Za-z0-9\-]{35})\b`)
+	accountIDRe = regexp.MustCompile(`(?i)\baccount[_-]?id\b\s*[:=]?\s*([A-Za-z0-9\-]{32,36})\b`)
 )
 
 // SPOAuth2ClientCredentials represents a Databricks Service Principal OAuth2 Client Credentials.
