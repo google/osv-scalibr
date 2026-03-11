@@ -32,6 +32,7 @@ import (
 	"osv.dev/bindings/go/osvdev"
 	"osv.dev/bindings/go/osvdevexperimental"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	osvapipb "osv.dev/bindings/go/api"
 )
@@ -65,14 +66,14 @@ func NewWithClient(c Client, initialQueryTimeout time.Duration) enricher.Enriche
 	}
 }
 
-// NewDefault creates a new Enricher with the default configuration and OSV.dev client
-func NewDefault() enricher.Enricher {
+// New creates a new Enricher with the default configuration and OSV.dev client
+func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
 	client := osvdev.DefaultClient()
 	client.Config.UserAgent = "osv-scanner_scan/" + scalibrversion.ScannerVersion
 	return &Enricher{
 		initialQueryTimeout: 5 * time.Minute,
 		client:              client,
-	}
+	}, nil
 }
 
 // Name of the Enricher.

@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -47,8 +49,11 @@ const (
 func TestScan(t *testing.T) {
 	jar := filepath.Join("testdata", reachableJar)
 
-	mockClient := mockClient(t)
-	enr := java.NewEnricher(mockClient)
+	enr, err := java.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("Javareach enricher init failed: %s", err)
+	}
+	enr.(*java.Enricher).Client = mockClient(t)
 
 	pkgs := setupPackages([]string{testJar})
 	input := enricher.ScanInput{
@@ -60,7 +65,7 @@ func TestScan(t *testing.T) {
 	inv := inventory.Inventory{
 		Packages: pkgs,
 	}
-	err := enr.Enrich(t.Context(), &input, &inv)
+	err = enr.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("Javareach enrich failed: %s", err)
 	}
