@@ -414,7 +414,8 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 			// Don't know what kind of dependency this is, so check them all.
 			// Check them in dev -> optional -> prod because that's the order npm seems to use when they conflict.
 			alreadyMatched := false
-			depStr := "devDependencies." + name
+			escapedName := gjson.Escape(name)
+			depStr := "devDependencies." + escapedName
 			if res := gjson.GetBytes(manif, depStr); res.Exists() {
 				ver := res.String()
 				if ver != origVer {
@@ -427,7 +428,7 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 				alreadyMatched = true
 			}
 
-			depStr = "optionalDependencies." + name
+			depStr = "optionalDependencies." + escapedName
 			if res := gjson.GetBytes(manif, depStr); res.Exists() {
 				ver := res.String()
 				if ver != origVer {
@@ -444,7 +445,7 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 				}
 			}
 
-			depStr = "dependencies." + name
+			depStr = "dependencies." + escapedName
 			if res := gjson.GetBytes(manif, depStr); res.Exists() {
 				ver := res.String()
 				if ver != origVer {
