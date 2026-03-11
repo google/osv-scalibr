@@ -15,12 +15,15 @@
 package databricks
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
 
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// NewUAPATValidator creates a new Databricks User Account PAT credentials Validator.
+// NewPATValidator creates a new Databricks PAT credentials Validator.
 // It performs GET requests to the Databricks endpoints with discovered credentials.
 //
 // Validation logic:
@@ -28,21 +31,27 @@ import (
 // - HTTP Status 401: Token is invalid
 // - Other status codes: Validation failed
 // See the error codes here:
-// https://docs.databricks.com/api/account/accountusers/list
-func NewUAPATValidator() *sv.Validator[UAPATCredentials] {
-	return &sv.Validator[UAPATCredentials]{
-		EndpointsFunc: func(creds UAPATCredentials) ([]string, error) {
-			return []string{
-				"https://accounts.cloud.databricks.com/api/2.0/accounts/" + creds.AccountID + "/scim/v2/Users",
-				"https://accounts.gcp.databricks.com/api/2.0/accounts/" + creds.AccountID + "/scim/v2/Users",
-				"https://accounts.azuredatabricks.net/api/2.0/accounts/" + creds.AccountID + "/scim/v2/Users",
-			}, nil
+// https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
+// https://docs.databricks.com/api/gcp/workspace/tokens/list
+func NewPATValidator() *sv.Validator[PATCredentials] {
+	return &sv.Validator[PATCredentials]{
+		EndpointFunc: func(creds PATCredentials) (string, error) {
+			if creds.Token == "" || creds.URL == "" {
+				return "", errors.New("OAuth2 token or url is empty")
+			}
+			return fmt.Sprintf("https://%s/api/2.0/token/list", creds.URL), nil
 		},
 		HTTPMethod: http.MethodGet,
-		HTTPHeaders: func(creds UAPATCredentials) map[string]string {
+		HTTPHeaders: func(creds PATCredentials) map[string]string {
 			return map[string]string{
 				"Authorization": "Bearer " + creds.Token,
 			}
+		},
+		Body: func(creds PATCredentials) (string, error) {
+			form := url.Values{}
+			form.Set("scope", "all-apis")
+
+			return form.Encode(), nil
 		},
 		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},

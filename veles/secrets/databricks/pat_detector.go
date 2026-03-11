@@ -17,27 +17,28 @@ package databricks
 import (
 	"regexp"
 
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/ntuple"
 )
 
 var (
-	// workspaceSPPATURLRe is a regular expression that matches Databricks Service Principal Workspace URL.
+	// workspacePATURLRe is a regular expression that matches Databricks Service Principal Workspace URL.
 	// Reference: https://docs.databricks.com/aws/en/admin/account-settings#account-id
-	workspaceSPPATURLRe = regexp.MustCompile(`\b[a-zA-Z0-9._\-]+(?:\.(?:cloud|gcp)\.databricks\.com|\.azuredatabricks\.net)\b`)
+	workspacePATURLRe = regexp.MustCompile(`\b[a-zA-Z0-9._\-]+(?:\.(?:cloud|gcp)\.databricks\.com|\.azuredatabricks\.net)(?:\/[^\s]*)?\b`)
 )
 
-// NewSPPATDetector returns a detector that matches Databricks Service Principal Personal Access Token Credentials.
-func NewSPPATDetector() veles.Detector {
+// NewPATDetector returns a detector that matches Databricks Personal Access Token Credentials.
+func NewPATDetector() veles.Detector {
 	return &ntuple.Detector{
 		MaxElementLen: max(maxTokenLength, maxURLLength),
 		MaxDistance:   maxDistance,
 		Finders: []ntuple.Finder{
 			ntuple.FindAllMatches(tokenRe),
-			ntuple.FindAllMatches(workspaceSPPATURLRe),
+			ntuple.FindAllMatches(workspacePATURLRe),
 		},
 		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
-			return SPPATCredentials{Token: string(ms[0].Value), URL: string(ms[1].Value)}, true
+			return PATCredentials{Token: string(ms[0].Value), URL: string(ms[1].Value)}, true
 		},
 	}
 }

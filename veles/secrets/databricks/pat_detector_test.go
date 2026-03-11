@@ -25,17 +25,22 @@ import (
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
-func TestUAPATDetectorAcceptance(t *testing.T) {
+const (
+	validPATToken = "dapiec91f46edff7a4ecae11005e2dcd21e5"
+	validPATURL   = "dbc-91833120-7095.cloud.databricks.com/browse/folders/workspace?o=7474652353870348"
+)
+
+func TestPATDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
-		databricks.NewUAPATDetector(),
-		validPATToken+"\n"+"account_id:"+validAccountID,
-		databricks.UAPATCredentials{Token: validPATToken, AccountID: validAccountID},
+		databricks.NewPATDetector(),
+		validPATToken+"\n"+validPATURL,
+		databricks.PATCredentials{Token: validPATToken, URL: validPATURL},
 	)
 }
 
-func TestUAPATDetector_Detect(t *testing.T) {
-	engine, err := veles.NewDetectionEngine([]veles.Detector{databricks.NewUAPATDetector()})
+func TestPATDetector_Detect(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{databricks.NewPATDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,37 +72,32 @@ func TestUAPATDetector_Detect(t *testing.T) {
 			want:  nil,
 		},
 		{
-			name:  "invalid Account ID format - underscore",
-			input: "bd59efba-4444-4444-443f-4444444_203",
+			name:  "invalid workspace URL format - different URL",
+			input: "abc123.cloud.databrickss.com",
 			want:  nil,
 		},
+		// --- Only PAT Token or Workspace URL ---
 		{
-			name:  "invalid Account ID format - too short",
-			input: "bd59efba-4444-4444",
-			want:  nil,
-		},
-		// --- Only PAT Token or Account ID ---
-		{
-			name:  "PAT Token but no Account ID",
+			name:  "PAT Token but no URL",
 			input: `dapiec91f46edff7a4ecae11005e2dcd21e5`,
 			want:  nil,
 		},
 		{
-			name:  "Account ID but no PAT Token",
-			input: `account_id: bd59efba-4444-4444-443f-44444449203`,
+			name:  "URL but no PAT Token",
+			input: `abc123.cloud.databricks.com`,
 			want:  nil,
 		},
-		// -- Single PAT Token and Account ID in close proximity (happy path) ---
+		// -- Single PAT Token and URL in close proximity (happy path) ---
 		{
-			name: "PAT_and_Account_ID_in_close_proximity",
+			name: "PAT_and_URL_in_close_proximity",
 			input: `
 dapiec91f46edff7a4ecae11005e2dcd21e5
-account_id: bd59efba-4444-4444-443f-44444449203
+prod-01.azuredatabricks.net
 `,
 			want: []veles.Secret{
-				databricks.UAPATCredentials{
-					Token:     "dapiec91f46edff7a4ecae11005e2dcd21e5",
-					AccountID: "bd59efba-4444-4444-443f-44444449203",
+				databricks.PATCredentials{
+					Token: "dapiec91f46edff7a4ecae11005e2dcd21e5",
+					URL:   "prod-01.azuredatabricks.net",
 				},
 			},
 		},
@@ -111,12 +111,12 @@ account_id: bd59efba-4444-4444-443f-44444449203
 			input: `
 valid_pat: dapiec91f46edff7a4ecae11005e2dcd21e5
 invalid_pat: papiec91f46edff7a4ecae11005e2dcd21e5
-account_id: bd59efba-4444-4444-443f-44444449203
-account_id: bd59efba-4444-4444-443f-4444444920`,
+prod-01.azuredatabricks.net
+prod-01.azuredatabrickss.net`,
 			want: []veles.Secret{
-				databricks.UAPATCredentials{
-					Token:     "dapiec91f46edff7a4ecae11005e2dcd21e5",
-					AccountID: "bd59efba-4444-4444-443f-44444449203",
+				databricks.PATCredentials{
+					Token: "dapiec91f46edff7a4ecae11005e2dcd21e5",
+					URL:   "prod-01.azuredatabricks.net",
 				},
 			},
 		},
@@ -126,19 +126,27 @@ account_id: bd59efba-4444-4444-443f-4444444920`,
 			input: `
 config_application_1:
 dapiec91f46edff7a4ecae11005e2dcd21e5
-account_id: ef59efba-4444-4444-443f-44444449203
+my-workspace.gcp.databricks.com
 
 config_application_2:
 dapi56eae0fe6bfaa9ea26eb3fa32ad6f8cb-3
-account_id: bd59efba-4444-4444-443f-44444449203`,
+prod-01.azuredatabricks.net
+
+config_application_3:
+dapi56eae0fe6bfaa9ea26eb3fa32ad6f8cb-4
+abc123.cloud.databricks.com`,
 			want: []veles.Secret{
-				databricks.UAPATCredentials{
-					Token:     "dapiec91f46edff7a4ecae11005e2dcd21e5",
-					AccountID: "ef59efba-4444-4444-443f-44444449203",
+				databricks.PATCredentials{
+					Token: "dapiec91f46edff7a4ecae11005e2dcd21e5",
+					URL:   "my-workspace.gcp.databricks.com",
 				},
-				databricks.UAPATCredentials{
-					Token:     "dapi56eae0fe6bfaa9ea26eb3fa32ad6f8cb-3",
-					AccountID: "bd59efba-4444-4444-443f-44444449203",
+				databricks.PATCredentials{
+					Token: "dapi56eae0fe6bfaa9ea26eb3fa32ad6f8cb-3",
+					URL:   "prod-01.azuredatabricks.net",
+				},
+				databricks.PATCredentials{
+					Token: "dapi56eae0fe6bfaa9ea26eb3fa32ad6f8cb-4",
+					URL:   "abc123.cloud.databricks.com",
 				},
 			},
 		},

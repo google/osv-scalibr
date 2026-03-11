@@ -325,10 +325,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
-	case velesdatabricks.UAPATCredentials:
-		return databricksUAPATCredentialsToProto(t), nil
-	case velesdatabricks.SPPATCredentials:
-		return databricksSPPATCredentialsToProto(t), nil
+	case velesdatabricks.PATCredentials:
+		return databricksPATCredentialsToProto(t), nil
 	case velesdatabricks.UAOAuth2ClientCredentials:
 		return databricksUAOAuth2ClientCredentialsToProto(t), nil
 	case velesdatabricks.SPOAuth2ClientCredentials:
@@ -1151,21 +1149,10 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
-func databricksUAPATCredentialsToProto(creds velesdatabricks.UAPATCredentials) *spb.SecretData {
+func databricksPATCredentialsToProto(creds velesdatabricks.PATCredentials) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_DatabricksUserAccountPat_{
-			DatabricksUserAccountPat: &spb.SecretData_DatabricksUserAccountPat{
-				Token:     creds.Token,
-				AccountId: creds.AccountID,
-			},
-		},
-	}
-}
-
-func databricksSPPATCredentialsToProto(creds velesdatabricks.SPPATCredentials) *spb.SecretData {
-	return &spb.SecretData{
-		Secret: &spb.SecretData_DatabricksServicePrincipalPat_{
-			DatabricksServicePrincipalPat: &spb.SecretData_DatabricksServicePrincipalPat{
+		Secret: &spb.SecretData_DatabricksPat_{
+			DatabricksPat: &spb.SecretData_DatabricksPat{
 				Token: creds.Token,
 				Url:   creds.URL,
 			},
@@ -1555,10 +1542,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
-	case *spb.SecretData_DatabricksUserAccountPat_:
-		return databricksUAPATToStruct(s.GetDatabricksUserAccountPat()), nil
-	case *spb.SecretData_DatabricksServicePrincipalPat_:
-		return databricksSPPATToStruct(s.GetDatabricksServicePrincipalPat()), nil
+	case *spb.SecretData_DatabricksPat_:
+		return databricksPATToStruct(s.GetDatabricksPat()), nil
 	case *spb.SecretData_DatabricksUserAccountOauth2ClientCredentials:
 		return databricksUAOAuth2ClientCredentialsToStruct(s.GetDatabricksUserAccountOauth2ClientCredentials()), nil
 	case *spb.SecretData_DatabricksServicePrincipalOauth2ClientCredentials:
@@ -1927,15 +1912,8 @@ func packagistConductorUpdateTokenToProto(s velespackagist.ConductorUpdateToken)
 	}
 }
 
-func databricksUAPATToStruct(creds *spb.SecretData_DatabricksUserAccountPat) velesdatabricks.UAPATCredentials {
-	return velesdatabricks.UAPATCredentials{
-		Token:     creds.GetToken(),
-		AccountID: creds.GetAccountId(),
-	}
-}
-
-func databricksSPPATToStruct(creds *spb.SecretData_DatabricksServicePrincipalPat) velesdatabricks.SPPATCredentials {
-	return velesdatabricks.SPPATCredentials{
+func databricksPATToStruct(creds *spb.SecretData_DatabricksPat) velesdatabricks.PATCredentials {
+	return velesdatabricks.PATCredentials{
 		Token: creds.GetToken(),
 		URL:   creds.GetUrl(),
 	}

@@ -28,8 +28,8 @@ const (
 	// Length 36: https://youtu.be/yyy7LA4H4co?t=682&si=lS0VuWNJ8ciPh9OC
 	// Length 38: https://youtube.com/shorts/nM-2L-taB1M?si=CTwdfH17xm-ySsG_
 	// Length 38: https://youtu.be/4wFygEnkUZw?t=186&si=aMrAjSBN4-xGBjJO
-	// Therefore, 38 is a good upper bound.
-	maxTokenLength = 38
+	// Therefore, 40 is a good upper bound.
+	maxTokenLength = 40
 
 	// maxIDLength is the maximum length of a valid client ID.
 	// There is not documented length.
@@ -63,13 +63,13 @@ const (
 )
 
 var (
-	// tokenRe is a regular expression that matches Databricks Service Principal Personal Access Token.
+	// tokenRe is a regular expression that matches Databricks Personal Access Token.
 	// Reference: https://docs.databricks.com/api/gcp/workspace/tokenmanagement/createobotoken
 	// Moreover, here are few real word demonstrations on youtube:
 	// https://youtu.be/yyy7LA4H4co?t=682&si=lS0VuWNJ8ciPh9OC
 	// https://youtube.com/shorts/nM-2L-taB1M?si=CTwdfH17xm-ySsG_
 	// https://youtu.be/4wFygEnkUZw?t=186&si=aMrAjSBN4-xGBjJO
-	tokenRe = regexp.MustCompile(`\bdapi[A-Za-z0-9._\-]{32,34}\b`)
+	tokenRe = regexp.MustCompile(`\bdapi[A-Za-z0-9._\-]{32,36}\b`)
 
 	// clientIDRe is a regular expression that matches Databricks OAuth2 Client IDs.
 	// A real word demonstration on youtube suggests its an UUID-like string:
@@ -108,18 +108,10 @@ type UAOAuth2ClientCredentials struct {
 	AccountID string
 }
 
-// SPPATCredentials represents a Databricks Service Principal Personal Access Token Credentials.
-type SPPATCredentials struct {
-	// Token is the Databricks Service Principal Personal Access Token
+// PATCredentials represents a Databricks Personal Access Token Credentials.
+type PATCredentials struct {
+	// Token is the Databricks Personal Access Token
 	Token string
-	// URL is the Databricks Service Principal Workspace URL
+	// URL is the Databricks Workspace URL
 	URL string
-}
-
-// UAPATCredentials represents a Databricks User Account Personal Access Token Credentials.
-type UAPATCredentials struct {
-	// Token is the Databricks User Account Personal Access Token
-	Token string
-	// AccountID is the Databricks User Account ID
-	AccountID string
 }

@@ -186,9 +186,8 @@ var (
 		fromVeles(salesforceoauth2jwt.NewValidator(), "secrets/salesforceoauth2jwtvalidate", 0),
 		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
 		fromVeles(databricks.NewSPOAuth2ClientValidator(), "secrets/databricksserviceprincipaloauth2clientvalidate", 0),
-		fromVeles(databricks.NewSPPATValidator(), "secrets/databricksserviceprincipalpat", 0),
+		fromVeles(databricks.NewPATValidator(), "secrets/databrickspat", 0),
 		fromVeles(databricks.NewUAOAuth2ClientValidator(), "secrets/databricksuseraccountoauth2clientvalidate", 0),
-		fromVeles(databricks.NewUAPATValidator(), "secrets/databricksuseraccountpat", 0),
 	})
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.

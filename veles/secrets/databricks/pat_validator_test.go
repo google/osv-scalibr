@@ -28,14 +28,19 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/databricks"
 )
 
-// mockUAPATTransport redirects requests to the test server
-type mockUAPATTransport struct {
+const (
+	validatorTestToken  = "dapiec91f46edff7a4ecae11005e2dcd21e5"
+	validatorPATTestURL = "my-workspace.gcp.databricks.com"
+)
+
+// mockPATTransport redirects requests to the test server
+type mockPATTransport struct {
 	testServer *httptest.Server
 }
 
-func (m *mockUAPATTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (m *mockPATTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Replace the original URL with our test server URL
-	if req.URL.Host == "accounts.cloud.databricks.com" || req.URL.Host == "accounts.gcp.databricks.com" || req.URL.Host == "accounts.azuredatabricks.net" {
+	if req.URL.Host == "my-workspace.gcp.databricks.com" {
 		testURL, _ := url.Parse(m.testServer.URL)
 		req.URL.Scheme = testURL.Scheme
 		req.URL.Host = testURL.Host
@@ -43,83 +48,83 @@ func (m *mockUAPATTransport) RoundTrip(req *http.Request) (*http.Response, error
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-// mockUAPATDatabricksServer creates a mock Databricks server for testing
-func mockUAPATDatabricksServer(t *testing.T, expectedToken string, expectedTestAccountID string, serverResponseCode int) *httptest.Server {
+// mockPATDatabricksServer creates a mock Databricks server for testing
+func mockPATDatabricksServer(t *testing.T, expectedToken string, serverResponseCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if it's a GET request to the expected endpoint
-		if r.Method != http.MethodGet || (!strings.HasPrefix(r.URL.Path, "/api/2.0/accounts/") && !strings.HasSuffix(r.URL.Path, "/scim/v2/users")) {
-			t.Errorf("unexpected request: %s %s, expected: GET /api/2.0/accounts/*/scim/v2/users", r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != "/api/2.0/token/list" {
+			t.Errorf("unexpected request: %s %s, expected: GET /api/2.0/token/list", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
 		authHeader := r.Header.Get("Authorization")
 
-		// Check Authorization header and AccountID
-		if !strings.Contains(authHeader, expectedToken) || !strings.Contains(r.URL.Path, expectedTestAccountID) {
-			w.Header().Set("Content-Type", "application/json")
+		// Check Authorization header and Account-Id
+		if !strings.Contains(authHeader, expectedToken) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		// Set response
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(serverResponseCode)
 	}))
 }
 
-func TestValidator(t *testing.T) {
+func TestPATValidator(t *testing.T) {
 	tests := []struct {
 		name               string
 		token              string
-		accountID          string
+		url                string
 		serverResponseCode int
 		cancelContext      bool
 		want               veles.ValidationStatus
 		wantErr            error
-		useServer          bool
 	}{
 		{
 			name:               "valid creds",
 			token:              validatorTestToken,
-			accountID:          validatorTestAccountID,
+			url:                validatorPATTestURL,
 			serverResponseCode: http.StatusOK,
 			want:               veles.ValidationValid,
 		},
 		{
 			name:               "invalid creds - Token",
 			token:              "YUVRAJ SAXENA",
-			accountID:          validatorTestAccountID,
+			url:                validatorPATTestURL,
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "invalid creds - Account ID",
+			name:               "invalid creds - URL",
 			token:              validatorTestToken,
-			accountID:          "YUVRAJ SAXENA",
+			url:                "YUVRAJ SAXENA",
 			serverResponseCode: http.StatusUnauthorized,
-			want:               veles.ValidationInvalid,
+			want:               veles.ValidationFailed,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "empty Token",
 			token:              "",
-			accountID:          validatorTestAccountID,
+			url:                validatorPATTestURL,
 			serverResponseCode: http.StatusUnauthorized,
-			want:               veles.ValidationInvalid,
+			want:               veles.ValidationFailed,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
-			name:               "empty Account ID",
+			name:               "empty URL",
 			token:              validatorTestToken,
-			accountID:          "",
+			url:                "",
 			serverResponseCode: http.StatusUnauthorized,
-			want:               veles.ValidationInvalid,
+			want:               veles.ValidationFailed,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "context cancelled",
 			token:              validatorTestToken,
-			accountID:          validatorTestAccountID,
+			url:                validatorPATTestURL,
 			serverResponseCode: http.StatusOK,
 			cancelContext:      true,
 			want:               veles.ValidationFailed,
@@ -131,7 +136,7 @@ func TestValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
 
-			server := mockUAPATDatabricksServer(t, validatorTestToken, expectedTestAccountID, tt.serverResponseCode)
+			server := mockPATDatabricksServer(t, validatorTestToken, tt.serverResponseCode)
 			defer server.Close()
 
 			if tt.cancelContext {
@@ -140,16 +145,16 @@ func TestValidator(t *testing.T) {
 				cancel()
 			}
 
-			validator := databricks.NewUAPATValidator()
+			validator := databricks.NewPATValidator()
 			if server != nil {
 				validator.HTTPC = &http.Client{
-					Transport: &mockUAPATTransport{testServer: server},
+					Transport: &mockPATTransport{testServer: server},
 				}
 			}
 
-			cred := databricks.UAPATCredentials{
-				Token:     tt.token,
-				AccountID: tt.accountID,
+			cred := databricks.PATCredentials{
+				Token: tt.token,
+				URL:   tt.url,
 			}
 
 			got, err := validator.Validate(ctx, cred)
@@ -162,54 +167,5 @@ func TestValidator(t *testing.T) {
 				t.Fatalf("Validate: expected %v, got %v", tt.want, got)
 			}
 		})
-	}
-}
-
-func TestUAPATValidate_MultipleEndpoints(t *testing.T) {
-	callCount := 0
-	ctx := t.Context()
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		callCount++
-
-		if r.Method != http.MethodGet ||
-			(!strings.HasPrefix(r.URL.Path, "/api/2.0/accounts/") && !strings.HasSuffix(r.URL.Path, "/scim/v2/users")) {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		// Simulate:
-		// 1st endpoint -> Unauthorized
-		// 2nd endpoint -> OK
-		if callCount == 1 {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	validator := databricks.NewUAPATValidator()
-	validator.HTTPC = &http.Client{
-		Transport: &mockUAPATTransport{testServer: server},
-	}
-
-	cred := databricks.UAPATCredentials{
-		Token:     validatorTestToken,
-		AccountID: validatorTestAccountID,
-	}
-
-	got, err := validator.Validate(ctx, cred)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if got != veles.ValidationValid {
-		t.Fatalf("expected ValidationValid, got %v", got)
-	}
-
-	if callCount != 2 {
-		t.Fatalf("expected 2 endpoint attempts, got %d", callCount)
 	}
 }
