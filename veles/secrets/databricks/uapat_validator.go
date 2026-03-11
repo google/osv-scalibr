@@ -44,7 +44,7 @@ func NewUAPATValidator() *sv.Validator[UAPATCredentials] {
 				"Authorization": "Bearer " + creds.Token,
 			}
 		},
-		ValidResponseCodes:   []int{http.StatusOK},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusForbidden},
 		InvalidResponseCodes: []int{http.StatusUnauthorized},
 	}
 }
