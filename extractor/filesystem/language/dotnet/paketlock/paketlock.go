@@ -52,11 +52,6 @@ var (
 	// Note: We only match top-level packages (not indented dependency constraints)
 	// The regex requires exactly 4 spaces followed by a non-space character
 	reLockPackage = regexp.MustCompile(`^    ([^\s(]+)\s*\(([^)]+)\)`)
-
-	// Regex to match GitHub entries with file path and commit hash
-	// Format: filepath.fs (commit_hash)
-	// Example: "    src/app/FakeLib/Globbing/Globbing.fs (0341a2e614eb2a7f34607cec914eb0ed83ce9add)"
-	reGitHubLockEntry = regexp.MustCompile(`^    (.+?)\s+\(([^)]+)\)`)
 )
 
 // Extractor extracts packages from Paket lock files.
@@ -192,87 +187,89 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 			continue
 		}
 
+		// Only process dependency entries from NUGET/GITHUB
+		// This will skip sections which are not supported such as GIST/HTTP
+		if currentSection != "NUGET" && currentSection != "GITHUB" {
+			continue
+		}
+
 		// Parse package entries: PackageName (version)
 		// Format: "    PackageName (version)" - exactly 4 spaces for top-level packages
 		matches := reLockPackage.FindStringSubmatch(line)
-		if len(matches) >= 3 {
-			// Only process dependency entries from sections we support.
-			// Explicitly skip GIST/HTTP sections.
-			if currentSection != "NUGET" && currentSection != "GITHUB" {
-				continue
-			}
+		if len(matches) < 3 {
+			continue
+		}
 
-			pkgName := strings.TrimSpace(matches[1])
-			version := strings.TrimSpace(matches[2])
+		pkgName := strings.TrimSpace(matches[1])
+		version := strings.TrimSpace(matches[2])
 
-			if pkgName == "" || version == "" {
-				continue
-			}
+		if pkgName == "" || version == "" {
+			continue
+		}
 
-			// Skip dependency constraints (versions with >=, <=, >, <, ~>, etc.)
-			// Lock files should only contain resolved versions (numeric versions)
-			if strings.ContainsAny(version, "><=~") {
-				continue
-			}
+		// Skip dependency constraints (versions with >=, <=, >, <, ~>, etc.)
+		// Lock files should only contain resolved versions (numeric versions)
+		if strings.ContainsAny(version, "><=~") {
+			continue
+		}
 
-			// Handle GitHub dependencies differently
-			if currentSection == "GITHUB" {
-				// For GitHub dependencies in lock files, there are two formats:
-				// 1. Simple: "    repo/name (version/tag)" - package name matches repo
-				// 2. With file: "    file/path.fs (commit)" - package name is file path, repo from remote: line
-				repoName := currentGitHubRepo
-				commit := ""
-				pkgVersion := ""
+		// Handle GitHub dependencies differently
+		if currentSection == "GITHUB" {
+			// For GitHub dependencies in lock files, there are two formats:
+			// 1. Simple: "    repo/name (version/tag)" - package name matches repo
+			// 2. With file: "    file/path.fs (commit)" - package name is file path, repo from remote: line
+			repoName := currentGitHubRepo
+			commit := ""
+			pkgVersion := ""
 
-				if repoName == "" {
-					// No remote: line tracked, so pkgName is the repo name (simple format)
-					repoName = pkgName
-					// In simple format, version could be a tag/version or commit hash
-					// If it's 40 hex chars, it's a commit; otherwise it's a version tag
-					if len(version) == 40 && isHexString(version) {
-						commit = version
-					} else {
-						pkgVersion = version
-					}
-				} else if pkgName == repoName {
-					// Package name matches repo name - this is the simple format
-					// The value could be a version tag or commit hash
-					if len(version) == 40 && isHexString(version) {
-						commit = version
-					} else {
-						pkgVersion = version
-					}
-				} else {
-					// Package name doesn't match repo - it's a file path
-					// The value in parentheses is the commit hash
+			if repoName == "" {
+				// No remote: line tracked, so pkgName is the repo name (simple format)
+				repoName = pkgName
+				// In simple format, version could be a tag/version or commit hash
+				// If it's 40 hex chars, it's a commit; otherwise it's a version tag
+				if len(version) == 40 && isHexString(version) {
 					commit = version
+				} else {
+					pkgVersion = version
 				}
-
-				sourceCode := &extractor.SourceCodeIdentifier{
-					Repo: "https://github.com/" + repoName,
+			} else if pkgName == repoName {
+				// Package name matches repo name - this is the simple format
+				// The value could be a version tag or commit hash
+				if len(version) == 40 && isHexString(version) {
+					commit = version
+				} else {
+					pkgVersion = version
 				}
-				if commit != "" {
-					sourceCode.Commit = commit
-				}
-
-				pkg := &extractor.Package{
-					Name:       repoName,
-					Version:    pkgVersion,
-					PURLType:   purl.TypeGithub,
-					Locations:  []string{path},
-					SourceCode: sourceCode,
-				}
-				packages = append(packages, pkg)
 			} else {
-				// NuGet and other package types
-				pkg := &extractor.Package{
-					Name:      pkgName,
-					Version:   version,
-					PURLType:  purl.TypeNuget,
-					Locations: []string{path},
-				}
-				packages = append(packages, pkg)
+				// Package name doesn't match repo - it's a file path
+				// The value in parentheses is the commit hash
+				commit = version
 			}
+
+			sourceCode := &extractor.SourceCodeIdentifier{
+				Repo: "https://github.com/" + repoName,
+			}
+			if commit != "" {
+				sourceCode.Commit = commit
+			}
+
+			pkg := &extractor.Package{
+				Name:       repoName,
+				Version:    pkgVersion,
+				PURLType:   purl.TypeGithub,
+				Locations:  []string{path},
+				SourceCode: sourceCode,
+			}
+			packages = append(packages, pkg)
+		} else {
+			// NuGet and other package types
+			pkg := &extractor.Package{
+				Name:      pkgName,
+				Version:   version,
+				PURLType:  purl.TypeNuget,
+				Locations: []string{path},
+			}
+			packages = append(packages, pkg)
 		}
 	}
 
