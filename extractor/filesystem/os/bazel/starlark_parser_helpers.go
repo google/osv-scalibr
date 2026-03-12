@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bazelmaven
+package bazel
 
 import (
+	"fmt"
+
 	"github.com/bazelbuild/buildtools/build"
 )
 
@@ -277,4 +279,84 @@ func findLoadStatements(file *build.File) loadMapping {
 	}
 
 	return loadMapping
+}
+
+// RuleAttributeResult holds the result of extracting a named attribute from a rule call
+// that was imported via a load() statement.
+type RuleAttributeResult struct {
+	// RuleName is the name of the rule function that was called (e.g., "go_library").
+	RuleName string
+	// LoadPath is the source path from the load() statement (e.g., "@rules_go//docs/go/core:rules.bzl").
+	LoadPath string
+	// Values contains the resolved string values of the requested attribute.
+	Values []string
+}
+
+// FindLoadedRuleAttributes finds all rule calls in a Bazel file that were imported via
+// load() from the given loadPath, and extracts the specified attribute values from each call.
+//
+// For example, given a Bazel file containing:
+//
+//	load("@rules_go//docs/go/core:rules.bzl", "go_binary", "go_library", "go_test")
+//	go_library(
+//	    name = "basic_gazelle_lib",
+//	    deps = ["@org_golang_x_net//html"],
+//	)
+//
+// Calling FindLoadedRuleAttributes(data, "@rules_go//docs/go/core:rules.bzl", "deps") would return
+// a result for "go_library" with the deps values.
+//
+// Parameters:
+//   - input: raw bytes of the Bazel file
+//   - loadPath: the source path to match in load() statements (e.g., "@rules_go//docs/go/core:rules.bzl")
+//   - attrName: the attribute name to extract from matching rule calls (e.g., "deps")
+//
+// Returns a slice of RuleAttributeResult, one per matching rule call that has the attribute.
+func FindLoadedRuleAttributes(input []byte, loadPath string, attrName string) ([]RuleAttributeResult, error) {
+	f, err := build.Parse("default", input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Bazel file: %w", err)
+	}
+
+	return FindLoadedRuleAttributesFromFile(f, loadPath, attrName), nil
+}
+
+// FindLoadedRuleAttributesFromFile is like FindLoadedRuleAttributes but operates on an
+// already-parsed *build.File.
+func FindLoadedRuleAttributesFromFile(f *build.File, loadPath string, attrName string) []RuleAttributeResult {
+	loads := findLoadStatements(f)
+
+	var results []RuleAttributeResult
+
+	for _, stmt := range f.Stmt {
+		call, ok := stmt.(*build.CallExpr)
+		if !ok {
+			continue
+		}
+
+		x, ok := call.X.(*build.Ident)
+		if !ok {
+			continue
+		}
+
+		// Check if this rule was loaded from the specified path
+		source, exists := loads[x.Name]
+		if !exists || source != loadPath {
+			continue
+		}
+
+		r := &build.Rule{Call: call}
+		if r.Attr(attrName) == nil {
+			continue
+		}
+
+		values := getAttributeArrayValues(r, f, attrName)
+		results = append(results, RuleAttributeResult{
+			RuleName: x.Name,
+			LoadPath: source,
+			Values:   values,
+		})
+	}
+
+	return results
 }

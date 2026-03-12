@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata defines a metadata struct for Bazel Tools.
+// Package metadata defines metadata structs for Bazel extractors.
 package metadata
 
 import (
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-// Metadata holds parsing information for a Bazel tool.
-type Metadata struct {
+// MavenMetadata holds parsing information for a Bazel Maven dependency.
+type MavenMetadata struct {
 	Name       string // Full Name of the dependency
 	GroupID    string // Maven group ID
 	ArtifactID string // Maven artifact ID
@@ -28,8 +28,8 @@ type Metadata struct {
 	RuleName   string // Bazel rule name
 }
 
-// SetProto sets the BazelMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
+// SetProto sets the BazelMavenMetadata field in the Package proto.
+func (m *MavenMetadata) SetProto(p *pb.Package) {
 	if m == nil {
 		return
 	}
@@ -48,17 +48,49 @@ func (m *Metadata) SetProto(p *pb.Package) {
 	}
 }
 
-// ToStruct converts the BazelMetadata proto to a Metadata struct.
-func ToStruct(m *pb.BazelMavenMetadata) *Metadata {
+// MavenToStruct converts the BazelMavenMetadata proto to a MavenMetadata struct.
+func MavenToStruct(m *pb.BazelMavenMetadata) *MavenMetadata {
 	if m == nil {
 		return nil
 	}
 
-	return &Metadata{
+	return &MavenMetadata{
 		Name:       m.GetName(),
 		GroupID:    m.GetGroupId(),
 		ArtifactID: m.GetArtifactId(),
 		Version:    m.GetVersion(),
 		RuleName:   m.GetRuleName(),
+	}
+}
+
+// GoMetadata holds parsing information for a Bazel Go dependency.
+type GoMetadata struct {
+	RuleName string // Bazel rule name (e.g., "go_library", "go_binary", "go_test")
+}
+
+// SetProto sets the BazelGoMetadata field in the Package proto.
+func (m *GoMetadata) SetProto(p *pb.Package) {
+	if m == nil {
+		return
+	}
+	if p == nil {
+		return
+	}
+
+	p.Metadata = &pb.Package_BazelGoMetadata{
+		BazelGoMetadata: &pb.BazelGoMetadata{
+			RuleName: m.RuleName,
+		},
+	}
+}
+
+// GoToStruct converts the BazelGoMetadata proto to a GoMetadata struct.
+func GoToStruct(m *pb.BazelGoMetadata) *GoMetadata {
+	if m == nil {
+		return nil
+	}
+
+	return &GoMetadata{
+		RuleName: m.GetRuleName(),
 	}
 }
