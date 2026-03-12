@@ -845,7 +845,7 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
-    GitlabIncomingEmailToken gitlab_incoming_email_token = 89;
+    GitlabMailToken gitlab_mail_token = 89;
   }
 
   message GCPSAK {
@@ -954,7 +954,7 @@ message SecretData {
     string pat = 1;
   }
 
-  message GitlabIncomingEmailToken {
+  message GitlabMailToken {
     string token = 1;
   }
 

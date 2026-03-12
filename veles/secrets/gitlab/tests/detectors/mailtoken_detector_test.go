@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gitlabincomingemailtoken_test
+package gitlab_test
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/gitlabincomingemailtoken"
+	"github.com/google/osv-scalibr/veles/secrets/gitlab"
 )
 
 func TestDetector_FindSecrets(t *testing.T) {
@@ -34,7 +34,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 				GITLAB_INCOMING_EMAIL_TOKEN=glimt-3xd28hqc2nnlc6nslnt2elhymg
 			`,
 			want: []veles.Secret{
-				gitlabincomingemailtoken.GitlabIncomingEmailToken{
+				gitlab.MailToken{
 					Token: "glimt-3xd28hqc2nnlc6nslnt2elhymg",
 				},
 			},
@@ -45,7 +45,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 				token: glimt-1yxdtvd3hr14wiegu1zo2hudq
 			`,
 			want: []veles.Secret{
-				gitlabincomingemailtoken.GitlabIncomingEmailToken{
+				gitlab.MailToken{
 					Token: "glimt-1yxdtvd3hr14wiegu1zo2hudq",
 				},
 			},
@@ -57,7 +57,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 				  token: glimt-f4bc97n60khq4ejxid7swcwqq
 			`,
 			want: []veles.Secret{
-				gitlabincomingemailtoken.GitlabIncomingEmailToken{
+				gitlab.MailToken{
 					Token: "glimt-f4bc97n60khq4ejxid7swcwqq",
 				},
 			},
@@ -69,10 +69,10 @@ func TestDetector_FindSecrets(t *testing.T) {
 				token2: glimt-1yxdtvd3hr14wiegu1zo2hudq
 			`,
 			want: []veles.Secret{
-				gitlabincomingemailtoken.GitlabIncomingEmailToken{
+				gitlab.MailToken{
 					Token: "glimt-3xd28hqc2nnlc6nslnt2elhymg",
 				},
-				gitlabincomingemailtoken.GitlabIncomingEmailToken{
+				gitlab.MailToken{
 					Token: "glimt-1yxdtvd3hr14wiegu1zo2hudq",
 				},
 			},
@@ -83,7 +83,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 				{"incoming_email_token": "glimt-f4bc97n60khq4ejxid7swcwqq"}
 			`,
 			want: []veles.Secret{
-				gitlabincomingemailtoken.GitlabIncomingEmailToken{
+				gitlab.MailToken{
 					Token: "glimt-f4bc97n60khq4ejxid7swcwqq",
 				},
 			},
@@ -101,7 +101,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 				glimt-1234567890123456789012345678901234567890
 			`,
 			want: []veles.Secret{
-				gitlabincomingemailtoken.GitlabIncomingEmailToken{
+				gitlab.MailToken{
 					Token: "glimt-12345678901234567890123456",
 				},
 			},
@@ -131,7 +131,7 @@ func TestDetector_FindSecrets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector := gitlabincomingemailtoken.NewDetector()
+			detector := gitlab.NewMailTokenDetector()
 			got, _ := detector.Detect([]byte(tt.input))
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("Detect() mismatch (-want +got):\n%s", diff)

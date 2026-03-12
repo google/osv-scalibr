@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gitlabincomingemailtoken
+package gitlab
 
 import (
 	"regexp"
@@ -23,7 +23,7 @@ import (
 
 var (
 	// Ensure constructor satisfies the interface at compile time.
-	_ veles.Detector = NewDetector()
+	_ veles.Detector = NewMailTokenDetector()
 )
 
 const (
@@ -35,13 +35,13 @@ const (
 // Based on observed format: 25-26 lowercase alphanumeric characters after prefix
 var tokenRe = regexp.MustCompile(`glimt-[a-z0-9]{25,26}`)
 
-// NewDetector returns a new Detector that matches GitLab Incoming Email Tokens.
-func NewDetector() veles.Detector {
+// NewMailTokenDetector returns a new Detector that matches GitLab Incoming Email Tokens.
+func NewMailTokenDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: tokenMaxLen,
 		Re:     tokenRe,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return GitlabIncomingEmailToken{Token: string(b)}, true
+			return MailToken{Token: string(b)}, true
 		},
 	}
 }

@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gitlabincomingemailtoken contains a Veles Secret type and Detector
-// for GitLab Incoming Email Tokens (prefix `glimt-`).
-package gitlabincomingemailtoken
+// Package gitlab implements the logic to detect GitLab tokens
+package gitlab
 
-// GitlabIncomingEmailToken is a Veles Secret that holds a GitLab Incoming
-// Email Token. These tokens are used for creating issues via email.
-type GitlabIncomingEmailToken struct {
+// MailToken is a Veles Secret that holds relevant information for a
+// GitLab Incoming Email Token (prefix `glimt-`).
+type MailToken struct {
 	Token string
 }

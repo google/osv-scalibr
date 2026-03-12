@@ -49,7 +49,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
-	"github.com/google/osv-scalibr/veles/secrets/gitlabincomingemailtoken"
+	"github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -197,8 +197,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubAppUserToServerTokenToProto(t.Token), nil
 	case velesgithub.OAuthToken:
 		return githubOAuthTokenToProto(t.Token), nil
-	case gitlabincomingemailtoken.GitlabIncomingEmailToken:
-		return gitlabIncomingEmailTokenToProto(t), nil
+	case gitlab.MailToken:
+		return gitlabMailTokenToProto(t), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
@@ -724,10 +724,10 @@ func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	}
 }
 
-func gitlabIncomingEmailTokenToProto(s gitlabincomingemailtoken.GitlabIncomingEmailToken) *spb.SecretData {
+func gitlabMailTokenToProto(s gitlab.MailToken) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_GitlabIncomingEmailToken_{
-			GitlabIncomingEmailToken: &spb.SecretData_GitlabIncomingEmailToken{
+		Secret: &spb.SecretData_GitlabMailToken_{
+			GitlabMailToken: &spb.SecretData_GitlabMailToken{
 				Token: s.Token,
 			},
 		},
@@ -1249,8 +1249,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
-	case *spb.SecretData_GitlabIncomingEmailToken_:
-		return gitlabIncomingEmailTokenToStruct(s.GetGitlabIncomingEmailToken()), nil
+	case *spb.SecretData_GitlabMailToken_:
+		return gitlabMailTokenToStruct(s.GetGitlabMailToken()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_Pypi:
@@ -1589,8 +1589,9 @@ func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	}
 }
 
-func gitlabIncomingEmailTokenToStruct(kPB *spb.SecretData_GitlabIncomingEmailToken) gitlabincomingemailtoken.GitlabIncomingEmailToken {
-	return gitlabincomingemailtoken.GitlabIncomingEmailToken{
+
+func gitlabMailTokenToStruct(kPB *spb.SecretData_GitlabMailToken) gitlab.MailToken {
+	return gitlab.MailToken{
 		Token: kPB.GetToken(),
 	}
 }
