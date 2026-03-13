@@ -163,6 +163,18 @@ func TestExtract(t *testing.T) {
 					Locations: []string{"testdata/paket.dependencies"},
 				},
 				{
+					Name:      "System.Text.Json",
+					Version:   "8.0.5",
+					PURLType:  purl.TypeNuget,
+					Locations: []string{"testdata/paket.dependencies"},
+				},
+				{
+					Name:      "Microsoft.NETFramework.ReferenceAssemblies",
+					Version:   "1.0.0",
+					PURLType:  purl.TypeNuget,
+					Locations: []string{"testdata/paket.dependencies"},
+				},
+				{
 					Name:      "Microsoft.Extensions.Logging",
 					Version:   "",
 					PURLType:  purl.TypeNuget,

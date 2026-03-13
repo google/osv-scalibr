@@ -5,6 +5,9 @@ nuget FSharp.Core >= 4.0.0
 nuget Newtonsoft.Json == 12.0.3
 nuget Microsoft.Extensions.Logging
 
+nuget System.Text.Json             >= 8.0.5 lowest_matching: true
+nuget Microsoft.NETFramework.ReferenceAssemblies  = 1.0.0
+
 github fsprojects/Paket
 github fsharp/FAKE:5.20.4
 

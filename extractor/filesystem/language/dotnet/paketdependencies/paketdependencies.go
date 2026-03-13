@@ -277,30 +277,23 @@ func isHexString(s string) bool {
 }
 
 // extractVersionFromConstraint extracts a version from a version constraint string.
-// Handles constraints like "~> 2.6.3", ">= 2.6.3", "== 2.6.3", "2.6.3"
+// Handles constraints like "~> 2.6.3", ">= 2.6.3", "== 2.6.3", "= 2.6.3", "2.6.3"
+// Also handles additional options like ">= 8.0.5 lowest_matching: true"
 func extractVersionFromConstraint(constraint string) string {
 	constraint = strings.TrimSpace(constraint)
-
-	// Remove constraint operators
-	constraint = strings.TrimPrefix(constraint, "~>")
-	constraint = strings.TrimPrefix(constraint, ">=")
-	constraint = strings.TrimPrefix(constraint, "<=")
-	constraint = strings.TrimPrefix(constraint, "==")
-	constraint = strings.TrimPrefix(constraint, ">")
-	constraint = strings.TrimPrefix(constraint, "<")
-	constraint = strings.TrimSpace(constraint)
-
-	// If constraint is empty after removing operators, return empty
-	if constraint == "" {
-		return ""
+	// Check longer operators first (==, >=, <=) before shorter ones (=, >, <)
+	for _, sep := range []string{"~>", ">=", "<=", "==", "=", ">", "<"} {
+		_, after, found := strings.Cut(constraint, sep)
+		if found {
+			after = strings.TrimSpace(after)
+			// Extract only the first word (version), ignoring additional options
+			parts := strings.Fields(after)
+			if len(parts) > 0 {
+				return parts[0]
+			}
+			return after
+		}
 	}
-
-	// Extract the first version-like string
-	parts := strings.Fields(constraint)
-	if len(parts) > 0 {
-		return strings.TrimSpace(parts[0])
-	}
-
 	return constraint
 }
 
