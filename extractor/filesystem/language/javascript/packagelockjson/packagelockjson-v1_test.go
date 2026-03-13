@@ -58,7 +58,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -76,7 +76,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/one-package-dev.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -94,7 +94,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/two-packages.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -104,7 +104,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/two-packages.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -122,7 +122,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -132,7 +132,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/scoped-packages.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -150,7 +150,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -160,7 +160,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -170,7 +170,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -180,7 +180,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -190,7 +190,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -208,7 +208,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -218,7 +218,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -228,7 +228,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -238,7 +238,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -248,7 +248,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -258,7 +258,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -268,7 +268,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -278,7 +278,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -288,7 +288,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -298,7 +298,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -308,7 +308,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -318,7 +318,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -328,7 +328,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -338,7 +338,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -348,7 +348,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -358,7 +358,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -368,7 +368,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -378,7 +378,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -388,7 +388,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -398,7 +398,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -408,7 +408,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -418,7 +418,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -428,7 +428,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -438,7 +438,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -448,7 +448,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -458,7 +458,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -468,7 +468,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -478,7 +478,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -488,7 +488,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -498,7 +498,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -508,7 +508,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -518,7 +518,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -528,7 +528,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -538,7 +538,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -548,7 +548,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -558,7 +558,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -568,7 +568,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -578,7 +578,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -588,7 +588,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -608,7 +608,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3b1bb80b302c2e552685dc8a029797ec832ea7c9",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -618,7 +618,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -630,7 +630,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -642,7 +642,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -654,7 +654,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "be5935f8d2595bcd97b05718ef1eeae08d812e10",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -666,7 +666,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -678,7 +678,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82dcc8e914dabd9305ab9ae580709a7825e824f5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -690,7 +690,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -702,7 +702,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82ae8802978da40d7f1be5ad5943c9e550ab2c89",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -714,7 +714,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -726,7 +726,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -738,7 +738,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -748,7 +748,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/commits.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -760,7 +760,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c2b377e7a254264fd4a1fe328e4e3cfc9e245570",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -772,7 +772,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "280b560161b751ba226d50c7db1e0a14a78c2de0",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -790,7 +790,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/files.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -800,7 +800,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/files.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -818,7 +818,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -828,7 +828,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -838,7 +838,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/alias.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -856,7 +856,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "optional"},
 					},
 				},
@@ -866,7 +866,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/optional-package.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
@@ -884,7 +884,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/same-package-different-groups.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -894,7 +894,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/same-package-different-groups.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -904,7 +904,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Locations:  []string{"testdata/same-package-different-groups.v1.json"},
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},

@@ -111,10 +111,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Description.Ref,
 			},
-			Metadata: osv.DepGroupMetadata{},
+			Metadata: &osv.DepGroupMetadata{},
 		}
 		if slices.Contains(strings.Split(pkg.Dependency, " "), "dev") {
-			pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
+			pkgDetails.Metadata = &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
 		}
 		packages = append(packages, pkgDetails)
 	}

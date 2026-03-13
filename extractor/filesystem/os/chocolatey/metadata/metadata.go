@@ -16,8 +16,13 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a Chocolatey package.
 type Metadata struct {
@@ -29,33 +34,23 @@ type Metadata struct {
 	Tags       string
 }
 
-// SetProto sets the ChocolateyMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_ChocolateyMetadata{
-		ChocolateyMetadata: &pb.ChocolateyPackageMetadata{
-			Name:       m.Name,
-			Version:    m.Version,
-			Authors:    m.Authors,
-			Licenseurl: m.LicenseURL,
-			Projecturl: m.ProjectURL,
-			Tags:       m.Tags,
-		},
+// ToProto converts the Metadata struct to a ChocolateyPackageMetadata proto.
+func ToProto(m *Metadata) *pb.ChocolateyPackageMetadata {
+	return &pb.ChocolateyPackageMetadata{
+		Name:       m.Name,
+		Version:    m.Version,
+		Authors:    m.Authors,
+		Licenseurl: m.LicenseURL,
+		Projecturl: m.ProjectURL,
+		Tags:       m.Tags,
 	}
 }
 
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
 // ToStruct converts the ChocolateyPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.ChocolateyPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		Name:       m.GetName(),
 		Version:    m.GetVersion(),

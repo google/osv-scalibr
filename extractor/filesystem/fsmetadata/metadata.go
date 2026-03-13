@@ -12,36 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package setup
+// Package fsmetadata provides a SCALIBR metadata type that wraps a scalibrfs.FS.
+package fsmetadata
 
 import (
 	"github.com/google/osv-scalibr/binary/proto/metadata"
-	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/google/osv-scalibr/fs"
 )
 
 func init() {
-	metadata.Register(ToStruct, ToProto)
+	metadata.RegisterNil[*Metadata]()
 }
 
-// Metadata contains additional information from a package in a setup.py file.
+// Metadata wraps a scalibrfs.FS.
 type Metadata struct {
-	// The comparator used to compare the package version, e.g. ==, ~=, >=
-	VersionComparator string
-}
-
-// ToProto converts the Metadata struct to a PythonSetupMetadata proto.
-func ToProto(m *Metadata) *pb.PythonSetupMetadata {
-	return &pb.PythonSetupMetadata{
-		VersionComparator: m.VersionComparator,
-	}
+	FS fs.FS
 }
 
 // IsProtoable marks the struct as a metadata type.
 func (m *Metadata) IsProtoable() {}
-
-// ToStruct converts the PythonSetupMetadata proto to a Metadata struct.
-func ToStruct(m *pb.PythonSetupMetadata) *Metadata {
-	return &Metadata{
-		VersionComparator: m.GetVersionComparator(),
-	}
-}

@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
@@ -104,6 +105,9 @@ message Package {
   repeated string plugins = 49;
   // The additional data found in the package.
   // LINT.IfChange
+  optional google.protobuf.Any metadata_any = 69;
+  // Deprecated: use metadata_any instead.
+  // TODO(#1847): Remove once the migration is complete.
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
