@@ -204,6 +204,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
+| SAP Ariba OAuth2 Client Credentials         | `secrets/saparibaoauth2clientcredentials` |
+| SAP BTP Access Token                        | `secrets/btpaccesstoken`               |
+| SAP BTP XSUAA Access Token                  | `secrets/btpxsuaaaccesstoken`          |
+| SAP BTP OAuth2 Client Credentials           | `secrets/btpoauth2clientcredentials`   |
+| SAP BTP XSUAA OAuth2 Client Credentials     | `secrets/btpxsuaaoauth2clientcredentials` |
+| SAP Success Factors Access Token            | `secrets/sapsuccessfactorsaccesstoken` |
+| SAP Concur Access Token                     | `secrets/sapconcuraccesstoken`         |
+| SAP Concur Refresh Token                    | `secrets/sapconcurrefreshtoken`        |
 
 ### Container inventory
 
