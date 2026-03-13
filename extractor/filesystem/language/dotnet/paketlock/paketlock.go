@@ -227,7 +227,7 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 				repoName = pkgName
 				// In simple format, version could be a tag/version or commit hash
 				// If it's 40 hex chars, it's a commit; otherwise it's a version tag
-				if len(version) == 40 && isHexString(version) {
+				if len(version) == 40 && isValidGitSHA1(version) {
 					commit = version
 				} else {
 					pkgVersion = version
@@ -235,7 +235,7 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 			} else if pkgName == repoName {
 				// Package name matches repo name - this is the simple format
 				// The value could be a version tag or commit hash
-				if len(version) == 40 && isHexString(version) {
+				if len(version) == 40 && isValidGitSHA1(version) {
 					commit = version
 				} else {
 					pkgVersion = version
@@ -284,8 +284,8 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 	return packages, nil
 }
 
-// isHexString checks if a string contains only hexadecimal characters.
-func isHexString(s string) bool {
+// isValidGitSHA1 checks if a string contains only hexadecimal characters (valid Git SHA-1).
+func isValidGitSHA1(s string) bool {
 	for _, c := range s {
 		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
 			return false

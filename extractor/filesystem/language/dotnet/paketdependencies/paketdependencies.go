@@ -214,7 +214,8 @@ func (e Extractor) parseDependenciesFile(reader io.Reader, path string) ([]*extr
 				ref := strings.TrimSpace(matches[2])
 				// Hex refs are treated as commits (supports abbreviated/full SHAs),
 				// otherwise treat as version/tag.
-				if len(ref) >= 7 && isHexString(ref) {
+				// Git SHA-1 hashes are 40 characters (full) or 7-40 characters (abbreviated)
+				if len(ref) >= 7 && len(ref) <= 40 && isValidGitSHA1(ref) {
 					commit = ref
 				} else {
 					version = ref
@@ -266,8 +267,8 @@ func (e Extractor) parseDependenciesFile(reader io.Reader, path string) ([]*extr
 	return packages, nil
 }
 
-// isHexString checks if a string contains only hexadecimal characters.
-func isHexString(s string) bool {
+// isValidGitSHA1 checks if a string is a valid Git SHA-1 hash.
+func isValidGitSHA1(s string) bool {
 	for _, c := range s {
 		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
 			return false
