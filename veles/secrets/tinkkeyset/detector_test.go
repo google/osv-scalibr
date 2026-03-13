@@ -15,7 +15,6 @@
 package tinkkeyset_test
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -23,7 +22,37 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := tinkkeyset.NewDetector()
+	cases := []struct {
+		name   string
+		input  string
+		secret veles.Secret
+	}{
+		{
+			name:  "json",
+			input: `{"primaryKeyId":1976038263,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBi7O0TErBM9eTl3UppUGZg","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1976038263,"outputPrefixType":"TINK"}]}`,
+			secret: tinkkeyset.TinkKeySet{
+				Content: `{"primaryKeyId":1976038263,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBi7O0TErBM9eTl3UppUGZg","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1976038263,"outputPrefixType":"TINK"}]}`,
+			},
+		},
+		{
+			name:  "base64",
+			input: `CPHv2PIDElQKSAowdHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbmsuQWVzR2NtS2V5EhIaEEL4HoapXqtkjiMgDxdcNUMYARABGPHv2PIDIAE=`,
+			secret: tinkkeyset.TinkKeySet{
+				Content: `{"primaryKeyId":1045837809,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.AesGcmKey","value":"GhBC+B6GqV6rZI4jIA8XXDVD","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":1045837809,"outputPrefixType":"TINK"}]}`,
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.input, tc.secret)
+		})
+	}
+}
 
 func TestDetector_truePositives(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{tinkkeyset.NewDetector()})
@@ -197,24 +226,13 @@ func TestDetector_truePositives(t *testing.T) {
 		},
 	}
 
-	cmpOpt := cmp.Comparer(func(x, y tinkkeyset.TinkKeySet) bool {
-		var xJSON, yJSON any
-		if err := json.Unmarshal([]byte(x.Content), &xJSON); err != nil {
-			return false
-		}
-		if err := json.Unmarshal([]byte(y.Content), &yJSON); err != nil {
-			return false
-		}
-		return cmp.Equal(xJSON, yJSON)
-	})
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty(), cmpOpt); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
 		})
