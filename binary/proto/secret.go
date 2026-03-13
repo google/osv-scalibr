@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
+	velesgitlab "github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -198,6 +199,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubOAuthTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
+	case velesgitlab.PipelineTriggerToken:
+		return gitlabPipelineTriggerTokenToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
 		return azureAccessTokenToProto(t), nil
 	case velesazuretoken.AzureIdentityToken:
@@ -721,6 +724,18 @@ func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	}
 }
 
+func gitlabPipelineTriggerTokenToProto(s velesgitlab.PipelineTriggerToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabPipelineTriggerToken_{
+			GitlabPipelineTriggerToken: &spb.SecretData_GitlabPipelineTriggerToken{
+				Token:     s.Token,
+				ProjectId: s.ProjectID,
+				Hostname:  s.Hostname,
+			},
+		},
+	}
+}
+
 func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PostmanApiKey{
@@ -1236,6 +1251,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
+	case *spb.SecretData_GitlabPipelineTriggerToken_:
+		return gitlabPipelineTriggerTokenToStruct(s.GetGitlabPipelineTriggerToken()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_Pypi:
@@ -1571,6 +1588,13 @@ func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
+	}
+}
+
+func gitlabPipelineTriggerTokenToStruct(kPB *spb.SecretData_GitlabPipelineTriggerToken) velesgitlab.PipelineTriggerToken {
+	return velesgitlab.PipelineTriggerToken{
+		Token:     kPB.GetToken(),
+		ProjectID: kPB.GetProjectId(),
 	}
 }
 
