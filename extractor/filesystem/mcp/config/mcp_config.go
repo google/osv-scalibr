@@ -48,7 +48,7 @@ var DefaultExclusions = map[string]bool{
 	"__pycache__":  true,
 	"venv":         true,
 	".venv":        true,
-	"target":       true, // Rust
+	"target":       true,
 	"dist":         true,
 	"build":        true,
 	".next":        true,
@@ -72,8 +72,11 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 
 	// Check for ignored directories in the path
-	if shouldSkip(path) {
-		return false
+	dir := filepath.ToSlash(filepath.Dir(path))
+	for part := range strings.SplitSeq(dir, "/") {
+		if DefaultExclusions[part] {
+			return false
+		}
 	}
 
 	return true
@@ -214,27 +217,4 @@ func splitPackageVersion(arg string) (string, string) {
 		return arg[:lastAt], arg[lastAt+1:]
 	}
 	return arg, ""
-}
-
-// shouldSkip checks if the path contains any ignored directories.
-func shouldSkip(path string) bool {
-	dir := filepath.Dir(path)
-
-	current := dir
-	for {
-		if current == "." || current == "/" || current == "\\" || current == "" {
-			break
-		}
-		base := filepath.Base(current)
-		if DefaultExclusions[base] {
-			return true
-		}
-
-		parent := filepath.Dir(current)
-		if parent == current {
-			break
-		}
-		current = parent
-	}
-	return false
 }
