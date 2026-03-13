@@ -23,12 +23,12 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/ffa/baseimageattr"
-	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
+	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
@@ -41,12 +41,14 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
@@ -65,6 +67,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
+	"github.com/google/osv-scalibr/veles/secrets/packagist"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -77,6 +80,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
 	"github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/secrets/supabase"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 
@@ -116,6 +120,7 @@ var (
 	SecretsValidate = initMapFromVelesPlugins([]velesPlugin{
 		fromVeles(anthropicapikey.NewWorkspaceValidator(), "secrets/anthropicapikeyworkspacevalidate", 0),
 		fromVeles(anthropicapikey.NewModelValidator(), "secrets/anthropicapikeymodelvalidate", 0),
+		fromVeles(bitwardenoauth2access.NewValidator(), "secrets/bitwardenoauth2accessvalidate", 0),
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
 		fromVeles(elasticcloudapikey.NewValidator(), "secrets/elasticcloudapikeyvalidate", 0),
 		fromVeles(pypiapitoken.NewValidator(), "secrets/pypiapitokenvalidate", 0),
@@ -141,6 +146,11 @@ var (
 		fromVeles(mistralapikey.NewValidator(), "secrets/mistralapikeyvalidate", 0),
 		fromVeles(openai.NewProjectValidator(), "secrets/openaivalidate", 0),
 		fromVeles(openrouter.NewValidator(), "secrets/openroutervalidate", 0),
+		fromVeles(packagist.NewAPIKeyValidator(), "secrets/packagistapikeyvalidate", 0),
+		fromVeles(packagist.NewAPISecretValidator(), "secrets/packagistsecretvalidate", 0),
+		fromVeles(packagist.NewOrgReadTokenValidator(), "secrets/packagistorgreadtokenvalidate", 0),
+		fromVeles(packagist.NewOrgUpdateTokenValidator(), "secrets/packagistorgupdatetokenvalidate", 0),
+		fromVeles(packagist.NewUserUpdateTokenValidator(), "secrets/packagistuserupdatetokenvalidate", 0),
 		fromVeles(circleci.NewPersonalAccessTokenValidator(), "secrets/circlecipatvalidate", 0),
 		fromVeles(circleci.NewProjectTokenValidator(), "secrets/circleciprojectvalidate", 0),
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),
@@ -153,6 +163,9 @@ var (
 		fromVeles(github.NewFineGrainedPATValidator(), "secrets/githubfinegrainedpatvalidate", 0),
 		fromVeles(stripeapikeys.NewSecretKeyValidator(), "secrets/stripesecretkeyvalidate", 0),
 		fromVeles(stripeapikeys.NewRestrictedKeyValidator(), "secrets/striperestrictedkeyvalidate", 0),
+		fromVeles(supabase.NewPATValidator(), "secrets/supabasepatvalidate", 0),
+		fromVeles(supabase.NewProjectSecretKeyValidator(), "secrets/supabaseprojectsecretkeyvalidate", 0),
+		fromVeles(supabase.NewServiceRoleJWTValidator(), "secrets/supabaseservicerolejwtvalidate", 0),
 		fromVeles(squareapikey.NewPersonalAccessTokenValidator(), "secrets/squarepersonalaccesstokenvalidate", 0),
 		fromVeles(squareapikey.NewOAuthApplicationSecretValidator(), "secrets/squareoauthapplicationsecretvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
@@ -165,6 +178,7 @@ var (
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
 		fromVeles(urlcreds.NewValidator(), "secrets/urlcredsvalidate", 0),
 		fromVeles(telegrambotapitoken.NewValidator(), "secrets/telegrombotapitokenvalidate", 0),
+		fromVeles(discordbottoken.NewValidator(), "secrets/discordbottokenvalidate", 0),
 		fromVeles(salesforceoauth2access.NewValidator(), "secrets/salesforceoauth2accessvalidate", 0),
 		fromVeles(salesforceoauth2client.NewValidator(), "secrets/salesforceoauth2clientvalidate", 0),
 		fromVeles(salesforceoauth2refresh.NewValidator(), "secrets/salesforceoauth2refreshvalidate", 0),

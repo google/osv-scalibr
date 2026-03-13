@@ -37,11 +37,12 @@ func mockSecretFromTuple(ms []ntuple.Match) (veles.Secret, bool) {
 	var c ntuple.Match
 
 	for j := range ms {
-		if ms[j].FinderIndex == 0 {
+		switch ms[j].FinderIndex {
+		case 0:
 			a = ms[j]
-		} else if ms[j].FinderIndex == 1 {
+		case 1:
 			b = ms[j]
-		} else {
+		default:
 			c = ms[j]
 		}
 	}

@@ -77,7 +77,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			return fmt.Errorf("%s halted at %q because of context error: %w", a.Name(), input.ScanRoot.Path, err)
 		}
 
-		metadata, ok := pkg.Metadata.(dpkgmetadata.Metadata)
+		metadata, ok := pkg.Metadata.(*dpkgmetadata.Metadata)
 		if !ok {
 			continue
 		}

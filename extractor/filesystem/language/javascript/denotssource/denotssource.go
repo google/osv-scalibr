@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"regexp"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -29,8 +30,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
-	sitter "github.com/smacker/go-tree-sitter"
-	"github.com/smacker/go-tree-sitter/typescript/typescript"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -40,14 +39,22 @@ const (
 	Name = "javascript/denotssource"
 )
 
-// TypeScript file extensions to be processed
-var tsExtensions = map[string]bool{
-	".ts":   true,
-	".tsx":  true,
-	".mts":  true,
-	".cts":  true,
-	".d.ts": true,
-}
+var (
+	// TypeScript file extensions to be processed
+	tsExtensions = map[string]bool{
+		".ts":   true,
+		".tsx":  true,
+		".mts":  true,
+		".cts":  true,
+		".d.ts": true,
+	}
+
+	// Regexps for typescript import statements that capture imported package name.
+	// e.g. import {debounce} from "https://unpkg.com/lodash-es@4.17.21/lodash.js";
+	importRe = regexp.MustCompile(`\bimport\s*.*\s*from\s*"(.*)"`)
+	// e.g. await import("https://unpkg.com/lodash-es@4.17.22/lodash.js");
+	dynamicImportRe = regexp.MustCompile(`\bimport\(\s*"(.*)"\s*\)`)
+)
 
 // Extractor extracts Deno dependencies from TypeScript source files.
 type Extractor struct {
@@ -148,7 +155,7 @@ func parseTypeScriptFile(ctx context.Context, inputPath string, reader io.Reader
 		log.Debugf("TypeScript file %s read failed: %v", inputPath, err)
 		return nil, fmt.Errorf("failed to read TypeScript file: %w", err)
 	}
-	pkgsStr, err := findImportPathsWithQuery(ctx, content)
+	pkgsStr, err := findImportPaths(ctx, content)
 	if err != nil {
 		return nil, err
 	}
@@ -164,50 +171,22 @@ func parseTypeScriptFile(ctx context.Context, inputPath string, reader io.Reader
 	return pkgs, nil
 }
 
-// findImportPathsWithQuery uses tree-sitter to find import paths in TypeScript source code.
+// findImportPaths uses regexps to find import paths in TypeScript source code.
 //
 // returns a slice of import paths found in the source code.
-func findImportPathsWithQuery(ctx context.Context, source []byte) ([]string, error) {
-	q, err := sitter.NewQuery([]byte(`
-		(import_statement source: (string) @import-source)
-		(call_expression function: (import) arguments: (arguments (string) @dynamic-import))
-	`), typescript.GetLanguage())
-	if err != nil {
-		return nil, fmt.Errorf("error while creating query for tree sitter: %w", err)
-	}
-
-	// Parse the source
-	parser := sitter.NewParser()
-	parser.SetLanguage(typescript.GetLanguage())
-
-	tree, err := parser.ParseCtx(context.WithoutCancel(ctx), nil, source)
-	if err != nil {
-		return nil, fmt.Errorf("error while parsing with tree sitter: %w", err)
-	}
-
-	// Create a query cursor
-	qc := sitter.NewQueryCursor()
-	qc.Exec(q, tree.RootNode())
-
-	// Iterate through matches
+func findImportPaths(ctx context.Context, source []byte) ([]string, error) {
 	var packages []string
-	for {
-		// Return if canceled or exceeding the deadline.
-		if err := ctx.Err(); err != nil {
-			return packages, fmt.Errorf("tree-sitter halted due to context error: %w", err)
-		}
-		m, ok := qc.NextMatch()
-		if !ok {
-			break
-		}
-		// Process captures
-		for _, c := range m.Captures {
-			capturedText := c.Node.Content(source)
-			// Remove quotes from the string
-			if len(capturedText) >= 2 && (capturedText[0] == '"' || capturedText[0] == '\'') {
-				capturedText = capturedText[1 : len(capturedText)-1]
+
+	for _, re := range []*regexp.Regexp{importRe, dynamicImportRe} {
+		matches := re.FindAllSubmatch(source, -1)
+		for _, match := range matches {
+			if err := ctx.Err(); err != nil {
+				return packages, err
 			}
-			packages = append(packages, capturedText)
+			if len(match) < 2 {
+				continue
+			}
+			packages = append(packages, string(match[1]))
 		}
 	}
 

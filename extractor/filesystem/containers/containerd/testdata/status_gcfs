@@ -1,0 +1,1 @@
+{"Version":"v1","Pid":23047,"CreatedAt":1771838419246561929,"StartedAt":1771838419350579305,"FinishedAt":0,"ExitCode":0,"Reason":"","Message":"","Resources":{"linux":{"cpu_period":100000,"cpu_shares":2,"oom_score_adj":1000,"unified":{"memory.oom.group":"1","memory.swap.max":"0"}}},"Restore":false}

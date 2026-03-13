@@ -67,6 +67,9 @@ func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network:  plugin.NetworkOnline,
 		DirectFS: true,
+		// This enricher follows registries defined in pom.xml, which can be risky if
+		// they point to malicious registries.
+		AllowUnsafePlugins: true,
 	}
 }
 
@@ -75,7 +78,7 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{pomxml.Name}
 }
 
-// Config is the configuration for the pomxmlnet Extractor.
+// Config is the configuration for the pomxml Enricher.
 type Config struct {
 	*datasource.MavenRegistryAPIClient
 
@@ -283,6 +286,7 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 				DepGroupVals: depGroups,
 				IsTransitive: !isDirect,
 			},
+			ScanRoot: input.Root,
 			// TODO(#408): Add merged paths in here as well
 			Locations: []string{input.Path},
 			Plugins:   []string{Name},

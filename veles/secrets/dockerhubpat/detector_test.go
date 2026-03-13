@@ -23,9 +23,19 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `dckr_pat_7awgM4jG5SQvxcvmNzhKj8PQjxo`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		dockerhubpat.NewDetector(),
+		`docker login -u username -p `+testKey,
+		dockerhubpat.DockerHubPAT{Pat: testKey, Username: "username"},
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Docker Hub PAT/s.
@@ -106,6 +116,62 @@ func TestDetector_truePositives(t *testing.T) {
 			input: testKey + `extra`,
 			want: []veles.Secret{
 				dockerhubpat.DockerHubPAT{Pat: testKey},
+			},
+		},
+		{
+			name: "env",
+			input: `
+			AZURE_OPENAI_VERSION="2025-01-01-preview-Placeholder"
+			AZURE_ENDPOINT="https://Placeholder.openai.azure.com/"
+			AZURE_OPENAI_KEY="PlaceholderAPIKey"
+			DOCKERHUB_USERNAME="PlaceholderDockerUser"
+			DOCKERHUB_TOKEN="dckr_pat_PlaceholderTokenPlaceholder"
+			# EMBEDDING_MODEL_NAME_OR_PATH="sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+			`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{
+					Pat:      "dckr_pat_PlaceholderTokenPlaceholder",
+					Username: "PlaceholderDockerUser",
+				},
+			},
+		},
+		{
+			name:  "docker login with --username and equals sign",
+			input: `docker login --username=alice -p ` + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "alice"},
+			},
+		},
+		{
+			name:  "docker login with quotes around username",
+			input: `docker login -u "bob_deploy" --password-stdin < ` + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "bob_deploy"},
+			},
+		},
+		{
+			name:  "docker login with single quotes and extra flags",
+			input: `docker login --quiet --username 'ci-runner' -p ` + testKey + ` registry.hub.docker.com`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "ci-runner"},
+			},
+		},
+		{
+			name: "JSON formatted credentials",
+			input: `{
+				"username": "service_account",
+				"registry": "docker.io",
+				"password": "` + testKey + `"
+			}`,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "service_account"},
+			},
+		},
+		{
+			name:  "YAML formatted credentials with colon",
+			input: "username: deploy_user\npassword: " + testKey,
+			want: []veles.Secret{
+				dockerhubpat.DockerHubPAT{Pat: testKey, Username: "deploy_user"},
 			},
 		},
 	}

@@ -22,14 +22,15 @@
 package scan_result_go_proto
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	osvschema "github.com/ossf/osv-schema/bindings/go/osvschema"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -337,7 +338,7 @@ func (x SecretStatus_SecretStatusEnum) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SecretStatus_SecretStatusEnum.Descriptor instead.
 func (SecretStatus_SecretStatusEnum) EnumDescriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 0}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{67, 0}
 }
 
 // The results of a scan incl. scan status and artifacts found.
@@ -695,7 +696,10 @@ type Package struct {
 	// value, e.g. PyPI.
 	Ecosystem string `protobuf:"bytes,27,opt,name=ecosystem,proto3" json:"ecosystem,omitempty"`
 	// Paths or source of files related to the package.
+	// This will soon be deprecated in favor of |location|.
 	Locations []string `protobuf:"bytes,2,rep,name=locations,proto3" json:"locations,omitempty"`
+	// TODO(b/400910349): Start populating this and deprecate |locations|.
+	Location *PackageLocation `protobuf:"bytes,68,opt,name=location,proto3" json:"location,omitempty"`
 	// The names of the plugins that found this software. Set by the
 	// core library.
 	Plugins []string `protobuf:"bytes,49,rep,name=plugins,proto3" json:"plugins,omitempty"`
@@ -746,7 +750,7 @@ type Package struct {
 	//	*Package_UnknownBinaryMetadata
 	//	*Package_BazelMavenMetadata
 	//	*Package_DenoMetadata
-	//	*Package_McpMetadata
+	//	*Package_SpackMetadata
 	Metadata isPackage_Metadata `protobuf_oneof:"metadata"`
 	// Signals to indicate that specific vulnerabilities are not applicable to
 	// this package.
@@ -833,6 +837,13 @@ func (x *Package) GetEcosystem() string {
 func (x *Package) GetLocations() []string {
 	if x != nil {
 		return x.Locations
+	}
+	return nil
+}
+
+func (x *Package) GetLocation() *PackageLocation {
+	if x != nil {
+		return x.Location
 	}
 	return nil
 }
@@ -1229,10 +1240,10 @@ func (x *Package) GetDenoMetadata() *JavascriptDenoMetadata {
 	return nil
 }
 
-func (x *Package) GetMcpMetadata() *MCPMetadata {
+func (x *Package) GetSpackMetadata() *SpackPackageMetadata {
 	if x != nil {
-		if x, ok := x.Metadata.(*Package_McpMetadata); ok {
-			return x.McpMetadata
+		if x, ok := x.Metadata.(*Package_SpackMetadata); ok {
+			return x.SpackMetadata
 		}
 	}
 	return nil
@@ -1431,8 +1442,8 @@ type Package_DenoMetadata struct {
 	DenoMetadata *JavascriptDenoMetadata `protobuf:"bytes,66,opt,name=deno_metadata,json=denoMetadata,proto3,oneof"`
 }
 
-type Package_McpMetadata struct {
-	McpMetadata *MCPMetadata `protobuf:"bytes,67,opt,name=mcp_metadata,json=mcpMetadata,proto3,oneof"`
+type Package_SpackMetadata struct {
+	SpackMetadata *SpackPackageMetadata `protobuf:"bytes,67,opt,name=spack_metadata,json=spackMetadata,proto3,oneof"`
 }
 
 func (*Package_PythonMetadata) isPackage_Metadata() {}
@@ -1519,7 +1530,63 @@ func (*Package_BazelMavenMetadata) isPackage_Metadata() {}
 
 func (*Package_DenoMetadata) isPackage_Metadata() {}
 
-func (*Package_McpMetadata) isPackage_Metadata() {}
+func (*Package_SpackMetadata) isPackage_Metadata() {}
+
+// Paths or source of files related to an extracted package.
+type PackageLocation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Main descriptor this package was extracted from (if applicable).
+	Desc *Location `protobuf:"bytes,1,opt,name=desc,proto3" json:"desc,omitempty"`
+	// Other locations related to this package, e.g. files installed by the OS
+	// package.
+	Related       []*Location `protobuf:"bytes,2,rep,name=related,proto3" json:"related,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PackageLocation) Reset() {
+	*x = PackageLocation{}
+	mi := &file_proto_scan_result_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PackageLocation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PackageLocation) ProtoMessage() {}
+
+func (x *PackageLocation) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PackageLocation.ProtoReflect.Descriptor instead.
+func (*PackageLocation) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *PackageLocation) GetDesc() *Location {
+	if x != nil {
+		return x.Desc
+	}
+	return nil
+}
+
+func (x *PackageLocation) GetRelated() []*Location {
+	if x != nil {
+		return x.Related
+	}
+	return nil
+}
 
 // Additional identifiers for source code software packages (e.g. NPM).
 type SourceCodeIdentifier struct {
@@ -1532,7 +1599,7 @@ type SourceCodeIdentifier struct {
 
 func (x *SourceCodeIdentifier) Reset() {
 	*x = SourceCodeIdentifier{}
-	mi := &file_proto_scan_result_proto_msgTypes[6]
+	mi := &file_proto_scan_result_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1544,7 +1611,7 @@ func (x *SourceCodeIdentifier) String() string {
 func (*SourceCodeIdentifier) ProtoMessage() {}
 
 func (x *SourceCodeIdentifier) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[6]
+	mi := &file_proto_scan_result_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1557,7 +1624,7 @@ func (x *SourceCodeIdentifier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SourceCodeIdentifier.ProtoReflect.Descriptor instead.
 func (*SourceCodeIdentifier) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{6}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SourceCodeIdentifier) GetRepo() string {
@@ -1595,7 +1662,7 @@ type LayerDetails struct {
 
 func (x *LayerDetails) Reset() {
 	*x = LayerDetails{}
-	mi := &file_proto_scan_result_proto_msgTypes[7]
+	mi := &file_proto_scan_result_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1607,7 +1674,7 @@ func (x *LayerDetails) String() string {
 func (*LayerDetails) ProtoMessage() {}
 
 func (x *LayerDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[7]
+	mi := &file_proto_scan_result_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1620,7 +1687,7 @@ func (x *LayerDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LayerDetails.ProtoReflect.Descriptor instead.
 func (*LayerDetails) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{7}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *LayerDetails) GetIndex() int32 {
@@ -1677,7 +1744,7 @@ type PackageExploitabilitySignal struct {
 
 func (x *PackageExploitabilitySignal) Reset() {
 	*x = PackageExploitabilitySignal{}
-	mi := &file_proto_scan_result_proto_msgTypes[8]
+	mi := &file_proto_scan_result_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1689,7 +1756,7 @@ func (x *PackageExploitabilitySignal) String() string {
 func (*PackageExploitabilitySignal) ProtoMessage() {}
 
 func (x *PackageExploitabilitySignal) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[8]
+	mi := &file_proto_scan_result_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1702,7 +1769,7 @@ func (x *PackageExploitabilitySignal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageExploitabilitySignal.ProtoReflect.Descriptor instead.
 func (*PackageExploitabilitySignal) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{8}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PackageExploitabilitySignal) GetPlugin() string {
@@ -1773,7 +1840,7 @@ type VulnIdentifiers struct {
 
 func (x *VulnIdentifiers) Reset() {
 	*x = VulnIdentifiers{}
-	mi := &file_proto_scan_result_proto_msgTypes[9]
+	mi := &file_proto_scan_result_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1785,7 +1852,7 @@ func (x *VulnIdentifiers) String() string {
 func (*VulnIdentifiers) ProtoMessage() {}
 
 func (x *VulnIdentifiers) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[9]
+	mi := &file_proto_scan_result_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1798,7 +1865,7 @@ func (x *VulnIdentifiers) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VulnIdentifiers.ProtoReflect.Descriptor instead.
 func (*VulnIdentifiers) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{9}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *VulnIdentifiers) GetIdentifiers() []string {
@@ -1822,7 +1889,7 @@ type FindingExploitabilitySignal struct {
 
 func (x *FindingExploitabilitySignal) Reset() {
 	*x = FindingExploitabilitySignal{}
-	mi := &file_proto_scan_result_proto_msgTypes[10]
+	mi := &file_proto_scan_result_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1834,7 +1901,7 @@ func (x *FindingExploitabilitySignal) String() string {
 func (*FindingExploitabilitySignal) ProtoMessage() {}
 
 func (x *FindingExploitabilitySignal) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[10]
+	mi := &file_proto_scan_result_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1847,7 +1914,7 @@ func (x *FindingExploitabilitySignal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindingExploitabilitySignal.ProtoReflect.Descriptor instead.
 func (*FindingExploitabilitySignal) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{10}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *FindingExploitabilitySignal) GetPlugin() string {
@@ -1887,7 +1954,7 @@ type Purl struct {
 
 func (x *Purl) Reset() {
 	*x = Purl{}
-	mi := &file_proto_scan_result_proto_msgTypes[11]
+	mi := &file_proto_scan_result_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1899,7 +1966,7 @@ func (x *Purl) String() string {
 func (*Purl) ProtoMessage() {}
 
 func (x *Purl) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[11]
+	mi := &file_proto_scan_result_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1912,7 +1979,7 @@ func (x *Purl) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Purl.ProtoReflect.Descriptor instead.
 func (*Purl) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{11}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Purl) GetPurl() string {
@@ -1974,7 +2041,7 @@ type Qualifier struct {
 
 func (x *Qualifier) Reset() {
 	*x = Qualifier{}
-	mi := &file_proto_scan_result_proto_msgTypes[12]
+	mi := &file_proto_scan_result_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1986,7 +2053,7 @@ func (x *Qualifier) String() string {
 func (*Qualifier) ProtoMessage() {}
 
 func (x *Qualifier) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[12]
+	mi := &file_proto_scan_result_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1999,7 +2066,7 @@ func (x *Qualifier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Qualifier.ProtoReflect.Descriptor instead.
 func (*Qualifier) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{12}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Qualifier) GetKey() string {
@@ -2033,7 +2100,7 @@ type PackageVuln struct {
 
 func (x *PackageVuln) Reset() {
 	*x = PackageVuln{}
-	mi := &file_proto_scan_result_proto_msgTypes[13]
+	mi := &file_proto_scan_result_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2045,7 +2112,7 @@ func (x *PackageVuln) String() string {
 func (*PackageVuln) ProtoMessage() {}
 
 func (x *PackageVuln) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[13]
+	mi := &file_proto_scan_result_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2058,7 +2125,7 @@ func (x *PackageVuln) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageVuln.ProtoReflect.Descriptor instead.
 func (*PackageVuln) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{13}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PackageVuln) GetVuln() *osvschema.Vulnerability {
@@ -2108,7 +2175,7 @@ type GenericFinding struct {
 
 func (x *GenericFinding) Reset() {
 	*x = GenericFinding{}
-	mi := &file_proto_scan_result_proto_msgTypes[14]
+	mi := &file_proto_scan_result_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2120,7 +2187,7 @@ func (x *GenericFinding) String() string {
 func (*GenericFinding) ProtoMessage() {}
 
 func (x *GenericFinding) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[14]
+	mi := &file_proto_scan_result_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2133,7 +2200,7 @@ func (x *GenericFinding) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericFinding.ProtoReflect.Descriptor instead.
 func (*GenericFinding) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{14}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GenericFinding) GetAdv() *GenericFindingAdvisory {
@@ -2182,7 +2249,7 @@ type GenericFindingAdvisory struct {
 
 func (x *GenericFindingAdvisory) Reset() {
 	*x = GenericFindingAdvisory{}
-	mi := &file_proto_scan_result_proto_msgTypes[15]
+	mi := &file_proto_scan_result_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2194,7 +2261,7 @@ func (x *GenericFindingAdvisory) String() string {
 func (*GenericFindingAdvisory) ProtoMessage() {}
 
 func (x *GenericFindingAdvisory) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[15]
+	mi := &file_proto_scan_result_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2207,7 +2274,7 @@ func (x *GenericFindingAdvisory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericFindingAdvisory.ProtoReflect.Descriptor instead.
 func (*GenericFindingAdvisory) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{15}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GenericFindingAdvisory) GetId() *AdvisoryId {
@@ -2256,7 +2323,7 @@ type AdvisoryId struct {
 
 func (x *AdvisoryId) Reset() {
 	*x = AdvisoryId{}
-	mi := &file_proto_scan_result_proto_msgTypes[16]
+	mi := &file_proto_scan_result_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2268,7 +2335,7 @@ func (x *AdvisoryId) String() string {
 func (*AdvisoryId) ProtoMessage() {}
 
 func (x *AdvisoryId) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[16]
+	mi := &file_proto_scan_result_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2281,7 +2348,7 @@ func (x *AdvisoryId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdvisoryId.ProtoReflect.Descriptor instead.
 func (*AdvisoryId) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{16}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *AdvisoryId) GetPublisher() string {
@@ -2309,7 +2376,7 @@ type GenericFindingTargetDetails struct {
 
 func (x *GenericFindingTargetDetails) Reset() {
 	*x = GenericFindingTargetDetails{}
-	mi := &file_proto_scan_result_proto_msgTypes[17]
+	mi := &file_proto_scan_result_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2321,7 +2388,7 @@ func (x *GenericFindingTargetDetails) String() string {
 func (*GenericFindingTargetDetails) ProtoMessage() {}
 
 func (x *GenericFindingTargetDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[17]
+	mi := &file_proto_scan_result_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2334,7 +2401,7 @@ func (x *GenericFindingTargetDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenericFindingTargetDetails.ProtoReflect.Descriptor instead.
 func (*GenericFindingTargetDetails) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{17}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GenericFindingTargetDetails) GetExtra() string {
@@ -2355,7 +2422,7 @@ type PythonPackageMetadata struct {
 
 func (x *PythonPackageMetadata) Reset() {
 	*x = PythonPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[18]
+	mi := &file_proto_scan_result_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2367,7 +2434,7 @@ func (x *PythonPackageMetadata) String() string {
 func (*PythonPackageMetadata) ProtoMessage() {}
 
 func (x *PythonPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[18]
+	mi := &file_proto_scan_result_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2380,7 +2447,7 @@ func (x *PythonPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PythonPackageMetadata.ProtoReflect.Descriptor instead.
 func (*PythonPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{18}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *PythonPackageMetadata) GetAuthor() string {
@@ -2410,7 +2477,7 @@ type JavascriptPackageJSONMetadata struct {
 
 func (x *JavascriptPackageJSONMetadata) Reset() {
 	*x = JavascriptPackageJSONMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[19]
+	mi := &file_proto_scan_result_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2422,7 +2489,7 @@ func (x *JavascriptPackageJSONMetadata) String() string {
 func (*JavascriptPackageJSONMetadata) ProtoMessage() {}
 
 func (x *JavascriptPackageJSONMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[19]
+	mi := &file_proto_scan_result_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2435,7 +2502,7 @@ func (x *JavascriptPackageJSONMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavascriptPackageJSONMetadata.ProtoReflect.Descriptor instead.
 func (*JavascriptPackageJSONMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{19}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *JavascriptPackageJSONMetadata) GetAuthor() string {
@@ -2482,7 +2549,7 @@ type JavascriptDenoMetadata struct {
 
 func (x *JavascriptDenoMetadata) Reset() {
 	*x = JavascriptDenoMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[20]
+	mi := &file_proto_scan_result_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2494,7 +2561,7 @@ func (x *JavascriptDenoMetadata) String() string {
 func (*JavascriptDenoMetadata) ProtoMessage() {}
 
 func (x *JavascriptDenoMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[20]
+	mi := &file_proto_scan_result_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2507,7 +2574,7 @@ func (x *JavascriptDenoMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavascriptDenoMetadata.ProtoReflect.Descriptor instead.
 func (*JavascriptDenoMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{20}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *JavascriptDenoMetadata) GetCdn() isJavascriptDenoMetadata_Cdn {
@@ -3581,6 +3648,75 @@ func (x *FlatpakPackageMetadata) GetDeveloper() string {
 	return ""
 }
 
+// The additional data found in Spack packages.
+type SpackPackageMetadata struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Platform             string                 `protobuf:"bytes,1,opt,name=platform,proto3" json:"platform,omitempty"`
+	PlatformOs           string                 `protobuf:"bytes,2,opt,name=platform_os,json=platformOs,proto3" json:"platform_os,omitempty"`
+	PlatformArchitecture string                 `protobuf:"bytes,3,opt,name=platform_architecture,json=platformArchitecture,proto3" json:"platform_architecture,omitempty"`
+	Hash                 string                 `protobuf:"bytes,4,opt,name=hash,proto3" json:"hash,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *SpackPackageMetadata) Reset() {
+	*x = SpackPackageMetadata{}
+	mi := &file_proto_scan_result_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SpackPackageMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpackPackageMetadata) ProtoMessage() {}
+
+func (x *SpackPackageMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpackPackageMetadata.ProtoReflect.Descriptor instead.
+func (*SpackPackageMetadata) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *SpackPackageMetadata) GetPlatform() string {
+	if x != nil {
+		return x.Platform
+	}
+	return ""
+}
+
+func (x *SpackPackageMetadata) GetPlatformOs() string {
+	if x != nil {
+		return x.PlatformOs
+	}
+	return ""
+}
+
+func (x *SpackPackageMetadata) GetPlatformArchitecture() string {
+	if x != nil {
+		return x.PlatformArchitecture
+	}
+	return ""
+}
+
+func (x *SpackPackageMetadata) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
 // The additional data found in MODULE packages.
 type KernelModuleMetadata struct {
 	state                          protoimpl.MessageState `protogen:"open.v1"`
@@ -3598,7 +3734,7 @@ type KernelModuleMetadata struct {
 
 func (x *KernelModuleMetadata) Reset() {
 	*x = KernelModuleMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[32]
+	mi := &file_proto_scan_result_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3610,7 +3746,7 @@ func (x *KernelModuleMetadata) String() string {
 func (*KernelModuleMetadata) ProtoMessage() {}
 
 func (x *KernelModuleMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[32]
+	mi := &file_proto_scan_result_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3623,7 +3759,7 @@ func (x *KernelModuleMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KernelModuleMetadata.ProtoReflect.Descriptor instead.
 func (*KernelModuleMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{32}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *KernelModuleMetadata) GetPackageName() string {
@@ -3703,7 +3839,7 @@ type VmlinuzMetadata struct {
 
 func (x *VmlinuzMetadata) Reset() {
 	*x = VmlinuzMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[33]
+	mi := &file_proto_scan_result_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3715,7 +3851,7 @@ func (x *VmlinuzMetadata) String() string {
 func (*VmlinuzMetadata) ProtoMessage() {}
 
 func (x *VmlinuzMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[33]
+	mi := &file_proto_scan_result_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3728,7 +3864,7 @@ func (x *VmlinuzMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VmlinuzMetadata.ProtoReflect.Descriptor instead.
 func (*VmlinuzMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{33}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *VmlinuzMetadata) GetName() string {
@@ -3834,7 +3970,7 @@ type MacAppsMetadata struct {
 
 func (x *MacAppsMetadata) Reset() {
 	*x = MacAppsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[34]
+	mi := &file_proto_scan_result_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3846,7 +3982,7 @@ func (x *MacAppsMetadata) String() string {
 func (*MacAppsMetadata) ProtoMessage() {}
 
 func (x *MacAppsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[34]
+	mi := &file_proto_scan_result_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3859,7 +3995,7 @@ func (x *MacAppsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MacAppsMetadata.ProtoReflect.Descriptor instead.
 func (*MacAppsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{34}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *MacAppsMetadata) GetBundleDisplayName() string {
@@ -3944,7 +4080,7 @@ type MacportsPackageMetadata struct {
 
 func (x *MacportsPackageMetadata) Reset() {
 	*x = MacportsPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[35]
+	mi := &file_proto_scan_result_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3956,7 +4092,7 @@ func (x *MacportsPackageMetadata) String() string {
 func (*MacportsPackageMetadata) ProtoMessage() {}
 
 func (x *MacportsPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[35]
+	mi := &file_proto_scan_result_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3969,7 +4105,7 @@ func (x *MacportsPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MacportsPackageMetadata.ProtoReflect.Descriptor instead.
 func (*MacportsPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{35}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *MacportsPackageMetadata) GetPackageName() string {
@@ -4004,7 +4140,7 @@ type SPDXPackageMetadata struct {
 
 func (x *SPDXPackageMetadata) Reset() {
 	*x = SPDXPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[36]
+	mi := &file_proto_scan_result_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4016,7 +4152,7 @@ func (x *SPDXPackageMetadata) String() string {
 func (*SPDXPackageMetadata) ProtoMessage() {}
 
 func (x *SPDXPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[36]
+	mi := &file_proto_scan_result_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4029,7 +4165,7 @@ func (x *SPDXPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SPDXPackageMetadata.ProtoReflect.Descriptor instead.
 func (*SPDXPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{36}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *SPDXPackageMetadata) GetPurl() *Purl {
@@ -4057,7 +4193,7 @@ type CDXPackageMetadata struct {
 
 func (x *CDXPackageMetadata) Reset() {
 	*x = CDXPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[37]
+	mi := &file_proto_scan_result_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4069,7 +4205,7 @@ func (x *CDXPackageMetadata) String() string {
 func (*CDXPackageMetadata) ProtoMessage() {}
 
 func (x *CDXPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[37]
+	mi := &file_proto_scan_result_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4082,7 +4218,7 @@ func (x *CDXPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CDXPackageMetadata.ProtoReflect.Descriptor instead.
 func (*CDXPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{37}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *CDXPackageMetadata) GetPurl() *Purl {
@@ -4111,7 +4247,7 @@ type JavaArchiveMetadata struct {
 
 func (x *JavaArchiveMetadata) Reset() {
 	*x = JavaArchiveMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[38]
+	mi := &file_proto_scan_result_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4123,7 +4259,7 @@ func (x *JavaArchiveMetadata) String() string {
 func (*JavaArchiveMetadata) ProtoMessage() {}
 
 func (x *JavaArchiveMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[38]
+	mi := &file_proto_scan_result_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4136,7 +4272,7 @@ func (x *JavaArchiveMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavaArchiveMetadata.ProtoReflect.Descriptor instead.
 func (*JavaArchiveMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{38}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *JavaArchiveMetadata) GetArtifactId() string {
@@ -4173,7 +4309,7 @@ type JavaLockfileMetadata struct {
 
 func (x *JavaLockfileMetadata) Reset() {
 	*x = JavaLockfileMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[39]
+	mi := &file_proto_scan_result_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4185,7 +4321,7 @@ func (x *JavaLockfileMetadata) String() string {
 func (*JavaLockfileMetadata) ProtoMessage() {}
 
 func (x *JavaLockfileMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[39]
+	mi := &file_proto_scan_result_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4198,7 +4334,7 @@ func (x *JavaLockfileMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavaLockfileMetadata.ProtoReflect.Descriptor instead.
 func (*JavaLockfileMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{39}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *JavaLockfileMetadata) GetArtifactId() string {
@@ -4242,7 +4378,7 @@ type OSVPackageMetadata struct {
 
 func (x *OSVPackageMetadata) Reset() {
 	*x = OSVPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[40]
+	mi := &file_proto_scan_result_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4254,7 +4390,7 @@ func (x *OSVPackageMetadata) String() string {
 func (*OSVPackageMetadata) ProtoMessage() {}
 
 func (x *OSVPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[40]
+	mi := &file_proto_scan_result_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4267,7 +4403,7 @@ func (x *OSVPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OSVPackageMetadata.ProtoReflect.Descriptor instead.
 func (*OSVPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{40}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *OSVPackageMetadata) GetPurlType() string {
@@ -4308,7 +4444,7 @@ type DepGroupMetadata struct {
 
 func (x *DepGroupMetadata) Reset() {
 	*x = DepGroupMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[41]
+	mi := &file_proto_scan_result_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4320,7 +4456,7 @@ func (x *DepGroupMetadata) String() string {
 func (*DepGroupMetadata) ProtoMessage() {}
 
 func (x *DepGroupMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[41]
+	mi := &file_proto_scan_result_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4333,7 +4469,7 @@ func (x *DepGroupMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DepGroupMetadata.ProtoReflect.Descriptor instead.
 func (*DepGroupMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{41}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *DepGroupMetadata) GetDepGroupVals() []string {
@@ -4354,7 +4490,7 @@ type PythonRequirementsMetadata struct {
 
 func (x *PythonRequirementsMetadata) Reset() {
 	*x = PythonRequirementsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[42]
+	mi := &file_proto_scan_result_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4366,7 +4502,7 @@ func (x *PythonRequirementsMetadata) String() string {
 func (*PythonRequirementsMetadata) ProtoMessage() {}
 
 func (x *PythonRequirementsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[42]
+	mi := &file_proto_scan_result_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4379,7 +4515,7 @@ func (x *PythonRequirementsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PythonRequirementsMetadata.ProtoReflect.Descriptor instead.
 func (*PythonRequirementsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{42}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *PythonRequirementsMetadata) GetHashCheckingModeValues() []string {
@@ -4412,7 +4548,7 @@ type PythonSetupMetadata struct {
 
 func (x *PythonSetupMetadata) Reset() {
 	*x = PythonSetupMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[43]
+	mi := &file_proto_scan_result_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4424,7 +4560,7 @@ func (x *PythonSetupMetadata) String() string {
 func (*PythonSetupMetadata) ProtoMessage() {}
 
 func (x *PythonSetupMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[43]
+	mi := &file_proto_scan_result_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4437,7 +4573,7 @@ func (x *PythonSetupMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PythonSetupMetadata.ProtoReflect.Descriptor instead.
 func (*PythonSetupMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{43}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *PythonSetupMetadata) GetVersionComparator() string {
@@ -4459,7 +4595,7 @@ type NetportsMetadata struct {
 
 func (x *NetportsMetadata) Reset() {
 	*x = NetportsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[44]
+	mi := &file_proto_scan_result_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4471,7 +4607,7 @@ func (x *NetportsMetadata) String() string {
 func (*NetportsMetadata) ProtoMessage() {}
 
 func (x *NetportsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[44]
+	mi := &file_proto_scan_result_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4484,7 +4620,7 @@ func (x *NetportsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NetportsMetadata.ProtoReflect.Descriptor instead.
 func (*NetportsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{44}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *NetportsMetadata) GetPort() uint32 {
@@ -4529,7 +4665,7 @@ type ContainerdContainerMetadata struct {
 
 func (x *ContainerdContainerMetadata) Reset() {
 	*x = ContainerdContainerMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[45]
+	mi := &file_proto_scan_result_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4541,7 +4677,7 @@ func (x *ContainerdContainerMetadata) String() string {
 func (*ContainerdContainerMetadata) ProtoMessage() {}
 
 func (x *ContainerdContainerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[45]
+	mi := &file_proto_scan_result_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4554,7 +4690,7 @@ func (x *ContainerdContainerMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerdContainerMetadata.ProtoReflect.Descriptor instead.
 func (*ContainerdContainerMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{45}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *ContainerdContainerMetadata) GetNamespaceName() string {
@@ -4663,7 +4799,7 @@ type ContainerdRuntimeContainerMetadata struct {
 
 func (x *ContainerdRuntimeContainerMetadata) Reset() {
 	*x = ContainerdRuntimeContainerMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[46]
+	mi := &file_proto_scan_result_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4675,7 +4811,7 @@ func (x *ContainerdRuntimeContainerMetadata) String() string {
 func (*ContainerdRuntimeContainerMetadata) ProtoMessage() {}
 
 func (x *ContainerdRuntimeContainerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[46]
+	mi := &file_proto_scan_result_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4688,7 +4824,7 @@ func (x *ContainerdRuntimeContainerMetadata) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ContainerdRuntimeContainerMetadata.ProtoReflect.Descriptor instead.
 func (*ContainerdRuntimeContainerMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{46}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *ContainerdRuntimeContainerMetadata) GetNamespaceName() string {
@@ -4750,7 +4886,7 @@ type WindowsOSVersion struct {
 
 func (x *WindowsOSVersion) Reset() {
 	*x = WindowsOSVersion{}
-	mi := &file_proto_scan_result_proto_msgTypes[47]
+	mi := &file_proto_scan_result_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4762,7 +4898,7 @@ func (x *WindowsOSVersion) String() string {
 func (*WindowsOSVersion) ProtoMessage() {}
 
 func (x *WindowsOSVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[47]
+	mi := &file_proto_scan_result_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4775,7 +4911,7 @@ func (x *WindowsOSVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WindowsOSVersion.ProtoReflect.Descriptor instead.
 func (*WindowsOSVersion) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{47}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *WindowsOSVersion) GetProduct() string {
@@ -4804,7 +4940,7 @@ type HomebrewPackageMetadata struct {
 
 func (x *HomebrewPackageMetadata) Reset() {
 	*x = HomebrewPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[48]
+	mi := &file_proto_scan_result_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4816,7 +4952,7 @@ func (x *HomebrewPackageMetadata) String() string {
 func (*HomebrewPackageMetadata) ProtoMessage() {}
 
 func (x *HomebrewPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[48]
+	mi := &file_proto_scan_result_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4829,7 +4965,7 @@ func (x *HomebrewPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HomebrewPackageMetadata.ProtoReflect.Descriptor instead.
 func (*HomebrewPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{48}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *HomebrewPackageMetadata) GetUrl() string {
@@ -4870,7 +5006,7 @@ type ChromeExtensionsMetadata struct {
 
 func (x *ChromeExtensionsMetadata) Reset() {
 	*x = ChromeExtensionsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[49]
+	mi := &file_proto_scan_result_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4882,7 +5018,7 @@ func (x *ChromeExtensionsMetadata) String() string {
 func (*ChromeExtensionsMetadata) ProtoMessage() {}
 
 func (x *ChromeExtensionsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[49]
+	mi := &file_proto_scan_result_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4895,7 +5031,7 @@ func (x *ChromeExtensionsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChromeExtensionsMetadata.ProtoReflect.Descriptor instead.
 func (*ChromeExtensionsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{49}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *ChromeExtensionsMetadata) GetName() string {
@@ -4970,7 +5106,7 @@ type VSCodeExtensionsMetadata struct {
 
 func (x *VSCodeExtensionsMetadata) Reset() {
 	*x = VSCodeExtensionsMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[50]
+	mi := &file_proto_scan_result_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4982,7 +5118,7 @@ func (x *VSCodeExtensionsMetadata) String() string {
 func (*VSCodeExtensionsMetadata) ProtoMessage() {}
 
 func (x *VSCodeExtensionsMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[50]
+	mi := &file_proto_scan_result_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4995,7 +5131,7 @@ func (x *VSCodeExtensionsMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VSCodeExtensionsMetadata.ProtoReflect.Descriptor instead.
 func (*VSCodeExtensionsMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{50}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *VSCodeExtensionsMetadata) GetId() string {
@@ -5064,7 +5200,7 @@ type PodmanMetadata struct {
 
 func (x *PodmanMetadata) Reset() {
 	*x = PodmanMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[51]
+	mi := &file_proto_scan_result_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5076,7 +5212,7 @@ func (x *PodmanMetadata) String() string {
 func (*PodmanMetadata) ProtoMessage() {}
 
 func (x *PodmanMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[51]
+	mi := &file_proto_scan_result_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5089,7 +5225,7 @@ func (x *PodmanMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PodmanMetadata.ProtoReflect.Descriptor instead.
 func (*PodmanMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{51}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *PodmanMetadata) GetExposedPorts() map[uint32]*Protocol {
@@ -5163,7 +5299,7 @@ type ChocolateyPackageMetadata struct {
 
 func (x *ChocolateyPackageMetadata) Reset() {
 	*x = ChocolateyPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[52]
+	mi := &file_proto_scan_result_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5175,7 +5311,7 @@ func (x *ChocolateyPackageMetadata) String() string {
 func (*ChocolateyPackageMetadata) ProtoMessage() {}
 
 func (x *ChocolateyPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[52]
+	mi := &file_proto_scan_result_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5188,7 +5324,7 @@ func (x *ChocolateyPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChocolateyPackageMetadata.ProtoReflect.Descriptor instead.
 func (*ChocolateyPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{52}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ChocolateyPackageMetadata) GetName() string {
@@ -5242,7 +5378,7 @@ type Protocol struct {
 
 func (x *Protocol) Reset() {
 	*x = Protocol{}
-	mi := &file_proto_scan_result_proto_msgTypes[53]
+	mi := &file_proto_scan_result_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5254,7 +5390,7 @@ func (x *Protocol) String() string {
 func (*Protocol) ProtoMessage() {}
 
 func (x *Protocol) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[53]
+	mi := &file_proto_scan_result_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5267,7 +5403,7 @@ func (x *Protocol) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Protocol.ProtoReflect.Descriptor instead.
 func (*Protocol) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{53}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *Protocol) GetNames() []string {
@@ -5289,7 +5425,7 @@ type DockerContainersMetadata struct {
 
 func (x *DockerContainersMetadata) Reset() {
 	*x = DockerContainersMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[54]
+	mi := &file_proto_scan_result_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5301,7 +5437,7 @@ func (x *DockerContainersMetadata) String() string {
 func (*DockerContainersMetadata) ProtoMessage() {}
 
 func (x *DockerContainersMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[54]
+	mi := &file_proto_scan_result_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5314,7 +5450,7 @@ func (x *DockerContainersMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerContainersMetadata.ProtoReflect.Descriptor instead.
 func (*DockerContainersMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{54}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *DockerContainersMetadata) GetImageName() string {
@@ -5355,7 +5491,7 @@ type AsdfMetadata struct {
 
 func (x *AsdfMetadata) Reset() {
 	*x = AsdfMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[55]
+	mi := &file_proto_scan_result_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5367,7 +5503,7 @@ func (x *AsdfMetadata) String() string {
 func (*AsdfMetadata) ProtoMessage() {}
 
 func (x *AsdfMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[55]
+	mi := &file_proto_scan_result_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5380,7 +5516,7 @@ func (x *AsdfMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AsdfMetadata.ProtoReflect.Descriptor instead.
 func (*AsdfMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{55}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *AsdfMetadata) GetToolName() string {
@@ -5407,7 +5543,7 @@ type MiseMetadata struct {
 
 func (x *MiseMetadata) Reset() {
 	*x = MiseMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[56]
+	mi := &file_proto_scan_result_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5419,7 +5555,7 @@ func (x *MiseMetadata) String() string {
 func (*MiseMetadata) ProtoMessage() {}
 
 func (x *MiseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[56]
+	mi := &file_proto_scan_result_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5432,7 +5568,7 @@ func (x *MiseMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MiseMetadata.ProtoReflect.Descriptor instead.
 func (*MiseMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{56}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *MiseMetadata) GetToolName() string {
@@ -5458,7 +5594,7 @@ type NvmMetadata struct {
 
 func (x *NvmMetadata) Reset() {
 	*x = NvmMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[57]
+	mi := &file_proto_scan_result_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5470,7 +5606,7 @@ func (x *NvmMetadata) String() string {
 func (*NvmMetadata) ProtoMessage() {}
 
 func (x *NvmMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[57]
+	mi := &file_proto_scan_result_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5483,7 +5619,7 @@ func (x *NvmMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NvmMetadata.ProtoReflect.Descriptor instead.
 func (*NvmMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{57}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *NvmMetadata) GetNodejsVersion() string {
@@ -5502,7 +5638,7 @@ type NodeVersionMetadata struct {
 
 func (x *NodeVersionMetadata) Reset() {
 	*x = NodeVersionMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[58]
+	mi := &file_proto_scan_result_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5514,7 +5650,7 @@ func (x *NodeVersionMetadata) String() string {
 func (*NodeVersionMetadata) ProtoMessage() {}
 
 func (x *NodeVersionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[58]
+	mi := &file_proto_scan_result_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5527,7 +5663,7 @@ func (x *NodeVersionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeVersionMetadata.ProtoReflect.Descriptor instead.
 func (*NodeVersionMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{58}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *NodeVersionMetadata) GetNodejsVersion() string {
@@ -5550,7 +5686,7 @@ type BazelMavenMetadata struct {
 
 func (x *BazelMavenMetadata) Reset() {
 	*x = BazelMavenMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[59]
+	mi := &file_proto_scan_result_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5562,7 +5698,7 @@ func (x *BazelMavenMetadata) String() string {
 func (*BazelMavenMetadata) ProtoMessage() {}
 
 func (x *BazelMavenMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[59]
+	mi := &file_proto_scan_result_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5575,7 +5711,7 @@ func (x *BazelMavenMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BazelMavenMetadata.ProtoReflect.Descriptor instead.
 func (*BazelMavenMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{59}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *BazelMavenMetadata) GetName() string {
@@ -5625,7 +5761,7 @@ type DockerPort struct {
 
 func (x *DockerPort) Reset() {
 	*x = DockerPort{}
-	mi := &file_proto_scan_result_proto_msgTypes[60]
+	mi := &file_proto_scan_result_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5637,7 +5773,7 @@ func (x *DockerPort) String() string {
 func (*DockerPort) ProtoMessage() {}
 
 func (x *DockerPort) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[60]
+	mi := &file_proto_scan_result_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5650,7 +5786,7 @@ func (x *DockerPort) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerPort.ProtoReflect.Descriptor instead.
 func (*DockerPort) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{60}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *DockerPort) GetIp() string {
@@ -5697,7 +5833,7 @@ type WingetPackageMetadata struct {
 
 func (x *WingetPackageMetadata) Reset() {
 	*x = WingetPackageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[61]
+	mi := &file_proto_scan_result_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5709,7 +5845,7 @@ func (x *WingetPackageMetadata) String() string {
 func (*WingetPackageMetadata) ProtoMessage() {}
 
 func (x *WingetPackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[61]
+	mi := &file_proto_scan_result_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5722,7 +5858,7 @@ func (x *WingetPackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WingetPackageMetadata.ProtoReflect.Descriptor instead.
 func (*WingetPackageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{61}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *WingetPackageMetadata) GetName() string {
@@ -5785,7 +5921,7 @@ type UnknownBinaryMetadata struct {
 
 func (x *UnknownBinaryMetadata) Reset() {
 	*x = UnknownBinaryMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[62]
+	mi := &file_proto_scan_result_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5797,7 +5933,7 @@ func (x *UnknownBinaryMetadata) String() string {
 func (*UnknownBinaryMetadata) ProtoMessage() {}
 
 func (x *UnknownBinaryMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[62]
+	mi := &file_proto_scan_result_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5810,7 +5946,7 @@ func (x *UnknownBinaryMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnknownBinaryMetadata.ProtoReflect.Descriptor instead.
 func (*UnknownBinaryMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{62}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *UnknownBinaryMetadata) GetFileHash() string {
@@ -5838,7 +5974,7 @@ type UnknownBinaryAttribution struct {
 
 func (x *UnknownBinaryAttribution) Reset() {
 	*x = UnknownBinaryAttribution{}
-	mi := &file_proto_scan_result_proto_msgTypes[63]
+	mi := &file_proto_scan_result_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5850,7 +5986,7 @@ func (x *UnknownBinaryAttribution) String() string {
 func (*UnknownBinaryAttribution) ProtoMessage() {}
 
 func (x *UnknownBinaryAttribution) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[63]
+	mi := &file_proto_scan_result_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5863,7 +5999,7 @@ func (x *UnknownBinaryAttribution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnknownBinaryAttribution.ProtoReflect.Descriptor instead.
 func (*UnknownBinaryAttribution) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{63}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *UnknownBinaryAttribution) GetLocalFilesystem() bool {
@@ -5882,17 +6018,19 @@ func (x *UnknownBinaryAttribution) GetBaseImage() bool {
 
 // A secret (i.e. credential) found by Veles secret scanning.
 type Secret struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Secret        *SecretData            `protobuf:"bytes,1,opt,name=secret,proto3" json:"secret,omitempty"`
-	Status        *SecretStatus          `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	Locations     []*Location            `protobuf:"bytes,3,rep,name=locations,proto3" json:"locations,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Secret    *SecretData            `protobuf:"bytes,1,opt,name=secret,proto3" json:"secret,omitempty"`
+	Status    *SecretStatus          `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Locations []*LocationLegacy      `protobuf:"bytes,3,rep,name=locations,proto3" json:"locations,omitempty"`
+	// TODO(b/400910349): Start populating this and deprecate |locations|.
+	Location      *Location `protobuf:"bytes,4,opt,name=location,proto3" json:"location,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Secret) Reset() {
 	*x = Secret{}
-	mi := &file_proto_scan_result_proto_msgTypes[64]
+	mi := &file_proto_scan_result_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5904,7 +6042,7 @@ func (x *Secret) String() string {
 func (*Secret) ProtoMessage() {}
 
 func (x *Secret) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[64]
+	mi := &file_proto_scan_result_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5917,7 +6055,7 @@ func (x *Secret) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Secret.ProtoReflect.Descriptor instead.
 func (*Secret) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{64}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *Secret) GetSecret() *SecretData {
@@ -5934,9 +6072,16 @@ func (x *Secret) GetStatus() *SecretStatus {
 	return nil
 }
 
-func (x *Secret) GetLocations() []*Location {
+func (x *Secret) GetLocations() []*LocationLegacy {
 	if x != nil {
 		return x.Locations
+	}
+	return nil
+}
+
+func (x *Secret) GetLocation() *Location {
+	if x != nil {
+		return x.Location
 	}
 	return nil
 }
@@ -6021,6 +6166,18 @@ type SecretData struct {
 	//	*SecretData_HerokuSecretKey_
 	//	*SecretData_NpmjsAccessToken
 	//	*SecretData_CloudflareApiToken
+	//	*SecretData_SupabasePat
+	//	*SecretData_SupabaseProjectSecretKey_
+	//	*SecretData_SupabaseServiceRoleJwt
+	//	*SecretData_PackagistApiKey
+	//	*SecretData_PackagistApiSecret
+	//	*SecretData_PackagistOrgReadToken_
+	//	*SecretData_PackagistOrgUpdateToken_
+	//	*SecretData_PackagistUserUpdateToken_
+	//	*SecretData_PackagistConductorUpdateToken_
+	//	*SecretData_ComposerHttpBasicCredentials
+	//	*SecretData_DiscordBotToken_
+	//	*SecretData_BitwardenOauth2AccessToken
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6028,7 +6185,7 @@ type SecretData struct {
 
 func (x *SecretData) Reset() {
 	*x = SecretData{}
-	mi := &file_proto_scan_result_proto_msgTypes[65]
+	mi := &file_proto_scan_result_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6040,7 +6197,7 @@ func (x *SecretData) String() string {
 func (*SecretData) ProtoMessage() {}
 
 func (x *SecretData) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[65]
+	mi := &file_proto_scan_result_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6053,7 +6210,7 @@ func (x *SecretData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData.ProtoReflect.Descriptor instead.
 func (*SecretData) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *SecretData) GetSecret() isSecretData_Secret {
@@ -6747,6 +6904,114 @@ func (x *SecretData) GetCloudflareApiToken() *SecretData_CloudflareAPIToken {
 	return nil
 }
 
+func (x *SecretData) GetSupabasePat() *SecretData_SupabasePAT {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SupabasePat); ok {
+			return x.SupabasePat
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSupabaseProjectSecretKey() *SecretData_SupabaseProjectSecretKey {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SupabaseProjectSecretKey_); ok {
+			return x.SupabaseProjectSecretKey
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSupabaseServiceRoleJwt() *SecretData_SupabaseServiceRoleJWT {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SupabaseServiceRoleJwt); ok {
+			return x.SupabaseServiceRoleJwt
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetPackagistApiKey() *SecretData_PackagistAPIKey {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PackagistApiKey); ok {
+			return x.PackagistApiKey
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetPackagistApiSecret() *SecretData_PackagistAPISecret {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PackagistApiSecret); ok {
+			return x.PackagistApiSecret
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetPackagistOrgReadToken() *SecretData_PackagistOrgReadToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PackagistOrgReadToken_); ok {
+			return x.PackagistOrgReadToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetPackagistOrgUpdateToken() *SecretData_PackagistOrgUpdateToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PackagistOrgUpdateToken_); ok {
+			return x.PackagistOrgUpdateToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetPackagistUserUpdateToken() *SecretData_PackagistUserUpdateToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PackagistUserUpdateToken_); ok {
+			return x.PackagistUserUpdateToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetPackagistConductorUpdateToken() *SecretData_PackagistConductorUpdateToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_PackagistConductorUpdateToken_); ok {
+			return x.PackagistConductorUpdateToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetComposerHttpBasicCredentials() *SecretData_ComposerPackagistCredentials {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_ComposerHttpBasicCredentials); ok {
+			return x.ComposerHttpBasicCredentials
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetDiscordBotToken() *SecretData_DiscordBotToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_DiscordBotToken_); ok {
+			return x.DiscordBotToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetBitwardenOauth2AccessToken() *SecretData_BitwardenOAuth2AccessToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_BitwardenOauth2AccessToken); ok {
+			return x.BitwardenOauth2AccessToken
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -7055,6 +7320,54 @@ type SecretData_CloudflareApiToken struct {
 	CloudflareApiToken *SecretData_CloudflareAPIToken `protobuf:"bytes,76,opt,name=cloudflare_api_token,json=cloudflareApiToken,proto3,oneof"`
 }
 
+type SecretData_SupabasePat struct {
+	SupabasePat *SecretData_SupabasePAT `protobuf:"bytes,77,opt,name=supabase_pat,json=supabasePat,proto3,oneof"`
+}
+
+type SecretData_SupabaseProjectSecretKey_ struct {
+	SupabaseProjectSecretKey *SecretData_SupabaseProjectSecretKey `protobuf:"bytes,78,opt,name=supabase_project_secret_key,json=supabaseProjectSecretKey,proto3,oneof"`
+}
+
+type SecretData_SupabaseServiceRoleJwt struct {
+	SupabaseServiceRoleJwt *SecretData_SupabaseServiceRoleJWT `protobuf:"bytes,79,opt,name=supabase_service_role_jwt,json=supabaseServiceRoleJwt,proto3,oneof"`
+}
+
+type SecretData_PackagistApiKey struct {
+	PackagistApiKey *SecretData_PackagistAPIKey `protobuf:"bytes,80,opt,name=packagist_api_key,json=packagistApiKey,proto3,oneof"`
+}
+
+type SecretData_PackagistApiSecret struct {
+	PackagistApiSecret *SecretData_PackagistAPISecret `protobuf:"bytes,81,opt,name=packagist_api_secret,json=packagistApiSecret,proto3,oneof"`
+}
+
+type SecretData_PackagistOrgReadToken_ struct {
+	PackagistOrgReadToken *SecretData_PackagistOrgReadToken `protobuf:"bytes,82,opt,name=packagist_org_read_token,json=packagistOrgReadToken,proto3,oneof"`
+}
+
+type SecretData_PackagistOrgUpdateToken_ struct {
+	PackagistOrgUpdateToken *SecretData_PackagistOrgUpdateToken `protobuf:"bytes,83,opt,name=packagist_org_update_token,json=packagistOrgUpdateToken,proto3,oneof"`
+}
+
+type SecretData_PackagistUserUpdateToken_ struct {
+	PackagistUserUpdateToken *SecretData_PackagistUserUpdateToken `protobuf:"bytes,84,opt,name=packagist_user_update_token,json=packagistUserUpdateToken,proto3,oneof"`
+}
+
+type SecretData_PackagistConductorUpdateToken_ struct {
+	PackagistConductorUpdateToken *SecretData_PackagistConductorUpdateToken `protobuf:"bytes,85,opt,name=packagist_conductor_update_token,json=packagistConductorUpdateToken,proto3,oneof"`
+}
+
+type SecretData_ComposerHttpBasicCredentials struct {
+	ComposerHttpBasicCredentials *SecretData_ComposerPackagistCredentials `protobuf:"bytes,86,opt,name=composer_http_basic_credentials,json=composerHttpBasicCredentials,proto3,oneof"`
+}
+
+type SecretData_DiscordBotToken_ struct {
+	DiscordBotToken *SecretData_DiscordBotToken `protobuf:"bytes,87,opt,name=discord_bot_token,json=discordBotToken,proto3,oneof"`
+}
+
+type SecretData_BitwardenOauth2AccessToken struct {
+	BitwardenOauth2AccessToken *SecretData_BitwardenOAuth2AccessToken `protobuf:"bytes,88,opt,name=bitwarden_oauth2_access_token,json=bitwardenOauth2AccessToken,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
 func (*SecretData_AnthropicWorkspaceApiKey) isSecretData_Secret() {}
@@ -7207,6 +7520,30 @@ func (*SecretData_NpmjsAccessToken) isSecretData_Secret() {}
 
 func (*SecretData_CloudflareApiToken) isSecretData_Secret() {}
 
+func (*SecretData_SupabasePat) isSecretData_Secret() {}
+
+func (*SecretData_SupabaseProjectSecretKey_) isSecretData_Secret() {}
+
+func (*SecretData_SupabaseServiceRoleJwt) isSecretData_Secret() {}
+
+func (*SecretData_PackagistApiKey) isSecretData_Secret() {}
+
+func (*SecretData_PackagistApiSecret) isSecretData_Secret() {}
+
+func (*SecretData_PackagistOrgReadToken_) isSecretData_Secret() {}
+
+func (*SecretData_PackagistOrgUpdateToken_) isSecretData_Secret() {}
+
+func (*SecretData_PackagistUserUpdateToken_) isSecretData_Secret() {}
+
+func (*SecretData_PackagistConductorUpdateToken_) isSecretData_Secret() {}
+
+func (*SecretData_ComposerHttpBasicCredentials) isSecretData_Secret() {}
+
+func (*SecretData_DiscordBotToken_) isSecretData_Secret() {}
+
+func (*SecretData_BitwardenOauth2AccessToken) isSecretData_Secret() {}
+
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
 	Status        SecretStatus_SecretStatusEnum `protobuf:"varint,1,opt,name=status,proto3,enum=scalibr.SecretStatus_SecretStatusEnum" json:"status,omitempty"`
@@ -7217,7 +7554,7 @@ type SecretStatus struct {
 
 func (x *SecretStatus) Reset() {
 	*x = SecretStatus{}
-	mi := &file_proto_scan_result_proto_msgTypes[66]
+	mi := &file_proto_scan_result_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7229,7 +7566,7 @@ func (x *SecretStatus) String() string {
 func (*SecretStatus) ProtoMessage() {}
 
 func (x *SecretStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[66]
+	mi := &file_proto_scan_result_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7242,7 +7579,7 @@ func (x *SecretStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretStatus.ProtoReflect.Descriptor instead.
 func (*SecretStatus) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{66}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *SecretStatus) GetStatus() SecretStatus_SecretStatusEnum {
@@ -7259,34 +7596,36 @@ func (x *SecretStatus) GetLastUpdated() *timestamppb.Timestamp {
 	return nil
 }
 
-type Location struct {
+// The old Location message type used for secrets and sensitive data.
+// TODO(b/400910349): Deprecate this in favor of the Location message.
+type LocationLegacy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Location:
 	//
-	//	*Location_Filepath
-	//	*Location_FilepathWithLayerDetails
-	//	*Location_EnvironmentVariable
-	//	*Location_ContainerCommand
-	Location      isLocation_Location `protobuf_oneof:"location"`
+	//	*LocationLegacy_Filepath
+	//	*LocationLegacy_FilepathWithLayerDetails
+	//	*LocationLegacy_EnvironmentVariable
+	//	*LocationLegacy_ContainerCommand
+	Location      isLocationLegacy_Location `protobuf_oneof:"location"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Location) Reset() {
-	*x = Location{}
-	mi := &file_proto_scan_result_proto_msgTypes[67]
+func (x *LocationLegacy) Reset() {
+	*x = LocationLegacy{}
+	mi := &file_proto_scan_result_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Location) String() string {
+func (x *LocationLegacy) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Location) ProtoMessage() {}
+func (*LocationLegacy) ProtoMessage() {}
 
-func (x *Location) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[67]
+func (x *LocationLegacy) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7297,81 +7636,81 @@ func (x *Location) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Location.ProtoReflect.Descriptor instead.
-func (*Location) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{67}
+// Deprecated: Use LocationLegacy.ProtoReflect.Descriptor instead.
+func (*LocationLegacy) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{68}
 }
 
-func (x *Location) GetLocation() isLocation_Location {
+func (x *LocationLegacy) GetLocation() isLocationLegacy_Location {
 	if x != nil {
 		return x.Location
 	}
 	return nil
 }
 
-func (x *Location) GetFilepath() *Filepath {
+func (x *LocationLegacy) GetFilepath() *Filepath {
 	if x != nil {
-		if x, ok := x.Location.(*Location_Filepath); ok {
+		if x, ok := x.Location.(*LocationLegacy_Filepath); ok {
 			return x.Filepath
 		}
 	}
 	return nil
 }
 
-func (x *Location) GetFilepathWithLayerDetails() *FilepathWithLayerDetails {
+func (x *LocationLegacy) GetFilepathWithLayerDetails() *FilepathWithLayerDetails {
 	if x != nil {
-		if x, ok := x.Location.(*Location_FilepathWithLayerDetails); ok {
+		if x, ok := x.Location.(*LocationLegacy_FilepathWithLayerDetails); ok {
 			return x.FilepathWithLayerDetails
 		}
 	}
 	return nil
 }
 
-func (x *Location) GetEnvironmentVariable() *EnvironmentVariable {
+func (x *LocationLegacy) GetEnvironmentVariable() *EnvironmentVariable {
 	if x != nil {
-		if x, ok := x.Location.(*Location_EnvironmentVariable); ok {
+		if x, ok := x.Location.(*LocationLegacy_EnvironmentVariable); ok {
 			return x.EnvironmentVariable
 		}
 	}
 	return nil
 }
 
-func (x *Location) GetContainerCommand() *ContainerCommand {
+func (x *LocationLegacy) GetContainerCommand() *ContainerCommand {
 	if x != nil {
-		if x, ok := x.Location.(*Location_ContainerCommand); ok {
+		if x, ok := x.Location.(*LocationLegacy_ContainerCommand); ok {
 			return x.ContainerCommand
 		}
 	}
 	return nil
 }
 
-type isLocation_Location interface {
-	isLocation_Location()
+type isLocationLegacy_Location interface {
+	isLocationLegacy_Location()
 }
 
-type Location_Filepath struct {
+type LocationLegacy_Filepath struct {
 	Filepath *Filepath `protobuf:"bytes,1,opt,name=filepath,proto3,oneof"`
 }
 
-type Location_FilepathWithLayerDetails struct {
+type LocationLegacy_FilepathWithLayerDetails struct {
 	FilepathWithLayerDetails *FilepathWithLayerDetails `protobuf:"bytes,2,opt,name=filepath_with_layer_details,json=filepathWithLayerDetails,proto3,oneof"`
 }
 
-type Location_EnvironmentVariable struct {
+type LocationLegacy_EnvironmentVariable struct {
 	EnvironmentVariable *EnvironmentVariable `protobuf:"bytes,3,opt,name=environment_variable,json=environmentVariable,proto3,oneof"`
 }
 
-type Location_ContainerCommand struct {
+type LocationLegacy_ContainerCommand struct {
 	ContainerCommand *ContainerCommand `protobuf:"bytes,4,opt,name=container_command,json=containerCommand,proto3,oneof"`
 }
 
-func (*Location_Filepath) isLocation_Location() {}
+func (*LocationLegacy_Filepath) isLocationLegacy_Location() {}
 
-func (*Location_FilepathWithLayerDetails) isLocation_Location() {}
+func (*LocationLegacy_FilepathWithLayerDetails) isLocationLegacy_Location() {}
 
-func (*Location_EnvironmentVariable) isLocation_Location() {}
+func (*LocationLegacy_EnvironmentVariable) isLocationLegacy_Location() {}
 
-func (*Location_ContainerCommand) isLocation_Location() {}
+func (*LocationLegacy_ContainerCommand) isLocationLegacy_Location() {}
 
 type Filepath struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -7382,7 +7721,7 @@ type Filepath struct {
 
 func (x *Filepath) Reset() {
 	*x = Filepath{}
-	mi := &file_proto_scan_result_proto_msgTypes[68]
+	mi := &file_proto_scan_result_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7394,7 +7733,7 @@ func (x *Filepath) String() string {
 func (*Filepath) ProtoMessage() {}
 
 func (x *Filepath) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[68]
+	mi := &file_proto_scan_result_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7407,7 +7746,7 @@ func (x *Filepath) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Filepath.ProtoReflect.Descriptor instead.
 func (*Filepath) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{68}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *Filepath) GetPath() string {
@@ -7427,7 +7766,7 @@ type FilepathWithLayerDetails struct {
 
 func (x *FilepathWithLayerDetails) Reset() {
 	*x = FilepathWithLayerDetails{}
-	mi := &file_proto_scan_result_proto_msgTypes[69]
+	mi := &file_proto_scan_result_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7439,7 +7778,7 @@ func (x *FilepathWithLayerDetails) String() string {
 func (*FilepathWithLayerDetails) ProtoMessage() {}
 
 func (x *FilepathWithLayerDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[69]
+	mi := &file_proto_scan_result_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7452,7 +7791,7 @@ func (x *FilepathWithLayerDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FilepathWithLayerDetails.ProtoReflect.Descriptor instead.
 func (*FilepathWithLayerDetails) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{69}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *FilepathWithLayerDetails) GetPath() string {
@@ -7478,7 +7817,7 @@ type EnvironmentVariable struct {
 
 func (x *EnvironmentVariable) Reset() {
 	*x = EnvironmentVariable{}
-	mi := &file_proto_scan_result_proto_msgTypes[70]
+	mi := &file_proto_scan_result_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7490,7 +7829,7 @@ func (x *EnvironmentVariable) String() string {
 func (*EnvironmentVariable) ProtoMessage() {}
 
 func (x *EnvironmentVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[70]
+	mi := &file_proto_scan_result_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7503,7 +7842,7 @@ func (x *EnvironmentVariable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnvironmentVariable.ProtoReflect.Descriptor instead.
 func (*EnvironmentVariable) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{70}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *EnvironmentVariable) GetName() string {
@@ -7522,7 +7861,7 @@ type ContainerCommand struct {
 
 func (x *ContainerCommand) Reset() {
 	*x = ContainerCommand{}
-	mi := &file_proto_scan_result_proto_msgTypes[71]
+	mi := &file_proto_scan_result_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7534,7 +7873,7 @@ func (x *ContainerCommand) String() string {
 func (*ContainerCommand) ProtoMessage() {}
 
 func (x *ContainerCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[71]
+	mi := &file_proto_scan_result_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7547,7 +7886,7 @@ func (x *ContainerCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerCommand.ProtoReflect.Descriptor instead.
 func (*ContainerCommand) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{71}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *ContainerCommand) GetCommand() string {
@@ -7555,6 +7894,103 @@ func (x *ContainerCommand) GetCommand() string {
 		return x.Command
 	}
 	return ""
+}
+
+type Location struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	File          *File                  `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Location) Reset() {
+	*x = Location{}
+	mi := &file_proto_scan_result_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Location) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Location) ProtoMessage() {}
+
+func (x *Location) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Location.ProtoReflect.Descriptor instead.
+func (*Location) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *Location) GetFile() *File {
+	if x != nil {
+		return x.File
+	}
+	return nil
+}
+
+type File struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Path  string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	// The specific position of the inventory item inside the file
+	LineNumber    *int32 `protobuf:"varint,2,opt,name=line_number,json=lineNumber,proto3,oneof" json:"line_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *File) Reset() {
+	*x = File{}
+	mi := &file_proto_scan_result_proto_msgTypes[74]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *File) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*File) ProtoMessage() {}
+
+func (x *File) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[74]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use File.ProtoReflect.Descriptor instead.
+func (*File) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{74}
+}
+
+func (x *File) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *File) GetLineNumber() int32 {
+	if x != nil && x.LineNumber != nil {
+		return *x.LineNumber
+	}
+	return 0
 }
 
 type ContainerImageMetadata struct {
@@ -7578,7 +8014,7 @@ type ContainerImageMetadata struct {
 
 func (x *ContainerImageMetadata) Reset() {
 	*x = ContainerImageMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[72]
+	mi := &file_proto_scan_result_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7590,7 +8026,7 @@ func (x *ContainerImageMetadata) String() string {
 func (*ContainerImageMetadata) ProtoMessage() {}
 
 func (x *ContainerImageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[72]
+	mi := &file_proto_scan_result_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7603,7 +8039,7 @@ func (x *ContainerImageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerImageMetadata.ProtoReflect.Descriptor instead.
 func (*ContainerImageMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *ContainerImageMetadata) GetIndex() int32 {
@@ -7646,7 +8082,7 @@ type BaseImageChain struct {
 
 func (x *BaseImageChain) Reset() {
 	*x = BaseImageChain{}
-	mi := &file_proto_scan_result_proto_msgTypes[73]
+	mi := &file_proto_scan_result_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7658,7 +8094,7 @@ func (x *BaseImageChain) String() string {
 func (*BaseImageChain) ProtoMessage() {}
 
 func (x *BaseImageChain) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[73]
+	mi := &file_proto_scan_result_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7671,7 +8107,7 @@ func (x *BaseImageChain) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BaseImageChain.ProtoReflect.Descriptor instead.
 func (*BaseImageChain) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{73}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *BaseImageChain) GetBaseImages() []*BaseImageDetails {
@@ -7702,7 +8138,7 @@ type BaseImageDetails struct {
 
 func (x *BaseImageDetails) Reset() {
 	*x = BaseImageDetails{}
-	mi := &file_proto_scan_result_proto_msgTypes[74]
+	mi := &file_proto_scan_result_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7714,7 +8150,7 @@ func (x *BaseImageDetails) String() string {
 func (*BaseImageDetails) ProtoMessage() {}
 
 func (x *BaseImageDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[74]
+	mi := &file_proto_scan_result_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7727,7 +8163,7 @@ func (x *BaseImageDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BaseImageDetails.ProtoReflect.Descriptor instead.
 func (*BaseImageDetails) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{74}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *BaseImageDetails) GetRepository() string {
@@ -7771,7 +8207,7 @@ type LayerMetadata struct {
 
 func (x *LayerMetadata) Reset() {
 	*x = LayerMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[75]
+	mi := &file_proto_scan_result_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7783,7 +8219,7 @@ func (x *LayerMetadata) String() string {
 func (*LayerMetadata) ProtoMessage() {}
 
 func (x *LayerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[75]
+	mi := &file_proto_scan_result_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7796,7 +8232,7 @@ func (x *LayerMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LayerMetadata.ProtoReflect.Descriptor instead.
 func (*LayerMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{75}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *LayerMetadata) GetIndex() int32 {
@@ -7854,7 +8290,7 @@ type Package_ContainerImageMetadataIndexes struct {
 
 func (x *Package_ContainerImageMetadataIndexes) Reset() {
 	*x = Package_ContainerImageMetadataIndexes{}
-	mi := &file_proto_scan_result_proto_msgTypes[76]
+	mi := &file_proto_scan_result_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7866,7 +8302,7 @@ func (x *Package_ContainerImageMetadataIndexes) String() string {
 func (*Package_ContainerImageMetadataIndexes) ProtoMessage() {}
 
 func (x *Package_ContainerImageMetadataIndexes) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[76]
+	mi := &file_proto_scan_result_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7920,7 +8356,7 @@ type SecretData_GCPSAK struct {
 
 func (x *SecretData_GCPSAK) Reset() {
 	*x = SecretData_GCPSAK{}
-	mi := &file_proto_scan_result_proto_msgTypes[79]
+	mi := &file_proto_scan_result_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7932,7 +8368,7 @@ func (x *SecretData_GCPSAK) String() string {
 func (*SecretData_GCPSAK) ProtoMessage() {}
 
 func (x *SecretData_GCPSAK) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[79]
+	mi := &file_proto_scan_result_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7945,7 +8381,7 @@ func (x *SecretData_GCPSAK) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GCPSAK.ProtoReflect.Descriptor instead.
 func (*SecretData_GCPSAK) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 0}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 0}
 }
 
 func (x *SecretData_GCPSAK) GetPrivateKeyId() string {
@@ -8042,7 +8478,7 @@ type SecretData_JWTToken struct {
 
 func (x *SecretData_JWTToken) Reset() {
 	*x = SecretData_JWTToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[80]
+	mi := &file_proto_scan_result_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8054,7 +8490,7 @@ func (x *SecretData_JWTToken) String() string {
 func (*SecretData_JWTToken) ProtoMessage() {}
 
 func (x *SecretData_JWTToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[80]
+	mi := &file_proto_scan_result_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8067,7 +8503,7 @@ func (x *SecretData_JWTToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_JWTToken.ProtoReflect.Descriptor instead.
 func (*SecretData_JWTToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 1}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 1}
 }
 
 func (x *SecretData_JWTToken) GetToken() string {
@@ -8087,7 +8523,7 @@ type SecretData_AnthropicWorkspaceAPIKey struct {
 
 func (x *SecretData_AnthropicWorkspaceAPIKey) Reset() {
 	*x = SecretData_AnthropicWorkspaceAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[81]
+	mi := &file_proto_scan_result_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8099,7 +8535,7 @@ func (x *SecretData_AnthropicWorkspaceAPIKey) String() string {
 func (*SecretData_AnthropicWorkspaceAPIKey) ProtoMessage() {}
 
 func (x *SecretData_AnthropicWorkspaceAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[81]
+	mi := &file_proto_scan_result_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8112,7 +8548,7 @@ func (x *SecretData_AnthropicWorkspaceAPIKey) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use SecretData_AnthropicWorkspaceAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_AnthropicWorkspaceAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 2}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 2}
 }
 
 func (x *SecretData_AnthropicWorkspaceAPIKey) GetKey() string {
@@ -8132,7 +8568,7 @@ type SecretData_AnthropicModelAPIKey struct {
 
 func (x *SecretData_AnthropicModelAPIKey) Reset() {
 	*x = SecretData_AnthropicModelAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[82]
+	mi := &file_proto_scan_result_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8144,7 +8580,7 @@ func (x *SecretData_AnthropicModelAPIKey) String() string {
 func (*SecretData_AnthropicModelAPIKey) ProtoMessage() {}
 
 func (x *SecretData_AnthropicModelAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[82]
+	mi := &file_proto_scan_result_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8157,7 +8593,7 @@ func (x *SecretData_AnthropicModelAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_AnthropicModelAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_AnthropicModelAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 3}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 3}
 }
 
 func (x *SecretData_AnthropicModelAPIKey) GetKey() string {
@@ -8176,7 +8612,7 @@ type SecretData_PerplexityAPIKey struct {
 
 func (x *SecretData_PerplexityAPIKey) Reset() {
 	*x = SecretData_PerplexityAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[83]
+	mi := &file_proto_scan_result_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8188,7 +8624,7 @@ func (x *SecretData_PerplexityAPIKey) String() string {
 func (*SecretData_PerplexityAPIKey) ProtoMessage() {}
 
 func (x *SecretData_PerplexityAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[83]
+	mi := &file_proto_scan_result_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8201,7 +8637,7 @@ func (x *SecretData_PerplexityAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_PerplexityAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_PerplexityAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 4}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 4}
 }
 
 func (x *SecretData_PerplexityAPIKey) GetKey() string {
@@ -8220,7 +8656,7 @@ type SecretData_MistralAPIKey struct {
 
 func (x *SecretData_MistralAPIKey) Reset() {
 	*x = SecretData_MistralAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[84]
+	mi := &file_proto_scan_result_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8232,7 +8668,7 @@ func (x *SecretData_MistralAPIKey) String() string {
 func (*SecretData_MistralAPIKey) ProtoMessage() {}
 
 func (x *SecretData_MistralAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[84]
+	mi := &file_proto_scan_result_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8245,7 +8681,7 @@ func (x *SecretData_MistralAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_MistralAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_MistralAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 5}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 5}
 }
 
 func (x *SecretData_MistralAPIKey) GetKey() string {
@@ -8264,7 +8700,7 @@ type SecretData_GrokXAIAPIKey struct {
 
 func (x *SecretData_GrokXAIAPIKey) Reset() {
 	*x = SecretData_GrokXAIAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[85]
+	mi := &file_proto_scan_result_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8276,7 +8712,7 @@ func (x *SecretData_GrokXAIAPIKey) String() string {
 func (*SecretData_GrokXAIAPIKey) ProtoMessage() {}
 
 func (x *SecretData_GrokXAIAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[85]
+	mi := &file_proto_scan_result_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8289,7 +8725,7 @@ func (x *SecretData_GrokXAIAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GrokXAIAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_GrokXAIAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 6}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 6}
 }
 
 func (x *SecretData_GrokXAIAPIKey) GetKey() string {
@@ -8308,7 +8744,7 @@ type SecretData_GrokXAIManagementAPIKey struct {
 
 func (x *SecretData_GrokXAIManagementAPIKey) Reset() {
 	*x = SecretData_GrokXAIManagementAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[86]
+	mi := &file_proto_scan_result_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8320,7 +8756,7 @@ func (x *SecretData_GrokXAIManagementAPIKey) String() string {
 func (*SecretData_GrokXAIManagementAPIKey) ProtoMessage() {}
 
 func (x *SecretData_GrokXAIManagementAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[86]
+	mi := &file_proto_scan_result_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8333,7 +8769,7 @@ func (x *SecretData_GrokXAIManagementAPIKey) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SecretData_GrokXAIManagementAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_GrokXAIManagementAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 7}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 7}
 }
 
 func (x *SecretData_GrokXAIManagementAPIKey) GetKey() string {
@@ -8352,7 +8788,7 @@ type SecretData_AzureStorageAccountAccessKey struct {
 
 func (x *SecretData_AzureStorageAccountAccessKey) Reset() {
 	*x = SecretData_AzureStorageAccountAccessKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[87]
+	mi := &file_proto_scan_result_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8364,7 +8800,7 @@ func (x *SecretData_AzureStorageAccountAccessKey) String() string {
 func (*SecretData_AzureStorageAccountAccessKey) ProtoMessage() {}
 
 func (x *SecretData_AzureStorageAccountAccessKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[87]
+	mi := &file_proto_scan_result_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8377,7 +8813,7 @@ func (x *SecretData_AzureStorageAccountAccessKey) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use SecretData_AzureStorageAccountAccessKey.ProtoReflect.Descriptor instead.
 func (*SecretData_AzureStorageAccountAccessKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 8}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 8}
 }
 
 func (x *SecretData_AzureStorageAccountAccessKey) GetKey() string {
@@ -8397,7 +8833,7 @@ type SecretData_PrivateKey struct {
 
 func (x *SecretData_PrivateKey) Reset() {
 	*x = SecretData_PrivateKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[88]
+	mi := &file_proto_scan_result_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8409,7 +8845,7 @@ func (x *SecretData_PrivateKey) String() string {
 func (*SecretData_PrivateKey) ProtoMessage() {}
 
 func (x *SecretData_PrivateKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[88]
+	mi := &file_proto_scan_result_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8422,7 +8858,7 @@ func (x *SecretData_PrivateKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_PrivateKey.ProtoReflect.Descriptor instead.
 func (*SecretData_PrivateKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 9}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 9}
 }
 
 func (x *SecretData_PrivateKey) GetBlock() string {
@@ -8448,7 +8884,7 @@ type SecretData_AzureAccessToken struct {
 
 func (x *SecretData_AzureAccessToken) Reset() {
 	*x = SecretData_AzureAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[89]
+	mi := &file_proto_scan_result_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8460,7 +8896,7 @@ func (x *SecretData_AzureAccessToken) String() string {
 func (*SecretData_AzureAccessToken) ProtoMessage() {}
 
 func (x *SecretData_AzureAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[89]
+	mi := &file_proto_scan_result_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8473,7 +8909,7 @@ func (x *SecretData_AzureAccessToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_AzureAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_AzureAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 10}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 10}
 }
 
 func (x *SecretData_AzureAccessToken) GetToken() string {
@@ -8496,7 +8932,7 @@ type SecretData_Pgpass struct {
 
 func (x *SecretData_Pgpass) Reset() {
 	*x = SecretData_Pgpass{}
-	mi := &file_proto_scan_result_proto_msgTypes[90]
+	mi := &file_proto_scan_result_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8508,7 +8944,7 @@ func (x *SecretData_Pgpass) String() string {
 func (*SecretData_Pgpass) ProtoMessage() {}
 
 func (x *SecretData_Pgpass) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[90]
+	mi := &file_proto_scan_result_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8521,7 +8957,7 @@ func (x *SecretData_Pgpass) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_Pgpass.ProtoReflect.Descriptor instead.
 func (*SecretData_Pgpass) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 11}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 11}
 }
 
 func (x *SecretData_Pgpass) GetHostname() string {
@@ -8572,7 +9008,7 @@ type SecretData_MariaDBCredentials struct {
 
 func (x *SecretData_MariaDBCredentials) Reset() {
 	*x = SecretData_MariaDBCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[91]
+	mi := &file_proto_scan_result_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8584,7 +9020,7 @@ func (x *SecretData_MariaDBCredentials) String() string {
 func (*SecretData_MariaDBCredentials) ProtoMessage() {}
 
 func (x *SecretData_MariaDBCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[91]
+	mi := &file_proto_scan_result_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8597,7 +9033,7 @@ func (x *SecretData_MariaDBCredentials) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_MariaDBCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_MariaDBCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 12}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 12}
 }
 
 func (x *SecretData_MariaDBCredentials) GetHost() string {
@@ -8644,7 +9080,7 @@ type SecretData_AzureIdentityToken struct {
 
 func (x *SecretData_AzureIdentityToken) Reset() {
 	*x = SecretData_AzureIdentityToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[92]
+	mi := &file_proto_scan_result_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8656,7 +9092,7 @@ func (x *SecretData_AzureIdentityToken) String() string {
 func (*SecretData_AzureIdentityToken) ProtoMessage() {}
 
 func (x *SecretData_AzureIdentityToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[92]
+	mi := &file_proto_scan_result_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8669,7 +9105,7 @@ func (x *SecretData_AzureIdentityToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_AzureIdentityToken.ProtoReflect.Descriptor instead.
 func (*SecretData_AzureIdentityToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 13}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 13}
 }
 
 func (x *SecretData_AzureIdentityToken) GetToken() string {
@@ -8688,7 +9124,7 @@ type SecretData_OpenAIAPIKey struct {
 
 func (x *SecretData_OpenAIAPIKey) Reset() {
 	*x = SecretData_OpenAIAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[93]
+	mi := &file_proto_scan_result_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8700,7 +9136,7 @@ func (x *SecretData_OpenAIAPIKey) String() string {
 func (*SecretData_OpenAIAPIKey) ProtoMessage() {}
 
 func (x *SecretData_OpenAIAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[93]
+	mi := &file_proto_scan_result_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8713,7 +9149,7 @@ func (x *SecretData_OpenAIAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_OpenAIAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_OpenAIAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 14}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 14}
 }
 
 func (x *SecretData_OpenAIAPIKey) GetKey() string {
@@ -8733,7 +9169,7 @@ type SecretData_DockerHubPat struct {
 
 func (x *SecretData_DockerHubPat) Reset() {
 	*x = SecretData_DockerHubPat{}
-	mi := &file_proto_scan_result_proto_msgTypes[94]
+	mi := &file_proto_scan_result_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8745,7 +9181,7 @@ func (x *SecretData_DockerHubPat) String() string {
 func (*SecretData_DockerHubPat) ProtoMessage() {}
 
 func (x *SecretData_DockerHubPat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[94]
+	mi := &file_proto_scan_result_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8758,7 +9194,7 @@ func (x *SecretData_DockerHubPat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_DockerHubPat.ProtoReflect.Descriptor instead.
 func (*SecretData_DockerHubPat) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 15}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 15}
 }
 
 func (x *SecretData_DockerHubPat) GetPat() string {
@@ -8784,7 +9220,7 @@ type SecretData_CloudflareAPIToken struct {
 
 func (x *SecretData_CloudflareAPIToken) Reset() {
 	*x = SecretData_CloudflareAPIToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[95]
+	mi := &file_proto_scan_result_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8796,7 +9232,7 @@ func (x *SecretData_CloudflareAPIToken) String() string {
 func (*SecretData_CloudflareAPIToken) ProtoMessage() {}
 
 func (x *SecretData_CloudflareAPIToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[95]
+	mi := &file_proto_scan_result_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8809,7 +9245,7 @@ func (x *SecretData_CloudflareAPIToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CloudflareAPIToken.ProtoReflect.Descriptor instead.
 func (*SecretData_CloudflareAPIToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 16}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 16}
 }
 
 func (x *SecretData_CloudflareAPIToken) GetToken() string {
@@ -8828,7 +9264,7 @@ type SecretData_DenoPat struct {
 
 func (x *SecretData_DenoPat) Reset() {
 	*x = SecretData_DenoPat{}
-	mi := &file_proto_scan_result_proto_msgTypes[96]
+	mi := &file_proto_scan_result_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8840,7 +9276,7 @@ func (x *SecretData_DenoPat) String() string {
 func (*SecretData_DenoPat) ProtoMessage() {}
 
 func (x *SecretData_DenoPat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[96]
+	mi := &file_proto_scan_result_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8853,7 +9289,7 @@ func (x *SecretData_DenoPat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_DenoPat.ProtoReflect.Descriptor instead.
 func (*SecretData_DenoPat) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 17}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 17}
 }
 
 func (x *SecretData_DenoPat) GetPat() string {
@@ -8872,7 +9308,7 @@ type SecretData_GitlabPat struct {
 
 func (x *SecretData_GitlabPat) Reset() {
 	*x = SecretData_GitlabPat{}
-	mi := &file_proto_scan_result_proto_msgTypes[97]
+	mi := &file_proto_scan_result_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8884,7 +9320,7 @@ func (x *SecretData_GitlabPat) String() string {
 func (*SecretData_GitlabPat) ProtoMessage() {}
 
 func (x *SecretData_GitlabPat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[97]
+	mi := &file_proto_scan_result_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8897,7 +9333,7 @@ func (x *SecretData_GitlabPat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GitlabPat.ProtoReflect.Descriptor instead.
 func (*SecretData_GitlabPat) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 18}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 18}
 }
 
 func (x *SecretData_GitlabPat) GetPat() string {
@@ -8916,7 +9352,7 @@ type SecretData_SlackAppLevelToken struct {
 
 func (x *SecretData_SlackAppLevelToken) Reset() {
 	*x = SecretData_SlackAppLevelToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[98]
+	mi := &file_proto_scan_result_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8928,7 +9364,7 @@ func (x *SecretData_SlackAppLevelToken) String() string {
 func (*SecretData_SlackAppLevelToken) ProtoMessage() {}
 
 func (x *SecretData_SlackAppLevelToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[98]
+	mi := &file_proto_scan_result_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8941,7 +9377,7 @@ func (x *SecretData_SlackAppLevelToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_SlackAppLevelToken.ProtoReflect.Descriptor instead.
 func (*SecretData_SlackAppLevelToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 19}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 19}
 }
 
 func (x *SecretData_SlackAppLevelToken) GetToken() string {
@@ -8960,7 +9396,7 @@ type SecretData_SlackAppConfigAccessToken struct {
 
 func (x *SecretData_SlackAppConfigAccessToken) Reset() {
 	*x = SecretData_SlackAppConfigAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[99]
+	mi := &file_proto_scan_result_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8972,7 +9408,7 @@ func (x *SecretData_SlackAppConfigAccessToken) String() string {
 func (*SecretData_SlackAppConfigAccessToken) ProtoMessage() {}
 
 func (x *SecretData_SlackAppConfigAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[99]
+	mi := &file_proto_scan_result_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8985,7 +9421,7 @@ func (x *SecretData_SlackAppConfigAccessToken) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use SecretData_SlackAppConfigAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_SlackAppConfigAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 20}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 20}
 }
 
 func (x *SecretData_SlackAppConfigAccessToken) GetToken() string {
@@ -9004,7 +9440,7 @@ type SecretData_SlackAppConfigRefreshToken struct {
 
 func (x *SecretData_SlackAppConfigRefreshToken) Reset() {
 	*x = SecretData_SlackAppConfigRefreshToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[100]
+	mi := &file_proto_scan_result_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9016,7 +9452,7 @@ func (x *SecretData_SlackAppConfigRefreshToken) String() string {
 func (*SecretData_SlackAppConfigRefreshToken) ProtoMessage() {}
 
 func (x *SecretData_SlackAppConfigRefreshToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[100]
+	mi := &file_proto_scan_result_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9029,7 +9465,7 @@ func (x *SecretData_SlackAppConfigRefreshToken) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use SecretData_SlackAppConfigRefreshToken.ProtoReflect.Descriptor instead.
 func (*SecretData_SlackAppConfigRefreshToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 21}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 21}
 }
 
 func (x *SecretData_SlackAppConfigRefreshToken) GetToken() string {
@@ -9048,7 +9484,7 @@ type SecretData_PostmanAPIKey struct {
 
 func (x *SecretData_PostmanAPIKey) Reset() {
 	*x = SecretData_PostmanAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[101]
+	mi := &file_proto_scan_result_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9060,7 +9496,7 @@ func (x *SecretData_PostmanAPIKey) String() string {
 func (*SecretData_PostmanAPIKey) ProtoMessage() {}
 
 func (x *SecretData_PostmanAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[101]
+	mi := &file_proto_scan_result_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9073,7 +9509,7 @@ func (x *SecretData_PostmanAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_PostmanAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_PostmanAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 22}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 22}
 }
 
 func (x *SecretData_PostmanAPIKey) GetKey() string {
@@ -9092,7 +9528,7 @@ type SecretData_PostmanCollectionAccessToken struct {
 
 func (x *SecretData_PostmanCollectionAccessToken) Reset() {
 	*x = SecretData_PostmanCollectionAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[102]
+	mi := &file_proto_scan_result_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9104,7 +9540,7 @@ func (x *SecretData_PostmanCollectionAccessToken) String() string {
 func (*SecretData_PostmanCollectionAccessToken) ProtoMessage() {}
 
 func (x *SecretData_PostmanCollectionAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[102]
+	mi := &file_proto_scan_result_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9117,7 +9553,7 @@ func (x *SecretData_PostmanCollectionAccessToken) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use SecretData_PostmanCollectionAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_PostmanCollectionAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 23}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 23}
 }
 
 func (x *SecretData_PostmanCollectionAccessToken) GetKey() string {
@@ -9136,7 +9572,7 @@ type SecretData_OpenRouterAPIKey struct {
 
 func (x *SecretData_OpenRouterAPIKey) Reset() {
 	*x = SecretData_OpenRouterAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[103]
+	mi := &file_proto_scan_result_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9148,7 +9584,7 @@ func (x *SecretData_OpenRouterAPIKey) String() string {
 func (*SecretData_OpenRouterAPIKey) ProtoMessage() {}
 
 func (x *SecretData_OpenRouterAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[103]
+	mi := &file_proto_scan_result_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9161,7 +9597,7 @@ func (x *SecretData_OpenRouterAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_OpenRouterAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_OpenRouterAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 24}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 24}
 }
 
 func (x *SecretData_OpenRouterAPIKey) GetKey() string {
@@ -9180,7 +9616,7 @@ type SecretData_DigitalOceanAPIToken struct {
 
 func (x *SecretData_DigitalOceanAPIToken) Reset() {
 	*x = SecretData_DigitalOceanAPIToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[104]
+	mi := &file_proto_scan_result_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9192,7 +9628,7 @@ func (x *SecretData_DigitalOceanAPIToken) String() string {
 func (*SecretData_DigitalOceanAPIToken) ProtoMessage() {}
 
 func (x *SecretData_DigitalOceanAPIToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[104]
+	mi := &file_proto_scan_result_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9205,7 +9641,7 @@ func (x *SecretData_DigitalOceanAPIToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_DigitalOceanAPIToken.ProtoReflect.Descriptor instead.
 func (*SecretData_DigitalOceanAPIToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 25}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 25}
 }
 
 func (x *SecretData_DigitalOceanAPIToken) GetKey() string {
@@ -9224,7 +9660,7 @@ type SecretData_CratesIOAPIToken struct {
 
 func (x *SecretData_CratesIOAPIToken) Reset() {
 	*x = SecretData_CratesIOAPIToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[105]
+	mi := &file_proto_scan_result_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9236,7 +9672,7 @@ func (x *SecretData_CratesIOAPIToken) String() string {
 func (*SecretData_CratesIOAPIToken) ProtoMessage() {}
 
 func (x *SecretData_CratesIOAPIToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[105]
+	mi := &file_proto_scan_result_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9249,7 +9685,7 @@ func (x *SecretData_CratesIOAPIToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CratesIOAPIToken.ProtoReflect.Descriptor instead.
 func (*SecretData_CratesIOAPIToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 26}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 26}
 }
 
 func (x *SecretData_CratesIOAPIToken) GetToken() string {
@@ -9268,7 +9704,7 @@ type SecretData_NpmJsAccessToken struct {
 
 func (x *SecretData_NpmJsAccessToken) Reset() {
 	*x = SecretData_NpmJsAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[106]
+	mi := &file_proto_scan_result_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9280,7 +9716,7 @@ func (x *SecretData_NpmJsAccessToken) String() string {
 func (*SecretData_NpmJsAccessToken) ProtoMessage() {}
 
 func (x *SecretData_NpmJsAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[106]
+	mi := &file_proto_scan_result_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9293,7 +9729,7 @@ func (x *SecretData_NpmJsAccessToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_NpmJsAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_NpmJsAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 27}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 27}
 }
 
 func (x *SecretData_NpmJsAccessToken) GetToken() string {
@@ -9312,7 +9748,7 @@ type SecretData_GithubAppRefreshToken struct {
 
 func (x *SecretData_GithubAppRefreshToken) Reset() {
 	*x = SecretData_GithubAppRefreshToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[107]
+	mi := &file_proto_scan_result_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9324,7 +9760,7 @@ func (x *SecretData_GithubAppRefreshToken) String() string {
 func (*SecretData_GithubAppRefreshToken) ProtoMessage() {}
 
 func (x *SecretData_GithubAppRefreshToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[107]
+	mi := &file_proto_scan_result_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9337,7 +9773,7 @@ func (x *SecretData_GithubAppRefreshToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GithubAppRefreshToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GithubAppRefreshToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 28}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 28}
 }
 
 func (x *SecretData_GithubAppRefreshToken) GetToken() string {
@@ -9356,7 +9792,7 @@ type SecretData_GithubAppServerToServerToken struct {
 
 func (x *SecretData_GithubAppServerToServerToken) Reset() {
 	*x = SecretData_GithubAppServerToServerToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[108]
+	mi := &file_proto_scan_result_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9368,7 +9804,7 @@ func (x *SecretData_GithubAppServerToServerToken) String() string {
 func (*SecretData_GithubAppServerToServerToken) ProtoMessage() {}
 
 func (x *SecretData_GithubAppServerToServerToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[108]
+	mi := &file_proto_scan_result_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9381,7 +9817,7 @@ func (x *SecretData_GithubAppServerToServerToken) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use SecretData_GithubAppServerToServerToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GithubAppServerToServerToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 29}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 29}
 }
 
 func (x *SecretData_GithubAppServerToServerToken) GetToken() string {
@@ -9400,7 +9836,7 @@ type SecretData_GithubClassicPersonalAccessToken struct {
 
 func (x *SecretData_GithubClassicPersonalAccessToken) Reset() {
 	*x = SecretData_GithubClassicPersonalAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[109]
+	mi := &file_proto_scan_result_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9412,7 +9848,7 @@ func (x *SecretData_GithubClassicPersonalAccessToken) String() string {
 func (*SecretData_GithubClassicPersonalAccessToken) ProtoMessage() {}
 
 func (x *SecretData_GithubClassicPersonalAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[109]
+	mi := &file_proto_scan_result_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9425,7 +9861,7 @@ func (x *SecretData_GithubClassicPersonalAccessToken) ProtoReflect() protoreflec
 
 // Deprecated: Use SecretData_GithubClassicPersonalAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GithubClassicPersonalAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 30}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 30}
 }
 
 func (x *SecretData_GithubClassicPersonalAccessToken) GetToken() string {
@@ -9444,7 +9880,7 @@ type SecretData_GithubFineGrainedPersonalAccessToken struct {
 
 func (x *SecretData_GithubFineGrainedPersonalAccessToken) Reset() {
 	*x = SecretData_GithubFineGrainedPersonalAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[110]
+	mi := &file_proto_scan_result_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9456,7 +9892,7 @@ func (x *SecretData_GithubFineGrainedPersonalAccessToken) String() string {
 func (*SecretData_GithubFineGrainedPersonalAccessToken) ProtoMessage() {}
 
 func (x *SecretData_GithubFineGrainedPersonalAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[110]
+	mi := &file_proto_scan_result_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9469,7 +9905,7 @@ func (x *SecretData_GithubFineGrainedPersonalAccessToken) ProtoReflect() protore
 
 // Deprecated: Use SecretData_GithubFineGrainedPersonalAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GithubFineGrainedPersonalAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 31}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 31}
 }
 
 func (x *SecretData_GithubFineGrainedPersonalAccessToken) GetToken() string {
@@ -9488,7 +9924,7 @@ type SecretData_GithubOAuthToken struct {
 
 func (x *SecretData_GithubOAuthToken) Reset() {
 	*x = SecretData_GithubOAuthToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[111]
+	mi := &file_proto_scan_result_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9500,7 +9936,7 @@ func (x *SecretData_GithubOAuthToken) String() string {
 func (*SecretData_GithubOAuthToken) ProtoMessage() {}
 
 func (x *SecretData_GithubOAuthToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[111]
+	mi := &file_proto_scan_result_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9513,7 +9949,7 @@ func (x *SecretData_GithubOAuthToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GithubOAuthToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GithubOAuthToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 32}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 32}
 }
 
 func (x *SecretData_GithubOAuthToken) GetToken() string {
@@ -9532,7 +9968,7 @@ type SecretData_GithubAppUserToServerToken struct {
 
 func (x *SecretData_GithubAppUserToServerToken) Reset() {
 	*x = SecretData_GithubAppUserToServerToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[112]
+	mi := &file_proto_scan_result_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9544,7 +9980,7 @@ func (x *SecretData_GithubAppUserToServerToken) String() string {
 func (*SecretData_GithubAppUserToServerToken) ProtoMessage() {}
 
 func (x *SecretData_GithubAppUserToServerToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[112]
+	mi := &file_proto_scan_result_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9557,7 +9993,7 @@ func (x *SecretData_GithubAppUserToServerToken) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use SecretData_GithubAppUserToServerToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GithubAppUserToServerToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 33}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 33}
 }
 
 func (x *SecretData_GithubAppUserToServerToken) GetToken() string {
@@ -9576,7 +10012,7 @@ type SecretData_PyPIAPIToken struct {
 
 func (x *SecretData_PyPIAPIToken) Reset() {
 	*x = SecretData_PyPIAPIToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[113]
+	mi := &file_proto_scan_result_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9588,7 +10024,7 @@ func (x *SecretData_PyPIAPIToken) String() string {
 func (*SecretData_PyPIAPIToken) ProtoMessage() {}
 
 func (x *SecretData_PyPIAPIToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[113]
+	mi := &file_proto_scan_result_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9601,7 +10037,7 @@ func (x *SecretData_PyPIAPIToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_PyPIAPIToken.ProtoReflect.Descriptor instead.
 func (*SecretData_PyPIAPIToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 34}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 34}
 }
 
 func (x *SecretData_PyPIAPIToken) GetToken() string {
@@ -9620,7 +10056,7 @@ type SecretData_TinkKeyset struct {
 
 func (x *SecretData_TinkKeyset) Reset() {
 	*x = SecretData_TinkKeyset{}
-	mi := &file_proto_scan_result_proto_msgTypes[114]
+	mi := &file_proto_scan_result_proto_msgTypes[116]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9632,7 +10068,7 @@ func (x *SecretData_TinkKeyset) String() string {
 func (*SecretData_TinkKeyset) ProtoMessage() {}
 
 func (x *SecretData_TinkKeyset) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[114]
+	mi := &file_proto_scan_result_proto_msgTypes[116]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9645,7 +10081,7 @@ func (x *SecretData_TinkKeyset) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_TinkKeyset.ProtoReflect.Descriptor instead.
 func (*SecretData_TinkKeyset) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 35}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 35}
 }
 
 func (x *SecretData_TinkKeyset) GetContent() string {
@@ -9664,7 +10100,7 @@ type SecretData_HashiCorpVaultToken struct {
 
 func (x *SecretData_HashiCorpVaultToken) Reset() {
 	*x = SecretData_HashiCorpVaultToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[115]
+	mi := &file_proto_scan_result_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9676,7 +10112,7 @@ func (x *SecretData_HashiCorpVaultToken) String() string {
 func (*SecretData_HashiCorpVaultToken) ProtoMessage() {}
 
 func (x *SecretData_HashiCorpVaultToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[115]
+	mi := &file_proto_scan_result_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9689,7 +10125,7 @@ func (x *SecretData_HashiCorpVaultToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HashiCorpVaultToken.ProtoReflect.Descriptor instead.
 func (*SecretData_HashiCorpVaultToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 36}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 36}
 }
 
 func (x *SecretData_HashiCorpVaultToken) GetToken() string {
@@ -9703,14 +10139,13 @@ type SecretData_HashiCorpVaultAppRoleCredentials struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoleId        string                 `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
 	SecretId      string                 `protobuf:"bytes,2,opt,name=secret_id,json=secretId,proto3" json:"secret_id,omitempty"`
-	Id            string                 `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"` // General ID field for uncertain UUID types when context is unclear
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SecretData_HashiCorpVaultAppRoleCredentials) Reset() {
 	*x = SecretData_HashiCorpVaultAppRoleCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[116]
+	mi := &file_proto_scan_result_proto_msgTypes[118]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9722,7 +10157,7 @@ func (x *SecretData_HashiCorpVaultAppRoleCredentials) String() string {
 func (*SecretData_HashiCorpVaultAppRoleCredentials) ProtoMessage() {}
 
 func (x *SecretData_HashiCorpVaultAppRoleCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[116]
+	mi := &file_proto_scan_result_proto_msgTypes[118]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9735,7 +10170,7 @@ func (x *SecretData_HashiCorpVaultAppRoleCredentials) ProtoReflect() protoreflec
 
 // Deprecated: Use SecretData_HashiCorpVaultAppRoleCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_HashiCorpVaultAppRoleCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 37}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 37}
 }
 
 func (x *SecretData_HashiCorpVaultAppRoleCredentials) GetRoleId() string {
@@ -9752,13 +10187,6 @@ func (x *SecretData_HashiCorpVaultAppRoleCredentials) GetSecretId() string {
 	return ""
 }
 
-func (x *SecretData_HashiCorpVaultAppRoleCredentials) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
 type SecretData_GCPAPIKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -9768,7 +10196,7 @@ type SecretData_GCPAPIKey struct {
 
 func (x *SecretData_GCPAPIKey) Reset() {
 	*x = SecretData_GCPAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[117]
+	mi := &file_proto_scan_result_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9780,7 +10208,7 @@ func (x *SecretData_GCPAPIKey) String() string {
 func (*SecretData_GCPAPIKey) ProtoMessage() {}
 
 func (x *SecretData_GCPAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[117]
+	mi := &file_proto_scan_result_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9793,7 +10221,7 @@ func (x *SecretData_GCPAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GCPAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_GCPAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 38}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 38}
 }
 
 func (x *SecretData_GCPAPIKey) GetKey() string {
@@ -9814,7 +10242,7 @@ type SecretData_HuggingfaceAPIKey struct {
 
 func (x *SecretData_HuggingfaceAPIKey) Reset() {
 	*x = SecretData_HuggingfaceAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[118]
+	mi := &file_proto_scan_result_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9826,7 +10254,7 @@ func (x *SecretData_HuggingfaceAPIKey) String() string {
 func (*SecretData_HuggingfaceAPIKey) ProtoMessage() {}
 
 func (x *SecretData_HuggingfaceAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[118]
+	mi := &file_proto_scan_result_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9839,7 +10267,7 @@ func (x *SecretData_HuggingfaceAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HuggingfaceAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_HuggingfaceAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 39}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 39}
 }
 
 func (x *SecretData_HuggingfaceAPIKey) GetKey() string {
@@ -9873,7 +10301,7 @@ type SecretData_HashiCorpCloudPlatformCredentials struct {
 
 func (x *SecretData_HashiCorpCloudPlatformCredentials) Reset() {
 	*x = SecretData_HashiCorpCloudPlatformCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[119]
+	mi := &file_proto_scan_result_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9885,7 +10313,7 @@ func (x *SecretData_HashiCorpCloudPlatformCredentials) String() string {
 func (*SecretData_HashiCorpCloudPlatformCredentials) ProtoMessage() {}
 
 func (x *SecretData_HashiCorpCloudPlatformCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[119]
+	mi := &file_proto_scan_result_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9898,7 +10326,7 @@ func (x *SecretData_HashiCorpCloudPlatformCredentials) ProtoReflect() protorefle
 
 // Deprecated: Use SecretData_HashiCorpCloudPlatformCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_HashiCorpCloudPlatformCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 40}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 40}
 }
 
 func (x *SecretData_HashiCorpCloudPlatformCredentials) GetClientId() string {
@@ -9933,7 +10361,7 @@ type SecretData_HashiCorpCloudPlatformToken struct {
 
 func (x *SecretData_HashiCorpCloudPlatformToken) Reset() {
 	*x = SecretData_HashiCorpCloudPlatformToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[120]
+	mi := &file_proto_scan_result_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9945,7 +10373,7 @@ func (x *SecretData_HashiCorpCloudPlatformToken) String() string {
 func (*SecretData_HashiCorpCloudPlatformToken) ProtoMessage() {}
 
 func (x *SecretData_HashiCorpCloudPlatformToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[120]
+	mi := &file_proto_scan_result_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9958,7 +10386,7 @@ func (x *SecretData_HashiCorpCloudPlatformToken) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use SecretData_HashiCorpCloudPlatformToken.ProtoReflect.Descriptor instead.
 func (*SecretData_HashiCorpCloudPlatformToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 41}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 41}
 }
 
 func (x *SecretData_HashiCorpCloudPlatformToken) GetToken() string {
@@ -10033,7 +10461,7 @@ type SecretData_StripeSecretKey struct {
 
 func (x *SecretData_StripeSecretKey) Reset() {
 	*x = SecretData_StripeSecretKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[121]
+	mi := &file_proto_scan_result_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10045,7 +10473,7 @@ func (x *SecretData_StripeSecretKey) String() string {
 func (*SecretData_StripeSecretKey) ProtoMessage() {}
 
 func (x *SecretData_StripeSecretKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[121]
+	mi := &file_proto_scan_result_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10058,7 +10486,7 @@ func (x *SecretData_StripeSecretKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_StripeSecretKey.ProtoReflect.Descriptor instead.
 func (*SecretData_StripeSecretKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 42}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 42}
 }
 
 func (x *SecretData_StripeSecretKey) GetKey() string {
@@ -10077,7 +10505,7 @@ type SecretData_StripeRestrictedKey struct {
 
 func (x *SecretData_StripeRestrictedKey) Reset() {
 	*x = SecretData_StripeRestrictedKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[122]
+	mi := &file_proto_scan_result_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10089,7 +10517,7 @@ func (x *SecretData_StripeRestrictedKey) String() string {
 func (*SecretData_StripeRestrictedKey) ProtoMessage() {}
 
 func (x *SecretData_StripeRestrictedKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[122]
+	mi := &file_proto_scan_result_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10102,7 +10530,7 @@ func (x *SecretData_StripeRestrictedKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_StripeRestrictedKey.ProtoReflect.Descriptor instead.
 func (*SecretData_StripeRestrictedKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 43}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 43}
 }
 
 func (x *SecretData_StripeRestrictedKey) GetKey() string {
@@ -10121,7 +10549,7 @@ type SecretData_StripeWebhookSecret struct {
 
 func (x *SecretData_StripeWebhookSecret) Reset() {
 	*x = SecretData_StripeWebhookSecret{}
-	mi := &file_proto_scan_result_proto_msgTypes[123]
+	mi := &file_proto_scan_result_proto_msgTypes[125]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10133,7 +10561,7 @@ func (x *SecretData_StripeWebhookSecret) String() string {
 func (*SecretData_StripeWebhookSecret) ProtoMessage() {}
 
 func (x *SecretData_StripeWebhookSecret) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[123]
+	mi := &file_proto_scan_result_proto_msgTypes[125]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10146,12 +10574,152 @@ func (x *SecretData_StripeWebhookSecret) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_StripeWebhookSecret.ProtoReflect.Descriptor instead.
 func (*SecretData_StripeWebhookSecret) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 44}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 44}
 }
 
 func (x *SecretData_StripeWebhookSecret) GetKey() string {
 	if x != nil {
 		return x.Key
+	}
+	return ""
+}
+
+type SecretData_SupabasePAT struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SupabasePAT) Reset() {
+	*x = SecretData_SupabasePAT{}
+	mi := &file_proto_scan_result_proto_msgTypes[126]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SupabasePAT) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SupabasePAT) ProtoMessage() {}
+
+func (x *SecretData_SupabasePAT) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[126]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SupabasePAT.ProtoReflect.Descriptor instead.
+func (*SecretData_SupabasePAT) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 45}
+}
+
+func (x *SecretData_SupabasePAT) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type SecretData_SupabaseProjectSecretKey struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	ProjectRef    string                 `protobuf:"bytes,2,opt,name=project_ref,json=projectRef,proto3" json:"project_ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SupabaseProjectSecretKey) Reset() {
+	*x = SecretData_SupabaseProjectSecretKey{}
+	mi := &file_proto_scan_result_proto_msgTypes[127]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SupabaseProjectSecretKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SupabaseProjectSecretKey) ProtoMessage() {}
+
+func (x *SecretData_SupabaseProjectSecretKey) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[127]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SupabaseProjectSecretKey.ProtoReflect.Descriptor instead.
+func (*SecretData_SupabaseProjectSecretKey) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 46}
+}
+
+func (x *SecretData_SupabaseProjectSecretKey) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SecretData_SupabaseProjectSecretKey) GetProjectRef() string {
+	if x != nil {
+		return x.ProjectRef
+	}
+	return ""
+}
+
+type SecretData_SupabaseServiceRoleJWT struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SupabaseServiceRoleJWT) Reset() {
+	*x = SecretData_SupabaseServiceRoleJWT{}
+	mi := &file_proto_scan_result_proto_msgTypes[128]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SupabaseServiceRoleJWT) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SupabaseServiceRoleJWT) ProtoMessage() {}
+
+func (x *SecretData_SupabaseServiceRoleJWT) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[128]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SupabaseServiceRoleJWT.ProtoReflect.Descriptor instead.
+func (*SecretData_SupabaseServiceRoleJWT) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 47}
+}
+
+func (x *SecretData_SupabaseServiceRoleJWT) GetToken() string {
+	if x != nil {
+		return x.Token
 	}
 	return ""
 }
@@ -10170,7 +10738,7 @@ type SecretData_GCPOAuth2ClientCredentials struct {
 
 func (x *SecretData_GCPOAuth2ClientCredentials) Reset() {
 	*x = SecretData_GCPOAuth2ClientCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[124]
+	mi := &file_proto_scan_result_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10182,7 +10750,7 @@ func (x *SecretData_GCPOAuth2ClientCredentials) String() string {
 func (*SecretData_GCPOAuth2ClientCredentials) ProtoMessage() {}
 
 func (x *SecretData_GCPOAuth2ClientCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[124]
+	mi := &file_proto_scan_result_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10195,7 +10763,7 @@ func (x *SecretData_GCPOAuth2ClientCredentials) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use SecretData_GCPOAuth2ClientCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_GCPOAuth2ClientCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 45}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 48}
 }
 
 func (x *SecretData_GCPOAuth2ClientCredentials) GetId() string {
@@ -10223,7 +10791,7 @@ type SecretData_GCPOAuth2AccessToken struct {
 
 func (x *SecretData_GCPOAuth2AccessToken) Reset() {
 	*x = SecretData_GCPOAuth2AccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[125]
+	mi := &file_proto_scan_result_proto_msgTypes[130]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10235,7 +10803,7 @@ func (x *SecretData_GCPOAuth2AccessToken) String() string {
 func (*SecretData_GCPOAuth2AccessToken) ProtoMessage() {}
 
 func (x *SecretData_GCPOAuth2AccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[125]
+	mi := &file_proto_scan_result_proto_msgTypes[130]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10248,7 +10816,7 @@ func (x *SecretData_GCPOAuth2AccessToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GCPOAuth2AccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_GCPOAuth2AccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 46}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 49}
 }
 
 func (x *SecretData_GCPOAuth2AccessToken) GetToken() string {
@@ -10268,7 +10836,7 @@ type SecretData_GCSHmacKey struct {
 
 func (x *SecretData_GCSHmacKey) Reset() {
 	*x = SecretData_GCSHmacKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[126]
+	mi := &file_proto_scan_result_proto_msgTypes[131]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10280,7 +10848,7 @@ func (x *SecretData_GCSHmacKey) String() string {
 func (*SecretData_GCSHmacKey) ProtoMessage() {}
 
 func (x *SecretData_GCSHmacKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[126]
+	mi := &file_proto_scan_result_proto_msgTypes[131]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10293,7 +10861,7 @@ func (x *SecretData_GCSHmacKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_GCSHmacKey.ProtoReflect.Descriptor instead.
 func (*SecretData_GCSHmacKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 47}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 50}
 }
 
 func (x *SecretData_GCSHmacKey) GetAccessId() string {
@@ -10324,7 +10892,7 @@ type SecretData_MysqlMyloginSection struct {
 
 func (x *SecretData_MysqlMyloginSection) Reset() {
 	*x = SecretData_MysqlMyloginSection{}
-	mi := &file_proto_scan_result_proto_msgTypes[127]
+	mi := &file_proto_scan_result_proto_msgTypes[132]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10336,7 +10904,7 @@ func (x *SecretData_MysqlMyloginSection) String() string {
 func (*SecretData_MysqlMyloginSection) ProtoMessage() {}
 
 func (x *SecretData_MysqlMyloginSection) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[127]
+	mi := &file_proto_scan_result_proto_msgTypes[132]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10349,7 +10917,7 @@ func (x *SecretData_MysqlMyloginSection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_MysqlMyloginSection.ProtoReflect.Descriptor instead.
 func (*SecretData_MysqlMyloginSection) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 48}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 51}
 }
 
 func (x *SecretData_MysqlMyloginSection) GetSectionName() string {
@@ -10404,7 +10972,7 @@ type SecretData_VapidKey struct {
 
 func (x *SecretData_VapidKey) Reset() {
 	*x = SecretData_VapidKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[128]
+	mi := &file_proto_scan_result_proto_msgTypes[133]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10416,7 +10984,7 @@ func (x *SecretData_VapidKey) String() string {
 func (*SecretData_VapidKey) ProtoMessage() {}
 
 func (x *SecretData_VapidKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[128]
+	mi := &file_proto_scan_result_proto_msgTypes[133]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10429,7 +10997,7 @@ func (x *SecretData_VapidKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_VapidKey.ProtoReflect.Descriptor instead.
 func (*SecretData_VapidKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 49}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 52}
 }
 
 func (x *SecretData_VapidKey) GetPrivateB64() string {
@@ -10470,7 +11038,7 @@ type SecretData_OnePasswordConnectToken struct {
 
 func (x *SecretData_OnePasswordConnectToken) Reset() {
 	*x = SecretData_OnePasswordConnectToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[129]
+	mi := &file_proto_scan_result_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10482,7 +11050,7 @@ func (x *SecretData_OnePasswordConnectToken) String() string {
 func (*SecretData_OnePasswordConnectToken) ProtoMessage() {}
 
 func (x *SecretData_OnePasswordConnectToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[129]
+	mi := &file_proto_scan_result_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10495,7 +11063,7 @@ func (x *SecretData_OnePasswordConnectToken) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SecretData_OnePasswordConnectToken.ProtoReflect.Descriptor instead.
 func (*SecretData_OnePasswordConnectToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 50}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 53}
 }
 
 func (x *SecretData_OnePasswordConnectToken) GetDeviceUuid() string {
@@ -10554,6 +11122,370 @@ func (x *SecretData_OnePasswordConnectToken) GetVerifierLocalHash() string {
 	return ""
 }
 
+type SecretData_ComposerPackagistCredentials struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Host          string                 `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_ComposerPackagistCredentials) Reset() {
+	*x = SecretData_ComposerPackagistCredentials{}
+	mi := &file_proto_scan_result_proto_msgTypes[135]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_ComposerPackagistCredentials) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_ComposerPackagistCredentials) ProtoMessage() {}
+
+func (x *SecretData_ComposerPackagistCredentials) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[135]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_ComposerPackagistCredentials.ProtoReflect.Descriptor instead.
+func (*SecretData_ComposerPackagistCredentials) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 54}
+}
+
+func (x *SecretData_ComposerPackagistCredentials) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *SecretData_ComposerPackagistCredentials) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *SecretData_ComposerPackagistCredentials) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type SecretData_PackagistAPIKey struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PackagistAPIKey) Reset() {
+	*x = SecretData_PackagistAPIKey{}
+	mi := &file_proto_scan_result_proto_msgTypes[136]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PackagistAPIKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PackagistAPIKey) ProtoMessage() {}
+
+func (x *SecretData_PackagistAPIKey) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[136]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PackagistAPIKey.ProtoReflect.Descriptor instead.
+func (*SecretData_PackagistAPIKey) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 55}
+}
+
+func (x *SecretData_PackagistAPIKey) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type SecretData_PackagistAPISecret struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Secret        string                 `protobuf:"bytes,1,opt,name=secret,proto3" json:"secret,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"` // Optional: populated when both key and secret are found together
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PackagistAPISecret) Reset() {
+	*x = SecretData_PackagistAPISecret{}
+	mi := &file_proto_scan_result_proto_msgTypes[137]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PackagistAPISecret) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PackagistAPISecret) ProtoMessage() {}
+
+func (x *SecretData_PackagistAPISecret) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[137]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PackagistAPISecret.ProtoReflect.Descriptor instead.
+func (*SecretData_PackagistAPISecret) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 56}
+}
+
+func (x *SecretData_PackagistAPISecret) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *SecretData_PackagistAPISecret) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type SecretData_PackagistOrgReadToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	RepoUrl       string                 `protobuf:"bytes,2,opt,name=repo_url,json=repoUrl,proto3" json:"repo_url,omitempty"` // Optional: populated when repo URL is found nearby
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PackagistOrgReadToken) Reset() {
+	*x = SecretData_PackagistOrgReadToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[138]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PackagistOrgReadToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PackagistOrgReadToken) ProtoMessage() {}
+
+func (x *SecretData_PackagistOrgReadToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[138]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PackagistOrgReadToken.ProtoReflect.Descriptor instead.
+func (*SecretData_PackagistOrgReadToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 57}
+}
+
+func (x *SecretData_PackagistOrgReadToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SecretData_PackagistOrgReadToken) GetRepoUrl() string {
+	if x != nil {
+		return x.RepoUrl
+	}
+	return ""
+}
+
+type SecretData_PackagistOrgUpdateToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	RepoUrl       string                 `protobuf:"bytes,2,opt,name=repo_url,json=repoUrl,proto3" json:"repo_url,omitempty"` // Optional: populated when repo URL is found nearby
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PackagistOrgUpdateToken) Reset() {
+	*x = SecretData_PackagistOrgUpdateToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[139]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PackagistOrgUpdateToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PackagistOrgUpdateToken) ProtoMessage() {}
+
+func (x *SecretData_PackagistOrgUpdateToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[139]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PackagistOrgUpdateToken.ProtoReflect.Descriptor instead.
+func (*SecretData_PackagistOrgUpdateToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 58}
+}
+
+func (x *SecretData_PackagistOrgUpdateToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SecretData_PackagistOrgUpdateToken) GetRepoUrl() string {
+	if x != nil {
+		return x.RepoUrl
+	}
+	return ""
+}
+
+type SecretData_PackagistUserUpdateToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`              // Required for validation
+	RepoUrl       string                 `protobuf:"bytes,3,opt,name=repo_url,json=repoUrl,proto3" json:"repo_url,omitempty"` // Optional: populated when repo URL is found nearby
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PackagistUserUpdateToken) Reset() {
+	*x = SecretData_PackagistUserUpdateToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[140]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PackagistUserUpdateToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PackagistUserUpdateToken) ProtoMessage() {}
+
+func (x *SecretData_PackagistUserUpdateToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[140]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PackagistUserUpdateToken.ProtoReflect.Descriptor instead.
+func (*SecretData_PackagistUserUpdateToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 59}
+}
+
+func (x *SecretData_PackagistUserUpdateToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SecretData_PackagistUserUpdateToken) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *SecretData_PackagistUserUpdateToken) GetRepoUrl() string {
+	if x != nil {
+		return x.RepoUrl
+	}
+	return ""
+}
+
+type SecretData_PackagistConductorUpdateToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_PackagistConductorUpdateToken) Reset() {
+	*x = SecretData_PackagistConductorUpdateToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[141]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_PackagistConductorUpdateToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_PackagistConductorUpdateToken) ProtoMessage() {}
+
+func (x *SecretData_PackagistConductorUpdateToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[141]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_PackagistConductorUpdateToken.ProtoReflect.Descriptor instead.
+func (*SecretData_PackagistConductorUpdateToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 60}
+}
+
+func (x *SecretData_PackagistConductorUpdateToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
 type SecretData_OnePasswordSecretKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -10563,7 +11495,7 @@ type SecretData_OnePasswordSecretKey struct {
 
 func (x *SecretData_OnePasswordSecretKey) Reset() {
 	*x = SecretData_OnePasswordSecretKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[130]
+	mi := &file_proto_scan_result_proto_msgTypes[142]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10575,7 +11507,7 @@ func (x *SecretData_OnePasswordSecretKey) String() string {
 func (*SecretData_OnePasswordSecretKey) ProtoMessage() {}
 
 func (x *SecretData_OnePasswordSecretKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[130]
+	mi := &file_proto_scan_result_proto_msgTypes[142]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10588,7 +11520,7 @@ func (x *SecretData_OnePasswordSecretKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_OnePasswordSecretKey.ProtoReflect.Descriptor instead.
 func (*SecretData_OnePasswordSecretKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 51}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 61}
 }
 
 func (x *SecretData_OnePasswordSecretKey) GetKey() string {
@@ -10607,7 +11539,7 @@ type SecretData_OnePasswordServiceToken struct {
 
 func (x *SecretData_OnePasswordServiceToken) Reset() {
 	*x = SecretData_OnePasswordServiceToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[131]
+	mi := &file_proto_scan_result_proto_msgTypes[143]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10619,7 +11551,7 @@ func (x *SecretData_OnePasswordServiceToken) String() string {
 func (*SecretData_OnePasswordServiceToken) ProtoMessage() {}
 
 func (x *SecretData_OnePasswordServiceToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[131]
+	mi := &file_proto_scan_result_proto_msgTypes[143]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10632,7 +11564,7 @@ func (x *SecretData_OnePasswordServiceToken) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SecretData_OnePasswordServiceToken.ProtoReflect.Descriptor instead.
 func (*SecretData_OnePasswordServiceToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 52}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 62}
 }
 
 func (x *SecretData_OnePasswordServiceToken) GetKey() string {
@@ -10651,7 +11583,7 @@ type SecretData_OnePasswordRecoveryCode struct {
 
 func (x *SecretData_OnePasswordRecoveryCode) Reset() {
 	*x = SecretData_OnePasswordRecoveryCode{}
-	mi := &file_proto_scan_result_proto_msgTypes[132]
+	mi := &file_proto_scan_result_proto_msgTypes[144]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10663,7 +11595,7 @@ func (x *SecretData_OnePasswordRecoveryCode) String() string {
 func (*SecretData_OnePasswordRecoveryCode) ProtoMessage() {}
 
 func (x *SecretData_OnePasswordRecoveryCode) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[132]
+	mi := &file_proto_scan_result_proto_msgTypes[144]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10676,7 +11608,7 @@ func (x *SecretData_OnePasswordRecoveryCode) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SecretData_OnePasswordRecoveryCode.ProtoReflect.Descriptor instead.
 func (*SecretData_OnePasswordRecoveryCode) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 53}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 63}
 }
 
 func (x *SecretData_OnePasswordRecoveryCode) GetKey() string {
@@ -10696,7 +11628,7 @@ type SecretData_AwsAccessKeyCredentials struct {
 
 func (x *SecretData_AwsAccessKeyCredentials) Reset() {
 	*x = SecretData_AwsAccessKeyCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[133]
+	mi := &file_proto_scan_result_proto_msgTypes[145]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10708,7 +11640,7 @@ func (x *SecretData_AwsAccessKeyCredentials) String() string {
 func (*SecretData_AwsAccessKeyCredentials) ProtoMessage() {}
 
 func (x *SecretData_AwsAccessKeyCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[133]
+	mi := &file_proto_scan_result_proto_msgTypes[145]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10721,7 +11653,7 @@ func (x *SecretData_AwsAccessKeyCredentials) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SecretData_AwsAccessKeyCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_AwsAccessKeyCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 54}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 64}
 }
 
 func (x *SecretData_AwsAccessKeyCredentials) GetAccessId() string {
@@ -10747,7 +11679,7 @@ type SecretData_ReCaptchaKey struct {
 
 func (x *SecretData_ReCaptchaKey) Reset() {
 	*x = SecretData_ReCaptchaKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[134]
+	mi := &file_proto_scan_result_proto_msgTypes[146]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10759,7 +11691,7 @@ func (x *SecretData_ReCaptchaKey) String() string {
 func (*SecretData_ReCaptchaKey) ProtoMessage() {}
 
 func (x *SecretData_ReCaptchaKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[134]
+	mi := &file_proto_scan_result_proto_msgTypes[146]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10772,7 +11704,7 @@ func (x *SecretData_ReCaptchaKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_ReCaptchaKey.ProtoReflect.Descriptor instead.
 func (*SecretData_ReCaptchaKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 55}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 65}
 }
 
 func (x *SecretData_ReCaptchaKey) GetSecret() string {
@@ -10791,7 +11723,7 @@ type SecretData_PyxKeyV1 struct {
 
 func (x *SecretData_PyxKeyV1) Reset() {
 	*x = SecretData_PyxKeyV1{}
-	mi := &file_proto_scan_result_proto_msgTypes[135]
+	mi := &file_proto_scan_result_proto_msgTypes[147]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10803,7 +11735,7 @@ func (x *SecretData_PyxKeyV1) String() string {
 func (*SecretData_PyxKeyV1) ProtoMessage() {}
 
 func (x *SecretData_PyxKeyV1) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[135]
+	mi := &file_proto_scan_result_proto_msgTypes[147]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10816,7 +11748,7 @@ func (x *SecretData_PyxKeyV1) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_PyxKeyV1.ProtoReflect.Descriptor instead.
 func (*SecretData_PyxKeyV1) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 56}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 66}
 }
 
 func (x *SecretData_PyxKeyV1) GetKey() string {
@@ -10835,7 +11767,7 @@ type SecretData_PyxKeyV2 struct {
 
 func (x *SecretData_PyxKeyV2) Reset() {
 	*x = SecretData_PyxKeyV2{}
-	mi := &file_proto_scan_result_proto_msgTypes[136]
+	mi := &file_proto_scan_result_proto_msgTypes[148]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10847,7 +11779,7 @@ func (x *SecretData_PyxKeyV2) String() string {
 func (*SecretData_PyxKeyV2) ProtoMessage() {}
 
 func (x *SecretData_PyxKeyV2) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[136]
+	mi := &file_proto_scan_result_proto_msgTypes[148]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10860,7 +11792,7 @@ func (x *SecretData_PyxKeyV2) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_PyxKeyV2.ProtoReflect.Descriptor instead.
 func (*SecretData_PyxKeyV2) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 57}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 67}
 }
 
 func (x *SecretData_PyxKeyV2) GetKey() string {
@@ -10879,7 +11811,7 @@ type SecretData_CodeCatalystCredentials struct {
 
 func (x *SecretData_CodeCatalystCredentials) Reset() {
 	*x = SecretData_CodeCatalystCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[137]
+	mi := &file_proto_scan_result_proto_msgTypes[149]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10891,7 +11823,7 @@ func (x *SecretData_CodeCatalystCredentials) String() string {
 func (*SecretData_CodeCatalystCredentials) ProtoMessage() {}
 
 func (x *SecretData_CodeCatalystCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[137]
+	mi := &file_proto_scan_result_proto_msgTypes[149]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10904,7 +11836,7 @@ func (x *SecretData_CodeCatalystCredentials) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SecretData_CodeCatalystCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_CodeCatalystCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 58}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 68}
 }
 
 func (x *SecretData_CodeCatalystCredentials) GetUrl() string {
@@ -10923,7 +11855,7 @@ type SecretData_CodeCommitCredentials struct {
 
 func (x *SecretData_CodeCommitCredentials) Reset() {
 	*x = SecretData_CodeCommitCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[138]
+	mi := &file_proto_scan_result_proto_msgTypes[150]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10935,7 +11867,7 @@ func (x *SecretData_CodeCommitCredentials) String() string {
 func (*SecretData_CodeCommitCredentials) ProtoMessage() {}
 
 func (x *SecretData_CodeCommitCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[138]
+	mi := &file_proto_scan_result_proto_msgTypes[150]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10948,7 +11880,7 @@ func (x *SecretData_CodeCommitCredentials) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CodeCommitCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_CodeCommitCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 59}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 69}
 }
 
 func (x *SecretData_CodeCommitCredentials) GetUrl() string {
@@ -10967,7 +11899,7 @@ type SecretData_BitBucketCredentials struct {
 
 func (x *SecretData_BitBucketCredentials) Reset() {
 	*x = SecretData_BitBucketCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[139]
+	mi := &file_proto_scan_result_proto_msgTypes[151]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10979,7 +11911,7 @@ func (x *SecretData_BitBucketCredentials) String() string {
 func (*SecretData_BitBucketCredentials) ProtoMessage() {}
 
 func (x *SecretData_BitBucketCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[139]
+	mi := &file_proto_scan_result_proto_msgTypes[151]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10992,7 +11924,7 @@ func (x *SecretData_BitBucketCredentials) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_BitBucketCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_BitBucketCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 60}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 70}
 }
 
 func (x *SecretData_BitBucketCredentials) GetUrl() string {
@@ -11011,7 +11943,7 @@ type SecretData_ElasticCloudAPIKey struct {
 
 func (x *SecretData_ElasticCloudAPIKey) Reset() {
 	*x = SecretData_ElasticCloudAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[140]
+	mi := &file_proto_scan_result_proto_msgTypes[152]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11023,7 +11955,7 @@ func (x *SecretData_ElasticCloudAPIKey) String() string {
 func (*SecretData_ElasticCloudAPIKey) ProtoMessage() {}
 
 func (x *SecretData_ElasticCloudAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[140]
+	mi := &file_proto_scan_result_proto_msgTypes[152]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11036,7 +11968,7 @@ func (x *SecretData_ElasticCloudAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_ElasticCloudAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_ElasticCloudAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 61}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 71}
 }
 
 func (x *SecretData_ElasticCloudAPIKey) GetKey() string {
@@ -11055,7 +11987,7 @@ type SecretData_PaystackSecretKey struct {
 
 func (x *SecretData_PaystackSecretKey) Reset() {
 	*x = SecretData_PaystackSecretKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[141]
+	mi := &file_proto_scan_result_proto_msgTypes[153]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11067,7 +11999,7 @@ func (x *SecretData_PaystackSecretKey) String() string {
 func (*SecretData_PaystackSecretKey) ProtoMessage() {}
 
 func (x *SecretData_PaystackSecretKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[141]
+	mi := &file_proto_scan_result_proto_msgTypes[153]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11080,12 +12012,56 @@ func (x *SecretData_PaystackSecretKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_PaystackSecretKey.ProtoReflect.Descriptor instead.
 func (*SecretData_PaystackSecretKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 62}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 72}
 }
 
 func (x *SecretData_PaystackSecretKey) GetKey() string {
 	if x != nil {
 		return x.Key
+	}
+	return ""
+}
+
+type SecretData_DiscordBotToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_DiscordBotToken) Reset() {
+	*x = SecretData_DiscordBotToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[154]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_DiscordBotToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_DiscordBotToken) ProtoMessage() {}
+
+func (x *SecretData_DiscordBotToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[154]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_DiscordBotToken.ProtoReflect.Descriptor instead.
+func (*SecretData_DiscordBotToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 73}
+}
+
+func (x *SecretData_DiscordBotToken) GetToken() string {
+	if x != nil {
+		return x.Token
 	}
 	return ""
 }
@@ -11101,7 +12077,7 @@ type SecretData_HerokuSecretKey struct {
 
 func (x *SecretData_HerokuSecretKey) Reset() {
 	*x = SecretData_HerokuSecretKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[142]
+	mi := &file_proto_scan_result_proto_msgTypes[155]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11113,7 +12089,7 @@ func (x *SecretData_HerokuSecretKey) String() string {
 func (*SecretData_HerokuSecretKey) ProtoMessage() {}
 
 func (x *SecretData_HerokuSecretKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[142]
+	mi := &file_proto_scan_result_proto_msgTypes[155]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11126,7 +12102,7 @@ func (x *SecretData_HerokuSecretKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HerokuSecretKey.ProtoReflect.Descriptor instead.
 func (*SecretData_HerokuSecretKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 63}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 74}
 }
 
 func (x *SecretData_HerokuSecretKey) GetKey() string {
@@ -11155,7 +12131,7 @@ type SecretData_HerokuSecretKeyMetadata struct {
 
 func (x *SecretData_HerokuSecretKeyMetadata) Reset() {
 	*x = SecretData_HerokuSecretKeyMetadata{}
-	mi := &file_proto_scan_result_proto_msgTypes[143]
+	mi := &file_proto_scan_result_proto_msgTypes[156]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11167,7 +12143,7 @@ func (x *SecretData_HerokuSecretKeyMetadata) String() string {
 func (*SecretData_HerokuSecretKeyMetadata) ProtoMessage() {}
 
 func (x *SecretData_HerokuSecretKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[143]
+	mi := &file_proto_scan_result_proto_msgTypes[156]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11180,7 +12156,7 @@ func (x *SecretData_HerokuSecretKeyMetadata) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use SecretData_HerokuSecretKeyMetadata.ProtoReflect.Descriptor instead.
 func (*SecretData_HerokuSecretKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 64}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 75}
 }
 
 func (x *SecretData_HerokuSecretKeyMetadata) GetExpireTime() *durationpb.Duration {
@@ -11206,7 +12182,7 @@ type SecretData_TelegramBotToken struct {
 
 func (x *SecretData_TelegramBotToken) Reset() {
 	*x = SecretData_TelegramBotToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[144]
+	mi := &file_proto_scan_result_proto_msgTypes[157]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11218,7 +12194,7 @@ func (x *SecretData_TelegramBotToken) String() string {
 func (*SecretData_TelegramBotToken) ProtoMessage() {}
 
 func (x *SecretData_TelegramBotToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[144]
+	mi := &file_proto_scan_result_proto_msgTypes[157]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11231,7 +12207,7 @@ func (x *SecretData_TelegramBotToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_TelegramBotToken.ProtoReflect.Descriptor instead.
 func (*SecretData_TelegramBotToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 65}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 76}
 }
 
 func (x *SecretData_TelegramBotToken) GetToken() string {
@@ -11251,7 +12227,7 @@ type SecretData_SalesforceOAuth2AccessToken struct {
 
 func (x *SecretData_SalesforceOAuth2AccessToken) Reset() {
 	*x = SecretData_SalesforceOAuth2AccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[145]
+	mi := &file_proto_scan_result_proto_msgTypes[158]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11263,7 +12239,7 @@ func (x *SecretData_SalesforceOAuth2AccessToken) String() string {
 func (*SecretData_SalesforceOAuth2AccessToken) ProtoMessage() {}
 
 func (x *SecretData_SalesforceOAuth2AccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[145]
+	mi := &file_proto_scan_result_proto_msgTypes[158]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11276,7 +12252,7 @@ func (x *SecretData_SalesforceOAuth2AccessToken) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use SecretData_SalesforceOAuth2AccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_SalesforceOAuth2AccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 66}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 77}
 }
 
 func (x *SecretData_SalesforceOAuth2AccessToken) GetToken() string {
@@ -11295,7 +12271,7 @@ type SecretData_SendGridAPIKey struct {
 
 func (x *SecretData_SendGridAPIKey) Reset() {
 	*x = SecretData_SendGridAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[146]
+	mi := &file_proto_scan_result_proto_msgTypes[159]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11307,7 +12283,7 @@ func (x *SecretData_SendGridAPIKey) String() string {
 func (*SecretData_SendGridAPIKey) ProtoMessage() {}
 
 func (x *SecretData_SendGridAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[146]
+	mi := &file_proto_scan_result_proto_msgTypes[159]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11320,7 +12296,7 @@ func (x *SecretData_SendGridAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_SendGridAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_SendGridAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 67}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 78}
 }
 
 func (x *SecretData_SendGridAPIKey) GetKey() string {
@@ -11344,7 +12320,7 @@ type SecretData_SalesforceOAuth2ClientCredentials struct {
 
 func (x *SecretData_SalesforceOAuth2ClientCredentials) Reset() {
 	*x = SecretData_SalesforceOAuth2ClientCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[147]
+	mi := &file_proto_scan_result_proto_msgTypes[160]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11356,7 +12332,7 @@ func (x *SecretData_SalesforceOAuth2ClientCredentials) String() string {
 func (*SecretData_SalesforceOAuth2ClientCredentials) ProtoMessage() {}
 
 func (x *SecretData_SalesforceOAuth2ClientCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[147]
+	mi := &file_proto_scan_result_proto_msgTypes[160]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11369,7 +12345,7 @@ func (x *SecretData_SalesforceOAuth2ClientCredentials) ProtoReflect() protorefle
 
 // Deprecated: Use SecretData_SalesforceOAuth2ClientCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_SalesforceOAuth2ClientCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 68}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 79}
 }
 
 func (x *SecretData_SalesforceOAuth2ClientCredentials) GetId() string {
@@ -11407,7 +12383,7 @@ type SecretData_SalesforceOAuth2RefreshCredentials struct {
 
 func (x *SecretData_SalesforceOAuth2RefreshCredentials) Reset() {
 	*x = SecretData_SalesforceOAuth2RefreshCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[148]
+	mi := &file_proto_scan_result_proto_msgTypes[161]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11419,7 +12395,7 @@ func (x *SecretData_SalesforceOAuth2RefreshCredentials) String() string {
 func (*SecretData_SalesforceOAuth2RefreshCredentials) ProtoMessage() {}
 
 func (x *SecretData_SalesforceOAuth2RefreshCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[148]
+	mi := &file_proto_scan_result_proto_msgTypes[161]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11432,7 +12408,7 @@ func (x *SecretData_SalesforceOAuth2RefreshCredentials) ProtoReflect() protorefl
 
 // Deprecated: Use SecretData_SalesforceOAuth2RefreshCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_SalesforceOAuth2RefreshCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 69}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 80}
 }
 
 func (x *SecretData_SalesforceOAuth2RefreshCredentials) GetId() string {
@@ -11470,7 +12446,7 @@ type SecretData_SalesforceOAuth2JWTCredentials struct {
 
 func (x *SecretData_SalesforceOAuth2JWTCredentials) Reset() {
 	*x = SecretData_SalesforceOAuth2JWTCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[149]
+	mi := &file_proto_scan_result_proto_msgTypes[162]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11482,7 +12458,7 @@ func (x *SecretData_SalesforceOAuth2JWTCredentials) String() string {
 func (*SecretData_SalesforceOAuth2JWTCredentials) ProtoMessage() {}
 
 func (x *SecretData_SalesforceOAuth2JWTCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[149]
+	mi := &file_proto_scan_result_proto_msgTypes[162]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11495,7 +12471,7 @@ func (x *SecretData_SalesforceOAuth2JWTCredentials) ProtoReflect() protoreflect.
 
 // Deprecated: Use SecretData_SalesforceOAuth2JWTCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_SalesforceOAuth2JWTCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 70}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 81}
 }
 
 func (x *SecretData_SalesforceOAuth2JWTCredentials) GetId() string {
@@ -11519,6 +12495,59 @@ func (x *SecretData_SalesforceOAuth2JWTCredentials) GetPrivateKey() string {
 	return ""
 }
 
+type SecretData_BitwardenOAuth2AccessToken struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Bitwarden OAuth2 Access Token
+	ClientId      string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	ClientSecret  string `protobuf:"bytes,2,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_BitwardenOAuth2AccessToken) Reset() {
+	*x = SecretData_BitwardenOAuth2AccessToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[163]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_BitwardenOAuth2AccessToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_BitwardenOAuth2AccessToken) ProtoMessage() {}
+
+func (x *SecretData_BitwardenOAuth2AccessToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[163]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_BitwardenOAuth2AccessToken.ProtoReflect.Descriptor instead.
+func (*SecretData_BitwardenOAuth2AccessToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 82}
+}
+
+func (x *SecretData_BitwardenOAuth2AccessToken) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *SecretData_BitwardenOAuth2AccessToken) GetClientSecret() string {
+	if x != nil {
+		return x.ClientSecret
+	}
+	return ""
+}
+
 type SecretData_CursorAPIKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -11528,7 +12557,7 @@ type SecretData_CursorAPIKey struct {
 
 func (x *SecretData_CursorAPIKey) Reset() {
 	*x = SecretData_CursorAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[150]
+	mi := &file_proto_scan_result_proto_msgTypes[164]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11540,7 +12569,7 @@ func (x *SecretData_CursorAPIKey) String() string {
 func (*SecretData_CursorAPIKey) ProtoMessage() {}
 
 func (x *SecretData_CursorAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[150]
+	mi := &file_proto_scan_result_proto_msgTypes[164]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11553,7 +12582,7 @@ func (x *SecretData_CursorAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CursorAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_CursorAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 71}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 83}
 }
 
 func (x *SecretData_CursorAPIKey) GetKey() string {
@@ -11572,7 +12601,7 @@ type SecretData_CircleCIPersonalAccessToken struct {
 
 func (x *SecretData_CircleCIPersonalAccessToken) Reset() {
 	*x = SecretData_CircleCIPersonalAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[151]
+	mi := &file_proto_scan_result_proto_msgTypes[165]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11584,7 +12613,7 @@ func (x *SecretData_CircleCIPersonalAccessToken) String() string {
 func (*SecretData_CircleCIPersonalAccessToken) ProtoMessage() {}
 
 func (x *SecretData_CircleCIPersonalAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[151]
+	mi := &file_proto_scan_result_proto_msgTypes[165]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11597,7 +12626,7 @@ func (x *SecretData_CircleCIPersonalAccessToken) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use SecretData_CircleCIPersonalAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_CircleCIPersonalAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 72}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 84}
 }
 
 func (x *SecretData_CircleCIPersonalAccessToken) GetToken() string {
@@ -11616,7 +12645,7 @@ type SecretData_CircleCIProjectToken struct {
 
 func (x *SecretData_CircleCIProjectToken) Reset() {
 	*x = SecretData_CircleCIProjectToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[152]
+	mi := &file_proto_scan_result_proto_msgTypes[166]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11628,7 +12657,7 @@ func (x *SecretData_CircleCIProjectToken) String() string {
 func (*SecretData_CircleCIProjectToken) ProtoMessage() {}
 
 func (x *SecretData_CircleCIProjectToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[152]
+	mi := &file_proto_scan_result_proto_msgTypes[166]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11641,7 +12670,7 @@ func (x *SecretData_CircleCIProjectToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CircleCIProjectToken.ProtoReflect.Descriptor instead.
 func (*SecretData_CircleCIProjectToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 73}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 85}
 }
 
 func (x *SecretData_CircleCIProjectToken) GetToken() string {
@@ -11660,7 +12689,7 @@ type SecretData_URLCredentials struct {
 
 func (x *SecretData_URLCredentials) Reset() {
 	*x = SecretData_URLCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[153]
+	mi := &file_proto_scan_result_proto_msgTypes[167]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11672,7 +12701,7 @@ func (x *SecretData_URLCredentials) String() string {
 func (*SecretData_URLCredentials) ProtoMessage() {}
 
 func (x *SecretData_URLCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[153]
+	mi := &file_proto_scan_result_proto_msgTypes[167]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11685,7 +12714,7 @@ func (x *SecretData_URLCredentials) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_URLCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_URLCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 74}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 86}
 }
 
 func (x *SecretData_URLCredentials) GetUrl() string {
@@ -11704,7 +12733,7 @@ type SecretData_SquarePersonalAccessToken struct {
 
 func (x *SecretData_SquarePersonalAccessToken) Reset() {
 	*x = SecretData_SquarePersonalAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[154]
+	mi := &file_proto_scan_result_proto_msgTypes[168]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11716,7 +12745,7 @@ func (x *SecretData_SquarePersonalAccessToken) String() string {
 func (*SecretData_SquarePersonalAccessToken) ProtoMessage() {}
 
 func (x *SecretData_SquarePersonalAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[154]
+	mi := &file_proto_scan_result_proto_msgTypes[168]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11729,7 +12758,7 @@ func (x *SecretData_SquarePersonalAccessToken) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use SecretData_SquarePersonalAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_SquarePersonalAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 75}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 87}
 }
 
 func (x *SecretData_SquarePersonalAccessToken) GetKey() string {
@@ -11749,7 +12778,7 @@ type SecretData_SquareOAuthApplicationSecret struct {
 
 func (x *SecretData_SquareOAuthApplicationSecret) Reset() {
 	*x = SecretData_SquareOAuthApplicationSecret{}
-	mi := &file_proto_scan_result_proto_msgTypes[155]
+	mi := &file_proto_scan_result_proto_msgTypes[169]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11761,7 +12790,7 @@ func (x *SecretData_SquareOAuthApplicationSecret) String() string {
 func (*SecretData_SquareOAuthApplicationSecret) ProtoMessage() {}
 
 func (x *SecretData_SquareOAuthApplicationSecret) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[155]
+	mi := &file_proto_scan_result_proto_msgTypes[169]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11774,7 +12803,7 @@ func (x *SecretData_SquareOAuthApplicationSecret) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use SecretData_SquareOAuthApplicationSecret.ProtoReflect.Descriptor instead.
 func (*SecretData_SquareOAuthApplicationSecret) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{65, 76}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{66, 88}
 }
 
 func (x *SecretData_SquareOAuthApplicationSecret) GetId() string {
@@ -11829,7 +12858,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06status\x18\x03 \x01(\v2\x13.scalibr.ScanStatusR\x06status\"M\n" +
 	"\tFileError\x12\x1b\n" +
 	"\tfile_path\x18\x01 \x01(\tR\bfilePath\x12#\n" +
-	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\"\xa3 \n" +
+	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\"\xe6 \n" +
 	"\aPackage\x12\x0e\n" +
 	"\x02id\x18< \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x18\n" +
@@ -11838,7 +12867,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"sourceCode\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x1c\n" +
 	"\tecosystem\x18\x1b \x01(\tR\tecosystem\x12\x1c\n" +
-	"\tlocations\x18\x02 \x03(\tR\tlocations\x12\x18\n" +
+	"\tlocations\x18\x02 \x03(\tR\tlocations\x124\n" +
+	"\blocation\x18D \x01(\v2\x18.scalibr.PackageLocationR\blocation\x12\x18\n" +
 	"\aplugins\x181 \x03(\tR\aplugins\x12I\n" +
 	"\x0fpython_metadata\x18\x05 \x01(\v2\x1e.scalibr.PythonPackageMetadataH\x00R\x0epythonMetadata\x12Y\n" +
 	"\x13javascript_metadata\x18\x06 \x01(\v2&.scalibr.JavascriptPackageJSONMetadataH\x00R\x12javascriptMetadata\x12@\n" +
@@ -11881,8 +12911,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\rmise_metadata\x18? \x01(\v2\x15.scalibr.MiseMetadataH\x00R\fmiseMetadata\x12X\n" +
 	"\x17unknown_binary_metadata\x18@ \x01(\v2\x1e.scalibr.UnknownBinaryMetadataH\x00R\x15unknownBinaryMetadata\x12O\n" +
 	"\x14bazel_maven_metadata\x18A \x01(\v2\x1b.scalibr.BazelMavenMetadataH\x00R\x12bazelMavenMetadata\x12F\n" +
-	"\rdeno_metadata\x18B \x01(\v2\x1f.scalibr.JavascriptDenoMetadataH\x00R\fdenoMetadata\x129\n" +
-	"\fmcp_metadata\x18C \x01(\v2\x14.scalibr.MCPMetadataH\x00R\vmcpMetadata\x12[\n" +
+	"\rdeno_metadata\x18B \x01(\v2\x1f.scalibr.JavascriptDenoMetadataH\x00R\fdenoMetadata\x12F\n" +
+	"\x0espack_metadata\x18C \x01(\v2\x1d.scalibr.SpackPackageMetadataH\x00R\rspackMetadata\x12[\n" +
 	"\x16exploitability_signals\x183 \x03(\v2$.scalibr.PackageExploitabilitySignalR\x15exploitabilitySignals\x12\x1a\n" +
 	"\blicenses\x184 \x03(\tR\blicenses\x12|\n" +
 	" container_image_metadata_indexes\x189 \x01(\v2..scalibr.Package.ContainerImageMetadataIndexesH\x01R\x1dcontainerImageMetadataIndexes\x88\x01\x01\x1at\n" +
@@ -11893,7 +12923,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\n" +
 	"\bmetadataB#\n" +
 	"!_container_image_metadata_indexesJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\n" +
-	"\x10\vJ\x04\b\x1c\x10\x1dJ\x04\b#\x10$J\x04\b\x11\x10\x15J\x04\b\x1d\x10\x1eJ\x04\b \x10!J\x04\b+\x10,J\x04\b;\x10<\"B\n" +
+	"\x10\vJ\x04\b\x1c\x10\x1dJ\x04\b#\x10$J\x04\b\x11\x10\x15J\x04\b\x1d\x10\x1eJ\x04\b \x10!J\x04\b+\x10,J\x04\b;\x10<\"e\n" +
+	"\x0fPackageLocation\x12%\n" +
+	"\x04desc\x18\x01 \x01(\v2\x11.scalibr.LocationR\x04desc\x12+\n" +
+	"\arelated\x18\x02 \x03(\v2\x11.scalibr.LocationR\arelated\"B\n" +
 	"\x14SourceCodeIdentifier\x12\x12\n" +
 	"\x04repo\x18\x01 \x01(\tR\x04repo\x12\x16\n" +
 	"\x06commit\x18\x02 \x01(\tR\x06commit\"\x96\x01\n" +
@@ -12065,7 +13098,13 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x05os_id\x18\x06 \x01(\tR\x04osId\x12\"\n" +
 	"\ros_version_id\x18\a \x01(\tR\vosVersionId\x12\x1e\n" +
 	"\vos_build_id\x18\b \x01(\tR\tosBuildId\x12\x1c\n" +
-	"\tdeveloper\x18\t \x01(\tR\tdeveloper\"\xe8\x02\n" +
+	"\tdeveloper\x18\t \x01(\tR\tdeveloper\"\x9c\x01\n" +
+	"\x14SpackPackageMetadata\x12\x1a\n" +
+	"\bplatform\x18\x01 \x01(\tR\bplatform\x12\x1f\n" +
+	"\vplatform_os\x18\x02 \x01(\tR\n" +
+	"platformOs\x123\n" +
+	"\x15platform_architecture\x18\x03 \x01(\tR\x14platformArchitecture\x12\x12\n" +
+	"\x04hash\x18\x04 \x01(\tR\x04hash\"\xe8\x02\n" +
 	"\x14KernelModuleMetadata\x12!\n" +
 	"\fpackage_name\x18\x01 \x01(\tR\vpackageName\x12'\n" +
 	"\x0fpackage_version\x18\x02 \x01(\tR\x0epackageVersion\x12)\n" +
@@ -12267,11 +13306,12 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x18UnknownBinaryAttribution\x12)\n" +
 	"\x10local_filesystem\x18\x01 \x01(\bR\x0flocalFilesystem\x12\x1d\n" +
 	"\n" +
-	"base_image\x18\x02 \x01(\bR\tbaseImage\"\x95\x01\n" +
+	"base_image\x18\x02 \x01(\bR\tbaseImage\"\xca\x01\n" +
 	"\x06Secret\x12+\n" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
-	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x12/\n" +
-	"\tlocations\x18\x03 \x03(\v2\x11.scalibr.LocationR\tlocations\"\xd2a\n" +
+	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x125\n" +
+	"\tlocations\x18\x03 \x03(\v2\x17.scalibr.LocationLegacyR\tlocations\x12-\n" +
+	"\blocation\x18\x04 \x01(\v2\x11.scalibr.LocationR\blocation\"\xcbq\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -12360,7 +13400,19 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\bdeno_pat\x18I \x01(\v2\x1b.scalibr.SecretData.DenoPatH\x00R\adenoPat\x12Q\n" +
 	"\x11heroku_secret_key\x18J \x01(\v2#.scalibr.SecretData.HerokuSecretKeyH\x00R\x0fherokuSecretKey\x12T\n" +
 	"\x12npmjs_access_token\x18K \x01(\v2$.scalibr.SecretData.NpmJsAccessTokenH\x00R\x10npmjsAccessToken\x12Z\n" +
-	"\x14cloudflare_api_token\x18L \x01(\v2&.scalibr.SecretData.CloudflareAPITokenH\x00R\x12cloudflareApiToken\x1a\xb0\x03\n" +
+	"\x14cloudflare_api_token\x18L \x01(\v2&.scalibr.SecretData.CloudflareAPITokenH\x00R\x12cloudflareApiToken\x12D\n" +
+	"\fsupabase_pat\x18M \x01(\v2\x1f.scalibr.SecretData.SupabasePATH\x00R\vsupabasePat\x12m\n" +
+	"\x1bsupabase_project_secret_key\x18N \x01(\v2,.scalibr.SecretData.SupabaseProjectSecretKeyH\x00R\x18supabaseProjectSecretKey\x12g\n" +
+	"\x19supabase_service_role_jwt\x18O \x01(\v2*.scalibr.SecretData.SupabaseServiceRoleJWTH\x00R\x16supabaseServiceRoleJwt\x12Q\n" +
+	"\x11packagist_api_key\x18P \x01(\v2#.scalibr.SecretData.PackagistAPIKeyH\x00R\x0fpackagistApiKey\x12Z\n" +
+	"\x14packagist_api_secret\x18Q \x01(\v2&.scalibr.SecretData.PackagistAPISecretH\x00R\x12packagistApiSecret\x12d\n" +
+	"\x18packagist_org_read_token\x18R \x01(\v2).scalibr.SecretData.PackagistOrgReadTokenH\x00R\x15packagistOrgReadToken\x12j\n" +
+	"\x1apackagist_org_update_token\x18S \x01(\v2+.scalibr.SecretData.PackagistOrgUpdateTokenH\x00R\x17packagistOrgUpdateToken\x12m\n" +
+	"\x1bpackagist_user_update_token\x18T \x01(\v2,.scalibr.SecretData.PackagistUserUpdateTokenH\x00R\x18packagistUserUpdateToken\x12|\n" +
+	" packagist_conductor_update_token\x18U \x01(\v21.scalibr.SecretData.PackagistConductorUpdateTokenH\x00R\x1dpackagistConductorUpdateToken\x12y\n" +
+	"\x1fcomposer_http_basic_credentials\x18V \x01(\v20.scalibr.SecretData.ComposerPackagistCredentialsH\x00R\x1ccomposerHttpBasicCredentials\x12Q\n" +
+	"\x11discord_bot_token\x18W \x01(\v2#.scalibr.SecretData.DiscordBotTokenH\x00R\x0fdiscordBotToken\x12s\n" +
+	"\x1dbitwarden_oauth2_access_token\x18X \x01(\v2..scalibr.SecretData.BitwardenOAuth2AccessTokenH\x00R\x1abitwardenOauth2AccessToken\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -12460,11 +13512,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"TinkKeyset\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\tR\acontent\x1a+\n" +
 	"\x13HashiCorpVaultToken\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x1ah\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1a^\n" +
 	" HashiCorpVaultAppRoleCredentials\x12\x17\n" +
 	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12\x1b\n" +
-	"\tsecret_id\x18\x02 \x01(\tR\bsecretId\x12\x0e\n" +
-	"\x02id\x18\x03 \x01(\tR\x02id\x1a\x1d\n" +
+	"\tsecret_id\x18\x02 \x01(\tR\bsecretIdJ\x04\b\x03\x10\x04\x1a\x1d\n" +
 	"\tGCPAPIKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1ag\n" +
 	"\x11HuggingfaceAPIKey\x12\x10\n" +
@@ -12491,7 +13542,15 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x13StripeRestrictedKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a'\n" +
 	"\x13StripeWebhookSecret\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x1aD\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a#\n" +
+	"\vSupabasePAT\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1aM\n" +
+	"\x18SupabaseProjectSecretKey\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1f\n" +
+	"\vproject_ref\x18\x02 \x01(\tR\n" +
+	"projectRef\x1a.\n" +
+	"\x16SupabaseServiceRoleJWT\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1aD\n" +
 	"\x1aGCPOAuth2ClientCredentials\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06secret\x18\x02 \x01(\tR\x06secret\x1a,\n" +
@@ -12522,7 +13581,28 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x02iv\x18\x05 \x01(\tR\x02iv\x12\"\n" +
 	"\runique_key_id\x18\x06 \x01(\tR\vuniqueKeyId\x12#\n" +
 	"\rverifier_salt\x18\a \x01(\tR\fverifierSalt\x12.\n" +
-	"\x13verifier_local_hash\x18\b \x01(\tR\x11verifierLocalHash\x1a(\n" +
+	"\x13verifier_local_hash\x18\b \x01(\tR\x11verifierLocalHash\x1aj\n" +
+	"\x1cComposerPackagistCredentials\x12\x12\n" +
+	"\x04host\x18\x01 \x01(\tR\x04host\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x1a#\n" +
+	"\x0fPackagistAPIKey\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a>\n" +
+	"\x12PackagistAPISecret\x12\x16\n" +
+	"\x06secret\x18\x01 \x01(\tR\x06secret\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x1aH\n" +
+	"\x15PackagistOrgReadToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x19\n" +
+	"\brepo_url\x18\x02 \x01(\tR\arepoUrl\x1aJ\n" +
+	"\x17PackagistOrgUpdateToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x19\n" +
+	"\brepo_url\x18\x02 \x01(\tR\arepoUrl\x1ag\n" +
+	"\x18PackagistUserUpdateToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x19\n" +
+	"\brepo_url\x18\x03 \x01(\tR\arepoUrl\x1a5\n" +
+	"\x1dPackagistConductorUpdateToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1a(\n" +
 	"\x14OnePasswordSecretKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a+\n" +
 	"\x17OnePasswordServiceToken\x12\x10\n" +
@@ -12547,7 +13627,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x12ElasticCloudAPIKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a%\n" +
 	"\x11PaystackSecretKey\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x1a\xb1\x01\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x1a'\n" +
+	"\x0fDiscordBotToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1a\xb1\x01\n" +
 	"\x0fHerokuSecretKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12m\n" +
 	"\x1aheroku_secret_key_metadata\x18\x02 \x01(\v2+.scalibr.SecretData.HerokuSecretKeyMetadataH\x00R\x17herokuSecretKeyMetadata\x88\x01\x01B\x1d\n" +
@@ -12574,7 +13656,10 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x1f\n" +
 	"\vprivate_key\x18\x03 \x01(\tR\n" +
-	"privateKey\x1a \n" +
+	"privateKey\x1a^\n" +
+	"\x1aBitwardenOAuth2AccessToken\x12\x1b\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12#\n" +
+	"\rclient_secret\x18\x02 \x01(\tR\fclientSecret\x1a \n" +
 	"\fCursorAPIKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a3\n" +
 	"\x1bCircleCIPersonalAccessToken\x12\x14\n" +
@@ -12599,8 +13684,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x05VALID\x10\x03\x12\x0f\n" +
 	"\vUNSUPPORTED\x10\x04\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x05\"\xc8\x02\n" +
-	"\bLocation\x12/\n" +
+	"\x06FAILED\x10\x05\"\xce\x02\n" +
+	"\x0eLocationLegacy\x12/\n" +
 	"\bfilepath\x18\x01 \x01(\v2\x11.scalibr.FilepathH\x00R\bfilepath\x12b\n" +
 	"\x1bfilepath_with_layer_details\x18\x02 \x01(\v2!.scalibr.FilepathWithLayerDetailsH\x00R\x18filepathWithLayerDetails\x12Q\n" +
 	"\x14environment_variable\x18\x03 \x01(\v2\x1c.scalibr.EnvironmentVariableH\x00R\x13environmentVariable\x12H\n" +
@@ -12615,7 +13700,14 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x13EnvironmentVariable\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\",\n" +
 	"\x10ContainerCommand\x12\x18\n" +
-	"\acommand\x18\x01 \x01(\tR\acommand\"\xb3\x02\n" +
+	"\acommand\x18\x01 \x01(\tR\acommand\"-\n" +
+	"\bLocation\x12!\n" +
+	"\x04file\x18\x01 \x01(\v2\r.scalibr.FileR\x04file\"P\n" +
+	"\x04File\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12$\n" +
+	"\vline_number\x18\x02 \x01(\x05H\x00R\n" +
+	"lineNumber\x88\x01\x01B\x0e\n" +
+	"\f_line_number\"\xb3\x02\n" +
 	"\x16ContainerImageMetadata\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\x05R\x05index\x12=\n" +
 	"\x0elayer_metadata\x18\x02 \x03(\v2\x16.scalibr.LayerMetadataR\rlayerMetadata\x12C\n" +
@@ -12675,7 +13767,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 157)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 171)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                         // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                             // 1: scalibr.SeverityEnum
@@ -12688,22 +13780,22 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*PluginStatus)(nil),                          // 8: scalibr.PluginStatus
 	(*FileError)(nil),                             // 9: scalibr.FileError
 	(*Package)(nil),                               // 10: scalibr.Package
-	(*SourceCodeIdentifier)(nil),                  // 11: scalibr.SourceCodeIdentifier
-	(*LayerDetails)(nil),                          // 12: scalibr.LayerDetails
-	(*PackageExploitabilitySignal)(nil),           // 13: scalibr.PackageExploitabilitySignal
-	(*VulnIdentifiers)(nil),                       // 14: scalibr.VulnIdentifiers
-	(*FindingExploitabilitySignal)(nil),           // 15: scalibr.FindingExploitabilitySignal
-	(*Purl)(nil),                                  // 16: scalibr.Purl
-	(*Qualifier)(nil),                             // 17: scalibr.Qualifier
-	(*PackageVuln)(nil),                           // 18: scalibr.PackageVuln
-	(*GenericFinding)(nil),                        // 19: scalibr.GenericFinding
-	(*GenericFindingAdvisory)(nil),                // 20: scalibr.GenericFindingAdvisory
-	(*AdvisoryId)(nil),                            // 21: scalibr.AdvisoryId
-	(*GenericFindingTargetDetails)(nil),           // 22: scalibr.GenericFindingTargetDetails
-	(*PythonPackageMetadata)(nil),                 // 23: scalibr.PythonPackageMetadata
-	(*JavascriptPackageJSONMetadata)(nil),         // 24: scalibr.JavascriptPackageJSONMetadata
-	(*JavascriptDenoMetadata)(nil),                // 25: scalibr.JavascriptDenoMetadata
-	(*MCPMetadata)(nil),                           // 26: scalibr.MCPMetadata
+	(*PackageLocation)(nil),                       // 11: scalibr.PackageLocation
+	(*SourceCodeIdentifier)(nil),                  // 12: scalibr.SourceCodeIdentifier
+	(*LayerDetails)(nil),                          // 13: scalibr.LayerDetails
+	(*PackageExploitabilitySignal)(nil),           // 14: scalibr.PackageExploitabilitySignal
+	(*VulnIdentifiers)(nil),                       // 15: scalibr.VulnIdentifiers
+	(*FindingExploitabilitySignal)(nil),           // 16: scalibr.FindingExploitabilitySignal
+	(*Purl)(nil),                                  // 17: scalibr.Purl
+	(*Qualifier)(nil),                             // 18: scalibr.Qualifier
+	(*PackageVuln)(nil),                           // 19: scalibr.PackageVuln
+	(*GenericFinding)(nil),                        // 20: scalibr.GenericFinding
+	(*GenericFindingAdvisory)(nil),                // 21: scalibr.GenericFindingAdvisory
+	(*AdvisoryId)(nil),                            // 22: scalibr.AdvisoryId
+	(*GenericFindingTargetDetails)(nil),           // 23: scalibr.GenericFindingTargetDetails
+	(*PythonPackageMetadata)(nil),                 // 24: scalibr.PythonPackageMetadata
+	(*JavascriptPackageJSONMetadata)(nil),         // 25: scalibr.JavascriptPackageJSONMetadata
+	(*JavascriptDenoMetadata)(nil),                // 26: scalibr.JavascriptDenoMetadata
 	(*APKPackageMetadata)(nil),                    // 27: scalibr.APKPackageMetadata
 	(*DPKGPackageMetadata)(nil),                   // 28: scalibr.DPKGPackageMetadata
 	(*RPMPackageMetadata)(nil),                    // 29: scalibr.RPMPackageMetadata
@@ -12714,314 +13806,344 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SNAPPackageMetadata)(nil),                   // 34: scalibr.SNAPPackageMetadata
 	(*PortagePackageMetadata)(nil),                // 35: scalibr.PortagePackageMetadata
 	(*FlatpakPackageMetadata)(nil),                // 36: scalibr.FlatpakPackageMetadata
-	(*KernelModuleMetadata)(nil),                  // 37: scalibr.KernelModuleMetadata
-	(*VmlinuzMetadata)(nil),                       // 38: scalibr.VmlinuzMetadata
-	(*MacAppsMetadata)(nil),                       // 39: scalibr.MacAppsMetadata
-	(*MacportsPackageMetadata)(nil),               // 40: scalibr.MacportsPackageMetadata
-	(*SPDXPackageMetadata)(nil),                   // 41: scalibr.SPDXPackageMetadata
-	(*CDXPackageMetadata)(nil),                    // 42: scalibr.CDXPackageMetadata
-	(*JavaArchiveMetadata)(nil),                   // 43: scalibr.JavaArchiveMetadata
-	(*JavaLockfileMetadata)(nil),                  // 44: scalibr.JavaLockfileMetadata
-	(*OSVPackageMetadata)(nil),                    // 45: scalibr.OSVPackageMetadata
-	(*DepGroupMetadata)(nil),                      // 46: scalibr.DepGroupMetadata
-	(*PythonRequirementsMetadata)(nil),            // 47: scalibr.PythonRequirementsMetadata
-	(*PythonSetupMetadata)(nil),                   // 48: scalibr.PythonSetupMetadata
-	(*NetportsMetadata)(nil),                      // 49: scalibr.NetportsMetadata
-	(*ContainerdContainerMetadata)(nil),           // 50: scalibr.ContainerdContainerMetadata
-	(*ContainerdRuntimeContainerMetadata)(nil),    // 51: scalibr.ContainerdRuntimeContainerMetadata
-	(*WindowsOSVersion)(nil),                      // 52: scalibr.WindowsOSVersion
-	(*HomebrewPackageMetadata)(nil),               // 53: scalibr.HomebrewPackageMetadata
-	(*ChromeExtensionsMetadata)(nil),              // 54: scalibr.ChromeExtensionsMetadata
-	(*VSCodeExtensionsMetadata)(nil),              // 55: scalibr.VSCodeExtensionsMetadata
-	(*PodmanMetadata)(nil),                        // 56: scalibr.PodmanMetadata
-	(*ChocolateyPackageMetadata)(nil),             // 57: scalibr.ChocolateyPackageMetadata
-	(*Protocol)(nil),                              // 58: scalibr.Protocol
-	(*DockerContainersMetadata)(nil),              // 59: scalibr.DockerContainersMetadata
-	(*AsdfMetadata)(nil),                          // 60: scalibr.AsdfMetadata
-	(*MiseMetadata)(nil),                          // 61: scalibr.MiseMetadata
-	(*NvmMetadata)(nil),                           // 62: scalibr.NvmMetadata
-	(*NodeVersionMetadata)(nil),                   // 63: scalibr.NodeVersionMetadata
-	(*BazelMavenMetadata)(nil),                    // 64: scalibr.BazelMavenMetadata
-	(*DockerPort)(nil),                            // 65: scalibr.DockerPort
-	(*WingetPackageMetadata)(nil),                 // 66: scalibr.WingetPackageMetadata
-	(*UnknownBinaryMetadata)(nil),                 // 67: scalibr.UnknownBinaryMetadata
-	(*UnknownBinaryAttribution)(nil),              // 68: scalibr.UnknownBinaryAttribution
-	(*Secret)(nil),                                // 69: scalibr.Secret
-	(*SecretData)(nil),                            // 70: scalibr.SecretData
-	(*SecretStatus)(nil),                          // 71: scalibr.SecretStatus
-	(*Location)(nil),                              // 72: scalibr.Location
-	(*Filepath)(nil),                              // 73: scalibr.Filepath
-	(*FilepathWithLayerDetails)(nil),              // 74: scalibr.FilepathWithLayerDetails
-	(*EnvironmentVariable)(nil),                   // 75: scalibr.EnvironmentVariable
-	(*ContainerCommand)(nil),                      // 76: scalibr.ContainerCommand
-	(*ContainerImageMetadata)(nil),                // 77: scalibr.ContainerImageMetadata
-	(*BaseImageChain)(nil),                        // 78: scalibr.BaseImageChain
-	(*BaseImageDetails)(nil),                      // 79: scalibr.BaseImageDetails
-	(*LayerMetadata)(nil),                         // 80: scalibr.LayerMetadata
-	(*Package_ContainerImageMetadataIndexes)(nil), // 81: scalibr.Package.ContainerImageMetadataIndexes
-	nil,                         // 82: scalibr.MCPMetadata.EnvEntry
-	nil,                         // 83: scalibr.PodmanMetadata.ExposedPortsEntry
-	(*SecretData_GCPSAK)(nil),   // 84: scalibr.SecretData.GCPSAK
-	(*SecretData_JWTToken)(nil), // 85: scalibr.SecretData.JWTToken
-	(*SecretData_AnthropicWorkspaceAPIKey)(nil),             // 86: scalibr.SecretData.AnthropicWorkspaceAPIKey
-	(*SecretData_AnthropicModelAPIKey)(nil),                 // 87: scalibr.SecretData.AnthropicModelAPIKey
-	(*SecretData_PerplexityAPIKey)(nil),                     // 88: scalibr.SecretData.PerplexityAPIKey
-	(*SecretData_MistralAPIKey)(nil),                        // 89: scalibr.SecretData.MistralAPIKey
-	(*SecretData_GrokXAIAPIKey)(nil),                        // 90: scalibr.SecretData.GrokXAIAPIKey
-	(*SecretData_GrokXAIManagementAPIKey)(nil),              // 91: scalibr.SecretData.GrokXAIManagementAPIKey
-	(*SecretData_AzureStorageAccountAccessKey)(nil),         // 92: scalibr.SecretData.AzureStorageAccountAccessKey
-	(*SecretData_PrivateKey)(nil),                           // 93: scalibr.SecretData.PrivateKey
-	(*SecretData_AzureAccessToken)(nil),                     // 94: scalibr.SecretData.AzureAccessToken
-	(*SecretData_Pgpass)(nil),                               // 95: scalibr.SecretData.Pgpass
-	(*SecretData_MariaDBCredentials)(nil),                   // 96: scalibr.SecretData.MariaDBCredentials
-	(*SecretData_AzureIdentityToken)(nil),                   // 97: scalibr.SecretData.AzureIdentityToken
-	(*SecretData_OpenAIAPIKey)(nil),                         // 98: scalibr.SecretData.OpenAIAPIKey
-	(*SecretData_DockerHubPat)(nil),                         // 99: scalibr.SecretData.DockerHubPat
-	(*SecretData_CloudflareAPIToken)(nil),                   // 100: scalibr.SecretData.CloudflareAPIToken
-	(*SecretData_DenoPat)(nil),                              // 101: scalibr.SecretData.DenoPat
-	(*SecretData_GitlabPat)(nil),                            // 102: scalibr.SecretData.GitlabPat
-	(*SecretData_SlackAppLevelToken)(nil),                   // 103: scalibr.SecretData.SlackAppLevelToken
-	(*SecretData_SlackAppConfigAccessToken)(nil),            // 104: scalibr.SecretData.SlackAppConfigAccessToken
-	(*SecretData_SlackAppConfigRefreshToken)(nil),           // 105: scalibr.SecretData.SlackAppConfigRefreshToken
-	(*SecretData_PostmanAPIKey)(nil),                        // 106: scalibr.SecretData.PostmanAPIKey
-	(*SecretData_PostmanCollectionAccessToken)(nil),         // 107: scalibr.SecretData.PostmanCollectionAccessToken
-	(*SecretData_OpenRouterAPIKey)(nil),                     // 108: scalibr.SecretData.OpenRouterAPIKey
-	(*SecretData_DigitalOceanAPIToken)(nil),                 // 109: scalibr.SecretData.DigitalOceanAPIToken
-	(*SecretData_CratesIOAPIToken)(nil),                     // 110: scalibr.SecretData.CratesIOAPIToken
-	(*SecretData_NpmJsAccessToken)(nil),                     // 111: scalibr.SecretData.NpmJsAccessToken
-	(*SecretData_GithubAppRefreshToken)(nil),                // 112: scalibr.SecretData.GithubAppRefreshToken
-	(*SecretData_GithubAppServerToServerToken)(nil),         // 113: scalibr.SecretData.GithubAppServerToServerToken
-	(*SecretData_GithubClassicPersonalAccessToken)(nil),     // 114: scalibr.SecretData.GithubClassicPersonalAccessToken
-	(*SecretData_GithubFineGrainedPersonalAccessToken)(nil), // 115: scalibr.SecretData.GithubFineGrainedPersonalAccessToken
-	(*SecretData_GithubOAuthToken)(nil),                     // 116: scalibr.SecretData.GithubOAuthToken
-	(*SecretData_GithubAppUserToServerToken)(nil),           // 117: scalibr.SecretData.GithubAppUserToServerToken
-	(*SecretData_PyPIAPIToken)(nil),                         // 118: scalibr.SecretData.PyPIAPIToken
-	(*SecretData_TinkKeyset)(nil),                           // 119: scalibr.SecretData.TinkKeyset
-	(*SecretData_HashiCorpVaultToken)(nil),                  // 120: scalibr.SecretData.HashiCorpVaultToken
-	(*SecretData_HashiCorpVaultAppRoleCredentials)(nil),     // 121: scalibr.SecretData.HashiCorpVaultAppRoleCredentials
-	(*SecretData_GCPAPIKey)(nil),                            // 122: scalibr.SecretData.GCPAPIKey
-	(*SecretData_HuggingfaceAPIKey)(nil),                    // 123: scalibr.SecretData.HuggingfaceAPIKey
-	(*SecretData_HashiCorpCloudPlatformCredentials)(nil),    // 124: scalibr.SecretData.HashiCorpCloudPlatformCredentials
-	(*SecretData_HashiCorpCloudPlatformToken)(nil),          // 125: scalibr.SecretData.HashiCorpCloudPlatformToken
-	(*SecretData_StripeSecretKey)(nil),                      // 126: scalibr.SecretData.StripeSecretKey
-	(*SecretData_StripeRestrictedKey)(nil),                  // 127: scalibr.SecretData.StripeRestrictedKey
-	(*SecretData_StripeWebhookSecret)(nil),                  // 128: scalibr.SecretData.StripeWebhookSecret
-	(*SecretData_GCPOAuth2ClientCredentials)(nil),           // 129: scalibr.SecretData.GCPOAuth2ClientCredentials
-	(*SecretData_GCPOAuth2AccessToken)(nil),                 // 130: scalibr.SecretData.GCPOAuth2AccessToken
-	(*SecretData_GCSHmacKey)(nil),                           // 131: scalibr.SecretData.GCSHmacKey
-	(*SecretData_MysqlMyloginSection)(nil),                  // 132: scalibr.SecretData.MysqlMyloginSection
-	(*SecretData_VapidKey)(nil),                             // 133: scalibr.SecretData.VapidKey
-	(*SecretData_OnePasswordConnectToken)(nil),              // 134: scalibr.SecretData.OnePasswordConnectToken
-	(*SecretData_OnePasswordSecretKey)(nil),                 // 135: scalibr.SecretData.OnePasswordSecretKey
-	(*SecretData_OnePasswordServiceToken)(nil),              // 136: scalibr.SecretData.OnePasswordServiceToken
-	(*SecretData_OnePasswordRecoveryCode)(nil),              // 137: scalibr.SecretData.OnePasswordRecoveryCode
-	(*SecretData_AwsAccessKeyCredentials)(nil),              // 138: scalibr.SecretData.AwsAccessKeyCredentials
-	(*SecretData_ReCaptchaKey)(nil),                         // 139: scalibr.SecretData.ReCaptchaKey
-	(*SecretData_PyxKeyV1)(nil),                             // 140: scalibr.SecretData.PyxKeyV1
-	(*SecretData_PyxKeyV2)(nil),                             // 141: scalibr.SecretData.PyxKeyV2
-	(*SecretData_CodeCatalystCredentials)(nil),              // 142: scalibr.SecretData.CodeCatalystCredentials
-	(*SecretData_CodeCommitCredentials)(nil),                // 143: scalibr.SecretData.CodeCommitCredentials
-	(*SecretData_BitBucketCredentials)(nil),                 // 144: scalibr.SecretData.BitBucketCredentials
-	(*SecretData_ElasticCloudAPIKey)(nil),                   // 145: scalibr.SecretData.ElasticCloudAPIKey
-	(*SecretData_PaystackSecretKey)(nil),                    // 146: scalibr.SecretData.PaystackSecretKey
-	(*SecretData_HerokuSecretKey)(nil),                      // 147: scalibr.SecretData.HerokuSecretKey
-	(*SecretData_HerokuSecretKeyMetadata)(nil),              // 148: scalibr.SecretData.HerokuSecretKeyMetadata
-	(*SecretData_TelegramBotToken)(nil),                     // 149: scalibr.SecretData.TelegramBotToken
-	(*SecretData_SalesforceOAuth2AccessToken)(nil),          // 150: scalibr.SecretData.SalesforceOAuth2AccessToken
-	(*SecretData_SendGridAPIKey)(nil),                       // 151: scalibr.SecretData.SendGridAPIKey
-	(*SecretData_SalesforceOAuth2ClientCredentials)(nil),    // 152: scalibr.SecretData.SalesforceOAuth2ClientCredentials
-	(*SecretData_SalesforceOAuth2RefreshCredentials)(nil),   // 153: scalibr.SecretData.SalesforceOAuth2RefreshCredentials
-	(*SecretData_SalesforceOAuth2JWTCredentials)(nil),       // 154: scalibr.SecretData.SalesforceOAuth2JWTCredentials
-	(*SecretData_CursorAPIKey)(nil),                         // 155: scalibr.SecretData.CursorAPIKey
-	(*SecretData_CircleCIPersonalAccessToken)(nil),          // 156: scalibr.SecretData.CircleCIPersonalAccessToken
-	(*SecretData_CircleCIProjectToken)(nil),                 // 157: scalibr.SecretData.CircleCIProjectToken
-	(*SecretData_URLCredentials)(nil),                       // 158: scalibr.SecretData.URLCredentials
-	(*SecretData_SquarePersonalAccessToken)(nil),            // 159: scalibr.SecretData.SquarePersonalAccessToken
-	(*SecretData_SquareOAuthApplicationSecret)(nil),         // 160: scalibr.SecretData.SquareOAuthApplicationSecret
-	nil,                             // 161: scalibr.ContainerImageMetadata.OsInfoEntry
-	(*timestamppb.Timestamp)(nil),   // 162: google.protobuf.Timestamp
-	(*osvschema.Vulnerability)(nil), // 163: osv.Vulnerability
-	(*durationpb.Duration)(nil),     // 164: google.protobuf.Duration
+	(*SpackPackageMetadata)(nil),                  // 37: scalibr.SpackPackageMetadata
+	(*KernelModuleMetadata)(nil),                  // 38: scalibr.KernelModuleMetadata
+	(*VmlinuzMetadata)(nil),                       // 39: scalibr.VmlinuzMetadata
+	(*MacAppsMetadata)(nil),                       // 40: scalibr.MacAppsMetadata
+	(*MacportsPackageMetadata)(nil),               // 41: scalibr.MacportsPackageMetadata
+	(*SPDXPackageMetadata)(nil),                   // 42: scalibr.SPDXPackageMetadata
+	(*CDXPackageMetadata)(nil),                    // 43: scalibr.CDXPackageMetadata
+	(*JavaArchiveMetadata)(nil),                   // 44: scalibr.JavaArchiveMetadata
+	(*JavaLockfileMetadata)(nil),                  // 45: scalibr.JavaLockfileMetadata
+	(*OSVPackageMetadata)(nil),                    // 46: scalibr.OSVPackageMetadata
+	(*DepGroupMetadata)(nil),                      // 47: scalibr.DepGroupMetadata
+	(*PythonRequirementsMetadata)(nil),            // 48: scalibr.PythonRequirementsMetadata
+	(*PythonSetupMetadata)(nil),                   // 49: scalibr.PythonSetupMetadata
+	(*NetportsMetadata)(nil),                      // 50: scalibr.NetportsMetadata
+	(*ContainerdContainerMetadata)(nil),           // 51: scalibr.ContainerdContainerMetadata
+	(*ContainerdRuntimeContainerMetadata)(nil),    // 52: scalibr.ContainerdRuntimeContainerMetadata
+	(*WindowsOSVersion)(nil),                      // 53: scalibr.WindowsOSVersion
+	(*HomebrewPackageMetadata)(nil),               // 54: scalibr.HomebrewPackageMetadata
+	(*ChromeExtensionsMetadata)(nil),              // 55: scalibr.ChromeExtensionsMetadata
+	(*VSCodeExtensionsMetadata)(nil),              // 56: scalibr.VSCodeExtensionsMetadata
+	(*PodmanMetadata)(nil),                        // 57: scalibr.PodmanMetadata
+	(*ChocolateyPackageMetadata)(nil),             // 58: scalibr.ChocolateyPackageMetadata
+	(*Protocol)(nil),                              // 59: scalibr.Protocol
+	(*DockerContainersMetadata)(nil),              // 60: scalibr.DockerContainersMetadata
+	(*AsdfMetadata)(nil),                          // 61: scalibr.AsdfMetadata
+	(*MiseMetadata)(nil),                          // 62: scalibr.MiseMetadata
+	(*NvmMetadata)(nil),                           // 63: scalibr.NvmMetadata
+	(*NodeVersionMetadata)(nil),                   // 64: scalibr.NodeVersionMetadata
+	(*BazelMavenMetadata)(nil),                    // 65: scalibr.BazelMavenMetadata
+	(*DockerPort)(nil),                            // 66: scalibr.DockerPort
+	(*WingetPackageMetadata)(nil),                 // 67: scalibr.WingetPackageMetadata
+	(*UnknownBinaryMetadata)(nil),                 // 68: scalibr.UnknownBinaryMetadata
+	(*UnknownBinaryAttribution)(nil),              // 69: scalibr.UnknownBinaryAttribution
+	(*Secret)(nil),                                // 70: scalibr.Secret
+	(*SecretData)(nil),                            // 71: scalibr.SecretData
+	(*SecretStatus)(nil),                          // 72: scalibr.SecretStatus
+	(*LocationLegacy)(nil),                        // 73: scalibr.LocationLegacy
+	(*Filepath)(nil),                              // 74: scalibr.Filepath
+	(*FilepathWithLayerDetails)(nil),              // 75: scalibr.FilepathWithLayerDetails
+	(*EnvironmentVariable)(nil),                   // 76: scalibr.EnvironmentVariable
+	(*ContainerCommand)(nil),                      // 77: scalibr.ContainerCommand
+	(*Location)(nil),                              // 78: scalibr.Location
+	(*File)(nil),                                  // 79: scalibr.File
+	(*ContainerImageMetadata)(nil),                // 80: scalibr.ContainerImageMetadata
+	(*BaseImageChain)(nil),                        // 81: scalibr.BaseImageChain
+	(*BaseImageDetails)(nil),                      // 82: scalibr.BaseImageDetails
+	(*LayerMetadata)(nil),                         // 83: scalibr.LayerMetadata
+	(*Package_ContainerImageMetadataIndexes)(nil), // 84: scalibr.Package.ContainerImageMetadataIndexes
+	nil,                         // 85: scalibr.PodmanMetadata.ExposedPortsEntry
+	(*SecretData_GCPSAK)(nil),   // 86: scalibr.SecretData.GCPSAK
+	(*SecretData_JWTToken)(nil), // 87: scalibr.SecretData.JWTToken
+	(*SecretData_AnthropicWorkspaceAPIKey)(nil),             // 88: scalibr.SecretData.AnthropicWorkspaceAPIKey
+	(*SecretData_AnthropicModelAPIKey)(nil),                 // 89: scalibr.SecretData.AnthropicModelAPIKey
+	(*SecretData_PerplexityAPIKey)(nil),                     // 90: scalibr.SecretData.PerplexityAPIKey
+	(*SecretData_MistralAPIKey)(nil),                        // 91: scalibr.SecretData.MistralAPIKey
+	(*SecretData_GrokXAIAPIKey)(nil),                        // 92: scalibr.SecretData.GrokXAIAPIKey
+	(*SecretData_GrokXAIManagementAPIKey)(nil),              // 93: scalibr.SecretData.GrokXAIManagementAPIKey
+	(*SecretData_AzureStorageAccountAccessKey)(nil),         // 94: scalibr.SecretData.AzureStorageAccountAccessKey
+	(*SecretData_PrivateKey)(nil),                           // 95: scalibr.SecretData.PrivateKey
+	(*SecretData_AzureAccessToken)(nil),                     // 96: scalibr.SecretData.AzureAccessToken
+	(*SecretData_Pgpass)(nil),                               // 97: scalibr.SecretData.Pgpass
+	(*SecretData_MariaDBCredentials)(nil),                   // 98: scalibr.SecretData.MariaDBCredentials
+	(*SecretData_AzureIdentityToken)(nil),                   // 99: scalibr.SecretData.AzureIdentityToken
+	(*SecretData_OpenAIAPIKey)(nil),                         // 100: scalibr.SecretData.OpenAIAPIKey
+	(*SecretData_DockerHubPat)(nil),                         // 101: scalibr.SecretData.DockerHubPat
+	(*SecretData_CloudflareAPIToken)(nil),                   // 102: scalibr.SecretData.CloudflareAPIToken
+	(*SecretData_DenoPat)(nil),                              // 103: scalibr.SecretData.DenoPat
+	(*SecretData_GitlabPat)(nil),                            // 104: scalibr.SecretData.GitlabPat
+	(*SecretData_SlackAppLevelToken)(nil),                   // 105: scalibr.SecretData.SlackAppLevelToken
+	(*SecretData_SlackAppConfigAccessToken)(nil),            // 106: scalibr.SecretData.SlackAppConfigAccessToken
+	(*SecretData_SlackAppConfigRefreshToken)(nil),           // 107: scalibr.SecretData.SlackAppConfigRefreshToken
+	(*SecretData_PostmanAPIKey)(nil),                        // 108: scalibr.SecretData.PostmanAPIKey
+	(*SecretData_PostmanCollectionAccessToken)(nil),         // 109: scalibr.SecretData.PostmanCollectionAccessToken
+	(*SecretData_OpenRouterAPIKey)(nil),                     // 110: scalibr.SecretData.OpenRouterAPIKey
+	(*SecretData_DigitalOceanAPIToken)(nil),                 // 111: scalibr.SecretData.DigitalOceanAPIToken
+	(*SecretData_CratesIOAPIToken)(nil),                     // 112: scalibr.SecretData.CratesIOAPIToken
+	(*SecretData_NpmJsAccessToken)(nil),                     // 113: scalibr.SecretData.NpmJsAccessToken
+	(*SecretData_GithubAppRefreshToken)(nil),                // 114: scalibr.SecretData.GithubAppRefreshToken
+	(*SecretData_GithubAppServerToServerToken)(nil),         // 115: scalibr.SecretData.GithubAppServerToServerToken
+	(*SecretData_GithubClassicPersonalAccessToken)(nil),     // 116: scalibr.SecretData.GithubClassicPersonalAccessToken
+	(*SecretData_GithubFineGrainedPersonalAccessToken)(nil), // 117: scalibr.SecretData.GithubFineGrainedPersonalAccessToken
+	(*SecretData_GithubOAuthToken)(nil),                     // 118: scalibr.SecretData.GithubOAuthToken
+	(*SecretData_GithubAppUserToServerToken)(nil),           // 119: scalibr.SecretData.GithubAppUserToServerToken
+	(*SecretData_PyPIAPIToken)(nil),                         // 120: scalibr.SecretData.PyPIAPIToken
+	(*SecretData_TinkKeyset)(nil),                           // 121: scalibr.SecretData.TinkKeyset
+	(*SecretData_HashiCorpVaultToken)(nil),                  // 122: scalibr.SecretData.HashiCorpVaultToken
+	(*SecretData_HashiCorpVaultAppRoleCredentials)(nil),     // 123: scalibr.SecretData.HashiCorpVaultAppRoleCredentials
+	(*SecretData_GCPAPIKey)(nil),                            // 124: scalibr.SecretData.GCPAPIKey
+	(*SecretData_HuggingfaceAPIKey)(nil),                    // 125: scalibr.SecretData.HuggingfaceAPIKey
+	(*SecretData_HashiCorpCloudPlatformCredentials)(nil),    // 126: scalibr.SecretData.HashiCorpCloudPlatformCredentials
+	(*SecretData_HashiCorpCloudPlatformToken)(nil),          // 127: scalibr.SecretData.HashiCorpCloudPlatformToken
+	(*SecretData_StripeSecretKey)(nil),                      // 128: scalibr.SecretData.StripeSecretKey
+	(*SecretData_StripeRestrictedKey)(nil),                  // 129: scalibr.SecretData.StripeRestrictedKey
+	(*SecretData_StripeWebhookSecret)(nil),                  // 130: scalibr.SecretData.StripeWebhookSecret
+	(*SecretData_SupabasePAT)(nil),                          // 131: scalibr.SecretData.SupabasePAT
+	(*SecretData_SupabaseProjectSecretKey)(nil),             // 132: scalibr.SecretData.SupabaseProjectSecretKey
+	(*SecretData_SupabaseServiceRoleJWT)(nil),               // 133: scalibr.SecretData.SupabaseServiceRoleJWT
+	(*SecretData_GCPOAuth2ClientCredentials)(nil),           // 134: scalibr.SecretData.GCPOAuth2ClientCredentials
+	(*SecretData_GCPOAuth2AccessToken)(nil),                 // 135: scalibr.SecretData.GCPOAuth2AccessToken
+	(*SecretData_GCSHmacKey)(nil),                           // 136: scalibr.SecretData.GCSHmacKey
+	(*SecretData_MysqlMyloginSection)(nil),                  // 137: scalibr.SecretData.MysqlMyloginSection
+	(*SecretData_VapidKey)(nil),                             // 138: scalibr.SecretData.VapidKey
+	(*SecretData_OnePasswordConnectToken)(nil),              // 139: scalibr.SecretData.OnePasswordConnectToken
+	(*SecretData_ComposerPackagistCredentials)(nil),         // 140: scalibr.SecretData.ComposerPackagistCredentials
+	(*SecretData_PackagistAPIKey)(nil),                      // 141: scalibr.SecretData.PackagistAPIKey
+	(*SecretData_PackagistAPISecret)(nil),                   // 142: scalibr.SecretData.PackagistAPISecret
+	(*SecretData_PackagistOrgReadToken)(nil),                // 143: scalibr.SecretData.PackagistOrgReadToken
+	(*SecretData_PackagistOrgUpdateToken)(nil),              // 144: scalibr.SecretData.PackagistOrgUpdateToken
+	(*SecretData_PackagistUserUpdateToken)(nil),             // 145: scalibr.SecretData.PackagistUserUpdateToken
+	(*SecretData_PackagistConductorUpdateToken)(nil),        // 146: scalibr.SecretData.PackagistConductorUpdateToken
+	(*SecretData_OnePasswordSecretKey)(nil),                 // 147: scalibr.SecretData.OnePasswordSecretKey
+	(*SecretData_OnePasswordServiceToken)(nil),              // 148: scalibr.SecretData.OnePasswordServiceToken
+	(*SecretData_OnePasswordRecoveryCode)(nil),              // 149: scalibr.SecretData.OnePasswordRecoveryCode
+	(*SecretData_AwsAccessKeyCredentials)(nil),              // 150: scalibr.SecretData.AwsAccessKeyCredentials
+	(*SecretData_ReCaptchaKey)(nil),                         // 151: scalibr.SecretData.ReCaptchaKey
+	(*SecretData_PyxKeyV1)(nil),                             // 152: scalibr.SecretData.PyxKeyV1
+	(*SecretData_PyxKeyV2)(nil),                             // 153: scalibr.SecretData.PyxKeyV2
+	(*SecretData_CodeCatalystCredentials)(nil),              // 154: scalibr.SecretData.CodeCatalystCredentials
+	(*SecretData_CodeCommitCredentials)(nil),                // 155: scalibr.SecretData.CodeCommitCredentials
+	(*SecretData_BitBucketCredentials)(nil),                 // 156: scalibr.SecretData.BitBucketCredentials
+	(*SecretData_ElasticCloudAPIKey)(nil),                   // 157: scalibr.SecretData.ElasticCloudAPIKey
+	(*SecretData_PaystackSecretKey)(nil),                    // 158: scalibr.SecretData.PaystackSecretKey
+	(*SecretData_DiscordBotToken)(nil),                      // 159: scalibr.SecretData.DiscordBotToken
+	(*SecretData_HerokuSecretKey)(nil),                      // 160: scalibr.SecretData.HerokuSecretKey
+	(*SecretData_HerokuSecretKeyMetadata)(nil),              // 161: scalibr.SecretData.HerokuSecretKeyMetadata
+	(*SecretData_TelegramBotToken)(nil),                     // 162: scalibr.SecretData.TelegramBotToken
+	(*SecretData_SalesforceOAuth2AccessToken)(nil),          // 163: scalibr.SecretData.SalesforceOAuth2AccessToken
+	(*SecretData_SendGridAPIKey)(nil),                       // 164: scalibr.SecretData.SendGridAPIKey
+	(*SecretData_SalesforceOAuth2ClientCredentials)(nil),    // 165: scalibr.SecretData.SalesforceOAuth2ClientCredentials
+	(*SecretData_SalesforceOAuth2RefreshCredentials)(nil),   // 166: scalibr.SecretData.SalesforceOAuth2RefreshCredentials
+	(*SecretData_SalesforceOAuth2JWTCredentials)(nil),       // 167: scalibr.SecretData.SalesforceOAuth2JWTCredentials
+	(*SecretData_BitwardenOAuth2AccessToken)(nil),           // 168: scalibr.SecretData.BitwardenOAuth2AccessToken
+	(*SecretData_CursorAPIKey)(nil),                         // 169: scalibr.SecretData.CursorAPIKey
+	(*SecretData_CircleCIPersonalAccessToken)(nil),          // 170: scalibr.SecretData.CircleCIPersonalAccessToken
+	(*SecretData_CircleCIProjectToken)(nil),                 // 171: scalibr.SecretData.CircleCIProjectToken
+	(*SecretData_URLCredentials)(nil),                       // 172: scalibr.SecretData.URLCredentials
+	(*SecretData_SquarePersonalAccessToken)(nil),            // 173: scalibr.SecretData.SquarePersonalAccessToken
+	(*SecretData_SquareOAuthApplicationSecret)(nil),         // 174: scalibr.SecretData.SquareOAuthApplicationSecret
+	nil,                             // 175: scalibr.ContainerImageMetadata.OsInfoEntry
+	(*timestamppb.Timestamp)(nil),   // 176: google.protobuf.Timestamp
+	(*osvschema.Vulnerability)(nil), // 177: osv.Vulnerability
+	(*durationpb.Duration)(nil),     // 178: google.protobuf.Duration
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	162, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	162, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	176, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	176, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	7,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	8,   // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	6,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
 	10,  // 5: scalibr.Inventory.packages:type_name -> scalibr.Package
-	18,  // 6: scalibr.Inventory.package_vulns:type_name -> scalibr.PackageVuln
-	19,  // 7: scalibr.Inventory.generic_findings:type_name -> scalibr.GenericFinding
-	69,  // 8: scalibr.Inventory.secrets:type_name -> scalibr.Secret
-	77,  // 9: scalibr.Inventory.container_image_metadata:type_name -> scalibr.ContainerImageMetadata
+	19,  // 6: scalibr.Inventory.package_vulns:type_name -> scalibr.PackageVuln
+	20,  // 7: scalibr.Inventory.generic_findings:type_name -> scalibr.GenericFinding
+	70,  // 8: scalibr.Inventory.secrets:type_name -> scalibr.Secret
+	80,  // 9: scalibr.Inventory.container_image_metadata:type_name -> scalibr.ContainerImageMetadata
 	3,   // 10: scalibr.ScanStatus.status:type_name -> scalibr.ScanStatus.ScanStatusEnum
 	9,   // 11: scalibr.ScanStatus.file_errors:type_name -> scalibr.FileError
 	7,   // 12: scalibr.PluginStatus.status:type_name -> scalibr.ScanStatus
-	11,  // 13: scalibr.Package.source_code:type_name -> scalibr.SourceCodeIdentifier
-	16,  // 14: scalibr.Package.purl:type_name -> scalibr.Purl
-	23,  // 15: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
-	24,  // 16: scalibr.Package.javascript_metadata:type_name -> scalibr.JavascriptPackageJSONMetadata
-	27,  // 17: scalibr.Package.apk_metadata:type_name -> scalibr.APKPackageMetadata
-	28,  // 18: scalibr.Package.dpkg_metadata:type_name -> scalibr.DPKGPackageMetadata
-	29,  // 19: scalibr.Package.rpm_metadata:type_name -> scalibr.RPMPackageMetadata
-	30,  // 20: scalibr.Package.cos_metadata:type_name -> scalibr.COSPackageMetadata
-	33,  // 21: scalibr.Package.depsjson_metadata:type_name -> scalibr.DEPSJSONMetadata
-	41,  // 22: scalibr.Package.spdx_metadata:type_name -> scalibr.SPDXPackageMetadata
-	43,  // 23: scalibr.Package.java_archive_metadata:type_name -> scalibr.JavaArchiveMetadata
-	44,  // 24: scalibr.Package.java_lockfile_metadata:type_name -> scalibr.JavaLockfileMetadata
-	31,  // 25: scalibr.Package.pacman_metadata:type_name -> scalibr.PACMANPackageMetadata
-	32,  // 26: scalibr.Package.nix_metadata:type_name -> scalibr.NixPackageMetadata
-	37,  // 27: scalibr.Package.kernel_module_metadata:type_name -> scalibr.KernelModuleMetadata
-	38,  // 28: scalibr.Package.vmlinuz_metadata:type_name -> scalibr.VmlinuzMetadata
-	35,  // 29: scalibr.Package.portage_metadata:type_name -> scalibr.PortagePackageMetadata
-	45,  // 30: scalibr.Package.osv_metadata:type_name -> scalibr.OSVPackageMetadata
-	49,  // 31: scalibr.Package.netports_metadata:type_name -> scalibr.NetportsMetadata
-	47,  // 32: scalibr.Package.python_requirements_metadata:type_name -> scalibr.PythonRequirementsMetadata
-	48,  // 33: scalibr.Package.python_setup_metadata:type_name -> scalibr.PythonSetupMetadata
-	50,  // 34: scalibr.Package.containerd_container_metadata:type_name -> scalibr.ContainerdContainerMetadata
-	34,  // 35: scalibr.Package.snap_metadata:type_name -> scalibr.SNAPPackageMetadata
-	36,  // 36: scalibr.Package.flatpak_metadata:type_name -> scalibr.FlatpakPackageMetadata
-	39,  // 37: scalibr.Package.mac_apps_metadata:type_name -> scalibr.MacAppsMetadata
-	51,  // 38: scalibr.Package.containerd_runtime_container_metadata:type_name -> scalibr.ContainerdRuntimeContainerMetadata
-	42,  // 39: scalibr.Package.cdx_metadata:type_name -> scalibr.CDXPackageMetadata
-	52,  // 40: scalibr.Package.windows_os_version_metadata:type_name -> scalibr.WindowsOSVersion
-	53,  // 41: scalibr.Package.homebrew_metadata:type_name -> scalibr.HomebrewPackageMetadata
-	54,  // 42: scalibr.Package.chrome_extensions_metadata:type_name -> scalibr.ChromeExtensionsMetadata
-	55,  // 43: scalibr.Package.vscode_extensions_metadata:type_name -> scalibr.VSCodeExtensionsMetadata
-	56,  // 44: scalibr.Package.podman_metadata:type_name -> scalibr.PodmanMetadata
-	59,  // 45: scalibr.Package.docker_containers_metadata:type_name -> scalibr.DockerContainersMetadata
-	40,  // 46: scalibr.Package.macports_metadata:type_name -> scalibr.MacportsPackageMetadata
-	66,  // 47: scalibr.Package.winget_metadata:type_name -> scalibr.WingetPackageMetadata
-	60,  // 48: scalibr.Package.asdf_metadata:type_name -> scalibr.AsdfMetadata
-	62,  // 49: scalibr.Package.nvm_metadata:type_name -> scalibr.NvmMetadata
-	63,  // 50: scalibr.Package.nodeversion_metadata:type_name -> scalibr.NodeVersionMetadata
-	46,  // 51: scalibr.Package.dep_group_metadata:type_name -> scalibr.DepGroupMetadata
-	57,  // 52: scalibr.Package.chocolatey_metadata:type_name -> scalibr.ChocolateyPackageMetadata
-	61,  // 53: scalibr.Package.mise_metadata:type_name -> scalibr.MiseMetadata
-	67,  // 54: scalibr.Package.unknown_binary_metadata:type_name -> scalibr.UnknownBinaryMetadata
-	64,  // 55: scalibr.Package.bazel_maven_metadata:type_name -> scalibr.BazelMavenMetadata
-	25,  // 56: scalibr.Package.deno_metadata:type_name -> scalibr.JavascriptDenoMetadata
-	26,  // 57: scalibr.Package.mcp_metadata:type_name -> scalibr.MCPMetadata
-	13,  // 58: scalibr.Package.exploitability_signals:type_name -> scalibr.PackageExploitabilitySignal
-	81,  // 59: scalibr.Package.container_image_metadata_indexes:type_name -> scalibr.Package.ContainerImageMetadataIndexes
-	0,   // 60: scalibr.PackageExploitabilitySignal.justification:type_name -> scalibr.VexJustification
-	14,  // 61: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
-	0,   // 62: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
-	17,  // 63: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	163, // 64: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
-	15,  // 65: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
-	20,  // 66: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
-	22,  // 67: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
-	15,  // 68: scalibr.GenericFinding.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
-	21,  // 69: scalibr.GenericFindingAdvisory.id:type_name -> scalibr.AdvisoryId
-	1,   // 70: scalibr.GenericFindingAdvisory.sev:type_name -> scalibr.SeverityEnum
-	2,   // 71: scalibr.JavascriptPackageJSONMetadata.source:type_name -> scalibr.PackageSource
-	82,  // 72: scalibr.MCPMetadata.env:type_name -> scalibr.MCPMetadata.EnvEntry
-	16,  // 73: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
-	16,  // 74: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
-	83,  // 75: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	162, // 76: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	162, // 77: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
-	65,  // 78: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
-	68,  // 79: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
-	70,  // 80: scalibr.Secret.secret:type_name -> scalibr.SecretData
-	71,  // 81: scalibr.Secret.status:type_name -> scalibr.SecretStatus
-	72,  // 82: scalibr.Secret.locations:type_name -> scalibr.Location
-	84,  // 83: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
-	86,  // 84: scalibr.SecretData.anthropic_workspace_api_key:type_name -> scalibr.SecretData.AnthropicWorkspaceAPIKey
-	87,  // 85: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
-	88,  // 86: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
-	93,  // 87: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
-	90,  // 88: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
-	91,  // 89: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
-	99,  // 90: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
-	109, // 91: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
-	98,  // 92: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
-	106, // 93: scalibr.SecretData.postman_api_key:type_name -> scalibr.SecretData.PostmanAPIKey
-	107, // 94: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
-	94,  // 95: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
-	97,  // 96: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
-	119, // 97: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
-	102, // 98: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
-	120, // 99: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
-	121, // 100: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
-	122, // 101: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
-	123, // 102: scalibr.SecretData.hugginface:type_name -> scalibr.SecretData.HuggingfaceAPIKey
-	112, // 103: scalibr.SecretData.github_app_refresh_token:type_name -> scalibr.SecretData.GithubAppRefreshToken
-	126, // 104: scalibr.SecretData.stripe_secret_key:type_name -> scalibr.SecretData.StripeSecretKey
-	127, // 105: scalibr.SecretData.stripe_restricted_key:type_name -> scalibr.SecretData.StripeRestrictedKey
-	128, // 106: scalibr.SecretData.stripe_webhook_secret:type_name -> scalibr.SecretData.StripeWebhookSecret
-	129, // 107: scalibr.SecretData.gcp_oauth2_client_credentials:type_name -> scalibr.SecretData.GCPOAuth2ClientCredentials
-	130, // 108: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
-	113, // 109: scalibr.SecretData.github_app_server_to_server_token:type_name -> scalibr.SecretData.GithubAppServerToServerToken
-	114, // 110: scalibr.SecretData.github_classic_personal_access_token:type_name -> scalibr.SecretData.GithubClassicPersonalAccessToken
-	115, // 111: scalibr.SecretData.github_fine_grained_personal_access_token:type_name -> scalibr.SecretData.GithubFineGrainedPersonalAccessToken
-	117, // 112: scalibr.SecretData.github_app_user_to_server_token:type_name -> scalibr.SecretData.GithubAppUserToServerToken
-	116, // 113: scalibr.SecretData.github_oauth_token:type_name -> scalibr.SecretData.GithubOAuthToken
-	108, // 114: scalibr.SecretData.openrouter_api_key:type_name -> scalibr.SecretData.OpenRouterAPIKey
-	105, // 115: scalibr.SecretData.slack_app_config_refresh_token:type_name -> scalibr.SecretData.SlackAppConfigRefreshToken
-	103, // 116: scalibr.SecretData.slack_app_level_token:type_name -> scalibr.SecretData.SlackAppLevelToken
-	104, // 117: scalibr.SecretData.slack_app_config_access_token:type_name -> scalibr.SecretData.SlackAppConfigAccessToken
-	92,  // 118: scalibr.SecretData.azure_storage_account_access_key:type_name -> scalibr.SecretData.AzureStorageAccountAccessKey
-	124, // 119: scalibr.SecretData.hashicorp_cloud_platform_credentials:type_name -> scalibr.SecretData.HashiCorpCloudPlatformCredentials
-	125, // 120: scalibr.SecretData.hashicorp_cloud_platform_token:type_name -> scalibr.SecretData.HashiCorpCloudPlatformToken
-	135, // 121: scalibr.SecretData.onepassword_secret_key:type_name -> scalibr.SecretData.OnePasswordSecretKey
-	136, // 122: scalibr.SecretData.onepassword_service_token:type_name -> scalibr.SecretData.OnePasswordServiceToken
-	137, // 123: scalibr.SecretData.onepassword_recovery_code:type_name -> scalibr.SecretData.OnePasswordRecoveryCode
-	134, // 124: scalibr.SecretData.onepassword_connect_token:type_name -> scalibr.SecretData.OnePasswordConnectToken
-	95,  // 125: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
-	118, // 126: scalibr.SecretData.pypi:type_name -> scalibr.SecretData.PyPIAPIToken
-	110, // 127: scalibr.SecretData.crates_io_api_token:type_name -> scalibr.SecretData.CratesIOAPIToken
-	96,  // 128: scalibr.SecretData.maria_db_credentials:type_name -> scalibr.SecretData.MariaDBCredentials
-	131, // 129: scalibr.SecretData.gcs_hmac_key:type_name -> scalibr.SecretData.GCSHmacKey
-	132, // 130: scalibr.SecretData.mysql_mylogin_section:type_name -> scalibr.SecretData.MysqlMyloginSection
-	133, // 131: scalibr.SecretData.vapid_key:type_name -> scalibr.SecretData.VapidKey
-	138, // 132: scalibr.SecretData.aws_access_key_credentials:type_name -> scalibr.SecretData.AwsAccessKeyCredentials
-	139, // 133: scalibr.SecretData.re_captcha_key:type_name -> scalibr.SecretData.ReCaptchaKey
-	140, // 134: scalibr.SecretData.pyx_key_v1:type_name -> scalibr.SecretData.PyxKeyV1
-	141, // 135: scalibr.SecretData.pyx_key_v2:type_name -> scalibr.SecretData.PyxKeyV2
-	142, // 136: scalibr.SecretData.code_catalyst_credentials:type_name -> scalibr.SecretData.CodeCatalystCredentials
-	85,  // 137: scalibr.SecretData.jwt_token:type_name -> scalibr.SecretData.JWTToken
-	143, // 138: scalibr.SecretData.code_commit_credentials:type_name -> scalibr.SecretData.CodeCommitCredentials
-	144, // 139: scalibr.SecretData.bitbucket_credentials:type_name -> scalibr.SecretData.BitBucketCredentials
-	146, // 140: scalibr.SecretData.paystack_secret_key:type_name -> scalibr.SecretData.PaystackSecretKey
-	149, // 141: scalibr.SecretData.telegram_bot_api_token:type_name -> scalibr.SecretData.TelegramBotToken
-	155, // 142: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
-	145, // 143: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
-	158, // 144: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
-	152, // 145: scalibr.SecretData.salesforce_oauth2_client_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2ClientCredentials
-	150, // 146: scalibr.SecretData.salesforce_oauth2_access_token:type_name -> scalibr.SecretData.SalesforceOAuth2AccessToken
-	153, // 147: scalibr.SecretData.salesforce_oauth2_refresh_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2RefreshCredentials
-	89,  // 148: scalibr.SecretData.mistral_api_key:type_name -> scalibr.SecretData.MistralAPIKey
-	156, // 149: scalibr.SecretData.circleci_personal_access_token:type_name -> scalibr.SecretData.CircleCIPersonalAccessToken
-	157, // 150: scalibr.SecretData.circleci_project_token:type_name -> scalibr.SecretData.CircleCIProjectToken
-	159, // 151: scalibr.SecretData.square_personal_access_token:type_name -> scalibr.SecretData.SquarePersonalAccessToken
-	160, // 152: scalibr.SecretData.square_oauth_application_secret:type_name -> scalibr.SecretData.SquareOAuthApplicationSecret
-	154, // 153: scalibr.SecretData.salesforce_oauth2_jwt_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2JWTCredentials
-	151, // 154: scalibr.SecretData.sendgrid_api_key:type_name -> scalibr.SecretData.SendGridAPIKey
-	101, // 155: scalibr.SecretData.deno_pat:type_name -> scalibr.SecretData.DenoPat
-	147, // 156: scalibr.SecretData.heroku_secret_key:type_name -> scalibr.SecretData.HerokuSecretKey
-	111, // 157: scalibr.SecretData.npmjs_access_token:type_name -> scalibr.SecretData.NpmJsAccessToken
-	100, // 158: scalibr.SecretData.cloudflare_api_token:type_name -> scalibr.SecretData.CloudflareAPIToken
-	4,   // 159: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	162, // 160: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	73,  // 161: scalibr.Location.filepath:type_name -> scalibr.Filepath
-	74,  // 162: scalibr.Location.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	75,  // 163: scalibr.Location.environment_variable:type_name -> scalibr.EnvironmentVariable
-	76,  // 164: scalibr.Location.container_command:type_name -> scalibr.ContainerCommand
-	12,  // 165: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	80,  // 166: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	78,  // 167: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	161, // 168: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	79,  // 169: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	58,  // 170: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	148, // 171: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
-	164, // 172: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
-	173, // [173:173] is the sub-list for method output_type
-	173, // [173:173] is the sub-list for method input_type
-	173, // [173:173] is the sub-list for extension type_name
-	173, // [173:173] is the sub-list for extension extendee
-	0,   // [0:173] is the sub-list for field type_name
+	12,  // 13: scalibr.Package.source_code:type_name -> scalibr.SourceCodeIdentifier
+	17,  // 14: scalibr.Package.purl:type_name -> scalibr.Purl
+	11,  // 15: scalibr.Package.location:type_name -> scalibr.PackageLocation
+	24,  // 16: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
+	25,  // 17: scalibr.Package.javascript_metadata:type_name -> scalibr.JavascriptPackageJSONMetadata
+	27,  // 18: scalibr.Package.apk_metadata:type_name -> scalibr.APKPackageMetadata
+	28,  // 19: scalibr.Package.dpkg_metadata:type_name -> scalibr.DPKGPackageMetadata
+	29,  // 20: scalibr.Package.rpm_metadata:type_name -> scalibr.RPMPackageMetadata
+	30,  // 21: scalibr.Package.cos_metadata:type_name -> scalibr.COSPackageMetadata
+	33,  // 22: scalibr.Package.depsjson_metadata:type_name -> scalibr.DEPSJSONMetadata
+	42,  // 23: scalibr.Package.spdx_metadata:type_name -> scalibr.SPDXPackageMetadata
+	44,  // 24: scalibr.Package.java_archive_metadata:type_name -> scalibr.JavaArchiveMetadata
+	45,  // 25: scalibr.Package.java_lockfile_metadata:type_name -> scalibr.JavaLockfileMetadata
+	31,  // 26: scalibr.Package.pacman_metadata:type_name -> scalibr.PACMANPackageMetadata
+	32,  // 27: scalibr.Package.nix_metadata:type_name -> scalibr.NixPackageMetadata
+	38,  // 28: scalibr.Package.kernel_module_metadata:type_name -> scalibr.KernelModuleMetadata
+	39,  // 29: scalibr.Package.vmlinuz_metadata:type_name -> scalibr.VmlinuzMetadata
+	35,  // 30: scalibr.Package.portage_metadata:type_name -> scalibr.PortagePackageMetadata
+	46,  // 31: scalibr.Package.osv_metadata:type_name -> scalibr.OSVPackageMetadata
+	50,  // 32: scalibr.Package.netports_metadata:type_name -> scalibr.NetportsMetadata
+	48,  // 33: scalibr.Package.python_requirements_metadata:type_name -> scalibr.PythonRequirementsMetadata
+	49,  // 34: scalibr.Package.python_setup_metadata:type_name -> scalibr.PythonSetupMetadata
+	51,  // 35: scalibr.Package.containerd_container_metadata:type_name -> scalibr.ContainerdContainerMetadata
+	34,  // 36: scalibr.Package.snap_metadata:type_name -> scalibr.SNAPPackageMetadata
+	36,  // 37: scalibr.Package.flatpak_metadata:type_name -> scalibr.FlatpakPackageMetadata
+	40,  // 38: scalibr.Package.mac_apps_metadata:type_name -> scalibr.MacAppsMetadata
+	52,  // 39: scalibr.Package.containerd_runtime_container_metadata:type_name -> scalibr.ContainerdRuntimeContainerMetadata
+	43,  // 40: scalibr.Package.cdx_metadata:type_name -> scalibr.CDXPackageMetadata
+	53,  // 41: scalibr.Package.windows_os_version_metadata:type_name -> scalibr.WindowsOSVersion
+	54,  // 42: scalibr.Package.homebrew_metadata:type_name -> scalibr.HomebrewPackageMetadata
+	55,  // 43: scalibr.Package.chrome_extensions_metadata:type_name -> scalibr.ChromeExtensionsMetadata
+	56,  // 44: scalibr.Package.vscode_extensions_metadata:type_name -> scalibr.VSCodeExtensionsMetadata
+	57,  // 45: scalibr.Package.podman_metadata:type_name -> scalibr.PodmanMetadata
+	60,  // 46: scalibr.Package.docker_containers_metadata:type_name -> scalibr.DockerContainersMetadata
+	41,  // 47: scalibr.Package.macports_metadata:type_name -> scalibr.MacportsPackageMetadata
+	67,  // 48: scalibr.Package.winget_metadata:type_name -> scalibr.WingetPackageMetadata
+	61,  // 49: scalibr.Package.asdf_metadata:type_name -> scalibr.AsdfMetadata
+	63,  // 50: scalibr.Package.nvm_metadata:type_name -> scalibr.NvmMetadata
+	64,  // 51: scalibr.Package.nodeversion_metadata:type_name -> scalibr.NodeVersionMetadata
+	47,  // 52: scalibr.Package.dep_group_metadata:type_name -> scalibr.DepGroupMetadata
+	58,  // 53: scalibr.Package.chocolatey_metadata:type_name -> scalibr.ChocolateyPackageMetadata
+	62,  // 54: scalibr.Package.mise_metadata:type_name -> scalibr.MiseMetadata
+	68,  // 55: scalibr.Package.unknown_binary_metadata:type_name -> scalibr.UnknownBinaryMetadata
+	65,  // 56: scalibr.Package.bazel_maven_metadata:type_name -> scalibr.BazelMavenMetadata
+	26,  // 57: scalibr.Package.deno_metadata:type_name -> scalibr.JavascriptDenoMetadata
+	37,  // 58: scalibr.Package.spack_metadata:type_name -> scalibr.SpackPackageMetadata
+	14,  // 59: scalibr.Package.exploitability_signals:type_name -> scalibr.PackageExploitabilitySignal
+	84,  // 60: scalibr.Package.container_image_metadata_indexes:type_name -> scalibr.Package.ContainerImageMetadataIndexes
+	78,  // 61: scalibr.PackageLocation.desc:type_name -> scalibr.Location
+	78,  // 62: scalibr.PackageLocation.related:type_name -> scalibr.Location
+	0,   // 63: scalibr.PackageExploitabilitySignal.justification:type_name -> scalibr.VexJustification
+	15,  // 64: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
+	0,   // 65: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
+	18,  // 66: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
+	177, // 67: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
+	16,  // 68: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
+	21,  // 69: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
+	23,  // 70: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
+	16,  // 71: scalibr.GenericFinding.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
+	22,  // 72: scalibr.GenericFindingAdvisory.id:type_name -> scalibr.AdvisoryId
+	1,   // 73: scalibr.GenericFindingAdvisory.sev:type_name -> scalibr.SeverityEnum
+	2,   // 74: scalibr.JavascriptPackageJSONMetadata.source:type_name -> scalibr.PackageSource
+	17,  // 75: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
+	17,  // 76: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
+	85,  // 77: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
+	176, // 78: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	176, // 79: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	66,  // 80: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
+	69,  // 81: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
+	71,  // 82: scalibr.Secret.secret:type_name -> scalibr.SecretData
+	72,  // 83: scalibr.Secret.status:type_name -> scalibr.SecretStatus
+	73,  // 84: scalibr.Secret.locations:type_name -> scalibr.LocationLegacy
+	78,  // 85: scalibr.Secret.location:type_name -> scalibr.Location
+	86,  // 86: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
+	88,  // 87: scalibr.SecretData.anthropic_workspace_api_key:type_name -> scalibr.SecretData.AnthropicWorkspaceAPIKey
+	89,  // 88: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
+	90,  // 89: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
+	95,  // 90: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
+	92,  // 91: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
+	93,  // 92: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
+	101, // 93: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
+	111, // 94: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
+	100, // 95: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
+	108, // 96: scalibr.SecretData.postman_api_key:type_name -> scalibr.SecretData.PostmanAPIKey
+	109, // 97: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
+	96,  // 98: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
+	99,  // 99: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
+	121, // 100: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
+	104, // 101: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
+	122, // 102: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
+	123, // 103: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
+	124, // 104: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
+	125, // 105: scalibr.SecretData.hugginface:type_name -> scalibr.SecretData.HuggingfaceAPIKey
+	114, // 106: scalibr.SecretData.github_app_refresh_token:type_name -> scalibr.SecretData.GithubAppRefreshToken
+	128, // 107: scalibr.SecretData.stripe_secret_key:type_name -> scalibr.SecretData.StripeSecretKey
+	129, // 108: scalibr.SecretData.stripe_restricted_key:type_name -> scalibr.SecretData.StripeRestrictedKey
+	130, // 109: scalibr.SecretData.stripe_webhook_secret:type_name -> scalibr.SecretData.StripeWebhookSecret
+	134, // 110: scalibr.SecretData.gcp_oauth2_client_credentials:type_name -> scalibr.SecretData.GCPOAuth2ClientCredentials
+	135, // 111: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
+	115, // 112: scalibr.SecretData.github_app_server_to_server_token:type_name -> scalibr.SecretData.GithubAppServerToServerToken
+	116, // 113: scalibr.SecretData.github_classic_personal_access_token:type_name -> scalibr.SecretData.GithubClassicPersonalAccessToken
+	117, // 114: scalibr.SecretData.github_fine_grained_personal_access_token:type_name -> scalibr.SecretData.GithubFineGrainedPersonalAccessToken
+	119, // 115: scalibr.SecretData.github_app_user_to_server_token:type_name -> scalibr.SecretData.GithubAppUserToServerToken
+	118, // 116: scalibr.SecretData.github_oauth_token:type_name -> scalibr.SecretData.GithubOAuthToken
+	110, // 117: scalibr.SecretData.openrouter_api_key:type_name -> scalibr.SecretData.OpenRouterAPIKey
+	107, // 118: scalibr.SecretData.slack_app_config_refresh_token:type_name -> scalibr.SecretData.SlackAppConfigRefreshToken
+	105, // 119: scalibr.SecretData.slack_app_level_token:type_name -> scalibr.SecretData.SlackAppLevelToken
+	106, // 120: scalibr.SecretData.slack_app_config_access_token:type_name -> scalibr.SecretData.SlackAppConfigAccessToken
+	94,  // 121: scalibr.SecretData.azure_storage_account_access_key:type_name -> scalibr.SecretData.AzureStorageAccountAccessKey
+	126, // 122: scalibr.SecretData.hashicorp_cloud_platform_credentials:type_name -> scalibr.SecretData.HashiCorpCloudPlatformCredentials
+	127, // 123: scalibr.SecretData.hashicorp_cloud_platform_token:type_name -> scalibr.SecretData.HashiCorpCloudPlatformToken
+	147, // 124: scalibr.SecretData.onepassword_secret_key:type_name -> scalibr.SecretData.OnePasswordSecretKey
+	148, // 125: scalibr.SecretData.onepassword_service_token:type_name -> scalibr.SecretData.OnePasswordServiceToken
+	149, // 126: scalibr.SecretData.onepassword_recovery_code:type_name -> scalibr.SecretData.OnePasswordRecoveryCode
+	139, // 127: scalibr.SecretData.onepassword_connect_token:type_name -> scalibr.SecretData.OnePasswordConnectToken
+	97,  // 128: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
+	120, // 129: scalibr.SecretData.pypi:type_name -> scalibr.SecretData.PyPIAPIToken
+	112, // 130: scalibr.SecretData.crates_io_api_token:type_name -> scalibr.SecretData.CratesIOAPIToken
+	98,  // 131: scalibr.SecretData.maria_db_credentials:type_name -> scalibr.SecretData.MariaDBCredentials
+	136, // 132: scalibr.SecretData.gcs_hmac_key:type_name -> scalibr.SecretData.GCSHmacKey
+	137, // 133: scalibr.SecretData.mysql_mylogin_section:type_name -> scalibr.SecretData.MysqlMyloginSection
+	138, // 134: scalibr.SecretData.vapid_key:type_name -> scalibr.SecretData.VapidKey
+	150, // 135: scalibr.SecretData.aws_access_key_credentials:type_name -> scalibr.SecretData.AwsAccessKeyCredentials
+	151, // 136: scalibr.SecretData.re_captcha_key:type_name -> scalibr.SecretData.ReCaptchaKey
+	152, // 137: scalibr.SecretData.pyx_key_v1:type_name -> scalibr.SecretData.PyxKeyV1
+	153, // 138: scalibr.SecretData.pyx_key_v2:type_name -> scalibr.SecretData.PyxKeyV2
+	154, // 139: scalibr.SecretData.code_catalyst_credentials:type_name -> scalibr.SecretData.CodeCatalystCredentials
+	87,  // 140: scalibr.SecretData.jwt_token:type_name -> scalibr.SecretData.JWTToken
+	155, // 141: scalibr.SecretData.code_commit_credentials:type_name -> scalibr.SecretData.CodeCommitCredentials
+	156, // 142: scalibr.SecretData.bitbucket_credentials:type_name -> scalibr.SecretData.BitBucketCredentials
+	158, // 143: scalibr.SecretData.paystack_secret_key:type_name -> scalibr.SecretData.PaystackSecretKey
+	162, // 144: scalibr.SecretData.telegram_bot_api_token:type_name -> scalibr.SecretData.TelegramBotToken
+	169, // 145: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
+	157, // 146: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
+	172, // 147: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
+	165, // 148: scalibr.SecretData.salesforce_oauth2_client_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2ClientCredentials
+	163, // 149: scalibr.SecretData.salesforce_oauth2_access_token:type_name -> scalibr.SecretData.SalesforceOAuth2AccessToken
+	166, // 150: scalibr.SecretData.salesforce_oauth2_refresh_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2RefreshCredentials
+	91,  // 151: scalibr.SecretData.mistral_api_key:type_name -> scalibr.SecretData.MistralAPIKey
+	170, // 152: scalibr.SecretData.circleci_personal_access_token:type_name -> scalibr.SecretData.CircleCIPersonalAccessToken
+	171, // 153: scalibr.SecretData.circleci_project_token:type_name -> scalibr.SecretData.CircleCIProjectToken
+	173, // 154: scalibr.SecretData.square_personal_access_token:type_name -> scalibr.SecretData.SquarePersonalAccessToken
+	174, // 155: scalibr.SecretData.square_oauth_application_secret:type_name -> scalibr.SecretData.SquareOAuthApplicationSecret
+	167, // 156: scalibr.SecretData.salesforce_oauth2_jwt_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2JWTCredentials
+	164, // 157: scalibr.SecretData.sendgrid_api_key:type_name -> scalibr.SecretData.SendGridAPIKey
+	103, // 158: scalibr.SecretData.deno_pat:type_name -> scalibr.SecretData.DenoPat
+	160, // 159: scalibr.SecretData.heroku_secret_key:type_name -> scalibr.SecretData.HerokuSecretKey
+	113, // 160: scalibr.SecretData.npmjs_access_token:type_name -> scalibr.SecretData.NpmJsAccessToken
+	102, // 161: scalibr.SecretData.cloudflare_api_token:type_name -> scalibr.SecretData.CloudflareAPIToken
+	131, // 162: scalibr.SecretData.supabase_pat:type_name -> scalibr.SecretData.SupabasePAT
+	132, // 163: scalibr.SecretData.supabase_project_secret_key:type_name -> scalibr.SecretData.SupabaseProjectSecretKey
+	133, // 164: scalibr.SecretData.supabase_service_role_jwt:type_name -> scalibr.SecretData.SupabaseServiceRoleJWT
+	141, // 165: scalibr.SecretData.packagist_api_key:type_name -> scalibr.SecretData.PackagistAPIKey
+	142, // 166: scalibr.SecretData.packagist_api_secret:type_name -> scalibr.SecretData.PackagistAPISecret
+	143, // 167: scalibr.SecretData.packagist_org_read_token:type_name -> scalibr.SecretData.PackagistOrgReadToken
+	144, // 168: scalibr.SecretData.packagist_org_update_token:type_name -> scalibr.SecretData.PackagistOrgUpdateToken
+	145, // 169: scalibr.SecretData.packagist_user_update_token:type_name -> scalibr.SecretData.PackagistUserUpdateToken
+	146, // 170: scalibr.SecretData.packagist_conductor_update_token:type_name -> scalibr.SecretData.PackagistConductorUpdateToken
+	140, // 171: scalibr.SecretData.composer_http_basic_credentials:type_name -> scalibr.SecretData.ComposerPackagistCredentials
+	159, // 172: scalibr.SecretData.discord_bot_token:type_name -> scalibr.SecretData.DiscordBotToken
+	168, // 173: scalibr.SecretData.bitwarden_oauth2_access_token:type_name -> scalibr.SecretData.BitwardenOAuth2AccessToken
+	4,   // 174: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	176, // 175: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	74,  // 176: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
+	75,  // 177: scalibr.LocationLegacy.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	76,  // 178: scalibr.LocationLegacy.environment_variable:type_name -> scalibr.EnvironmentVariable
+	77,  // 179: scalibr.LocationLegacy.container_command:type_name -> scalibr.ContainerCommand
+	13,  // 180: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	79,  // 181: scalibr.Location.file:type_name -> scalibr.File
+	83,  // 182: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	81,  // 183: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	175, // 184: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	82,  // 185: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	59,  // 186: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	161, // 187: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
+	178, // 188: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
+	189, // [189:189] is the sub-list for method output_type
+	189, // [189:189] is the sub-list for method input_type
+	189, // [189:189] is the sub-list for extension type_name
+	189, // [189:189] is the sub-list for extension extendee
+	0,   // [0:189] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -13072,18 +14194,18 @@ func file_proto_scan_result_proto_init() {
 		(*Package_UnknownBinaryMetadata)(nil),
 		(*Package_BazelMavenMetadata)(nil),
 		(*Package_DenoMetadata)(nil),
-		(*Package_McpMetadata)(nil),
+		(*Package_SpackMetadata)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[8].OneofWrappers = []any{
+	file_proto_scan_result_proto_msgTypes[9].OneofWrappers = []any{
 		(*PackageExploitabilitySignal_VulnIdentifiers)(nil),
 		(*PackageExploitabilitySignal_MatchesAllVulns)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[20].OneofWrappers = []any{
+	file_proto_scan_result_proto_msgTypes[21].OneofWrappers = []any{
 		(*JavascriptDenoMetadata_FromDenolandCdn)(nil),
 		(*JavascriptDenoMetadata_FromUnpkgCdn)(nil),
 		(*JavascriptDenoMetadata_FromEsmCdn)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[65].OneofWrappers = []any{
+	file_proto_scan_result_proto_msgTypes[66].OneofWrappers = []any{
 		(*SecretData_Gcpsak)(nil),
 		(*SecretData_AnthropicWorkspaceApiKey)(nil),
 		(*SecretData_AnthropicModelApiKey)(nil),
@@ -13160,21 +14282,34 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_HerokuSecretKey_)(nil),
 		(*SecretData_NpmjsAccessToken)(nil),
 		(*SecretData_CloudflareApiToken)(nil),
+		(*SecretData_SupabasePat)(nil),
+		(*SecretData_SupabaseProjectSecretKey_)(nil),
+		(*SecretData_SupabaseServiceRoleJwt)(nil),
+		(*SecretData_PackagistApiKey)(nil),
+		(*SecretData_PackagistApiSecret)(nil),
+		(*SecretData_PackagistOrgReadToken_)(nil),
+		(*SecretData_PackagistOrgUpdateToken_)(nil),
+		(*SecretData_PackagistUserUpdateToken_)(nil),
+		(*SecretData_PackagistConductorUpdateToken_)(nil),
+		(*SecretData_ComposerHttpBasicCredentials)(nil),
+		(*SecretData_DiscordBotToken_)(nil),
+		(*SecretData_BitwardenOauth2AccessToken)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[67].OneofWrappers = []any{
-		(*Location_Filepath)(nil),
-		(*Location_FilepathWithLayerDetails)(nil),
-		(*Location_EnvironmentVariable)(nil),
-		(*Location_ContainerCommand)(nil),
+	file_proto_scan_result_proto_msgTypes[68].OneofWrappers = []any{
+		(*LocationLegacy_Filepath)(nil),
+		(*LocationLegacy_FilepathWithLayerDetails)(nil),
+		(*LocationLegacy_EnvironmentVariable)(nil),
+		(*LocationLegacy_ContainerCommand)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[142].OneofWrappers = []any{}
+	file_proto_scan_result_proto_msgTypes[74].OneofWrappers = []any{}
+	file_proto_scan_result_proto_msgTypes[155].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   157,
+			NumMessages:   171,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

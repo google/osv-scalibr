@@ -44,6 +44,7 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
+	spackmeta "github.com/google/osv-scalibr/extractor/filesystem/os/spack/metadata"
 	wingetmeta "github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
@@ -102,6 +103,9 @@ var (
 		},
 		reflect.TypeFor[*spb.Package_FlatpakMetadata](): func(p *spb.Package) any {
 			return flatpakmeta.ToStruct(p.GetFlatpakMetadata())
+		},
+		reflect.TypeFor[*spb.SpackPackageMetadata](): func(p *spb.Package) any {
+			return spackmeta.ToStruct(p.GetSpackMetadata())
 		},
 		reflect.TypeFor[*spb.Package_NixMetadata](): func(p *spb.Package) any {
 			return nixmeta.ToStruct(p.GetNixMetadata())
@@ -203,6 +207,7 @@ var (
 		(*pacmanmeta.Metadata)(nil),
 		(*portagemeta.Metadata)(nil),
 		(*flatpakmeta.Metadata)(nil),
+		(*spackmeta.Metadata)(nil),
 		(*nixmeta.Metadata)(nil),
 		(*macapps.Metadata)(nil),
 		(*asdfmeta.Metadata)(nil),
