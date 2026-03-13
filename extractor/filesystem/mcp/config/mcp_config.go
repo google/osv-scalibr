@@ -18,10 +18,12 @@ import (
 )
 
 const (
+	// Name is the identifier for the MCP config extractor.
 	Name           = "mcp/config"
 	defaultVersion = 0
 )
 
+// Extractor implements the filesystem extractor for MCP server configurations.
 type Extractor struct{}
 
 // New creates a new MCP Config extractor.
@@ -162,9 +164,7 @@ type ServerConfig struct {
 
 // determinePURL determines the PURL components based on the server command and args.
 func determinePURL(serverName, command string, args []string) (string, string, string) {
-	purlType := ""
-	purlName := ""
-	purlVersion := ""
+	var purlType, purlName, purlVersion string
 
 	cmd := strings.ToLower(command)
 
