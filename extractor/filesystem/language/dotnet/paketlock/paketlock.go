@@ -215,51 +215,7 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 
 		// Handle GitHub dependencies differently
 		if currentSection == "GITHUB" {
-			// For GitHub dependencies in lock files, there are two formats:
-			// 1. Simple: "    repo/name (version/tag)" - package name matches repo
-			// 2. With file: "    file/path.fs (commit)" - package name is file path, repo from remote: line
-			repoName := currentGitHubRepo
-			commit := ""
-			pkgVersion := ""
-
-			if repoName == "" {
-				// No remote: line tracked, so pkgName is the repo name (simple format)
-				repoName = pkgName
-				// In simple format, version could be a tag/version or commit hash
-				// If it's 40 hex chars, it's a commit; otherwise it's a version tag
-				if len(version) == 40 && isValidGitSHA1(version) {
-					commit = version
-				} else {
-					pkgVersion = version
-				}
-			} else if pkgName == repoName {
-				// Package name matches repo name - this is the simple format
-				// The value could be a version tag or commit hash
-				if len(version) == 40 && isValidGitSHA1(version) {
-					commit = version
-				} else {
-					pkgVersion = version
-				}
-			} else {
-				// Package name doesn't match repo - it's a file path
-				// The value in parentheses is the commit hash
-				commit = version
-			}
-
-			sourceCode := &extractor.SourceCodeIdentifier{
-				Repo: "https://github.com/" + repoName,
-			}
-			if commit != "" {
-				sourceCode.Commit = commit
-			}
-
-			pkg := &extractor.Package{
-				Name:       repoName,
-				Version:    pkgVersion,
-				PURLType:   purl.TypeGithub,
-				Locations:  []string{path},
-				SourceCode: sourceCode,
-			}
+			pkg := getGithubPkg(currentGitHubRepo, pkgName, version, path)
 			packages = append(packages, pkg)
 		} else {
 			// NuGet and other package types
@@ -282,6 +238,54 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 		packages = []*extractor.Package{}
 	}
 	return packages, nil
+}
+
+// getGithubPkg creates a Package for a GitHub dependency.
+// For GitHub dependencies in lock files, there are two formats:
+// 1. Simple: "    repo/name (version/tag)" - package name matches repo
+// 2. With file: "    file/path.fs (commit)" - package name is file path, repo from remote: line
+func getGithubPkg(repoName string, pkgName string, version string, path string) *extractor.Package {
+	commit := ""
+	pkgVersion := ""
+
+	if repoName == "" {
+		// No remote: line tracked, so pkgName is the repo name (simple format)
+		repoName = pkgName
+		// In simple format, version could be a tag/version or commit hash
+		// If it's 40 hex chars, it's a commit; otherwise it's a version tag
+		if len(version) == 40 && isValidGitSHA1(version) {
+			commit = version
+		} else {
+			pkgVersion = version
+		}
+	} else if pkgName == repoName {
+		// Package name matches repo name - this is the simple format
+		// The value could be a version tag or commit hash
+		if len(version) == 40 && isValidGitSHA1(version) {
+			commit = version
+		} else {
+			pkgVersion = version
+		}
+	} else {
+		// Package name doesn't match repo - it's a file path
+		// The value in parentheses is the commit hash
+		commit = version
+	}
+
+	sourceCode := &extractor.SourceCodeIdentifier{
+		Repo: "https://github.com/" + repoName,
+	}
+	if commit != "" {
+		sourceCode.Commit = commit
+	}
+
+	return &extractor.Package{
+		Name:       repoName,
+		Version:    pkgVersion,
+		PURLType:   purl.TypeGithub,
+		Locations:  []string{path},
+		SourceCode: sourceCode,
+	}
 }
 
 // isValidGitSHA1 checks if a string contains only hexadecimal characters (valid Git SHA-1).
