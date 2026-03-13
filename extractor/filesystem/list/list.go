@@ -81,6 +81,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	mcpconfig "github.com/google/osv-scalibr/extractor/filesystem/mcp/config"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
@@ -447,6 +448,7 @@ var (
 		wordpressplugins.Name: {wordpressplugins.New},
 		chromeextensions.Name: {chromeextensions.New},
 		netscaler.Name:        {netscaler.New},
+		mcpconfig.Name:        {mcpconfig.New},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
