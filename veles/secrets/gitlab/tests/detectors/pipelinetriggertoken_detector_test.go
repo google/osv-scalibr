@@ -148,7 +148,7 @@ TRIGGER_TOKEN=%s`,
 		},
 	}, {
 		name:  "token_only_without_url",
-		input: fmt.Sprintf(`trigger_token: %s`, detectorToken),
+		input: `trigger_token: ` + detectorToken,
 		want: []veles.Secret{
 			gitlab.PipelineTriggerToken{Token: detectorToken},
 		},

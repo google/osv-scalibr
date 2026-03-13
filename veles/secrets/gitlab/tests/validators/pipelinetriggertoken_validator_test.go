@@ -142,8 +142,8 @@ func TestValidator(t *testing.T) {
 
 			// Create validator with mock client
 			validator := gitlab.NewPipelineTriggerTokenValidator()
-			validator.Validator.HTTPC = server.Client()
-			validator.Validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
+			validator.HTTPC = server.Client()
+			validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
 				return server.URL + "/api/v4/projects/" + secret.ProjectID + "/trigger/pipeline", nil
 			}
 
@@ -175,8 +175,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	})
 
 	validator := gitlab.NewPipelineTriggerTokenValidator()
-	validator.Validator.HTTPC = server.Client()
-	validator.Validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
+	validator.HTTPC = server.Client()
+	validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
 		return server.URL + "/api/v4/projects/" + secret.ProjectID + "/trigger/pipeline", nil
 	}
 
@@ -230,10 +230,10 @@ func TestValidator_CustomHostname(t *testing.T) {
 	defer server.Close()
 
 	validator := gitlab.NewPipelineTriggerTokenValidator()
-	validator.Validator.HTTPC = server.Client()
+	validator.HTTPC = server.Client()
 
 	// Override EndpointFunc to use the mock server URL
-	validator.Validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
+	validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
 		// Verify that the hostname is being used
 		if secret.Hostname != customHostname {
 			t.Errorf("expected hostname %s, got %s", customHostname, secret.Hostname)
@@ -268,10 +268,10 @@ func TestValidator_DefaultHostname(t *testing.T) {
 	defer server.Close()
 
 	validator := gitlab.NewPipelineTriggerTokenValidator()
-	validator.Validator.HTTPC = server.Client()
+	validator.HTTPC = server.Client()
 
 	// Override EndpointFunc to use the mock server URL and verify default hostname
-	validator.Validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
+	validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
 		// When hostname is empty, it should default to gitlab.com
 		expectedHostname := "gitlab.com"
 		actualHostname := secret.Hostname
@@ -310,8 +310,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 	defer server.Close()
 
 	validator := gitlab.NewPipelineTriggerTokenValidator()
-	validator.Validator.HTTPC = server.Client()
-	validator.Validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
+	validator.HTTPC = server.Client()
+	validator.EndpointFunc = func(secret gitlab.PipelineTriggerToken) (string, error) {
 		return server.URL + "/api/v4/projects/" + secret.ProjectID + "/trigger/pipeline", nil
 	}
 
