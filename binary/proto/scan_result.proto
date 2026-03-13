@@ -149,6 +149,7 @@ message Package {
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
     SpackPackageMetadata spack_metadata = 67;
+    MCPMetadata mcp_metadata = 69;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
