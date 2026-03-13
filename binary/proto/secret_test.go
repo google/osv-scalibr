@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
@@ -42,7 +43,7 @@ var (
 			ServiceAccount: "some-service-account@gserviceaccount.iam.google.com",
 			Signature:      make([]byte, 256),
 		},
-		Location: "/foo/bar/baz.json",
+		Location: location.FromPath("/foo/bar/baz.json"),
 		Validation: inventory.SecretValidationResult{
 			At:     secretAt1,
 			Status: veles.ValidationInvalid,
@@ -62,13 +63,9 @@ var (
 			Status:      spb.SecretStatus_INVALID,
 			LastUpdated: timestamppb.New(secretAt1),
 		},
-		Locations: []*spb.LocationLegacy{
-			&spb.LocationLegacy{
-				Location: &spb.LocationLegacy_Filepath{
-					Filepath: &spb.Filepath{
-						Path: "/foo/bar/baz.json",
-					},
-				},
+		Location: &spb.Location{
+			File: &spb.File{
+				Path: "/foo/bar/baz.json",
 			},
 		},
 	}
@@ -76,7 +73,7 @@ var (
 		Secret: gcpapikey.GCPAPIKey{
 			Key: "AIzatestestestestestestestestestesttest",
 		},
-		Location: "/foo/bar/baz.json",
+		Location: location.FromPath("/foo/bar/baz.json"),
 	}
 	secretGCPAPIKeyProto = &spb.Secret{
 		Secret: &spb.SecretData{
@@ -86,13 +83,9 @@ var (
 				},
 			},
 		},
-		Locations: []*spb.LocationLegacy{
-			&spb.LocationLegacy{
-				Location: &spb.LocationLegacy_Filepath{
-					Filepath: &spb.Filepath{
-						Path: "/foo/bar/baz.json",
-					},
-				},
+		Location: &spb.Location{
+			File: &spb.File{
+				Path: "/foo/bar/baz.json",
 			},
 		},
 	}
@@ -102,7 +95,7 @@ var (
 			ID:     "12345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
 			Secret: "GOCSPX-1mVwFTjGIXgs2BC2uHzksQi0HAK",
 		},
-		Location: "/foo/bar/baz.json",
+		Location: location.FromPath("/foo/bar/baz.json"),
 	}
 	secretGCPOAuth2ClientCredentialsProto = &spb.Secret{
 		Secret: &spb.SecretData{
@@ -113,13 +106,9 @@ var (
 				},
 			},
 		},
-		Locations: []*spb.LocationLegacy{
-			&spb.LocationLegacy{
-				Location: &spb.LocationLegacy_Filepath{
-					Filepath: &spb.Filepath{
-						Path: "/foo/bar/baz.json",
-					},
-				},
+		Location: &spb.Location{
+			File: &spb.File{
+				Path: "/foo/bar/baz.json",
 			},
 		},
 	}

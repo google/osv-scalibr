@@ -17,6 +17,7 @@ package inventory
 import (
 	"time"
 
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 )
 
@@ -24,9 +25,8 @@ import (
 // Scalibr handles secrets transparently, only Veles cares about what concrete
 // type they are.
 type Secret struct {
-	Secret   veles.Secret
-	Location string
-
+	Secret     veles.Secret
+	Location   location.Location
 	Validation SecretValidationResult
 }
 

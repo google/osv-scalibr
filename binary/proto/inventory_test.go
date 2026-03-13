@@ -151,18 +151,18 @@ func TestInventoryToProtoInvalidPackage(t *testing.T) {
 func TestInventoryToStruct(t *testing.T) {
 	pkgWithIDProto :=
 		&pb.Package{
-			Id:        "1234567890",
-			Name:      "software",
-			Version:   "1.0.0",
-			Locations: []string{"/file1"},
-			Plugins:   []string{"os/dpkg"},
+			Id:       "1234567890",
+			Name:     "software",
+			Version:  "1.0.0",
+			Location: pkgLocProtoFromPath("/file1"),
+			Plugins:  []string{"os/dpkg"},
 		}
 	pkgStruct :=
 		&extractor.Package{
-			Name:      "software",
-			Version:   "1.0.0",
-			Locations: []string{"/file1"},
-			Plugins:   []string{"os/dpkg"},
+			Name:     "software",
+			Version:  "1.0.0",
+			Location: extractor.LocationFromPath("/file1"),
+			Plugins:  []string{"os/dpkg"},
 		}
 	pkgVulnProto := &pb.PackageVuln{
 		Vuln:      &osvpb.Vulnerability{Id: "GHSA-1"},
