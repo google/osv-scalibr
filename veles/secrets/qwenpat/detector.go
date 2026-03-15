@@ -41,7 +41,7 @@ func NewDetector() veles.Detector {
 		MaxLen: maxTokenLength,
 		Re:     patRe,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return APIKey{Key: string(b)}, true
+			return QwenPAT{Pat: string(b)}, true
 		},
 	}
 }
