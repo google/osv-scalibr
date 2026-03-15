@@ -1,4 +1,4 @@
-// Copyright 2026 Google LLC
+	// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1201,7 +1201,7 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 
 func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_QwenPat_{
+		Secret: &spb.SecretData_QwenPat{
 			QwenPat: &spb.SecretData_QwenPat{
 				Pat: s.Pat,
 			},
@@ -1552,20 +1552,6 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_SquareOauthApplicationSecret:
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
-		}, nil
-	case *spb.SecretData_HttpBasicAuth:
-		creds := s.GetHttpBasicAuth()
-		return veleshttp.BasicAuthCredentials{
-			Username: creds.GetUsername(),
-			Password: creds.GetPassword(),
-		}, nil
-	case *spb.SecretData_HttpBearer:
-		return veleshttp.BearerToken{
-			Value: s.GetHttpBearer().GetValue(),
-		}, nil
-	case *spb.SecretData_HttpCsrfToken:
-		return veleshttp.CSRFToken{
-			Value: s.GetHttpCsrfToken().GetValue(),
 		}, nil
 	case *spb.SecretData_HttpCookie:
 		return veleshttp.Cookie{

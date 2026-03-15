@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testQwenAPIKey = `sk-8jxqzgqkdv4xvpmhczrjq7k` // 32 characters long
