@@ -117,6 +117,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecommit"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitlabrunnerconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
@@ -140,6 +141,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
 	"github.com/google/osv-scalibr/veles/secrets/github"
+	"github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -351,6 +353,7 @@ var (
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
 		cloudflareapitoken.Name:      {cloudflareapitoken.New},
+		gitlabrunnerconfig.Name:      {gitlabrunnerconfig.New},
 		bitwardenoauth2access.Name:   {bitwardenoauth2access.New},
 	}
 
@@ -376,6 +379,7 @@ var (
 		{gcpapikey.NewDetector(), "secrets/gcpapikey", 0},
 		{gcpexpressmode.NewDetector(), "secrets/gcpexpressmode", 0},
 		{gcpsak.NewDetector(), "secrets/gcpsak", 0},
+		{gitlab.NewRunnerAuthTokenDetector(), "secrets/gitlab/runnerauthtoken", 0},
 		{gitlabpat.NewDetector(), "secrets/gitlabpat", 0},
 		{grokxaiapikey.NewAPIKeyDetector(), "secrets/grokxaiapikey", 0},
 		{grokxaiapikey.NewManagementKeyDetector(), "secrets/grokxaimanagementkey", 0},
