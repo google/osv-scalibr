@@ -30,6 +30,9 @@ const (
 // It performs a GET request to the appropriate Qwen API endpoint
 // If the request returns HTTP 200, the key is considered valid.
 // If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
+// See following links:
+// 1. https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope
+// 2. https://www.alibabacloud.com/help/en/model-studio/error-code
 func NewValidator() *sv.Validator[QwenPAT] {
 	return &sv.Validator[QwenPAT]{
 		Endpoint:   dashScopeModels,

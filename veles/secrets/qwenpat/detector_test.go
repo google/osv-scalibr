@@ -28,6 +28,16 @@ import (
 const testQwenAPIKey = `sk-8jxqzgqkdv4xvpmhczrjq7k` // 32 characters long
 
 
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t, qwenpat.NewDetector(),
+		testQwenAPIKey,
+		qwenpat.QwenPAT{Pat: testQwenAPIKey},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Qwen PAT/s.
 func TestDetector_truePositives(t *testing.T) {
