@@ -28,6 +28,9 @@ const maxTokenLength = 35
 // patRe is a regular expression that matches a Qwen AI API Service Accounts key.
 // Qwen AI API Service Accounts key have the form: `sk-` followed by 32
 // alphanumeric characters.
+// See following links:
+// 1. https://www.alibabacloud.com/help/en/model-studio/get-api-key
+// 2. https://qwenlm.github.io/qwen-code-docs/en/users/configuration/auth/#-option-2-api-key-flexible
 var patRe = regexp.MustCompile(`sk-[A-Za-z0-9]{32}`)
 
 
