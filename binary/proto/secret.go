@@ -1,4 +1,4 @@
-// Copyright 2026 Google LLC
+	// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
-        "github.com/google/osv-scalibr/veles/secrets/qwenpat"
+    "github.com/google/osv-scalibr/veles/secrets/qwenpat"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -1148,7 +1148,7 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 
 func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_QwenPat_{
+		Secret: &spb.SecretData_QwenPat{
 			QwenPat: &spb.SecretData_QwenPat{
 				Pat: s.Pat,
 			},
@@ -1515,7 +1515,7 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
-        case *spb.SecretData_QwenPat_:
+    case *spb.SecretData_QwenPat:
 		return qwenPATToStruct(s.GetQwenPat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

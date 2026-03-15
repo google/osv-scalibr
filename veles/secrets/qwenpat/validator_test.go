@@ -134,9 +134,8 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := qwenpat.NewValidator(
-				qwenpat.WithClient(client),
-			)
+			validator := qwenpat.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test pat
 			pat := qwenpat.QwenPAT{Pat: tc.Pat}
@@ -168,9 +167,10 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := qwenpat.NewValidator(
-		qwenpat.WithClient(client),
-	)
+
+	validator := qwenpat.NewValidator()
+	validator.HTTPC = client
+
 
 	// Create a test pat
 	pat := qwenpat.QwenPAT{Pat: validatorTestQwenPat}
@@ -202,10 +202,9 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := qwenpat.NewValidator(
-		qwenpat.WithClient(client),
-	)
-
+	validator := qwenpat.NewValidator()
+	validator.HTTPC = client
+	
 	testCases := []struct {
 		name     string
 		Pat      string
