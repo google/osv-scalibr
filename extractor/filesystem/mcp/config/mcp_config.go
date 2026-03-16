@@ -42,22 +42,6 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
-// DefaultExclusions is the list of directories to ignore.
-var DefaultExclusions = map[string]bool{
-	".git":         true,
-	"node_modules": true,
-	"vendor":       true,
-	"__pycache__":  true,
-	"venv":         true,
-	".venv":        true,
-	"target":       true,
-	"dist":         true,
-	"build":        true,
-	".next":        true,
-	".terraform":   true,
-	".gradle":      true,
-}
-
 // FileRequired returns true if the file is an MCP configuration file.
 // We look for:
 //   - mcp.json
@@ -73,19 +57,11 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 
-	// Check for ignored directories in the path
-	dir := filepath.ToSlash(filepath.Dir(path))
-	for part := range strings.SplitSeq(dir, "/") {
-		if DefaultExclusions[part] {
-			return false
-		}
-	}
-
 	return true
 }
 
 // Extract parses the MCP configuration file and returns the inventory.
-func (e *Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// 1. Parse JSON
 	var manifest Manifest
 	decoder := json.NewDecoder(input.Reader)
@@ -103,6 +79,10 @@ func (e *Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inv
 	inv := &inventory.Inventory{}
 
 	for name, server := range manifest.MCPServers {
+		if err := ctx.Err(); err != nil {
+			return inventory.Inventory{}, err
+		}
+
 		serverPkg := &extractor.Package{
 			Name:      name,
 			Locations: []string{input.Path},

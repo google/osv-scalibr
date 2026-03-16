@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -45,11 +46,6 @@ func TestFileRequired(t *testing.T) {
 		{
 			name: "other_json",
 			path: "path/to/other.json",
-			want: false,
-		},
-		{
-			name: "should_skip_node_modules",
-			path: "path/to/node_modules/mcp.json",
 			want: false,
 		},
 	}
@@ -269,5 +265,35 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestExtractContextCancellation(t *testing.T) {
+	e, err := config.New(nil)
+	if err != nil {
+		t.Fatalf("config.New() error = %v", err)
+	}
+
+	content := `{
+		"mcpServers": {
+			"server1": {"command": "npx", "args": ["pkg1"]},
+			"server2": {"command": "npx", "args": ["pkg2"]}
+		}
+	}`
+
+	input := &filesystem.ScanInput{
+		Path:   "test/mcp.json",
+		Reader: strings.NewReader(content),
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel the context immediately
+
+	_, err = e.Extract(ctx, input)
+	if err == nil {
+		t.Fatal("Extract() expected error due to canceled context, got nil")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("Extract() error = %v; want %v", err, context.Canceled)
 	}
 }
