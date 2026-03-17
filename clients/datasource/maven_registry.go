@@ -333,7 +333,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 
 	u := requestURL.JoinPath(paths...).String()
 	resp, err := m.responses.Get(u, func() (response, error) {
-		log.Infof("Fetching response from: %s", u)
+		log.Debugf("Fetching response from: %s", u)
 		resp, err := auth.Get(ctx, httpClient, u)
 		if err != nil {
 			return response{}, fmt.Errorf("%w: Maven registry query failed: %w", errAPIFailed, err)
