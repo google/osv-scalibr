@@ -221,7 +221,7 @@ func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifa
 			errs = append(errs, err)
 		}
 
-		return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s: %w", groupID, artifactID, version, errors.Join(errs...))
+		return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s:\n%w", groupID, artifactID, version, errors.Join(errs...))
 	}
 
 	for _, registry := range append(m.registries, m.defaultRegistry) {
@@ -251,7 +251,7 @@ func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifa
 		errs = append(errs, err)
 	}
 
-	return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s: %w", groupID, artifactID, version, errors.Join(errs...))
+	return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s:\n%w", groupID, artifactID, version, errors.Join(errs...))
 }
 
 // GetVersions returns the list of available versions of a Maven package specified by groupID and artifactID.
