@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
+	velesgitlab "github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -198,6 +199,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubOAuthTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
+	case velesgitlab.AgentToken:
+		return gitlabAgentTokenToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
 		return azureAccessTokenToProto(t), nil
 	case velesazuretoken.AzureIdentityToken:
@@ -721,6 +724,17 @@ func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	}
 }
 
+func gitlabAgentTokenToProto(s velesgitlab.AgentToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabAgentToken_{
+			GitlabAgentToken: &spb.SecretData_GitlabAgentToken{
+				Token:  s.Token,
+				KasUrl: s.KasURL,
+			},
+		},
+	}
+}
+
 func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PostmanApiKey{
@@ -1236,6 +1250,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
+	case *spb.SecretData_GitlabAgentToken_:
+		return gitlabAgentTokenToStruct(s.GetGitlabAgentToken()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_Pypi:
@@ -1571,6 +1587,13 @@ func denoPATToStruct(kPB *spb.SecretData_DenoPat) veles.Secret {
 func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
+	}
+}
+
+func gitlabAgentTokenToStruct(kPB *spb.SecretData_GitlabAgentToken) velesgitlab.AgentToken {
+	return velesgitlab.AgentToken{
+		Token:  kPB.GetToken(),
+		KasURL: kPB.GetKasUrl(),
 	}
 }
 
