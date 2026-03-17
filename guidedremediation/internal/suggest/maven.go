@@ -66,7 +66,7 @@ func (ms *MavenSuggester) Suggest(ctx context.Context, mf manifest.Manifest, opt
 
 		latest, err := suggestMavenVersion(ctx, opts.ResolveClient, req, opts.UpgradeConfig.Get(req.Name))
 		if err != nil {
-			log.Warnf("failed to suggest Maven version for package %s: %v", req.Name, err)
+			log.Warnf("failed to suggest Maven version for package %q: %v", req.Name, err)
 			continue
 		}
 		if latest.Version == req.Version {
@@ -111,10 +111,14 @@ func suggestMavenVersion(ctx context.Context, cl resolve.Client, req resolve.Req
 	for _, ver := range versions {
 		parsed, err := semver.Maven.Parse(ver.Version)
 		if err != nil {
-			log.Warnf("parsing Maven version %s: %v", parsed, err)
+			log.Warnf("parsing Maven version %q: %v", ver.Version, err)
 			continue
 		}
 		semvers = append(semvers, parsed)
+	}
+	if len(semvers) == 0 {
+		// Not able to parse any versions, so return the original requirement.
+		return req, nil
 	}
 
 	constraint, err := semver.Maven.ParseConstraint(req.Version)
@@ -132,10 +136,14 @@ func suggestMavenVersion(ctx context.Context, cl resolve.Client, req resolve.Req
 	} else {
 		// Guess the latest version satisfying the constraint is being used
 		for _, v := range semvers {
-			if constraint.MatchVersion(v) && current.Compare(v) < 0 {
+			if constraint.MatchVersion(v) && (current == nil || current.Compare(v) < 0) {
 				current = v
 			}
 		}
+	}
+	if current == nil {
+		// Not able to guess the current concrete version, so return the original requirement.
+		return req, nil
 	}
 
 	var newReq *semver.Version
@@ -154,7 +162,7 @@ func suggestMavenVersion(ctx context.Context, cl resolve.Client, req resolve.Req
 		}
 		newReq = v
 	}
-	if constraint.IsSimple() || !constraint.MatchVersion(newReq) {
+	if newReq != nil && (constraint.IsSimple() || !constraint.MatchVersion(newReq)) {
 		// For version range requirement, update the requirement if the
 		// new requirement does not satisfy the constraint.
 		req.Version = newReq.String()
