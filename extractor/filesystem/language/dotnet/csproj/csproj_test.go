@@ -57,6 +57,30 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             ".vbproj file",
+			path:             "project.vbproj",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "path .vbproj file",
+			path:             "path/to/my/project.vbproj",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             ".fsproj file",
+			path:             "project.fsproj",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "path .fsproj file",
+			path:             "path/to/my/project.fsproj",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:         "file not required",
 			path:         "test.config",
 			wantRequired: false,
