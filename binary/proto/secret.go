@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
+	velesgitlab "github.com/google/osv-scalibr/veles/secrets/gitlab"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
@@ -198,6 +199,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return githubOAuthTokenToProto(t.Token), nil
 	case gitlabpat.GitlabPAT:
 		return gitalbPatKeyToProto(t), nil
+	case velesgitlab.CIJobToken:
+		return gitlabCIJobTokenToProto(t), nil
 	case velesazuretoken.AzureAccessToken:
 		return azureAccessTokenToProto(t), nil
 	case velesazuretoken.AzureIdentityToken:
@@ -721,6 +724,32 @@ func gitalbPatKeyToProto(s gitlabpat.GitlabPAT) *spb.SecretData {
 	}
 }
 
+func gitlabCIJobTokenToProto(s velesgitlab.CIJobToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GitlabCiJobToken{
+			GitlabCiJobToken: &spb.SecretData_GitlabCIJobToken{
+				Token:                    s.Token,
+				Hostname:                 s.Hostname,
+				GitlabCiJobTokenMetadata: gitlabCIJobTokenMetadataToProto(s),
+			},
+		},
+	}
+}
+
+func gitlabCIJobTokenMetadataToProto(s velesgitlab.CIJobToken) *spb.SecretData_GitlabCIJobTokenMetadata {
+	// Only populate metadata if at least one field is set
+	if s.JobID == 0 && s.Status == "" && s.Username == "" && s.ProjectID == 0 {
+		return nil
+	}
+
+	return &spb.SecretData_GitlabCIJobTokenMetadata{
+		JobId:     s.JobID,
+		Status:    s.Status,
+		Username:  s.Username,
+		ProjectId: s.ProjectID,
+	}
+}
+
 func postmanAPIKeyToProto(s velespostmanapikey.PostmanAPIKey) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_PostmanApiKey{
@@ -1236,6 +1265,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return denoPATToStruct(s.GetDenoPat()), nil
 	case *spb.SecretData_GitlabPat_:
 		return gitlabPATToStruct(s.GetGitlabPat()), nil
+	case *spb.SecretData_GitlabCiJobToken:
+		return gitlabCIJobTokenToStruct(s.GetGitlabCiJobToken()), nil
 	case *spb.SecretData_Digitalocean:
 		return digitalOceanAPITokenToStruct(s.GetDigitalocean()), nil
 	case *spb.SecretData_Pypi:
@@ -1572,6 +1603,23 @@ func gitlabPATToStruct(kPB *spb.SecretData_GitlabPat) gitlabpat.GitlabPAT {
 	return gitlabpat.GitlabPAT{
 		Pat: kPB.GetPat(),
 	}
+}
+
+func gitlabCIJobTokenToStruct(kPB *spb.SecretData_GitlabCIJobToken) velesgitlab.CIJobToken {
+	token := velesgitlab.CIJobToken{
+		Token:    kPB.GetToken(),
+		Hostname: kPB.GetHostname(),
+	}
+
+	// Populate enriched metadata if available
+	if meta := kPB.GetGitlabCiJobTokenMetadata(); meta != nil {
+		token.JobID = meta.GetJobId()
+		token.Status = meta.GetStatus()
+		token.Username = meta.GetUsername()
+		token.ProjectID = meta.GetProjectId()
+	}
+
+	return token
 }
 
 func onePasswordConnectTokenToStruct(kPB *spb.SecretData_OnePasswordConnectToken) velesonepasswordconnecttoken.OnePasswordConnectToken {
