@@ -114,10 +114,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		_, commit, _ := strings.Cut(lockPackage.Source.Git, "#")
 
 		pkgDetails := &extractor.Package{
-			Name:      lockPackage.Name,
-			Version:   lockPackage.Version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{input.Path},
+			Name:     lockPackage.Name,
+			Version:  lockPackage.Version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 
 		if commit != "" {

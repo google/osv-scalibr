@@ -105,10 +105,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "numpy",
-					Version:   "1.23.3",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/one-package.lock"},
+					Name:     "numpy",
+					Version:  "1.23.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/one-package.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -122,19 +122,19 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "proto-plus",
-					Version:   "1.22.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages.lock"},
+					Name:     "proto-plus",
+					Version:  "1.22.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "protobuf",
-					Version:   "4.21.5",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages.lock"},
+					Name:     "protobuf",
+					Version:  "4.21.5",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -148,10 +148,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "emoji",
-					Version:   "2.0.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/one-package-with-metadata.lock"},
+					Name:     "emoji",
+					Version:  "2.0.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/one-package-with-metadata.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -165,10 +165,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "ike",
-					Version:   "0.2.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/source-git.lock"},
+					Name:     "ike",
+					Version:  "0.2.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/source-git.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "cd66602cd29f61a2d2e7fb995fef1e61708c034d",
 					},
@@ -185,10 +185,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "appdirs",
-					Version:   "1.4.4",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/source-legacy.lock"},
+					Name:     "appdirs",
+					Version:  "1.4.4",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/source-legacy.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -202,10 +202,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "numpy",
-					Version:   "1.23.3",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/optional-package.lock"},
+					Name:     "numpy",
+					Version:  "1.23.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/optional-package.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
@@ -219,100 +219,100 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "async-timeout",
-					Version:   "5.0.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "async-timeout",
+					Version:  "5.0.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
 				{
-					Name:      "factory-boy",
-					Version:   "3.3.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "factory-boy",
+					Version:  "3.3.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "faker",
-					Version:   "33.3.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "faker",
+					Version:  "33.3.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
-					Name:      "proto-plus",
-					Version:   "1.22.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "proto-plus",
+					Version:  "1.22.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "proto-plus",
-					Version:   "1.23.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "proto-plus",
+					Version:  "1.23.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "protobuf",
-					Version:   "4.25.5",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "protobuf",
+					Version:  "4.25.5",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "python-dateutil",
-					Version:   "2.9.0.post0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "python-dateutil",
+					Version:  "2.9.0.post0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
-					Name:      "six",
-					Version:   "1.17.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "six",
+					Version:  "1.17.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "typing-extensions",
-					Version:   "4.12.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "typing-extensions",
+					Version:  "4.12.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
-					Name:      "urllib3",
-					Version:   "2.3.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "urllib3",
+					Version:  "2.3.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "redis",
-					Version:   "5.2.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.v2.lock"},
+					Name:     "redis",
+					Version:  "5.2.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/multiple-packages.v2.lock"),
 					Metadata: osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},

@@ -64,12 +64,14 @@ var cimStructForTest = func() *extractor.ContainerImageMetadata {
 var pkgWithLayerStruct = &extractor.Package{
 	Name:          "withlayer",
 	Version:       "1.0",
+	Location:      extractor.LocationFromPath("/file1"),
 	LayerMetadata: cimStructForTest.LayerMetadata[0],
 }
 
 var pkgWithLayerProto = &pb.Package{
-	Name:    "withlayer",
-	Version: "1.0",
+	Name:     "withlayer",
+	Version:  "1.0",
+	Location: pkgLocProtoFromPath("/file1"),
 	ContainerImageMetadataIndexes: &pb.Package_ContainerImageMetadataIndexes{
 		LayerIndex:          0,
 		ContainerImageIndex: 0,

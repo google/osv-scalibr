@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -310,11 +311,18 @@ func TestExtract(t *testing.T) {
 					Metadata: &requirements.Metadata{VersionComparator: "~=", Requirement: "Mopidy-Dirble ~= 1.1"},
 				},
 				{
-					Name:      "pandas",
-					Version:   "2.2.3",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/example.txt", "testdata/other-requirements.txt"},
-					Metadata:  &requirements.Metadata{Requirement: "pandas==2.2.3"},
+					Name:     "pandas",
+					Version:  "2.2.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "testdata/example.txt",
+						}},
+						Related: []location.Location{
+							location.FromPath("testdata/other-requirements.txt"),
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "pandas==2.2.3"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -479,8 +487,8 @@ func TestExtract(t *testing.T) {
 	// fill Location and Extractor
 	for _, t := range tests {
 		for _, p := range t.wantPackages {
-			if p.Locations == nil {
-				p.Locations = []string{t.path}
+			if p.Location.Descriptor == nil {
+				p.Location = extractor.LocationFromPath(t.path)
 			}
 			if p.Metadata == nil {
 				p.Metadata = &requirements.Metadata{}

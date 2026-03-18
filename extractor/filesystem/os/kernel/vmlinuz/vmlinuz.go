@@ -158,10 +158,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	metadata.OSVersionID = m["VERSION_ID"]
 
 	p := &extractor.Package{
-		Name:      metadata.Name,
-		Version:   metadata.Version,
-		Metadata:  &metadata,
-		Locations: []string{input.Path},
+		Name:     metadata.Name,
+		Version:  metadata.Version,
+		Metadata: &metadata,
+		Location: extractor.LocationFromPath(input.Path),
 	}
 
 	packages = append(packages, p)

@@ -82,10 +82,10 @@ func (e Extractor) extractFromPath(path string) []*extractor.Package {
 
 	if len(match) == 3 {
 		pkg := &extractor.Package{
-			Name:      match[1],
-			Version:   match[2],
-			PURLType:  purl.TypeNim,
-			Locations: []string{path},
+			Name:     match[1],
+			Version:  match[2],
+			PURLType: purl.TypeNim,
+			Location: extractor.LocationFromPath(path),
 		}
 		return []*extractor.Package{pkg}
 	}
