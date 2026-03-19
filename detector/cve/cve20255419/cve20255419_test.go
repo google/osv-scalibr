@@ -103,8 +103,8 @@ func TestScan(t *testing.T) {
 			name: "ChromiumAppsPackageNameNotRecognized",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "chromium-apps",
-					Version:   "137.0.7151.67",
+					Name:     "chromium-apps",
+					Version:  "137.0.7151.67",
 					Location: extractor.LocationFromPath("/chromiumapps"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "131.0.6778.264",
@@ -118,8 +118,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronWithoutChromiumCoreSkipped",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "39.4.0",
+					Name:     "electron",
+					Version:  "39.4.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "39.4.0",
@@ -133,8 +133,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronBackportVersionWithoutChromiumCoreEvaluated",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "36.4.0",
+					Name:     "electron",
+					Version:  "36.4.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "36.4.0",
@@ -148,8 +148,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronOlderMajorWithoutChromiumCoreReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "24.1.3.8",
+					Name:     "electron",
+					Version:  "24.1.3.8",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "24.1.3.8",
@@ -163,8 +163,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronBelowBackportFixWithoutChromiumCoreReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "36.3.0",
+					Name:     "electron",
+					Version:  "36.3.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "36.3.0",
@@ -178,8 +178,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronWithBackportFixedNotReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "39.4.0",
+					Name:     "electron",
+					Version:  "39.4.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7103.149",
@@ -194,8 +194,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronWithBackportBelowFixedReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "36.3.0",
+					Name:     "electron",
+					Version:  "36.3.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7103.120",
@@ -210,8 +210,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronWithBackportPreReleaseFixedNotReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "37.0.0-beta.3",
+					Name:     "electron",
+					Version:  "37.0.0-beta.3",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "138.0.7190.0",
@@ -226,8 +226,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronWithBackportPreReleaseBelowFixedReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "37.0.0-beta.2",
+					Name:     "electron",
+					Version:  "37.0.0-beta.2",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "138.0.7189.0",
@@ -242,8 +242,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronUnknownMajorFallsBackToChromiumCore",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "39.4.0",
+					Name:     "electron",
+					Version:  "39.4.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7100.1",
@@ -258,8 +258,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronUnknownMajorWithCoreBelowBackportFloorReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "39.4.0",
+					Name:     "electron",
+					Version:  "39.4.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "131.0.6778.264",
@@ -274,8 +274,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronFourPartVersionComparedAsNumeric",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "36.4.0",
+					Name:     "electron",
+					Version:  "36.4.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7103.120",
@@ -290,8 +290,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronWithFixedChromiumCoreNotReported",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "39.4.0",
+					Name:     "electron",
+					Version:  "39.4.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "142.0.7444.265",
@@ -312,8 +312,8 @@ func TestScan(t *testing.T) {
 			name: "ElectronStable37NotVulnerable",
 			pkgs: []*extractor.Package{
 				{
-					Name:      "electron",
-					Version:   "37.0.0",
+					Name:     "electron",
+					Version:  "37.0.0",
 					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "37.0.0",
