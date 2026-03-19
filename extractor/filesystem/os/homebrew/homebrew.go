@@ -109,10 +109,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, nil
 	}
 	pkg := &extractor.Package{
-		Name:      p.AppName,
-		Version:   p.AppVersion,
-		PURLType:  purl.TypeBrew,
-		Locations: []string{input.Path},
+		Name:     p.AppName,
+		Version:  p.AppVersion,
+		PURLType: purl.TypeBrew,
+		Location: extractor.LocationFromPath(input.Path),
 	}
 
 	// If we found a formula file path, parse it and attach the metadata to the package.

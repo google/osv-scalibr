@@ -25,6 +25,7 @@ import (
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
@@ -138,9 +139,11 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 		return nil, err
 	}
 	return &spb.Secret{
-		Secret:    sec,
-		Status:    res,
-		Locations: secretLocationToProto(s.Location),
+		Secret: sec,
+		Status: res,
+		// TODO(b/400910349) Remove once integrators no longer read this field.
+		Locations: []*spb.LocationLegacy{locationToLegacyProto(&s.Location)},
+		Location:  LocationToProto(&s.Location),
 	}, nil
 }
 
@@ -1172,28 +1175,12 @@ func validationStatusToProto(s veles.ValidationStatus) (spb.SecretStatus_SecretS
 	return v, nil
 }
 
-func secretLocationToProto(filepath string) []*spb.LocationLegacy {
-	return []*spb.LocationLegacy{
-		{
-			Location: &spb.LocationLegacy_Filepath{
-				Filepath: &spb.Filepath{
-					Path: filepath,
-				},
-			},
-		},
-	}
-}
-
 // --- Proto to Struct
 
 // SecretToStruct converts a proto Secret to its struct representation.
 func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 	if s == nil {
 		return nil, nil
-	}
-
-	if len(s.GetLocations()) > 1 {
-		return nil, ErrMultipleSecretLocations
 	}
 
 	sec, err := velesSecretToStruct(s.GetSecret())
@@ -1204,14 +1191,15 @@ func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 	if err != nil {
 		return nil, err
 	}
-	var path string
-	if len(s.GetLocations()) > 0 {
-		path = secretLocationToStruct(s.GetLocations()[0])
+
+	loc := location.Location{}
+	if l := LocationToStruct(s.GetLocation()); l != nil {
+		loc = *l
 	}
 
 	return &inventory.Secret{
 		Secret:     sec,
-		Location:   path,
+		Location:   loc,
 		Validation: res,
 	}, nil
 }
@@ -1696,13 +1684,6 @@ func validationStatusToStruct(s spb.SecretStatus_SecretStatusEnum) (veles.Valida
 		return veles.ValidationUnspecified, fmt.Errorf("%w: %q", ErrUnsupportedValidationType, s)
 	}
 	return v, nil
-}
-
-func secretLocationToStruct(location *spb.LocationLegacy) string {
-	if location.GetFilepath() != nil {
-		return location.GetFilepath().GetPath()
-	}
-	return ""
 }
 
 func hashicorpVaultTokenToStruct(tokenPB *spb.SecretData_HashiCorpVaultToken) veleshashicorpvault.Token {

@@ -241,10 +241,10 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-lock-only/package-lock.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-lock-only/package-lock.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -253,10 +253,10 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-lock-only/package-lock.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-lock-only/package-lock.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -273,10 +273,10 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -285,10 +285,10 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -312,10 +312,10 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/both/npm-shrinkwrap.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/both/npm-shrinkwrap.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -324,10 +324,10 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/both/npm-shrinkwrap.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/both/npm-shrinkwrap.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},

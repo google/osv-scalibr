@@ -153,10 +153,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	packages := make([]*extractor.Package, 0, len(parsedTomlFile.Dependencies)+1)
 
 	packages = append(packages, &extractor.Package{
-		Name:      parsedTomlFile.Package.Name,
-		Version:   parsedTomlFile.Package.Version,
-		PURLType:  purl.TypeCargo,
-		Locations: []string{input.Path},
+		Name:     parsedTomlFile.Package.Name,
+		Version:  parsedTomlFile.Package.Version,
+		PURLType: purl.TypeCargo,
+		Location: extractor.LocationFromPath(input.Path),
 	})
 
 	for name, dependency := range parsedTomlFile.Dependencies {
@@ -181,7 +181,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Name:       name,
 			Version:    dependency.Version,
 			PURLType:   purl.TypeCargo,
-			Locations:  []string{input.Path},
+			Location:   extractor.LocationFromPath(input.Path),
 			SourceCode: srcCode,
 		})
 	}

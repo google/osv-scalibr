@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -264,6 +265,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				continue
 			}
 			if pp.valid() {
+				descriptorLoc := location.FromPath(input.Path)
 				packagePom = append(packagePom, &extractor.Package{
 					Name:     fmt.Sprintf("%s:%s", pp.GroupID, pp.ArtifactID),
 					Version:  pp.Version,
@@ -273,7 +275,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 						GroupID:    pp.GroupID,
 						SHA1:       sha1,
 					},
-					Locations: []string{input.Path, path},
+					Location: extractor.PackageLocation{
+						Descriptor: &descriptorLoc,
+						Related:    []location.Location{location.FromPath(path)},
+					},
 				})
 			}
 
@@ -285,6 +290,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				continue
 			}
 			if mf.valid() {
+				descriptorLoc := location.FromPath(input.Path)
 				packageManifest = append(packageManifest, &extractor.Package{
 					Name:     fmt.Sprintf("%s:%s", mf.GroupID, mf.ArtifactID),
 					Version:  mf.Version,
@@ -294,7 +300,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 						GroupID:    mf.GroupID,
 						SHA1:       sha1,
 					},
-					Locations: []string{input.Path, path},
+					Location: extractor.PackageLocation{
+						Descriptor: &descriptorLoc,
+						Related:    []location.Location{location.FromPath(path)},
+					},
 				})
 			}
 
@@ -314,7 +323,10 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				subPackage, openedBytes, err = e.extractWithMax(ctx, subInput, depth+1, openedBytes)
 				// Prepend the current input path
 				for i := range subPackage {
-					subPackage[i].Locations = append([]string{input.Path}, subPackage[i].Locations...)
+					loc := &subPackage[i].Location
+					loc.Related = append([]location.Location{*loc.Descriptor}, loc.Related...)
+					newDesc := location.FromPath(input.Path)
+					loc.Descriptor = &newDesc
 				}
 				if err != nil {
 					log.Errorf("%s failed to extract %q: %v", e.Name(), path, err)
@@ -365,7 +377,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 					GroupID:    groupID,
 					SHA1:       sha1,
 				},
-				Locations: []string{input.Path},
+				Location: extractor.LocationFromPath(input.Path),
 			})
 		}
 	}
@@ -386,7 +398,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				GroupID:    "unknown",
 				SHA1:       sha1,
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

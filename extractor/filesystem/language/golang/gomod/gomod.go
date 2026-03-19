@@ -109,8 +109,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// merge go.sum packages with go.mod ones
 	for k, sumPkg := range sumPkgs {
 		if pkg, ok := pkgs[k]; ok {
-			// if the dependency is already present then add `go.sum` to its Locations slice
-			pkg.Locations = append(pkg.Locations, sumPkg.Locations...)
+			// if the dependency is already present then add `go.sum` to its related locations
+			pkg.Location.Related = append(pkg.Location.Related, *sumPkg.Location.Descriptor)
 		} else {
 			// otherwise add a new dependency to the package
 			pkgs[k] = sumPkg
@@ -143,10 +143,10 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 		name := require.Mod.Path
 		version := strings.TrimPrefix(require.Mod.Version, "v")
 		packages[pkgKey{name: name, version: version}] = &extractor.Package{
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{input.Path},
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 	}
 
@@ -175,10 +175,10 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 
 		for _, replacement := range replacements {
 			packages[replacement] = &extractor.Package{
-				Name:      replace.New.Path,
-				Version:   strings.TrimPrefix(replace.New.Version, "v"),
-				PURLType:  purl.TypeGolang,
-				Locations: []string{input.Path},
+				Name:     replace.New.Path,
+				Version:  strings.TrimPrefix(replace.New.Version, "v"),
+				PURLType: purl.TypeGolang,
+				Location: extractor.LocationFromPath(input.Path),
 			}
 		}
 	}
@@ -197,10 +197,10 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 	// Add the Go stdlib as an explicit dependency.
 	if goVersion != "" {
 		packages[pkgKey{name: "stdlib"}] = &extractor.Package{
-			Name:      "stdlib",
-			Version:   goVersion,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{input.Path},
+			Name:     "stdlib",
+			Version:  goVersion,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 	}
 

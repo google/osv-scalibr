@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 
@@ -94,12 +95,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		if err := ext.validate(); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("bad format: %w", err)
 		}
+		descriptor := location.FromPath(ext.Location.Path)
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      ext.Identifier.ID,
-			Version:   ext.Version,
-			PURLType:  purl.TypeGeneric,
-			Locations: []string{ext.Location.Path, input.Path},
-			Metadata:  &ext.Metadata,
+			Name:     ext.Identifier.ID,
+			Version:  ext.Version,
+			PURLType: purl.TypeGeneric,
+			Location: extractor.PackageLocation{
+				Descriptor: &descriptor,
+				Related:    []location.Location{location.FromPath(input.Path)},
+			},
+			Metadata: &ext.Metadata,
 		})
 	}
 

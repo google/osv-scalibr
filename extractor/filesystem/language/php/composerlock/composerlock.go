@@ -81,10 +81,10 @@ func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []str
 	}
 
 	return &extractor.Package{
-		Name:      pkg.Name,
-		Version:   pkg.Version,
-		PURLType:  purl.TypeComposer,
-		Locations: []string{input.Path},
+		Name:     pkg.Name,
+		Version:  pkg.Version,
+		PURLType: purl.TypeComposer,
+		Location: extractor.LocationFromPath(input.Path),
 		SourceCode: &extractor.SourceCodeIdentifier{
 			Commit: commit,
 		},

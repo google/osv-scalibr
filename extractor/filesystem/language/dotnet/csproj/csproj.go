@@ -68,10 +68,14 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// FileRequired returns true if the specified file matches the .csproj pattern.
+// FileRequired returns true if the specified file matches an
+// MSBuild project file pattern (.csproj, .vbproj, .fsproj).
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !strings.HasSuffix(filepath.Base(path), ".csproj") {
+	base := filepath.Base(path)
+	if !strings.HasSuffix(base, ".csproj") &&
+		!strings.HasSuffix(base, ".vbproj") &&
+		!strings.HasSuffix(base, ".fsproj") {
 		return false
 	}
 
