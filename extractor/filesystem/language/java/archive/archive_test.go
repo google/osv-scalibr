@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -223,9 +224,13 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-				Locations: []string{
-					filepath.FromSlash("testdata/simple.jar"),
-					filepath.FromSlash("testdata/simple.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{
+						File: &location.File{Path: filepath.FromSlash("testdata/simple.jar")},
+					},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/simple.jar/pom.properties")),
+					},
 				},
 			}},
 		},
@@ -246,9 +251,13 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-				Locations: []string{
-					filepath.FromSlash("testdata/simple.jar"),
-					filepath.FromSlash("testdata/simple.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/simple.jar"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/simple.jar/pom.properties")),
+					},
 				},
 			}},
 		},
@@ -262,9 +271,7 @@ func TestExtract(t *testing.T) {
 				Version:  "2.4.0",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "no_pom_properties", GroupID: "no_pom_properties"},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
@@ -281,9 +288,7 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "no_pom_properties",
 					GroupID:    "org.apache.ivy", // Group ID overridden by manifest.
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
@@ -302,9 +307,7 @@ func TestExtract(t *testing.T) {
 					// manifest.
 					GroupID: "no_pom_properties",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
@@ -317,9 +320,7 @@ func TestExtract(t *testing.T) {
 				Version:  "2.4.0",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "pom_missing_group_id", GroupID: "pom_missing_group_id"},
-				Locations: []string{
-					filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar")),
 			}},
 		},
 		{
@@ -332,9 +333,7 @@ func TestExtract(t *testing.T) {
 				Version:  "0.3.5",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "org.eclipse.sisu.inject", GroupID: "org.eclipse.sisu"},
-				Locations: []string{
-					filepath.FromSlash("testdata/org.eclipse.sisu.inject-0.3.5.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/org.eclipse.sisu.inject-0.3.5.jar")),
 			}},
 		},
 		{
@@ -350,18 +349,22 @@ func TestExtract(t *testing.T) {
 					GroupID:    "com.some.package",
 					SHA1:       "PO6pevcX8f2Rkpv4xB6NYviFokQ=", // inner most nested.jar
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/nested_at_10.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/nested_at_10.jar"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/pom.properties")),
+					},
 				},
 			}},
 		},
@@ -382,9 +385,13 @@ func TestExtract(t *testing.T) {
 					Version:  "1.2.3",
 					PURLType: purl.TypeMaven,
 					Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-					Locations: []string{
-						filepath.FromSlash("testdata/complex.jar"),
-						filepath.FromSlash("testdata/complex.jar/pom.properties"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: filepath.FromSlash("testdata/complex.jar"),
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.FromSlash("testdata/complex.jar/pom.properties")),
+						},
 					},
 				},
 				{
@@ -392,10 +399,14 @@ func TestExtract(t *testing.T) {
 					Version:  "3.2.1",
 					PURLType: purl.TypeMaven,
 					Metadata: &archivemeta.Metadata{ArtifactID: "another-package-name", GroupID: "com.some.anotherpackage"},
-					Locations: []string{
-						filepath.FromSlash("testdata/complex.jar"),
-						filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar"),
-						filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar/pom.properties"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: filepath.FromSlash("testdata/complex.jar"),
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar")),
+							location.FromPath(filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar/pom.properties")),
+						},
 					},
 				},
 			},
@@ -410,9 +421,13 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-				Locations: []string{
-					filepath.FromSlash("testdata/complex.jar"),
-					filepath.FromSlash("testdata/complex.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/complex.jar"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/complex.jar/pom.properties")),
+					},
 				},
 			}},
 			wantErr:          filesystem.ErrExtractorMemoryLimitExceeded,
@@ -433,9 +448,13 @@ func TestExtract(t *testing.T) {
 						// openssl sha1 -binary third_party/scalibr/extractor/filesystem/language/java/archive/testdata/guava-31.1-jre.jar | base64
 						SHA1: "YEWPh30FXQyRFNnhou+3N7S8KCw=",
 					},
-					Locations: []string{
-						filepath.FromSlash("testdata/guava-31.1-jre.jar"),
-						filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: filepath.FromSlash("testdata/guava-31.1-jre.jar"),
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties")),
+						},
 					},
 				},
 			},
@@ -457,9 +476,13 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "failureaccess",
 					GroupID:    "com.google.guava.failureaccess",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/manifest-symbolicname"),
-					filepath.FromSlash("testdata/manifest-symbolicname/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/manifest-symbolicname"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/manifest-symbolicname/MANIFEST.MF")),
+					},
 				},
 			}},
 		},
@@ -475,9 +498,13 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "correct.name",
 					GroupID:    "test.group",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/invalid-ids"),
-					filepath.FromSlash("testdata/invalid-ids/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/invalid-ids"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/invalid-ids/MANIFEST.MF")),
+					},
 				},
 			}},
 		},
@@ -493,9 +520,13 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "spring-web",
 					GroupID:    "org.springframework",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/known-group-id"),
-					filepath.FromSlash("testdata/known-group-id/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/known-group-id"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/known-group-id/MANIFEST.MF")),
+					},
 				},
 			}},
 		},
@@ -512,9 +543,7 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "ivy",
 					GroupID:    "org.apache.ivy",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/ivy-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/ivy-2.4.0.jar")),
 			}},
 		},
 		{
@@ -531,9 +560,7 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "no_pom_properties",
 					GroupID:    "org.elasticsearch",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
@@ -547,9 +574,13 @@ func TestExtract(t *testing.T) {
 				Version:  "1.4",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "axis", GroupID: "org.apache.axis"},
-				Locations: []string{
-					filepath.FromSlash("testdata/axis"),
-					filepath.FromSlash("testdata/axis/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/axis"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/axis/MANIFEST.MF")),
+					},
 				},
 			}},
 		},

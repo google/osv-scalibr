@@ -100,10 +100,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "JSON",
-					Version:   "0.20.0",
-					PURLType:  purl.TypeJulia,
-					Locations: []string{"testdata/only-version-dependency.toml"},
+					Name:     "JSON",
+					Version:  "0.20.0",
+					PURLType: purl.TypeJulia,
+					Location: extractor.LocationFromPath("testdata/only-version-dependency.toml"),
 				},
 			},
 		},
@@ -114,16 +114,16 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "JSON",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeJulia,
-					Locations: []string{"testdata/more-than-two-dependencies.toml"},
+					Name:     "JSON",
+					Version:  "1.0.0",
+					PURLType: purl.TypeJulia,
+					Location: extractor.LocationFromPath("testdata/more-than-two-dependencies.toml"),
 				},
 				{
-					Name:      "TOML",
-					Version:   "2.0.0",
-					PURLType:  purl.TypeJulia,
-					Locations: []string{"testdata/more-than-two-dependencies.toml"},
+					Name:     "TOML",
+					Version:  "2.0.0",
+					PURLType: purl.TypeJulia,
+					Location: extractor.LocationFromPath("testdata/more-than-two-dependencies.toml"),
 				},
 			},
 		},
@@ -134,19 +134,19 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "DataStructures",
-					Version:   "0.17.0",
-					PURLType:  purl.TypeJulia,
-					Locations: []string{"testdata/git-dependency-with-commit.toml"},
+					Name:     "DataStructures",
+					Version:  "0.17.0",
+					PURLType: purl.TypeJulia,
+					Location: extractor.LocationFromPath("testdata/git-dependency-with-commit.toml"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0809951a1774dc724da22d26e4289bbaab77809a",
 					},
 				},
 				{
-					Name:      "Unregistered",
-					Version:   "0.2.0",
-					PURLType:  purl.TypeJulia,
-					Locations: []string{"testdata/git-dependency-with-commit.toml"},
+					Name:     "Unregistered",
+					Version:  "0.2.0",
+					PURLType: purl.TypeJulia,
+					Location: extractor.LocationFromPath("testdata/git-dependency-with-commit.toml"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/00vareladavid/Unregistered.jl",
 						Commit: "cca953732cd949cfe36d70e981a41ac32a5c6ae7",

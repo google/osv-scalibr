@@ -124,11 +124,11 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 	return inventory.Inventory{
 		Packages: []*extractor.Package{{
-			Name:      pkgName,
-			Version:   version,
-			PURLType:  purl.TypeGeneric,
-			Locations: []string{path},
-			Metadata:  md,
+			Name:     pkgName,
+			Version:  version,
+			PURLType: purl.TypeGeneric,
+			Location: extractor.LocationFromPath(path),
+			Metadata: md,
 		}},
 	}, nil
 }

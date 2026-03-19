@@ -140,7 +140,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		}
 
 		dbSpecific, err := structpb.NewStruct(map[string]any{
-			"extra": fmt.Sprintf("%s %s (%s) at %s", pkg.Name, pkg.Version, decision.extra, strings.Join(pkg.Locations, ", ")),
+			"extra": fmt.Sprintf("%s %s (%s) at %s", pkg.Name, pkg.Version, decision.extra, pkg.Location.PathOrEmpty()),
 		})
 		if err != nil {
 			return inventory.Finding{}, fmt.Errorf("failed creating dbSpecific struct: %w", err)

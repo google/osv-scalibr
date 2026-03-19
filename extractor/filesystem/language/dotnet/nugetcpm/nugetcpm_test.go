@@ -152,10 +152,10 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "LiteDB",
-					Version:   "5.0.12",
-					PURLType:  purl.TypeNuget,
-					Locations: []string{"testdata/valid"},
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 		},

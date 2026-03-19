@@ -165,7 +165,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			},
 			Licenses:   []string{record["L"]},
 			SourceCode: sourceCode,
-			Locations:  []string{input.Path},
+			Location:   extractor.LocationFromPath(input.Path),
 		}
 
 		if pkg.Name == "" || pkg.Version == "" {

@@ -154,7 +154,7 @@ func TestExtract(t *testing.T) {
 						PlatformOS:   "ubuntu24.04",
 						Architecture: "skylake",
 					},
-					Locations: []string{"testdata/validspec.json"},
+					Location: extractor.LocationFromPath("testdata/validspec.json"),
 				},
 				{
 					Name:     "compiler-wrapper",
@@ -166,7 +166,7 @@ func TestExtract(t *testing.T) {
 						PlatformOS:   "ubuntu24.04",
 						Architecture: "skylake",
 					},
-					Locations: []string{"testdata/validspec.json"},
+					Location: extractor.LocationFromPath("testdata/validspec.json"),
 				},
 				{
 					Name:     "gcc-runtime",
@@ -178,7 +178,7 @@ func TestExtract(t *testing.T) {
 						PlatformOS:   "ubuntu24.04",
 						Architecture: "skylake",
 					},
-					Locations: []string{"testdata/validspec.json"},
+					Location: extractor.LocationFromPath("testdata/validspec.json"),
 				},
 				{
 					Name:     "gmake",
@@ -190,7 +190,7 @@ func TestExtract(t *testing.T) {
 						PlatformOS:   "ubuntu24.04",
 						Architecture: "skylake",
 					},
-					Locations: []string{"testdata/validspec.json"},
+					Location: extractor.LocationFromPath("testdata/validspec.json"),
 				},
 			},
 		},

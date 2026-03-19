@@ -238,7 +238,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				Maintainer:        h.Get("Maintainer"),
 				Architecture:      h.Get("Architecture"),
 			},
-			Locations:             []string{input.Path},
+			Location:              extractor.LocationFromPath(input.Path),
 			ExploitabilitySignals: vexes,
 		}
 		sourceName, sourceVersion, err := parseSourceNameVersion(h.Get("Source"))

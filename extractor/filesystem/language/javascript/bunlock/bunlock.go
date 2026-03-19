@@ -149,7 +149,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Metadata: osv.DepGroupMetadata{
 				DepGroupVals: []string{},
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

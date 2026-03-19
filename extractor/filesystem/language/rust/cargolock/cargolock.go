@@ -81,10 +81,10 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 
 	for _, lockPackage := range parsedLockfile.Packages {
 		packages = append(packages, &extractor.Package{
-			Name:      lockPackage.Name,
-			Version:   lockPackage.Version,
-			PURLType:  purl.TypeCargo,
-			Locations: []string{input.Path},
+			Name:     lockPackage.Name,
+			Version:  lockPackage.Version,
+			PURLType: purl.TypeCargo,
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

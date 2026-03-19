@@ -172,10 +172,10 @@ func (e Extractor) extractFromYMLInput(ctx context.Context, input *filesystem.Sc
 
 	if metaYML.Name != "" && metaYML.Version != "" {
 		pkg := &extractor.Package{
-			Name:      metaYML.Name,
-			Version:   metaYML.Version,
-			PURLType:  purl.TypeCPAN,
-			Locations: []string{input.Path},
+			Name:     metaYML.Name,
+			Version:  metaYML.Version,
+			PURLType: purl.TypeCPAN,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 		packages = append(packages, pkg)
 	}
@@ -198,10 +198,10 @@ func (e Extractor) extractFromJSONInput(ctx context.Context, input *filesystem.S
 
 	if parsedMETAFile.Name != "" && parsedMETAFile.Version != "" {
 		pkg := &extractor.Package{
-			Name:      parsedMETAFile.Name,
-			Version:   parsedMETAFile.Version,
-			PURLType:  purl.TypeCPAN,
-			Locations: []string{input.Path},
+			Name:     parsedMETAFile.Name,
+			Version:  parsedMETAFile.Version,
+			PURLType: purl.TypeCPAN,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 		packages = append(packages, pkg)
 	}

@@ -36,53 +36,53 @@ func TestScan(t *testing.T) {
 		{
 			name: "VulnerableChromeAndEdge",
 			pkgs: []*extractor.Package{
-				{Name: "google-chrome", Version: "137.0.7151.67", Locations: []string{"/chrome"}},
-				{Name: "microsoft-edge", Version: "137.0.3296.61", Locations: []string{"/edge"}},
-				{Name: "chromium", Version: "137.0.7151.67", Locations: []string{"/chromium"}},
+				{Name: "google-chrome", Version: "137.0.7151.67", Location: extractor.LocationFromPath("/chrome")},
+				{Name: "microsoft-edge", Version: "137.0.3296.61", Location: extractor.LocationFromPath("/edge")},
+				{Name: "chromium", Version: "137.0.7151.67", Location: extractor.LocationFromPath("/chromium")},
 			},
 			wantVuln: 3,
 		},
 		{
 			name: "FixedVersionsNotReported",
 			pkgs: []*extractor.Package{
-				{Name: "google-chrome", Version: "137.0.7151.68", Locations: []string{"/chrome"}},
-				{Name: "microsoft-edge", Version: "137.0.3296.62", Locations: []string{"/edge"}},
-				{Name: "chromium", Version: "137.0.7151.68", Locations: []string{"/chromium"}},
+				{Name: "google-chrome", Version: "137.0.7151.68", Location: extractor.LocationFromPath("/chrome")},
+				{Name: "microsoft-edge", Version: "137.0.3296.62", Location: extractor.LocationFromPath("/edge")},
+				{Name: "chromium", Version: "137.0.7151.68", Location: extractor.LocationFromPath("/chromium")},
 			},
 			wantVuln: 0,
 		},
 		{
 			name: "EdgeExtendedStableFixedVersionNotReported",
 			pkgs: []*extractor.Package{
-				{Name: "microsoft-edge", Version: "136.0.3240.115", Locations: []string{"/edge"}},
+				{Name: "microsoft-edge", Version: "136.0.3240.115", Location: extractor.LocationFromPath("/edge")},
 			},
 			wantVuln: 0,
 		},
 		{
 			name: "EdgeExtendedStableBelowFixedReported",
 			pkgs: []*extractor.Package{
-				{Name: "microsoft-edge", Version: "136.0.3240.104", Locations: []string{"/edge"}},
+				{Name: "microsoft-edge", Version: "136.0.3240.104", Location: extractor.LocationFromPath("/edge")},
 			},
 			wantVuln: 1,
 		},
 		{
 			name: "EdgeNewerMajorNotReported",
 			pkgs: []*extractor.Package{
-				{Name: "microsoft-edge", Version: "145.0.3800.70", Locations: []string{"/edge"}},
+				{Name: "microsoft-edge", Version: "145.0.3800.70", Location: extractor.LocationFromPath("/edge")},
 			},
 			wantVuln: 0,
 		},
 		{
 			name: "InvalidVersionSkipped",
 			pkgs: []*extractor.Package{
-				{Name: "google-chrome", Version: "137.0.7151", Locations: []string{"/chrome"}},
+				{Name: "google-chrome", Version: "137.0.7151", Location: extractor.LocationFromPath("/chrome")},
 			},
 			wantVuln: 0,
 		},
 		{
 			name: "UnknownPackageSkipped",
 			pkgs: []*extractor.Package{
-				{Name: "unknown-browser", Version: "1.2.3.4", Locations: []string{"/unknown"}},
+				{Name: "unknown-browser", Version: "1.2.3.4", Location: extractor.LocationFromPath("/unknown")},
 			},
 			wantVuln: 0,
 		},
@@ -92,7 +92,7 @@ func TestScan(t *testing.T) {
 			// only applies to Electron-embedded Chromium, not standalone Chrome.
 			name: "StandaloneChrome131FixedVersionIsUpstream",
 			pkgs: []*extractor.Package{
-				{Name: "google-chrome", Version: "131.0.6778.264", Locations: []string{"/chrome"}},
+				{Name: "google-chrome", Version: "131.0.6778.264", Location: extractor.LocationFromPath("/chrome")},
 			},
 			wantVuln:  1,
 			wantFixed: "137.0.7151.68",
@@ -105,7 +105,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "chromium-apps",
 					Version:   "137.0.7151.67",
-					Locations: []string{"/chromiumapps"},
+					Location: extractor.LocationFromPath("/chromiumapps"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "131.0.6778.264",
 						VersionSource:   "chromium_binary",
@@ -120,7 +120,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "39.4.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "39.4.0",
 						VersionSource:   "plist_cf_bundle_version",
@@ -135,7 +135,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "36.4.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "36.4.0",
 						VersionSource:   "plist_cf_bundle_version",
@@ -150,7 +150,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "24.1.3.8",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "24.1.3.8",
 						VersionSource:   "plist_cf_bundle_version",
@@ -165,7 +165,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "36.3.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "36.3.0",
 						VersionSource:   "plist_cf_bundle_version",
@@ -180,7 +180,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "39.4.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7103.149",
 						ElectronVersion: "36.4.0",
@@ -196,7 +196,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "36.3.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7103.120",
 						ElectronVersion: "36.3.0",
@@ -212,7 +212,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "37.0.0-beta.3",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "138.0.7190.0",
 						ElectronVersion: "37.0.0-beta.3",
@@ -228,7 +228,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "37.0.0-beta.2",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "138.0.7189.0",
 						ElectronVersion: "37.0.0-beta.2",
@@ -244,7 +244,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "39.4.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7100.1",
 						ElectronVersion: "39.4.0",
@@ -260,7 +260,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "39.4.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "131.0.6778.264",
 						ElectronVersion: "39.4.0",
@@ -276,7 +276,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "36.4.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "136.0.7103.120",
 						ElectronVersion: "36.4.0.1",
@@ -292,7 +292,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "39.4.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ChromiumVersion: "142.0.7444.265",
 						ElectronVersion: "39.4.0",
@@ -314,7 +314,7 @@ func TestScan(t *testing.T) {
 				{
 					Name:      "electron",
 					Version:   "37.0.0",
-					Locations: []string{"/electron"},
+					Location: extractor.LocationFromPath("/electron"),
 					Metadata: &chromiumapps.Metadata{
 						ElectronVersion: "37.0.0",
 						VersionSource:   "plist_cf_bundle_version",
@@ -329,7 +329,7 @@ func TestScan(t *testing.T) {
 			// cases are now merged into a single "v[0] <= 136" case.
 			name: "EdgeMajor135Reported",
 			pkgs: []*extractor.Package{
-				{Name: "microsoft-edge", Version: "135.0.3100.50", Locations: []string{"/edge"}},
+				{Name: "microsoft-edge", Version: "135.0.3100.50", Location: extractor.LocationFromPath("/edge")},
 			},
 			wantVuln:  1,
 			wantFixed: "136.0.3240.115",
@@ -374,7 +374,7 @@ func TestScan(t *testing.T) {
 
 func TestScanCancelled(t *testing.T) {
 	px, err := packageindex.New([]*extractor.Package{
-		{Name: "google-chrome", Version: "137.0.7151.67", Locations: []string{"/chrome"}},
+		{Name: "google-chrome", Version: "137.0.7151.67", Location: extractor.LocationFromPath("/chrome")},
 	})
 	if err != nil {
 		t.Fatalf("packageindex.New() err: %v", err)

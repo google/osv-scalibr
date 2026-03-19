@@ -88,7 +88,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 				ArtifactID: component.Name,
 				GroupID:    component.Group,
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

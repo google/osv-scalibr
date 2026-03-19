@@ -78,10 +78,10 @@ func TestExtractorExtract(t *testing.T) {
 			path:    "ProgramFiles/Google/Chrome/Application/1.0.0.0/chrome.exe",
 			content: "random bytes Chrome/142.0.7444.265 tail",
 			want: []*extractor.Package{{
-				Name:      "google-chrome",
-				Version:   "142.0.7444.265",
-				PURLType:  purl.TypeGeneric,
-				Locations: []string{"ProgramFiles/Google/Chrome/Application/1.0.0.0/chrome.exe"},
+				Name:     "google-chrome",
+				Version:  "142.0.7444.265",
+				PURLType: purl.TypeGeneric,
+				Location: extractor.LocationFromPath("ProgramFiles/Google/Chrome/Application/1.0.0.0/chrome.exe"),
 				Metadata: &chromiumapps.Metadata{
 					ChromiumVersion: "142.0.7444.265",
 					VersionSource:   "chromium_binary",
@@ -93,10 +93,10 @@ func TestExtractorExtract(t *testing.T) {
 			path:    "Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework",
 			content: "something Chrome/142.0.7444.265 Electron/39.4.0 end",
 			want: []*extractor.Package{{
-				Name:      "electron",
-				Version:   "142.0.7444.265",
-				PURLType:  purl.TypeGeneric,
-				Locations: []string{"Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework"},
+				Name:     "electron",
+				Version:  "142.0.7444.265",
+				PURLType: purl.TypeGeneric,
+				Location: extractor.LocationFromPath("Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework"),
 				Metadata: &chromiumapps.Metadata{
 					ChromiumVersion: "142.0.7444.265",
 					ElectronVersion: "39.4.0",
@@ -109,10 +109,10 @@ func TestExtractorExtract(t *testing.T) {
 			path:    "opt/chromium/137.0.7151.67/chrome",
 			content: "no chromium token",
 			want: []*extractor.Package{{
-				Name:      "chromium",
-				Version:   "137.0.7151.67",
-				PURLType:  purl.TypeGeneric,
-				Locations: []string{"opt/chromium/137.0.7151.67/chrome"},
+				Name:     "chromium",
+				Version:  "137.0.7151.67",
+				PURLType: purl.TypeGeneric,
+				Location: extractor.LocationFromPath("opt/chromium/137.0.7151.67/chrome"),
 				Metadata: &chromiumapps.Metadata{
 					VersionSource: "path",
 				},
@@ -125,10 +125,10 @@ func TestExtractorExtract(t *testing.T) {
 			plistPath: "Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/Info.plist",
 			plistData: `<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleVersion</key><string>39.4.0</string></dict></plist>`,
 			want: []*extractor.Package{{
-				Name:      "electron",
-				Version:   "39.4.0",
-				PURLType:  purl.TypeGeneric,
-				Locations: []string{"Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework"},
+				Name:     "electron",
+				Version:  "39.4.0",
+				PURLType: purl.TypeGeneric,
+				Location: extractor.LocationFromPath("Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework"),
 				Metadata: &chromiumapps.Metadata{
 					ElectronVersion: "39.4.0",
 					VersionSource:   "plist_cf_bundle_version",
@@ -232,5 +232,5 @@ func packageCmpLess(a, b *extractor.Package) bool {
 	if a.Version != b.Version {
 		return a.Version < b.Version
 	}
-	return len(a.Locations) < len(b.Locations)
+	return a.Location.PathOrEmpty() < b.Location.PathOrEmpty()
 }
