@@ -100,9 +100,9 @@ func TestExtract(t *testing.T) {
 			WantInventory: inventory.Inventory{
 				Packages: []*extractor.Package{
 					{
-						Name:      "@modelcontextprotocol/server-filesystem",
-						Version:   "",
-						PURLType:  purl.TypeNPM,
+						Name:     "@modelcontextprotocol/server-filesystem",
+						Version:  "",
+						PURLType: purl.TypeNPM,
 						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
@@ -112,8 +112,8 @@ func TestExtract(t *testing.T) {
 						},
 					},
 					{
-						Name:      "mcp-server-git",
-						PURLType:  purl.TypePyPi,
+						Name:     "mcp-server-git",
+						PURLType: purl.TypePyPi,
 						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "uvx",
@@ -142,9 +142,9 @@ func TestExtract(t *testing.T) {
 			WantInventory: inventory.Inventory{
 				Packages: []*extractor.Package{
 					{
-						Name:      "@scope/pkg",
-						Version:   "1.2.3",
-						PURLType:  purl.TypeNPM,
+						Name:     "@scope/pkg",
+						Version:  "1.2.3",
+						PURLType: purl.TypeNPM,
 						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
@@ -170,9 +170,9 @@ func TestExtract(t *testing.T) {
 			WantInventory: inventory.Inventory{
 				Packages: []*extractor.Package{
 					{
-						Name:      "pkg",
-						Version:   "1.2.3",
-						PURLType:  purl.TypeNPM,
+						Name:     "pkg",
+						Version:  "1.2.3",
+						PURLType: purl.TypeNPM,
 						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
@@ -212,9 +212,9 @@ func TestExtract(t *testing.T) {
 			WantInventory: inventory.Inventory{
 				Packages: []*extractor.Package{
 					{
-						Name:      "@modelcontextprotocol/server-filesystem",
-						Version:   "0.6.2",
-						PURLType:  purl.TypeNPM,
+						Name:     "@modelcontextprotocol/server-filesystem",
+						Version:  "0.6.2",
+						PURLType: purl.TypeNPM,
 						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
@@ -224,15 +224,131 @@ func TestExtract(t *testing.T) {
 						},
 					},
 					{
-						Name:      "mcp-server-git",
-						Version:   "2025.12.17",
-						PURLType:  purl.TypePyPi,
+						Name:     "mcp-server-git",
+						Version:  "2025.12.17",
+						PURLType: purl.TypePyPi,
 						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "uvx",
 							Args:      []string{"mcp-server-git@2025.12.17", "--repository", "/tmp/safe_repo"},
 							Env:       map[string]string{},
 							RuntimeID: "vulnerable-python-git",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "UVX_With_Python_Flag",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"aws-documentation": {
+						"command": "uvx",
+						"args": ["--python", "3.13", "awslabs.aws-documentation-mcp-server"],
+						"env": {
+							"FASTMCP_LOG_LEVEL": "ERROR",
+							"AWS_DOCUMENTATION_PARTITION": "aws"
+						}
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "awslabs.aws-documentation-mcp-server",
+						Version:  "",
+						PURLType: purl.TypePyPi,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "uvx",
+							Args:      []string{"--python", "3.13", "awslabs.aws-documentation-mcp-server"},
+							Env:       map[string]string{"FASTMCP_LOG_LEVEL": "[REDACTED]", "AWS_DOCUMENTATION_PARTITION": "[REDACTED]"},
+							RuntimeID: "aws-documentation",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "NPX_With_Node_Arg_Schema",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"complex-npx": {
+						"command": "npx",
+						"args": ["--node-arg", "--inspect", "-y", "@some/pkg@2.0.0"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "@some/pkg",
+						Version:  "2.0.0",
+						PURLType: purl.TypeNPM,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "npx",
+							Args:      []string{"--node-arg", "--inspect", "-y", "@some/pkg@2.0.0"},
+							Env:       map[string]string{},
+							RuntimeID: "complex-npx",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "UVX_With_Equals_Sign_And_Unknown_Bool",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"complex-uvx": {
+						"command": "uvx",
+						"args": ["--verbose", "--python=3.13", "mypackage@1.0"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "mypackage",
+						Version:  "1.0",
+						PURLType: purl.TypePyPi,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "uvx",
+							Args:      []string{"--verbose", "--python=3.13", "mypackage@1.0"},
+							Env:       map[string]string{},
+							RuntimeID: "complex-uvx",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "Generic_Fallback_Command",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"custom-go-server": {
+						"command": "go",
+						"args": ["run", "main.go"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "mcp-server/custom-go-server",
+						Version:  "",
+						PURLType: purl.TypeGeneric,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "go",
+							Args:      []string{"run", "main.go"},
+							Env:       map[string]string{},
+							RuntimeID: "custom-go-server",
 						},
 					},
 				},
@@ -287,7 +403,7 @@ func TestExtractContextCancellation(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel the context immediately
+	cancel()
 
 	_, err = e.Extract(ctx, input)
 	if err == nil {

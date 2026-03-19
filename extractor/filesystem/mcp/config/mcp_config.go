@@ -151,7 +151,7 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 	// NPM (npx)
 	if cmd == "npx" && len(args) > 0 {
 		purlType = purl.TypeNPM
-		pkgArg := firstNonFlagArg(args)
+		pkgArg := firstNonFlagArg(cmd, args)
 		if pkgArg != "" {
 			purlName, purlVersion = splitPackageVersion(pkgArg)
 		}
@@ -160,7 +160,7 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 	} else if (cmd == "uvx" || cmd == "pip") && len(args) > 0 {
 		purlType = purl.TypePyPi
 		// uvx package-name
-		pkgArg := firstNonFlagArg(args)
+		pkgArg := firstNonFlagArg(cmd, args)
 		if pkgArg != "" {
 			purlName, purlVersion = splitPackageVersion(pkgArg)
 		}
@@ -176,13 +176,53 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 }
 
 // Helper to find the first non-flag argument.
-func firstNonFlagArg(args []string) string {
+func firstNonFlagArg(command string, args []string) string {
+	skipNext := false
+	cmdFlags := valueConsumingFlags[command] // Grab the schema for this specific command
+
 	for _, arg := range args {
-		if !strings.HasPrefix(arg, "-") {
-			return arg
+		if skipNext {
+			skipNext = false
+			continue
 		}
+
+		if strings.HasPrefix(arg, "-") {
+			// Handle the case where a user provides a value with an equals sign (e.g., --python=3.13)
+			// We split by '=' to get just the flag name ("--python")
+			flagName := strings.SplitN(arg, "=", 2)[0]
+
+			// Check if this flag is in our schema for this command
+			if cmdFlags != nil && cmdFlags[flagName] {
+				// Only skip the NEXT argument if they didn't use the '=' syntax
+				if !strings.Contains(arg, "=") {
+					skipNext = true
+				}
+			}
+			continue
+		}
+
+		return arg
 	}
+
 	return ""
+}
+
+var valueConsumingFlags = map[string]map[string]bool{
+	"uvx": {
+		"--python":    true,
+		"-p":          true,
+		"--with":      true,
+		"--from":      true,
+		"--directory": true,
+		"-C":          true,
+	},
+	"npx": {
+		"--package":  true,
+		"-p":         true,
+		"--node-arg": true,
+		"-n":         true,
+		"-c":         true,
+	},
 }
 
 // splitPackageVersion splits package name and version (e.g. pkg@1.2.3 -> pkg, 1.2.3)
