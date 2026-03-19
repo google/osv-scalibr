@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -219,13 +220,12 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 			continue
 		}
 
-		// Prepend embeddedFS.Path to Locations for all packages in mountedInv
+		// Prepend embeddedFS.Path to Locations for all packages in mountedInv.
 		for _, pkg := range mountedInv.Packages {
-			updatedLocations := make([]string, len(pkg.Locations))
-			for i, loc := range pkg.Locations {
-				updatedLocations[i] = fmt.Sprintf("%s:%s", embeddedFS.Path, loc)
+			prependEmbeddedFSPath(pkg.Location.Descriptor, embeddedFS)
+			for _, r := range pkg.Location.Related {
+				prependEmbeddedFSPath(&r, embeddedFS)
 			}
-			pkg.Locations = updatedLocations
 		}
 
 		additionalInv.Append(mountedInv)
@@ -853,4 +853,10 @@ func fileSize(file FileAPI) (int64, error) {
 		return 0, err
 	}
 	return info.Size(), nil
+}
+
+func prependEmbeddedFSPath(l *location.Location, embeddedFS *inventory.EmbeddedFS) {
+	if l != nil && l.File != nil {
+		l.File.Path = fmt.Sprintf("%s:%s", embeddedFS.Path, l.File.Path)
+	}
 }

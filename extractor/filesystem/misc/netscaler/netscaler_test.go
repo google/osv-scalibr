@@ -73,10 +73,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "NetScaler",
-					Version:   "14.1-36.5",
-					Locations: []string{"testdata/valid/loader.conf"},
-					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
+					Name:     "NetScaler",
+					Version:  "14.1-36.5",
+					Location: extractor.LocationFromPath("testdata/valid/loader.conf"),
+					Metadata: os.DirFS(wdir).(scalibrfs.FS),
 				},
 			},
 		},
@@ -87,10 +87,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "NetScaler",
-					Version:   "13.1-59.21",
-					Locations: []string{"testdata/valid/nsversion"},
-					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
+					Name:     "NetScaler",
+					Version:  "13.1-59.21",
+					Location: extractor.LocationFromPath("testdata/valid/nsversion"),
+					Metadata: os.DirFS(wdir).(scalibrfs.FS),
 				},
 			},
 		},
@@ -101,10 +101,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "NetScaler",
-					Version:   "12.1-55.329",
-					Locations: []string{"testdata/valid/ns.conf"},
-					Metadata:  os.DirFS(wdir).(scalibrfs.FS),
+					Name:     "NetScaler",
+					Version:  "12.1-55.329",
+					Location: extractor.LocationFromPath("testdata/valid/ns.conf"),
+					Metadata: os.DirFS(wdir).(scalibrfs.FS),
 				},
 			},
 		},

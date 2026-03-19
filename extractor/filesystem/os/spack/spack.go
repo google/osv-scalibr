@@ -204,11 +204,11 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		}
 
 		p := &extractor.Package{
-			Name:      n.Name,
-			Version:   n.Version,
-			PURLType:  purl.TypeSpack,
-			Metadata:  m,
-			Locations: []string{input.Path},
+			Name:     n.Name,
+			Version:  n.Version,
+			PURLType: purl.TypeSpack,
+			Metadata: m,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 		pkgs = append(pkgs, p)
 	}

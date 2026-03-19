@@ -169,11 +169,11 @@ func TestToPURL(t *testing.T) {
 		{
 			desc: "Valid_package_extractor",
 			pkg: &extractor.Package{
-				Name:      "software",
-				Version:   "1.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"/file1"},
-				Plugins:   []string{wheelegg.Name},
+				Name:     "software",
+				Version:  "1.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("/file1"),
+				Plugins:  []string{wheelegg.Name},
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypePyPi,

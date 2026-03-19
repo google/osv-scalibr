@@ -143,7 +143,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	for _, p := range pkgs {
-		p.Locations = []string{input.Path}
+		p.Location = extractor.LocationFromPath(input.Path)
 	}
 
 	e.reportFileExtracted(input.Path, input.Info, nil)

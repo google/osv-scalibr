@@ -131,9 +131,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 			Name:     pkg.Name,
 			Version:  pkg.Version,
 			PURLType: purl.TypeCocoapods,
-			Locations: []string{
-				input.Path,
-			},
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

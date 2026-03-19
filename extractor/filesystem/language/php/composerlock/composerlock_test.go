@@ -105,10 +105,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/one-package.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/one-package.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
@@ -125,10 +125,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/one-package-dev.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/one-package-dev.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
@@ -145,10 +145,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
@@ -157,10 +157,10 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "theseer/tokenizer",
-					Version:   "1.1.3",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages.json"},
+					Name:     "theseer/tokenizer",
+					Version:  "1.1.3",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
 					},
@@ -177,10 +177,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages-alt.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages-alt.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
@@ -189,10 +189,10 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "theseer/tokenizer",
-					Version:   "1.1.3",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages-alt.json"},
+					Name:     "theseer/tokenizer",
+					Version:  "1.1.3",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages-alt.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
 					},
@@ -209,10 +209,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "drupal/core",
-					Version:   "10.4.5",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "drupal/core",
+					Version:  "10.4.5",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "5247dbaa65b42b601058555f4a8b2bd541f5611f",
 					},
@@ -221,10 +221,10 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "drupal/tfa",
-					Version:   "2.0.0-alpha4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "drupal/tfa",
+					Version:  "2.0.0-alpha4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -233,10 +233,10 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "drupal/field_time",
-					Version:   "1.0.0-beta5",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "drupal/field_time",
+					Version:  "1.0.0-beta5",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -245,10 +245,10 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "theseer/tokenizer",
-					Version:   "1.1.3",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "theseer/tokenizer",
+					Version:  "1.1.3",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
 					},

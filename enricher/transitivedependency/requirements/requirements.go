@@ -193,12 +193,12 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		pkgs[i-1] = &extractor.Package{
-			Name:      node.Version.Name,
-			Version:   node.Version.Version,
-			PURLType:  purl.TypePyPi,
-			ScanRoot:  scanRoot,
-			Locations: []string{path},
-			Plugins:   []string{Name},
+			Name:     node.Version.Name,
+			Version:  node.Version.Version,
+			PURLType: purl.TypePyPi,
+			ScanRoot: scanRoot,
+			Location: extractor.LocationFromPath(path),
+			Plugins:  []string{Name},
 		}
 	}
 	return pkgs, nil

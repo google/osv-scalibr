@@ -254,18 +254,15 @@ func npmLockfile(lockfile string, fsys scalibrfs.FS) (*packagelockjson.LockFile,
 func MapNPMProjectRootsToPackages(packages []*extractor.Package) map[string][]*extractor.Package {
 	rootsToPackages := map[string][]*extractor.Package{}
 	for _, pkg := range packages {
-		if len(pkg.Locations) == 0 || pkg.PURLType != purl.TypeNPM {
+		if pkg.Location.Descriptor == nil || pkg.Location.Descriptor.File == nil || pkg.PURLType != purl.TypeNPM {
 			continue
 		}
 
-		for _, loc := range pkg.Locations {
-			root := npmProjectRootDirectory(loc)
-			if root == "" {
-				continue
-			}
-			rootsToPackages[root] = append(rootsToPackages[root], pkg)
-			break
+		root := npmProjectRootDirectory(pkg.Location.Descriptor.File.Path)
+		if root == "" {
+			continue
 		}
+		rootsToPackages[root] = append(rootsToPackages[root], pkg)
 	}
 	return rootsToPackages
 }

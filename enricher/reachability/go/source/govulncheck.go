@@ -84,7 +84,7 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 			continue
 		}
 		if pkg.Name == "stdlib" {
-			for _, l := range pkg.Locations {
+			if l := pkg.Location.PathOrEmpty(); l != "" {
 				if goModVersions[l] != "" {
 					continue
 				}

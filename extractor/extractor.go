@@ -16,6 +16,7 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -52,7 +53,7 @@ type Package struct {
 	// Source code level package identifiers.
 	SourceCode *SourceCodeIdentifier
 	// Paths or source of files related to the package.
-	Locations []string
+	Location PackageLocation
 	// The scan root that this package was found in.
 	// TODO(b/400910349): Unify Locations and ScanRoot into a single struct.
 	ScanRoot string
@@ -70,6 +71,31 @@ type Package struct {
 	Licenses []string
 	// If true, the package version is deprecated (e.g. yanked, unpublished, deprecated)
 	Deprecated bool
+}
+
+// PackageLocation stores the paths of files or artifacts related to the package.
+type PackageLocation struct {
+	// Main descriptor this package was extracted from (if applicable),
+	// e.g. the location of the lockfile.
+	Descriptor *location.Location
+	// Other locations related to this package, e.g. files installed by the OS package.
+	Related []location.Location
+}
+
+// PathOrEmpty returns the path of the Package's descriptor
+// or an empty string if the location is not a file path.
+func (p PackageLocation) PathOrEmpty() string {
+	if p.Descriptor == nil || p.Descriptor.File == nil {
+		return ""
+	}
+	return p.Descriptor.File.Path
+}
+
+// LocationFromPath returns a PackageLocation struct based on
+// the file path of the descriptor.
+func LocationFromPath(path string) PackageLocation {
+	loc := location.FromPath(path)
+	return PackageLocation{Descriptor: &loc}
 }
 
 // PURL returns the Package URL of this package.

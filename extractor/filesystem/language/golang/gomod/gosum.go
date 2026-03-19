@@ -62,10 +62,10 @@ func extractFromSum(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package,
 		}
 
 		packages[pkgKey{name: name, version: version}] = &extractor.Package{
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{goSumPath},
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(goSumPath),
 		}
 	}
 

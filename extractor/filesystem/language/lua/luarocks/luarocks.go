@@ -90,10 +90,10 @@ func (e Extractor) extractFromPath(path string) []*extractor.Package {
 		module := parts[len(parts)-3]
 		version := parts[len(parts)-2]
 		pkg := &extractor.Package{
-			Name:      module,
-			Version:   version,
-			PURLType:  purl.TypeLua,
-			Locations: []string{path},
+			Name:     module,
+			Version:  version,
+			PURLType: purl.TypeLua,
+			Location: extractor.LocationFromPath(path),
 		}
 		return []*extractor.Package{pkg}
 	}
