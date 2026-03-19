@@ -103,7 +103,7 @@ func TestExtract(t *testing.T) {
 						Name:      "@modelcontextprotocol/server-filesystem",
 						Version:   "",
 						PURLType:  purl.TypeNPM,
-						Locations: []string{"test/mcp.json"},
+						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
 							Args:      []string{"-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/files"},
@@ -114,7 +114,7 @@ func TestExtract(t *testing.T) {
 					{
 						Name:      "mcp-server-git",
 						PURLType:  purl.TypePyPi,
-						Locations: []string{"test/mcp.json"},
+						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "uvx",
 							Args:      []string{"mcp-server-git", "--repository", "test"},
@@ -145,7 +145,7 @@ func TestExtract(t *testing.T) {
 						Name:      "@scope/pkg",
 						Version:   "1.2.3",
 						PURLType:  purl.TypeNPM,
-						Locations: []string{"test/mcp.json"},
+						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
 							Args:      []string{"-y", "@scope/pkg@1.2.3"},
@@ -173,7 +173,7 @@ func TestExtract(t *testing.T) {
 						Name:      "pkg",
 						Version:   "1.2.3",
 						PURLType:  purl.TypeNPM,
-						Locations: []string{"test/mcp.json"},
+						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
 							Args:      []string{"pkg@1.2.3"},
@@ -215,7 +215,7 @@ func TestExtract(t *testing.T) {
 						Name:      "@modelcontextprotocol/server-filesystem",
 						Version:   "0.6.2",
 						PURLType:  purl.TypeNPM,
-						Locations: []string{"test/mcp.json"},
+						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "npx",
 							Args:      []string{"-y", "@modelcontextprotocol/server-filesystem@0.6.2", "/tmp/allowed_test_dir"},
@@ -227,7 +227,7 @@ func TestExtract(t *testing.T) {
 						Name:      "mcp-server-git",
 						Version:   "2025.12.17",
 						PURLType:  purl.TypePyPi,
-						Locations: []string{"test/mcp.json"},
+						Location: extractor.LocationFromPath("test/mcp.json"),
 						Metadata: &metadata.Metadata{
 							Command:   "uvx",
 							Args:      []string{"mcp-server-git@2025.12.17", "--repository", "/tmp/safe_repo"},

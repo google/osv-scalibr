@@ -84,8 +84,8 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		}
 
 		serverPkg := &extractor.Package{
-			Name:      name,
-			Locations: []string{input.Path},
+			Name:     name,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 
 		// 3. PURL Generation
