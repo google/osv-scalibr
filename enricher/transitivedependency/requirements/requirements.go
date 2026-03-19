@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -101,7 +102,12 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
-	for path, pkgMap := range pkgGroups {
+
+	paths := slices.Collect(maps.Keys(pkgGroups))
+	slices.Sort(paths)
+
+	for _, path := range paths {
+		pkgMap := pkgGroups[path]
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)

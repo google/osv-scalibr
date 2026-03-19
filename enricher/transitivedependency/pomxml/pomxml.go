@@ -37,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -122,11 +123,16 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, pomxml.Name)
 
-	for path, pkgMap := range pkgGroups {
+	paths := slices.Collect(maps.Keys(pkgGroups))
+	slices.Sort(paths)
+
+	for _, path := range paths {
+		pkgMap := pkgGroups[path]
 		f, err := input.ScanRoot.FS.Open(path)
 
 		if err != nil {
-			return err
+			log.Warnf("failed to open %s: %v", path, err)
+			continue
 		}
 
 		enrichedInv, err := e.extract(ctx, &filesystem.ScanInput{
@@ -138,7 +144,8 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		})
 
 		if err != nil {
-			return err
+			log.Warnf("failed resolution for %s: %v", path, err)
+			continue
 		}
 
 		internal.Add(enrichedInv.Packages, inv, Name, pkgMap)
