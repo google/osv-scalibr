@@ -20,10 +20,10 @@ import (
 	"reflect"
 
 	"github.com/google/osv-scalibr/converter"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
-
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
 	"github.com/google/uuid"
@@ -71,13 +71,15 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 	}
 
 	packageProto := &spb.Package{
-		Id:                            id.String(),
-		Name:                          pkg.Name,
-		Version:                       pkg.Version,
-		SourceCode:                    sourceCodeIdentifierToProto(pkg.SourceCode),
-		Purl:                          purlproto.ToProto(p),
-		Ecosystem:                     pkg.Ecosystem().String(),
-		Locations:                     pkg.Locations,
+		Id:         id.String(),
+		Name:       pkg.Name,
+		Version:    pkg.Version,
+		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
+		Purl:       purlproto.ToProto(p),
+		Ecosystem:  pkg.Ecosystem().String(),
+		// TODO(b/400910349): Remove once integrators no longer read this field.
+		Locations:                     packageLocationToLegacyProto(pkg.Location),
+		Location:                      packageLocationToProto(pkg.Location),
 		Plugins:                       pkg.Plugins,
 		ExploitabilitySignals:         exps,
 		ContainerImageMetadataIndexes: cii,
@@ -95,6 +97,32 @@ func sourceCodeIdentifierToProto(s *extractor.SourceCodeIdentifier) *spb.SourceC
 		Repo:   s.Repo,
 		Commit: s.Commit,
 	}
+}
+
+func packageLocationToProto(l extractor.PackageLocation) *spb.PackageLocation {
+	var related []*spb.Location
+	for _, r := range l.Related {
+		related = append(related, LocationToProto(&r))
+	}
+	return &spb.PackageLocation{
+		Desc:    LocationToProto(l.Descriptor),
+		Related: related,
+	}
+}
+
+// Conversion function into the legacy package.locations field.
+// TODO(b/400910349): Remove once integrators no longer use this.
+func packageLocationToLegacyProto(l extractor.PackageLocation) []string {
+	var locs []string
+	if l := l.Descriptor.PathOrEmpty(); l != "" {
+		locs = append(locs, l)
+	}
+	for _, r := range l.Related {
+		if l := r.PathOrEmpty(); l != "" {
+			locs = append(locs, l)
+		}
+	}
+	return locs
 }
 
 func setProtoMetadata(meta any, p *spb.Package) {
@@ -131,9 +159,6 @@ func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 		return nil, nil
 	}
 
-	var locations []string
-	locations = append(locations, pkgProto.GetLocations()...)
-
 	// TODO - b/421463494: Remove this once windows PURLs are corrected.
 	ptype := pkgProto.GetPurl().GetType()
 	if pkgProto.GetPurl().GetType() == purl.TypeGeneric && pkgProto.GetPurl().GetNamespace() == "microsoft" {
@@ -154,7 +179,7 @@ func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 		Name:                  pkgProto.GetName(),
 		Version:               pkgProto.GetVersion(),
 		SourceCode:            sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
-		Locations:             locations,
+		Location:              packageLocationToStruct(pkgProto.GetLocation()),
 		PURLType:              ptype,
 		Plugins:               pkgProto.GetPlugins(),
 		ExploitabilitySignals: exps,
@@ -171,6 +196,19 @@ func sourceCodeIdentifierToStruct(s *spb.SourceCodeIdentifier) *extractor.Source
 	return &extractor.SourceCodeIdentifier{
 		Repo:   s.Repo,
 		Commit: s.Commit,
+	}
+}
+
+func packageLocationToStruct(l *spb.PackageLocation) extractor.PackageLocation {
+	var related []location.Location
+	for _, l := range l.GetRelated() {
+		if s := LocationToStruct(l); s != nil {
+			related = append(related, *s)
+		}
+	}
+	return extractor.PackageLocation{
+		Descriptor: LocationToStruct(l.GetDesc()),
+		Related:    related,
 	}
 }
 

@@ -127,7 +127,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, nil
 	}
 
-	p.Locations = []string{input.Path}
+	p.Location = extractor.LocationFromPath(input.Path)
 	return inventory.Inventory{Packages: []*extractor.Package{p}}, nil
 }
 

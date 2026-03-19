@@ -116,7 +116,7 @@ func (enr Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *
 	jars := make(map[string]struct{})
 	for i := range inv.Packages {
 		if slices.Contains(inv.Packages[i].Plugins, archive.Name) {
-			jars[inv.Packages[i].Locations[0]] = struct{}{}
+			jars[inv.Packages[i].Location.PathOrEmpty()] = struct{}{}
 		}
 	}
 
@@ -141,7 +141,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 		client = http.DefaultClient
 	}
 	for i := range inv.Packages {
-		if inv.Packages[i].Locations[0] == jarPath {
+		if inv.Packages[i].Location.PathOrEmpty() == jarPath {
 			allDeps = append(allDeps, inv.Packages[i])
 		}
 	}
@@ -326,7 +326,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 
 	totalUnreachable := 0
 	for i := range inv.Packages {
-		if inv.Packages[i].Locations[0] != jarPath {
+		if inv.Packages[i].Location.PathOrEmpty() != jarPath {
 			continue
 		}
 		metadata := inv.Packages[i].Metadata.(*archivemeta.Metadata)

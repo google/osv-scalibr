@@ -120,8 +120,8 @@ func (e *fakeExtractor) Extract(ctx context.Context, input *filesystem.ScanInput
 	pkgs := []*extractor.Package{}
 	for _, name := range namesErr.Names {
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      name,
-			Locations: []string{path},
+			Name:     name,
+			Location: extractor.LocationFromPath(path),
 		})
 	}
 

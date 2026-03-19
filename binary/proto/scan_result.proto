@@ -1378,8 +1378,8 @@ message Location {
 
 message File {
   string path = 1;
-  // The specific position of the inventory item inside the file
-  optional int32 line_number = 2;
+  // The specific position of the inventory item inside the file.
+  int32 line_number = 2;
 }
 
 message ContainerImageMetadata {

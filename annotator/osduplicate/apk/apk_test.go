@@ -56,14 +56,14 @@ func TestAnnotate(t *testing.T) {
 			apkDB: "testdata/empty",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 		},
@@ -72,18 +72,18 @@ func TestAnnotate(t *testing.T) {
 			apkDB: "testdata/some",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          apk.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -91,8 +91,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 		},
@@ -102,14 +102,14 @@ func TestAnnotate(t *testing.T) {
 			apkDB: "testdata/some",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 					// No annotations
 				},
 			},

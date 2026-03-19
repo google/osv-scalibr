@@ -183,10 +183,10 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 	}
 	if validatedGoVers != "" {
 		res = append(res, &extractor.Package{
-			Name:      "go",
-			Version:   validatedGoVers,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filename},
+			Name:     "go",
+			Version:  validatedGoVers,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filename),
 		})
 	}
 
@@ -199,10 +199,10 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 		pkgVers = strings.TrimPrefix(pkgVers, "v")
 
 		pkg := &extractor.Package{
-			Name:      pkgName,
-			Version:   pkgVers,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filename},
+			Name:     pkgName,
+			Version:  pkgVers,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filename),
 		}
 		res = append(res, pkg)
 	}
@@ -242,10 +242,10 @@ func mainModule(binfo *buildinfo.BuildInfo, filename string) *extractor.Package 
 	}
 	version := strings.TrimPrefix(binfo.Main.Version, "v")
 	return &extractor.Package{
-		Name:      binfo.Main.Path,
-		Version:   version,
-		PURLType:  purl.TypeGolang,
-		Locations: []string{filename},
+		Name:     binfo.Main.Path,
+		Version:  version,
+		PURLType: purl.TypeGolang,
+		Location: extractor.LocationFromPath(filename),
 	}
 }
 
