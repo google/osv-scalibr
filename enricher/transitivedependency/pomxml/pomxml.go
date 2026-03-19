@@ -17,6 +17,7 @@ package pomxml
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -126,12 +127,14 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	paths := slices.Collect(maps.Keys(pkgGroups))
 	slices.Sort(paths)
 
+	var errs error
 	for _, path := range paths {
 		pkgMap := pkgGroups[path]
 		f, err := input.ScanRoot.FS.Open(path)
 
 		if err != nil {
 			log.Warnf("failed to open %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed to open %s: %w", path, err))
 			continue
 		}
 
@@ -145,13 +148,14 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 
 		if err != nil {
 			log.Warnf("failed resolution for %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
 			continue
 		}
 
 		internal.Add(enrichedInv.Packages, inv, Name, pkgMap)
 	}
 
-	return nil
+	return errs
 }
 
 func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {

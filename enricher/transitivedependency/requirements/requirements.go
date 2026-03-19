@@ -106,6 +106,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	paths := slices.Collect(maps.Keys(pkgGroups))
 	slices.Sort(paths)
 
+	var errs error
 	for _, path := range paths {
 		pkgMap := pkgGroups[path]
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
@@ -131,13 +132,14 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		// For each manifest, perform dependency resolution.
 		pkgs, err := e.resolve(ctx, path, list, input.ScanRoot.Path)
 		if err != nil {
-			log.Warnf("failed resolution: %v", err)
+			log.Warnf("failed resolution for %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
 			continue
 		}
 
 		internal.Add(pkgs, inv, Name, pkgMap)
 	}
-	return nil
+	return errs
 }
 
 // resolve performs dependency resolution for packages found in a single requirements.txt.
