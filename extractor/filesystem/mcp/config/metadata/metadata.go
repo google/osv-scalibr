@@ -33,9 +33,10 @@ func (m *Metadata) SetProto(p *spb.Package) {
 	}
 	p.Metadata = &spb.Package_McpMetadata{
 		McpMetadata: &spb.MCPMetadata{
-			Command: m.Command,
-			Args:    m.Args,
-			Env:     m.Env,
+			Command:   m.Command,
+			Args:      m.Args,
+			Env:       m.Env,
+			RuntimeId: m.RuntimeID,
 		},
 	}
 }
