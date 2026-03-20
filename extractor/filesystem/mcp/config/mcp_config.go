@@ -148,6 +148,8 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 
 	cmd := strings.ToLower(command)
 
+	isUvToolRun := cmd == "uv" && len(args) > 1 && args[0] == "tool" && args[1] == "run"
+
 	// NPM (npx)
 	if cmd == "npx" && len(args) > 0 {
 		purlType = purl.TypeNPM
@@ -156,8 +158,8 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 			purlName, purlVersion = splitPackageVersion(pkgArg)
 		}
 
-		// PyPI (uvx, pipx)
-	} else if (cmd == "uvx" || cmd == "pipx") && len(args) > 0 {
+		// PyPI (uvx, pipx, uv tool run)
+	} else if (cmd == "uvx" || cmd == "pipx" || isUvToolRun) && len(args) > 0 {
 		purlType = purl.TypePyPi
 		// uvx package-name
 		pkgArg := firstNonFlagArg(cmd, args)
@@ -205,6 +207,10 @@ func firstNonFlagArg(command string, args []string) string {
 			continue
 		}
 
+		if command == "uv" && (arg == "tool" || arg == "run") {
+			continue
+		}
+
 		return arg
 	}
 
@@ -230,6 +236,14 @@ var valueConsumingFlags = map[string]map[string]bool{
 	"pipx": {
 		"--python": true,
 		"--spec":   true,
+	},
+	"uv": {
+		"--python":    true,
+		"-p":          true,
+		"--with":      true,
+		"--from":      true,
+		"--directory": true,
+		"-C":          true,
 	},
 }
 

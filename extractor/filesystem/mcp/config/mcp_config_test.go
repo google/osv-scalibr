@@ -299,6 +299,34 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			Name: "Uv_Tool_Run_Command",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"uv-tool-server": {
+						"command": "uv",
+						"args": ["tool", "run", "--python", "3.12", "my-uv-server@1.0"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "my-uv-server",
+						Version:  "1.0",
+						PURLType: purl.TypePyPi,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "uv",
+							Args:      []string{"tool", "run", "--python", "3.12", "my-uv-server@1.0"},
+							Env:       map[string]string{},
+							RuntimeID: "uv-tool-server",
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "NPX_With_Node_Arg_Schema",
 			Path: "test/mcp.json",
 			Content: `{
