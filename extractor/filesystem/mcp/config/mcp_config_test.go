@@ -327,6 +327,62 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			Name: "Go_Run_Remote_Module",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"remote-go-server": {
+						"command": "go",
+						"args": ["run", "github.com/mark3labs/mcp-go/examples/ping@v0.1.0"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "github.com/mark3labs/mcp-go/examples/ping",
+						Version:  "v0.1.0",
+						PURLType: purl.TypeGolang,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "go",
+							Args:      []string{"run", "github.com/mark3labs/mcp-go/examples/ping@v0.1.0"},
+							Env:       map[string]string{},
+							RuntimeID: "remote-go-server",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "Go_Run_Local_File",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"local-go-server": {
+						"command": "go",
+						"args": ["run", "main.go"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "mcp-server/local-go-server",
+						Version:  "",
+						PURLType: purl.TypeGeneric,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "go",
+							Args:      []string{"run", "main.go"},
+							Env:       map[string]string{},
+							RuntimeID: "local-go-server",
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "NPX_With_Node_Arg_Schema",
 			Path: "test/mcp.json",
 			Content: `{

@@ -149,6 +149,7 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 	cmd := strings.ToLower(command)
 
 	isUvToolRun := cmd == "uv" && len(args) > 1 && args[0] == "tool" && args[1] == "run"
+	isGoRun := cmd == "go" && len(args) > 0 && args[0] == "run"
 
 	// NPM (npx)
 	if cmd == "npx" && len(args) > 0 {
@@ -167,9 +168,20 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 			purlName, purlVersion = splitPackageVersion(pkgArg)
 		}
 
-		// Fallback / Generic Binaries
+		// Golang (go run)
+	} else if isGoRun {
+		pkgArg := firstNonFlagArg(cmd, args)
+		// If it's a local Go file or path then generic.
+		// If it's a module path (e.g., github.com/...), treat as a Golang package.
+		if pkgArg != "" && !strings.HasSuffix(pkgArg, ".go") && !strings.HasPrefix(pkgArg, ".") && !strings.HasPrefix(pkgArg, "/") {
+			purlType = purl.TypeGolang
+			purlName, purlVersion = splitPackageVersion(pkgArg)
+		} else {
+			purlType = purl.TypeGeneric
+			purlName = "mcp-server/" + serverName
+		}
 	} else {
-		// It is a raw binary, script, or docker command.
+		// It is a raw binary or script.
 		// We classify this as 'generic' and namespace it under 'mcp-server'.
 		purlType = purl.TypeGeneric
 		purlName = "mcp-server/" + serverName
@@ -211,6 +223,10 @@ func firstNonFlagArg(command string, args []string) string {
 			continue
 		}
 
+		if command == "go" && arg == "run" {
+			continue
+		}
+
 		return arg
 	}
 
@@ -244,6 +260,10 @@ var valueConsumingFlags = map[string]map[string]bool{
 		"--from":      true,
 		"--directory": true,
 		"-C":          true,
+	},
+	"go": {
+		"-tags": true,
+		"-exec": true,
 	},
 }
 
