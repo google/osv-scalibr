@@ -156,8 +156,8 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 			purlName, purlVersion = splitPackageVersion(pkgArg)
 		}
 
-		// PyPI (uvx, pip)
-	} else if (cmd == "uvx" || cmd == "pip") && len(args) > 0 {
+		// PyPI (uvx, pipx)
+	} else if (cmd == "uvx" || cmd == "pipx") && len(args) > 0 {
 		purlType = purl.TypePyPi
 		// uvx package-name
 		pkgArg := firstNonFlagArg(cmd, args)
@@ -201,6 +201,10 @@ func firstNonFlagArg(command string, args []string) string {
 			continue
 		}
 
+		if command == "pipx" && arg == "run" {
+			continue
+		}
+
 		return arg
 	}
 
@@ -222,6 +226,10 @@ var valueConsumingFlags = map[string]map[string]bool{
 		"--node-arg": true,
 		"-n":         true,
 		"-c":         true,
+	},
+	"pipx": {
+		"--python": true,
+		"--spec":   true,
 	},
 }
 

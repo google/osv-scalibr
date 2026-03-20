@@ -271,6 +271,34 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			Name: "Pipx_With_Run_Command_And_Flags",
+			Path: "test/mcp.json",
+			Content: `{
+                "mcpServers": {
+                    "python-pipx-server": {
+                        "command": "pipx",
+                        "args": ["run", "--python", "3.12", "my-transient-server@2.5.0"]
+                    }
+                }
+            }`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "my-transient-server",
+						Version:  "2.5.0",
+						PURLType: purl.TypePyPi,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "pipx",
+							Args:      []string{"run", "--python", "3.12", "my-transient-server@2.5.0"},
+							Env:       map[string]string{},
+							RuntimeID: "python-pipx-server",
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "NPX_With_Node_Arg_Schema",
 			Path: "test/mcp.json",
 			Content: `{
