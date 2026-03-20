@@ -150,6 +150,7 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 
 	isUvToolRun := cmd == "uv" && len(args) > 1 && args[0] == "tool" && args[1] == "run"
 	isGoRun := cmd == "go" && len(args) > 0 && args[0] == "run"
+	isDockerRun := cmd == "docker" && len(args) > 0 && args[0] == "run"
 
 	// NPM (npx)
 	if cmd == "npx" && len(args) > 0 {
@@ -180,6 +181,16 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 			purlType = purl.TypeGeneric
 			purlName = "mcp-server/" + serverName
 		}
+
+		// Docker (docker run image:tag)
+	} else if isDockerRun {
+		purlType = purl.TypeDocker
+		pkgArg := firstNonFlagArg(cmd, args)
+		if pkgArg != "" {
+			purlName, purlVersion = splitDockerImageVersion(pkgArg)
+		}
+
+		// Fallback / Generic Binaries
 	} else {
 		// It is a raw binary or script.
 		// We classify this as 'generic' and namespace it under 'mcp-server'.
@@ -192,7 +203,8 @@ func determinePURL(serverName, command string, args []string) (string, string, s
 // Helper to find the first non-flag argument.
 func firstNonFlagArg(command string, args []string) string {
 	skipNext := false
-	cmdFlags := valueConsumingFlags[command] // Grab the schema for this specific command
+	cmdFlags := valueConsumingFlags[command]  // Grab the schema for this specific command
+	cmdIgnored := ignoredSubcommands[command] // Grab the subcommands to skip
 
 	for _, arg := range args {
 		if skipNext {
@@ -215,15 +227,7 @@ func firstNonFlagArg(command string, args []string) string {
 			continue
 		}
 
-		if command == "pipx" && arg == "run" {
-			continue
-		}
-
-		if command == "uv" && (arg == "tool" || arg == "run") {
-			continue
-		}
-
-		if command == "go" && arg == "run" {
+		if cmdIgnored != nil && cmdIgnored[arg] {
 			continue
 		}
 
@@ -265,6 +269,31 @@ var valueConsumingFlags = map[string]map[string]bool{
 		"-tags": true,
 		"-exec": true,
 	},
+	"docker": {
+		"-v":            true,
+		"--volume":      true,
+		"-p":            true,
+		"--publish":     true,
+		"-e":            true,
+		"--env":         true,
+		"--env-file":    true,
+		"--name":        true,
+		"--network":     true,
+		"-w":            true,
+		"--workdir":     true,
+		"-u":            true,
+		"--user":        true,
+		"--entrypoint":  true,
+		"--restart":     true,
+		"--mac-address": true,
+	},
+}
+
+var ignoredSubcommands = map[string]map[string]bool{
+	"pipx":   {"run": true},
+	"uv":     {"tool": true, "run": true},
+	"go":     {"run": true},
+	"docker": {"run": true},
 }
 
 // splitPackageVersion splits package name and version (e.g. pkg@1.2.3 -> pkg, 1.2.3)
@@ -278,5 +307,26 @@ func splitPackageVersion(arg string) (string, string) {
 		// Scoped package without version: @scope/pkg -> lastAt will be 0.
 		return arg[:lastAt], arg[lastAt+1:]
 	}
+	return arg, ""
+}
+
+// splitDockerImageVersion splits a docker image into name and version/tag.
+// e.g., ubuntu:20.04 -> ubuntu, 20.04 | golang@sha256:123... -> golang, sha256:123...
+func splitDockerImageVersion(arg string) (string, string) {
+	// First check for digest (@)
+	if idx := strings.LastIndex(arg, "@"); idx != -1 {
+		return arg[:idx], arg[idx+1:]
+	}
+
+	// Then check for tag (:)
+	if idx := strings.LastIndex(arg, ":"); idx != -1 {
+		// Ensure the colon comes after the last slash to avoid splitting on registry ports
+		// (e.g., registry.example.com:5000/my-image)
+		lastSlash := strings.LastIndex(arg, "/")
+		if idx > lastSlash {
+			return arg[:idx], arg[idx+1:]
+		}
+	}
+
 	return arg, ""
 }

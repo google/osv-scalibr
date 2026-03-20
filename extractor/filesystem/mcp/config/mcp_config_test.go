@@ -439,6 +439,62 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			Name: "Docker_Run_With_Tag_And_Flags",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"docker-server": {
+						"command": "docker",
+						"args": ["run", "-i", "--rm", "-e", "API_KEY=123", "-v", "/local:/container", "mcp/sqlite-server:1.2.0"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "mcp/sqlite-server",
+						Version:  "1.2.0",
+						PURLType: purl.TypeDocker,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "docker",
+							Args:      []string{"run", "-i", "--rm", "-e", "API_KEY=123", "-v", "/local:/container", "mcp/sqlite-server:1.2.0"},
+							Env:       map[string]string{},
+							RuntimeID: "docker-server",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "Docker_Run_With_Registry_Port_No_Tag",
+			Path: "test/mcp.json",
+			Content: `{
+				"mcpServers": {
+					"custom-registry-server": {
+						"command": "docker",
+						"args": ["run", "localhost:5000/my-company/custom-mcp"]
+					}
+				}
+			}`,
+			WantInventory: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "localhost:5000/my-company/custom-mcp",
+						Version:  "",
+						PURLType: purl.TypeDocker,
+						Location: extractor.LocationFromPath("test/mcp.json"),
+						Metadata: &metadata.Metadata{
+							Command:   "docker",
+							Args:      []string{"run", "localhost:5000/my-company/custom-mcp"},
+							Env:       map[string]string{},
+							RuntimeID: "custom-registry-server",
+						},
+					},
+				},
+			},
+		},
+		{
 			Name: "Generic_Fallback_Command",
 			Path: "test/mcp.json",
 			Content: `{
