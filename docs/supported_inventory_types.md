@@ -231,6 +231,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chrome extensions                  | `chrome/extensions` |
 | Maven entries in Bazel build files | `os/bazelmaven`     |
 | NetScaler installations            | `netscaler`         |
+| MCP servers                        | `mcp/config`        |
 
 ### EmbeddedFS
 
