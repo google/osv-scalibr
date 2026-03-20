@@ -22,15 +22,14 @@
 package scan_result_go_proto
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	osvschema "github.com/ossf/osv-schema/bindings/go/osvschema"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -14322,7 +14321,7 @@ func file_proto_scan_result_proto_init() {
 		(*LocationLegacy_EnvironmentVariable)(nil),
 		(*LocationLegacy_ContainerCommand)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[155].OneofWrappers = []any{}
+	file_proto_scan_result_proto_msgTypes[157].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
