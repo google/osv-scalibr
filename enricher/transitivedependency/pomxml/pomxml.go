@@ -67,6 +67,9 @@ func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network:  plugin.NetworkOnline,
 		DirectFS: true,
+		// This enricher follows registries defined in pom.xml, which can be risky if
+		// they point to malicious registries.
+		AllowUnsafePlugins: true,
 	}
 }
 
@@ -283,9 +286,10 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 				DepGroupVals: depGroups,
 				IsTransitive: !isDirect,
 			},
+			ScanRoot: input.Root,
 			// TODO(#408): Add merged paths in here as well
-			Locations: []string{input.Path},
-			Plugins:   []string{Name},
+			Location: extractor.LocationFromPath(input.Path),
+			Plugins:  []string{Name},
 		}
 		details[pkg.Name] = &pkg
 	}

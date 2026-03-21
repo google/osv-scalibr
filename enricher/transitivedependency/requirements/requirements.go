@@ -123,7 +123,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		}
 
 		// For each manifest, perform dependency resolution.
-		pkgs, err := e.resolve(ctx, path, list)
+		pkgs, err := e.resolve(ctx, path, list, input.ScanRoot.Path)
 		if err != nil {
 			log.Warnf("failed resolution: %v", err)
 			continue
@@ -135,7 +135,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 }
 
 // resolve performs dependency resolution for packages found in a single requirements.txt.
-func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Package) ([]*extractor.Package, error) {
+func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Package, scanRoot string) ([]*extractor.Package, error) {
 	overrideClient := resolution.NewOverrideClient(e.Client)
 	resolver := pypiresolve.NewResolver(overrideClient)
 
@@ -193,11 +193,12 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		pkgs[i-1] = &extractor.Package{
-			Name:      node.Version.Name,
-			Version:   node.Version.Version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{path},
-			Plugins:   []string{Name},
+			Name:     node.Version.Name,
+			Version:  node.Version.Version,
+			PURLType: purl.TypePyPi,
+			ScanRoot: scanRoot,
+			Location: extractor.LocationFromPath(path),
+			Plugins:  []string{Name},
 		}
 	}
 	return pkgs, nil

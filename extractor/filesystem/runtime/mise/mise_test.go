@@ -82,7 +82,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "terraform",
 						ToolVersion: "1",
 					},
-					Locations: []string{"testdata/valid-mise.toml"},
+					Location: extractor.LocationFromPath("testdata/valid-mise.toml"),
 				},
 				{
 					Name:     "aws-cli",
@@ -92,7 +92,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "aws-cli",
 						ToolVersion: "2",
 					},
-					Locations: []string{"testdata/valid-mise.toml"},
+					Location: extractor.LocationFromPath("testdata/valid-mise.toml"),
 				},
 				{
 					Name:     "node",
@@ -102,7 +102,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "node",
 						ToolVersion: "22",
 					},
-					Locations: []string{"testdata/valid-mise.toml"},
+					Location: extractor.LocationFromPath("testdata/valid-mise.toml"),
 				},
 			},
 		},

@@ -163,10 +163,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/ValidXML.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
-					Name:      "Chrome",
-					Version:   "130.0.6723.69",
-					PURLType:  purl.TypeMacApps,
-					Locations: []string{"testdata/ValidXML.plist"},
+					Name:     "Chrome",
+					Version:  "130.0.6723.69",
+					PURLType: purl.TypeMacApps,
+					Location: extractor.LocationFromPath("testdata/ValidXML.plist"),
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "Google Chrome",
 						CFBundleIdentifier:         "com.google.Chrome",
@@ -188,10 +188,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/BinaryApp.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
-					Name:      "gMacInformation",
-					Version:   "202410231131",
-					PURLType:  purl.TypeMacApps,
-					Locations: []string{"testdata/BinaryApp.plist"},
+					Name:     "gMacInformation",
+					Version:  "202410231131",
+					PURLType: purl.TypeMacApps,
+					Location: extractor.LocationFromPath("testdata/BinaryApp.plist"),
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "",
 						CFBundleIdentifier:         "com.google.corp.gMacInformation",
@@ -225,10 +225,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/MissingData.plist",
 			wantPackages: []*extractor.Package{
 				&extractor.Package{
-					Name:      "Chrome",
-					Version:   "",
-					PURLType:  purl.TypeMacApps,
-					Locations: []string{"testdata/MissingData.plist"},
+					Name:     "Chrome",
+					Version:  "",
+					PURLType: purl.TypeMacApps,
+					Location: extractor.LocationFromPath("testdata/MissingData.plist"),
 					Metadata: &macapps.Metadata{
 						CFBundleDisplayName:        "",
 						CFBundleIdentifier:         "com.google.Chrome",
