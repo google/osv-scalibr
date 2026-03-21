@@ -1,4 +1,4 @@
-	// Copyright 2026 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ import (
 	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
+	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
@@ -83,7 +84,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
-    "github.com/google/osv-scalibr/veles/secrets/qwenpat"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -327,7 +327,7 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return discordBotTokenToProto(t), nil
 	case qwenpat.QwenPAT:
 		return qwenPATToProto(t), nil
-    default:
+	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
 }
@@ -1145,17 +1145,15 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
-
 func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_QwenPat{
-			QwenPat: &spb.SecretData_QwenPat{
+		Secret: &spb.SecretData_Qwen_Pat{
+			Qwen_Pat: &spb.SecretData_QwenPat{
 				Pat: s.Pat,
 			},
 		},
 	}
 }
-
 
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
@@ -1515,8 +1513,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
-    case *spb.SecretData_QwenPat:
-		return qwenPATToStruct(s.GetQwenPat()), nil
+	case *spb.SecretData_Qwen_Pat:
+		return qwenPATToStruct(s.GetQwen_Pat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1944,7 +1942,6 @@ func vapidKeyToProto(t vapid.Key) *spb.SecretData {
 		},
 	}
 }
-
 
 func qwenPATToStruct(kPB *spb.SecretData_QwenPat) qwenpat.QwenPAT {
 	return qwenpat.QwenPAT{

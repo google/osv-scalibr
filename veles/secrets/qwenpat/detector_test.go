@@ -28,7 +28,6 @@ import (
 
 const testQwenAPIKey = `sk-8jxqzgqkdv4xvpmhczrjq7k` // 32 characters long
 
-
 func TestDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t, qwenpat.NewDetector(),

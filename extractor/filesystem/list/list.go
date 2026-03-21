@@ -160,6 +160,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
+	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
@@ -175,7 +176,6 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
-	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
