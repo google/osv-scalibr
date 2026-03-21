@@ -15,7 +15,7 @@
 package qwenpat
 
 // QwenPAT is a Veles Secret that holds relevant information for a
-// Qwen AI API Service Accounts keyy (prefix `sk-`).
+// Qwen AI API Service Accounts key (prefix `sk-`).
 // QwenPAT represents PAT used to authenticate requests
 type QwenPAT struct {
 	Pat string

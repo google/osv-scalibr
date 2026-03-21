@@ -17,11 +17,12 @@
 package qwenpat
 
 import (
-        "regexp"
+	"regexp"
 
-        "github.com/google/osv-scalibr/veles"
-        "github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
+
 // maxTokenLength is the maximum size of a Qwen PAT.
 const maxTokenLength = 35
 
@@ -32,7 +33,6 @@ const maxTokenLength = 35
 // 1. https://www.alibabacloud.com/help/en/model-studio/get-api-key
 // 2. https://qwenlm.github.io/qwen-code-docs/en/users/configuration/auth/#-option-2-api-key-flexible
 var patRe = regexp.MustCompile(`sk-[A-Za-z0-9]{32}`)
-
 
 // NewDetector returns a new simpletoken.Detector that matches OpenAI API keys
 // (both legacy and project-scoped formats).
