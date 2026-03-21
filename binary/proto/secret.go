@@ -1,4 +1,4 @@
-	// Copyright 2026 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1198,17 +1198,15 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 	}
 }
 
-
 func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_QwenPat{
-			QwenPat: &spb.SecretData_QwenPat{
+		Secret: &spb.SecretData_Qwen_Pat{
+			Qwen_Pat: &spb.SecretData_QwenPat{
 				Pat: s.Pat,
 			},
 		},
 	}
 }
-
 
 func validationResultToProto(r inventory.SecretValidationResult) (*spb.SecretStatus, error) {
 	status, err := validationStatusToProto(r.Status)
@@ -1557,8 +1555,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return veleshttp.Cookie{
 			Values: s.GetHttpCookie().GetValues(),
 		}, nil
-	case *spb.SecretData_QwenPat_:
-		return qwenPATToStruct(s.GetQwenPat()), nil
+	case *spb.SecretData_Qwen_Pat:
+		return qwenPATToStruct(s.GetQwen_Pat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
@@ -1979,7 +1977,6 @@ func vapidKeyToProto(t vapid.Key) *spb.SecretData {
 		},
 	}
 }
-
 
 func qwenPATToStruct(kPB *spb.SecretData_QwenPat) qwenpat.QwenPAT {
 	return qwenpat.QwenPAT{
