@@ -149,7 +149,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 		}
 
 		for _, p := range newInv.Packages {
-			p.ScanRoot = config.ScanRoots[i].Path
+			p.Location.ScanRoot = config.ScanRoots[i].Path
 		}
 
 		inv.Append(newInv)

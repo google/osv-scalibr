@@ -214,8 +214,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:     "org.transitive:chuck",
 				Version:  "1.1.1",
 				PURLType: purl.TypeMaven,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/transitive.xml"),
+				Location: extractor.LocationFromScanRootAndPath("testdata", "testdata/transitive.xml"),
 				Plugins:  []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
 					ArtifactID:   "chuck",
@@ -228,8 +227,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:     "org.transitive:dave",
 				Version:  "2.2.2",
 				PURLType: purl.TypeMaven,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/transitive.xml"),
+				Location: extractor.LocationFromScanRootAndPath("testdata", "testdata/transitive.xml"),
 				Plugins:  []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
 					ArtifactID:   "dave",
@@ -242,8 +240,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:     "org.transitive:eve",
 				Version:  "3.3.3",
 				PURLType: purl.TypeMaven,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/transitive.xml"),
+				Location: extractor.LocationFromScanRootAndPath("testdata", "testdata/transitive.xml"),
 				Plugins:  []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
 					ArtifactID:   "eve",
@@ -256,8 +253,7 @@ func TestEnricher_Enrich(t *testing.T) {
 				Name:     "org.transitive:frank",
 				Version:  "4.4.4",
 				PURLType: purl.TypeMaven,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/transitive.xml"),
+				Location: extractor.LocationFromScanRootAndPath("testdata", "testdata/transitive.xml"),
 				Plugins:  []string{"transitivedependency/pomxml"},
 				Metadata: &javalockfile.Metadata{
 					ArtifactID:   "frank",

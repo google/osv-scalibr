@@ -81,7 +81,7 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 	}
 
 	for _, p := range inv.Packages {
-		p.ScanRoot = config.ScanRoot.Path
+		p.Location.ScanRoot = config.ScanRoot.Path
 	}
 
 	return inv, statuses, nil
