@@ -211,6 +211,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | ------------------------------- | ---------------------------------------------------------------------------------- |
 | Containerd container images     | `containers/containerd-runtime` (standalone), `containers/containerd` (filesystem) |
 | Docker container images         | `containers/docker` (standalone)                                                   |
+| Argo CD Application images      | `containers/argocdimage` (filesystem)                                              |
+| Argo Workflow container images  | `containers/argoworkflowimage` (filesystem)                                        |
 | Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
 | K8s images                      | `containers/k8simage` (filesystem)                                                 |
 | Podman container images         | `containers/podman` (filesystem)                                                   |
