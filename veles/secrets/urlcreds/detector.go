@@ -12,28 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright 2026 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package urlcreds
 
 import (
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
+	mongodbconnectionurl "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 )
 
 const (
@@ -49,7 +37,16 @@ var (
 	urlPattern = regexp.MustCompile(`\b[a-zA-Z0-9+.-]+:\/\/[^\s\?@#\/]+@[^\s]+\b`)
 )
 
+// isMongoDBScheme returns true if the URL scheme is mongodb or mongodb+srv.
+func isMongoDBScheme(scheme string) bool {
+	s := strings.ToLower(scheme)
+	return s == "mongodb" || s == "mongodb+srv"
+}
+
 // NewDetector creates and returns a new instance of the URL with credentials detector.
+// For MongoDB connection URLs (mongodb:// or mongodb+srv://), it returns a
+// MongoDBConnectionURL secret instead of a generic Credentials secret, so that
+// the MongoDB-specific validator can be used.
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxURLLength,
@@ -61,6 +58,9 @@ func NewDetector() veles.Detector {
 			}
 			if !hasValidCredentials(u) {
 				return nil, false
+			}
+			if isMongoDBScheme(u.Scheme) {
+				return mongodbconnectionurl.MongoDBConnectionURL{URL: string(b)}, true
 			}
 			return Credentials{FullURL: u.String()}, true
 		},

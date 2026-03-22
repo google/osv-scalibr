@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package mongodbconnectionurl contains a Veles Secret type and a Validator for
+// MongoDB connection URLs with embedded credentials.
 package mongodbconnectionurl
 
 // MongoDBConnectionURL is a Veles Secret that holds a MongoDB connection URL

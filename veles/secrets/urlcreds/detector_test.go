@@ -12,20 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright 2026 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package urlcreds_test
 
 import (
@@ -35,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	mongodburi "github.com/google/osv-scalibr/veles/secrets/mongodburl"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 )
 
@@ -89,6 +76,27 @@ func TestDetector_truePositives(t *testing.T) {
 			input: "http://:pass%3Aword@example.com",
 			want: []veles.Secret{
 				urlcreds.Credentials{FullURL: "http://:pass%3Aword@example.com"},
+			},
+		},
+		{
+			name:  "mongodb_url_returns_MongoDBConnectionURL",
+			input: "mongodb://myUser:myPass@localhost",
+			want: []veles.Secret{
+				mongodburi.MongoDBConnectionURL{URL: "mongodb://myUser:myPass@localhost"},
+			},
+		},
+		{
+			name:  "mongodb_url_with_port_and_options",
+			input: "mongodb://myUser:D1fficultP%40ssw0rd@mongodb0.example.com:27017/?authSource=admin",
+			want: []veles.Secret{
+				mongodburi.MongoDBConnectionURL{URL: "mongodb://myUser:D1fficultP%40ssw0rd@mongodb0.example.com:27017/?authSource=admin"},
+			},
+		},
+		{
+			name:  "mongodb_srv_url_returns_MongoDBConnectionURL",
+			input: "mongodb+srv://myUser:myPass@cluster0.example.net/myDB?retryWrites=true",
+			want: []veles.Secret{
+				mongodburi.MongoDBConnectionURL{URL: "mongodb+srv://myUser:myPass@cluster0.example.net/myDB?retryWrites=true"},
 			},
 		},
 	}
