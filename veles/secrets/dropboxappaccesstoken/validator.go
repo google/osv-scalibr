@@ -32,6 +32,7 @@ const (
 
 // NewValidator creates a new Validator that validates Dropbox App access tokens
 // by making a POST request to the Dropbox API /2/users/get_current_account endpoint.
+// reference: https://www.dropbox.com/developers/documentation/http/documentation#users-get_current_account
 func NewValidator() *sv.Validator[APIAccessToken] {
 	v := &sv.Validator[APIAccessToken]{
 		Endpoint:   dropboxAPIBaseURL + AccountEndpoint,
