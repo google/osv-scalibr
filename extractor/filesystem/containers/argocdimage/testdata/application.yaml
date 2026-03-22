@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-custom-image
+  namespace: argocd
+spec:
+  project: default
+  source:
+    path: bitnamicharts/nginx
+    repoURL: registry-1.docker.io
+    targetRevision: 1.16.1
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: my-namespace
