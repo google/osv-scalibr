@@ -25,6 +25,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/internal/hclparse"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -34,14 +35,35 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "misc/terraformlock"
+	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
+	// If Extract gets a bigger file, it will return an error.
+	defaultMaxFileSizeBytes = 10 * units.MiB
 )
 
 // Extractor extracts Terraform providers from .terraform.lock.hcl files.
-type Extractor struct{}
+type Extractor struct {
+	maxFileSizeBytes int64
+}
 
-// New returns a new instance of the extractor.
+// New returns a Terraform lock file extractor.
+//
+// For most use cases, initialize with:
+// ```
+// e := New(&cpb.PluginConfig{})
+// ```
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	return &Extractor{}, nil
+	maxFileSizeBytes := defaultMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
+	}
+
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.TerraformLock { return c.GetTerraformLock() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	e := &Extractor{maxFileSizeBytes: maxFileSizeBytes}
+	return e, nil
 }
 
 // Name of the extractor.
@@ -84,7 +106,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	// Iterate through the body blocks to find provider blocks
-	for i := range int(body.NamedChildCount()) {
+	for i := range body.NamedChildCount() {
 		if err := ctx.Err(); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}

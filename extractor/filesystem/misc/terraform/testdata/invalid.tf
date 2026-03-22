@@ -1,2 +1,2 @@
-this is not valid terraform syntax {
-  invalid block
+module "servers" {
+  source = "./app-cluster"

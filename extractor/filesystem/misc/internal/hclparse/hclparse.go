@@ -17,37 +17,117 @@
 package hclparse
 
 import (
-	"context"
 	"fmt"
 
-	sitter "github.com/smacker/go-tree-sitter"
-	"github.com/smacker/go-tree-sitter/hcl"
+	"github.com/odvcencio/gotreesitter"
+	"github.com/odvcencio/gotreesitter/grammars"
 )
 
-// ParseHCL parses HCL content using tree-sitter and returns the root node.
-// The caller must call tree.Close() when done.
-func ParseHCL(ctx context.Context, content []byte, path string) (*sitter.Tree, *sitter.Node, error) {
-	parser := sitter.NewParser()
-	defer parser.Close()
-	parser.SetLanguage(hcl.GetLanguage())
+// Tree wraps a gotreesitter.Tree and provides a Close method for cleanup.
+type Tree struct {
+	inner *gotreesitter.Tree
+}
 
-	tree, err := parser.ParseCtx(ctx, nil, content)
+// Close releases the tree resources.
+func (t *Tree) Close() {
+	if t.inner != nil {
+		t.inner.Release()
+	}
+}
+
+// Node wraps a gotreesitter node and provides tree-sitter-like accessors.
+type Node struct {
+	inner *gotreesitter.Node
+	lang  *gotreesitter.Language
+}
+
+// Type returns the node's type name (e.g. "body", "block", "identifier").
+func (n *Node) Type() string {
+	if n == nil || n.inner == nil {
+		return ""
+	}
+	return n.inner.Type(n.lang)
+}
+
+// NamedChildCount returns the number of named children.
+func (n *Node) NamedChildCount() int {
+	if n == nil || n.inner == nil {
+		return 0
+	}
+	return n.inner.NamedChildCount()
+}
+
+// NamedChild returns the i-th named child, or nil.
+func (n *Node) NamedChild(i int) *Node {
+	if n == nil || n.inner == nil {
+		return nil
+	}
+	child := n.inner.NamedChild(i)
+	if child == nil {
+		return nil
+	}
+	return &Node{inner: child, lang: n.lang}
+}
+
+// HasError returns true if the node or any descendant has a parse error.
+func (n *Node) HasError() bool {
+	if n == nil || n.inner == nil {
+		return false
+	}
+	return n.inner.HasError()
+}
+
+// StartByte returns the byte offset where this node starts.
+func (n *Node) StartByte() uint32 {
+	if n == nil || n.inner == nil {
+		return 0
+	}
+	return n.inner.StartByte()
+}
+
+// EndByte returns the byte offset where this node ends.
+func (n *Node) EndByte() uint32 {
+	if n == nil || n.inner == nil {
+		return 0
+	}
+	return n.inner.EndByte()
+}
+
+// Text returns the source text covered by this node.
+func (n *Node) Text(src []byte) string {
+	if n == nil || n.inner == nil {
+		return ""
+	}
+	return n.inner.Text(src)
+}
+
+// ParseHCL parses HCL content using gotreesitter and returns the tree and root node.
+// The caller must call tree.Close() when done.
+// The first parameter is accepted for API compatibility but unused.
+func ParseHCL(_ any, content []byte, path string) (*Tree, *Node, error) {
+	lang := grammars.HclLanguage()
+	parser := gotreesitter.NewParser(lang)
+
+	tree, err := parser.Parse(content)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse HCL: %w", err)
 	}
 
 	root := tree.RootNode()
 	if root != nil && root.HasError() {
-		tree.Close()
+		tree.Release()
 		return nil, nil, fmt.Errorf("failed to parse HCL: syntax errors in %s", path)
 	}
 
-	return tree, root, nil
+	return &Tree{inner: tree}, &Node{inner: root, lang: lang}, nil
 }
 
 // FindNamedChildByType returns the first named child of the given type, or nil.
-func FindNamedChildByType(node *sitter.Node, childType string) *sitter.Node {
-	for i := range int(node.NamedChildCount()) {
+func FindNamedChildByType(node *Node, childType string) *Node {
+	if node == nil {
+		return nil
+	}
+	for i := range node.NamedChildCount() {
 		child := node.NamedChild(i)
 		if child != nil && child.Type() == childType {
 			return child
@@ -57,13 +137,16 @@ func FindNamedChildByType(node *sitter.Node, childType string) *sitter.Node {
 }
 
 // NodeText returns the text content of a node.
-func NodeText(node *sitter.Node, src []byte) string {
+func NodeText(node *Node, src []byte) string {
+	if node == nil {
+		return ""
+	}
 	return string(src[node.StartByte():node.EndByte()])
 }
 
 // GetBlockType returns the type identifier of a block node (e.g. "module", "terraform", "provider").
-func GetBlockType(block *sitter.Node, src []byte) string {
-	for i := range int(block.NamedChildCount()) {
+func GetBlockType(block *Node, src []byte) string {
+	for i := range block.NamedChildCount() {
 		child := block.NamedChild(i)
 		if child != nil && child.Type() == "identifier" {
 			return NodeText(child, src)
@@ -73,8 +156,8 @@ func GetBlockType(block *sitter.Node, src []byte) string {
 }
 
 // GetBlockLabel returns the first string label of a block node (e.g. the provider address).
-func GetBlockLabel(block *sitter.Node, src []byte) string {
-	for i := range int(block.NamedChildCount()) {
+func GetBlockLabel(block *Node, src []byte) string {
+	for i := range block.NamedChildCount() {
 		child := block.NamedChild(i)
 		if child != nil && child.Type() == "string_lit" {
 			tmplLit := FindNamedChildByType(child, "template_literal")
@@ -88,7 +171,7 @@ func GetBlockLabel(block *sitter.Node, src []byte) string {
 
 // ExtractStringFromExpr extracts the unquoted string value from an expression node.
 // It navigates: expression -> literal_value -> string_lit -> template_literal.
-func ExtractStringFromExpr(expr *sitter.Node, src []byte) string {
+func ExtractStringFromExpr(expr *Node, src []byte) string {
 	litVal := FindNamedChildByType(expr, "literal_value")
 	if litVal == nil {
 		return ""
@@ -105,8 +188,8 @@ func ExtractStringFromExpr(expr *sitter.Node, src []byte) string {
 }
 
 // ExtractAttribute extracts the key name and string value from an attribute node.
-func ExtractAttribute(attr *sitter.Node, src []byte) (key, val string) {
-	for i := range int(attr.NamedChildCount()) {
+func ExtractAttribute(attr *Node, src []byte) (key, val string) {
+	for i := range attr.NamedChildCount() {
 		child := attr.NamedChild(i)
 		if child == nil {
 			continue
@@ -122,8 +205,8 @@ func ExtractAttribute(attr *sitter.Node, src []byte) (key, val string) {
 }
 
 // FindSourceAndVersionValues walks the body node and extracts "source" and "version" attribute values.
-func FindSourceAndVersionValues(body *sitter.Node, src []byte) (source, version string) {
-	for i := range int(body.NamedChildCount()) {
+func FindSourceAndVersionValues(body *Node, src []byte) (source, version string) {
+	for i := range body.NamedChildCount() {
 		child := body.NamedChild(i)
 		if child == nil {
 			continue
@@ -145,7 +228,7 @@ func FindSourceAndVersionValues(body *sitter.Node, src []byte) (source, version 
 
 // ExtractIdentifierFromExpr extracts an identifier from an expression node.
 // It navigates: expression -> variable_expr -> identifier.
-func ExtractIdentifierFromExpr(expr *sitter.Node, src []byte) string {
+func ExtractIdentifierFromExpr(expr *Node, src []byte) string {
 	varExpr := FindNamedChildByType(expr, "variable_expr")
 	if varExpr == nil {
 		return ""

@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
-	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -36,14 +36,35 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "misc/terraform"
+	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
+	// If Extract gets a bigger file, it will return an error.
+	defaultMaxFileSizeBytes = 10 * units.MiB
 )
 
 // Extractor extracts Terraform modules and providers.
-type Extractor struct{}
+type Extractor struct {
+	maxFileSizeBytes int64
+}
 
-// New returns a new instance of the extractor.
+// New returns a Terraform extractor.
+//
+// For most use cases, initialize with:
+// ```
+// e := New(&cpb.PluginConfig{})
+// ```
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	return &Extractor{}, nil
+	maxFileSizeBytes := defaultMaxFileSizeBytes
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
+	}
+
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.Terraform { return c.GetTerraform() })
+	if specific.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	}
+
+	e := &Extractor{maxFileSizeBytes: maxFileSizeBytes}
+	return e, nil
 }
 
 // Name of the extractor.
@@ -87,7 +108,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{Packages: pkgs}, nil
 	}
 
-	for i := range int(body.NamedChildCount()) {
+	for i := range body.NamedChildCount() {
 		if err := ctx.Err(); err != nil {
 			return inventory.Inventory{},
 				fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
@@ -117,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // extractModule extracts a package from a module block using tree-sitter AST.
-func extractModule(block *sitter.Node, src []byte, location string) *extractor.Package {
+func extractModule(block *hclparse.Node, src []byte, location string) *extractor.Package {
 	body := hclparse.FindNamedChildByType(block, "body")
 	if body == nil {
 		return nil
@@ -140,7 +161,7 @@ func extractModule(block *sitter.Node, src []byte, location string) *extractor.P
 }
 
 // extractProviders extracts packages from terraform.required_providers blocks.
-func extractProviders(terraformBlock *sitter.Node, src []byte, location string) []*extractor.Package {
+func extractProviders(terraformBlock *hclparse.Node, src []byte, location string) []*extractor.Package {
 	var pkgs []*extractor.Package
 
 	body := hclparse.FindNamedChildByType(terraformBlock, "body")
@@ -149,7 +170,7 @@ func extractProviders(terraformBlock *sitter.Node, src []byte, location string) 
 	}
 
 	// Find required_providers blocks inside the terraform block
-	for i := range int(body.NamedChildCount()) {
+	for i := range body.NamedChildCount() {
 		child := body.NamedChild(i)
 		if child == nil {
 			continue
@@ -164,7 +185,7 @@ func extractProviders(terraformBlock *sitter.Node, src []byte, location string) 
 		}
 
 		// Each attribute in required_providers is a provider definition
-		for j := range int(rpBody.NamedChildCount()) {
+		for j := range rpBody.NamedChildCount() {
 			attr := rpBody.NamedChild(j)
 			if attr == nil {
 				continue
@@ -190,7 +211,7 @@ func extractProviders(terraformBlock *sitter.Node, src []byte, location string) 
 
 // extractProviderFromAttribute extracts source and version from a provider attribute
 // whose value is an object like { source = "hashicorp/aws", version = "~> 5.92" }.
-func extractProviderFromAttribute(attr *sitter.Node, src []byte) (source, version string) {
+func extractProviderFromAttribute(attr *hclparse.Node, src []byte) (source, version string) {
 	// Navigate: expression -> collection_value -> object -> object_elem(s)
 	expr := hclparse.FindNamedChildByType(attr, "expression")
 	if expr == nil {
@@ -207,7 +228,7 @@ func extractProviderFromAttribute(attr *sitter.Node, src []byte) (source, versio
 		return "", ""
 	}
 
-	for i := range int(obj.NamedChildCount()) {
+	for i := range obj.NamedChildCount() {
 		elem := obj.NamedChild(i)
 		if elem == nil {
 			continue
@@ -230,10 +251,10 @@ func extractProviderFromAttribute(attr *sitter.Node, src []byte) (source, versio
 
 // extractObjectElem extracts the key and value from an object_elem node.
 // The key is an identifier inside a variable_expr, and the value is a string literal.
-func extractObjectElem(elem *sitter.Node, src []byte) (key, val string) {
+func extractObjectElem(elem *hclparse.Node, src []byte) (key, val string) {
 	// object_elem has two expression children: key and val
-	var expressions []*sitter.Node
-	for i := range int(elem.NamedChildCount()) {
+	var expressions []*hclparse.Node
+	for i := range elem.NamedChildCount() {
 		child := elem.NamedChild(i)
 		if child != nil && child.Type() == "expression" {
 			expressions = append(expressions, child)
