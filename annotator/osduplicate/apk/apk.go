@@ -71,8 +71,8 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	defer f.Close()
 
 	mainOSPackages, err := extractApkCache(input.ScanRoot)
-	missingApkCache := errors.Is(err, ErrMissingApkCache)
-	if err != nil && !missingApkCache {
+	outOfSyncCache := errors.Is(err, ErrOutOfSyncCache)
+	if err != nil && !outOfSyncCache {
 		return fmt.Errorf("failed to read the apk cache: %w", err)
 	}
 
@@ -99,7 +99,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		filePath := path.Join(folder, filename)
 
 		for _, pkg := range locationToPKGs[filePath] {
-			if !missingApkCache && !mainOSPackages.contains(pkg) {
+			if !outOfSyncCache && !mainOSPackages.contains(pkg) {
 				continue
 			}
 			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{

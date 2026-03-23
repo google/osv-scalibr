@@ -63,7 +63,7 @@ aarch64
 -- etc/apk/repositories --
 https://dl-cdn.alpinelinux.org/alpine/v3.23/community
 `,
-			wantErr: ErrMissingApkCache,
+			wantErr: ErrOutOfSyncCache,
 		},
 		{
 			name: "missing_arch_file",
@@ -90,7 +90,7 @@ https://dl-cdn.alpinelinux.org/alpine/v3.24/community
 == APKINDEX ==
 P:curl
 `,
-			wantErr: ErrMissingApkCache,
+			wantErr: ErrOutOfSyncCache,
 		},
 		{
 			name: "multiple_repositories",

@@ -40,8 +40,9 @@ const (
 )
 
 var (
-	// ErrMissingApkCache is returned if the cache folder is missing or empty
-	ErrMissingApkCache = errors.New("missing apk cache")
+	// ErrOutOfSyncCache is returned if the cache is in an inconsistent state: the cache has been pruned or
+	// one (or more) of the repository metadata files is missing.
+	ErrOutOfSyncCache = errors.New("apk cache is out of sync or incomplete")
 
 	// mainOSRepoPattern matches the strict path structure of an official Alpine OS repo
 	// excluding the testing branch which does not return security advisories
@@ -78,6 +79,8 @@ func extractApkCache(root *fs.ScanRoot) (*mainOSPackages, error) {
 	res := &mainOSPackages{value: map[string]struct{}{}}
 	for _, r := range mainRepos {
 		path := getRepoIndexPath(r, arch)
+		// return error if only one of the repository metadata is broken
+		// since the cache is either in a unconstistent state or out of sync
 		if err := extractRepositoryIndex(root, path, res); err != nil {
 			return nil, err
 		}
@@ -157,7 +160,7 @@ func extractRepositoryIndex(root *fs.ScanRoot, filePath string, cache *mainOSPac
 	file, err := root.FS.Open(filePath)
 	if err != nil {
 		if errors.Is(err, iofs.ErrNotExist) {
-			return errors.Join(ErrMissingApkCache, err)
+			return errors.Join(ErrOutOfSyncCache, err)
 		}
 		return err
 	}
