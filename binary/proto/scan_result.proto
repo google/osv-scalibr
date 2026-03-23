@@ -858,6 +858,12 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    SAPAccessToken sap_access_token = 89;
+    SAPSuccessFactorsAccessToken sap_success_factors_access_token = 90;
+    SAPAribaOAuth2ClientCredentials sap_ariba_oauth2_client_credentials = 91;
+    SAPBTPOAuth2ClientCredentials sap_btp_oauth2_client_credentials = 93; 
+    SAPConcurAccessToken sap_concur_access_token = 94;
+    SAPConcurRefreshToken sap_concur_refresh_token = 95;
   }
 
   message GCPSAK {
@@ -1288,6 +1294,36 @@ message SecretData {
     string username = 2;
     // Salesforce OAuth2 private key
     string private_key = 3;
+  }
+
+  message SAPAccessToken {
+    string token = 1;
+    string url = 2;
+  }
+
+  message SAPSuccessFactorsAccessToken {
+    string token = 1;
+  }
+  
+  message SAPAribaOAuth2ClientCredentials {
+    string id = 1;
+    string secret = 2;
+  }
+
+  message SAPBTPOAuth2ClientCredentials {
+    string id = 1;
+    string secret = 2;
+    string token_url = 3;
+  } 
+
+  message SAPConcurAccessToken {
+    string token = 1;
+  }
+
+  message SAPConcurRefreshToken {
+    string id = 1;
+    string secret = 2;
+    string token = 3;
   }
 
   message BitwardenOAuth2AccessToken {
