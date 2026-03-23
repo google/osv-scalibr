@@ -58,6 +58,7 @@ import (
 	winmetadata "github.com/google/osv-scalibr/extractor/standalone/windows/common/metadata"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -83,8 +84,8 @@ var (
 			Maintainer:        "maintainer",
 			Architecture:      "amd64",
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{dpkg.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{dpkg.Name},
 		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 			Plugin:          dpkg.Name,
 			Justification:   vex.ComponentNotPresent,
@@ -116,7 +117,7 @@ var (
 				Architecture:      "amd64",
 			},
 		},
-		Locations: []string{"/file1"},
+		Location: pkgLocProtoFromPath("/file1"),
 		// TODO(b/400910349): Remove once integrators stop using these fields.
 		Plugins: []string{"os/dpkg"},
 		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{&spb.PackageExploitabilitySignal{
@@ -146,26 +147,26 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Maintainer:        "maintainer",
 			Architecture:      "amd64",
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{dpkg.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{dpkg.Name},
 	}
 	purlPythonPackage := &extractor.Package{
-		Name:      "software",
-		Version:   "1.0.0",
-		PURLType:  purl.TypePyPi,
-		Locations: []string{"/file1"},
-		Plugins:   []string{wheelegg.Name},
+		Name:     "software",
+		Version:  "1.0.0",
+		PURLType: purl.TypePyPi,
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{wheelegg.Name},
 		Metadata: &wheelegg.PythonPackageMetadata{
 			Author:      "author",
 			AuthorEmail: "author@corp.com",
 		},
 	}
 	pythonRequirementsPackage := &extractor.Package{
-		Name:      "foo",
-		Version:   "1.0",
-		PURLType:  purl.TypePyPi,
-		Locations: []string{"/file1"},
-		Plugins:   []string{requirements.Name},
+		Name:     "foo",
+		Version:  "1.0",
+		PURLType: purl.TypePyPi,
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{requirements.Name},
 		Metadata: &requirements.Metadata{
 			HashCheckingModeValues: []string{"sha256:123"},
 			VersionComparator:      ">=",
@@ -190,8 +191,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 			Source: javascriptmeta.Unknown,
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{packagejson.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{packagejson.Name},
 	}
 
 	purlDotnetDepsJSONPackage := &extractor.Package{
@@ -203,8 +204,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			PackageVersion: "1.0.0",
 			Type:           "type",
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{depsjson.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{depsjson.Name},
 	}
 
 	purlDotnetDepsJSONPackageProto := &spb.Package{
@@ -217,7 +218,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Version: "1.0.0",
 		},
 		Ecosystem: "NuGet",
-		Locations: []string{"/file1"},
+		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"dotnet/depsjson"},
 		Metadata: &spb.Package_DepsjsonMetadata{
 			DepsjsonMetadata: &spb.DEPSJSONMetadata{
@@ -231,6 +232,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 	windowsPackage := &extractor.Package{
 		Name:     "windows_server_2019",
 		Version:  "10.0.17763.3406",
+		Location: extractor.LocationFromPath("/file1"),
 		PURLType: "windows",
 		Metadata: &winmetadata.OSVersion{
 			Product:     "windows_server_2019",
@@ -264,8 +266,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Architecture:      "amd64",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/dpkg"},
+		Location: pkgLocProtoFromPath("/file1"),
+		Plugins:  []string{"os/dpkg"},
 	}
 	purlPythonPackageProto := &spb.Package{
 		Name:    "software",
@@ -277,7 +279,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Version: "1.0.0",
 		},
 		Ecosystem: "PyPI",
-		Locations: []string{"/file1"},
+		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"python/wheelegg"},
 		Metadata: &spb.Package_PythonMetadata{
 			PythonMetadata: &spb.PythonPackageMetadata{
@@ -296,7 +298,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Version: "1.0",
 		},
 		Ecosystem: "PyPI",
-		Locations: []string{"/file1"},
+		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"python/requirements"},
 		Metadata: &spb.Package_PythonRequirementsMetadata{
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
@@ -316,7 +318,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Version: "1.0.0",
 		},
 		Ecosystem: "npm",
-		Locations: []string{"/file1"},
+		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"javascript/packagejson"},
 		Metadata: &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
@@ -339,8 +341,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Version: "1.1.1",
 			},
 		},
-		Locations: []string{"/openssl"},
-		Plugins:   []string{cdx.Name},
+		Location: extractor.LocationFromPath("/openssl"),
+		Plugins:  []string{cdx.Name},
 	}
 	cdxPackageProto := &spb.Package{
 		Name:      "openssl",
@@ -362,8 +364,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				},
 			},
 		},
-		Locations: []string{"/openssl"},
-		Plugins:   []string{"sbom/cdx"},
+		Location: pkgLocProtoFromPath("/openssl"),
+		Plugins:  []string{"sbom/cdx"},
 	}
 	purlRPMPackage := &extractor.Package{
 		Name:     "openssh-clients",
@@ -380,9 +382,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Vendor:       "CentOS",
 			Architecture: "x86_64",
 		},
-		Licenses:  []string{"BSD"},
-		Locations: []string{"/file1"},
-		Plugins:   []string{rpm.Name},
+		Licenses: []string{"BSD"},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{rpm.Name},
 	}
 	purlRPMPackageProto := &spb.Package{
 		Name:    "openssh-clients",
@@ -415,8 +417,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Architecture: "x86_64",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/rpm"},
+		Location: pkgLocProtoFromPath("/file1"),
+		Plugins:  []string{"os/rpm"},
 	}
 	purlPACMANPackage := &extractor.Package{
 		Name:     "zstd",
@@ -428,8 +430,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			OSID:           "arch",
 			OSVersionID:    "20241201.0.284684",
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{pacman.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{pacman.Name},
 	}
 	purlPACMANPackageProto := &spb.Package{
 		Name:    "zstd",
@@ -453,8 +455,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				OsVersionId:    "20241201.0.284684",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/pacman"},
+		Location: pkgLocProtoFromPath("/file1"),
+		Plugins:  []string{"os/pacman"},
 	}
 	purlPORTAGEPackage := &extractor.Package{
 		Name:     "Capture-Tiny",
@@ -466,8 +468,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			OSID:           "gentoo",
 			OSVersionID:    "2.17",
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{portage.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{portage.Name},
 	}
 	purlPORTAGEPackageProto := &spb.Package{
 		Name:    "Capture-Tiny",
@@ -491,8 +493,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				OsVersionId:    "2.17",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/portage"},
+		Location: pkgLocProtoFromPath("/file1"),
+		Plugins:  []string{"os/portage"},
 	}
 	purlNixPackage := &extractor.Package{
 		Name:     "attr",
@@ -505,8 +507,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			OSVersionCodename: "vicuna",
 			OSVersionID:       "24.11",
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{nix.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{nix.Name},
 	}
 	purlNixPackageProto := &spb.Package{
 		Name:    "attr",
@@ -530,15 +532,15 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				OsVersionId:       "24.11",
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/nix"},
+		Location: pkgLocProtoFromPath("/file1"),
+		Plugins:  []string{"os/nix"},
 	}
 	purlHomebrewPackage := &extractor.Package{
-		Name:      "rclone",
-		Version:   "1.67.0",
-		PURLType:  purl.TypeBrew,
-		Locations: []string{"/file1"},
-		Plugins:   []string{homebrew.Name},
+		Name:     "rclone",
+		Version:  "1.67.0",
+		PURLType: purl.TypeBrew,
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{homebrew.Name},
 	}
 	purlHomebrewPackageProto := &spb.Package{
 		Name:    "rclone",
@@ -549,8 +551,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "rclone",
 			Version: "1.67.0",
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/homebrew"},
+		Location: pkgLocProtoFromPath("/file1"),
+		Plugins:  []string{"os/homebrew"},
 	}
 	purlWingetPackage := &extractor.Package{
 		Name:     "Git.Git",
@@ -565,8 +567,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Tags:     []string{"git", "vcs"},
 			Commands: []string{"git"},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{winget.Name},
+		Location: extractor.LocationFromPath("/file1"),
+		Plugins:  []string{winget.Name},
 	}
 	purlWingetPackageProto := &spb.Package{
 		Name:    "Git.Git",
@@ -588,8 +590,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Commands: []string{"git"},
 			},
 		},
-		Locations: []string{"/file1"},
-		Plugins:   []string{"os/winget"},
+		Location: pkgLocProtoFromPath("/file1"),
+		Plugins:  []string{"os/winget"},
 	}
 	containerdPackage := &extractor.Package{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
@@ -606,8 +608,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			UpperDir:    "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs",
 			WorkDir:     "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/work",
 		},
-		Locations: []string{"/file4"},
-		Plugins:   []string{ctrdfs.Name},
+		Location: extractor.LocationFromPath("/file4"),
+		Plugins:  []string{ctrdfs.Name},
 	}
 	containerdPackageProto := &spb.Package{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
@@ -627,8 +629,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				WorkDir:       "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/work",
 			},
 		},
-		Locations: []string{"/file4"},
-		Plugins:   []string{"containers/containerd"},
+		Location: pkgLocProtoFromPath("/file4"),
+		Plugins:  []string{"containers/containerd"},
 	}
 	containerdRuntimePackage := &extractor.Package{
 		Name:    "gcr.io/google-samples/hello-app:1.0",
@@ -642,8 +644,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			PID:         8915,
 			RootFS:      "/run/containerd/io.containerd.runtime.v2.task/default/1234567890/rootfs",
 		},
-		Locations: []string{"/file7"},
-		Plugins:   []string{ctrdruntime.Name},
+		Location: extractor.LocationFromPath("/file7"),
+		Plugins:  []string{ctrdruntime.Name},
 	}
 	containerdRuntimePackageProto := &spb.Package{
 		Name:      "gcr.io/google-samples/hello-app:1.0",
@@ -660,12 +662,13 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				RootfsPath:    "/run/containerd/io.containerd.runtime.v2.task/default/1234567890/rootfs",
 			},
 		},
-		Locations: []string{"/file7"},
-		Plugins:   []string{"containers/containerd-runtime"},
+		Location: pkgLocProtoFromPath("/file7"),
+		Plugins:  []string{"containers/containerd-runtime"},
 	}
 	windowsPackageProto := &spb.Package{
-		Name:    "windows_server_2019",
-		Version: "10.0.17763.3406",
+		Name:     "windows_server_2019",
+		Version:  "10.0.17763.3406",
+		Location: pkgLocProtoFromPath("/file1"),
 		Metadata: &spb.Package_WindowsOsVersionMetadata{
 			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
 				Product:     "windows_server_2019",
@@ -688,11 +691,11 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Plugins: []string{"windows/dismpatch"},
 	}
 	mavenPackage := &extractor.Package{
-		Name:      "abc:xyz",
-		Version:   "1.0.0",
-		PURLType:  purl.TypeMaven,
-		Locations: []string{"/pom.xml"},
-		Plugins:   []string{pomxml.Name, transitivedependencypomxml.Name},
+		Name:     "abc:xyz",
+		Version:  "1.0.0",
+		PURLType: purl.TypeMaven,
+		Location: extractor.LocationFromPath("/pom.xml"),
+		Plugins:  []string{pomxml.Name, transitivedependencypomxml.Name},
 		Metadata: &javalockfile.Metadata{
 			GroupID:      "abc",
 			ArtifactID:   "xyz",
@@ -710,8 +713,8 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Namespace: "abc",
 			Version:   "1.0.0",
 		},
-		Locations: []string{"/pom.xml"},
-		Plugins:   []string{pomxml.Name, transitivedependencypomxml.Name},
+		Location: pkgLocProtoFromPath("/pom.xml"),
+		Plugins:  []string{pomxml.Name, transitivedependencypomxml.Name},
 		Metadata: &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId:   "xyz",
@@ -722,8 +725,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 	}
 
 	podmanPackage := &extractor.Package{
-		Name:    "docker.io/redis",
-		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Name:     "docker.io/redis",
+		Version:  "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Location: extractor.LocationFromPath("/file1"),
 		Metadata: &podman.Metadata{
 			ExposedPorts: map[uint16][]string{6379: {"tcp"}},
 			PID:          4232,
@@ -737,8 +741,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Plugins: []string{podman.Name},
 	}
 	podmanPackageProto := &spb.Package{
-		Name:    "docker.io/redis",
-		Version: "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Name:     "docker.io/redis",
+		Version:  "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Location: pkgLocProtoFromPath("/file1"),
 		Metadata: &spb.Package_PodmanMetadata{
 			PodmanMetadata: &spb.PodmanMetadata{
 				ExposedPorts:  map[uint32]*spb.Protocol{6379: {Names: []string{"tcp"}}},
@@ -760,7 +765,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			ServiceAccount: "some-service-account@gserviceaccount.iam.google.com",
 			Signature:      make([]byte, 256),
 		},
-		Location: "/foo/bar/baz.json",
+		Location: location.FromPath("/foo/bar/baz.json"),
 		Validation: inventory.SecretValidationResult{
 			At:     startTime,
 			Status: veles.ValidationInvalid,
@@ -780,13 +785,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Status:      spb.SecretStatus_INVALID,
 			LastUpdated: timestamppb.New(startTime),
 		},
-		Locations: []*spb.LocationLegacy{
-			&spb.LocationLegacy{
-				Location: &spb.LocationLegacy_Filepath{
-					Filepath: &spb.Filepath{
-						Path: "/foo/bar/baz.json",
-					},
-				},
+		Location: &spb.Location{
+			File: &spb.File{
+				Path: "/foo/bar/baz.json",
 			},
 		},
 	}
@@ -807,7 +808,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				PrivateKey:              "-----BEGIN PRIVATE KEY-----\nREDACTED\n-----END PRIVATE KEY-----\n",
 			},
 		},
-		Location: "/foo/bar/baz.json",
+		Location: location.FromPath("/foo/bar/baz.json"),
 		Validation: inventory.SecretValidationResult{
 			At:     startTime,
 			Status: veles.ValidationInvalid,
@@ -836,20 +837,17 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Status:      spb.SecretStatus_INVALID,
 			LastUpdated: timestamppb.New(startTime),
 		},
-		Locations: []*spb.LocationLegacy{
-			&spb.LocationLegacy{
-				Location: &spb.LocationLegacy_Filepath{
-					Filepath: &spb.Filepath{
-						Path: "/foo/bar/baz.json",
-					},
-				},
+		Location: &spb.Location{
+			File: &spb.File{
+				Path: "/foo/bar/baz.json",
 			},
 		},
 	}
 
 	dockerPackage := &extractor.Package{
-		Name:    "redis",
-		Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Name:     "redis",
+		Version:  "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Location: extractor.LocationFromPath("/file1"),
 		Metadata: &docker.Metadata{
 			ImageName:   "redis",
 			ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
@@ -860,8 +858,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 	}
 
 	dockerPackageProto := &spb.Package{
-		Name:    "redis",
-		Version: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Name:     "redis",
+		Version:  "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
+		Location: pkgLocProtoFromPath("/file1"),
 		Metadata: &spb.Package_DockerContainersMetadata{
 			DockerContainersMetadata: &spb.DockerContainersMetadata{
 				ImageName:   "redis",
@@ -879,11 +878,13 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:     "express",
 		Version:  "4.17.1",
 		Licenses: []string{"MIT"},
+		Location: extractor.LocationFromPath("/file1"),
 	}
 	licensePackageProto := &spb.Package{
 		Name:     "express",
 		Version:  "4.17.1",
 		Licenses: []string{"MIT"},
+		Location: pkgLocProtoFromPath("/file1"),
 	}
 
 	testCases := []struct {
@@ -1594,6 +1595,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			opts := append([]cmp.Option{
 				protocmp.Transform(),
 				cmpopts.EquateEmpty(),
+				// Ignore legacy location fields.
+				// TODO(b/400910349): Remove once these fields are no longer set.
+				protocmp.IgnoreFields(&spb.Secret{}, "locations"),
 			}, pkgOpts...)
 
 			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
@@ -1623,6 +1627,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			opts = []cmp.Option{
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
 				cmpopts.EquateEmpty(),
+				// Ignore legacy location fields.
+				// TODO(b/400910349): Remove once these fields are no longer set.
+				protocmp.IgnoreFields(&spb.Secret{}, "locations"),
 			}
 
 			gotInv := proto.InventoryToStruct(invProto)

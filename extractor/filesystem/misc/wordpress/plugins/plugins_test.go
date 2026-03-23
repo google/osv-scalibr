@@ -135,10 +135,10 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "Akismet Anti-spam: Spam Protection",
-					Version:   "5.3",
-					PURLType:  purl.TypeWordpress,
-					Locations: []string{"testdata/valid"},
+					Name:     "Akismet Anti-spam: Spam Protection",
+					Version:  "5.3",
+					PURLType: purl.TypeWordpress,
+					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 		},

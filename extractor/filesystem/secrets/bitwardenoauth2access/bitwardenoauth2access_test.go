@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	velesbitwarden "github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
 )
@@ -111,7 +112,7 @@ func TestExtract(t *testing.T) {
 			wantInventory: inventory.Inventory{
 				Secrets: []*inventory.Secret{
 					{
-						Location: "data.json",
+						Location: location.FromPath("data.json"),
 						Secret: velesbitwarden.Token{
 							ClientID:     "d351d93b-adb0-4714-bbef-a11100fff9cc",
 							ClientSecret: "N8N2xWg4FV8lusbl5CHBb5XRil6kOa",
@@ -129,7 +130,7 @@ func TestExtract(t *testing.T) {
 			wantInventory: inventory.Inventory{
 				Secrets: []*inventory.Secret{
 					{
-						Location: "data.json",
+						Location: location.FromPath("data.json"),
 						Secret: velesbitwarden.Token{
 							ClientID:     "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 							ClientSecret: "AbCdEfGhIjKlMnOpQrStUvWxYz123456",

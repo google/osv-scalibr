@@ -7873,8 +7873,8 @@ func (x *Location) GetFile() *File {
 type File struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Path  string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	// The specific position of the inventory item inside the file
-	LineNumber    *int32 `protobuf:"varint,2,opt,name=line_number,json=lineNumber,proto3,oneof" json:"line_number,omitempty"`
+	// The specific position of the inventory item inside the file.
+	LineNumber    int32 `protobuf:"varint,2,opt,name=line_number,json=lineNumber,proto3" json:"line_number,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7917,8 +7917,8 @@ func (x *File) GetPath() string {
 }
 
 func (x *File) GetLineNumber() int32 {
-	if x != nil && x.LineNumber != nil {
-		return *x.LineNumber
+	if x != nil {
+		return x.LineNumber
 	}
 	return 0
 }
@@ -13623,12 +13623,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x10ContainerCommand\x12\x18\n" +
 	"\acommand\x18\x01 \x01(\tR\acommand\"-\n" +
 	"\bLocation\x12!\n" +
-	"\x04file\x18\x01 \x01(\v2\r.scalibr.FileR\x04file\"P\n" +
+	"\x04file\x18\x01 \x01(\v2\r.scalibr.FileR\x04file\";\n" +
 	"\x04File\x12\x12\n" +
-	"\x04path\x18\x01 \x01(\tR\x04path\x12$\n" +
-	"\vline_number\x18\x02 \x01(\x05H\x00R\n" +
-	"lineNumber\x88\x01\x01B\x0e\n" +
-	"\f_line_number\"\xb3\x02\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x1f\n" +
+	"\vline_number\x18\x02 \x01(\x05R\n" +
+	"lineNumber\"\xb3\x02\n" +
 	"\x16ContainerImageMetadata\x12\x14\n" +
 	"\x05index\x18\x01 \x01(\x05R\x05index\x12=\n" +
 	"\x0elayer_metadata\x18\x02 \x03(\v2\x16.scalibr.LayerMetadataR\rlayerMetadata\x12C\n" +
@@ -14222,7 +14221,6 @@ func file_proto_scan_result_proto_init() {
 		(*LocationLegacy_EnvironmentVariable)(nil),
 		(*LocationLegacy_ContainerCommand)(nil),
 	}
-	file_proto_scan_result_proto_msgTypes[74].OneofWrappers = []any{}
 	file_proto_scan_result_proto_msgTypes[155].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

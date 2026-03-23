@@ -124,7 +124,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 				continue
 			}
 
-			for _, location := range pkg.Locations {
+			if location := pkg.Location.PathOrEmpty(); location != "" {
 				// fs represents the filesystem where the vulnerable package was found.
 				// It's required to prevent duplicate security findings originating from
 				// the same filesystem.
@@ -196,10 +196,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 
 				if hasVulnerableConfig {
 					// Add locations and ns.conf to dbSpecific
-					locations := pkg.Locations
 					dbSpecific := &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("Vulnerable version: %s; Locations: %s", pkg.Version, strings.Join(locations, ", "))}},
+							"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("Vulnerable version: %s; Locations: %s", pkg.Version, pkg.Location.PathOrEmpty())}},
 						},
 					}
 					finding := d.findingForPackage(dbSpecific).PackageVulns[0]

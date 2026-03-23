@@ -158,11 +158,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			pkgVersion := strings.TrimSpace(match[3])
 
 			p := &extractor.Package{
-				Name:      pkgName,
-				Version:   pkgVersion,
-				PURLType:  purl.TypePyPi,
-				Locations: []string{input.Path},
-				Metadata:  &Metadata{VersionComparator: comp},
+				Name:     pkgName,
+				Version:  pkgVersion,
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath(input.Path),
+				Metadata: &Metadata{VersionComparator: comp},
 			}
 
 			packages = append(packages, p)

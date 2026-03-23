@@ -94,10 +94,9 @@ message Package {
   // Ecosystem - For software packages this corresponds to an OSV ecosystem
   // value, e.g. PyPI.
   string ecosystem = 27;
+  // TODO(b/400910349): Remove once integrators no longer use this.
+  repeated string locations = 2 [deprecated = true];
   // Paths or source of files related to the package.
-  // This will soon be deprecated in favor of |location|.
-  repeated string locations = 2;
-  // TODO(b/400910349): Start populating this and deprecate |locations|.
   PackageLocation location = 68;
   // The names of the plugins that found this software. Set by the
   // core library.
@@ -762,8 +761,8 @@ message UnknownBinaryAttribution {
 message Secret {
   SecretData secret = 1;
   SecretStatus status = 2;
-  repeated LocationLegacy locations = 3;
-  // TODO(b/400910349): Start populating this and deprecate |locations|.
+  // TODO(b/400910349): Remove once integrators no longer use this.
+  repeated LocationLegacy locations = 3 [deprecated = true];
   Location location = 4;
 }
 
@@ -1378,8 +1377,8 @@ message Location {
 
 message File {
   string path = 1;
-  // The specific position of the inventory item inside the file
-  optional int32 line_number = 2;
+  // The specific position of the inventory item inside the file.
+  int32 line_number = 2;
 }
 
 message ContainerImageMetadata {

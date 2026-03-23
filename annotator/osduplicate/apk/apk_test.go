@@ -60,16 +60,16 @@ func TestAnnotate(t *testing.T) {
 			fakeFS: "testdata/empty",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Version:   "14.2.0-r6",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Version:   "14.2.0-r6",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 		},
@@ -78,20 +78,20 @@ func TestAnnotate(t *testing.T) {
 			fakeFS: "testdata/nocache",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Version:   "14.2.0-r6",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Version:   "14.2.0-r6",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          apk.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -99,8 +99,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 		},
@@ -109,21 +109,21 @@ func TestAnnotate(t *testing.T) {
 			fakeFS: "testdata/cache",
 			packages: []*extractor.Package{
 				{
-					Name:      "libcurl",
-					Version:   "8.17.0-r1",
-					Locations: []string{"usr/lib/libcurl.so.4.8.0"},
+					Name:     "libcurl",
+					Version:  "8.17.0-r1",
+					Location: extractor.LocationFromPath("usr/lib/libcurl.so.4.8.0"),
 				},
 				{
-					Name:      "orb",
-					Version:   "1.4.10",
-					Locations: []string{"usr/bin/orb-update"},
+					Name:     "orb",
+					Version:  "1.4.10",
+					Location: extractor.LocationFromPath("usr/bin/orb-update"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libcurl",
-					Version:   "8.17.0-r1",
-					Locations: []string{"usr/lib/libcurl.so.4.8.0"},
+					Name:     "libcurl",
+					Version:  "8.17.0-r1",
+					Location: extractor.LocationFromPath("usr/lib/libcurl.so.4.8.0"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          apk.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -131,9 +131,9 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "orb",
-					Version:   "1.4.10",
-					Locations: []string{"usr/bin/orb-update"},
+					Name:     "orb",
+					Version:  "1.4.10",
+					Location: extractor.LocationFromPath("usr/bin/orb-update"),
 				},
 			},
 		},
@@ -143,16 +143,16 @@ func TestAnnotate(t *testing.T) {
 			fakeFS: "testdata/nocache",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Version:   "14.2.0-r6",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Version:   "14.2.0-r6",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 					// No annotations
 				},
 			},

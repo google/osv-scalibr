@@ -190,7 +190,7 @@ func TestExtract(t *testing.T) {
 						OSVersionCodename: "jammy",
 						OSVersionID:       "22.04",
 					},
-					Locations: []string{"testdata/valid"},
+					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,

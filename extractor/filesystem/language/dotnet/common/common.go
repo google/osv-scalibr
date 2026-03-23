@@ -61,10 +61,10 @@ func ExtractPackagesFromMSBuildXML(r io.Reader, filePath string) ([]*extractor.P
 			}
 
 			result = append(result, &extractor.Package{
-				Name:      pkg.Include,
-				Version:   pkg.Version,
-				PURLType:  purl.TypeNuget,
-				Locations: []string{filePath},
+				Name:     pkg.Include,
+				Version:  pkg.Version,
+				PURLType: purl.TypeNuget,
+				Location: extractor.LocationFromPath(filePath),
 			})
 		}
 	}

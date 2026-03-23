@@ -58,10 +58,10 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "python_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypePyPi,
@@ -72,10 +72,10 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "npm_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypeNPM,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPath("location"),
 				Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
 					Source: javascriptmeta.Unknown,
 				},
@@ -89,10 +89,10 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "hex_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypeHex,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeHex,
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeHex,
@@ -114,7 +114,7 @@ func TestToPURL(t *testing.T) {
 					},
 					CPEs: []string{},
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypePyPi,
@@ -137,7 +137,7 @@ func TestToPURL(t *testing.T) {
 					},
 					CPEs: []string{},
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeCargo,
@@ -156,7 +156,7 @@ func TestToPURL(t *testing.T) {
 					PackageName:       "pkg-name",
 					OSVersionCodename: "jammy",
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeDebian,
@@ -178,7 +178,7 @@ func TestToPURL(t *testing.T) {
 					PackageName:       "pkg-name",
 					OSVersionCodename: "jammy",
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeOpkg,

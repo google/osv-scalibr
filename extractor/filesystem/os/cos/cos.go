@@ -170,7 +170,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 				OSVersionID:   m["VERSION_ID"],
 				EbuildVersion: pkg.EbuildVersion,
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

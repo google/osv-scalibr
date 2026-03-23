@@ -156,7 +156,7 @@ func TestExtract(t *testing.T) {
 						OSID:           "gentoo",
 						OSVersionID:    "2.17",
 					},
-					Locations: []string{"testdata/valid"},
+					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,

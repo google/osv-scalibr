@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -171,7 +172,9 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		extraPaths = append(extraPaths, newPaths...)
 		for _, p := range newPKG {
 			// Note the path through which we refer to this requirements.txt file.
-			p.Locations = append([]string{initPath}, p.Locations...)
+			p.Location.Related = append([]location.Location{*p.Location.Descriptor}, p.Location.Related...)
+			initLoc := location.FromPath(initPath)
+			p.Location.Descriptor = &initLoc
 		}
 		pkgs = append(pkgs, newPKG...)
 	}
@@ -233,10 +236,10 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{filepath.ToSlash(path)},
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPath(filepath.ToSlash(path)),
 			Metadata: &Metadata{
 				HashCheckingModeValues: hashOptions,
 				VersionComparator:      comp,

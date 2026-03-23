@@ -134,10 +134,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			}
 			name, version := m[1], m[2]
 			p := &extractor.Package{
-				Name:      name,
-				Version:   version,
-				PURLType:  purl.TypeGem,
-				Locations: []string{input.Path},
+				Name:     name,
+				Version:  version,
+				PURLType: purl.TypeGem,
+				Location: extractor.LocationFromPath(input.Path),
 			}
 			if section.revision != "" {
 				p.SourceCode = &extractor.SourceCodeIdentifier{

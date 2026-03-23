@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -99,7 +100,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "secret.cnf",
+					Location: location.FromPath("secret.cnf"),
 				},
 			},
 		},
@@ -112,7 +113,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},
@@ -125,7 +126,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},
@@ -138,13 +139,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "user", Password: "another_password", Port: "3306",
 					},
-					Location: "to_include/another_to_include.ini",
+					Location: location.FromPath("to_include/another_to_include.ini"),
 				},
 				{
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},
@@ -157,13 +158,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "user", Password: "another_password", Port: "3306",
 					},
-					Location: "to_include/another_to_include.ini",
+					Location: location.FromPath("to_include/another_to_include.ini"),
 				},
 				{
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},

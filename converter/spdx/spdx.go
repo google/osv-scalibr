@@ -91,10 +91,20 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 		if len(pkg.Plugins) > 0 {
 			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])
 		}
-		if len(pkg.Locations) == 1 {
-			pSourceInfo += " from " + pkg.Locations[0]
-		} else if l := len(pkg.Locations); l > 1 {
-			pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", l, pkg.Locations[0], pkg.Locations[1])
+		if pkg.Location.Descriptor != nil && pkg.Location.Descriptor.File != nil && pkg.Location.Descriptor.File.Path != "" {
+			pSourceInfo += " from " + pkg.Location.Descriptor.File.Path
+		} else {
+			locs := []string{}
+			for _, l := range pkg.Location.Related {
+				if l.File != nil && l.File.Path != "" {
+					locs = append(locs, l.File.Path)
+				}
+			}
+			if len(locs) == 1 {
+				pSourceInfo += " from " + locs[0]
+			} else if len(locs) > 1 {
+				pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", len(locs), locs[0], locs[1])
+			}
 		}
 
 		licensesConcluded, otherLicenses := LicenseExpression(pkg.Licenses)

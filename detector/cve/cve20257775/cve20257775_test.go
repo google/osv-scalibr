@@ -36,51 +36,39 @@ func TestScan(t *testing.T) {
 
 	pkgs := []*extractor.Package{
 		{
-			Name:    "NetScaler",
-			Version: "14.1-47.47", // Vulnerable version
-			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:1:flash", "boot", "loader.conf"),
-			},
+			Name:     "NetScaler",
+			Version:  "14.1-47.47", // Vulnerable version
+			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:1:flash", "boot", "loader.conf")),
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:    "NetScaler",
-			Version: "14.1-47.48", // Benign Version
-			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:2:flash", "boot", "loader.conf"),
-			},
+			Name:     "NetScaler",
+			Version:  "14.1-47.48", // Benign Version
+			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:2:flash", "boot", "loader.conf")),
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:    "NetScaler",
-			Version: "13.1-59.21", // Vulnerable version
-			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:3:ns-13.1-59.21.gz"),
-			},
+			Name:     "NetScaler",
+			Version:  "13.1-59.21", // Vulnerable version
+			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:3:ns-13.1-59.21.gz")),
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:    "NetScaler",
-			Version: "13.1-59.22", // Benign Version
-			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:4:ns-13.1-59.22.gz"),
-			},
+			Name:     "NetScaler",
+			Version:  "13.1-59.22", // Benign Version
+			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:4:ns-13.1-59.22.gz")),
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:    "NetScaler",
-			Version: "12.1-55.329", // Vulnerable version
-			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:5:nsversion"),
-			},
+			Name:     "NetScaler",
+			Version:  "12.1-55.329", // Vulnerable version
+			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:5:nsversion")),
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 		{
-			Name:    "NetScaler",
-			Version: "12.1-55.330", // Benign Version
-			Locations: []string{
-				filepath.Join(dir, "testdata", "valid.vmdk:6:nsversion"),
-			},
+			Name:     "NetScaler",
+			Version:  "12.1-55.330", // Benign Version
+			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:6:nsversion")),
 			Metadata: scalibrfs.DirFS(filepath.Join(dir, "testdata")),
 		},
 	}

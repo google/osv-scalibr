@@ -112,8 +112,8 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 
 	for _, spdxPkg := range spdxDoc.Packages {
 		pkg := &extractor.Package{
-			Locations: []string{path},
-			Metadata:  &spdxmeta.Metadata{},
+			Location: extractor.LocationFromPath(path),
+			Metadata: &spdxmeta.Metadata{},
 		}
 		m := pkg.Metadata.(*spdxmeta.Metadata)
 		for _, extRef := range spdxPkg.PackageExternalReferences {
