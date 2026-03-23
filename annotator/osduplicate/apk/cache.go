@@ -119,6 +119,16 @@ func listMainRepositories(root *fs.ScanRoot) ([]string, error) {
 			continue
 		}
 
+		// handle tagged repositories, ex:
+		// @testing https://dl-cdn.alpinelinux.org/alpine/edge/testing
+		if strings.HasPrefix(line, "@") {
+			var ok bool
+			_, line, ok = strings.Cut(line, " ")
+			if !ok {
+				continue
+			}
+		}
+
 		// Check if it looks like a standard Alpine OS repository.
 		if !mainOSRepoPattern.MatchString(line) {
 			continue

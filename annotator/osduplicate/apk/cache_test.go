@@ -116,6 +116,25 @@ V:3.4
 `,
 			want: []string{"curl:8.1.2-r0", "nano:2.1"},
 		},
+		{
+			name: "tagged_repository",
+			fakeFS: `
+-- etc/apk/arch --
+aarch64
+-- etc/apk/repositories --
+https://dl-cdn.alpinelinux.org/alpine/v3.23/main
+@comm https://dl-cdn.alpinelinux.org/alpine/v3.23/community
+-- var/cache/apk/APKINDEX.caefdf39.tar.gz --
+== APKINDEX ==
+P:curl
+V:8.1.2-r0
+-- var/cache/apk/APKINDEX.ee9ee731.tar.gz --
+== APKINDEX ==
+P:nano
+V:2.1
+`,
+			want: []string{"curl:8.1.2-r0", "nano:2.1"},
+		},
 	}
 
 	for _, tt := range tests {
