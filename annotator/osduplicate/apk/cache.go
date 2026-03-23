@@ -43,8 +43,9 @@ var (
 	// ErrMissingApkCache is returned if the cache folder is missing or empty
 	ErrMissingApkCache = errors.New("missing apk cache")
 
-	// alpineRepoRegex matches the strict path structure of an official Alpine OS repo
-	alpineRepoRegex = regexp.MustCompile(`\/alpine\/(v\d+\.\d+|edge)\/(main|community|testing)\/?$`)
+	// mainOSRepoPattern matches the strict path structure of an official Alpine OS repo
+	// excluding the testing branch which does not return security advisories
+	mainOSRepoPattern = regexp.MustCompile(`dl-cdn.alpinelinux.org\/alpine\/(v\d+\.\d+|edge)\/(main|community)\/?$`)
 )
 
 // mainOSPackages contains the set of packages listed in main OS repositories indexes
@@ -54,8 +55,12 @@ type mainOSPackages struct {
 
 // contains returns true if a package found in main OS repo index
 func (a *mainOSPackages) contains(pkg *extractor.Package) bool {
-	_, exists := a.value[pkg.Name]
+	_, exists := a.value[key(pkg.Name, pkg.Version)]
 	return exists
+}
+
+func key(pkgName, pkgVersion string) string {
+	return pkgName + ":" + pkgVersion
 }
 
 // extractApkCache extracts main repositories information from the var/cache/apk/ folder
@@ -115,7 +120,7 @@ func listMainRepositories(root *fs.ScanRoot) ([]string, error) {
 		}
 
 		// Check if it looks like a standard Alpine OS repository.
-		if !alpineRepoRegex.MatchString(line) {
+		if !mainOSRepoPattern.MatchString(line) {
 			continue
 		}
 
@@ -171,9 +176,15 @@ func extractRepositoryIndex(root *fs.ScanRoot, filePath string, cache *mainOSPac
 		scanner := apkutil.NewScanner(tr)
 		for scanner.Scan() {
 			record := scanner.Record()
-			if pkgName, ok := record["P"]; ok {
-				cache.value[pkgName] = struct{}{}
+			pkgName, ok := record["P"]
+			if !ok {
+				continue
 			}
+			pkgVersion, ok := record["V"]
+			if !ok {
+				continue
+			}
+			cache.value[key(pkgName, pkgVersion)] = struct{}{}
 		}
 		return scanner.Err()
 	}

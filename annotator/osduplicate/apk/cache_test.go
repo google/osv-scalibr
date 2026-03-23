@@ -53,7 +53,7 @@ V:3.1.0-r0
 v3.23.3-260-gd483e0429d3
 `,
 			wantErr: nil,
-			want:    []string{"curl", "openssl"},
+			want:    []string{"curl:8.1.2-r0", "openssl:3.1.0-r0"},
 		},
 		{
 			name: "missing_cache_entirely",
@@ -91,6 +91,30 @@ https://dl-cdn.alpinelinux.org/alpine/v3.24/community
 P:curl
 `,
 			wantErr: ErrMissingApkCache,
+		},
+		{
+			name: "multiple_repositories",
+			fakeFS: `
+-- etc/apk/arch --
+aarch64
+-- etc/apk/repositories --
+https://dl-cdn.alpinelinux.org/alpine/v3.23/main
+https://dl-cdn.alpinelinux.org/alpine/v3.23/community
+https://pkgs.orb.net/stable/alpine
+-- var/cache/apk/APKINDEX.caefdf39.tar.gz --
+== APKINDEX ==
+P:curl
+V:8.1.2-r0
+-- var/cache/apk/APKINDEX.ee9ee731.tar.gz --
+== APKINDEX ==
+P:nano
+V:2.1
+-- var/cache/apk/APKINDEX.b3dcc868.tar.gz --
+== APKINDEX ==
+P:orb
+V:3.4
+`,
+			want: []string{"curl:8.1.2-r0", "nano:2.1"},
 		},
 	}
 
