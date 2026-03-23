@@ -235,6 +235,13 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
+			Name: "null json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.v2.json",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "could not extract"},
+		},
+		{
 			Name: "valid package-lock.json only",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/package-lock-only/package-lock.json",
