@@ -41,27 +41,25 @@ const (
 
 var (
 	// ErrMissingApkCache is returned if the cache folder is missing or empty
-	ErrMissingApkCache = errors.New("missing apk cache: " + apkCacheDir)
-	// ErrMissingApkRepoIndex is returned if a main OS cache entry is missing
-	ErrMissingApkRepoIndex = errors.New("missing apk repository index")
+	ErrMissingApkCache = errors.New("missing apk cache")
 
 	// alpineRepoRegex matches the strict path structure of an official Alpine OS repo
 	alpineRepoRegex = regexp.MustCompile(`\/alpine\/(v\d+\.\d+|edge)\/(main|community|testing)\/?$`)
 )
 
-// apkCache contains the set of packages listed in main OS repositories indexes
-type apkCache struct {
+// mainOSPackages contains the set of packages listed in main OS repositories indexes
+type mainOSPackages struct {
 	value map[string]struct{}
 }
 
-// isFromMainOSRepo returns true if a package found in main OS repo index
-func (a *apkCache) isFromMainOSRepo(pkg *extractor.Package) bool {
+// contains returns true if a package found in main OS repo index
+func (a *mainOSPackages) contains(pkg *extractor.Package) bool {
 	_, exists := a.value[pkg.Name]
 	return exists
 }
 
 // extractApkCache extracts main repositories information from the var/cache/apk/ folder
-func extractApkCache(root *fs.ScanRoot) (*apkCache, error) {
+func extractApkCache(root *fs.ScanRoot) (*mainOSPackages, error) {
 	arch, err := getSystemArch(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system architecture: %w", err)
@@ -72,22 +70,15 @@ func extractApkCache(root *fs.ScanRoot) (*apkCache, error) {
 		return nil, err
 	}
 
-	apkCache := &apkCache{
-		value: map[string]struct{}{},
-	}
-	errs := []error{}
+	res := &mainOSPackages{value: map[string]struct{}{}}
 	for _, r := range mainRepos {
 		path := getRepoIndexPath(r, arch)
-		if err := extractRepositoryIndex(root, path, apkCache); err != nil {
-			errs = append(errs, err)
+		if err := extractRepositoryIndex(root, path, res); err != nil {
+			return nil, err
 		}
 	}
 
-	if len(apkCache.value) == 0 {
-		errs = append(errs, ErrMissingApkCache)
-	}
-
-	return apkCache, errors.Join(errs...)
+	return res, nil
 }
 
 // getSystemArch reads the architecture from /etc/apk/arch
@@ -147,11 +138,11 @@ func getRepoIndexPath(repoURL string, arch string) string {
 }
 
 // extractRepositoryIndex opens the specified cached index file and parses it
-func extractRepositoryIndex(root *fs.ScanRoot, filePath string, cache *apkCache) error {
+func extractRepositoryIndex(root *fs.ScanRoot, filePath string, cache *mainOSPackages) error {
 	file, err := root.FS.Open(filePath)
 	if err != nil {
 		if errors.Is(err, iofs.ErrNotExist) {
-			return errors.Join(ErrMissingApkRepoIndex, err)
+			return errors.Join(ErrMissingApkCache, err)
 		}
 		return err
 	}

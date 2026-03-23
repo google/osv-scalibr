@@ -16,7 +16,6 @@ package apk
 
 import (
 	"maps"
-	"runtime"
 	"slices"
 	"testing"
 
@@ -27,9 +26,6 @@ import (
 )
 
 func TestExtractApkCache(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
 	tests := []struct {
 		name string
 		// fakeFS tarballs inner structure is represented using nested txtar
@@ -81,31 +77,20 @@ P:curl
 			wantErr: cmpopts.AnyError,
 		},
 		{
+			// The etc/apk/repositories file has been modified but
+			// the cache has not been refreshed
 			name: "comment_repository_ignored",
 			fakeFS: `
 -- etc/apk/arch --
 aarch64
 -- etc/apk/repositories --
 #https://dl-cdn.alpinelinux.org/alpine/v3.23/community
-https://example.com/custom/repo
+https://dl-cdn.alpinelinux.org/alpine/v3.24/community
 -- var/cache/apk/APKINDEX.caefdf39.tar.gz --
 == APKINDEX ==
 P:curl
 `,
 			wantErr: ErrMissingApkCache,
-		},
-		{
-			name: "skip_missing_repository_index_but_still_returns_error",
-			fakeFS: `
--- etc/apk/arch --
-aarch64
--- etc/apk/repositories --
-https://dl-cdn.alpinelinux.org/alpine/v3.23/community
--- var/cache/apk/APKINDEX.caefdf39.tar.gz --
-== APKINDEX ==
-P:curl
-`,
-			wantErr: ErrMissingApkRepoIndex,
 		},
 	}
 
