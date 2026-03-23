@@ -18,6 +18,7 @@ package packagelockjson
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"path"
@@ -300,7 +301,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 	}
 
 	if parsedLockfile == nil {
-		return nil, fmt.Errorf("could not extract: decoded null JSON value")
+		return nil, errors.New("could not extract: decoded null JSON value")
 	}
 
 	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile)))

@@ -18,6 +18,7 @@ package composerlock
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -105,7 +106,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	if parsedLockfile == nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract: decoded null JSON value")
+		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
 	}
 
 	packages := make(
