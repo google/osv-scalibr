@@ -57,22 +57,25 @@ func TestAnnotate(t *testing.T) {
 			packages: []*extractor.Package{
 				{
 					Name:      "libstdc++",
+					Version:   "14.2.0-r6",
 					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "libstdc++",
+					Version:   "14.2.0-r6",
 					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
 				},
 			},
 		},
 		{
-			desc:   "found_in_db_not_in_main_OS",
-			fakeFS: "testdata/not_main_OS",
+			desc:   "one_found_in_db-one_not(empty_cache)",
+			fakeFS: "testdata/nocache",
 			packages: []*extractor.Package{
 				{
 					Name:      "libstdc++",
+					Version:   "14.2.0-r6",
 					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
 				},
 				{
@@ -83,30 +86,7 @@ func TestAnnotate(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
-				},
-				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
-				},
-			},
-		},
-		{
-			desc:   "some_pkgs_found_in_db_and_in_main_OS_repository",
-			fakeFS: "testdata/some",
-			packages: []*extractor.Package{
-				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
-				},
-				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
-				},
-			},
-			wantPackages: []*extractor.Package{
-				{
-					Name:      "libstdc++",
+					Version:   "14.2.0-r6",
 					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          apk.Name,
@@ -121,22 +101,25 @@ func TestAnnotate(t *testing.T) {
 			},
 		},
 		{
-			desc:   "some_pkgs_found_in_db",
-			fakeFS: "testdata/some",
+			desc:   "both_found-one_from_main_one_not",
+			fakeFS: "testdata/cache",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:      "libcurl",
+					Version:   "8.17.0-r1",
+					Locations: []string{"usr/lib/libcurl.so.4.8.0"},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:      "orb",
+					Version:   "1.4.10",
+					Locations: []string{"usr/bin/orb-update"},
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:      "libcurl",
+					Version:   "8.17.0-r1",
+					Locations: []string{"usr/lib/libcurl.so.4.8.0"},
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          apk.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -144,24 +127,27 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:      "orb",
+					Version:   "1.4.10",
+					Locations: []string{"usr/bin/orb-update"},
 				},
 			},
 		},
 		{
 			desc:   "ctx_cancelled",
 			ctx:    cancelledContext,
-			fakeFS: "testdata/some",
+			fakeFS: "testdata/nocache",
 			packages: []*extractor.Package{
 				{
 					Name:      "libstdc++",
+					Version:   "14.2.0-r6",
 					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
 					Name:      "libstdc++",
+					Version:   "14.2.0-r6",
 					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
 					// No annotations
 				},
