@@ -190,7 +190,7 @@ func TestExtract(t *testing.T) {
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/null.json",
 			},
-			wantErr: extracttest.ContainsErrStr{Str: "could not extract"},
+			wantErr: extracttest.ContainsErrStr{Str: "decoded null JSON value"},
 		},
 		{
 			name: "invalid yml file",

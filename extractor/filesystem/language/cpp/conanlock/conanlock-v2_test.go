@@ -41,7 +41,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/null.v2.json",
 			},
-			WantErr: extracttest.ContainsErrStr{Str: "could not extract"},
+			WantErr: extracttest.ContainsErrStr{Str: "decoded null JSON value"},
 		},
 		{
 			Name: "one package",
