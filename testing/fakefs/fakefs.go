@@ -62,7 +62,13 @@ func PrepareFS(txt string, modifiers ...FileModifier) (scalibrfs.FS, error) {
 }
 
 // TarGzModifier parses the content of a .tar.gz file like a nested txtar
-// and builds the tarball content
+// and builds the tarball content, Example:
+//
+//	-- example.tar.gz --
+//	== FILE1.ext ==
+//	content
+//	== FILE2.ext ==
+//	content
 func TarGzModifier(name string, f *fstest.MapFile) error {
 	if !strings.HasSuffix(name, ".tar.gz") {
 		return nil
@@ -72,6 +78,8 @@ func TarGzModifier(name string, f *fstest.MapFile) error {
 	gw := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gw)
 
+	// == are used to differentiate between tar.gz and txtar control chars,
+	// convert them into -- so that txtar.Parse can parse them
 	innerData := bytes.ReplaceAll(f.Data, []byte("=="), []byte("--"))
 	archive := txtar.Parse(innerData)
 	for _, tf := range archive.Files {
