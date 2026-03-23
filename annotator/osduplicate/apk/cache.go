@@ -46,7 +46,7 @@ var (
 
 	// mainOSRepoPattern matches the strict path structure of an official Alpine OS repo
 	// excluding the testing branch which does not return security advisories
-	mainOSRepoPattern = regexp.MustCompile(`dl-cdn.alpinelinux.org\/alpine\/(v\d+\.\d+|edge)\/(main|community)\/?$`)
+	mainOSRepoPattern = regexp.MustCompile(`https://dl-cdn\.alpinelinux\.org\/alpine\/(v\d+\.\d+|edge)\/(main|community)\/?$`)
 )
 
 // mainOSPackages contains the set of packages listed in main OS repositories indexes
