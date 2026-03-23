@@ -104,6 +104,7 @@ message PluginSpecificConfig {
     SpackConfig spack = 69;
     CsProjConfig csproj = 70;
     NugetCPMConfig nuget_cpm = 71;
+    OSVDevConfig osvdev = 72;
   }
 }
 
@@ -516,6 +517,11 @@ message OSVLocalConfig {
   // The remote host to download zip files from, which will be suffixed with
   // "/<ecosystem>/all.zip"
   string remote_host = 3;
+}
+
+message OSVDevConfig {
+  // Timeout for the initial batch query to OSV.dev.
+  int64 initial_query_timeout_seconds = 1;
 }
 
 message CodeServerConfig {

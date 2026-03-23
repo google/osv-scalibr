@@ -26,7 +26,7 @@ import (
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-const envKeyLocalDBCacheDirectory = "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"
+const envKeyLocalDBCacheDirectory = "OSV_SCALIBR_LOCAL_DB_CACHE_DIRECTORY"
 
 // localMatcher implements the VulnerabilityMatcher interface by downloading the osv export zip files,
 // and performing the matching locally.
@@ -150,7 +150,7 @@ func setupLocalDBDirectory(localDBPath string) (string, error) {
 		}
 	}
 
-	altPath := path.Join(localDBPath, "osv-scanner")
+	altPath := path.Join(localDBPath, "osv-scalibr")
 	err = os.MkdirAll(altPath, 0750)
 	if err == nil {
 		return altPath, nil

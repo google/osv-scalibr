@@ -107,7 +107,7 @@ var (
 
 	// VulnMatching enrichers.
 	VulnMatching = InitMap{
-		osvdev.Name:   {noCFG(osvdev.NewDefault)},
+		osvdev.Name:   {osvdev.New},
 		osvlocal.Name: {osvlocal.New},
 	}
 
