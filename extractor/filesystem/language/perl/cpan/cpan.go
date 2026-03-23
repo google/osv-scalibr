@@ -18,6 +18,7 @@ package cpan
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -190,6 +191,10 @@ func (e Extractor) extractFromJSONInput(ctx context.Context, input *filesystem.S
 
 	if err != nil {
 		return nil, fmt.Errorf("could not extract: %w", err)
+	}
+
+	if parsedMETAFile == nil {
+		return nil, errors.New("could not extract: decoded null JSON value")
 	}
 
 	if err := ctx.Err(); err != nil {

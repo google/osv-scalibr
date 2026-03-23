@@ -18,6 +18,7 @@ package conanlock
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -228,6 +229,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	if parsedLockfile == nil {
+		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
 	}
 
 	pkgs := parseConanLock(*parsedLockfile)
