@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -103,12 +102,8 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
 
-	paths := slices.Collect(maps.Keys(pkgGroups))
-	slices.Sort(paths)
-
 	var errs error
-	for _, path := range paths {
-		pkgMap := pkgGroups[path]
+	for path, pkgMap := range pkgGroups {
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)

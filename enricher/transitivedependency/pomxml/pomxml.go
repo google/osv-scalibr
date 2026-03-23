@@ -124,12 +124,8 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, pomxml.Name)
 
-	paths := slices.Collect(maps.Keys(pkgGroups))
-	slices.Sort(paths)
-
 	var errs error
-	for _, path := range paths {
-		pkgMap := pkgGroups[path]
+	for path, pkgMap := range pkgGroups {
 		f, err := input.ScanRoot.FS.Open(path)
 
 		if err != nil {
