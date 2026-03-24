@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	peversionmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/peversion/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -39,8 +40,8 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "os/peversion"
-	// Maximum file size to parse (300 MB).
-	maxFileSizeBytes = 300 * 1024 * 1024
+	// defaultMaxFileSizeBytes is the default maximum file size to parse (300 MB).
+	defaultMaxFileSizeBytes = 300 * 1024 * 1024
 )
 
 // Precompiled regex patterns for filename parsing.
@@ -51,11 +52,12 @@ var (
 
 // Common Windows system directories that typically contain many PE files
 // but are less relevant for security scanning.
+// Uses forward slashes as paths are normalized by the filesystem walker.
 var systemDirFragments = []string{
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "System32",
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "WinSxS",
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "Servicing",
-	string(os.PathSeparator) + "Windows" + string(os.PathSeparator) + "SoftwareDistribution",
+	"/Windows/System32",
+	"/Windows/WinSxS",
+	"/Windows/Servicing",
+	"/Windows/SoftwareDistribution",
 }
 
 // Config configures the PE version extractor behavior.
@@ -63,12 +65,16 @@ type Config struct {
 	// SkipSystemDirs, if true, skips common Windows system directories
 	// like System32, WinSxS to reduce noise and scan time.
 	SkipSystemDirs bool
+	// MaxFileSizeBytes is the maximum file size to parse.
+	// Files larger than this are skipped. 0 means use default (300 MB).
+	MaxFileSizeBytes int64
 }
 
 // DefaultConfig returns the recommended default configuration.
 func DefaultConfig() Config {
 	return Config{
-		SkipSystemDirs: true,
+		SkipSystemDirs:   true,
+		MaxFileSizeBytes: defaultMaxFileSizeBytes,
 	}
 }
 
@@ -101,9 +107,7 @@ func (Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
-		OS:            plugin.OSWindows,
-		DirectFS:      true,
-		RunningSystem: true,
+		OS: plugin.OSWindows,
 	}
 }
 
@@ -119,19 +123,20 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 
 	// Skip common Windows system directories if configured.
-	if e.config.SkipSystemDirs && shouldSkipSystemDir(path) {
-		log.Debugf("peversion: Skipping system directory file: %q", path)
+	if e.config.SkipSystemDirs && ShouldSkipSystemDir(path) {
 		return false
 	}
 
 	// Skip files that are too large.
+	maxSize := e.config.MaxFileSizeBytes
+	if maxSize <= 0 {
+		maxSize = defaultMaxFileSizeBytes
+	}
 	info, err := api.Stat()
 	if err != nil {
-		log.Debugf("peversion: Could not stat file %q: %v", path, err)
 		return false
 	}
-	if info.Size() > maxFileSizeBytes {
-		log.Debugf("peversion: Skipping large file %q (%d bytes)", path, info.Size())
+	if info.Size() > maxSize {
 		return false
 	}
 
@@ -157,51 +162,51 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		defer func() {
 			dir := filepath.Dir(absPath)
 			if err := os.RemoveAll(dir); err != nil {
-				log.Debugf("peversion: Failed to clean up temporary directory %s: %v", dir, err)
+				log.Warnf("peversion: Failed to clean up temporary directory %s: %v", dir, err)
 			}
 		}()
 	}
 
 	// Extract version and product name from PE resources.
 	version, prodName, peMetadata := extractPEVersionWithMetadata(absPath)
-	log.Debugf("peversion: Extracted PE metadata - version: %q, prodName: %q, metadata: %v", version, prodName, peMetadata)
 
 	if prodName == "" {
-		// No useful product name found, skip this file.
-		log.Debugf("peversion: Skipping %q - no product name found", input.Path)
 		return inventory.Inventory{}, nil
 	}
 
-	normalizedVersion := normalizeVersion(version)
-	log.Debugf("peversion: Found PE package: %q (version: %q) at %q", prodName, normalizedVersion, input.Path)
+	normalizedVersion := NormalizeVersion(version)
 
-	// Create metadata map with PE version resource information.
-	metadata := map[string]any{
-		"original_path": input.Path,
-		"raw_version":   version,
-	}
-	// Add PE version resource metadata if available.
-	for key, value := range peMetadata {
-		metadata["pe_"+key] = value
+	// Create metadata struct with PE version resource information.
+	md := &peversionmetadata.Metadata{
+		OriginalPath:     input.Path,
+		RawVersion:       version,
+		CompanyName:      peMetadata["CompanyName"],
+		FileDescription:  peMetadata["FileDescription"],
+		OriginalFilename: peMetadata["OriginalFilename"],
+		InternalName:     peMetadata["InternalName"],
+		PrivateBuild:     peMetadata["PrivateBuild"],
+		SpecialBuild:     peMetadata["SpecialBuild"],
+		Comments:         peMetadata["Comments"],
 	}
 
 	pkg := &extractor.Package{
 		Name:       prodName,
 		Version:    normalizedVersion,
 		PURLType:   purl.TypeGeneric,
-		Locations:  []string{input.Path},
-		Metadata:   metadata,
+		Location:   extractor.LocationFromPath(input.Path),
+		Metadata:   md,
 		SourceCode: &extractor.SourceCodeIdentifier{},
 	}
 
 	return inventory.Inventory{Packages: []*extractor.Package{pkg}}, nil
 }
 
-// shouldSkipSystemDir checks if a path contains common system directories.
-func shouldSkipSystemDir(path string) bool {
-	lowerPath := strings.ToLower(path)
+// ShouldSkipSystemDir checks if a path contains common system directories.
+func ShouldSkipSystemDir(path string) bool {
+	// Normalize backslashes to forward slashes for consistent matching.
+	normalizedPath := strings.ToLower(strings.ReplaceAll(path, "\\", "/"))
 	for _, frag := range systemDirFragments {
-		if strings.Contains(lowerPath, strings.ToLower(frag)) {
+		if strings.Contains(normalizedPath, strings.ToLower(frag)) {
 			return true
 		}
 	}
@@ -253,8 +258,8 @@ func extractPEVersionWithMetadata(exePath string) (version, prodName string, met
 
 	// Store additional PE version resource fields for security analysis.
 	interestingFields := []string{
-		"CompanyName", "LegalCopyright", "FileDescription",
-		"OriginalFilename", "InternalName", "LegalTrademarks",
+		"CompanyName", "FileDescription",
+		"OriginalFilename", "InternalName",
 		"PrivateBuild", "SpecialBuild", "Comments",
 	}
 
@@ -317,8 +322,8 @@ func extractVersionFromFilename(exePath string) (version, prodName string) {
 	return version, prodName
 }
 
-// normalizeVersion standardizes version strings by replacing common separators with dots.
-func normalizeVersion(ver string) string {
+// NormalizeVersion standardizes version strings by replacing common separators with dots.
+func NormalizeVersion(ver string) string {
 	ver = strings.TrimSpace(ver)
 	ver = strings.ReplaceAll(ver, "_", ".")
 	ver = strings.ReplaceAll(ver, "-", ".")

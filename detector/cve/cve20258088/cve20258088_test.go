@@ -9,7 +9,7 @@ import (
 	"github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
-	"github.com/google/osv-scalibr/semantic"
+	"github.com/google/osv-scalibr/purl"
 )
 
 func runDetector(t *testing.T, f fs.FS, pkgs []*extractor.Package) inventory.Finding {
@@ -30,70 +30,82 @@ func runDetector(t *testing.T, f fs.FS, pkgs []*extractor.Package) inventory.Fin
 	return finding
 }
 
-func TestNoFindings(t *testing.T) {
-	finding := runDetector(t, fstest.MapFS{}, nil)
-	if len(finding.PackageVulns) != 0 {
-		t.Errorf("Expected no findings, got %d", len(finding.PackageVulns))
-	}
-}
-
-func TestInstalledWinRARAffected(t *testing.T) {
-	pkgs := []*extractor.Package{{
-		Name:    "WinRAR",
-		Version: "6.23",
-	}}
-
-	finding := runDetector(t, fstest.MapFS{}, pkgs)
-	if len(finding.PackageVulns) == 0 {
-		t.Fatalf("Expected a finding for vulnerable WinRAR package")
-	}
-	v := finding.PackageVulns[0]
-	if v.Vulnerability.Id != "CVE-2025-8088" {
-		t.Errorf("Unexpected vuln ID: %s", v.Vulnerability.Id)
-	}
-}
-
-func TestInstalledWinRARSafe(t *testing.T) {
-	pkgs := []*extractor.Package{{
-		Name:    "WinRAR",
-		Version: "7.20",
-	}}
-
-	finding := runDetector(t, fstest.MapFS{}, pkgs)
-	if len(finding.PackageVulns) != 0 {
-		t.Fatalf("Expected no finding for safe WinRAR version, got %+v", finding)
-	}
-}
-
-func TestFileSystemWinRARPortable(t *testing.T) {
-	// Simulate what the PE version extractor would find for WinRAR610.exe
-	pkgs := []*extractor.Package{
+func TestScan(t *testing.T) {
+	tests := []struct {
+		name         string
+		pkgs         []*extractor.Package
+		wantFindings int
+		wantVulnID   string
+	}{
 		{
-			Name:      "WinRAR",
-			Version:   "6.10",
-			PURLType:  "generic",
-			Locations: []string{"WinRAR610.exe"},
+			name:         "no_packages",
+			pkgs:         nil,
+			wantFindings: 0,
+		},
+		{
+			name: "vulnerable_winrar_installed",
+			pkgs: []*extractor.Package{{
+				Name:    "WinRAR",
+				Version: "6.23",
+			}},
+			wantFindings: 1,
+			wantVulnID:   "CVE-2025-8088",
+		},
+		{
+			name: "safe_winrar_version",
+			pkgs: []*extractor.Package{{
+				Name:    "WinRAR",
+				Version: "7.20",
+			}},
+			wantFindings: 0,
+		},
+		{
+			name: "vulnerable_portable_winrar",
+			pkgs: []*extractor.Package{{
+				Name:     "WinRAR",
+				Version:  "6.10",
+				PURLType: purl.TypeGeneric,
+				Location: extractor.LocationFromPath("WinRAR610.exe"),
+			}},
+			wantFindings: 1,
+			wantVulnID:   "CVE-2025-8088",
+		},
+		{
+			name: "unrar_detected_as_vulnerable",
+			pkgs: []*extractor.Package{{
+				Name:    "UnRAR",
+				Version: "5.0",
+			}},
+			wantFindings: 1,
+			wantVulnID:   "CVE-2025-8088",
+		},
+		{
+			name: "non_winrar_package_ignored",
+			pkgs: []*extractor.Package{{
+				Name:    "7-Zip",
+				Version: "1.0",
+			}},
+			wantFindings: 0,
+		},
+		{
+			name: "boundary_version_7.13_not_vulnerable",
+			pkgs: []*extractor.Package{{
+				Name:    "WinRAR",
+				Version: "7.13",
+			}},
+			wantFindings: 0,
 		},
 	}
 
-	finding := runDetector(t, fstest.MapFS{}, pkgs)
-	if len(finding.PackageVulns) == 0 {
-		t.Fatalf("Expected finding from portable WinRAR exe, got none")
-	}
-	got := finding.PackageVulns[0]
-	if got.Package.Name != "WinRAR" && got.Package.Name != "winrar" {
-		t.Errorf("Expected package name WinRAR, got %s", got.Package.Name)
-	}
-
-	sv, err := semantic.Parse(got.Package.Version, "Maven")
-	if err != nil {
-		t.Errorf("Failed to parse version: %v", err)
-	}
-	cmp, err := sv.CompareStr("7.13")
-	if err != nil {
-		t.Errorf("Failed to compare version: %v", err)
-	}
-	if cmp >= 0 {
-		t.Errorf("Expected affected version, got %s", got.Package.Version)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			finding := runDetector(t, fstest.MapFS{}, tt.pkgs)
+			if got := len(finding.PackageVulns); got != tt.wantFindings {
+				t.Fatalf("Scan() returned %d findings, want %d", got, tt.wantFindings)
+			}
+			if tt.wantFindings > 0 && finding.PackageVulns[0].Vulnerability.Id != tt.wantVulnID {
+				t.Errorf("Vulnerability ID = %q, want %q", finding.PackageVulns[0].Vulnerability.Id, tt.wantVulnID)
+			}
+		})
 	}
 }

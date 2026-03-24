@@ -19,17 +19,15 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/os/peversion"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/semantic"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -64,7 +62,7 @@ func (Detector) Version() int { return 0 }
 
 // Requirements of the detector.
 func (Detector) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{OS: plugin.OSWindows, DirectFS: true, RunningSystem: true}
+	return &plugin.Capabilities{OS: plugin.OSWindows}
 }
 
 // RequiredExtractors of the detector.
@@ -80,7 +78,7 @@ func (d Detector) DetectedFinding() inventory.Finding {
 func (d Detector) findingForPackage(dbSpecific *structpb.Struct) inventory.Finding {
 	pkg := &extractor.Package{
 		Name:     "winrar",
-		PURLType: "generic",
+		PURLType: purl.TypeGeneric,
 	}
 	vuln := d.makePackageVuln(pkg, "WinRAR path traversal vulnerability (<7.13)",
 		"WinRAR versions before 7.13 are vulnerable to a path traversal attack that allows attackers to extract files to arbitrary locations outside the intended extraction directory.",
@@ -93,42 +91,29 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	var findings []*inventory.PackageVuln
 
 	if px == nil {
-		log.Infof("cve20258088: PackageIndex is nil, no packages to scan")
 		return inventory.Finding{}, nil
 	}
 
-	// Get generic packages which includes output from PE version extractor.
-	allPackages := px.GetAllOfType("generic")
-	log.Infof("cve20258088: Scanning %d generic packages from PackageIndex", len(allPackages))
+	allPackages := px.GetAll()
 
 	for _, pkg := range allPackages {
-		log.Debugf("cve20258088: Checking package %q version %q", pkg.Name, pkg.Version)
-
-		// Only consider packages extracted by the peversion extractor.
-		if !slices.Contains(pkg.Plugins, peversion.Name) {
-			continue
-		}
-
-		// Use word boundary regex to avoid false positives like "Libraries", "Hardware", etc.
+		// Use word boundary regex to match WinRAR/UnRAR/RAR product names.
 		if !winrarNameRegex.MatchString(pkg.Name) {
 			continue
 		}
-
-		log.Debugf("cve20258088: Package %q matched WinRAR regex", pkg.Name)
 
 		normalizedVersion := normalizeVersion(pkg.Version)
 		if normalizedVersion == "" {
 			continue
 		}
 
+		// EcosystemMaven is used because WinRAR uses dot-separated numeric versioning
+		// (e.g. "7.12.0") which is compatible with Maven version comparison semantics.
 		if sv, err := semantic.Parse(normalizedVersion, string(osvconstants.EcosystemMaven)); err == nil {
 			if cmp, err := sv.CompareStr("7.13"); err == nil && cmp < 0 {
-				log.Infof("cve20258088: Vulnerable WinRAR package found: Package %q, Version: %q",
-					pkg.Name, normalizedVersion)
-
 				dbSpecific := &structpb.Struct{
 					Fields: map[string]*structpb.Value{
-						"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, normalizedVersion, strings.Join(pkg.Locations, ", "))}},
+						"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, normalizedVersion, pkg.Location.PathOrEmpty())}},
 					},
 				}
 				finding := d.findingForPackage(dbSpecific)
@@ -147,7 +132,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 func (Detector) makePackageVuln(pkg *extractor.Package, summary, details string, dbSpecific *structpb.Struct) *inventory.PackageVuln {
 	winrarPkg := &extractor.Package{
 		Name:     "winrar",
-		PURLType: "generic",
+		PURLType: purl.TypeGeneric,
 	}
 	return &inventory.PackageVuln{
 		Package: pkg,

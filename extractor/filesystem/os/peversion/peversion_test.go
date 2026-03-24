@@ -20,38 +20,8 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem/os/peversion"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
-
-func TestName(t *testing.T) {
-	extractor := peversion.NewDefault()
-	if extractor.Name() != "os/peversion" {
-		t.Errorf("Name() = %q, want %q", extractor.Name(), "os/peversion")
-	}
-}
-
-func TestVersion(t *testing.T) {
-	extractor := peversion.NewDefault()
-	if extractor.Version() != 0 {
-		t.Errorf("Version() = %d, want %d", extractor.Version(), 0)
-	}
-}
-
-func TestRequirements(t *testing.T) {
-	extractor := peversion.NewDefault()
-	requirements := extractor.Requirements()
-
-	if requirements.OS != plugin.OSWindows {
-		t.Errorf("Requirements().OS = %v, want %v", requirements.OS, plugin.OSWindows)
-	}
-	if !requirements.DirectFS {
-		t.Errorf("Requirements().DirectFS = %v, want %v", requirements.DirectFS, true)
-	}
-	if !requirements.RunningSystem {
-		t.Errorf("Requirements().RunningSystem = %v, want %v", requirements.RunningSystem, true)
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -61,79 +31,79 @@ func TestFileRequired(t *testing.T) {
 		want     bool
 	}{
 		{
-			name:     "exe file should be required",
+			name:     "exe_file_required",
 			path:     "C:/Program Files/WinRAR/WinRAR.exe",
 			fileSize: 1000,
 			want:     true,
 		},
 		{
-			name:     "dll file should be required",
+			name:     "dll_file_required",
 			path:     "C:/Program Files/WinRAR/RarExt.dll",
 			fileSize: 1000,
 			want:     true,
 		},
 		{
-			name:     "uppercase EXE should be required",
+			name:     "uppercase_exe_required",
 			path:     "C:/Program Files/App/test.EXE",
 			fileSize: 1000,
 			want:     true,
 		},
 		{
-			name:     "uppercase DLL should be required",
+			name:     "uppercase_dll_required",
 			path:     "C:/Program Files/App/test.DLL",
 			fileSize: 1000,
 			want:     true,
 		},
 		{
-			name:     "txt file should not be required",
+			name:     "txt_file_not_required",
 			path:     "C:/Users/test/readme.txt",
 			fileSize: 1000,
 			want:     false,
 		},
 		{
-			name:     "json file should not be required",
+			name:     "json_file_not_required",
 			path:     "C:/Users/test/config.json",
 			fileSize: 1000,
 			want:     false,
 		},
 		{
-			name:     "no extension should not be required",
+			name:     "no_extension_not_required",
 			path:     "C:/Users/test/somefile",
 			fileSize: 1000,
 			want:     false,
 		},
 		{
-			name:     "System32 exe should be skipped",
-			path:     "C:\\Windows\\System32\\notepad.exe",
+			name:     "system32_exe_skipped",
+			path:     "C:/Windows/System32/notepad.exe",
 			fileSize: 1000,
 			want:     false,
 		},
 		{
-			name:     "WinSxS dll should be skipped",
-			path:     "C:\\Windows\\WinSxS\\some_assembly\\test.dll",
+			name:     "winsxs_dll_skipped",
+			path:     "C:/Windows/WinSxS/some_assembly/test.dll",
 			fileSize: 1000,
 			want:     false,
 		},
 		{
-			name:     "Servicing exe should be skipped",
-			path:     "C:\\Windows\\Servicing\\packages\\test.exe",
+			name:     "servicing_exe_skipped",
+			path:     "C:/Windows/Servicing/packages/test.exe",
 			fileSize: 1000,
 			want:     false,
 		},
 		{
-			name:     "SoftwareDistribution exe should be skipped",
-			path:     "C:\\Windows\\SoftwareDistribution\\Download\\test.exe",
+			name:     "software_distribution_exe_skipped",
+			path:     "C:/Windows/SoftwareDistribution/Download/test.exe",
 			fileSize: 1000,
 			want:     false,
 		},
 		{
-			name:     "file larger than 300MB should be skipped",
+			name:     "file_larger_than_max_skipped",
 			path:     "C:/Program Files/Large/huge.exe",
 			fileSize: 350 * 1024 * 1024, // 350 MB
 			want:     false,
 		},
 		{
-			name:     "file exactly 300MB should be required",
+			name:     "file_exactly_max_size_required",
 			path:     "C:/Program Files/Large/big.exe",
 			fileSize: 300 * 1024 * 1024, // 300 MB
 			want:     true,
@@ -157,10 +127,10 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-func TestFileRequired_SkipSystemDirsDisabled(t *testing.T) {
-	// Test with SkipSystemDirs disabled - system dirs should be scanned
+func TestFileRequired_skip_system_dirs_disabled(t *testing.T) {
 	config := peversion.Config{
-		SkipSystemDirs: false,
+		SkipSystemDirs:   false,
+		MaxFileSizeBytes: 300 * 1024 * 1024,
 	}
 	extractor := peversion.NewWithConfig(config)
 
@@ -171,14 +141,14 @@ func TestFileRequired_SkipSystemDirsDisabled(t *testing.T) {
 		want     bool
 	}{
 		{
-			name:     "System32 exe should be required when SkipSystemDirs is false",
-			path:     "C:\\Windows\\System32\\notepad.exe",
+			name:     "system32_exe_required_when_skip_disabled",
+			path:     "C:/Windows/System32/notepad.exe",
 			fileSize: 1000,
 			want:     true,
 		},
 		{
-			name:     "WinSxS dll should be required when SkipSystemDirs is false",
-			path:     "C:\\Windows\\WinSxS\\some_assembly\\test.dll",
+			name:     "winsxs_dll_required_when_skip_disabled",
+			path:     "C:/Windows/WinSxS/some_assembly/test.dll",
 			fileSize: 1000,
 			want:     true,
 		},
@@ -199,41 +169,94 @@ func TestFileRequired_SkipSystemDirsDisabled(t *testing.T) {
 	}
 }
 
-func TestNormalizeVersion(t *testing.T) {
-	// Test internal function behavior through observable outputs
-	// The normalizeVersion function replaces underscores and hyphens with dots
-	// We can't directly test unexported functions, but we document expected behavior here
+func TestFileRequired_custom_max_file_size(t *testing.T) {
+	config := peversion.Config{
+		SkipSystemDirs:   true,
+		MaxFileSizeBytes: 10 * 1024 * 1024, // 10 MB
+	}
+	extractor := peversion.NewWithConfig(config)
+
 	tests := []struct {
+		name     string
+		path     string
+		fileSize int64
+		want     bool
+	}{
+		{
+			name:     "file_under_custom_limit_required",
+			path:     "C:/Program Files/App/small.exe",
+			fileSize: 5 * 1024 * 1024, // 5 MB
+			want:     true,
+		},
+		{
+			name:     "file_over_custom_limit_skipped",
+			path:     "C:/Program Files/App/big.exe",
+			fileSize: 15 * 1024 * 1024, // 15 MB
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			api := simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileName: tt.path,
+				FileMode: fs.ModePerm,
+				FileSize: tt.fileSize,
+			})
+			got := extractor.FileRequired(api)
+			if got != tt.want {
+				t.Errorf("FileRequired(%q) = %v, want %v", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeVersion(t *testing.T) {
+	tests := []struct {
+		name  string
 		input string
 		want  string
 	}{
-		{input: "1.0.0", want: "1.0.0"},
-		{input: "1_0_0", want: "1.0.0"},
-		{input: "1-0-0", want: "1.0.0"},
-		{input: "  1.0.0  ", want: "1.0.0"},
-		{input: "1_0-0", want: "1.0.0"},
+		{name: "dots_unchanged", input: "1.0.0", want: "1.0.0"},
+		{name: "underscores_to_dots", input: "1_0_0", want: "1.0.0"},
+		{name: "hyphens_to_dots", input: "1-0-0", want: "1.0.0"},
+		{name: "whitespace_trimmed", input: "  1.0.0  ", want: "1.0.0"},
+		{name: "mixed_separators", input: "1_0-0", want: "1.0.0"},
+		{name: "empty_string", input: "", want: ""},
 	}
 
-	// Document expected normalization behavior
-	_ = tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := peversion.NormalizeVersion(tt.input)
+			if got != tt.want {
+				t.Errorf("NormalizeVersion(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
 }
 
 func TestShouldSkipSystemDir(t *testing.T) {
-	// Test internal function behavior documentation
-	// The shouldSkipSystemDir function checks for Windows system directories
-	systemDirs := []string{
-		"C:/Windows/System32/file.exe",
-		"C:/Windows/WinSxS/file.dll",
-		"C:/Windows/Servicing/file.exe",
-		"C:/Windows/SoftwareDistribution/file.exe",
-	}
-	nonSystemDirs := []string{
-		"C:/Program Files/App/file.exe",
-		"C:/Users/test/file.dll",
-		"D:/Games/game.exe",
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{name: "system32_skipped", path: "C:/Windows/System32/file.exe", want: true},
+		{name: "winsxs_skipped", path: "C:/Windows/WinSxS/file.dll", want: true},
+		{name: "servicing_skipped", path: "C:/Windows/Servicing/file.exe", want: true},
+		{name: "software_distribution_skipped", path: "C:/Windows/SoftwareDistribution/file.exe", want: true},
+		{name: "program_files_not_skipped", path: "C:/Program Files/App/file.exe", want: false},
+		{name: "users_dir_not_skipped", path: "C:/Users/test/file.dll", want: false},
+		{name: "backslash_paths_skipped", path: "C:\\Windows\\System32\\notepad.exe", want: true},
+		{name: "case_insensitive", path: "C:/WINDOWS/SYSTEM32/file.exe", want: true},
 	}
 
-	// Document expected skip behavior
-	_ = systemDirs
-	_ = nonSystemDirs
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := peversion.ShouldSkipSystemDir(tt.path)
+			if got != tt.want {
+				t.Errorf("ShouldSkipSystemDir(%q) = %v, want %v", tt.path, got, tt.want)
+			}
+		})
+	}
 }
