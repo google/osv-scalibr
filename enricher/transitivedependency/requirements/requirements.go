@@ -101,6 +101,8 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
+
+	var errs error
 	for path, pkgMap := range pkgGroups {
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
@@ -125,13 +127,14 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		// For each manifest, perform dependency resolution.
 		pkgs, err := e.resolve(ctx, path, list, input.ScanRoot.Path)
 		if err != nil {
-			log.Warnf("failed resolution: %v", err)
+			log.Warnf("failed resolution for %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
 			continue
 		}
 
 		internal.Add(pkgs, inv, Name, pkgMap)
 	}
-	return nil
+	return errs
 }
 
 // resolve performs dependency resolution for packages found in a single requirements.txt.
