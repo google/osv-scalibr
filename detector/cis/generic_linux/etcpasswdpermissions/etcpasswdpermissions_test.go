@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -111,7 +111,10 @@ func TestScan(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			det := etcpasswdpermissions.Detector{}
+			det, err := etcpasswdpermissions.New(nil)
+			if err != nil {
+				t.Fatalf("etcpasswdpermissions.New(): %v", err)
+			}
 			got, err := det.Scan(t.Context(), &scalibrfs.ScanRoot{FS: tc.fsys}, px)
 			findings := got.GenericFindings
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {

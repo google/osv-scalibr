@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package inventory
 import (
 	"time"
 
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 )
 
@@ -24,9 +25,8 @@ import (
 // Scalibr handles secrets transparently, only Veles cares about what concrete
 // type they are.
 type Secret struct {
-	Secret   veles.Secret
-	Location string
-
+	Secret     veles.Secret
+	Location   location.Location
 	Validation SecretValidationResult
 }
 

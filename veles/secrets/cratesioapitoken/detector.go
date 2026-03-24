@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ const maxTokenLength = 35
 // keyRe is a regular expression that matches a Crates.io API key.
 // Crates.io API keys have the form: `cio` followed by 32
 // alphanumeric characters.
-var keyRe = regexp.MustCompile(`cio[a-zA-Z-0-9]{32}`)
+var keyRe = regexp.MustCompile(`\bcio[a-zA-Z-0-9]{32}\b`)
 
 // NewDetector returns a new simpletoken.Detector that matches
 // Crates.io API keys.

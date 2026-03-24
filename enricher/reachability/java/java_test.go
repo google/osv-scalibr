@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -117,21 +117,21 @@ func setupPackages(names []string) []*extractor.Package {
 
 	for _, n := range names {
 		reachablePkg := &extractor.Package{
-			Name:      reachablePkgName,
-			Version:   version,
-			PURLType:  purl.TypeMaven,
-			Metadata:  &archivemeta.Metadata{ArtifactID: reachableArtifactID, GroupID: reachableGroupID},
-			Locations: []string{filepath.Join("testdata", n)},
-			Plugins:   []string{archive.Name},
+			Name:     reachablePkgName,
+			Version:  version,
+			PURLType: purl.TypeMaven,
+			Metadata: &archivemeta.Metadata{ArtifactID: reachableArtifactID, GroupID: reachableGroupID},
+			Location: extractor.LocationFromPath(filepath.Join("testdata", n)),
+			Plugins:  []string{archive.Name},
 		}
 
 		unreachablePkg := &extractor.Package{
-			Name:      unreachablePkgName,
-			Version:   version,
-			PURLType:  purl.TypeMaven,
-			Metadata:  &archivemeta.Metadata{ArtifactID: unreachableArtifactID, GroupID: unreachableGroupID},
-			Locations: []string{filepath.Join("testdata", n)},
-			Plugins:   []string{archive.Name},
+			Name:     unreachablePkgName,
+			Version:  version,
+			PURLType: purl.TypeMaven,
+			Metadata: &archivemeta.Metadata{ArtifactID: unreachableArtifactID, GroupID: unreachableGroupID},
+			Location: extractor.LocationFromPath(filepath.Join("testdata", n)),
+			Plugins:  []string{archive.Name},
 		}
 
 		pkgs = append(pkgs, reachablePkg, unreachablePkg)

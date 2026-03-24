@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
@@ -61,7 +62,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-			e := pubspec.Extractor{}
+			e, err := pubspec.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("pubspec.New() error: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -100,14 +104,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "back_button_interceptor",
-					Version:   "6.0.1",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/one-package.lock"},
+					Name:     "back_button_interceptor",
+					Version:  "6.0.1",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/one-package.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -118,14 +122,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "build_runner",
-					Version:   "2.2.1",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/one-package-dev.lock"},
+					Name:     "build_runner",
+					Version:  "2.2.1",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/one-package-dev.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -138,24 +142,24 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "shelf",
-					Version:   "1.3.2",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/two-packages.lock"},
+					Name:     "shelf",
+					Version:  "1.3.2",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
-					Name:      "shelf_web_socket",
-					Version:   "1.0.2",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/two-packages.lock"},
+					Name:     "shelf_web_socket",
+					Version:  "1.0.2",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -166,46 +170,46 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "back_button_interceptor",
-					Version:   "6.0.1",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/mixed-packages.lock"},
+					Name:     "back_button_interceptor",
+					Version:  "6.0.1",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/mixed-packages.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
-					Name:      "build_runner",
-					Version:   "2.2.1",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/mixed-packages.lock"},
+					Name:     "build_runner",
+					Version:  "2.2.1",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/mixed-packages.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "shelf",
-					Version:   "1.3.2",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/mixed-packages.lock"},
+					Name:     "shelf",
+					Version:  "1.3.2",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/mixed-packages.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
-					Name:      "shelf_web_socket",
-					Version:   "1.0.2",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/mixed-packages.lock"},
+					Name:     "shelf_web_socket",
+					Version:  "1.0.2",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/mixed-packages.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -216,54 +220,54 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "flutter_rust_bridge",
-					Version:   "1.32.0",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/source-git.lock"},
+					Name:     "flutter_rust_bridge",
+					Version:  "1.32.0",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/source-git.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "e5adce55eea0b74d3680e66a2c5252edf17b07e1",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
-					Name:      "screen_retriever",
-					Version:   "0.1.2",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/source-git.lock"},
+					Name:     "screen_retriever",
+					Version:  "0.1.2",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/source-git.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "406b9b038b2c1d779f1e7bf609c8c248be247372",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
-					Name:      "tray_manager",
-					Version:   "0.1.8",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/source-git.lock"},
+					Name:     "tray_manager",
+					Version:  "0.1.8",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/source-git.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3aa37c86e47ea748e7b5507cbe59f2c54ebdb23a",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
-					Name:      "window_manager",
-					Version:   "0.2.7",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/source-git.lock"},
+					Name:     "window_manager",
+					Version:  "0.2.7",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/source-git.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "88487257cbafc501599ab4f82ec343b46acec020",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
-					Name:      "toggle_switch",
-					Version:   "1.4.0",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/source-git.lock"},
+					Name:     "toggle_switch",
+					Version:  "1.4.0",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/source-git.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -274,14 +278,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "flutter_web_plugins",
-					Version:   "0.0.0",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/source-sdk.lock"},
+					Name:     "flutter_web_plugins",
+					Version:  "0.0.0",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/source-sdk.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -292,14 +296,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "maa_core",
-					Version:   "0.0.1",
-					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/source-path.lock"},
+					Name:     "maa_core",
+					Version:  "0.0.1",
+					PURLType: purl.TypePub,
+					Location: extractor.LocationFromPath("testdata/source-path.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{},
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -307,7 +311,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := pubspec.Extractor{}
+			extr, err := pubspec.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("pubspec.New() error: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

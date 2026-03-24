@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	awsaccesskeydetector "github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -49,7 +52,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 			if tt.isWindows && runtime.GOOS != "windows" {
 				t.Skipf("Skipping test %q for %q", t.Name(), runtime.GOOS)
 			}
-			e := awsaccesskey.New()
+			e, err := awsaccesskey.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("awsaccesskey.New failed: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -76,10 +82,10 @@ func TestExtractor_Extract(t *testing.T) {
 			WantSecrets: []*inventory.Secret{
 				{
 					Secret: awsaccesskeydetector.Credentials{
-						AccessID: "AIKA1984R439T439HTH4",
+						AccessID: "AKIA1984R439T439HTH4",
 						Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 					},
-					Location: "aws_credentials",
+					Location: location.FromPath("aws_credentials"),
 				},
 			},
 		},
@@ -92,7 +98,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := awsaccesskey.New()
+			extr, err := awsaccesskey.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("awsaccesskey.New failed: %v", err)
+			}
 
 			inputCfg := extracttest.ScanInputMockConfig{
 				Path:         tt.Path,

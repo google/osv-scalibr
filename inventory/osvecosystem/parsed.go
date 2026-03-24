@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,6 +99,7 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemAlpaquita,
 		osvconstants.EcosystemAlpine,
 		osvconstants.EcosystemAndroid,
+		osvconstants.EcosystemCleanStart,
 		osvconstants.EcosystemBellSoftHardenedContainers,
 		osvconstants.EcosystemBioconductor,
 		osvconstants.EcosystemBitnami,
@@ -119,6 +120,7 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemMinimOS,
 		osvconstants.EcosystemNPM,
 		osvconstants.EcosystemNuGet,
+		osvconstants.EcosystemOpam,
 		osvconstants.EcosystemOpenEuler,
 		osvconstants.EcosystemOpenSUSE,
 		osvconstants.EcosystemOSSFuzz,
@@ -132,7 +134,9 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemSUSE,
 		osvconstants.EcosystemSwiftURL,
 		osvconstants.EcosystemUbuntu,
-		osvconstants.EcosystemWolfi:
+		osvconstants.EcosystemWolfi,
+		// GIT is a pseudo ecosystem that can be used in queries, so should be considered valid.
+		"GIT":
 
 	default:
 		return fmt.Errorf("base ecosystem does not exist in osvschema: %q", p.Ecosystem)

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -97,7 +100,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "secret.cnf",
+					Location: location.FromPath("secret.cnf"),
 				},
 			},
 		},
@@ -110,7 +113,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},
@@ -123,7 +126,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},
@@ -136,13 +139,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "user", Password: "another_password", Port: "3306",
 					},
-					Location: "to_include/another_to_include.ini",
+					Location: location.FromPath("to_include/another_to_include.ini"),
 				},
 				{
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},
@@ -155,13 +158,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "user", Password: "another_password", Port: "3306",
 					},
-					Location: "to_include/another_to_include.ini",
+					Location: location.FromPath("to_include/another_to_include.ini"),
 				},
 				{
 					Secret: mariadb.Credentials{
 						Section: "mariadb-client", User: "root", Password: "secret_password", Port: "3306",
 					},
-					Location: "to_include/to_include.cnf",
+					Location: location.FromPath("to_include/to_include.cnf"),
 				},
 			},
 		},
@@ -175,9 +178,19 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := mariadb.New(mariadb.Config{
-				FollowInclude: tt.FollowInclude,
-			})
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Mariadb{
+						Mariadb: &cpb.MariadbConfig{
+							FollowInclude: &tt.FollowInclude,
+						},
+					}},
+				},
+			}
+			extr, err := mariadb.New(cfg)
+			if err != nil {
+				t.Fatalf("mariadb.New failed: %v", err)
+			}
 
 			inputCfg := extracttest.ScanInputMockConfig{
 				Path:         tt.Path,

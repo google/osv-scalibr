@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,12 +22,35 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	realToken  = "ya29.a0AQQ_BDQWmhK2ywGDxkB2uBTykNRPd89V28-MUwZnVWZl3AMP1BD5s2UiIEdFNThSh-etTblBm6BPd0K1JmuRiyTNW_ICOa3-3gkS2SHoaNgm4x-jPEeDLsFa5ppHPurdNxRU_H9PnfpKCU-3ayKluSVmdQqXUYpo1PwqqbnGw0FWUEL2uZgS8GZ1lL7_9zSrt36PdCYaCgYKAcQSAQ8SFQHGX2MiS2cGUcQliabDBsSTYb8iTw0206"
 	shortToken = "ya29.a0AQQ_BDQWmhK2ywGDxkB2uBTykNRPd89V28"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := gcpoauth2access.NewDetector()
+	cases := []struct {
+		name  string
+		token string
+	}{
+		{
+			name:  "real-token",
+			token: realToken,
+		},
+		{
+			name:  "short-token",
+			token: shortToken,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(t, d, tc.token, gcpoauth2access.Token{Token: tc.token})
+		})
+	}
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gcpoauth2access.NewDetector()})

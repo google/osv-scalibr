@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,9 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		}
 		if m.OSID == "alpaquita" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpaquita, Suffix: m.OSVersionID}
+		}
+		if m.OSID == "clnstrt" || m.OSID == "cleanstart" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemCleanStart, Suffix: ""}
 		}
 		if m.OSID == "bellsoft-hardened-containers" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemBellSoftHardenedContainers, Suffix: m.OSVersionID}

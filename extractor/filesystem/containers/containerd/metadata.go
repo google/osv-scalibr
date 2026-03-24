@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,15 @@
 // limitations under the License.
 
 package containerd
+
+import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata contains metadata about a containerd container.
 type Metadata struct {
@@ -31,4 +40,45 @@ type Metadata struct {
 	LowerDir    string
 	UpperDir    string
 	WorkDir     string
+}
+
+// ToProto converts the Metadata struct to a ContainerdContainerMetadata proto.
+func ToProto(m *Metadata) *pb.ContainerdContainerMetadata {
+	return &pb.ContainerdContainerMetadata{
+		NamespaceName: m.Namespace,
+		ImageName:     m.ImageName,
+		ImageDigest:   m.ImageDigest,
+		Runtime:       m.Runtime,
+		Id:            m.ID,
+		PodName:       m.PodName,
+		PodNamespace:  m.PodNamespace,
+		Pid:           int32(m.PID),
+		Snapshotter:   m.Snapshotter,
+		SnapshotKey:   m.SnapshotKey,
+		LowerDir:      m.LowerDir,
+		UpperDir:      m.UpperDir,
+		WorkDir:       m.WorkDir,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
+// ToStruct converts the containerd container metadata proto to the Metadata struct.
+func ToStruct(m *pb.ContainerdContainerMetadata) *Metadata {
+	return &Metadata{
+		Namespace:    m.GetNamespaceName(),
+		ImageName:    m.GetImageName(),
+		ImageDigest:  m.GetImageDigest(),
+		Runtime:      m.GetRuntime(),
+		ID:           m.GetId(),
+		PodName:      m.GetPodName(),
+		PodNamespace: m.GetPodNamespace(),
+		PID:          int(m.GetPid()),
+		Snapshotter:  m.GetSnapshotter(),
+		SnapshotKey:  m.GetSnapshotKey(),
+		LowerDir:     m.GetLowerDir(),
+		UpperDir:     m.GetUpperDir(),
+		WorkDir:      m.GetWorkDir(),
+	}
 }

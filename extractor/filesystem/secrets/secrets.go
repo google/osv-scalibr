@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 )
@@ -41,6 +42,7 @@ var (
 		".cfg":       true,
 		".env":       true,
 		".html":      true,
+		".ini":       true,
 		".ipynb":     true,
 		".json":      true,
 		".log":       true,
@@ -104,7 +106,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	for _, s := range secrets {
 		i.Secrets = append(i.Secrets, &inventory.Secret{
 			Secret:   s,
-			Location: input.Path,
+			Location: location.FromPath(input.Path),
 		})
 	}
 	return i, nil

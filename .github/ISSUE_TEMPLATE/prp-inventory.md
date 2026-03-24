@@ -8,6 +8,7 @@ assignees: ''
 ---
 
 - **Software distribution method or binary type**: {e.g. `dpkg, npm, .jar files`}
+- **Popularity of distribution method** {e.g. `There are X million packages uploaded to NPM / Y million package downloads from Packagist`}
 - **Any critical, emergent vulnerability associated with software from the distribution method**: {e.g. `None`, `openssh-server affected by CVE-2024-6387`}
 - **Resources**:
   * {Any links}

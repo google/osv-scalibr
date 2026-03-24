@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/enricher/secrets"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -52,7 +53,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeStringSecret("FOO"),
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -60,7 +61,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeStringSecret("FOO"),
-								Location: path,
+								Location: location.FromPath(path),
 								Validation: inventory.SecretValidationResult{
 									Status: veles.ValidationValid,
 								},
@@ -74,7 +75,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -82,7 +83,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 								Validation: inventory.SecretValidationResult{
 									Status: veles.ValidationUnsupported,
 								},
@@ -105,7 +106,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -113,7 +114,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 								Validation: inventory.SecretValidationResult{
 									Status: veles.ValidationFailed,
 									Err:    errTest,
@@ -128,11 +129,11 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 							},
 							{
 								Secret:   velestest.NewFakeIntSecret(456),
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -140,7 +141,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 								Validation: inventory.SecretValidationResult{
 									Status: veles.ValidationFailed,
 									Err:    errTest,
@@ -148,7 +149,7 @@ func TestEnricher(t *testing.T) {
 							},
 							{
 								Secret:   velestest.NewFakeIntSecret(456),
-								Location: path,
+								Location: location.FromPath(path),
 								Validation: inventory.SecretValidationResult{
 									Status: veles.ValidationFailed,
 									Err:    errTest,
@@ -163,11 +164,11 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 							},
 							{
 								Secret:   velestest.NewFakeStringSecret("foo"),
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -175,7 +176,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   velestest.NewFakeIntSecret(123),
-								Location: path,
+								Location: location.FromPath(path),
 								Validation: inventory.SecretValidationResult{
 									Status: veles.ValidationFailed,
 									Err:    errTest,
@@ -183,7 +184,7 @@ func TestEnricher(t *testing.T) {
 							},
 							{
 								Secret:   velestest.NewFakeStringSecret("foo"),
-								Location: path,
+								Location: location.FromPath(path),
 								Validation: inventory.SecretValidationResult{
 									Status: veles.ValidationValid,
 								},
@@ -222,7 +223,7 @@ func TestEnricher_respectsContext(t *testing.T) {
 		Secrets: []*inventory.Secret{
 			{
 				Secret:   velestest.NewFakeStringSecret("foo"),
-				Location: "/foo/bar/baz.json",
+				Location: location.FromPath("/foo/bar/baz.json"),
 			},
 		},
 	}
@@ -236,7 +237,7 @@ func TestEnricher_respectsContext(t *testing.T) {
 func TestAddValidator(t *testing.T) {
 	secret := inventory.Secret{
 		Secret:   velestest.NewFakeStringSecret("foo"),
-		Location: "/foo/bar/baz.json",
+		Location: location.FromPath("/foo/bar/baz.json"),
 	}
 	inv := inventory.Inventory{Secrets: []*inventory.Secret{&secret}}
 	enricher := secrets.NewWithEngine(veles.NewValidationEngine()).(*secrets.Enricher)

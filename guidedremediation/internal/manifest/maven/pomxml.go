@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -206,7 +206,6 @@ func (r readWriter) SupportedStrategies() []strategy.Strategy {
 
 // Read parses the manifest from the given file.
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
-	// TODO(#472): much of this logic is duplicated with the pomxmlnet extractor.
 	ctx := context.Background()
 	path = filepath.ToSlash(path)
 	f, err := fsys.Open(path)

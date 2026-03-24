@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,10 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // OnePasswordConnectToken is a Veles Secret that holds a OnePassword Connect Token
@@ -73,7 +76,7 @@ type TokenData struct {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -129,7 +132,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			VerifierSalt:      data.Verifier.Salt,
 			VerifierLocalHash: data.Verifier.LocalHash,
 		},
-		Location: input.Path,
+		Location: location.FromPath(input.Path),
 	}
 
 	secrets = append(secrets, secret)

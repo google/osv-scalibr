@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,12 +23,42 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	testKey          = `sk-pyx-2testestestestestestestestestestestestestestes`
 	testKeyMixedCase = `sk-pyx-2testesTESTesTESTestestestestestestestestestes`
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	d := pyxkeyv2.NewDetector()
+	cases := []struct {
+		name string
+		key  string
+	}{
+		{
+			name: "lowercase",
+			key:  testKey,
+		},
+		{
+			name: "mixed-case",
+			key:  testKeyMixedCase,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			velestest.AcceptDetector(
+				t,
+				d,
+				tc.key,
+				pyxkeyv2.PyxKeyV2{Key: tc.key},
+				velestest.WithBackToBack(),
+				velestest.WithPad('a'),
+			)
+		})
+	}
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a pyx v2 user key.

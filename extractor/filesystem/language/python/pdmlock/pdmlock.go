@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -50,7 +52,7 @@ type pdmLockFile struct {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -80,15 +82,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	for _, parsedPKG := range parsedLockFile.Packages {
 		pkg := &extractor.Package{
-			Name:      parsedPKG.Name,
-			Version:   parsedPKG.Version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{input.Path},
+			Name:     parsedPKG.Name,
+			Version:  parsedPKG.Version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 
 		depGroups := parseGroupsToDepGroups(parsedPKG.Groups)
 
-		pkg.Metadata = osv.DepGroupMetadata{
+		pkg.Metadata = &osv.DepGroupMetadata{
 			DepGroupVals: depGroups,
 		}
 

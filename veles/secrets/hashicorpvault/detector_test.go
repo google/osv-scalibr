@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,17 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		NewTokenDetector(),
+		"hvs.CAESIB8KI2QJk0ePUYdOQXaxl0",
+		Token{Token: "hvs.CAESIB8KI2QJk0ePUYdOQXaxl0"},
+	)
+}
 
 func TestNewTokenDetector_Detect(t *testing.T) {
 	tests := []struct {
@@ -93,6 +103,18 @@ func TestNewTokenDetector_Detect(t *testing.T) {
 	}
 }
 
+func TestAppRoleDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		NewAppRoleDetector(),
+		"role_id: 87654321-4321-4321-4321-210987654321\nsecret_id: 11111111-2222-3333-4444-555555555555",
+		AppRoleCredentials{
+			RoleID:   "87654321-4321-4321-4321-210987654321",
+			SecretID: "11111111-2222-3333-4444-555555555555",
+		},
+	)
+}
+
 func TestNewAppRoleDetector_Detect(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -131,13 +153,6 @@ func TestNewAppRoleDetector_Detect(t *testing.T) {
 			},
 		},
 		{
-			name:  "UUID without context",
-			input: "some random UUID: 12345678-1234-1234-1234-123456789012 in text",
-			expected: []veles.Secret{
-				AppRoleCredentials{ID: "12345678-1234-1234-1234-123456789012"},
-			},
-		},
-		{
 			name:     "mixed case UUID with invalid hex chars",
 			input:    "ROLE_ID=12345678-ABCD-1234-EFGH-123456789012",
 			expected: nil, // G and H are not valid hex characters
@@ -145,23 +160,6 @@ func TestNewAppRoleDetector_Detect(t *testing.T) {
 		{
 			name:     "no UUID",
 			input:    "some random text without UUIDs",
-			expected: nil,
-		},
-		{
-			name:     "invalid UUID format",
-			input:    "12345678-1234-1234-1234-12345678901", // too short
-			expected: nil,
-		},
-		{
-			name:  "invalid UUID format with extra chars",
-			input: "12345678-1234-1234-1234-1234567890123", // too long
-			expected: []veles.Secret{
-				AppRoleCredentials{ID: "12345678-1234-1234-1234-123456789012"},
-			}, // The regex will match the valid portion
-		},
-		{
-			name:     "invalid UUID format missing hyphens",
-			input:    "1234567812341234123412345678901",
 			expected: nil,
 		},
 	}

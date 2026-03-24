@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.cdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom.cdx.json"),
 				},
 				{
 					Name:     "openssl",
@@ -132,7 +132,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
-					Locations: []string{"testdata/sbom.cdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom.cdx.json"),
 				},
 			},
 		},
@@ -146,7 +146,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom-with-nested-comps.cdx.json"),
 				},
 				{
 					Name:     "openssl",
@@ -155,7 +155,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
-					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom-with-nested-comps.cdx.json"),
 				},
 				{
 					Name:     "rustls",
@@ -164,7 +164,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:cargo/rustls@0.23.13"),
 					},
-					Locations: []string{"testdata/sbom-with-nested-comps.cdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom-with-nested-comps.cdx.json"),
 				},
 			},
 		},
@@ -183,9 +183,7 @@ func TestExtract(t *testing.T) {
 							"usr/lib/node_modules/@gar/promisify/package.json",
 						},
 					},
-					Locations: []string{
-						"testdata/sbom-with-locations.cdx.json",
-					},
+					Location: extractor.LocationFromPath("testdata/sbom-with-locations.cdx.json"),
 				},
 			},
 		},
@@ -199,7 +197,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &cdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.cdx.xml"},
+					Location: extractor.LocationFromPath("testdata/sbom.cdx.xml"),
 				},
 				{
 					Name:     "openssl",
@@ -208,7 +206,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &cdxmeta.Metadata{
 						PURL: purlFromString(t, "pkg:generic/openssl@1.1.1"),
 					},
-					Locations: []string{"testdata/sbom.cdx.xml"},
+					Location: extractor.LocationFromPath("testdata/sbom.cdx.xml"),
 				},
 			},
 		},

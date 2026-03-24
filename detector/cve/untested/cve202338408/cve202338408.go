@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/semantic"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -57,9 +58,7 @@ var (
 type Detector struct{}
 
 // New returns a detector.
-func New() detector.Detector {
-	return &Detector{}
-}
+func New(cfg *cpb.PluginConfig) (detector.Detector, error) { return &Detector{}, nil }
 
 // Name of the detector.
 func (Detector) Name() string { return Name }
@@ -97,7 +96,7 @@ func (Detector) findingForPackage(dbSpecific *structpb.Struct, pkg *extractor.Pa
 				}},
 				Ranges: []*osvpb.Range{{
 					Type:   osvpb.Range_ECOSYSTEM,
-					Events: []*osvpb.Event{{Fixed: "9.3.p2"}},
+					Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: "9.3.p2"}},
 				}},
 			}},
 			DatabaseSpecific: dbSpecific,
@@ -272,7 +271,7 @@ type fileLocations struct {
 
 func versionLessEqual(lower, upper string) (bool, error) {
 	// Version format looks like this: 3.7.1p2, 3.7, 3.2.3, 2.9p2
-	r, err := semantic.MustParse(lower, "Packagist").CompareStr(upper)
+	r, err := semantic.ParsePackagistVersion(lower).CompareStr(upper)
 
 	return r <= 0, err
 }

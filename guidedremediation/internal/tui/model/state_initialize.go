@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ func (s stateInitialize) Update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.relockBaseManifest = msg.resolvedManifest
 		m.relockBaseErrors = computeResolveErrors(msg.resolvedManifest.Graph)
 		if m.options.Lockfile == "" {
-			m.st = stateRelockResult{}
+			m.st = newStateRelockResult(m)
 		} else {
 			m.st = newStateChooseStrategy(m)
 		}
@@ -100,7 +100,7 @@ func (s stateInitialize) View(m Model) string {
 	if m.options.Lockfile == "" {
 		sb.WriteString("No lockfile provided. Assuming re-lock.\n")
 	} else {
-		sb.WriteString(fmt.Sprintf("Scanning %s ", components.SelectedTextStyle.Render(m.options.Lockfile)))
+		fmt.Fprintf(&sb, "Scanning %s ", components.SelectedTextStyle.Render(m.options.Lockfile))
 		if m.lockfileGraph.Graph == nil {
 			sb.WriteString(s.spinner.View())
 			sb.WriteString("\n")
@@ -110,7 +110,7 @@ func (s stateInitialize) View(m Model) string {
 		sb.WriteString("✓\n")
 	}
 
-	sb.WriteString(fmt.Sprintf("Resolving %s ", components.SelectedTextStyle.Render(m.options.Manifest)))
+	fmt.Fprintf(&sb, "Resolving %s ", components.SelectedTextStyle.Render(m.options.Manifest))
 	if m.relockBaseManifest == nil {
 		sb.WriteString(s.spinner.View())
 		sb.WriteString("\n")

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -78,7 +80,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = macports.Extractor{}
+			e, err := macports.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("macports.New: %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, nil)); got != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, tt.wantRequired)
 			}
@@ -110,7 +115,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion:  "2.5.4",
 						PackageRevision: "0",
 					},
-					Locations: []string{"/opt/local/var/macports/registry/portfiles/libtool-2.5.4_0/ad1db8600defd0eb7646fd461154434ec33014e5b04be396c9a40b0ce9171299-2968/Portfile"},
+					Location: extractor.LocationFromPath("/opt/local/var/macports/registry/portfiles/libtool-2.5.4_0/ad1db8600defd0eb7646fd461154434ec33014e5b04be396c9a40b0ce9171299-2968/Portfile"),
 				},
 			},
 		},
@@ -127,7 +132,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion:  "1.78.1",
 						PackageRevision: "5",
 					},
-					Locations: []string{"/opt/local/var/macports/registry/portfiles/gobject-introspection-1.78.1_5/c55084712bbb40ccf96cbfb8f1c1c77c670a37e189f4accb8ada691aea18d1ef-1331/Portfile"},
+					Location: extractor.LocationFromPath("/opt/local/var/macports/registry/portfiles/gobject-introspection-1.78.1_5/c55084712bbb40ccf96cbfb8f1c1c77c670a37e189f4accb8ada691aea18d1ef-1331/Portfile"),
 				},
 			},
 		},
@@ -144,7 +149,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion:  "1.17.0",
 						PackageRevision: "0",
 					},
-					Locations: []string{"/opt/local/var/macports/registry/portfiles/xorg-xcb-proto-1.17.0_0/9846ecdbb454aa6ef08a26553a3667b63a6f46abfdb73ffaec2700e6473074df-2685/Portfile"},
+					Location: extractor.LocationFromPath("/opt/local/var/macports/registry/portfiles/xorg-xcb-proto-1.17.0_0/9846ecdbb454aa6ef08a26553a3667b63a6f46abfdb73ffaec2700e6473074df-2685/Portfile"),
 				},
 			},
 		},
@@ -161,7 +166,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion:  "2.3.3",
 						PackageRevision: "7",
 					},
-					Locations: []string{"/opt/local/var/macports/registry/portfiles/gd2-2.3.3_7/6c29fb21ddd646407e905e6b8b9a2c70cf00b3dea10609043f6b188fa7e30a1b-3596/Portfile"},
+					Location: extractor.LocationFromPath("/opt/local/var/macports/registry/portfiles/gd2-2.3.3_7/6c29fb21ddd646407e905e6b8b9a2c70cf00b3dea10609043f6b188fa7e30a1b-3596/Portfile"),
 				},
 			},
 		},
@@ -178,7 +183,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion:  "1.0.7pre44",
 						PackageRevision: "0",
 					},
-					Locations: []string{"/opt/local/var/macports/registry/portfiles/urw-fonts-1.0.7pre44_0/07082b6c0b422e34867886e9af30145d0ffaf7e8586705677a9906c1fd8a314f-1753/Portfile"},
+					Location: extractor.LocationFromPath("/opt/local/var/macports/registry/portfiles/urw-fonts-1.0.7pre44_0/07082b6c0b422e34867886e9af30145d0ffaf7e8586705677a9906c1fd8a314f-1753/Portfile"),
 				},
 			},
 		},
@@ -191,7 +196,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = macports.Extractor{}
+			e, err := macports.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("macports.New: %v", err)
+			}
 			input := &filesystem.ScanInput{Path: tt.path, Reader: nil}
 			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {

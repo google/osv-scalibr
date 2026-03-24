@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -116,9 +116,12 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := gobinary.New(&cpb.PluginConfig{
+			e, err := gobinary.New(&cpb.PluginConfig{
 				MaxFileSizeBytes: tt.maxFileSizeBytes,
 			})
+			if err != nil {
+				t.Fatalf("gobinary.New(): %v", err)
+			}
 			e.(*gobinary.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
@@ -276,7 +279,10 @@ func TestExtract(t *testing.T) {
 				tt.cfg = &cpb.PluginConfig{}
 			}
 
-			e := gobinary.New(tt.cfg)
+			e, err := gobinary.New(tt.cfg)
+			if err != nil {
+				t.Fatalf("gobinary.New(): %v", err)
+			}
 			e.(*gobinary.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !errors.Is(err, tt.wantErr) {
@@ -438,7 +444,7 @@ func createPackagesWithMain(pkgs []*extractor.Package, location string) []*extra
 	// Main package
 	mainName := strings.Split(strings.TrimPrefix(location, "testdata/"), "-")[0]
 	res = append(res, &extractor.Package{
-		Name: mainName, Version: "(devel)", Locations: []string{location},
+		Name: mainName, Version: "(devel)", Location: extractor.LocationFromPath(location),
 		PURLType: purl.TypeGolang,
 	})
 	return res
@@ -448,10 +454,10 @@ func createPackages(pkgs []*extractor.Package, location string) []*extractor.Pac
 	res := []*extractor.Package{}
 	for _, p := range pkgs {
 		res = append(res, &extractor.Package{
-			Name:      p.Name,
-			Version:   p.Version,
-			Locations: []string{location},
-			PURLType:  purl.TypeGolang,
+			Name:     p.Name,
+			Version:  p.Version,
+			Location: extractor.LocationFromPath(location),
+			PURLType: purl.TypeGolang,
 		})
 	}
 	return res

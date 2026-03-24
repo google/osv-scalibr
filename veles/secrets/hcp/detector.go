@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ func findMatches(re *regexp.Regexp) func(data []byte) []*pair.Match {
 		out := make([]*pair.Match, 0, len(idxs))
 		for _, m := range idxs {
 			// m[0], m[1] are the full-match bounds; m[2], m[3] are the first capture group bounds
-			out = append(out, &pair.Match{Start: m[2], Value: data[m[2]:m[3]]})
+			out = append(out, &pair.Match{Start: m[0], Value: data[m[2]:m[3]]})
 		}
 		return out
 	}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -87,7 +90,7 @@ func TestExtract(t *testing.T) {
 						Database: "mydb",
 						Username: "myuser",
 						Password: "mypassword"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -95,7 +98,7 @@ func TestExtract(t *testing.T) {
 						Database: "testdb",
 						Username: "testuser",
 						Password: "testpass123"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -103,7 +106,7 @@ func TestExtract(t *testing.T) {
 						Database: "testdb",
 						Username: "testuser",
 						Password: "passw*ord"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -111,7 +114,7 @@ func TestExtract(t *testing.T) {
 						Database: "testdb",
 						Username: "testuser",
 						Password: "passw ord"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -119,7 +122,7 @@ func TestExtract(t *testing.T) {
 						Database: "db name",
 						Username: "testuser",
 						Password: "password"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "*",
@@ -127,7 +130,7 @@ func TestExtract(t *testing.T) {
 						Database: "db",
 						Username: "admin",
 						Password: "supersecret"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "prod.example.com",
@@ -135,7 +138,7 @@ func TestExtract(t *testing.T) {
 						Database: "db",
 						Username: "admin",
 						Password: `pass\:word`},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 			},
 		}, {
@@ -149,7 +152,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			e := pgpass.New()
+			e, err := pgpass.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("pgpass.New failed: %v", err)
+			}
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
 

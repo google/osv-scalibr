@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,11 +66,11 @@ type Extractor struct {
 }
 
 // New returns a Go binary extractor.
-func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	e := &Extractor{maxFileSizeBytes: cfg.MaxFileSizeBytes}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoBinaryConfig { return c.GetGoBinary() })
 	e.versionFromContent = specific.GetVersionFromContent()
-	return e
+	return e, nil
 }
 
 // Name of the extractor.
@@ -183,10 +183,10 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 	}
 	if validatedGoVers != "" {
 		res = append(res, &extractor.Package{
-			Name:      "go",
-			Version:   validatedGoVers,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filename},
+			Name:     "go",
+			Version:  validatedGoVers,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filename),
 		})
 	}
 
@@ -199,10 +199,10 @@ func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, fil
 		pkgVers = strings.TrimPrefix(pkgVers, "v")
 
 		pkg := &extractor.Package{
-			Name:      pkgName,
-			Version:   pkgVers,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filename},
+			Name:     pkgName,
+			Version:  pkgVers,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filename),
 		}
 		res = append(res, pkg)
 	}
@@ -242,10 +242,10 @@ func mainModule(binfo *buildinfo.BuildInfo, filename string) *extractor.Package 
 	}
 	version := strings.TrimPrefix(binfo.Main.Version, "v")
 	return &extractor.Package{
-		Name:      binfo.Main.Path,
-		Version:   version,
-		PURLType:  purl.TypeGolang,
-		Locations: []string{filename},
+		Name:     binfo.Main.Path,
+		Version:  version,
+		PURLType: purl.TypeGolang,
+		Location: extractor.LocationFromPath(filename),
 	}
 }
 

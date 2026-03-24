@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,11 +33,14 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 var (
@@ -152,12 +155,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			cfg := defaultConfigWith(archive.Config{
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-				Stats:            collector,
-			})
-
-			var e filesystem.Extractor = archive.New(cfg)
+			e, err := archive.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("archive.New: %v", err)
+			}
+			e.(*archive.Extractor).Stats = collector
 
 			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
@@ -179,7 +181,9 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		description      string
-		cfg              archive.Config
+		maxOpenedBytes   int64
+		extractFilename  bool
+		hashJars         bool
 		path             string
 		contentPath      string
 		want             []*extractor.Package
@@ -220,64 +224,62 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-				Locations: []string{
-					filepath.FromSlash("testdata/simple.jar"),
-					filepath.FromSlash("testdata/simple.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{
+						File: &location.File{Path: filepath.FromSlash("testdata/simple.jar")},
+					},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/simple.jar/pom.properties")),
+					},
 				},
 			}},
 		},
 		{
-			name:        "Jar file with no pom.properties, and IdentifyByFilename enabled",
-			description: "Contains other files but no pom.properties. Has invalid filename.",
-			path:        filepath.FromSlash("testdata/no_pom_properties.jar"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
-			want: []*extractor.Package{},
+			name:            "Jar file with no pom.properties, and IdentifyByFilename enabled",
+			description:     "Contains other files but no pom.properties. Has invalid filename.",
+			path:            filepath.FromSlash("testdata/no_pom_properties.jar"),
+			extractFilename: true,
+			want:            []*extractor.Package{},
 		},
 		{
-			name:        "Jar file with pom.properties, IdentifyByFilename enabled",
-			description: "Contains valid pom.properties, won't be identified by filename.",
-			path:        filepath.FromSlash("testdata/simple.jar"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
+			name:            "Jar file with pom.properties, IdentifyByFilename enabled",
+			description:     "Contains valid pom.properties, won't be identified by filename.",
+			path:            filepath.FromSlash("testdata/simple.jar"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "com.some.package:package-name",
 				Version:  "1.2.3",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-				Locations: []string{
-					filepath.FromSlash("testdata/simple.jar"),
-					filepath.FromSlash("testdata/simple.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/simple.jar"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/simple.jar/pom.properties")),
+					},
 				},
 			}},
 		},
 		{
-			name:        "Jar file with no pom.properties and manifest, and IdentifyByFilename enabled",
-			description: "Contains other files but no pom.properties and manifest. Has valid filename.",
-			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
+			name:            "Jar file with no pom.properties and manifest, and IdentifyByFilename enabled",
+			description:     "Contains other files but no pom.properties and manifest. Has valid filename.",
+			path:            filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "no_pom_properties:no_pom_properties",
 				Version:  "2.4.0",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "no_pom_properties", GroupID: "no_pom_properties"},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
-			name:        "Jar file with no pom.properties but has manifest, and IdentifyByFilename enabled",
-			description: "Contains other files but no pom.properties. Has valid manifest with Group ID. Has valid filename.",
-			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-			contentPath: filepath.FromSlash("testdata/combine-manifest-filename/MANIFEST.MF"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
+			name:            "Jar file with no pom.properties but has manifest, and IdentifyByFilename enabled",
+			description:     "Contains other files but no pom.properties. Has valid manifest with Group ID. Has valid filename.",
+			path:            filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+			contentPath:     filepath.FromSlash("testdata/combine-manifest-filename/MANIFEST.MF"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "org.apache.ivy:no_pom_properties",
 				Version:  "2.4.0",
@@ -286,19 +288,15 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "no_pom_properties",
 					GroupID:    "org.apache.ivy", // Group ID overridden by manifest.
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
-			name:        "Jar file with no pom.properties but has manifest, and IdentifyByFilename enabled",
-			description: "Contains other files but no pom.properties. Has valid manifest without Group ID. Has valid filename.",
-			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-			contentPath: filepath.FromSlash("testdata/manifest-no-group-id/MANIFEST.MF"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
+			name:            "Jar file with no pom.properties but has manifest, and IdentifyByFilename enabled",
+			description:     "Contains other files but no pom.properties. Has valid manifest without Group ID. Has valid filename.",
+			path:            filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+			contentPath:     filepath.FromSlash("testdata/manifest-no-group-id/MANIFEST.MF"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "no_pom_properties:no_pom_properties",
 				Version:  "2.4.0",
@@ -309,49 +307,39 @@ func TestExtract(t *testing.T) {
 					// manifest.
 					GroupID: "no_pom_properties",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
-			name:        "Jar file with invalid pom.properties and manifest, IdentifyByFilename enabled",
-			description: "Contains a pom.properties which is missing the `groupId` field and so it is ignored. Has no manifest. Has valid filename.",
-			path:        filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
+			name:            "Jar file with invalid pom.properties and manifest, IdentifyByFilename enabled",
+			description:     "Contains a pom.properties which is missing the `groupId` field and so it is ignored. Has no manifest. Has valid filename.",
+			path:            filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "pom_missing_group_id:pom_missing_group_id",
 				Version:  "2.4.0",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "pom_missing_group_id", GroupID: "pom_missing_group_id"},
-				Locations: []string{
-					filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/pom_missing_group_id-2.4.0.jar")),
 			}},
 		},
 		{
-			name:        "Jar file with no pom.properties and manifest, and IdentifyByFilename enabled",
-			description: "Contains other files but no pom.properties and manifest. Has valid filename with groupID.",
-			path:        filepath.FromSlash("testdata/org.eclipse.sisu.inject-0.3.5.jar"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
+			name:            "Jar file with no pom.properties and manifest, and IdentifyByFilename enabled",
+			description:     "Contains other files but no pom.properties and manifest. Has valid filename with groupID.",
+			path:            filepath.FromSlash("testdata/org.eclipse.sisu.inject-0.3.5.jar"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "org.eclipse.sisu:org.eclipse.sisu.inject",
 				Version:  "0.3.5",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "org.eclipse.sisu.inject", GroupID: "org.eclipse.sisu"},
-				Locations: []string{
-					filepath.FromSlash("testdata/org.eclipse.sisu.inject-0.3.5.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/org.eclipse.sisu.inject-0.3.5.jar")),
 			}},
 		},
 		{
-			name: "Nested_jars_with_pom.properties_at_depth_10",
-			path: filepath.FromSlash("testdata/nested_at_10.jar"),
-			cfg:  archive.Config{HashJars: true},
+			name:     "Nested_jars_with_pom.properties_at_depth_10",
+			path:     filepath.FromSlash("testdata/nested_at_10.jar"),
+			hashJars: true,
 			want: []*extractor.Package{{
 				Name:     "com.some.package:package-name",
 				Version:  "1.2.3",
@@ -361,18 +349,22 @@ func TestExtract(t *testing.T) {
 					GroupID:    "com.some.package",
 					SHA1:       "PO6pevcX8f2Rkpv4xB6NYviFokQ=", // inner most nested.jar
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/nested_at_10.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar"),
-					filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/nested_at_10.jar"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar")),
+						location.FromPath(filepath.FromSlash("testdata/nested_at_10.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/nested.jar/pom.properties")),
+					},
 				},
 			}},
 		},
@@ -393,9 +385,13 @@ func TestExtract(t *testing.T) {
 					Version:  "1.2.3",
 					PURLType: purl.TypeMaven,
 					Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-					Locations: []string{
-						filepath.FromSlash("testdata/complex.jar"),
-						filepath.FromSlash("testdata/complex.jar/pom.properties"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: filepath.FromSlash("testdata/complex.jar"),
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.FromSlash("testdata/complex.jar/pom.properties")),
+						},
 					},
 				},
 				{
@@ -403,39 +399,44 @@ func TestExtract(t *testing.T) {
 					Version:  "3.2.1",
 					PURLType: purl.TypeMaven,
 					Metadata: &archivemeta.Metadata{ArtifactID: "another-package-name", GroupID: "com.some.anotherpackage"},
-					Locations: []string{
-						filepath.FromSlash("testdata/complex.jar"),
-						filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar"),
-						filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar/pom.properties"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: filepath.FromSlash("testdata/complex.jar"),
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar")),
+							location.FromPath(filepath.FromSlash("testdata/complex.jar/BOOT-INF/lib/inner.jar/pom.properties")),
+						},
 					},
 				},
 			},
 		},
 		{
-			name:        "Ignore inner pom.properties because max opened bytes reached",
-			description: "A jar file with pom.properties at complex.jar/pom.properties and another at complex.jar/BOOT-INF/lib/inner.jar/pom.properties. The inner pom.properties is never extracted because MaxOpenedBytes is reached.",
-			cfg: archive.Config{
-				MaxOpenedBytes: 700,
-				Stats:          testcollector.New(),
-			},
-			path: filepath.FromSlash("testdata/complex.jar"),
+			name:           "Ignore inner pom.properties because max opened bytes reached",
+			description:    "A jar file with pom.properties at complex.jar/pom.properties and another at complex.jar/BOOT-INF/lib/inner.jar/pom.properties. The inner pom.properties is never extracted because MaxOpenedBytes is reached.",
+			maxOpenedBytes: 700,
+			path:           filepath.FromSlash("testdata/complex.jar"),
 			want: []*extractor.Package{{
 				Name:     "com.some.package:package-name",
 				Version:  "1.2.3",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "package-name", GroupID: "com.some.package"},
-				Locations: []string{
-					filepath.FromSlash("testdata/complex.jar"),
-					filepath.FromSlash("testdata/complex.jar/pom.properties"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/complex.jar"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/complex.jar/pom.properties")),
+					},
 				},
 			}},
 			wantErr:          filesystem.ErrExtractorMemoryLimitExceeded,
 			wantResultMetric: stats.FileExtractedResultErrorMemoryLimitExceeded,
 		},
 		{
-			name: "Realistic_jar_file_with_pom.properties",
-			path: filepath.FromSlash("testdata/guava-31.1-jre.jar"),
-			cfg:  archive.Config{HashJars: true},
+			name:     "Realistic_jar_file_with_pom.properties",
+			path:     filepath.FromSlash("testdata/guava-31.1-jre.jar"),
+			hashJars: true,
 			want: []*extractor.Package{
 				{
 					Name:     "com.google.guava:guava",
@@ -447,9 +448,13 @@ func TestExtract(t *testing.T) {
 						// openssl sha1 -binary third_party/scalibr/extractor/filesystem/language/java/archive/testdata/guava-31.1-jre.jar | base64
 						SHA1: "YEWPh30FXQyRFNnhou+3N7S8KCw=",
 					},
-					Locations: []string{
-						filepath.FromSlash("testdata/guava-31.1-jre.jar"),
-						filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: filepath.FromSlash("testdata/guava-31.1-jre.jar"),
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties")),
+						},
 					},
 				},
 			},
@@ -471,9 +476,13 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "failureaccess",
 					GroupID:    "com.google.guava.failureaccess",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/manifest-symbolicname"),
-					filepath.FromSlash("testdata/manifest-symbolicname/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/manifest-symbolicname"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/manifest-symbolicname/MANIFEST.MF")),
+					},
 				},
 			}},
 		},
@@ -489,9 +498,13 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "correct.name",
 					GroupID:    "test.group",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/invalid-ids"),
-					filepath.FromSlash("testdata/invalid-ids/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/invalid-ids"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/invalid-ids/MANIFEST.MF")),
+					},
 				},
 			}},
 		},
@@ -507,17 +520,21 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "spring-web",
 					GroupID:    "org.springframework",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/known-group-id"),
-					filepath.FromSlash("testdata/known-group-id/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/known-group-id"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/known-group-id/MANIFEST.MF")),
+					},
 				},
 			}},
 		},
 		{
-			name:        "Test combination of manifest and filename",
-			path:        filepath.FromSlash("testdata/ivy-2.4.0.jar"),
-			contentPath: filepath.FromSlash("testdata/combine-manifest-filename/MANIFEST.MF"),
-			cfg:         archive.Config{ExtractFromFilename: true},
+			name:            "Test combination of manifest and filename",
+			path:            filepath.FromSlash("testdata/ivy-2.4.0.jar"),
+			contentPath:     filepath.FromSlash("testdata/combine-manifest-filename/MANIFEST.MF"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "org.apache.ivy:ivy",
 				Version:  "2.4.0",
@@ -526,17 +543,15 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "ivy",
 					GroupID:    "org.apache.ivy",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/ivy-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/ivy-2.4.0.jar")),
 			}},
 		},
 		{
-			name:        "Test combination of filename and manifest with group ID transform",
-			description: "The manifest has a Implementation-Title field with more data than just the group ID and we want to extract just the group ID.",
-			path:        filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-			contentPath: filepath.FromSlash("testdata/manifest-implementation-title/MANIFEST.MF"),
-			cfg:         archive.Config{ExtractFromFilename: true},
+			name:            "Test combination of filename and manifest with group ID transform",
+			description:     "The manifest has a Implementation-Title field with more data than just the group ID and we want to extract just the group ID.",
+			path:            filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
+			contentPath:     filepath.FromSlash("testdata/manifest-implementation-title/MANIFEST.MF"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "org.elasticsearch:no_pom_properties",
 				Version:  "2.4.0",
@@ -545,27 +560,27 @@ func TestExtract(t *testing.T) {
 					ArtifactID: "no_pom_properties",
 					GroupID:    "org.elasticsearch",
 				},
-				Locations: []string{
-					filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar"),
-				},
+				Location: extractor.LocationFromPath(filepath.FromSlash("testdata/no_pom_properties-2.4.0.jar")),
 			}},
 		},
 		{
-			name:        "Apache Axis package with incorrect artifact and group ID and space in version",
-			description: "The MANIFEST.MF file has 4 main issues: 1) The Name field is `org/apache/axis` which is incorrect. 2) The Implementation-Title field is `Apache Axis` which is incorrect. 3) The Implementation-Version field is has spaces `1.4 1855 April 22 2006`. 4) There is a blank new line in the file.",
-			path:        filepath.FromSlash("testdata/axis"),
-			contentPath: filepath.FromSlash("testdata/axis/MANIFEST.MF"),
-			cfg: archive.Config{
-				ExtractFromFilename: true,
-			},
+			name:            "Apache Axis package with incorrect artifact and group ID and space in version",
+			description:     "The MANIFEST.MF file has 4 main issues: 1) The Name field is `org/apache/axis` which is incorrect. 2) The Implementation-Title field is `Apache Axis` which is incorrect. 3) The Implementation-Version field is has spaces `1.4 1855 April 22 2006`. 4) There is a blank new line in the file.",
+			path:            filepath.FromSlash("testdata/axis"),
+			contentPath:     filepath.FromSlash("testdata/axis/MANIFEST.MF"),
+			extractFilename: true,
 			want: []*extractor.Package{{
 				Name:     "org.apache.axis:axis",
 				Version:  "1.4",
 				PURLType: purl.TypeMaven,
 				Metadata: &archivemeta.Metadata{ArtifactID: "axis", GroupID: "org.apache.axis"},
-				Locations: []string{
-					filepath.FromSlash("testdata/axis"),
-					filepath.FromSlash("testdata/axis/MANIFEST.MF"),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{File: &location.File{
+						Path: filepath.FromSlash("testdata/axis"),
+					}},
+					Related: []location.Location{
+						location.FromPath(filepath.FromSlash("testdata/axis/MANIFEST.MF")),
+					},
 				},
 			}},
 		},
@@ -593,17 +608,32 @@ func TestExtract(t *testing.T) {
 			// os.Open returns a ReaderAt per default. In case MaxOpenedBytes is set, we want to have no
 			// ReaderAt, such that we can test the MaxOpenedBytes limit.
 			var r io.Reader = f
-			if tt.cfg.MaxOpenedBytes > 0 {
+			if tt.maxOpenedBytes > 0 {
 				r = noReaderAt{r: r}
 			}
 
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
 
 			log.SetLogger(&log.DefaultLogger{Verbose: true})
-			e := archive.New(defaultConfigWith(tt.cfg))
+
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_JavaArchive{
+						JavaArchive: &cpb.JavaArchiveConfig{
+							MaxOpenedBytes:      tt.maxOpenedBytes,
+							ExtractFromFilename: &tt.extractFilename,
+							HashJars:            &tt.hashJars,
+						},
+					}},
+				},
+			}
+			e, err := archive.New(cfg)
+			if err != nil {
+				t.Fatalf("archive.New: %v", err)
+			}
+			e.(*archive.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if err != nil && errors.Is(tt.wantErr, errAny) {
 				err = errAny
@@ -635,31 +665,6 @@ type noReaderAt struct {
 
 func (r noReaderAt) Read(p []byte) (n int, err error) {
 	return r.r.Read(p)
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with archive.DefaultConfig().
-func defaultConfigWith(cfg archive.Config) archive.Config {
-	newCfg := archive.DefaultConfig()
-
-	if cfg.MaxZipDepth > 0 {
-		newCfg.MaxZipDepth = cfg.MaxZipDepth
-	}
-	if cfg.MaxOpenedBytes > 0 {
-		newCfg.MaxOpenedBytes = cfg.MaxOpenedBytes
-	}
-	if cfg.MinZipBytes > 0 {
-		newCfg.MinZipBytes = cfg.MinZipBytes
-	}
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-	// ignores defaults
-	newCfg.ExtractFromFilename = cfg.ExtractFromFilename
-	newCfg.HashJars = cfg.HashJars
-	return newCfg
 }
 
 // mustJar creates a temporary jar file that contains the file from path and returns it opened.

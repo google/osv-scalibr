@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -121,7 +123,7 @@ type cargoTomlFile struct {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -151,10 +153,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	packages := make([]*extractor.Package, 0, len(parsedTomlFile.Dependencies)+1)
 
 	packages = append(packages, &extractor.Package{
-		Name:      parsedTomlFile.Package.Name,
-		Version:   parsedTomlFile.Package.Version,
-		PURLType:  purl.TypeCargo,
-		Locations: []string{input.Path},
+		Name:     parsedTomlFile.Package.Name,
+		Version:  parsedTomlFile.Package.Version,
+		PURLType: purl.TypeCargo,
+		Location: extractor.LocationFromPath(input.Path),
 	})
 
 	for name, dependency := range parsedTomlFile.Dependencies {
@@ -179,7 +181,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Name:       name,
 			Version:    dependency.Version,
 			PURLType:   purl.TypeCargo,
-			Locations:  []string{input.Path},
+			Location:   extractor.LocationFromPath(input.Path),
 			SourceCode: srcCode,
 		})
 	}

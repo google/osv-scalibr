@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/velestest"
@@ -55,6 +56,11 @@ func TestFileRequired(t *testing.T) {
 		{
 			name: "accept_CFG",
 			path: "baz.cfg",
+			want: true,
+		},
+		{
+			name: "accept_INI",
+			path: "config.ini",
 			want: true,
 		},
 		{
@@ -139,7 +145,7 @@ func TestExtract(t *testing.T) {
 			want: []*inventory.Secret{
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 			},
 		},
@@ -150,11 +156,11 @@ func TestExtract(t *testing.T) {
 			want: []*inventory.Secret{
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 			},
 		},
@@ -165,15 +171,15 @@ func TestExtract(t *testing.T) {
 			want: []*inventory.Secret{
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 				{
 					Secret:   velestest.NewFakeStringSecret("BAR"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 			},
 		},

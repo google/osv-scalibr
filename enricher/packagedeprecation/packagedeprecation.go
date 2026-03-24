@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@ package packagedeprecation
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"github.com/google/osv-scalibr/depsdev/depsdevalpha"
 	"github.com/google/osv-scalibr/enricher"
@@ -66,16 +68,16 @@ func (e *Enricher) SetClient(client Client) {
 }
 
 // New returns a new package deprecation enricher.
-func New() enricher.Enricher {
+func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
 	grpcConfig := grpcclient.DefaultConfig()
 	grpcclient, err := grpcclient.New(grpcConfig)
 	if err != nil {
-		log.Errorf("Failed to create deps.dev gRPC client: %v", err)
+		return nil, fmt.Errorf("failed to create deps.dev gRPC client: %w", err)
 	}
 
 	c := NewClient(grpcclient)
 
-	return &Enricher{client: c}
+	return &Enricher{client: c}, nil
 }
 
 // Enrich enriches the inventory with package version deprecation status from deps.dev.

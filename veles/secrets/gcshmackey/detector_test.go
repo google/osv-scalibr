@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		gcshmackey.NewDetector(),
+		`GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JT
+32r923jr023rk320rk2a3rkB34tj340r32Ckt433`,
+		gcshmackey.HMACKey{
+			AccessID: "GOOG1984R439T439HTH439T403TJ430TK340TK43T430JT430TK430JT043JT",
+			Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
+		},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gcshmackey.NewDetector()})

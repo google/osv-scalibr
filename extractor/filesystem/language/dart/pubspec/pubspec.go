@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"gopkg.in/yaml.v3"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -73,7 +75,7 @@ type pubspecLockfile struct {
 type Extractor struct{}
 
 // New returns a new instance of this Extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -102,17 +104,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	for name, pkg := range parsedLockfile.Packages {
 		pkgDetails := &extractor.Package{
-			Name:      name,
-			Version:   pkg.Version,
-			PURLType:  purl.TypePub,
-			Locations: []string{input.Path},
+			Name:     name,
+			Version:  pkg.Version,
+			PURLType: purl.TypePub,
+			Location: extractor.LocationFromPath(input.Path),
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Description.Ref,
 			},
-			Metadata: osv.DepGroupMetadata{},
+			Metadata: &osv.DepGroupMetadata{},
 		}
 		if slices.Contains(strings.Split(pkg.Dependency, " "), "dev") {
-			pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
+			pkgDetails.Metadata = &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
 		}
 		packages = append(packages, pkgDetails)
 	}

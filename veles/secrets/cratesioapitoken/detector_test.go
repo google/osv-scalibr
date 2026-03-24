@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,19 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `cioAbCdEfGhIjKlMnOpQrStUvWxYz123456`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		cratesioapitoken.NewDetector(),
+		testKey,
+		cratesioapitoken.CratesIOAPItoken{Token: testKey},
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Crates.io API key/s.
@@ -58,7 +68,7 @@ func TestDetector_truePositives(t *testing.T) {
 		},
 	}, {
 		name:  "multiple matches",
-		input: testKey + testKey + testKey,
+		input: testKey + " " + testKey + " " + testKey,
 		want: []veles.Secret{
 			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 			cratesioapitoken.CratesIOAPItoken{Token: testKey},
@@ -77,12 +87,6 @@ func TestDetector_truePositives(t *testing.T) {
 	:test_api_key: cio-test
 	:CIO_API_TOKEN: %s
 			`, testKey),
-		want: []veles.Secret{
-			cratesioapitoken.CratesIOAPItoken{Token: testKey},
-		},
-	}, {
-		name:  "potential match longer than max key length",
-		input: testKey + `extra`,
 		want: []veles.Secret{
 			cratesioapitoken.CratesIOAPItoken{Token: testKey},
 		},

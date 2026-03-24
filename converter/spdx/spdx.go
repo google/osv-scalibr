@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
-	"github.com/google/osv-scalibr/result"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/common"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
@@ -48,8 +48,8 @@ type Config struct {
 }
 
 // ToSPDX23 converts the SCALIBR scan results into an SPDX v2.3 document.
-func ToSPDX23(r *result.ScanResult, c Config) *v2_3.Document {
-	packages := make([]*v2_3.Package, 0, len(r.Inventory.Packages)+1)
+func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
+	packages := make([]*v2_3.Package, 0, len(i.Packages)+1)
 
 	// Add a main package that contains all other top-level packages.
 	mainPackageID := SPDXRefPrefix + "Package-main-" + uuid.New().String()
@@ -65,7 +65,7 @@ func ToSPDX23(r *result.ScanResult, c Config) *v2_3.Document {
 		IsFilesAnalyzedTagPresent: false,
 	})
 
-	relationships := make([]*v2_3.Relationship, 0, 1+2*len(r.Inventory.Packages))
+	relationships := make([]*v2_3.Relationship, 0, 1+2*len(i.Packages))
 	relationships = append(relationships, &v2_3.Relationship{
 		RefA:         toDocElementID(SPDXDocumentID),
 		RefB:         toDocElementID(mainPackageID),
@@ -74,7 +74,7 @@ func ToSPDX23(r *result.ScanResult, c Config) *v2_3.Document {
 
 	allOtherLicenses := stringset.Set{}
 
-	for _, pkg := range r.Inventory.Packages {
+	for _, pkg := range i.Packages {
 		p := pkg.PURL()
 		if p == nil {
 			log.Warnf("Package %v has no PURL, skipping", pkg)
@@ -91,10 +91,20 @@ func ToSPDX23(r *result.ScanResult, c Config) *v2_3.Document {
 		if len(pkg.Plugins) > 0 {
 			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])
 		}
-		if len(pkg.Locations) == 1 {
-			pSourceInfo += " from " + pkg.Locations[0]
-		} else if l := len(pkg.Locations); l > 1 {
-			pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", l, pkg.Locations[0], pkg.Locations[1])
+		if pkg.Location.Descriptor != nil && pkg.Location.Descriptor.File != nil && pkg.Location.Descriptor.File.Path != "" {
+			pSourceInfo += " from " + pkg.Location.Descriptor.File.Path
+		} else {
+			locs := []string{}
+			for _, l := range pkg.Location.Related {
+				if l.File != nil && l.File.Path != "" {
+					locs = append(locs, l.File.Path)
+				}
+			}
+			if len(locs) == 1 {
+				pSourceInfo += " from " + locs[0]
+			} else if len(locs) > 1 {
+				pSourceInfo += fmt.Sprintf(" from %d locations, including %s and %s", len(locs), locs[0], locs[1])
+			}
 		}
 
 		licensesConcluded, otherLicenses := LicenseExpression(pkg.Licenses)

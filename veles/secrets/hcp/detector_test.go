@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,25 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAccessTokenDetectorAcceptance(t *testing.T) {
+	jwt := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2F1dGguaWRwLmhhc2hpY29ycC5jb20vIiwiYXVkIjpbImh0dHBzOi8vYXBpLmhhc2hpY29ycC5jbG91ZCJdLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+	velestest.AcceptDetector(t, hcp.NewAccessTokenDetector(), jwt, hcp.AccessToken{Token: jwt})
+}
+
+func TestPairDetectorAcceptance(t *testing.T) {
+	id := "53au9oDSqR8SBzIy6QJASHnyC1SMQxE2"                                  // 32 chars
+	sec := "GGoNkaj1uVBWLO5Lk0-G3duEBK2Mi-w8kUpIJfX7u93fgWqnbMiaKYJgKrO2F6Vc" // 64 chars
+
+	velestest.AcceptDetector(
+		t,
+		hcp.NewPairDetector(),
+		"hcp_client_id="+id+"\nhcp_client_secret="+sec,
+		hcp.ClientCredentials{ClientID: id, ClientSecret: sec},
+	)
+}
 
 func TestPairDetector(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{hcp.NewPairDetector()})

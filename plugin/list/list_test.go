@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,10 @@ import (
 )
 
 func TestExtractorNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, e := range pl.FilesystemExtractors(all) {
 		if prev, ok := names[e.Name()]; ok {
@@ -44,7 +47,10 @@ func TestExtractorNamesUnique(t *testing.T) {
 }
 
 func TestDetectorNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, d := range pl.Detectors(all) {
 		if prev, ok := names[d.Name()]; ok {
@@ -56,7 +62,10 @@ func TestDetectorNamesUnique(t *testing.T) {
 }
 
 func TestAnnotatorNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, a := range pl.Annotators(all) {
 		if prev, ok := names[a.Name()]; ok {
@@ -68,7 +77,10 @@ func TestAnnotatorNamesUnique(t *testing.T) {
 }
 
 func TestEnricherNamesUnique(t *testing.T) {
-	all := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.All(): %v", err)
+	}
 	names := make(map[string]plugin.Plugin)
 	for _, e := range pl.Enrichers(all) {
 		if prev, ok := names[e.Name()]; ok {
@@ -82,8 +94,11 @@ func TestEnricherNamesUnique(t *testing.T) {
 func TestFromCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
 	want := []string{"os/snap", "weakcredentials/etcshadow"} // Available for Linux
-	dontWant := []string{"os/homebrew", "windows/dismpatch"} // Not available for Linux
-	plugins := pl.FromCapabilities(capab, &cpb.PluginConfig{})
+	dontWant := []string{"windows/dismpatch"}                // Not available for Linux
+	plugins, err := pl.FromCapabilities(capab, &cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("pl.FromCapabilities(%v): %v", capab, err)
+	}
 
 	for _, w := range want {
 		found := false
@@ -115,8 +130,8 @@ func TestFromNames(t *testing.T) {
 	}{
 		{
 			desc:      "Find_all_Plugins_of_a_type",
-			names:     []string{"python", "windows", "cis", "vex", "layerdetails"},
-			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "vex/cachedir", "vex/filter", "vex/os-duplicate/apk", "vex/os-duplicate/cos", "vex/os-duplicate/dpkg", "vex/os-duplicate/rpm", "vex/no-executable/dpkg", "baseimage"},
+			names:     []string{"python", "windows", "cis", "layerdetails"},
+			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "baseimage"},
 		},
 		{
 			desc:      "Remove_duplicates",

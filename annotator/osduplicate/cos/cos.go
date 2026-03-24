@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -47,7 +49,7 @@ const (
 type Annotator struct{}
 
 // New returns a new Annotator.
-func New() annotator.Annotator { return &Annotator{} }
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
 func (Annotator) Name() string { return Name }
@@ -85,10 +87,10 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			continue
 		}
 
-		if len(pkg.Locations) == 0 {
+		if pkg.Location.Descriptor == nil || pkg.Location.Descriptor.File == nil {
 			continue
 		}
-		loc := pkg.Locations[0]
+		loc := pkg.Location.Descriptor.File.Path
 		// Annotate non-OS (e.g. language) packages as OS duplicates if:
 		// They're in the OS package installation directory
 		if strings.HasPrefix(loc, cosPkgDir) ||

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,8 +32,10 @@ import (
 )
 
 var (
+	purlDPKG = PurlDPKGAnnotationPackage()
+
 	idToPkg = map[string]*extractor.Package{
-		"1": purlDPKGAnnotationPackage,
+		"1": purlDPKG,
 	}
 	pkgToID = func() map[*extractor.Package]string {
 		m := make(map[*extractor.Package]string)
@@ -45,7 +47,7 @@ var (
 
 	pkgVulnStruct1 = &inventory.PackageVuln{
 		Vulnerability: &osvpb.Vulnerability{},
-		Package:       purlDPKGAnnotationPackage,
+		Package:       purlDPKG,
 		Plugins:       []string{"cve/cve-1234-finder", "cve/cve-1234-enricher"},
 		ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{
 			Plugin:        "some-plugin",

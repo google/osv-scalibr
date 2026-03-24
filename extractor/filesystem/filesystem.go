@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -34,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
@@ -112,9 +114,6 @@ type Config struct {
 	MaxInodes int
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
 	MaxFileSize int
-	// Optional: By default, inventories stores a path relative to the scan root. If StoreAbsolutePath
-	// is set, the absolute path is stored instead.
-	StoreAbsolutePath bool
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
 	PrintDurationAnalysis bool
 	// Optional: If true, fail the scan if any permission errors are encountered.
@@ -143,10 +142,14 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 
 	var status []*plugin.Status
 	inv := inventory.Inventory{}
-	for _, root := range scanRoots {
+	for i, root := range scanRoots {
 		newInv, st, err := runOnScanRoot(ctx, config, root, wc)
 		if err != nil {
 			return inv, nil, err
+		}
+
+		for _, p := range newInv.Packages {
+			p.ScanRoot = config.ScanRoots[i].Path
 		}
 
 		inv.Append(newInv)
@@ -217,13 +220,12 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 			continue
 		}
 
-		// Prepend embeddedFS.Path to Locations for all packages in mountedInv
+		// Prepend embeddedFS.Path to Locations for all packages in mountedInv.
 		for _, pkg := range mountedInv.Packages {
-			updatedLocations := make([]string, len(pkg.Locations))
-			for i, loc := range pkg.Locations {
-				updatedLocations[i] = fmt.Sprintf("%s:%s", embeddedFS.Path, loc)
+			prependEmbeddedFSPath(pkg.Location.Descriptor, embeddedFS)
+			for _, r := range pkg.Location.Related {
+				prependEmbeddedFSPath(&r, embeddedFS)
 			}
-			pkg.Locations = updatedLocations
 		}
 
 		additionalInv.Append(mountedInv)
@@ -270,7 +272,6 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		maxInodes:         config.MaxInodes,
 		maxFileSize:       config.MaxFileSize,
 		inodesVisited:     0,
-		storeAbsolutePath: config.StoreAbsolutePath,
 		errorOnFSErrors:   config.ErrorOnFSErrors,
 		extractorOverride: config.ExtractorOverride,
 
@@ -327,24 +328,24 @@ func RunFS(ctx context.Context, config *Config, wc *walkContext) (inventory.Inve
 }
 
 type walkContext struct {
+	mu sync.Mutex
 	//nolint:containedctx
-	ctx               context.Context
-	stats             stats.Collector
-	extractors        []Extractor
-	fs                scalibrfs.FS
-	scanRoot          string
-	pathsToExtract    []string
-	ignoreSubDirs     bool
-	dirsToSkip        map[string]bool // Anything under these paths should be skipped.
-	skipDirRegex      *regexp.Regexp
-	skipDirGlob       glob.Glob
-	useGitignore      bool
-	maxInodes         int
-	inodesVisited     int
-	maxFileSize       int // In bytes.
-	dirsVisited       int
-	storeAbsolutePath bool
-	errorOnFSErrors   bool
+	ctx             context.Context
+	stats           stats.Collector
+	extractors      []Extractor
+	fs              scalibrfs.FS
+	scanRoot        string
+	pathsToExtract  []string
+	ignoreSubDirs   bool
+	dirsToSkip      map[string]bool // Anything under these paths should be skipped.
+	skipDirRegex    *regexp.Regexp
+	skipDirGlob     glob.Glob
+	useGitignore    bool
+	maxInodes       int
+	inodesVisited   int
+	maxFileSize     int // In bytes.
+	dirsVisited     int
+	errorOnFSErrors bool
 
 	// applicable gitignore patterns for the current and parent directories.
 	gitignores []internal.GitignorePattern
@@ -405,6 +406,8 @@ func walkIndividualPaths(wc *walkContext) error {
 }
 
 func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	wc.currentPath = path
 
 	wc.inodesVisited++
@@ -520,6 +523,8 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 }
 
 func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	if len(wc.gitignores) > 0 && d.Type().IsDir() {
 		// Remove .gitignores that applied to this directory.
 		wc.gitignores = wc.gitignores[:len(wc.gitignores)-1]
@@ -610,9 +615,6 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 		wc.foundInv[ex.Name()] = true
 		for _, r := range results.Packages {
 			r.Plugins = append(r.Plugins, ex.Name())
-			if wc.storeAbsolutePath {
-				r.Locations = expandAbsolutePath(wc.scanRoot, r.Locations)
-			}
 		}
 		wc.inventory.Append(results)
 	}
@@ -627,14 +629,6 @@ func (wc *walkContext) PrepareNewScan(absRoot string, fs scalibrfs.FS) error {
 	wc.fileAPI.fs = fs
 	wc.inventory = inventory.Inventory{}
 	return nil
-}
-
-func expandAbsolutePath(scanRoot string, paths []string) []string {
-	var locations []string
-	for _, l := range paths {
-		locations = append(locations, filepath.Join(scanRoot, l))
-	}
-	return locations
 }
 
 func expandAllAbsolutePaths(scanRoots []*scalibrfs.ScanRoot) ([]*scalibrfs.ScanRoot, error) {
@@ -741,6 +735,8 @@ func createFileErrorsForPlugin(errorMap map[string]error) []*plugin.FileError {
 }
 
 func (wc *walkContext) printStatus() {
+	wc.mu.Lock()
+	defer wc.mu.Unlock()
 	log.Infof("Status: new inodes: %d, %.1f inodes/s, new extract calls: %d, path: %q\n",
 		wc.inodesVisited-wc.lastInodes,
 		float64(wc.inodesVisited-wc.lastInodes)/time.Since(wc.lastStatus).Seconds(),
@@ -857,4 +853,10 @@ func fileSize(file FileAPI) (int64, error) {
 		return 0, err
 	}
 	return info.Size(), nil
+}
+
+func prependEmbeddedFSPath(l *location.Location, embeddedFS *inventory.EmbeddedFS) {
+	if l != nil && l.File != nil {
+		l.File.Path = fmt.Sprintf("%s:%s", embeddedFS.Path, l.File.Path)
+	}
 }

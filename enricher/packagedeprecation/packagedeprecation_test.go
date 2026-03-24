@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 
 	grpcpb "deps.dev/api/v3alpha"
 	"github.com/google/go-cmp/cmp"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/extractor"
@@ -151,7 +152,11 @@ func TestEnrich(t *testing.T) {
 
 func mustNew(t *testing.T, client packagedeprecation.Client) enricher.Enricher {
 	t.Helper()
-	e := packagedeprecation.New().(*packagedeprecation.Enricher)
-	e.SetClient(client)
-	return e
+	e, err := packagedeprecation.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("packagedeprecation.New: %v", err)
+	}
+	pe := e.(*packagedeprecation.Enricher)
+	pe.SetClient(client)
+	return pe
 }

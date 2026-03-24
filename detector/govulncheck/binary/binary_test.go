@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,13 +45,16 @@ func TestScan(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		wd = "/" + wd
 	}
-	det := binary.New(&cpb.PluginConfig{
+	det, err := binary.New(&cpb.PluginConfig{
 		PluginSpecific: []*cpb.PluginSpecificConfig{
 			{Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
 				OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 			}}},
 		},
 	})
+	if err != nil {
+		t.Fatalf("binary.New(): %v", err)
+	}
 	px := setupPackageIndex([]string{binaryName})
 	findings, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err != nil {
@@ -66,6 +69,13 @@ func TestScan(t *testing.T) {
 	}
 	got := findings.PackageVulns[0]
 	want := &inventory.PackageVuln{
+		Package: &extractor.Package{
+			Name:     binaryName,
+			Version:  "1.2.3",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join("testdata", binaryName)),
+			Plugins:  []string{gobinary.Name},
+		},
 		Vulnerability: &osvpb.Vulnerability{
 			Id:        "GO-2022-1144",
 			Modified:  &timestamppb.Timestamp{},
@@ -119,13 +129,16 @@ func TestScanErrorInGovulncheck(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		wd = "/" + wd
 	}
-	det := binary.New(&cpb.PluginConfig{
+	det, err := binary.New(&cpb.PluginConfig{
 		PluginSpecific: []*cpb.PluginSpecificConfig{
 			{Config: &cpb.PluginSpecificConfig_Govulncheck{Govulncheck: &cpb.GovulncheckConfig{
 				OfflineVulnDbPath: filepath.ToSlash(filepath.Join(wd, "testdata", "vulndb")),
 			}}},
 		},
 	})
+	if err != nil {
+		t.Fatalf("binary.New: %v", err)
+	}
 	px := setupPackageIndex([]string{"nonexistent", binaryName})
 	result, err := det.Scan(t.Context(), scalibrfs.RealFSScanRoot("."), px)
 	if err == nil {
@@ -140,11 +153,11 @@ func setupPackageIndex(names []string) *packageindex.PackageIndex {
 	var pkgs []*extractor.Package
 	for _, n := range names {
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      n,
-			Version:   "1.2.3",
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filepath.Join("testdata", n)},
-			Plugins:   []string{gobinary.Name},
+			Name:     n,
+			Version:  "1.2.3",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join("testdata", n)),
+			Plugins:  []string{gobinary.Name},
 		})
 	}
 	px, _ := packageindex.New(pkgs)

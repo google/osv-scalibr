@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,15 +22,37 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
-	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	// Example valid Postman API and Collection tokens.
-	detectorPMAK = "PMAK-68b96bd4ae8d2b0001db8a86-" +
-		"192b1cb49020c70a4d0c814ab71de822d7"
+	detectorPMAK = "PMAK-68b96bd4ae8d2b0001db8a86-192b1cb49020c70a4d0c814ab71de822d7"
 	detectorPMAT = "PMAT-01K4A58P2HS2Q43TXHSXFRDBZX"
 )
+
+func TestAPIKeyDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		postmanapikey.NewAPIKeyDetector(),
+		detectorPMAK,
+		postmanapikey.PostmanAPIKey{Key: detectorPMAK},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
+
+func TestCollectionTokenDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		postmanapikey.NewCollectionTokenDetector(),
+		detectorPMAT,
+		postmanapikey.PostmanCollectionToken{Key: detectorPMAT},
+		velestest.WithBackToBack(),
+		velestest.WithPad('a'),
+	)
+}
 
 // TestAPIKeyDetector_truePositives tests PMAK detection.
 func TestAPIKeyDetector_truePositives(t *testing.T) {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -31,6 +30,8 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -111,13 +112,13 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := dotnetpe.DefaultConfig()
 			collector := testcollector.New()
-			cfg.Stats = collector
-			if tt.maxFileSizeBytes != 0 {
-				cfg.MaxFileSizeBytes = tt.maxFileSizeBytes
+			cfg := &cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes}
+			e, err := dotnetpe.New(cfg)
+			if err != nil {
+				t.Fatalf("dotnetpe.New: %v", err)
 			}
-			var e filesystem.Extractor = dotnetpe.New(cfg)
+			e.(*dotnetpe.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -185,7 +186,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := dotnetpe.New(dotnetpe.DefaultConfig())
+			extr, err := dotnetpe.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("dotnetpe.New: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, input)

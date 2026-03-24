@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,13 +45,13 @@ type Extractor struct {
 }
 
 // New returns a new archive extractor.
-func New(cfg *cpb.PluginConfig) filesystem.Extractor {
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	maxSize := cfg.MaxFileSizeBytes
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.ArchiveConfig { return c.GetArchive() })
 	if specific.GetMaxFileSizeBytes() > 0 {
 		maxSize = specific.GetMaxFileSizeBytes()
 	}
-	return &Extractor{maxFileSizeBytes: maxSize}
+	return &Extractor{maxFileSizeBytes: maxSize}, nil
 }
 
 // Name returns the name of the extractor.

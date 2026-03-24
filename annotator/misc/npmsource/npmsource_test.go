@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/misc/npmsource"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -47,7 +48,7 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 		Name:     "wrappy",
 		PURLType: "npm",
 		// Locations is the absolute path of the package.json file.
-		Locations: []string{filepath.Join(root, "testproject/node_modules/dependency-1/package.json")},
+		Location: extractor.LocationFromPath(filepath.Join(root, "testproject/node_modules/dependency-1/package.json")),
 	}
 	inv := &inventory.Inventory{Packages: []*extractor.Package{copier.Copy(inputPackage).(*extractor.Package)}}
 
@@ -56,9 +57,9 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 	}
 
 	wantPackage := &extractor.Package{
-		Name:      "wrappy",
-		PURLType:  "npm",
-		Locations: []string{filepath.Join(root, "testproject/node_modules/dependency-1/package.json")},
+		Name:     "wrappy",
+		PURLType: "npm",
+		Location: extractor.LocationFromPath(filepath.Join(root, "testproject/node_modules/dependency-1/package.json")),
 		Metadata: &metadata.JavascriptPackageJSONMetadata{
 			// We want to assert that the package was resolved from the NPM repository which means that
 			// the lockfile was read from the relative path in the scan root.
@@ -66,7 +67,12 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 		},
 	}
 
-	err := npmsource.New().Annotate(t.Context(), input, inv)
+	anno, err := npmsource.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = anno.Annotate(t.Context(), input, inv)
 	if err != nil {
 		t.Errorf("Annotate(%v) error: %v; want error presence = false", inputPackage, err)
 	}
@@ -96,14 +102,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Unknown,
 				},
@@ -115,14 +121,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "supports-color",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/supports-color/package.json"},
+				Name:     "supports-color",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/supports-color/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "supports-color",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/supports-color/package.json"},
+				Name:     "supports-color",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/supports-color/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Other,
 				},
@@ -134,14 +140,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "custom-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/custom-package/package.json"},
+				Name:     "custom-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/custom-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "custom-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/custom-package/package.json"},
+				Name:     "custom-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/custom-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Other,
 				},
@@ -153,14 +159,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "local-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/local-package/package.json"},
+				Name:     "local-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/local-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "local-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/local-package/package.json"},
+				Name:     "local-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/local-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Local,
 				},
@@ -172,14 +178,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "wrappy",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "wrappy",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "wrappy",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "wrappy",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -191,14 +197,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "string-width",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "string-width",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "string-width",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "string-width",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -210,14 +216,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "@babel/highlight",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "@babel/highlight",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "@babel/highlight",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "@babel/highlight",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -229,14 +235,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.v1.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "ajv",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "ajv",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "ajv",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "ajv",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -246,14 +252,14 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 			name:      "no lockfile present",
 			lockfiles: map[string]string{},
 			inputPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Unknown,
 				},
@@ -272,7 +278,12 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := npmsource.New().Annotate(t.Context(), input, inv)
+			anno, err := npmsource.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)
@@ -305,14 +316,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Unknown,
 				},
@@ -324,14 +335,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "supports-color",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/supports-color/package.json"},
+				Name:     "supports-color",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/supports-color/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "supports-color",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/supports-color/package.json"},
+				Name:     "supports-color",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/supports-color/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Other,
 				},
@@ -343,14 +354,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "local-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/local-package/package.json"},
+				Name:     "local-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/local-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "local-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/local-package/package.json"},
+				Name:     "local-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/local-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Local,
 				},
@@ -362,14 +373,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "@babel/code-frame",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "@babel/code-frame",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "@babel/code-frame",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "@babel/code-frame",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -381,14 +392,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "string-width",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "string-width",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "string-width",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "string-width",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -400,14 +411,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "custom-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/custom-package/package.json"},
+				Name:     "custom-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/custom-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "custom-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/custom-package/package.json"},
+				Name:     "custom-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/custom-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Other,
 				},
@@ -419,14 +430,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "wrappy",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "wrappy",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "wrappy",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "wrappy",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -438,14 +449,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "@babel/highlight",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "@babel/highlight",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "@babel/highlight",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "@babel/highlight",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -457,14 +468,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				"testproject/package-lock.json": "testdata/package-lock.json",
 			},
 			inputPackage: &extractor.Package{
-				Name:      "ajv",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "ajv",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "ajv",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+				Name:     "ajv",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.PublicRegistry,
 				},
@@ -474,14 +485,14 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			name:      "no lockfile present",
 			lockfiles: map[string]string{},
 			inputPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 			},
 			wantPackage: &extractor.Package{
-				Name:      "abandoned-package",
-				PURLType:  "npm",
-				Locations: []string{"testproject/node_modules/abandoned-package/package.json"},
+				Name:     "abandoned-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("testproject/node_modules/abandoned-package/package.json"),
 				Metadata: &metadata.JavascriptPackageJSONMetadata{
 					Source: metadata.Unknown,
 				},
@@ -500,7 +511,12 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 				ScanRoot: scalibrfs.RealFSScanRoot(root),
 			}
 
-			err := npmsource.New().Annotate(t.Context(), input, inv)
+			anno, err := npmsource.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(t.Context(), input, inv)
 			gotErr := err != nil
 			if gotErr != tt.wantAnyErr {
 				t.Errorf("Annotate_LockfileV1(%v) error: %v; want error presence = %v", tt.inputPackage, err, tt.wantAnyErr)
@@ -524,19 +540,19 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			name: "maps_root_directory_to_package_from_node_modules/../package.json",
 			inputPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.0.0",
-					PURLType:  "npm",
-					Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				},
 			},
 			want: map[string][]*extractor.Package{
 				"testproject": []*extractor.Package{
 					{
-						Name:      "acorn",
-						Version:   "1.0.0",
-						PURLType:  "npm",
-						Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+						Name:     "acorn",
+						Version:  "1.0.0",
+						PURLType: "npm",
+						Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 					},
 				},
 			},
@@ -545,19 +561,19 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			name: "maps_root_directory_to_package_from_node_modules/../package.json",
 			inputPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.0.0",
-					PURLType:  "npm",
-					Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				},
 			},
 			want: map[string][]*extractor.Package{
 				"testproject": []*extractor.Package{
 					{
-						Name:      "acorn",
-						Version:   "1.0.0",
-						PURLType:  "npm",
-						Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+						Name:     "acorn",
+						Version:  "1.0.0",
+						PURLType: "npm",
+						Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 					},
 				},
 			},
@@ -566,10 +582,10 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			name: "no_map_for_non-npm_packages",
 			inputPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.0.0",
-					PURLType:  "pypi",
-					Locations: []string{"testproject/node_modules/dependency-1/package.json"},
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "pypi",
+					Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/package.json"),
 				},
 			},
 			want: make(map[string][]*extractor.Package),
@@ -578,10 +594,10 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			name: "no_map_for_non-package.json",
 			inputPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.0.0",
-					PURLType:  "npm",
-					Locations: []string{"testproject/node_modules/dependency-2/package2.json"},
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("testproject/node_modules/dependency-2/package2.json"),
 				},
 			},
 			want: make(map[string][]*extractor.Package),
@@ -590,10 +606,10 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			name: "no_map_for_non-node_modules_directory",
 			inputPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.0.0",
-					PURLType:  "npm",
-					Locations: []string{"testproject/package.json"},
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("testproject/package.json"),
 				},
 			},
 			want: make(map[string][]*extractor.Package),
@@ -602,10 +618,10 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 			name: "no_map_for_empty_locations",
 			inputPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.0.0",
-					PURLType:  "npm",
-					Locations: []string{""},
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath(""),
 				},
 			},
 			want: make(map[string][]*extractor.Package),

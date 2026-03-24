@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,37 @@ package metadata
 
 import (
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/purl/purlproto"
+
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for packages extracted from SPDX files.
 type Metadata struct {
 	PURL *purl.PackageURL
 	CPEs []string
+}
+
+// ToProto converts the SPDX metadata struct to the SPDXPackageMetadata proto.
+func ToProto(m *Metadata) *pb.SPDXPackageMetadata {
+	return &pb.SPDXPackageMetadata{
+		Purl: purlproto.ToProto(m.PURL),
+		Cpes: m.CPEs,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
+// ToStruct converts the SPDX metadata proto to the Metadata struct.
+func ToStruct(m *pb.SPDXPackageMetadata) *Metadata {
+	return &Metadata{
+		PURL: purlproto.FromProto(m.GetPurl()),
+		CPEs: m.GetCpes(),
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	_ "modernc.org/sqlite" // Import sqlite driver
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -42,13 +44,8 @@ const (
 type Extractor struct{}
 
 // New creates a new Winget extractor instance.
-func New() filesystem.Extractor {
-	return &Extractor{}
-}
-
-// NewDefault creates a new Winget extractor with default configuration.
-func NewDefault() filesystem.Extractor {
-	return New()
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return &Extractor{}, nil
 }
 
 // Name returns the unique identifier for this extractor.
@@ -134,10 +131,10 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		}
 
 		extPkg := &extractor.Package{
-			Name:      pkg.ID,
-			Version:   pkg.Version,
-			PURLType:  purl.TypeWinget,
-			Locations: []string{input.Path},
+			Name:     pkg.ID,
+			Version:  pkg.Version,
+			PURLType: purl.TypeWinget,
+			Location: extractor.LocationFromPath(input.Path),
 			Metadata: &metadata.Metadata{
 				Name:     pkg.Name,
 				ID:       pkg.ID,
@@ -168,7 +165,7 @@ func (e *Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
 
 func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package, error) {
 	query := `
-	SELECT 
+	SELECT
 		i.id as package_id,
 		n.name as package_name,
 		v.version as package_version,
@@ -178,7 +175,7 @@ func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package
 		GROUP_CONCAT(DISTINCT cmd.command) as commands
 	FROM manifest man
 	JOIN ids i ON man.id = i.rowid
-	JOIN names n ON man.name = n.rowid  
+	JOIN names n ON man.name = n.rowid
 	JOIN versions v ON man.version = v.rowid
 	JOIN monikers m ON man.moniker = m.rowid
 	JOIN channels c ON man.channel = c.rowid

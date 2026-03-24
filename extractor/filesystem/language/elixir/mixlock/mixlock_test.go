@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -32,41 +31,9 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     elixir.Config
-		wantCfg elixir.Config
-	}{
-		{
-			name: "default",
-			cfg:  elixir.DefaultConfig(),
-			wantCfg: elixir.Config{
-				MaxFileSizeBytes: 10 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: elixir.Config{
-				MaxFileSizeBytes: 10,
-			},
-			wantCfg: elixir.Config{
-				MaxFileSizeBytes: 10,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := elixir.New(tt.cfg)
-			if diff := cmp.Diff(tt.wantCfg, got.Config()); diff != "" {
-				t.Errorf("New(%+v).Config(): (-want +got):\n%s", tt.cfg, diff)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -131,10 +98,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = elixir.New(elixir.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := elixir.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("elixir.New: %v", err)
+			}
+			e.(*elixir.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -167,19 +135,19 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "bunt",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeHex,
-					Locations: []string{"testdata/valid"},
+					Name:     "bunt",
+					Version:  "1.0.0",
+					PURLType: purl.TypeHex,
+					Location: extractor.LocationFromPath("testdata/valid"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "081c2c665f086849e6d57900292b3a161727ab40431219529f13c4ddcf3e7a44",
 					},
 				},
 				{
-					Name:      "certifi",
-					Version:   "2.12.0",
-					PURLType:  purl.TypeHex,
-					Locations: []string{"testdata/valid"},
+					Name:     "certifi",
+					Version:  "2.12.0",
+					PURLType: purl.TypeHex,
+					Location: extractor.LocationFromPath("testdata/valid"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "2d1cca2ec95f59643862af91f001478c9863c2ac9cb6e2f89780bfd8de987329",
 					},
@@ -193,10 +161,10 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "bunt",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeHex,
-					Locations: []string{"testdata/invalid"},
+					Name:     "bunt",
+					Version:  "1.0.0",
+					PURLType: purl.TypeHex,
+					Location: extractor.LocationFromPath("testdata/invalid"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "081c2c665f086849e6d57900292b3a161727ab40431219529f13c4ddcf3e7a44",
 					},
@@ -215,10 +183,11 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = elixir.New(elixir.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: 100,
-			})
+			e, err := elixir.New(&cpb.PluginConfig{MaxFileSizeBytes: 100})
+			if err != nil {
+				t.Fatalf("elixir.New: %v", err)
+			}
+			e.(*elixir.Extractor).Stats = collector
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

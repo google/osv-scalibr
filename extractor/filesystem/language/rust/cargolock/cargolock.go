@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -47,7 +49,7 @@ type cargoLockFile struct {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -79,10 +81,10 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 
 	for _, lockPackage := range parsedLockfile.Packages {
 		packages = append(packages, &extractor.Package{
-			Name:      lockPackage.Name,
-			Version:   lockPackage.Version,
-			PURLType:  purl.TypeCargo,
-			Locations: []string{input.Path},
+			Name:     lockPackage.Name,
+			Version:  lockPackage.Version,
+			PURLType: purl.TypeCargo,
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,14 +34,14 @@ func vaultURL(cfg *cpb.PluginConfig) string {
 //
 // The enricher is initialized with the vault URL from the config. If the URL is not set,
 // an empty string is used, which will cause the validation to fail.
-func NewTokenValidatorEnricher(cfg *cpb.PluginConfig) enricher.Enricher {
-	return convert.FromVelesValidator(hashicorpvault.NewTokenValidator(vaultURL(cfg)), "secrets/hashicorpvaulttokenvalidate", 0)()
+func NewTokenValidatorEnricher(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	return convert.FromVelesValidator(hashicorpvault.NewTokenValidator(vaultURL(cfg)), "secrets/hashicorpvaulttokenvalidate", 0)(), nil
 }
 
 // NewAppRoleValidatorEnricher returns an enricher for Hashicorp app role validation.
 //
 // The enricher is initialized with the vault URL from the config. If the URL is not set,
 // an empty string is used, which will cause the validation to fail.
-func NewAppRoleValidatorEnricher(cfg *cpb.PluginConfig) enricher.Enricher {
-	return convert.FromVelesValidator(hashicorpvault.NewAppRoleValidator(vaultURL(cfg)), "secrets/hashicorpvaultapprolevalidate", 0)()
+func NewAppRoleValidatorEnricher(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	return convert.FromVelesValidator(hashicorpvault.NewAppRoleValidator(vaultURL(cfg)), "secrets/hashicorpvaultapprolevalidate", 0)(), nil
 }

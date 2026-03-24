@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestNPMLockExtractor_Extract_V1(t *testing.T) {
@@ -54,9 +56,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/one-package.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/one-package.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -72,9 +74,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/one-package-dev.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/one-package-dev.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -90,9 +92,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/two-packages.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/two-packages.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -100,9 +102,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/two-packages.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/two-packages.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -118,9 +120,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/scoped-packages.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -128,9 +130,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "@babel/code-frame",
 					Version:    "7.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/scoped-packages.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -146,9 +148,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss",
 					Version:    "6.0.23",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -156,9 +158,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss",
 					Version:    "7.0.16",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -166,9 +168,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-calc",
 					Version:    "7.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -176,9 +178,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "6.1.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -186,9 +188,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -204,9 +206,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "2.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -214,9 +216,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-display-values",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -224,9 +226,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-timing-functions",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -234,9 +236,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-string",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -244,9 +246,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-whitespace",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -254,9 +256,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "6.1.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -264,9 +266,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "cssnano-preset-default",
 					Version:    "4.0.7",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -274,9 +276,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-merge-longhand",
 					Version:    "4.0.11",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -284,9 +286,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-discard-overridden",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -294,9 +296,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-reduce-transforms",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -304,9 +306,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-svgo",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -314,9 +316,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-ordered-values",
 					Version:    "4.1.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -324,9 +326,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-minify-selectors",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -334,9 +336,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "babel-code-frame",
 					Version:    "6.26.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -344,9 +346,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "css-declaration-sorter",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -354,9 +356,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-url",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -364,9 +366,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-minify-params",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -374,9 +376,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -384,9 +386,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-colormin",
 					Version:    "4.0.3",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -394,9 +396,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "autoprefixer",
 					Version:    "9.5.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -404,9 +406,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-charset",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -414,9 +416,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-unique-selectors",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -424,9 +426,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-reduce-initial",
 					Version:    "4.0.3",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -434,9 +436,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-positions",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -444,9 +446,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-discard-duplicates",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -454,9 +456,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-loader",
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -464,9 +466,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "cssnano",
 					Version:    "4.1.10",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -474,9 +476,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-discard-empty",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -484,9 +486,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-repeat-style",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -494,9 +496,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-convert-values",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -504,9 +506,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "friendly-errors-webpack-plugin",
 					Version:    "1.7.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -514,9 +516,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "@vue/component-compiler-utils",
 					Version:    "2.6.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -524,9 +526,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-merge-rules",
 					Version:    "4.0.3",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -534,9 +536,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-normalize-unicode",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -544,9 +546,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-minify-font-values",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -554,9 +556,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-minify-gradients",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -564,9 +566,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "cssnano-util-raw-cache",
 					Version:    "4.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -574,9 +576,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-calc",
 					Version:    "7.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -584,9 +586,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-discard-comments",
 					Version:    "4.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/nested-dependencies-dup.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -599,14 +601,14 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@segment/analytics.js-integration-facebook-pixel",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "@segment/analytics.js-integration-facebook-pixel",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3b1bb80b302c2e552685dc8a029797ec832ea7c9",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -614,129 +616,129 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "ansi-styles",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "babel-preset-php",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "babel-preset-php",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "is-number-1",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-1",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-1",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-1",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "be5935f8d2595bcd97b05718ef1eeae08d812e10",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-2",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-2",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "is-number-2",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-2",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82dcc8e914dabd9305ab9ae580709a7825e824f5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "is-number-3",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-3",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-3",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-3",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82ae8802978da40d7f1be5ad5943c9e550ab2c89",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-4",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-4",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-5",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-5",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-6",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "is-number-6",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -744,33 +746,33 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "postcss-calc",
 					Version:    "7.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "raven-js",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "raven-js",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c2b377e7a254264fd4a1fe328e4e3cfc9e245570",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "slick-carousel",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v1.json"},
+					Name:     "slick-carousel",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "280b560161b751ba226d50c7db1e0a14a78c2de0",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -786,9 +788,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "lodash",
 					Version:    "1.3.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/files.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/files.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -796,9 +798,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "other_package",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/files.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/files.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -814,9 +816,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "@babel/code-frame",
 					Version:    "7.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/alias.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/alias.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -824,9 +826,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "string-width",
 					Version:    "4.2.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/alias.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/alias.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -834,9 +836,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "string-width",
 					Version:    "5.1.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/alias.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/alias.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -852,9 +854,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/optional-package.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/optional-package.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "optional"},
 					},
 				},
@@ -862,9 +864,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/optional-package.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/optional-package.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
@@ -880,9 +882,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "eslint",
 					Version:    "1.2.3",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/same-package-different-groups.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/same-package-different-groups.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -890,9 +892,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "table",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/same-package-different-groups.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/same-package-different-groups.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -900,9 +902,9 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Name:       "ajv",
 					Version:    "5.5.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/same-package-different-groups.v1.json"},
+					Location:   extractor.LocationFromPath("testdata/same-package-different-groups.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -913,9 +915,11 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
-			extr := packagelockjson.New(packagelockjson.Config{
-				Stats: collector,
-			})
+			extr, err := packagelockjson.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("packagelockjson.New: %v", err)
+			}
+			extr.(*packagelockjson.Extractor).Stats = collector
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

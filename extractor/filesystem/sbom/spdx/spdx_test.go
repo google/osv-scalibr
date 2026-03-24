@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.json"),
 				},
 				{
 					Name:     "openssl",
@@ -125,7 +125,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.json"),
 				},
 			},
 		},
@@ -140,7 +140,7 @@ func TestExtract(t *testing.T) {
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						PURL: getPURL("nginx", "1.21.1"),
 					},
-					Locations: []string{"testdata/purl_and_cpe.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/purl_and_cpe.spdx.json"),
 				},
 				{
 					Name:     "openssl",
@@ -148,7 +148,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/purl_and_cpe.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/purl_and_cpe.spdx.json"),
 				},
 			},
 		},
@@ -161,7 +161,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx"),
 				},
 				{
 					Name:     "openssl",
@@ -169,7 +169,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx"),
 				},
 			},
 		},
@@ -182,7 +182,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx.yml"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.yml"),
 				},
 				{
 					Name:     "openssl",
@@ -190,7 +190,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx.yml"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.yml"),
 				},
 			},
 		},
@@ -203,7 +203,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx.rdf"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.rdf"),
 				},
 				{
 					Name:     "openssl",
@@ -211,7 +211,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx.rdf"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.rdf"),
 				},
 			},
 		},

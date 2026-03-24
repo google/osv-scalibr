@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,9 +31,12 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range dl.All {
 		for _, initer := range initers {
-			name := initer(&cpb.PluginConfig{}).Name()
-			if !reValidName.MatchString(name) {
-				t.Errorf("Invalid plugin name %q", name)
+			p, err := initer(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("initer(): %v", err)
+			}
+			if !reValidName.MatchString(p.Name()) {
+				t.Errorf("Invalid plugin name %q", p.Name())
 			}
 		}
 	}
@@ -57,7 +60,9 @@ func TestDetectorsFromName(t *testing.T) {
 			desc: "Find_misc_detectors",
 			name: "misc",
 			wantDets: []string{
+				"cronjobprivesc",
 				"dockersocket",
+				"misc/pammisconfig",
 			},
 		},
 		{

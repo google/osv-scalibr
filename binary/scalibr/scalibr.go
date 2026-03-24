@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,6 +101,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 	filterByCapabilities := fs.Bool("filter-by-capabilities", true, "If set, plugins whose requirements (network access, OS, etc.) aren't satisfied by the scanning environment will be silently disabled instead of throwing a validation error.")
 	windowsAllDrives := fs.Bool("windows-all-drives", false, "Scan all drives on Windows")
 	offline := fs.Bool("offline", false, "Offline mode: Run only plugins that don't require network access")
+	allowUnsafePlugins := fs.Bool("allow-unsafe-plugins", false, "Allows enablement of unsafe plugins which could trigger Remote Code Execution when run on malicious input. Make sure you're running SCALIBR on trusted artifacts before enabling this setting.")
 
 	if err := fs.Parse(args); err != nil {
 		return nil, err
@@ -141,6 +142,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 		FilterByCapabilities:  *filterByCapabilities,
 		WindowsAllDrives:      *windowsAllDrives,
 		Offline:               *offline,
+		AllowUnsafePlugins:    *allowUnsafePlugins,
 	}
 	if err := cli.ValidateFlags(flags); err != nil {
 		return nil, err

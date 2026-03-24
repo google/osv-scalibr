@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -184,7 +184,7 @@ func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetai
 // Update overwrites the manifest on disk with the updated dependencies.
 func Update(opts options.UpdateOptions) (result.Result, error) {
 	var (
-		hasManifest = (opts.Manifest != "")
+		hasManifest = opts.Manifest != ""
 		manifestRW  manifest.ReadWriter
 	)
 	if !hasManifest {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package conanlock
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -28,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -146,7 +149,7 @@ func parseConanV1Lock(lockfile conanLockFile) []*extractor.Package {
 			Name:     reference.Name,
 			Version:  reference.Version,
 			PURLType: purl.TypeConan,
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: []string{},
 			},
 		})
@@ -168,7 +171,7 @@ func parseConanRequires(packages *[]*extractor.Package, requires []string, group
 			Name:     reference.Name,
 			Version:  reference.Version,
 			PURLType: purl.TypeConan,
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: []string{group},
 			},
 		})
@@ -201,7 +204,7 @@ func parseConanLock(lockfile conanLockFile) []*extractor.Package {
 type Extractor struct{}
 
 // New returns a new instance of this Extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor
 func (e Extractor) Name() string { return Name }
@@ -228,10 +231,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
+	if parsedLockfile == nil {
+		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
+	}
+
 	pkgs := parseConanLock(*parsedLockfile)
 
 	for i := range pkgs {
-		pkgs[i].Locations = []string{input.Path}
+		pkgs[i].Location = extractor.LocationFromPath(input.Path)
 	}
 
 	return inventory.Inventory{Packages: pkgs}, nil

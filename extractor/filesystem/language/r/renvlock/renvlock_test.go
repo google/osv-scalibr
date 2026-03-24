@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_Extract(t *testing.T) {
@@ -50,10 +52,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "morning",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeCran,
-					Locations: []string{"testdata/one-package.lock"},
+					Name:     "morning",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/one-package.lock"),
 				},
 			},
 		},
@@ -64,16 +66,16 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "markdown",
-					Version:   "1.0",
-					PURLType:  purl.TypeCran,
-					Locations: []string{"testdata/two-packages.lock"},
+					Name:     "markdown",
+					Version:  "1.0",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
 				},
 				{
-					Name:      "mime",
-					Version:   "0.7",
-					PURLType:  purl.TypeCran,
-					Locations: []string{"testdata/two-packages.lock"},
+					Name:     "mime",
+					Version:  "0.7",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
 				},
 			},
 		},
@@ -84,10 +86,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "markdown",
-					Version:   "1.0",
-					PURLType:  purl.TypeCran,
-					Locations: []string{"testdata/with-mixed-sources.lock"},
+					Name:     "markdown",
+					Version:  "1.0",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/with-mixed-sources.lock"),
 				},
 			},
 		},
@@ -98,10 +100,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "BH",
-					Version:   "1.75.0-0",
-					PURLType:  purl.TypeCran,
-					Locations: []string{"testdata/with-bioconductor.lock"},
+					Name:     "BH",
+					Version:  "1.75.0-0",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/with-bioconductor.lock"),
 				},
 			},
 		},
@@ -116,7 +118,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := renvlock.Extractor{}
+			extr, err := renvlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("renvlock.New: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

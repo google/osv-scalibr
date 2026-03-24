@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package composerlock
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -28,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -52,7 +55,7 @@ type composerLock struct {
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -79,14 +82,14 @@ func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []str
 	}
 
 	return &extractor.Package{
-		Name:      pkg.Name,
-		Version:   pkg.Version,
-		PURLType:  purl.TypeComposer,
-		Locations: []string{input.Path},
+		Name:     pkg.Name,
+		Version:  pkg.Version,
+		PURLType: purl.TypeComposer,
+		Location: extractor.LocationFromPath(input.Path),
 		SourceCode: &extractor.SourceCodeIdentifier{
 			Commit: commit,
 		},
-		Metadata: osv.DepGroupMetadata{
+		Metadata: &osv.DepGroupMetadata{
 			DepGroupVals: groups,
 		},
 	}
@@ -100,6 +103,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	if parsedLockfile == nil {
+		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
 	}
 
 	packages := make(

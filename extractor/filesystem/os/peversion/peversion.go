@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/saferwall/pe"
 )
 
@@ -76,13 +78,18 @@ type Extractor struct {
 }
 
 // New creates a new PE version extractor with the given configuration.
-func New(config Config) filesystem.Extractor {
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return NewWithConfig(DefaultConfig()), nil
+}
+
+// NewWithConfig creates a new PE version extractor with the given configuration.
+func NewWithConfig(config Config) filesystem.Extractor {
 	return &Extractor{config: config}
 }
 
 // NewDefault returns an extractor with default configuration.
 func NewDefault() filesystem.Extractor {
-	return New(DefaultConfig())
+	return NewWithConfig(DefaultConfig())
 }
 
 // Name of the extractor.

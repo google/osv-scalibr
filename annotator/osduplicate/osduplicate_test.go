@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 )
 
 func TestBuildLocationToPKGsMap(t *testing.T) {
@@ -40,27 +41,27 @@ func TestBuildLocationToPKGsMap(t *testing.T) {
 			desc: "one_pkg_per_location",
 			inventory: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					{Name: "package1", Locations: []string{"location1"}},
-					{Name: "package2", Locations: []string{"location2"}},
+					{Name: "package1", Location: extractor.LocationFromPath("location1")},
+					{Name: "package2", Location: extractor.LocationFromPath("location2")},
 				},
 			},
 			want: map[string][]*extractor.Package{
-				"location1": []*extractor.Package{{Name: "package1", Locations: []string{"location1"}}},
-				"location2": []*extractor.Package{{Name: "package2", Locations: []string{"location2"}}},
+				"location1": []*extractor.Package{{Name: "package1", Location: extractor.LocationFromPath("location1")}},
+				"location2": []*extractor.Package{{Name: "package2", Location: extractor.LocationFromPath("location2")}},
 			},
 		},
 		{
 			desc: "multiple_pkgs_per_location",
 			inventory: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					{Name: "package1", Locations: []string{"location"}},
-					{Name: "package2", Locations: []string{"location"}},
+					{Name: "package1", Location: extractor.LocationFromPath("location")},
+					{Name: "package2", Location: extractor.LocationFromPath("location")},
 				},
 			},
 			want: map[string][]*extractor.Package{
 				"location": []*extractor.Package{
-					{Name: "package1", Locations: []string{"location"}},
-					{Name: "package2", Locations: []string{"location"}},
+					{Name: "package1", Location: extractor.LocationFromPath("location")},
+					{Name: "package2", Location: extractor.LocationFromPath("location")},
 				},
 			},
 		},
@@ -68,51 +69,62 @@ func TestBuildLocationToPKGsMap(t *testing.T) {
 			desc: "ignore_non_lockfile_locations",
 			inventory: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					{Name: "package", Locations: []string{"lockfile", "non-lockfile"}},
+					{
+						Name: "package",
+						Location: extractor.PackageLocation{
+							Descriptor: &location.Location{File: &location.File{Path: "lockfile"}},
+							Related:    []location.Location{location.FromPath("non-lockfile")},
+						}},
 				},
 			},
 			want: map[string][]*extractor.Package{
-				"lockfile": []*extractor.Package{{Name: "package", Locations: []string{"lockfile", "non-lockfile"}}},
+				"lockfile": []*extractor.Package{{
+					Name: "package",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "lockfile"}},
+						Related:    []location.Location{location.FromPath("non-lockfile")},
+					},
+				}},
 			},
 		},
 		{
 			desc: "ignore_os_packages",
 			inventory: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					{Name: "os-package", Locations: []string{"location-1"}, Plugins: []string{"os/dpkg"}},
-					{Name: "language-package", Locations: []string{"location-2"}, Plugins: []string{"python/wheelegg"}},
+					{Name: "os-package", Location: extractor.LocationFromPath("location-1"), Plugins: []string{"os/dpkg"}},
+					{Name: "language-package", Location: extractor.LocationFromPath("location-2"), Plugins: []string{"python/wheelegg"}},
 				},
 			},
 			want: map[string][]*extractor.Package{
-				"location-2": []*extractor.Package{{Name: "language-package", Locations: []string{"location-2"}, Plugins: []string{"python/wheelegg"}}},
+				"location-2": []*extractor.Package{{Name: "language-package", Location: extractor.LocationFromPath("location-2"), Plugins: []string{"python/wheelegg"}}},
 			},
 		},
 		{
 			desc: "absolute_to_relative_paths",
 			inventory: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					{Name: "package1", Locations: []string{"/root/location1"}},
-					{Name: "package2", Locations: []string{"/root/location2"}},
+					{Name: "package1", Location: extractor.LocationFromPath("/root/location1")},
+					{Name: "package2", Location: extractor.LocationFromPath("/root/location2")},
 				},
 			},
 			scanRoot: "/root/",
 			want: map[string][]*extractor.Package{
-				"location1": []*extractor.Package{{Name: "package1", Locations: []string{"/root/location1"}}},
-				"location2": []*extractor.Package{{Name: "package2", Locations: []string{"/root/location2"}}},
+				"location1": []*extractor.Package{{Name: "package1", Location: extractor.LocationFromPath("/root/location1")}},
+				"location2": []*extractor.Package{{Name: "package2", Location: extractor.LocationFromPath("/root/location2")}},
 			},
 		},
 		{
 			desc: "absolute_to_relative_paths_no_leading_slash",
 			inventory: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					{Name: "package1", Locations: []string{"/root/location1"}},
-					{Name: "package2", Locations: []string{"/root/location2"}},
+					{Name: "package1", Location: extractor.LocationFromPath("/root/location1")},
+					{Name: "package2", Location: extractor.LocationFromPath("/root/location2")},
 				},
 			},
 			scanRoot: "/root",
 			want: map[string][]*extractor.Package{
-				"location1": []*extractor.Package{{Name: "package1", Locations: []string{"/root/location1"}}},
-				"location2": []*extractor.Package{{Name: "package2", Locations: []string{"/root/location2"}}},
+				"location1": []*extractor.Package{{Name: "package1", Location: extractor.LocationFromPath("/root/location1")}},
+				"location2": []*extractor.Package{{Name: "package2", Location: extractor.LocationFromPath("/root/location2")}},
 			},
 		},
 	}

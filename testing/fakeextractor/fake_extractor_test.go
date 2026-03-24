@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -135,11 +135,11 @@ func TestExtract(t *testing.T) {
 	name1 := "package"
 	name2 := "another package"
 	multiplePackages := []*extractor.Package{{
-		Name:      name1,
-		Locations: []string{"some path"},
+		Name:     name1,
+		Location: extractor.LocationFromPath("some path"),
 	}, {
-		Name:      name2,
-		Locations: []string{"some path"},
+		Name:     name2,
+		Location: extractor.LocationFromPath("some path"),
 	}}
 
 	type args struct {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+	bazelmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -29,6 +30,13 @@ import (
 // - Artifact ID is lowercased and stored as the name
 func MakePackageURL(version string, metadata any) *purl.PackageURL {
 	switch m := metadata.(type) {
+	case *bazelmavenmeta.Metadata:
+		return &purl.PackageURL{
+			Type:      purl.TypeMaven,
+			Namespace: strings.ToLower(m.GroupID),
+			Name:      strings.ToLower(m.ArtifactID),
+			Version:   version,
+		}
 	case *archivemeta.Metadata:
 		return &purl.PackageURL{
 			Type:      purl.TypeMaven,

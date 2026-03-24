@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,45 @@
 // Package osv defines OSV-specific fields for parsed source packages.
 package osv
 
+import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+	metadata.Register(DepGroupToStruct, DepGroupToProto)
+}
+
 // Metadata holds parsing information for packages extracted by an OSV extractor wrapper.
 type Metadata struct {
 	PURLType  string
 	Commit    string
 	Ecosystem string
 	CompareAs string
+}
+
+// ToProto converts the Metadata struct to an OSVPackageMetadata proto.
+func ToProto(m *Metadata) *pb.OSVPackageMetadata {
+	return &pb.OSVPackageMetadata{
+		PurlType:  m.PURLType,
+		Commit:    m.Commit,
+		Ecosystem: m.Ecosystem,
+		CompareAs: m.CompareAs,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
+// ToStruct converts the OSVPackageMetadata proto to a Metadata struct.
+func ToStruct(m *pb.OSVPackageMetadata) *Metadata {
+	return &Metadata{
+		PURLType:  m.GetPurlType(),
+		Commit:    m.GetCommit(),
+		Ecosystem: m.GetEcosystem(),
+		CompareAs: m.GetCompareAs(),
+	}
 }
 
 // DepGroups provides access to the list of dependency groups a package item belongs to.
@@ -40,4 +73,21 @@ var _ DepGroups = DepGroupMetadata{}
 // DepGroups return the dependency groups property in the metadata
 func (dgm DepGroupMetadata) DepGroups() []string {
 	return dgm.DepGroupVals
+}
+
+// DepGroupToProto converts the DepGroupMetadata struct to a DepGroupMetadata proto.
+func DepGroupToProto(dgm *DepGroupMetadata) *pb.DepGroupMetadata {
+	return &pb.DepGroupMetadata{
+		DepGroupVals: dgm.DepGroupVals,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (dgm *DepGroupMetadata) IsProtoable() {}
+
+// DepGroupToStruct converts the DepGroupMetadata proto to a DepGroupMetadata struct.
+func DepGroupToStruct(m *pb.DepGroupMetadata) *DepGroupMetadata {
+	return &DepGroupMetadata{
+		DepGroupVals: m.GetDepGroupVals(),
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,10 +72,7 @@ func appRoleBody(creds AppRoleCredentials) (string, error) {
 	if creds.RoleID == "" || creds.SecretID == "" {
 		return "", fmt.Errorf("both role_id and secret_id are required for AppRole validation. Actual creds %v", creds)
 	}
-	body := AppRoleLoginRequest{
-		RoleID:   creds.RoleID,
-		SecretID: creds.SecretID,
-	}
+	body := AppRoleLoginRequest(creds)
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal AppRoleLoginRequest: %w", err)

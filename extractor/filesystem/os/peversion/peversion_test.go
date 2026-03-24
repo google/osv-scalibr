@@ -162,7 +162,7 @@ func TestFileRequired_SkipSystemDirsDisabled(t *testing.T) {
 	config := peversion.Config{
 		SkipSystemDirs: false,
 	}
-	extractor := peversion.New(config)
+	extractor := peversion.NewWithConfig(config)
 
 	tests := []struct {
 		name     string

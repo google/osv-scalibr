@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import (
 )
 
 // InitFn is the extractor initializer function.
-type InitFn func(cfg *cpb.PluginConfig) standalone.Extractor
+type InitFn func(cfg *cpb.PluginConfig) (standalone.Extractor, error)
 
 // InitMap is a map of extractor names to their initers.
 type InitMap map[string][]InitFn
@@ -94,7 +94,7 @@ func vals(initMap InitMap) []InitFn {
 // Wraps initer functions that don't take any config value to initer functions that do.
 // TODO(b/400910349): Remove once all plugins take config values.
 func noCFG(f func() standalone.Extractor) InitFn {
-	return func(_ *cpb.PluginConfig) standalone.Extractor { return f() }
+	return func(_ *cpb.PluginConfig) (standalone.Extractor, error) { return f(), nil }
 }
 
 // ExtractorsFromName returns a list of extractors from a name.
@@ -102,7 +102,11 @@ func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]standalone.Extrac
 	if initers, ok := extractorNames[name]; ok {
 		result := []standalone.Extractor{}
 		for _, initer := range initers {
-			result = append(result, initer(cfg))
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}

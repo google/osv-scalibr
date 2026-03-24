@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,16 @@
 // Package metadata defines a metadata struct for kernel vmlinuz files.
 package metadata
 
-import "github.com/google/osv-scalibr/log"
+import (
+	"github.com/google/osv-scalibr/log"
+
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a kernel vmlinuz file.
 type Metadata struct {
@@ -31,6 +40,45 @@ type Metadata struct {
 	OSVersionCodename string
 	OSVersionID       string
 	RWRootFS          bool
+}
+
+// ToProto converts the Metadata struct to a VmlinuzMetadata proto.
+func ToProto(m *Metadata) *pb.VmlinuzMetadata {
+	return &pb.VmlinuzMetadata{
+		Name:              m.Name,
+		Version:           m.Version,
+		Architecture:      m.Architecture,
+		ExtendedVersion:   m.ExtendedVersion,
+		Format:            m.Format,
+		SwapDevice:        m.SwapDevice,
+		RootDevice:        m.RootDevice,
+		VideoMode:         m.VideoMode,
+		OsId:              m.OSID,
+		OsVersionCodename: m.OSVersionCodename,
+		OsVersionId:       m.OSVersionID,
+		RwRootFs:          m.RWRootFS,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
+// ToStruct converts a Package proto to a vmlinuz metadata struct.
+func ToStruct(m *pb.VmlinuzMetadata) *Metadata {
+	return &Metadata{
+		Name:              m.GetName(),
+		Version:           m.GetVersion(),
+		Architecture:      m.GetArchitecture(),
+		ExtendedVersion:   m.GetExtendedVersion(),
+		Format:            m.GetFormat(),
+		SwapDevice:        m.GetSwapDevice(),
+		RootDevice:        m.GetRootDevice(),
+		VideoMode:         m.GetVideoMode(),
+		OSID:              m.GetOsId(),
+		OSVersionCodename: m.GetOsVersionCodename(),
+		OSVersionID:       m.GetOsVersionId(),
+		RWRootFS:          m.GetRwRootFs(),
+	}
 }
 
 // ToNamespace extracts the PURL namespace from the metadata.

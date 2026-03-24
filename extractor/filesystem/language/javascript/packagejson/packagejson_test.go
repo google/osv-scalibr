@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import (
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -98,8 +100,8 @@ func TestFileRequired(t *testing.T) {
 			path:             "package.json",
 			fileSizeBytes:    1000 * units.MiB,
 			maxFileSizeBytes: 0,
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
 		},
 	}
 
@@ -107,10 +109,11 @@ func TestFileRequired(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := packagejson.New(packagejson.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := packagejson.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("packagejson.New: %v", err)
+			}
+			e.(*packagejson.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -139,7 +142,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		cfg              packagejson.Config
+		includeDeps      bool
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -149,10 +152,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "testdata",
-					Version:   "10.46.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package.json"},
+					Name:     "testdata",
+					Version:  "10.46.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Author: &metadata.Person{
 							Name:  "Developer",
@@ -168,10 +171,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/deps/accepts/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "accepts",
-					Version:   "1.3.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/deps/accepts/package.json"},
+					Name:     "accepts",
+					Version:  "1.3.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/deps/accepts/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -193,10 +196,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/deps/no-person-name/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "accepts",
-					Version:   "1.3.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/deps/no-person-name/package.json"},
+					Name:     "accepts",
+					Version:  "1.3.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/deps/no-person-name/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -214,10 +217,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/deps/with/deps/acorn/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.2.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/deps/with/deps/acorn/package.json"},
+					Name:     "acorn",
+					Version:  "1.2.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/deps/with/deps/acorn/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Maintainers: []*metadata.Person{
 							{
@@ -271,9 +274,7 @@ func TestExtract(t *testing.T) {
 					Name:     "undici",
 					Version:  "5.28.3",
 					PURLType: purl.TypeNPM,
-					Locations: []string{
-						"testdata/undici-package.json",
-					},
+					Location: extractor.LocationFromPath("testdata/undici-package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -297,10 +298,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/not-vscode.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "jsonparse",
-					Version:   "1.3.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/not-vscode.json"},
+					Name:     "jsonparse",
+					Version:  "1.3.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/not-vscode.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Author: &metadata.Person{
 							Name:  "Tim Caswell",
@@ -311,53 +312,53 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "package_with_dependencies",
-			path: "testdata/package-with-deps.json",
-			cfg:  packagejson.Config{IncludeDependencies: true},
+			name:        "package_with_dependencies",
+			path:        "testdata/package-with-deps.json",
+			includeDeps: true,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "package-with-deps",
-					Version:   "1.2.3",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
-					Metadata:  &metadata.JavascriptPackageJSONMetadata{},
+					Name:     "package-with-deps",
+					Version:  "1.2.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{},
 				},
 				{
-					Name:      "dep1",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep1",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep2",
-					Version:   "2.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep2",
+					Version:  "2.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep3",
-					Version:   "3.1.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep3",
+					Version:  "3.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep4",
-					Version:   "0.4.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep4",
+					Version:  "0.4.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep5",
-					Version:   "5.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep5",
+					Version:  "5.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				// dep6 is invalid, so it should not be included.
 				{
-					Name:      "dep7",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep7",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 			},
 		},
@@ -388,7 +389,6 @@ func TestExtract(t *testing.T) {
 			}
 
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			input := &filesystem.ScanInput{
 				FS:     scalibrfs.DirFS("."),
@@ -396,7 +396,20 @@ func TestExtract(t *testing.T) {
 				Reader: r,
 				Info:   info,
 			}
-			e := packagejson.New(defaultConfigWith(tt.cfg))
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{
+						JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
+							IncludeDependencies: tt.includeDeps,
+						},
+					}},
+				},
+			}
+			e, err := packagejson.New(cfg)
+			if err != nil {
+				t.Fatalf("packagejson.New: %v", err)
+			}
+			e.(*packagejson.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
@@ -426,18 +439,4 @@ func TestExtract(t *testing.T) {
 			}
 		})
 	}
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
-func defaultConfigWith(cfg packagejson.Config) packagejson.Config {
-	newCfg := packagejson.DefaultConfig()
-	newCfg.IncludeDependencies = cfg.IncludeDependencies
-
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	return newCfg
 }

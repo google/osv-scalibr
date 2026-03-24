@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,10 +80,10 @@ func ParseMixLockFile(input *filesystem.ScanInput) (inventory.Inventory, error) 
 
 		// Directly appending to packages
 		packages = append(packages, &extractor.Package{
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypeHex,
-			Locations: []string{input.Path},
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeHex,
+			Location: extractor.LocationFromPath(input.Path),
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},

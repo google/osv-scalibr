@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,10 +27,13 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -101,12 +104,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = requirements.New(
-				requirements.Config{
-					Stats:            collector,
-					MaxFileSizeBytes: tt.maxFileSizeBytes,
-				},
-			)
+			e, err := requirements.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("requirements.New(%v) error: %v", tt.maxFileSizeBytes, err)
+			}
+			e.(*requirements.Extractor).Stats = collector
 
 			// Set default size if not provided.
 			fileSizeBytes := tt.fileSizeBytes
@@ -309,11 +311,18 @@ func TestExtract(t *testing.T) {
 					Metadata: &requirements.Metadata{VersionComparator: "~=", Requirement: "Mopidy-Dirble ~= 1.1"},
 				},
 				{
-					Name:      "transitive-req",
-					Version:   "1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/example.txt", "testdata/other-requirements.txt"},
-					Metadata:  &requirements.Metadata{Requirement: "transitive-req==1"},
+					Name:     "pandas",
+					Version:  "2.2.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "testdata/example.txt",
+						}},
+						Related: []location.Location{
+							location.FromPath("testdata/other-requirements.txt"),
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "pandas==2.2.3"},
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -478,8 +487,8 @@ func TestExtract(t *testing.T) {
 	// fill Location and Extractor
 	for _, t := range tests {
 		for _, p := range t.wantPackages {
-			if p.Locations == nil {
-				p.Locations = []string{t.path}
+			if p.Location.Descriptor == nil {
+				p.Location = extractor.LocationFromPath(t.path)
 			}
 			if p.Metadata == nil {
 				p.Metadata = &requirements.Metadata{}
@@ -497,7 +506,11 @@ func TestExtract(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = requirements.New(requirements.Config{Stats: collector})
+			e, err := requirements.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("requirements.New() error: %v", err)
+			}
+			e.(*requirements.Extractor).Stats = collector
 
 			fsys := scalibrfs.DirFS(".")
 

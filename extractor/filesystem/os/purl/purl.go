@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
+	spackmeta "github.com/google/osv-scalibr/extractor/filesystem/os/spack/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -120,6 +121,14 @@ func MakePackageURL(name string, version string, purlType string, metadata any) 
 	case *nixmeta.Metadata:
 		if distro := m.ToDistro(); distro != "" {
 			q[purl.Distro] = distro
+		}
+
+	case *spackmeta.Metadata:
+		if m.Architecture != "" {
+			q[purl.Arch] = m.Architecture
+		}
+		if m.PlatformOS != "" {
+			q[purl.Distro] = m.Platform + "-" + m.PlatformOS
 		}
 
 	default:

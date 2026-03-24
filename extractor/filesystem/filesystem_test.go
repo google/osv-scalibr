@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -190,9 +190,9 @@ func (e *fakeExtractorSoftware) Extract(ctx context.Context, input *filesystem.S
 	return inventory.Inventory{
 		Packages: []*extractor.Package{
 			{
-				Name:      "Software",
-				Locations: []string{path},
-				Plugins:   []string{e.Name()},
+				Name:     "Software",
+				Location: extractor.LocationFromPath(path),
+				Plugins:  []string{e.Name()},
 			},
 		},
 	}, nil
@@ -241,9 +241,9 @@ func TestRun_EmbeddedFS(t *testing.T) {
 	wantInv := inventory.Inventory{
 		Packages: []*extractor.Package{
 			{
-				Name:      "Software",
-				Locations: []string{"disk.vmdk:1:file.txt"},
-				Plugins:   []string{"fake-ex-software", "fake-ex-software"}, // Expect duplicate due to observed behavior
+				Name:     "Software",
+				Location: extractor.LocationFromPath("disk.vmdk:1:file.txt"),
+				Plugins:  []string{"fake-ex-software", "fake-ex-software"}, // Expect duplicate due to observed behavior
 			},
 		},
 		EmbeddedFSs: []*inventory.EmbeddedFS{
@@ -262,7 +262,9 @@ func TestRun_EmbeddedFS(t *testing.T) {
 
 	// Sort package locations for comparison
 	for _, p := range gotInv.Packages {
-		sort.Strings(p.Locations)
+		sort.Slice(p.Location.Related, func(i, j int) bool {
+			return p.Location.Related[i].File.Path < p.Location.Related[j].File.Path
+		})
 	}
 
 	// Compare inventory
@@ -310,8 +312,8 @@ func (e fakeExtractorDirs) Extract(ctx context.Context, input *filesystem.ScanIn
 	path := filepath.ToSlash(input.Path)
 	if path == e.dir {
 		return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
-			Name:      e.name,
-			Locations: []string{path},
+			Name:     e.name,
+			Location: extractor.LocationFromPath(path),
 		}}}, nil
 	}
 	return inventory.Inventory{}, errors.New("unrecognized path")
@@ -352,7 +354,6 @@ func TestRunFS(t *testing.T) {
 		dirsToSkip       []string
 		skipDirGlob      string
 		skipDirRegex     string
-		storeAbsPath     bool
 		maxInodes        int
 		maxFileSizeBytes int
 		wantErr          error
@@ -365,14 +366,14 @@ func TestRunFS(t *testing.T) {
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -388,9 +389,9 @@ func TestRunFS(t *testing.T) {
 			dirsToSkip: []string{path.Join(cwd, "dir1")},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -405,9 +406,9 @@ func TestRunFS(t *testing.T) {
 			dirsToSkip: []string{"dir1"},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -422,9 +423,9 @@ func TestRunFS(t *testing.T) {
 			skipDirRegex: ".*1",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -439,9 +440,9 @@ func TestRunFS(t *testing.T) {
 			skipDirRegex: "/sub$",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -456,14 +457,14 @@ func TestRunFS(t *testing.T) {
 			skipDirRegex: "asdf",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -489,9 +490,9 @@ func TestRunFS(t *testing.T) {
 			skipDirGlob: "**/sub",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -517,14 +518,14 @@ func TestRunFS(t *testing.T) {
 			skipDirGlob: "none",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -538,14 +539,14 @@ func TestRunFS(t *testing.T) {
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2WithPKG1},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name1,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2WithPKG1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2WithPKG1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -561,9 +562,9 @@ func TestRunFS(t *testing.T) {
 			pathsToExtract: []string{path.Join(cwd, path2)},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -578,9 +579,9 @@ func TestRunFS(t *testing.T) {
 			pathsToExtract: []string{path2},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -595,9 +596,9 @@ func TestRunFS(t *testing.T) {
 			pathsToExtract: []string{"dir2"},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -624,9 +625,9 @@ func TestRunFS(t *testing.T) {
 			ignoreSubDirs:  true,
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -664,9 +665,9 @@ func TestRunFS(t *testing.T) {
 			ex:   []filesystem.Extractor{fakeExWithPartialResult},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeExWithPartialResult.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeExWithPartialResult.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -736,14 +737,14 @@ func TestRunFS(t *testing.T) {
 			maxInodes: 6,
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -759,33 +760,11 @@ func TestRunFS(t *testing.T) {
 			maxFileSizeBytes: 10,
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
-			wantStatus: []*plugin.Status{
-				{Name: "ex1", Version: 1, Status: success},
-				{Name: "ex2", Version: 2, Status: success},
-			},
-			wantInodeCount: 6,
-		},
-		{
-			desc: "Extractors_successful_store_absolute_path_when_requested",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
-				{
-					Name:      name1,
-					Locations: []string{filepath.Join(cwd, path1)},
-					Plugins:   []string{fakeEx1.Name()},
-				},
-				{
-					Name:      name2,
-					Locations: []string{filepath.Join(cwd, path2)},
-					Plugins:   []string{fakeEx2.Name()},
-				},
-			}},
-			storeAbsPath: true,
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: success},
 				{Name: "ex2", Version: 2, Status: success},
@@ -797,14 +776,14 @@ func TestRunFS(t *testing.T) {
 			ex:   []filesystem.Extractor{fakeEx1, fakeExDirs},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{dir1},
-					Plugins:   []string{fakeExDirs.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(dir1),
+					Plugins:  []string{fakeExDirs.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -847,8 +826,7 @@ func TestRunFS(t *testing.T) {
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},
-				Stats:             fc,
-				StoreAbsolutePath: tc.storeAbsPath,
+				Stats: fc,
 			}
 			wc, err := filesystem.InitWalkContext(
 				t.Context(), config, []*scalibrfs.ScanRoot{{
@@ -872,7 +850,9 @@ func TestRunFS(t *testing.T) {
 
 			// The order of the locations doesn't matter.
 			for _, p := range gotInv.Packages {
-				sort.Strings(p.Locations)
+				sort.Slice(p.Location.Related, func(i, j int) bool {
+					return p.Location.Related[i].File.Path < p.Location.Related[j].File.Path
+				})
 			}
 
 			if diff := cmp.Diff(tc.wantPkg, gotInv, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorDirs{}), cmpopts.EquateErrors()); diff != "" {
@@ -1019,8 +999,7 @@ func TestRunFSGitignore(t *testing.T) {
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},
-				Stats:             fc,
-				StoreAbsolutePath: false,
+				Stats: fc,
 			}
 			wc, err := filesystem.InitWalkContext(
 				t.Context(), config, []*scalibrfs.ScanRoot{{

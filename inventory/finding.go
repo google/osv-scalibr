@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ func PackageToAffected(pkg *extractor.Package, fixed string, severity *osvpb.Sev
 		Severity: []*osvpb.Severity{severity},
 		Ranges: []*osvpb.Range{{
 			Type:   osvpb.Range_ECOSYSTEM,
-			Events: []*osvpb.Event{{Fixed: fixed}},
+			Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: fixed}},
 		}},
 	}}
 }

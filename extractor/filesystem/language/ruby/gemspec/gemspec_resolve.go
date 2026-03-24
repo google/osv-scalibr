@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -566,8 +566,8 @@ func stripInlineComment(line string) string {
 // unless, while, until) to simplify require target parsing.
 func trimRubyTrailingCondition(expr string) string {
 	for _, kw := range []string{" if ", " unless ", " while ", " until "} {
-		if idx := strings.Index(expr, kw); idx >= 0 {
-			return strings.TrimSpace(expr[:idx])
+		if before, _, found := strings.Cut(expr, kw); found {
+			return strings.TrimSpace(before)
 		}
 	}
 	return expr

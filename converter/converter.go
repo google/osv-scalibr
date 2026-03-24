@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,9 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/google/osv-scalibr/result"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 )
@@ -36,8 +37,8 @@ func ToPURL(p *extractor.Package) *purl.PackageURL {
 }
 
 // ToSPDX23 converts the SCALIBR scan results into an SPDX v2.3 document.
-func ToSPDX23(r *result.ScanResult, c spdx.Config) *v2_3.Document {
-	return spdx.ToSPDX23(r, c)
+func ToSPDX23(i inventory.Inventory, c spdx.Config) *v2_3.Document {
+	return spdx.ToSPDX23(i, c)
 }
 
 // CDXConfig describes custom settings that should be applied to the generated CDX file.
@@ -49,7 +50,7 @@ type CDXConfig struct {
 }
 
 // ToCDX converts the SCALIBR scan results into a CycloneDX document.
-func ToCDX(r *result.ScanResult, c CDXConfig) *cyclonedx.BOM {
+func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 	bom := cyclonedx.NewBOM()
 	bom.Metadata = &cyclonedx.Metadata{
 		Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05Z"),
@@ -84,8 +85,8 @@ func ToCDX(r *result.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		bom.Metadata.Authors = &authors
 	}
 
-	comps := make([]cyclonedx.Component, 0, len(r.Inventory.Packages))
-	for _, pkg := range r.Inventory.Packages {
+	comps := make([]cyclonedx.Component, 0, len(i.Packages))
+	for _, pkg := range i.Packages {
 		comp := cyclonedx.Component{
 			BOMRef:  uuid.New().String(),
 			Type:    cyclonedx.ComponentTypeLibrary,
@@ -98,13 +99,12 @@ func ToCDX(r *result.ScanResult, c CDXConfig) *cyclonedx.BOM {
 		if cpes := extractCPEs(pkg); len(cpes) > 0 {
 			comp.CPE = cpes[0]
 		}
-		if len(pkg.Locations) > 0 {
-			occ := make([]cyclonedx.EvidenceOccurrence, 0, len((pkg.Locations)))
-			for _, loc := range pkg.Locations {
-				occ = append(occ, cyclonedx.EvidenceOccurrence{
-					Location: loc,
-				})
-			}
+		occ := []cyclonedx.EvidenceOccurrence{}
+		occ = appendOccurrenceFromLocation(pkg.Location.Descriptor, occ)
+		for _, r := range pkg.Location.Related {
+			occ = appendOccurrenceFromLocation(&r, occ)
+		}
+		if len(occ) > 0 {
 			comp.Evidence = &cyclonedx.Evidence{
 				Occurrences: &occ,
 			}
@@ -125,4 +125,13 @@ func extractCPEs(p *extractor.Package) []string {
 		return m.CPEs
 	}
 	return nil
+}
+
+func appendOccurrenceFromLocation(l *location.Location, occ []cyclonedx.EvidenceOccurrence) []cyclonedx.EvidenceOccurrence {
+	if l != nil && l.File != nil {
+		occ = append(occ, cyclonedx.EvidenceOccurrence{
+			Location: l.File.Path,
+		})
+	}
+	return occ
 }

@@ -1,3 +1,4 @@
+# Test fixture only — do not install with pip
 [project]
 name = "my-project"
 version = "1.2.3"

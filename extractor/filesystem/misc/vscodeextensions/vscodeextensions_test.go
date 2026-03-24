@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,8 +25,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -76,7 +79,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 				t.Skipf("Skipping test on %s", runtime.GOOS)
 			}
 
-			e := vscodeextensions.Extractor{}
+			e, err := vscodeextensions.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("vscodeextensions.New failed: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -104,9 +110,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "ms-vscode.cpptools",
 					Version:  "1.23.6",
 					PURLType: purl.TypeGeneric,
-					Locations: []string{
-						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
-						"testdata/one-extension.json",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
+						}},
+						Related: []location.Location{location.FromPath("testdata/one-extension.json")},
 					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
@@ -125,10 +133,17 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "golang.go",
-					Version:   "0.46.1",
-					PURLType:  purl.TypeGeneric,
-					Locations: []string{"/home/username/.vscode/extensions/golang.go-0.46.1", "testdata/extensions.json"},
+					Name:     "golang.go",
+					Version:  "0.46.1",
+					PURLType: purl.TypeGeneric,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/home/username/.vscode/extensions/golang.go-0.46.1",
+						}},
+						Related: []location.Location{
+							location.FromPath("testdata/extensions.json"),
+						},
+					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "d6f6cfea-4b6f-41f4-b571-6ad2ab7918da",
 						PublisherID:          "dbf6ae0a-da75-4167-ac8b-75b4512f2153",
@@ -141,9 +156,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "google.geminicodeassist",
 					Version:  "2.28.0",
 					PURLType: purl.TypeGeneric,
-					Locations: []string{
-						"/home/username/.vscode/extensions/google.geminicodeassist-2.28.0",
-						"testdata/extensions.json",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/home/username/.vscode/extensions/google.geminicodeassist-2.28.0",
+						}},
+						Related: []location.Location{location.FromPath("testdata/extensions.json")},
 					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "51643712-2cb2-4384-b7cc-d55b01b8274b",
@@ -157,9 +174,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "googlecloudtools.cloudcode",
 					Version:  "2.27.0",
 					PURLType: purl.TypeGeneric,
-					Locations: []string{
-						"/home/username/.vscode/extensions/googlecloudtools.cloudcode-2.27.0",
-						"testdata/extensions.json",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/home/username/.vscode/extensions/googlecloudtools.cloudcode-2.27.0",
+						}},
+						Related: []location.Location{location.FromPath("testdata/extensions.json")},
 					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "5e8803a2-3dc8-42b3-9c5f-ea9d37828c03",
@@ -173,9 +192,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "ms-vscode.cpptools",
 					Version:  "1.23.6",
 					PURLType: purl.TypeGeneric,
-					Locations: []string{
-						"/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
-						"testdata/extensions.json",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/home/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-linux-arm64",
+						}},
+						Related: []location.Location{location.FromPath("testdata/extensions.json")},
 					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
@@ -197,9 +218,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "ms-python.debugpy",
 					Version:  "2025.4.0",
 					PURLType: purl.TypeGeneric,
-					Locations: []string{
-						"/c:/Users/username/.vscode/extensions/ms-python.debugpy-2025.4.0-win32-arm64",
-						"testdata/extensions-windows.json",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/c:/Users/username/.vscode/extensions/ms-python.debugpy-2025.4.0-win32-arm64",
+						}},
+						Related: []location.Location{location.FromPath("testdata/extensions-windows.json")},
 					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "4bd5d2c9-9d65-401a-b0b2-7498d9f17615",
@@ -213,9 +236,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "ms-python.python",
 					Version:  "2025.2.0",
 					PURLType: purl.TypeGeneric,
-					Locations: []string{
-						"/c:/Users/username/.vscode/extensions/ms-python.python-2025.2.0-win32-arm64",
-						"testdata/extensions-windows.json",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/c:/Users/username/.vscode/extensions/ms-python.python-2025.2.0-win32-arm64",
+						}},
+						Related: []location.Location{location.FromPath("testdata/extensions-windows.json")},
 					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "f1f59ae4-9318-4f3c-a9b5-81b2eaa5f8a5",
@@ -229,9 +254,11 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "ms-vscode.cpptools",
 					Version:  "1.23.6",
 					PURLType: purl.TypeGeneric,
-					Locations: []string{
-						"/c:/Users/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-win32-arm64",
-						"testdata/extensions-windows.json",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: "/c:/Users/username/.vscode/extensions/ms-vscode.cpptools-1.23.6-win32-arm64",
+						}},
+						Related: []location.Location{location.FromPath("testdata/extensions-windows.json")},
 					},
 					Metadata: &vscodeextensions.Metadata{
 						ID:                   "690b692e-e8a9-493f-b802-8089d50ac1b2",
@@ -247,7 +274,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := vscodeextensions.New()
+			extr, err := vscodeextensions.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("vscodeextensions.New failed: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
