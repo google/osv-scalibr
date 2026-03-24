@@ -223,21 +223,21 @@ func extractPEVersionWithMetadata(exePath string) (version, prodName string, met
 	if err != nil {
 		// PE parsing failed, try filename heuristics.
 		version, prodName = extractVersionFromFilename(exePath)
-		return
+		return version, prodName, metadata
 	}
 	defer peFile.Close()
 
 	// Parse the PE file structure.
 	if err = peFile.Parse(); err != nil {
 		version, prodName = extractVersionFromFilename(exePath)
-		return
+		return version, prodName, metadata
 	}
 
 	// Extract version resources.
 	versionInfo, err := peFile.ParseVersionResources()
 	if err != nil {
 		version, prodName = extractVersionFromFilename(exePath)
-		return
+		return version, prodName, metadata
 	}
 
 	// Extract version: prefer ProductVersion, fallback to FileVersion.

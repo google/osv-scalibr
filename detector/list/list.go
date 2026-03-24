@@ -78,8 +78,6 @@ var Untested = InitMap{
 	cve20242912.Name: {cve20242912.New},
 }
 
-
-
 // Weakcredentials detectors for weak credentials.
 var Weakcredentials = InitMap{
 	codeserver.Name:  {codeserver.New},
@@ -129,7 +127,6 @@ var detectorNames = concat(All, InitMap{
 	"default":           vals(Default),
 	"detectors/all":     vals(All),
 	"all":               vals(All),
-
 })
 
 func concat(initMaps ...InitMap) InitMap {
