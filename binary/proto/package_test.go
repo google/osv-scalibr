@@ -47,8 +47,8 @@ func TestPackageToProto(t *testing.T) {
 		},
 		{
 			desc: "success",
-			pkg:  purlDPKGAnnotationPackage,
-			want: purlDPKGAnnotationPackageProto,
+			pkg:  PurlDPKGAnnotationPackage(),
+			want: PurlDPKGAnnotationPackageProto(t),
 		},
 	}
 
@@ -104,8 +104,8 @@ func TestPackageToStruct(t *testing.T) {
 		},
 		{
 			desc: "success",
-			pkg:  purlDPKGAnnotationPackageProto,
-			want: purlDPKGAnnotationPackage,
+			pkg:  PurlDPKGAnnotationPackageProto(t),
+			want: PurlDPKGAnnotationPackage(),
 		},
 	}
 

@@ -66,13 +66,14 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var (
-	purlDPKGAnnotationPackage = &extractor.Package{
+func PurlDPKGAnnotationPackage() *extractor.Package {
+	return &extractor.Package{
 		Name:     "software",
 		Version:  "1.0.0",
 		PURLType: purl.TypeDebian,
@@ -86,13 +87,18 @@ var (
 		},
 		Location: extractor.LocationFromPath("/file1"),
 		Plugins:  []string{dpkg.Name},
-		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{{
 			Plugin:          dpkg.Name,
 			Justification:   vex.ComponentNotPresent,
 			MatchesAllVulns: true,
 		}},
 	}
-	purlDPKGAnnotationPackageProto = &spb.Package{
+}
+
+func PurlDPKGAnnotationPackageProto(t *testing.T) *spb.Package {
+	t.Helper()
+
+	p := &spb.Package{
 		Name:    "software",
 		Version: "1.0.0",
 		Purl: &spb.Purl{
@@ -120,13 +126,24 @@ var (
 		Location: pkgLocProtoFromPath("/file1"),
 		// TODO(b/400910349): Remove once integrators stop using these fields.
 		Plugins: []string{"os/dpkg"},
-		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{&spb.PackageExploitabilitySignal{
+		ExploitabilitySignals: []*spb.PackageExploitabilitySignal{{
 			Plugin:        dpkg.Name,
 			Justification: spb.VexJustification_COMPONENT_NOT_PRESENT,
 			VulnFilter:    &spb.PackageExploitabilitySignal_MatchesAllVulns{MatchesAllVulns: true},
 		}},
 	}
-)
+	p.MetadataAny = mustNewAny(t, p.GetDpkgMetadata())
+	return p
+}
+
+func mustNewAny(t *testing.T, m protobuf.Message) *anypb.Any {
+	t.Helper()
+	a, err := anypb.New(m)
+	if err != nil {
+		t.Fatalf("failed to create Any: %v", err)
+	}
+	return a
+}
 
 func TestScanResultToProtoAndBack(t *testing.T) {
 	endTime := time.Now()
@@ -887,6 +904,24 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Location: pkgLocProtoFromPath("/file1"),
 	}
 
+	purlDotnetDepsJSONPackageProto.MetadataAny = mustNewAny(t, purlDotnetDepsJSONPackageProto.GetDepsjsonMetadata())
+	purlDPKGPackageProto.MetadataAny = mustNewAny(t, purlDPKGPackageProto.GetDpkgMetadata())
+	purlPythonPackageProto.MetadataAny = mustNewAny(t, purlPythonPackageProto.GetPythonMetadata())
+	pythonRequirementsPackageProto.MetadataAny = mustNewAny(t, pythonRequirementsPackageProto.GetPythonRequirementsMetadata())
+	purlJavascriptPackageProto.MetadataAny = mustNewAny(t, purlJavascriptPackageProto.GetJavascriptMetadata())
+	cdxPackageProto.MetadataAny = mustNewAny(t, cdxPackageProto.GetCdxMetadata())
+	purlRPMPackageProto.MetadataAny = mustNewAny(t, purlRPMPackageProto.GetRpmMetadata())
+	purlPACMANPackageProto.MetadataAny = mustNewAny(t, purlPACMANPackageProto.GetPacmanMetadata())
+	purlPORTAGEPackageProto.MetadataAny = mustNewAny(t, purlPORTAGEPackageProto.GetPortageMetadata())
+	purlNixPackageProto.MetadataAny = mustNewAny(t, purlNixPackageProto.GetNixMetadata())
+	containerdPackageProto.MetadataAny = mustNewAny(t, containerdPackageProto.GetContainerdContainerMetadata())
+	containerdRuntimePackageProto.MetadataAny = mustNewAny(t, containerdRuntimePackageProto.GetContainerdRuntimeContainerMetadata())
+	windowsPackageProto.MetadataAny = mustNewAny(t, windowsPackageProto.GetWindowsOsVersionMetadata())
+	mavenPackageProto.MetadataAny = mustNewAny(t, mavenPackageProto.GetJavaLockfileMetadata())
+	podmanPackageProto.MetadataAny = mustNewAny(t, podmanPackageProto.GetPodmanMetadata())
+	dockerPackageProto.MetadataAny = mustNewAny(t, dockerPackageProto.GetDockerContainersMetadata())
+	purlWingetPackageProto.MetadataAny = mustNewAny(t, purlWingetPackageProto.GetWingetMetadata())
+
 	testCases := []struct {
 		desc         string
 		res          *scalibr.ScanResult
@@ -916,7 +951,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Packages: []*extractor.Package{
 						purlDPKGPackage,
-						purlDPKGAnnotationPackage,
+						PurlDPKGAnnotationPackage(),
 						purlPythonPackage,
 						pythonRequirementsPackage,
 						purlJavascriptPackage,
@@ -973,7 +1008,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				Inventory: &spb.Inventory{
 					Packages: []*spb.Package{
 						purlDPKGPackageProto,
-						purlDPKGAnnotationPackageProto,
+						PurlDPKGAnnotationPackageProto(t),
 						purlPythonPackageProto,
 						pythonRequirementsPackageProto,
 						purlJavascriptPackageProto,

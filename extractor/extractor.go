@@ -16,6 +16,7 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -66,7 +67,7 @@ type Package struct {
 	// Details about the layer that the package was attributed to.
 	LayerMetadata *LayerMetadata
 	// The additional data found in the package.
-	Metadata any
+	Metadata metadata.Protoable
 	// Licenses information of this package
 	Licenses []string
 	// If true, the package version is deprecated (e.g. yanked, unpublished, deprecated)

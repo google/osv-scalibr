@@ -16,8 +16,16 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
 
 // Metadata holds parsing information for a spack package.
 type Metadata struct {
@@ -27,31 +35,18 @@ type Metadata struct {
 	Architecture string
 }
 
-// SetProto sets the SpackPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_SpackMetadata{
-		SpackMetadata: &pb.SpackPackageMetadata{
-			Hash:                 m.Hash,
-			Platform:             m.Platform,
-			PlatformOs:           m.PlatformOS,
-			PlatformArchitecture: m.Architecture,
-		},
+// ToProto converts the Metadata struct to a SpackPackageMetadata proto.
+func ToProto(m *Metadata) *pb.SpackPackageMetadata {
+	return &pb.SpackPackageMetadata{
+		Hash:                 m.Hash,
+		Platform:             m.Platform,
+		PlatformOs:           m.PlatformOS,
+		PlatformArchitecture: m.Architecture,
 	}
 }
 
 // ToStruct converts the SpackPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.SpackPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		Hash:         m.GetHash(),
 		Platform:     m.GetPlatform(),

@@ -37,6 +37,13 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			WantPackages: []*extractor.Package{},
 		},
 		{
+			Name: "null json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.v2.jsontest",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "decoded null JSON value"},
+		},
+		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v2.json",
@@ -47,7 +54,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.2.11",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/one-package.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -64,7 +71,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.2.11",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/no-name.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -81,7 +88,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.2.11",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/two-packages.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -90,7 +97,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.0.8",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/two-packages.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -107,7 +114,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.2.13",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -116,7 +123,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.0.8",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -125,7 +132,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "2.12.1",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -134,7 +141,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.6.39",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -143,7 +150,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.0.9",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -160,7 +167,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 					Version:  "1.11.1",
 					PURLType: purl.TypeConan,
 					Location: extractor.LocationFromPath("testdata/one-package-dev.v2.json"),
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"build-requires"},
 					},
 				},
