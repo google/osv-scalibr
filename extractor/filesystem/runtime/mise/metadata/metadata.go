@@ -16,8 +16,13 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a Mise tool.
 type Metadata struct {
@@ -25,29 +30,19 @@ type Metadata struct {
 	ToolVersion string
 }
 
-// SetProto sets the AsdfMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_MiseMetadata{
-		MiseMetadata: &pb.MiseMetadata{
-			ToolName:    m.ToolName,
-			ToolVersion: m.ToolVersion,
-		},
+// ToProto converts the Metadata struct to a MiseMetadata proto.
+func ToProto(m *Metadata) *pb.MiseMetadata {
+	return &pb.MiseMetadata{
+		ToolName:    m.ToolName,
+		ToolVersion: m.ToolVersion,
 	}
 }
 
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
 // ToStruct converts the AsdfMetadata proto to a Metadata struct.
 func ToStruct(m *pb.MiseMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		ToolName:    m.GetToolName(),
 		ToolVersion: m.GetToolVersion(),

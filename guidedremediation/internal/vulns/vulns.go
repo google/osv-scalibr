@@ -19,12 +19,23 @@ import (
 	"slices"
 
 	"deps.dev/util/resolve"
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/guidedremediation/internal/util"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
+
+func init() {
+	metadata.RegisterNil[*systemMetadata]()
+}
+
+type systemMetadata struct {
+	System resolve.System
+}
+
+func (m systemMetadata) IsProtoable() {}
 
 // VKToPackage converts a resolve.VersionKey to an *extractor.Package
 func VKToPackage(vk resolve.VersionKey) *extractor.Package {
@@ -33,7 +44,7 @@ func VKToPackage(vk resolve.VersionKey) *extractor.Package {
 		Name:     vk.Name,
 		Version:  vk.Version,
 		PURLType: toPURLType(ecosystem),
-		Metadata: vk.System,
+		Metadata: systemMetadata{System: vk.System},
 	}
 	return p
 }

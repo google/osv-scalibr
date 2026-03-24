@@ -16,9 +16,8 @@ package proto
 
 import (
 	"fmt"
-	"io/fs"
-	"reflect"
 
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory/location"
@@ -27,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -85,7 +85,9 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		ContainerImageMetadataIndexes: cii,
 		Licenses:                      pkg.Licenses,
 	}
-	setProtoMetadata(pkg.Metadata, packageProto)
+	if err := setProtoMetadata(pkg.Metadata, packageProto); err != nil {
+		return nil, err
+	}
 	return packageProto, nil
 }
 
@@ -125,30 +127,43 @@ func packageLocationToLegacyProto(l extractor.PackageLocation) []string {
 	return locs
 }
 
-func setProtoMetadata(meta any, p *spb.Package) {
+func setProtoMetadata(meta metadata.Protoable, p *spb.Package) error {
 	if meta == nil {
-		return
+		return nil
 	}
-
 	if p == nil {
-		return
+		return nil
 	}
 
-	if m, ok := meta.(MetadataProtoSetter); ok {
-		m.SetProto(p)
-		return
+	anyMsg, err := metadata.StructToProto(meta)
+	if err != nil {
+		return fmt.Errorf("failed to convert metadata to proto: %w", err)
+	}
+	p.MetadataAny = anyMsg
+
+	if anyMsg == nil {
+		return nil
 	}
 
-	// input.FS is passed from Extractors to Detectors, but it represents a
-	// runtime filesystem interface rather than a serializable data structure.
-	// Attempting to serialize it would be invalid and unsafe.
-	// This check explicitly excludes it from metadata serialization to prevent
-	// type assertion and proto conversion errors.
-	if _, ok := meta.(fs.FS); ok {
-		return
+	// Backfill old metadata field for backward compatibility.
+	// TODO(#1847): Remove once the migration is complete.
+	msg, err := anyMsg.UnmarshalNew()
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal metadata for backfill: %w", err)
 	}
 
-	log.Errorf("Failed to convert metadata of type %T to proto: %+v", meta, meta)
+	md := p.ProtoReflect().Descriptor().Oneofs().ByName("metadata")
+	if md != nil {
+		for i := range md.Fields().Len() {
+			fd := md.Fields().Get(i)
+			if fd.Message() != nil && fd.Message().FullName() == msg.ProtoReflect().Descriptor().FullName() {
+				p.ProtoReflect().Set(fd, protoreflect.ValueOfMessage(msg.ProtoReflect()))
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("failed to convert metadata of type %T to proto: %+v", meta, meta)
 }
 
 // --- Proto to Struct
@@ -175,6 +190,10 @@ func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 		exps = append(exps, expStruct)
 	}
 
+	meta, err := metadataToStruct(pkgProto)
+	if err != nil {
+		return nil, err
+	}
 	pkg := &extractor.Package{
 		Name:                  pkgProto.GetName(),
 		Version:               pkgProto.GetVersion(),
@@ -183,7 +202,7 @@ func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 		PURLType:              ptype,
 		Plugins:               pkgProto.GetPlugins(),
 		ExploitabilitySignals: exps,
-		Metadata:              metadataToStruct(pkgProto),
+		Metadata:              meta,
 		Licenses:              pkgProto.GetLicenses(),
 	}
 	return pkg, nil
@@ -212,16 +231,24 @@ func packageLocationToStruct(l *spb.PackageLocation) extractor.PackageLocation {
 	}
 }
 
-func metadataToStruct(md *spb.Package) any {
-	if md.GetMetadata() == nil {
-		return nil
+func metadataToStruct(pkg *spb.Package) (metadata.Protoable, error) {
+	if pkg.GetMetadataAny() != nil {
+		return metadata.ProtoToStruct(pkg.GetMetadataAny())
 	}
 
-	t := reflect.TypeOf(md.GetMetadata())
-	if converter, ok := metadataTypeToStructConverter[t]; ok {
-		return converter(md)
+	// Fallback to old metadata field [deprecated]
+	// TODO(#1847): Remove this once the migration is complete.
+	md := pkg.ProtoReflect().Descriptor().Oneofs().ByName("metadata")
+	if md == nil {
+		return nil, nil
 	}
 
-	log.Errorf("Failed to convert metadata of type %T to struct: %+v", md.GetMetadata(), md.GetMetadata())
-	return nil
+	which := pkg.ProtoReflect().WhichOneof(md)
+	if which == nil {
+		return nil, nil
+	}
+
+	// getting the message
+	msg := pkg.ProtoReflect().Get(which).Message().Interface()
+	return metadata.MessageToStruct(msg)
 }

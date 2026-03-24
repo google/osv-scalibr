@@ -149,7 +149,7 @@ func parseConanV1Lock(lockfile conanLockFile) []*extractor.Package {
 			Name:     reference.Name,
 			Version:  reference.Version,
 			PURLType: purl.TypeConan,
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: []string{},
 			},
 		})
@@ -171,7 +171,7 @@ func parseConanRequires(packages *[]*extractor.Package, requires []string, group
 			Name:     reference.Name,
 			Version:  reference.Version,
 			PURLType: purl.TypeConan,
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: []string{group},
 			},
 		})

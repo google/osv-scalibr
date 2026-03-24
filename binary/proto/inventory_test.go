@@ -50,7 +50,7 @@ func TestInventoryToProto(t *testing.T) {
 			desc: "success",
 			inv: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					purlDPKGAnnotationPackage,
+					purlDPKG,
 					pkgWithLayerStruct,
 				},
 				PackageVulns: []*inventory.PackageVuln{
@@ -68,7 +68,7 @@ func TestInventoryToProto(t *testing.T) {
 			},
 			want: &pb.Inventory{
 				Packages: []*pb.Package{
-					purlDPKGAnnotationPackageProto,
+					PurlDPKGAnnotationPackageProto(t),
 					pkgWithLayerProto,
 				},
 				PackageVulns: []*pb.PackageVuln{
@@ -196,7 +196,7 @@ func TestInventoryToStruct(t *testing.T) {
 			desc: "success",
 			inv: &pb.Inventory{
 				Packages: []*pb.Package{
-					purlDPKGAnnotationPackageProto,
+					PurlDPKGAnnotationPackageProto(t),
 					pkgWithLayerProto,
 					pkgWithIDProto,
 				},
@@ -215,7 +215,7 @@ func TestInventoryToStruct(t *testing.T) {
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					purlDPKGAnnotationPackage,
+					purlDPKG,
 					pkgWithLayerStruct,
 					pkgStruct,
 				},
