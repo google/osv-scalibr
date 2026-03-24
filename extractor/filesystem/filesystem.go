@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/tempdir"
 )
 
 var (
@@ -183,6 +184,10 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 	// Process embedded filesystems
 	var additionalInv inventory.Inventory
+	// seenMap is used for deduplication
+	seenMap := map[string]struct{}{}
+	// rawDiskImageFiles contains raw disk image files to be deleted
+	var rawDiskImageFiles []string
 	for _, embeddedFS := range inv.EmbeddedFSs {
 		// Mount the embedded filesystem
 		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
@@ -247,7 +252,56 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		// Collect temporary directories and raw files after traversal for removal.
 		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			embeddedFS.TempPaths = c.TempPaths()
+			paths := c.TempPaths()
+
+			for _, p := range paths {
+				if p == "" {
+					continue
+				}
+
+				// Normalize path: ensure absolute
+				if !filepath.IsAbs(p) {
+					root, err := tempdir.GetRootPath()
+					if err != nil {
+						log.Infof("failed to get tempdir root path: %v", err)
+						continue
+					}
+					p = filepath.Join(root, p)
+				}
+
+				// Dedup check
+				if _, seen := seenMap[p]; seen {
+					continue
+				}
+
+				info, err := os.Stat(p)
+				if err != nil {
+					log.Infof("failed to stat temp path %s: %v", p, err)
+					continue
+				}
+
+				if info.IsDir() {
+					// Remove directory immediately
+					if err := tempdir.RemoveAll(p); err != nil {
+						log.Infof("failed to remove temp directory %s: %v", p, err)
+					}
+				} else {
+					// A single disk image may contain multiple partitions, so the raw disk image file
+					// must not be deleted prematurely. Removing it prematurely can lead to mount failures
+					// or runtime issues (e.g., nil pointer dereference).
+					// Therefore, this cleanup will be deferred until all embedded filesystems have been handled.
+					rawDiskImageFiles = append(rawDiskImageFiles, p)
+				}
+
+				seenMap[p] = struct{}{}
+			}
+		}
+	}
+
+	// Remove all converted raw disk image files created during embeddedFS extraction.
+	for _, rawDiskImage := range rawDiskImageFiles {
+		if err := tempdir.RemoveAll(rawDiskImage); err != nil {
+			log.Infof("failed to remove temp raw file %s: %v", rawDiskImage, err)
 		}
 	}
 
