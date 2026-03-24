@@ -29,6 +29,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/tempdir"
 )
 
 const (
@@ -94,10 +95,21 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, errors.New("input.Reader is nil")
 	}
 
-	var tempDir string
-	var err error
+	// Create the plugin directory.
+	// Disk layout will be similar to the following in the OS sets temporary directory:
+	// ├── osv-scalibr-run-953505549
+	// │				└── extractor
+	// │				    └── archive
+	// |						└── valid.tar 					<--- A directory with the name set to the file discovered by the extractor
+	// │				        	├── bin						<--- A folder containing archive data
+	// │				        	│				└── bash	<--- A file inside /bin directory
+	pluginDir, pluginRoot, err := tempdir.CreateExtractorDir("archive", input.Path)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
+	}
+
 	if strings.HasSuffix(input.Path, ".tar") {
-		tempDir, err = common.TARToTempDir(input.Reader)
+		err = common.TARToTempDir(pluginDir, pluginRoot, input.Reader)
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 		}
@@ -106,7 +118,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("gzip.NewReader(%q): %w", input.Path, err)
 		}
-		tempDir, err = common.TARToTempDir(reader)
+		err = common.TARToTempDir(pluginDir, pluginRoot, reader)
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 		}
@@ -118,9 +130,10 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var refMu sync.Mutex
 	getEmbeddedFS := func(ctx context.Context) (scalibrfs.FS, error) {
 		return &common.EmbeddedDirFS{
-			FS:       scalibrfs.DirFS(tempDir),
+			FS:       &common.RootFSWrapper{Root: pluginRoot, FS: pluginRoot.FS()},
+			Root:     pluginRoot,
 			File:     nil,
-			TmpPaths: []string{tempDir},
+			TmpPaths: []string{pluginDir},
 			RefCount: &refCount,
 			RefMu:    &refMu,
 		}, nil
