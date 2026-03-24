@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
+	"github.com/google/osv-scalibr/detector/cve/cve20258088"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
@@ -96,6 +97,8 @@ var Misc = InitMap{
 var CVE = InitMap{
 	// CVE-2025-7775 detector
 	cve20257775.Name: {cve20257775.New},
+	// CVE-2025-8088 WinRAR RCE detector
+	cve20258088.Name: {cve20258088.New},
 }
 
 // Default detectors that are recommended to be enabled.

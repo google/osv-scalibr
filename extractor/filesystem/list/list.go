@@ -98,6 +98,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macports"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/peversion"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
@@ -329,6 +330,7 @@ var (
 		module.Name:     {module.New},
 		vmlinuz.Name:    {vmlinuz.New},
 		pacman.Name:     {pacman.New},
+		peversion.Name:  {peversion.New},
 		portage.Name:    {portage.New},
 		flatpak.Name:    {flatpak.New},
 		spack.Name:      {spack.New},
