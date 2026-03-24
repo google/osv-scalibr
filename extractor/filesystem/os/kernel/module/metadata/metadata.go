@@ -16,10 +16,15 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/log"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a kernel module.
 type Metadata struct {
@@ -52,35 +57,25 @@ func (m *Metadata) ToDistro() string {
 	return ""
 }
 
-// SetProto sets the KernelModuleMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_KernelModuleMetadata{
-		KernelModuleMetadata: &pb.KernelModuleMetadata{
-			PackageName:                    m.PackageName,
-			PackageVersion:                 m.PackageVersion,
-			PackageVermagic:                m.PackageVermagic,
-			PackageSourceVersionIdentifier: m.PackageSourceVersionIdentifier,
-			OsId:                           m.OSID,
-			OsVersionCodename:              m.OSVersionCodename,
-			OsVersionId:                    m.OSVersionID,
-			PackageAuthor:                  m.PackageAuthor,
-		},
+// ToProto converts the Metadata struct to a KernelModuleMetadata proto.
+func ToProto(m *Metadata) *pb.KernelModuleMetadata {
+	return &pb.KernelModuleMetadata{
+		PackageName:                    m.PackageName,
+		PackageVersion:                 m.PackageVersion,
+		PackageVermagic:                m.PackageVermagic,
+		PackageSourceVersionIdentifier: m.PackageSourceVersionIdentifier,
+		OsId:                           m.OSID,
+		OsVersionCodename:              m.OSVersionCodename,
+		OsVersionId:                    m.OSVersionID,
+		PackageAuthor:                  m.PackageAuthor,
 	}
 }
 
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
 // ToStruct converts the KernelModuleMetadata proto to a Metadata struct.
 func ToStruct(m *pb.KernelModuleMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:                    m.GetPackageName(),
 		PackageVersion:                 m.GetPackageVersion(),

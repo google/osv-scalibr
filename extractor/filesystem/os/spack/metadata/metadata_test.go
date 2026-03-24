@@ -19,110 +19,51 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/spack/metadata"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *metadata.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.SpackPackageMetadata
 	}{
 		{
-			desc: "nil_metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil_package",
-			m:    &metadata.Metadata{},
-			p:    nil,
-			want: nil,
-		},
-		{
-			desc: "set_metadata",
+			desc: "simple_metadata",
 			m: &metadata.Metadata{
 				Platform: "linux",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SpackMetadata{
-					SpackMetadata: &pb.SpackPackageMetadata{
-						Platform: "linux",
-					},
-				},
-			},
-		},
-		{
-			desc: "override_metadata",
-			m: &metadata.Metadata{
+			want: &pb.SpackPackageMetadata{
 				Platform: "linux",
 			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SpackMetadata{
-					SpackMetadata: &pb.SpackPackageMetadata{
-						Platform: "linux",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SpackMetadata{
-					SpackMetadata: &pb.SpackPackageMetadata{
-						Platform: "linux",
-					},
-				},
-			},
 		},
 		{
-			desc: "set_all_fields",
+			desc: "all_fields",
 			m: &metadata.Metadata{
 				Hash:         "dsohcyk45wchbd364rjio7b3sj2bucgc",
 				Platform:     "linux",
 				PlatformOS:   "ubuntu24.04",
 				Architecture: "skylake",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SpackMetadata{
-					SpackMetadata: &pb.SpackPackageMetadata{
-						Hash:                 "dsohcyk45wchbd364rjio7b3sj2bucgc",
-						Platform:             "linux",
-						PlatformOs:           "ubuntu24.04",
-						PlatformArchitecture: "skylake",
-					},
-				},
+			want: &pb.SpackPackageMetadata{
+				Hash:                 "dsohcyk45wchbd364rjio7b3sj2bucgc",
+				Platform:             "linux",
+				PlatformOs:           "ubuntu24.04",
+				PlatformArchitecture: "skylake",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := metadata.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
-			}
-
-			// Test the reverse conversion for completeness.
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := metadata.ToStruct(p.GetSpackMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetSpackMetadata(), diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 		})
 	}
@@ -134,11 +75,6 @@ func TestToStruct(t *testing.T) {
 		m    *pb.SpackPackageMetadata
 		want *metadata.Metadata
 	}{
-		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
 		{
 			desc: "some_fields",
 			m: &pb.SpackPackageMetadata{
@@ -170,25 +106,6 @@ func TestToStruct(t *testing.T) {
 			got := metadata.ToStruct(tc.m)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
-			}
-
-			if tc.m == nil {
-				return
-			}
-
-			// Test the reverse conversion for completeness.
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_SpackMetadata{
-					SpackMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
-			opts := []cmp.Option{
-				protocmp.Transform(),
-			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, gotP, diff)
 			}
 		})
 	}
