@@ -64,6 +64,15 @@ func fromVelesDetector(t *testing.T, d veles.Detector, name string, ver int) plu
 	return p
 }
 
+func fromVelesValidator[S veles.Secret](t *testing.T, v veles.Validator[S], name string, ver int) plugin.Plugin {
+	t.Helper()
+	p, err := ce.FromVelesValidator(v, name, ver)(nil)
+	if err != nil {
+		t.Fatalf("Failed to create plugin from Veles validator: %v", err)
+	}
+	return p
+}
+
 func TestScan(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
 	partialSuccess := &plugin.ScanStatus{
@@ -385,7 +394,7 @@ func TestScan(t *testing.T) {
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fromVelesDetector(t, fakeSecretDetector1, "secret-detector", 1),
-					ce.FromVelesValidator(fakeSecretValidator1, "secret-validator", 1)(),
+					fromVelesValidator(t, fakeSecretValidator1, "secret-validator", 1),
 				},
 				ScanRoots: tmpRoot,
 			},

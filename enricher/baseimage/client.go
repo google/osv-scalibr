@@ -17,8 +17,10 @@ package baseimage
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	grpcpb "deps.dev/api/v3alpha"
+	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -45,18 +47,26 @@ type Result struct {
 	Repository string
 }
 
-// ClientGRPC is the GRPC client for the deps.dev client.
+// ClientGRPC implements a client with lazy initialization for the underlying deps.dev client.
 type ClientGRPC struct {
+	cfg    *grpcclient.Config
 	client grpcpb.InsightsClient
 }
 
 // NewClientGRPC returns a new ClientGRPC.
-func NewClientGRPC(client grpcpb.InsightsClient) *ClientGRPC {
-	return &ClientGRPC{client: client}
+func NewClientGRPC(cfg *grpcclient.Config) Client {
+	return &ClientGRPC{cfg: cfg}
 }
 
 // QueryContainerImages queries the deps.dev client for container images.
 func (c *ClientGRPC) QueryContainerImages(ctx context.Context, req *Request) (*Response, error) {
+	if c.client == nil {
+		client, err := grpcclient.New(c.cfg)
+		if err != nil {
+			return nil, fmt.Errorf("QueryContainerImages newClient: %w", err)
+		}
+		c.client = client
+	}
 	reqpb := makeReq(req.ChainID)
 	resppb, err := c.client.QueryContainerImages(ctx, reqpb)
 	if err != nil {
