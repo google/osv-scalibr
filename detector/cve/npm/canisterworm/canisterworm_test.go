@@ -37,6 +37,13 @@ func TestScan(t *testing.T) {
 			wantCount: 1,
 		},
 		{
+			name: "malicious pypi package found",
+			packages: []*extractor.Package{
+				{Name: "telnyx", Version: "4.87.1", PURLType: purl.TypePyPi},
+			},
+			wantCount: 1,
+		},
+		{
 			name: "multiple versions of malicious package",
 			packages: []*extractor.Package{
 				{Name: "@emilgroup/setting-sdk", Version: "0.2.3", PURLType: purl.TypeNPM},
