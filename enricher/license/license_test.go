@@ -18,7 +18,6 @@ import (
 	"context"
 	"testing"
 
-	depsdevpb "deps.dev/api/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-cpy/cpy"
@@ -29,6 +28,9 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"google.golang.org/protobuf/proto"
+
+	depsdevpb "deps.dev/api/v3"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestEnrich(t *testing.T) {
@@ -47,7 +49,11 @@ func TestEnrich(t *testing.T) {
 	}
 
 	cli := fakeclient.New(licenseMap)
-	e := license.NewWithClient(cli)
+	e, err := license.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("license.New(): %v", err)
+	}
+	e.(*license.Enricher).Client = cli
 
 	tests := []struct {
 		name     string

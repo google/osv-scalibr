@@ -16,6 +16,9 @@
 package fakefs
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"io/fs"
 	"strings"
 	"testing/fstest"
@@ -56,4 +59,41 @@ func PrepareFS(txt string, modifiers ...FileModifier) (scalibrfs.FS, error) {
 	}
 
 	return mfs, nil
+}
+
+// TarGzModifier parses the content of a .tar.gz file like a nested txtar
+// and builds the tarball content, Example:
+//
+//	-- example.tar.gz --
+//	== FILE1.ext ==
+//	content
+//	== FILE2.ext ==
+//	content
+func TarGzModifier(name string, f *fstest.MapFile) error {
+	if !strings.HasSuffix(name, ".tar.gz") {
+		return nil
+	}
+
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+
+	// == are used to differentiate between tar.gz and txtar control chars,
+	// convert them into -- so that txtar.Parse can parse them
+	innerData := bytes.ReplaceAll(f.Data, []byte("=="), []byte("--"))
+	archive := txtar.Parse(innerData)
+	for _, tf := range archive.Files {
+		if err := tw.WriteHeader(&tar.Header{Name: tf.Name, Mode: 0600, Size: int64(len(tf.Data))}); err != nil {
+			return err
+		}
+		if _, err := tw.Write(tf.Data); err != nil {
+			return err
+		}
+	}
+
+	tw.Close()
+	gw.Close()
+
+	f.Data = buf.Bytes()
+	return nil
 }

@@ -27,6 +27,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestEnricher(t *testing.T) {
@@ -164,9 +166,17 @@ func TestEnricher(t *testing.T) {
 					defer ts.Close()
 
 					// Use enricher configured against the mock server
-					enricher := huggingfacemeta.NewWithBaseURL(ts.URL)
+					cfg := &cpb.PluginConfig{
+						PluginSpecific: []*cpb.PluginSpecificConfig{
+							{Config: &cpb.PluginSpecificConfig_HuggingfaceMeta{HuggingfaceMeta: &cpb.HuggingfaceMetaConfig{BaseUrl: ts.URL}}},
+						},
+					}
+					enricher, err := huggingfacemeta.New(cfg)
+					if err != nil {
+						t.Fatalf("huggingfacemeta.New(%v): %v", cfg, err)
+					}
 
-					err := enricher.Enrich(t.Context(), nil, &sc.input)
+					err = enricher.Enrich(t.Context(), nil, &sc.input)
 					if !cmp.Equal(err, sc.wantErr, cmpopts.EquateErrors()) {
 						t.Fatalf("Enrich() error: got %v, want %v\n", err, sc.wantErr)
 					}

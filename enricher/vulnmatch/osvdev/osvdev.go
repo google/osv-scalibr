@@ -22,7 +22,6 @@ import (
 	"slices"
 	"time"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -33,6 +32,7 @@ import (
 	"osv.dev/bindings/go/osvdev"
 	"osv.dev/bindings/go/osvdevexperimental"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	osvapipb "osv.dev/bindings/go/api"
 )
@@ -61,11 +61,7 @@ type Enricher struct {
 // New creates a new Enricher with the given configuration.
 func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	client := osvdev.DefaultClient()
-	userAgent := "osv-scalibr/" + scalibrversion.ScannerVersion
-	if cfg.UserAgent != "" {
-		userAgent = cfg.UserAgent
-	}
-	client.Config.UserAgent = userAgent
+	client.Config.UserAgent = "osv-scalibr/" + scalibrversion.ScannerVersion
 
 	initialQueryTimeout := 5 * time.Minute
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OSVDevConfig { return c.GetOsvdev() })

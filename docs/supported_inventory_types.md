@@ -256,6 +256,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Detects vulnerability CVE-2020-11978 in Apache Airflow.                      | `cve/cve-2020-11978`                     |
 | Detects vulnerability CVE-2024-2912 in BentoML.                              | `cve/cve-2024-2912`                      |
 | Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway               | `cve/cve-2025-7775`                      |
+| Detects malicious NPM packages related to Canister worm                      | `cve/npm/canisterworm`                   |
 | Checks for whether code-server has authentication enabled.                   | `weakcredentials/codeserver`             |
 | Checks for weak passwords in /etc/shadow.                                    | `weakcredentials/etcshadow`              |
 | Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |

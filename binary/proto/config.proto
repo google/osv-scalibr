@@ -105,6 +105,9 @@ message PluginSpecificConfig {
     CsProjConfig csproj = 70;
     NugetCPMConfig nuget_cpm = 71;
     OSVDevConfig osvdev = 72;
+    HCPIdentityConfig hcp_identity = 73;
+    HerokuExpirationConfig heroku_expiration = 74;
+    HuggingfaceMetaConfig huggingface_meta = 75;
   }
 }
 
@@ -351,6 +354,21 @@ message NugetCPMConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message HuggingfaceMetaConfig {
+  // The base URL of the Huggingface API.
+  string base_url = 1;
+}
+
+message HerokuExpirationConfig {
+  // The base URL of the Heroku API.
+  string base_url = 1;
+}
+
+message HCPIdentityConfig {
+  // The base URL of the HCP API.
+  string base_url = 1;
 }
 
 message DotnetPackagesConfigConfig {

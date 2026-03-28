@@ -1,3 +1,4 @@
+-- lib/apk/db/installed --
 C:Q1smIZUQjMDPDDEMJOQmqXSfiZuUY=
 P:python3-pyc
 V:3.12.11-r0
@@ -38,3 +39,7 @@ Z:Q1zXyCP/4899Z2UkECzKdgCnrdenI=
 R:libstdc++.so.6.0.33
 a:0:0:755
 Z:Q184DyzCylUa5WvMjPTw5XlThxdPA=
+-- etc/apk/arch --
+aarch64
+-- etc/apk/repositories --
+https://dl-cdn.alpinelinux.org/alpine/v3.23/community
