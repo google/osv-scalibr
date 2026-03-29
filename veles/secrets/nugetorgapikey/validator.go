@@ -24,7 +24,7 @@ import (
 // the NuGet.org package push endpoint.
 //
 // It performs a PUT request to the NuGet.org package publish endpoint
-// using the API key in the X-NuGet-ApiKey header. If the request returns
+// using the API key in the X-Nuget-Apikey header. If the request returns
 // HTTP 400 Bad Request, the key is valid (authentication passed, but no
 // package body was provided). If 403 Forbidden, the key is valid but has
 // limited scope. If 401 Unauthorized, the key is invalid. Other status codes
@@ -35,7 +35,7 @@ func NewValidator() *simplevalidate.Validator[NuGetOrgAPIKey] {
 		HTTPMethod: http.MethodPut,
 		HTTPHeaders: func(key NuGetOrgAPIKey) map[string]string {
 			return map[string]string{
-				"X-NuGet-ApiKey": key.Key,
+				"X-Nuget-Apikey": key.Key,
 				"Content-Type":   "application/octet-stream",
 			}
 		},
