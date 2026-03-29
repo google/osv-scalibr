@@ -70,6 +70,8 @@ func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.Val
 		validator = &validators.FTPValidator{}
 	case "sftp":
 		validator = &validators.SFTPValidator{}
+	case "mongodb", "mongodb+srv":
+		validator = &validators.MongoDBValidator{}
 	default:
 		return veles.ValidationFailed, fmt.Errorf("scheme %q not supported", scheme)
 	}

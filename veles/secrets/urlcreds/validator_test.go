@@ -31,11 +31,15 @@ package urlcreds_test
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -46,6 +50,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -55,6 +61,7 @@ func TestValidator(t *testing.T) {
 	digestHTTPSvrWithCookies := mockDigestHTTPServer(t, "admin", "pass", true)
 	ftpAddr := mockFTPServer(t, "user", "pass")
 	sftpAddr := mockSSHServer(t, "sshuser", "sshpass")
+	mongoAddr := mockMongoDBServer(t, "mongouser", "mongopass")
 
 	cases := []struct {
 		name string
@@ -112,6 +119,17 @@ func TestValidator(t *testing.T) {
 		{
 			name: "sftp_invalid",
 			url:  "sftp://sshuser:wrong@" + sftpAddr,
+			want: veles.ValidationInvalid,
+		},
+		// MongoDB Tests
+		{
+			name: "mongodb_valid",
+			url:  fmt.Sprintf("mongodb://mongouser:mongopass@%s/testdb", mongoAddr),
+			want: veles.ValidationValid,
+		},
+		{
+			name: "mongodb_invalid",
+			url:  fmt.Sprintf("mongodb://mongouser:wrong@%s/testdb", mongoAddr),
 			want: veles.ValidationInvalid,
 		},
 	}
@@ -335,4 +353,279 @@ func mockDigestHTTPServer(t *testing.T, validUser, validPass string, testCookies
 
 	t.Cleanup(server.Close)
 	return server
+}
+
+// --- MongoDB mock server ---
+
+// mongoWireMsg holds a parsed MongoDB wire protocol message.
+type mongoWireMsg struct {
+	doc    []byte
+	reqID  int32
+	opCode uint32
+}
+
+func mockMongoDBServer(t *testing.T, validUser, validPass string) string {
+	t.Helper()
+
+	l, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { l.Close() })
+
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		t.Fatal(err)
+	}
+
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+			go handleMongoConn(conn, validUser, validPass, salt)
+		}
+	}()
+
+	return l.Addr().String()
+}
+
+func handleMongoConn(conn net.Conn, validUser, validPass string, salt []byte) {
+	defer conn.Close()
+
+	const scramIterations = 4096
+	var clientFirstBare, serverFirstMsg, serverNonce string
+	authDone := false
+
+	for {
+		msg, err := readMongoMsg(conn)
+		if err != nil {
+			return
+		}
+
+		var cmd bson.D
+		if err := bson.Unmarshal(msg.doc, &cmd); err != nil {
+			return
+		}
+		if len(cmd) == 0 {
+			return
+		}
+
+		var resp []byte
+
+		switch cmd[0].Key {
+		case "hello", "ismaster", "isMaster":
+			resp, _ = bson.Marshal(bson.D{
+				{Key: "ok", Value: 1.0},
+				{Key: "helloOk", Value: true},
+				{Key: "isWritablePrimary", Value: true},
+				{Key: "maxWireVersion", Value: int32(21)},
+				{Key: "minWireVersion", Value: int32(0)},
+				{Key: "maxBsonObjectSize", Value: int32(16777216)},
+				{Key: "maxMessageSizeBytes", Value: int32(48000000)},
+				{Key: "maxWriteBatchSize", Value: int32(100000)},
+				{Key: "connectionId", Value: int32(1)},
+				{Key: "saslSupportedMechs", Value: bson.A{"SCRAM-SHA-256"}},
+			})
+
+		case "saslStart":
+			payload := getMongoPayload(cmd)
+			clientFirst := string(payload)
+			clientFirstBare = strings.TrimPrefix(clientFirst, "n,,")
+			parts := parseSCRAMKV(clientFirstBare)
+			clientNonce := parts["r"]
+			serverNonce = clientNonce + "srv" + base64.StdEncoding.EncodeToString(salt[:8])
+
+			serverFirstMsg = fmt.Sprintf("r=%s,s=%s,i=%d",
+				serverNonce,
+				base64.StdEncoding.EncodeToString(salt),
+				scramIterations,
+			)
+
+			resp, _ = bson.Marshal(bson.D{
+				{Key: "conversationId", Value: int32(1)},
+				{Key: "payload", Value: bson.Binary{Data: []byte(serverFirstMsg)}},
+				{Key: "done", Value: false},
+				{Key: "ok", Value: 1.0},
+			})
+
+		case "saslContinue":
+			if authDone {
+				resp, _ = bson.Marshal(bson.D{
+					{Key: "conversationId", Value: int32(1)},
+					{Key: "payload", Value: bson.Binary{}},
+					{Key: "done", Value: true},
+					{Key: "ok", Value: 1.0},
+				})
+				if err := writeMongoResp(conn, msg, resp); err != nil {
+					return
+				}
+				continue
+			}
+
+			payload := getMongoPayload(cmd)
+			clientFinal := string(payload)
+			cfParts := parseSCRAMKV(clientFinal)
+			proofB64 := cfParts["p"]
+			proof, _ := base64.StdEncoding.DecodeString(proofB64)
+
+			clientFinalNoProof := fmt.Sprintf("c=biws,r=%s", serverNonce)
+			authMessage := clientFirstBare + "," + serverFirstMsg + "," + clientFinalNoProof
+
+			saltedPass := pbkdf2.Key([]byte(validPass), salt, scramIterations, 32, sha256.New)
+			clientKey := computeHMAC(saltedPass, []byte("Client Key"))
+			storedKey := computeHash(clientKey)
+			clientSig := computeHMAC(storedKey, []byte(authMessage))
+			expectedProof := xorSlices(clientKey, clientSig)
+
+			userParts := parseSCRAMKV(clientFirstBare)
+			if userParts["n"] != validUser || !hmac.Equal(proof, expectedProof) {
+				resp, _ = bson.Marshal(bson.D{
+					{Key: "ok", Value: 0.0},
+					{Key: "code", Value: int32(18)},
+					{Key: "codeName", Value: "AuthenticationFailed"},
+					{Key: "errmsg", Value: "Authentication failed."},
+				})
+				_ = writeMongoResp(conn, msg, resp)
+				return
+			}
+
+			serverKey := computeHMAC(saltedPass, []byte("Server Key"))
+			serverSig := computeHMAC(serverKey, []byte(authMessage))
+			serverFinal := "v=" + base64.StdEncoding.EncodeToString(serverSig)
+
+			authDone = true
+			resp, _ = bson.Marshal(bson.D{
+				{Key: "conversationId", Value: int32(1)},
+				{Key: "payload", Value: bson.Binary{Data: []byte(serverFinal)}},
+				{Key: "done", Value: false},
+				{Key: "ok", Value: 1.0},
+			})
+
+		default:
+			resp, _ = bson.Marshal(bson.D{{Key: "ok", Value: 1.0}})
+		}
+
+		if err := writeMongoResp(conn, msg, resp); err != nil {
+			return
+		}
+	}
+}
+
+// readMongoMsg reads a MongoDB wire protocol message (supports OP_QUERY and OP_MSG).
+func readMongoMsg(r io.Reader) (mongoWireMsg, error) {
+	header := make([]byte, 16)
+	if _, err := io.ReadFull(r, header); err != nil {
+		return mongoWireMsg{}, err
+	}
+
+	msgLen := binary.LittleEndian.Uint32(header[0:4])
+	requestID := int32(binary.LittleEndian.Uint32(header[4:8]))
+	opCode := binary.LittleEndian.Uint32(header[12:16])
+
+	body := make([]byte, msgLen-16)
+	if _, err := io.ReadFull(r, body); err != nil {
+		return mongoWireMsg{}, err
+	}
+
+	var doc []byte
+	switch opCode {
+	case 2013: // OP_MSG
+		flagBits := binary.LittleEndian.Uint32(body[0:4])
+		end := len(body)
+		if flagBits&1 != 0 {
+			end -= 4 // strip CRC32C checksum
+		}
+		doc = body[5:end] // skip flagBits(4) + kind(1)
+
+	case 2004: // OP_QUERY
+		// Skip: flags(4) + collectionName(cstring) + numberToSkip(4) + numberToReturn(4)
+		pos := 4
+		for pos < len(body) && body[pos] != 0 {
+			pos++
+		}
+		pos++ // null terminator
+		pos += 8 // numberToSkip + numberToReturn
+		doc = body[pos:]
+
+	default:
+		return mongoWireMsg{}, fmt.Errorf("unsupported opcode %d", opCode)
+	}
+
+	return mongoWireMsg{doc: doc, reqID: requestID, opCode: opCode}, nil
+}
+
+// writeMongoResp sends a response using the appropriate wire protocol format.
+func writeMongoResp(w io.Writer, req mongoWireMsg, doc []byte) error {
+	switch req.opCode {
+	case 2004: // OP_QUERY → respond with OP_REPLY (opcode 1)
+		// responseFlags(4) + cursorID(8) + startingFrom(4) + numberReturned(4) = 20 bytes
+		bodyLen := 20 + len(doc)
+		msgLen := uint32(16 + bodyLen)
+		buf := make([]byte, 36) // 16 header + 20 reply prefix
+		binary.LittleEndian.PutUint32(buf[0:4], msgLen)
+		binary.LittleEndian.PutUint32(buf[8:12], uint32(req.reqID))
+		binary.LittleEndian.PutUint32(buf[12:16], 1) // OP_REPLY
+		// responseFlags, cursorID, startingFrom = 0
+		binary.LittleEndian.PutUint32(buf[32:36], 1) // numberReturned
+		if _, err := w.Write(buf); err != nil {
+			return err
+		}
+		_, err := w.Write(doc)
+		return err
+
+	default: // OP_MSG → respond with OP_MSG
+		bodyLen := 4 + 1 + len(doc) // flagBits + kind + doc
+		msgLen := uint32(16 + bodyLen)
+		buf := make([]byte, 21) // 16 header + 5 (flagBits + kind)
+		binary.LittleEndian.PutUint32(buf[0:4], msgLen)
+		binary.LittleEndian.PutUint32(buf[8:12], uint32(req.reqID))
+		binary.LittleEndian.PutUint32(buf[12:16], 2013) // OP_MSG
+		if _, err := w.Write(buf); err != nil {
+			return err
+		}
+		_, err := w.Write(doc)
+		return err
+	}
+}
+
+func getMongoPayload(cmd bson.D) []byte {
+	for _, elem := range cmd {
+		if elem.Key == "payload" {
+			if b, ok := elem.Value.(bson.Binary); ok {
+				return b.Data
+			}
+		}
+	}
+	return nil
+}
+
+func computeHMAC(key, data []byte) []byte {
+	h := hmac.New(sha256.New, key)
+	h.Write(data)
+	return h.Sum(nil)
+}
+
+func computeHash(data []byte) []byte {
+	h := sha256.Sum256(data)
+	return h[:]
+}
+
+func xorSlices(a, b []byte) []byte {
+	out := make([]byte, len(a))
+	for i := range a {
+		out[i] = a[i] ^ b[i]
+	}
+	return out
+}
+
+func parseSCRAMKV(s string) map[string]string {
+	m := make(map[string]string)
+	for _, field := range strings.Split(s, ",") {
+		if i := strings.IndexByte(field, '='); i >= 0 {
+			m[field[:i]] = field[i+1:]
+		}
+	}
+	return m
 }

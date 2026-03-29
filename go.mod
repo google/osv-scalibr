@@ -59,6 +59,7 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	github.com/tink-crypto/tink-go/v2 v2.4.0
 	go.etcd.io/bbolt v1.4.1
+	go.mongodb.org/mongo-driver/v2 v2.5.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.47.0
 	golang.org/x/mod v0.31.0
@@ -168,8 +169,12 @@ require (
 	github.com/tonistiigi/go-csvvalue v0.0.0-20240814133006-030d3b2625d0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/vbatts/tar-split v0.12.1 // indirect
+	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
+	github.com/xdg-go/scram v1.2.0 // indirect
+	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
