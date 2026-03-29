@@ -59,6 +59,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
+	"github.com/google/osv-scalibr/veles/secrets/nugetorgapikey"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
@@ -171,6 +172,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return cratesioAPITokenToProto(t), nil
 	case npmjsaccesstoken.NpmJsAccessToken:
 		return npmJSAccessTokenToProto(t), nil
+	case nugetorgapikey.NuGetOrgAPIKey:
+		return nugetOrgAPIKeyToProto(t), nil
 	case velesslacktoken.SlackAppConfigAccessToken:
 		return slackAppConfigAccessTokenToProto(t), nil
 	case velesslacktoken.SlackAppConfigRefreshToken:
@@ -1232,6 +1235,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return cratesioAPITokenToStruct(s.GetCratesIoApiToken()), nil
 	case *spb.SecretData_NpmjsAccessToken:
 		return npmJSAccessTokenToStruct(s.GetNpmjsAccessToken()), nil
+	case *spb.SecretData_NugetOrgApiKey:
+		return nugetOrgAPIKeyToStruct(s.GetNugetOrgApiKey()), nil
 	case *spb.SecretData_SlackAppConfigRefreshToken_:
 		return slackAppConfigRefreshTokenToStruct(s.GetSlackAppConfigRefreshToken()), nil
 	case *spb.SecretData_SlackAppConfigAccessToken_:
@@ -1514,6 +1519,22 @@ func cratesioAPITokenToStruct(kPB *spb.SecretData_CratesIOAPIToken) cratesioapit
 func npmJSAccessTokenToStruct(kPB *spb.SecretData_NpmJsAccessToken) npmjsaccesstoken.NpmJsAccessToken {
 	return npmjsaccesstoken.NpmJsAccessToken{
 		Token: kPB.GetToken(),
+	}
+}
+
+func nugetOrgAPIKeyToProto(s nugetorgapikey.NuGetOrgAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_NugetOrgApiKey{
+			NugetOrgApiKey: &spb.SecretData_NuGetOrgAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func nugetOrgAPIKeyToStruct(kPB *spb.SecretData_NuGetOrgAPIKey) nugetorgapikey.NuGetOrgAPIKey {
+	return nugetorgapikey.NuGetOrgAPIKey{
+		Key: kPB.GetKey(),
 	}
 }
 

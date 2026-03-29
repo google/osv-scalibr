@@ -862,6 +862,7 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    NuGetOrgAPIKey nuget_org_api_key = 89;
   }
 
   message GCPSAK {
@@ -1323,6 +1324,10 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+
+  message NuGetOrgAPIKey {
+    string key = 1;
   }
 }
 
