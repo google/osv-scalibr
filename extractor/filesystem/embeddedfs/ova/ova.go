@@ -28,6 +28,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/tempdir"
 )
 
 const (
@@ -96,7 +97,18 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, errors.New("input.Reader is nil")
 	}
 
-	tempDir, err := common.TARToTempDir(input.Reader)
+	// Create the plugin directory.
+	// Disk layout will be similar to the following in the OS sets temporary directory:
+	// ├── osv-scalibr-run-953505549
+	// │				└── extractor
+	// │				    └── ova
+	// |						└── valid.ova 					<--- A directory with the name set to the file discovered by the extractor
+	pluginDir, err := tempdir.CreateExtractorDir("ova", input.Path)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
+	}
+
+	err = common.TARToTempDir(pluginDir, input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 	}
@@ -105,9 +117,9 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var refMu sync.Mutex
 	getEmbeddedFS := func(ctx context.Context) (scalibrfs.FS, error) {
 		return &common.EmbeddedDirFS{
-			FS:       scalibrfs.DirFS(tempDir),
+			FS:       scalibrfs.DirFS(pluginDir),
 			File:     nil,
-			TmpPaths: []string{tempDir},
+			TmpPaths: []string{pluginDir},
 			RefCount: &refCount,
 			RefMu:    &refMu,
 		}, nil

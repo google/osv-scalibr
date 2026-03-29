@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/tempdir"
 )
 
 var (
@@ -180,6 +181,8 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 	// Process embedded filesystems
 	var additionalInv inventory.Inventory
+	// seenRawFiles contain raw disk image files which are deleted
+	seenRawFiles := map[string]struct{}{}
 	for _, embeddedFS := range inv.EmbeddedFSs {
 		// Mount the embedded filesystem
 		mountedFS, err := embeddedFS.GetEmbeddedFS(ctx)
@@ -231,9 +234,25 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 		additionalInv.Append(mountedInv)
 		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
 
-		// Collect temporary directories and raw files after traversal for removal.
 		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			embeddedFS.TempPaths = c.TempPaths()
+			paths := c.TempPaths()
+
+			for _, p := range paths {
+				if p == "" {
+					continue
+				}
+
+				// Optional: deduplicate
+				if _, seen := seenRawFiles[p]; seen {
+					continue
+				}
+
+				if err := tempdir.RemoveAll(p); err != nil {
+					log.Infof("failed to remove temp path %s: %v", p, err)
+				}
+
+				seenRawFiles[p] = struct{}{}
+			}
 		}
 	}
 

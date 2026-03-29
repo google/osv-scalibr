@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"runtime"
 	"slices"
@@ -48,6 +47,7 @@ import (
 	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/google/osv-scalibr/result"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/google/osv-scalibr/tempdir"
 	"github.com/google/osv-scalibr/version"
 	"go.uber.org/multierr"
 
@@ -241,17 +241,11 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	sro.Inventory = inv
-	// Defer cleanup of all temporary files and directories created during extraction.
-	// This function iterates over all EmbeddedFS entries in the inventory and
-	// removes their associated TempPaths.
-	// Any failures during removal are logged but do not interrupt execution.
+	// Defer cleanup of root temporary directory and all it's subdirectories created during extraction.
 	defer func() {
-		for _, embeddedFS := range sro.Inventory.EmbeddedFSs {
-			for _, tmpPath := range embeddedFS.TempPaths {
-				if err := os.RemoveAll(tmpPath); err != nil {
-					log.Infof("Failed to remove %s", tmpPath)
-				}
-			}
+		// Remove the root temporary directory and all it's subdirectories that we created for this run of scalibr.
+		if err := tempdir.RemoveRoot(); err != nil {
+			log.Infof("Failed to remove tempdir root: %v", err)
 		}
 	}()
 	sro.PluginStatus = append(sro.PluginStatus, extractorStatus...)

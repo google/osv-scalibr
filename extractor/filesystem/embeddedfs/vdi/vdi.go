@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/tempdir"
 )
 
 const (
@@ -129,23 +130,42 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, errors.New("input.Reader is nil")
 	}
 
+	// Create the plugin directory.
+	// Disk layout will be similar to the following in the OS sets temporary directory:
+	// ├── osv-scalibr-run-953505549
+	// │				└── extractor
+	// │				    └── vdi
+	// |						└── valid.vdi 								<--- A directory with the name set to the file discovered by the extractor
+	// │				        	├── partition-1-ext4					<--- A folder containing partition data
+	// │				        	│				└── private-key1.pem
+	// │				        	├── partition-2-exfat
+	// │				        	│				└── private-key2.pem
+	// │				        	├── partition-3-fat32
+	// │				        	│				└── private-key3.pem
+	// │				        	├── partition-4-ntfs
+	// │				        	│				└── private-key4.pem
+	// │				        	└── vdi-1234.raw						<--- Converted disk image
+	pluginDir, err := tempdir.CreateExtractorDir("vdi", input.Path)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
+	}
+
 	// Create a temporary file for the raw disk image
-	tmpRaw, err := os.CreateTemp("", "scalibr-vdi-raw-*.raw")
+	rawDiskIMGPath, tmpRaw, err := tempdir.CreateFile(pluginDir, "vdi-*.raw")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}
-	tmpRawPath := tmpRaw.Name()
 
 	// Convert VDI to raw
 	if err := convertVDIToRaw(input.Reader, tmpRaw); err != nil {
-		os.Remove(tmpRawPath)
+		os.Remove(rawDiskIMGPath)
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", input.Path, err)
 	}
 
 	// Retrieve all partitions and the associated disk handle from the raw disk image.
-	partitionList, disk, err := common.GetDiskPartitions(tmpRawPath)
+	partitionList, disk, err := common.GetDiskPartitions(rawDiskIMGPath)
 	if err != nil {
-		os.Remove(tmpRawPath)
+		os.Remove(rawDiskIMGPath)
 		return inventory.Inventory{}, err
 	}
 
@@ -157,7 +177,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var embeddedFSs []*inventory.EmbeddedFS
 	for i, p := range partitionList {
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
-		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vdi", partitionIndex, p, disk, tmpRawPath, &refMu, &refCount)
+		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vdi", partitionIndex, p, disk, pluginDir, rawDiskIMGPath, &refMu, &refCount)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
 			Path:          fmt.Sprintf("%s:%d", input.Path, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,
