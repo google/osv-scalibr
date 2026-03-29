@@ -470,7 +470,7 @@ func handleMongoConn(conn net.Conn, validUser, validPass string, salt []byte) {
 			proofB64 := cfParts["p"]
 			proof, _ := base64.StdEncoding.DecodeString(proofB64)
 
-			clientFinalNoProof := fmt.Sprintf("c=biws,r=%s", serverNonce)
+			clientFinalNoProof := "c=biws,r=" + serverNonce
 			authMessage := clientFirstBare + "," + serverFirstMsg + "," + clientFinalNoProof
 
 			saltedPass := pbkdf2.Key([]byte(validPass), salt, scramIterations, 32, sha256.New)
@@ -545,7 +545,7 @@ func readMongoMsg(r io.Reader) (mongoWireMsg, error) {
 		for pos < len(body) && body[pos] != 0 {
 			pos++
 		}
-		pos++ // null terminator
+		pos++    // null terminator
 		pos += 8 // numberToSkip + numberToReturn
 		doc = body[pos:]
 
@@ -622,9 +622,9 @@ func xorSlices(a, b []byte) []byte {
 
 func parseSCRAMKV(s string) map[string]string {
 	m := make(map[string]string)
-	for _, field := range strings.Split(s, ",") {
-		if i := strings.IndexByte(field, '='); i >= 0 {
-			m[field[:i]] = field[i+1:]
+	for field := range strings.SplitSeq(s, ",") {
+		if k, v, ok := strings.Cut(field, "="); ok {
+			m[k] = v
 		}
 	}
 	return m
