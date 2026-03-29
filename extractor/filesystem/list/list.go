@@ -155,6 +155,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/packagist"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/secrets/qwenaiapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
@@ -393,6 +394,7 @@ var (
 		{packagist.NewUserUpdateTokenDetector(), "secrets/packagistuserupdatetoken", 0},
 		{packagist.NewConductorUpdateTokenDetector(), "secrets/packagistconductorupdatetoken", 0},
 		{perplexityapikey.NewDetector(), "secrets/perplexityapikey", 0},
+		{qwenaiapikey.NewDetector(), "secrets/qwenaiapikey", 0},
 		{postmanapikey.NewAPIKeyDetector(), "secrets/postmanapikey", 0},
 		{postmanapikey.NewCollectionTokenDetector(), "secrets/postmancollectiontoken", 0},
 		{privatekey.NewDetector(), "secrets/privatekey", 0},

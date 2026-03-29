@@ -65,6 +65,7 @@ import (
 	velespackagist "github.com/google/osv-scalibr/veles/secrets/packagist"
 	velespaystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	velesqwenaiapikey "github.com/google/osv-scalibr/veles/secrets/qwenaiapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	velesprivatekey "github.com/google/osv-scalibr/veles/secrets/privatekey"
 	pypiapitoken "github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
@@ -213,6 +214,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return openaiAPIKeyToProto(t.Key), nil
 	case velesopenrouter.APIKey:
 		return openrouterAPIKeyToProto(t.Key), nil
+	case velesqwenaiapikey.APIKey:
+		return qwenAIAPIKeyToProto(t.Key), nil
 	case velespackagist.APIKey:
 		return packagistAPIKeyToProto(t), nil
 	case velespackagist.APISecret:
@@ -875,6 +878,16 @@ func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_OpenaiApiKey{
 			OpenaiApiKey: &spb.SecretData_OpenAIAPIKey{
+				Key: key,
+			},
+		},
+	}
+}
+
+func qwenAIAPIKeyToProto(key string) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_QwenAiApiKey{
+			QwenAiApiKey: &spb.SecretData_QwenAIAPIKey{
 				Key: key,
 			},
 		},

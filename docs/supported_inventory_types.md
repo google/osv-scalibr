@@ -171,6 +171,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Packagist User Update Token                 | `secrets/packagistuserupdatetoken`     |
 | Packagist Conductor Update Token            | `secrets/packagistconductorupdatetoken`|
 | Perplexity API key                          | `secrets/perplexityapikey`             |
+| Qwen AI API key                             | `secrets/qwenaiapikey`                 |
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |
 | Postman API key                             | `secrets/postmanapikey`                |
