@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	velescursorapikey "github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databrickspat"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	velesdigitalocean "github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	velesdiscordbottoken "github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -209,6 +210,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return tinkKeysetToProto(t), nil
 	case velescursorapikey.APIKey:
 		return cursorAPIKeyToProto(t.Key), nil
+	case databrickspat.PATCredentials:
+		return databricksPATToProto(t), nil
 	case velesopenai.APIKey:
 		return openaiAPIKeyToProto(t.Key), nil
 	case velesopenrouter.APIKey:
@@ -871,6 +874,24 @@ func cursorAPIKeyToProto(key string) *spb.SecretData {
 	}
 }
 
+func databricksPATToProto(s databrickspat.PATCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_DatabricksPat{
+			DatabricksPat: &spb.SecretData_DatabricksPAT{
+				Token: s.Token,
+				Url:   s.URL,
+			},
+		},
+	}
+}
+
+func databricksPATToStruct(kPB *spb.SecretData_DatabricksPAT) databrickspat.PATCredentials {
+	return databrickspat.PATCredentials{
+		Token: kPB.GetToken(),
+		URL:   kPB.GetUrl(),
+	}
+}
+
 func openaiAPIKeyToProto(key string) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_OpenaiApiKey{
@@ -1276,6 +1297,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return tinkkeyset.TinkKeySet{Content: s.GetTinkKeyset().GetContent()}, nil
 	case *spb.SecretData_CursorApiKey:
 		return velescursorapikey.APIKey{Key: s.GetCursorApiKey().GetKey()}, nil
+	case *spb.SecretData_DatabricksPat:
+		return databricksPATToStruct(s.GetDatabricksPat()), nil
 	case *spb.SecretData_PackagistApiKey:
 		return velespackagist.APIKey{Key: s.GetPackagistApiKey().GetKey()}, nil
 	case *spb.SecretData_PackagistApiSecret:

@@ -136,6 +136,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
+| Databricks Personal Access Token            | `secrets/databrickspat`                |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
 | Docker hub PAT                              | `secrets/dockerhubpat`                 |
 | Elastic Cloud API key                       | `secrets/elasticcloudapikey`           |
