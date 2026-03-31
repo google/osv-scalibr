@@ -133,6 +133,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
+| Clojars Deploy Token                        | `secrets/clojarsdeploytoken`           |
 | Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
