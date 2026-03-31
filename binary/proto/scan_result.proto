@@ -862,6 +862,8 @@ message SecretData {
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    AlibabaCloudAccessKeyCredentials alibaba_cloud_access_key_credentials =
+        89;
   }
 
   message GCPSAK {
@@ -1323,6 +1325,11 @@ message SecretData {
   message SquareOAuthApplicationSecret {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
+  }
+
+  message AlibabaCloudAccessKeyCredentials {
+    string access_key_id = 1;
+    string access_key_secret = 2;
   }
 }
 

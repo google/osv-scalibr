@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/alibabacloudaccesskey"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
@@ -327,6 +328,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case alibabacloudaccesskey.Credentials:
+		return alibabaCloudAccessKeyCredentialsToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -425,6 +428,18 @@ func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
 		},
 	}
 }
+
+func alibabaCloudAccessKeyCredentialsToProto(s alibabacloudaccesskey.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AlibabaCloudAccessKeyCredentials_{
+			AlibabaCloudAccessKeyCredentials: &spb.SecretData_AlibabaCloudAccessKeyCredentials{
+				AccessKeyId:     s.AccessKeyID,
+				AccessKeySecret: s.AccessKeySecret,
+			},
+		},
+	}
+}
+
 func bitwardenTokenToProto(s bitwardenoauth2access.Token) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_BitwardenOauth2AccessToken{
@@ -1384,6 +1399,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return &awsaccesskey.Credentials{
 			AccessID: creds.AccessId,
 			Secret:   creds.Secret,
+		}, nil
+	case *spb.SecretData_AlibabaCloudAccessKeyCredentials_:
+		creds := s.GetAlibabaCloudAccessKeyCredentials()
+		return &alibabacloudaccesskey.Credentials{
+			AccessKeyID:     creds.AccessKeyId,
+			AccessKeySecret: creds.AccessKeySecret,
 		}, nil
 	case *spb.SecretData_BitwardenOauth2AccessToken:
 		creds := s.GetBitwardenOauth2AccessToken()

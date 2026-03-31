@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/alibabacloudaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
@@ -173,6 +174,7 @@ var (
 		fromVeles(herokuplatformkey.NewValidator(), "secrets/herokuplatformkeykeyvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),
 		fromVeles(awsaccesskey.NewValidator(), "secrets/awsaccesskeyvalidate", 0),
+		fromVeles(alibabacloudaccesskey.NewValidator(), "secrets/alibabacloudaccesskeyvalidate", 0),
 		fromVeles(codecatalyst.NewValidator(), "secrets/codecatalystcredentialsvalidate", 0),
 		fromVeles(codecommit.NewValidator(), "secrets/codecommitcredentialsvalidate", 0),
 		fromVeles(bitbucket.NewValidator(), "secrets/bitbucketcredentialsvalidate", 0),
