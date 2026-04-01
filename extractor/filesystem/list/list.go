@@ -148,6 +148,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	"github.com/google/osv-scalibr/veles/secrets/mongodbatlasapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
@@ -385,6 +386,7 @@ var (
 		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
 		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
+		{mongodbatlasapikey.NewDetector(), "secrets/mongodbatlasapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
 		{packagist.NewAPISecretDetector(), "secrets/packagistsecret", 0},

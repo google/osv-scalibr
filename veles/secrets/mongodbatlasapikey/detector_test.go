@@ -176,7 +176,7 @@ private_api_key = "22222222-2222-2222-2222-222222222222"`,
 		},
 		// --- Backtick-quoted values ---
 		{
-			name: "backtick_quoted_values",
+			name:  "backtick_quoted_values",
 			input: "public_api_key = `abcd1234`\nprivate_api_key = `f2a79e29-8a44-4c75-a56d-5a4f7c6d1c97`",
 			want: []veles.Secret{
 				mongodbatlasapikey.Credentials{

@@ -59,8 +59,8 @@ func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: max(maxPublicKeyLen, maxPrivateKeyLen),
 		MaxDistance:   uint32(maxDistance),
-		FindA:        pair.FindAllMatches(publicKeyPattern),
-		FindB:        pair.FindAllMatches(privateKeyPattern),
+		FindA:         pair.FindAllMatches(publicKeyPattern),
+		FindB:         pair.FindAllMatches(privateKeyPattern),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			pubSub := publicKeyPattern.FindSubmatch(p.A.Value)
 			if len(pubSub) < 2 {
