@@ -58,7 +58,7 @@ func verifyDigestAuth(authHeader, expectedUser, expectedPass string) bool {
 	}
 
 	params := make(map[string]string)
-	for _, part := range strings.Split(strings.TrimPrefix(authHeader, "Digest "), ",") {
+	for part := range strings.SplitSeq(strings.TrimPrefix(authHeader, "Digest "), ",") {
 		part = strings.TrimSpace(part)
 		k, v, ok := strings.Cut(part, "=")
 		if !ok {

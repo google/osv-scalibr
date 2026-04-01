@@ -18,6 +18,8 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -68,7 +70,7 @@ func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.Valida
 
 	challenge := resp.Header.Get("Www-Authenticate")
 	if challenge == "" {
-		return veles.ValidationFailed, fmt.Errorf("missing WWW-Authenticate header")
+		return veles.ValidationFailed, errors.New("missing WWW-Authenticate header")
 	}
 
 	// Step 2: Parse the Digest challenge and compute response.
@@ -77,7 +79,7 @@ func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.Valida
 	nonce := params["nonce"]
 	qop := params["qop"]
 	if realm == "" || nonce == "" {
-		return veles.ValidationFailed, fmt.Errorf("incomplete digest challenge")
+		return veles.ValidationFailed, errors.New("incomplete digest challenge")
 	}
 
 	authHeader, err := computeDigestAuth(key.PublicKey, key.PrivateKey, "GET", "/api/atlas/v2/", realm, nonce, qop)
@@ -117,7 +119,7 @@ func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.Valida
 func parseDigestChallenge(header string) map[string]string {
 	params := make(map[string]string)
 	header = strings.TrimPrefix(header, "Digest ")
-	for _, part := range strings.Split(header, ",") {
+	for part := range strings.SplitSeq(header, ",") {
 		part = strings.TrimSpace(part)
 		k, v, ok := strings.Cut(part, "=")
 		if !ok {
@@ -161,5 +163,5 @@ func generateCNonce() (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%x", b), nil
+	return hex.EncodeToString(b), nil
 }
