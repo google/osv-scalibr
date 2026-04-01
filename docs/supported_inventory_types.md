@@ -155,6 +155,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`          |
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`        |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`            |
+| IBM Cloud API Key                           | `secrets/ibmcloudapikey`               |
 | MariaDB Credentials                         | `secrets/mariadb`                      |
 | Mysql Mylogin                               | `secrets/mysqlmylogin`                 |
 | npmjs Registry Access Tokens                | `secrets/npmjsaccesstoken`             |

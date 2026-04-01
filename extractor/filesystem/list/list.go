@@ -146,6 +146,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/ibmcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
@@ -384,6 +385,7 @@ var (
 		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},
 		{hcp.NewAccessTokenDetector(), "secrets/hcpaccesstoken", 0},
 		{huggingfaceapikey.NewDetector(), "secrets/huggingfaceapikey", 0},
+		{ibmcloudapikey.NewDetector(), "secrets/ibmcloudapikey", 0},
 		{mistralapikey.NewDetector(), "secrets/mistralapikey", 0},
 		{openai.NewDetector(), "secrets/openai", 0},
 		{openrouter.NewDetector(), "secrets/openrouter", 0},
