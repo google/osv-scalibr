@@ -50,6 +50,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/dropboxappaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
@@ -131,6 +132,7 @@ var (
 		fromVeles(slacktoken.NewAppConfigRefreshTokenValidator(), "secrets/slackconfigrefreshtokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigAccessTokenValidator(), "secrets/slackconfigaccesstokenvalidate", 0),
 		fromVeles(dockerhubpat.NewValidator(), "secrets/dockerhubpatvalidate", 0),
+		fromVeles(dropboxappaccesstoken.NewValidator(), "secrets/dropboxappaccesstokenvalidate", 0),
 		fromVeles(cloudflareapitoken.NewValidator(), "secrets/cloudflareapitokenvalidate", 0),
 		fromVeles(denopat.NewUserTokenValidator(), "secrets/denopatuservalidate", 0),
 		fromVeles(denopat.NewOrgTokenValidator(), "secrets/denopatorgvalidate", 0),

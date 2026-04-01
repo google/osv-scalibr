@@ -132,6 +132,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/secrets/dropboxappaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpexpressmode"
@@ -370,6 +371,7 @@ var (
 		{slacktoken.NewAppConfigRefreshTokenDetector(), "secrets/slackappconfigrefreshtoken", 0},
 		{slacktoken.NewAppLevelTokenDetector(), "secrets/slackappleveltoken", 0},
 		{dockerhubpat.NewDetector(), "secrets/dockerhubpat", 0},
+		{dropboxappaccesstoken.NewDetector(), "secrets/dropboxappaccesstoken", 0},
 		{elasticcloudapikey.NewDetector(), "secrets/elasticcloudapikey", 0},
 		{denopat.NewUserTokenDetector(), "secrets/denopatuser", 0},
 		{denopat.NewOrgTokenDetector(), "secrets/denopatorg", 0},
