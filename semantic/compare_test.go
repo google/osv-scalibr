@@ -285,3 +285,32 @@ func TestVersion_Compare_Debian_InvalidVersion(t *testing.T) {
 		t.Errorf("expected ErrInvalidVersion, got '%v'", err)
 	}
 }
+
+func TestVersion_Compare_Alpine_Transitivity(t *testing.T) {
+	v1 := parseAsVersion(t, "10.1.1-invalid", "Alpine")
+	v2 := parseAsVersion(t, "2.3.4-invalid", "Alpine")
+	v3 := parseAsVersion(t, "3.4.5-r1", "Alpine") // valid
+
+	c12, err := v1.Compare(v2)
+	if err != nil {
+		t.Fatalf("failed to compare: %v", err)
+	}
+	c23, err := v2.Compare(v3)
+	if err != nil {
+		t.Fatalf("failed to compare: %v", err)
+	}
+	c13, err := v1.Compare(v3)
+	if err != nil {
+		t.Fatalf("failed to compare: %v", err)
+	}
+
+	if c12 >= 0 {
+		t.Fatalf("expected v1 < v2, got %d", c12)
+	}
+	if c23 >= 0 {
+		t.Fatalf("expected v2 < v3, got %d", c23)
+	}
+	if c13 >= 0 {
+		t.Errorf("expected v1 < v3, got %d", c13)
+	}
+}

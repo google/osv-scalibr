@@ -207,9 +207,16 @@ func (v AlpineVersion) compareRemainder(w AlpineVersion) int {
 }
 
 func (v AlpineVersion) compare(w AlpineVersion) int {
-	// if both versions are invalid, then just use a string compare
-	if v.invalid && w.invalid {
-		return strings.Compare(v.original, w.original)
+	// invalid versions are less than valid versions
+	if v.invalid {
+		// if both versions are invalid, then just use a string compare
+		if w.invalid {
+			return strings.Compare(v.original, w.original)
+		}
+		return -1
+	}
+	if w.invalid {
+		return +1
 	}
 
 	// note: commit hashes are ignored as we can't properly compare them
