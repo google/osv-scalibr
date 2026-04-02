@@ -146,6 +146,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/secrets/jdbcurlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
@@ -426,6 +427,7 @@ var (
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
 		{urlcreds.NewDetector(), "secrets/urlcreds", 0},
+		{jdbcurlcreds.NewDetector(), "secrets/jdbcurlcreds", 0},
 		{telegrambotapitoken.NewDetector(), "secrets/telegrambotapitoken", 0},
 		{salesforceoauth2access.NewDetector(), "secrets/salesforceoauth2access", 0},
 		{salesforceoauth2client.NewDetector(), "secrets/salesforceoauth2client", 0},
