@@ -1,3 +1,16 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package rpm
 
 import (
@@ -10,19 +23,18 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 
 	rpmdb "github.com/erikvarga/go-rpmdb/pkg"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/fs"
 
 	_ "modernc.org/sqlite" // Import sqlite driver
 )
 
 const (
-	dnfRepoListDir    = "var/cache/dnf"
-	zypperRepoListDir = "var/cache/zypp/raw"
-	yumRepoListDir    = "var/cache/yum"
+	dnfRepoListDir = "var/cache/dnf"
+	yumRepoListDir = "var/cache/yum"
 )
 
 var (
@@ -30,65 +42,70 @@ var (
 )
 
 type mainOSPackages struct {
-	value map[string]struct{}
+	vendorOnly     bool
+	trustedVendors []string
+	value          map[string]struct{}
 }
 
 func (m *mainOSPackages) Contains(pkg *rpmdb.PackageInfo) bool {
-	p := rpmPackage{
-		Name: pkg.Name,
-		Arch: pkg.Arch,
-		Version: rpmVersion{
-			Epoch: pkg.Epoch,
-			Ver:   pkg.Version,
-			Rel:   pkg.Release,
-		},
+	if m.vendorOnly {
+		return slices.ContainsFunc(m.trustedVendors, func(v string) bool {
+			return strings.Contains(pkg.Vendor, v)
+		})
 	}
-	_, exists := m.value[p.Key()]
+	_, exists := m.value[pkg.SourceRpm]
 	return exists
 }
 
-type rpmPackage struct {
-	Name    string     `xml:"name"`
-	Arch    string     `xml:"arch"`
-	Version rpmVersion `xml:"version"`
-}
-type rpmVersion struct {
-	Epoch *int   `xml:"epoch,attr"`
-	Ver   string `xml:"ver,attr"`
-	Rel   string `xml:"rel,attr"`
-}
-
-func (p rpmPackage) Key() string {
-	epoch := "0"
-	if p.Version.Epoch != nil {
-		epoch = strconv.Itoa(*p.Version.Epoch)
-	}
-	key := p.Name + "-" + epoch + ":" + p.Version.Ver + "-" + p.Version.Rel
-	if p.Arch != "" {
-		key += "." + p.Arch
-	}
-	return key
-}
-
 func extractMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
-	type extractor struct {
+	content, err := osrelease.GetOSRelease(root.FS)
+	if err != nil {
+		return nil, err
+	}
+	osID := strings.ToLower(content["ID"])
+
+	// Bypass cache parsing entirely for OS distributions where Vendor matches are reliable
+	//
+	// Using the Vendor as a mean to classify a package to be from a default repo or not
+	// may result in false positives in cases where an rpm package has the same Vendor as other packages
+	// published under main repositories while being publish in non default repositories.
+	//
+	// With RHEL, SLES, openSUSE packages the Vendor seems reliable and is preferred since it doesn't need the cache
+	// folder to be refreshed to work.
+	switch {
+	case osID == "rhel":
+		return &mainOSPackages{
+			vendorOnly:     true,
+			trustedVendors: []string{"Red Hat, Inc."},
+		}, nil
+	case osID == "sles" || strings.HasPrefix(osID, "sles_") || strings.HasPrefix(osID, "opensuse"):
+		return &mainOSPackages{
+			vendorOnly:     true,
+			trustedVendors: []string{"openSUSE", "SUSE LLC <https://www.suse.com/>"},
+		}, nil
+	}
+
+	// extract the cache from different folders depending on the installed package manager
+
+	type cacheExtractor struct {
 		indicators []string
-		extract    func(*fs.ScanRoot) (*mainOSPackages, error)
+		// extract given a root and OS id returns a collection of mainOSPackages
+		extract func(*fs.ScanRoot, string) (*mainOSPackages, error)
 	}
 
 	// use config files as indicators to reliably detect the correct package manager
 	// since cache folder may be removed
-	extractors := []extractor{
+	extractors := []cacheExtractor{
 		{indicators: []string{"etc/dnf/dnf.conf"}, extract: extractDnfMainRepos},
-		{indicators: []string{"etc/zypp/zypp.conf"}, extract: extractZypperMainRepos},
 		{indicators: []string{"etc/yum/yum.conf"}, extract: extractYumMainRepos},
+		// currently there is no support for zypper since every OS using zypper is handled at Vendor level
 	}
 
 	for _, e := range extractors {
 		if !hasPackageManager(root, e.indicators) {
 			continue
 		}
-		return e.extract(root)
+		return e.extract(root, osID)
 	}
 
 	return nil, errors.New("package manager not supported")
@@ -103,7 +120,29 @@ func hasPackageManager(root *fs.ScanRoot, indicators []string) bool {
 	return false
 }
 
-func extractDnfMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
+// isMainDnfRepo strictly matches the extracted repo ID based on the OS
+func isMainDnfRepo(osID, dirName string) bool {
+	// usually repo folder have the following naming structure
+	// repo_name-hash
+	//
+	// The issue is that some repo_name may contain additional info, forcing use to do a broad string check,
+	// which makes string manipulation at this point not necessary
+	repoID := dirName
+
+	switch osID {
+	case "almalinux", "rocky", "centos", "rhel":
+		return strings.Contains(repoID, "appstream") ||
+			strings.Contains(repoID, "baseos") ||
+			strings.Contains(repoID, "crb") ||
+			strings.Contains(repoID, "codeready-builder")
+	case "amzn":
+		return strings.Contains(repoID, "amazonlinux")
+	default:
+		return strings.Contains(repoID, "appstream") || strings.Contains(repoID, "baseos")
+	}
+}
+
+func extractDnfMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
 	entries, err := iofs.ReadDir(root.FS, dnfRepoListDir)
 	if err != nil {
 		if errors.Is(err, iofs.ErrNotExist) {
@@ -120,16 +159,13 @@ func extractDnfMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
 		value: make(map[string]struct{}),
 	}
 
-	mainOSRepos := []string{"appstream-", "baseos-", "codeready-builder-", "crb-"}
-
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
 		name := entry.Name()
 
-		isMainDnfRepo := slices.ContainsFunc(mainOSRepos, func(p string) bool { return strings.Contains(name, p) })
-		if !isMainDnfRepo {
+		if !isMainDnfRepo(osID, name) {
 			continue
 		}
 
@@ -143,7 +179,7 @@ func extractDnfMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
 		for _, e := range repoEntries {
 			if !e.IsDir() && strings.HasSuffix(e.Name(), "primary.xml.gz") {
 				filePath := filepath.Join(path, e.Name())
-				// dnf use the same repository format as zypper
+				// dnf uses the same repository format as libsolv
 				if err := parseLibsolvRepo(root.FS, filePath, cache); err != nil {
 					return nil, err
 				}
@@ -154,58 +190,20 @@ func extractDnfMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
 	return cache, nil
 }
 
-func extractZypperMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
-	entries, err := iofs.ReadDir(root.FS, zypperRepoListDir)
-	if err != nil {
-		if errors.Is(err, iofs.ErrNotExist) {
-			return nil, ErrMissingCache
-		}
-		return nil, err
+// isMainYumRepo strictly matches the repo directory name based on the OS
+func isMainYumRepo(osID, repoID string) bool {
+	switch osID {
+	case "amzn":
+		return repoID == "amzn2-core" || repoID == "amzn-main" || repoID == "amzn-updates"
+	case "centos":
+		return repoID == "base" || repoID == "updates" || repoID == "repobase"
+	default:
+		return repoID == "base" || repoID == "updates"
 	}
-
-	if len(entries) == 0 {
-		return nil, ErrMissingCache
-	}
-
-	cache := &mainOSPackages{
-		value: make(map[string]struct{}),
-	}
-	mainOSPrefixes := []string{"SLE_BCI", "packagehub", "repo-sle-update", "repo-update", "repo-backports-update"}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-
-		isMainDnfRepo := slices.ContainsFunc(mainOSPrefixes, func(p string) bool { return strings.HasPrefix(name, p) })
-		if !isMainDnfRepo {
-			continue
-		}
-
-		path := filepath.Join(zypperRepoListDir, name, "repodata")
-
-		repoEntries, err := iofs.ReadDir(root.FS, path)
-		if err != nil {
-			if errors.Is(err, iofs.ErrNotExist) {
-				continue
-			}
-			return nil, err
-		}
-		for _, e := range repoEntries {
-			if !e.IsDir() && strings.HasSuffix(e.Name(), "primary.xml.gz") {
-				filePath := filepath.Join(path, e.Name())
-				if err := parseLibsolvRepo(root.FS, filePath, cache); err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
-	return cache, nil
 }
 
-func extractYumMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
+func extractYumMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
+	// initially read the YUM cache dir to detect if it has been pruned
 	entries, err := iofs.ReadDir(root.FS, yumRepoListDir)
 	if err != nil {
 		if errors.Is(err, iofs.ErrNotExist) {
@@ -222,15 +220,13 @@ func extractYumMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
 		value: make(map[string]struct{}),
 	}
 
-	mainOSRepos := []string{"base", "updates", "extras", "centos", "rhel", "epel", "ol"}
-
-	// YUM caches can be nested (e.g. /var/cache/yum/x86_64/7/base/repodata)
+	// YUM caches are nested (e.g. /var/cache/yum/x86_64/7/base/repodata)
 	// WalkDir allows us to find primary.xml.gz regardless of directory depth.
 	err = iofs.WalkDir(root.FS, yumRepoListDir, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
-		if !d.IsDir() {
+		if d.IsDir() {
 			return nil
 		}
 		if !strings.HasSuffix(d.Name(), "primary.sqlite.gz") {
@@ -247,8 +243,7 @@ func extractYumMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
 		}
 		repoName := parts[len(parts)-3]
 
-		isMainDnfRepo := slices.ContainsFunc(mainOSRepos, func(p string) bool { return strings.Contains(repoName, p) })
-		if !isMainDnfRepo {
+		if !isMainYumRepo(osID, repoName) {
 			return nil
 		}
 
@@ -257,10 +252,6 @@ func extractYumMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
 
 	if err != nil {
 		return nil, err
-	}
-
-	if len(cache.value) == 0 {
-		return nil, ErrMissingCache
 	}
 
 	return cache, nil
@@ -300,21 +291,27 @@ func parseYumRepo(fsys fs.FS, path string, cache *mainOSPackages) error {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT name, arch, epoch, version, release FROM packages")
+	rows, err := db.Query("SELECT rpm_sourcerpm FROM packages")
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		pkg := rpmPackage{}
-		if err := rows.Scan(&pkg); err != nil {
+		var sourceRpm sql.NullString
+		if err := rows.Scan(&sourceRpm); err != nil {
 			return err
 		}
-		cache.value[pkg.Key()] = struct{}{}
+		if sourceRpm.Valid && sourceRpm.String != "" {
+			cache.value[sourceRpm.String] = struct{}{}
+		}
 	}
 
 	return rows.Err()
+}
+
+type rpmPackage struct {
+	SourceRPM string `xml:"format>sourcerpm"`
 }
 
 // parseLibsolvRepo parses repository information contained in primary.xml.gz files
@@ -354,8 +351,8 @@ func parseLibsolvRepo(fsys fs.FS, path string, cache *mainOSPackages) error {
 				return err
 			}
 
-			if pkg.Name != "" && pkg.Version.Ver != "" {
-				cache.value[pkg.Key()] = struct{}{}
+			if pkg.SourceRPM != "" {
+				cache.value[pkg.SourceRPM] = struct{}{}
 			}
 		}
 	}
