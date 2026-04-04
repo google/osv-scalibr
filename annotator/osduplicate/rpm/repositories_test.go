@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
-	"os"
 	"runtime"
 	"strings"
 	"testing"
@@ -44,20 +43,6 @@ func compressModifier(name string, f *fstest.MapFile) error {
 		return err
 	}
 	f.Data = b.Bytes()
-	return nil
-}
-
-// loadFixtureModifier dynamically loads a file content from a specific location
-func loadFixtureModifier(name string, f *fstest.MapFile) error {
-	const prefix = "LOAD_FIXTURE:"
-	if after, ok := bytes.CutPrefix(f.Data, []byte(prefix)); ok {
-		fixturePath := strings.TrimSpace(string(after))
-		b, err := os.ReadFile(fixturePath)
-		if err != nil {
-			return err
-		}
-		f.Data = b
-	}
 	return nil
 }
 
@@ -334,7 +319,7 @@ func TestExtractYumMainRepos(t *testing.T) {
 ID="centos"
 -- etc/yum/yum.conf --
 -- var/cache/yum/x86_64/7/epel/repodata/123-primary.sqlite.gz --
-LOAD_FIXTURE: testdata/yum-primary.sqlite.gz
+-> testdata/yum-primary.sqlite.gz
 `,
 			want: &mainOSPackages{
 				value: map[string]struct{}{},
@@ -348,7 +333,7 @@ LOAD_FIXTURE: testdata/yum-primary.sqlite.gz
 ID="centos"
 -- etc/yum/yum.conf --
 -- var/cache/yum/x86_64/7/base/repodata/456-primary.sqlite.gz --
-LOAD_FIXTURE: testdata/yum-primary.sqlite.gz
+-> testdata/yum-primary.sqlite.gz
 `,
 			want: &mainOSPackages{
 				value: map[string]struct{}{
@@ -361,7 +346,7 @@ LOAD_FIXTURE: testdata/yum-primary.sqlite.gz
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mfs, err := fakefs.PrepareFS(tt.txt, loadFixtureModifier)
+			mfs, err := fakefs.PrepareFS(tt.txt, fakefs.SimLinkModifier)
 			if err != nil {
 				t.Fatal(err)
 			}

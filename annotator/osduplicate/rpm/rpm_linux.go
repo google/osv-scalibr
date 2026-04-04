@@ -102,7 +102,7 @@ func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs
 
 	db, err := rpmdb.Open(realDBPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading db: %w", err)
 	}
 	defer db.Close()
 
