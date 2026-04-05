@@ -54,8 +54,8 @@ func mockNuGetServer(t *testing.T, expectedKey string, serverResponseCode int) *
 			return
 		}
 
-		// Check X-NuGet-ApiKey header
-		apiKey := r.Header.Get("X-NuGet-ApiKey")
+		// Check X-Nuget-Apikey header
+		apiKey := r.Header.Get("X-Nuget-Apikey")
 		if apiKey != expectedKey {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
