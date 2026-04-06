@@ -118,6 +118,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mariadb"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mongodbatlasapikey"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mysqlmylogin"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
@@ -148,6 +149,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	velesmongodbatlasapikey "github.com/google/osv-scalibr/veles/secrets/mongodbatlasapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
@@ -352,6 +354,7 @@ var (
 		bitbucket.Name:               {bitbucket.New},
 		cloudflareapitoken.Name:      {cloudflareapitoken.New},
 		bitwardenoauth2access.Name:   {bitwardenoauth2access.New},
+		mongodbatlasapikey.Name:      {mongodbatlasapikey.New},
 	}
 
 	// SecretDetectors for Detector interface.
@@ -433,6 +436,7 @@ var (
 		{salesforceoauth2jwt.NewDetector(), "secrets/salesforceoauth2jwt", 0},
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
+		{velesmongodbatlasapikey.NewDetector(), "secrets/mongodbatlasapikey", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
