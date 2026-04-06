@@ -278,6 +278,22 @@ ID="centos"
 				},
 			},
 		},
+		{
+			name: "parses_primary.sqlite.gz-yum-amazonlinux",
+			txt: `
+-- etc/os-release --
+ID="amzn"
+-- etc/yum/yum.conf --
+-- /var/cache/yum/aarch64/2/amzn2-core/primary.sqlite.gz --
+-> testdata/yum-primary.sqlite.gz
+`,
+			want: &mainOSPackages{
+				value: map[string]struct{}{
+					"golang-1.13.14-1.amzn2.0.1.src.rpm": {},
+					"curl-7.55.1-12.amzn2.0.6.src.rpm":   {},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -222,7 +222,7 @@ func extractYumMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error
 	}
 
 	// YUM caches are nested (e.g. /var/cache/yum/x86_64/7/base/repodata)
-	// WalkDir allows us to find primary.xml.gz regardless of directory depth.
+	// WalkDir allows us to find primary.sqlite.gz regardless of directory depth.
 	err = iofs.WalkDir(root.FS, yumRepoListDir, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -234,15 +234,16 @@ func extractYumMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error
 			return nil
 		}
 
-		// Extract the repository name from the path.
-		// Path example: var/cache/yum/x86_64/7/base/primary.sqlite.gz
-		parts := strings.Split(filepath.ToSlash(path), "/")
+		cleanPath := strings.TrimPrefix(path, yumRepoListDir+"/")
+		parts := strings.Split(cleanPath, "/")
 
-		// If standard structure, the repo name is 2 directories up from the file
-		if len(parts) < 3 {
+		// Ensure the path has at least arch/version/repo/file
+		if len(parts) < 4 {
 			return nil
 		}
-		repoName := parts[len(parts)-3]
+
+		// The repository name is always safely at index 2 relative to the yum cache root
+		repoName := parts[2]
 
 		if !isMainYumRepo(osID, repoName) {
 			return nil
