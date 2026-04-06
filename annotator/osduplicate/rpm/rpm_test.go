@@ -253,6 +253,9 @@ func TestAnnotate(t *testing.T) {
 			},
 			wantErr: cmpopts.AnyError,
 		},
+		// Note: End-to-end tests for main OS packages are omitted here due to the complexity of mocking RPM databases.
+		// Comprehensive E2E testing will instead be implemented at: https://github.com/google/security-testbeds
+		// using real docker images
 	}
 
 	for _, fsType := range []string{"virtual_fs", "real_fs"} {
