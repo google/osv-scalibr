@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
-	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -29,9 +28,9 @@ import (
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
-// compressModifier dynamically compresses fake files ending in .gz
-func compressModifier(name string, f *fstest.MapFile) error {
-	if !strings.HasSuffix(name, ".gz") {
+// xmlCompressModifier dynamically compresses fake files ending in .gz
+func xmlCompressModifier(name string, f *fstest.MapFile) error {
+	if !strings.HasSuffix(name, ".xml.gz") {
 		return nil
 	}
 	var b bytes.Buffer
@@ -102,105 +101,90 @@ func TestIsMainYumRepo(t *testing.T) {
 	}
 }
 
-func TestExtractMainRepos_VendorBypass(t *testing.T) {
-	tests := []struct {
-		name       string
-		txt        string
-		wantVendor []string
-	}{
-		{
-			name: "RHEL bypasses cache and uses vendor string",
-			txt: `
--- etc/os-release --
-ID="rhel"
-`,
-			wantVendor: []string{"Red Hat, Inc."},
-		},
-		{
-			name: "SLES bypasses cache and uses vendor string",
-			txt: `
--- etc/os-release --
-ID="sles_sap"
-`,
-			wantVendor: []string{"openSUSE", "SUSE LLC <https://www.suse.com/>"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mfs, _ := fakefs.PrepareFS(tt.txt)
-			root := &scalibrfs.ScanRoot{FS: mfs}
-
-			got, err := extractMainRepos(root)
-			if err != nil {
-				t.Fatalf("extractMainRepos() error = %v", err)
-			}
-
-			if !got.vendorOnly {
-				t.Errorf("Expected vendorOnly=true for bypass OS")
-			}
-			if diff := cmp.Diff(tt.wantVendor, got.trustedVendors); diff != "" {
-				t.Errorf("trustedVendors mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestExtractDnfMainRepos(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
+func TestExtractMainPackages(t *testing.T) {
 	tests := []struct {
 		name    string
-		osID    string
 		txt     string
 		want    *mainOSPackages
 		wantErr error
 	}{
 		{
-			name:    "Missing cache directory",
-			osID:    "almalinux",
-			txt:     ``,
+			name: "RHEL_bypasses_cache_and_uses_vendor_string",
+			txt: `
+-- etc/os-release --
+ID="rhel"
+`,
+			want: &mainOSPackages{
+				vendorOnly:     true,
+				trustedVendors: []string{"Red Hat, Inc."},
+				value:          map[string]struct{}{},
+			},
+		},
+		{
+			name: "SLES_bypasses_cache_and_uses_vendor_string",
+			txt: `
+-- etc/os-release --
+ID="sles_sap"
+`,
+			want: &mainOSPackages{
+				vendorOnly:     true,
+				trustedVendors: []string{"openSUSE", "SUSE LLC <https://www.suse.com/>"},
+				value:          map[string]struct{}{},
+			},
+		},
+		{
+			name: "missing_cache_directory-dnf",
+			txt: `
+-- etc/os-release --
+ID="centos"
+-- etc/yum/yum.conf --
+`,
 			wantErr: ErrMissingCache,
 		},
 		{
-			name: "Ignores 3rd party repos (epel)",
-			osID: "almalinux",
+			name: "missing_cache_directory-yum",
+			txt: `
+-- etc/os-release --
+ID="rockylinux"
+-- etc/dnf/dnf.conf --
+-- etc/yum/yum.conf --
+`,
+			wantErr: ErrMissingCache,
+		},
+		{
+			name: "ignore_epel_repo-dnf",
 			txt: `
 -- etc/os-release --
 ID="almalinux"
 -- etc/dnf/dnf.conf --
 -- var/cache/dnf/epel-12345/repodata/123-primary.xml.gz --
 <metadata>
-	<package type="rpm">
-	  <name>golang</name>
-	  <arch>aarch64</arch>
-	  <version epoch="0" ver="1.25.3" rel="1.el9_7"/>
-	  <checksum type="sha256" pkgid="YES">44584c65e7ae11893ff6c0535677aec5cd6c5cc31e34855e86904cc354ce6882</checksum>
-	  <summary>The Go Programming Language</summary>
-	  <description>The Go Programming Language.</description>
-	  <packager>Rocky Linux Build System &lt;releng@rockylinux.org&gt;</packager>
-	  <url>http://golang.org/</url>
-	  <time file="1763663501" build="1763661517"/>
-	  <size package="1310659" installed="10067264" archive="10081900"/>
-	  <location href="Packages/g/golang-1.25.3-1.el9_7.aarch64.rpm"/>
-	  <format>
-	    <rpm:license>BSD and Public Domain</rpm:license>
-	    <rpm:vendor>Rocky Enterprise Software Foundation</rpm:vendor>
-	    <rpm:group>Unspecified</rpm:group>
-	    <rpm:sourcerpm>golang-1.25.3-1.el9_7.src.rpm</rpm:sourcerpm>
-	  </format>
-	</package>
-</metadata>
-`,
+				<package type="rpm">
+				  <name>golang</name>
+				  <arch>aarch64</arch>
+				  <version epoch="0" ver="1.25.3" rel="1.el9_7"/>
+				  <checksum type="sha256" pkgid="YES">44584c65e7ae11893ff6c0535677aec5cd6c5cc31e34855e86904cc354ce6882</checksum>
+				  <summary>The Go Programming Language</summary>
+				  <description>The Go Programming Language.</description>
+				  <packager>Rocky Linux Build System &lt;releng@rockylinux.org&gt;</packager>
+				  <url>http://golang.org/</url>
+				  <time file="1763663501" build="1763661517"/>
+				  <size package="1310659" installed="10067264" archive="10081900"/>
+				  <location href="Packages/g/golang-1.25.3-1.el9_7.aarch64.rpm"/>
+				  <format>
+				    <rpm:license>BSD and Public Domain</rpm:license>
+				    <rpm:vendor>Rocky Enterprise Software Foundation</rpm:vendor>
+				    <rpm:group>Unspecified</rpm:group>
+				    <rpm:sourcerpm>golang-1.25.3-1.el9_7.src.rpm</rpm:sourcerpm>
+				  </format>
+				</package>
+</metadata>`,
 			want: &mainOSPackages{
 				value: map[string]struct{}{},
 			},
 		},
 		{
-			name: "Parses standard DNF primary.xml.gz correctly",
-			osID: "almalinux",
+			name: "parses_standard_primary.xml.gz-dnf",
 			txt: `
 -- etc/os-release --
 ID="rocky"
@@ -265,55 +249,8 @@ ID="rocky"
 				},
 			},
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mfs, err := fakefs.PrepareFS(tt.txt, compressModifier)
-			if err != nil {
-				t.Fatal(err)
-			}
-			root := &scalibrfs.ScanRoot{FS: mfs}
-
-			got, err := extractDnfMainRepos(root, tt.osID)
-			if !errors.Is(err, tt.wantErr) {
-				t.Errorf("extractDnfMainRepos() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			opts := []cmp.Option{
-				cmp.AllowUnexported(mainOSPackages{}),
-				cmpopts.EquateEmpty(),
-			}
-
-			if diff := cmp.Diff(tt.want, got, opts...); diff != "" {
-				t.Errorf("extractDnfMainRepos() (-want +got): %v", diff)
-			}
-		})
-	}
-}
-
-func TestExtractYumMainRepos(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
-	tests := []struct {
-		name    string
-		osID    string
-		txt     string
-		want    *mainOSPackages
-		wantErr error
-	}{
 		{
-			name:    "Missing cache directory",
-			osID:    "centos",
-			txt:     ``,
-			wantErr: ErrMissingCache,
-		},
-		{
-			name: "Ignores 3rd party repos (epel)",
-			osID: "centos",
+			name: "ignores_3rd_party_repos-yum",
 			txt: `
 -- etc/os-release --
 ID="centos"
@@ -326,8 +263,7 @@ ID="centos"
 			},
 		},
 		{
-			name: "Parses standard YUM primary.sqlite.gz correctly",
-			osID: "centos",
+			name: "parses_primary.sqlite.gz-yum",
 			txt: `
 -- etc/os-release --
 ID="centos"
@@ -346,13 +282,13 @@ ID="centos"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mfs, err := fakefs.PrepareFS(tt.txt, fakefs.SimLinkModifier)
+			mfs, err := fakefs.PrepareFS(tt.txt, fakefs.SimLinkModifier, xmlCompressModifier)
 			if err != nil {
 				t.Fatal(err)
 			}
 			root := &scalibrfs.ScanRoot{FS: mfs}
 
-			got, err := extractYumMainRepos(root, tt.osID)
+			got, err := extractMainPackages(root)
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("extractYumMainRepos() error = %v, wantErr %v", err, tt.wantErr)
 				return

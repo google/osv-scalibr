@@ -38,7 +38,8 @@ const (
 )
 
 var (
-	ErrMissingCache = errors.New("rpm cache is empty")
+	ErrMissingCache  = errors.New("rpm cache is empty")
+	ErrMissingOSInfo = errors.New("unable to extract os information")
 )
 
 type mainOSPackages struct {
@@ -57,10 +58,10 @@ func (m *mainOSPackages) Contains(pkg *rpmdb.PackageInfo) bool {
 	return exists
 }
 
-func extractMainRepos(root *fs.ScanRoot) (*mainOSPackages, error) {
+func extractMainPackages(root *fs.ScanRoot) (*mainOSPackages, error) {
 	content, err := osrelease.GetOSRelease(root.FS)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrMissingOSInfo, err)
 	}
 	osID := strings.ToLower(content["ID"])
 

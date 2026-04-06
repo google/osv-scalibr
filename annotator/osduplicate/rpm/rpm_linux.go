@@ -61,7 +61,12 @@ var (
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results, input.ScanRoot)
 
-	errs := []error{}
+	mainPackages, err := extractMainPackages(input.ScanRoot)
+	if err != nil && !errors.Is(err, ErrMissingCache) && !errors.Is(err, ErrMissingOSInfo) {
+		return fmt.Errorf("error extracting main packages metadata %w", err)
+	}
+
+	var errs []error
 	for _, dir := range rpmDirectories {
 		for _, file := range rpmFilenames {
 			// Return if canceled or exceeding deadline.
@@ -76,7 +81,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 				continue
 			}
 
-			if err := a.annotatePackagesInRPMDB(ctx, input.ScanRoot, dbPath, locationToPKGs); err != nil {
+			if err := a.annotatePackagesInRPMDB(ctx, input.ScanRoot, dbPath, mainPackages, locationToPKGs); err != nil {
 				return err
 			}
 		}
@@ -85,7 +90,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	return errors.Join(errs...)
 }
 
-func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs.ScanRoot, dbPath string, locationToPKGs map[string][]*extractor.Package) error {
+func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs.ScanRoot, dbPath string, mainPackages *mainOSPackages, locationToPKGs map[string][]*extractor.Package) error {
 	realDBPath, err := scalibrfs.GetRealPath(root, dbPath, nil)
 	if err != nil {
 		return fmt.Errorf("GetRealPath(%v, %v): %w", root, dbPath, err)
@@ -106,43 +111,44 @@ func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs
 	}
 	defer db.Close()
 
-	var pkgs []*rpmdb.PackageInfo
-	if a.Timeout == 0 {
-		pkgs, err = db.ListPackages()
-		if err != nil {
-			return err
-		}
-	} else {
-		ctx, cancelFunc := context.WithTimeout(ctx, a.Timeout)
-		defer cancelFunc()
-
-		pkgs, err = db.ListPackagesWithContext(ctx)
-		if err != nil {
-			return err
-		}
+	if a.Timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, a.Timeout)
+		defer cancel()
 	}
 
-	for _, pkg := range pkgs {
-		for i, base := range pkg.BaseNames {
-			if len(pkg.DirIndexes) <= i {
-				return fmt.Errorf("malformed RPM directory index: want %d entries, got %d", i+1, len(pkg.DirIndexes))
-			}
-			dir := pkg.DirNames[pkg.DirIndexes[i]]
-			// Remove leading '/' since SCALIBR fs paths don't include that.
-			path := strings.TrimPrefix(dir+base, "/")
+	rpmPkgs, err := db.ListPackagesWithContext(ctx)
+	if err != nil {
+		return err
+	}
 
-			if pkgs, ok := locationToPKGs[path]; ok {
-				for _, pkg := range pkgs {
-					if !slices.ContainsFunc(pkg.ExploitabilitySignals, func(s *vex.PackageExploitabilitySignal) bool {
-						return s.Plugin == Name
-					}) {
-						pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-							Plugin:          Name,
-							Justification:   vex.ComponentNotPresent,
-							MatchesAllVulns: true,
-						})
-					}
+	for _, rpmPkg := range rpmPkgs {
+		if mainPackages != nil && mainPackages.Contains(rpmPkg) {
+			continue
+		}
+
+		for i, base := range rpmPkg.BaseNames {
+			if len(rpmPkg.DirIndexes) <= i {
+				return fmt.Errorf("malformed RPM directory index: want %d entries, got %d", i+1, len(rpmPkg.DirIndexes))
+			}
+
+			dir := rpmPkg.DirNames[rpmPkg.DirIndexes[i]]
+			// Remove leading '/' since SCALIBR fs paths don't include that.
+			pkgPath := strings.TrimPrefix(path.Join(dir, base), "/")
+
+			for _, extPkg := range locationToPKGs[pkgPath] {
+				hasSignal := slices.ContainsFunc(extPkg.ExploitabilitySignals, func(s *vex.PackageExploitabilitySignal) bool {
+					return s.Plugin == Name
+				})
+				if hasSignal {
+					continue
 				}
+
+				extPkg.ExploitabilitySignals = append(extPkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+					Plugin:          Name,
+					Justification:   vex.ComponentNotPresent,
+					MatchesAllVulns: true,
+				})
 			}
 		}
 	}

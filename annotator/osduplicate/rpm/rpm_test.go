@@ -16,6 +16,7 @@ package rpm_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -33,9 +34,9 @@ import (
 )
 
 func TestAnnotate(t *testing.T) {
-	// if runtime.GOOS != "linux" {
-	// 	t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	// }
+	if runtime.GOOS != "linux" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
 
 	cancelledContext, cancel := context.WithCancel(t.Context())
 	cancel()
