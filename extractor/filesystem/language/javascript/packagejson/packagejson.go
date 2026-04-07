@@ -16,6 +16,7 @@
 package packagejson
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -142,10 +143,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("packagejson.parse: %w", err)
 	}
 
-	for _, p := range pkgs {
-		p.Location = extractor.LocationFromPath(input.Path)
-	}
-
 	e.reportFileExtracted(input.Path, input.Info, nil)
 	return inventory.Inventory{Packages: pkgs}, nil
 }
@@ -166,10 +163,13 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 }
 
 func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Package, error) {
-	dec := json.NewDecoder(r)
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
 
 	var p packageJSON
-	if err := dec.Decode(&p); err != nil {
+	if err := json.Unmarshal(b, &p); err != nil {
 		log.Debugf("package.json file %s json decode failed: %v", path, err)
 		// TODO(b/281023532): We should not mark the overall SCALIBR scan as failed if we can't parse a file.
 		return nil, fmt.Errorf("failed to parse package.json file: %w", err)
@@ -193,14 +193,17 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 		Name:     p.Name,
 		Version:  p.Version,
 		PURLType: purl.TypeNPM,
+		Location: extractor.LocationFromPath(path),
 		Metadata: &metadata.JavascriptPackageJSONMetadata{
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
 			Contributors: removeEmptyPersons(p.Contributors),
 		},
 	})
+	pkgs[0].Location.Descriptor.File.LineNumber = 1
 
 	if includeDependencies {
+		lineMap := findLineNumbers(b, p.Dependencies)
 		for name, version := range p.Dependencies {
 			c, err := semver.NPM.ParseConstraint(version)
 			if err != nil {
@@ -212,6 +215,8 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 				log.Debugf("failed to calculate min NPM version for dependency %s in %s with constraint %s: %v", name, path, version, err)
 				continue
 			}
+
+			lineNum := lineMap[name]
 			pkgs = append(pkgs, &extractor.Package{
 				Name: name,
 				// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
@@ -220,11 +225,29 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 				// does not parse out the build value, so that need to be fixed first.
 				Version:  v.Canon(false),
 				PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPath(path),
 			})
+			pkgs[len(pkgs)-1].Location.Descriptor.File.LineNumber = lineNum
 		}
 	}
 
 	return pkgs, nil
+}
+
+func findLineNumbers(b []byte, dependencies map[string]string) map[string]int {
+	res := make(map[string]int)
+	lines := bytes.Split(b, []byte("\n"))
+	for i, line := range lines {
+		for name := range dependencies {
+			if _, ok := res[name]; ok {
+				continue
+			}
+			if bytes.Contains(line, []byte("\""+name+"\"")) {
+				res[name] = i + 1
+			}
+		}
+	}
+	return res
 }
 
 func (p packageJSON) hasNameAndVersionValues() bool {
