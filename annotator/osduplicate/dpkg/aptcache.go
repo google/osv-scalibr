@@ -103,14 +103,36 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 	}
 	defer reader.Close()
 
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		if after, ok := strings.CutPrefix(scanner.Text(), "Package: "); ok {
+	// Replace Scanner with Reader
+	bufReader := bufio.NewReader(reader)
+
+	for {
+		line, isPrefix, err := bufReader.ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+
+		// Check if the start of this line contains a package name
+		if after, ok := strings.CutPrefix(string(line), "Package: "); ok {
 			cache.value[after] = struct{}{}
+		}
+
+		// If the line was too long for the buffer, drain the remainder of it.
+		for isPrefix {
+			_, isPrefix, err = bufReader.ReadLine()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
 		}
 	}
 
-	return scanner.Err()
+	return nil
 }
 
 // readerFromExtension returns an io.ReadCloser depending on the file extension
