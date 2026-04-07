@@ -16,8 +16,11 @@
 package pomxml
 
 import (
+	"bytes"
 	"context"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"maps"
 	"path/filepath"
 	"regexp"
@@ -32,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -86,11 +90,63 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project *maven.Project
 
-	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
+	content, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not read %s: %w", input.Path, err)
+	}
+
+	if err := datasource.NewMavenDecoder(bytes.NewReader(content)).Decode(&project); err != nil {
 		err := fmt.Errorf("could not extract pom from %s: %w", input.Path, err)
 		log.Errorf(err.Error())
 		return inventory.Inventory{}, err
 	}
+
+	lineNumbers := map[string]int{}
+	filePaths := map[string]string{}
+
+	// Get line numbers from current pom.xml
+	for name, line := range getLineNumbers(content) {
+		lineNumbers[name] = line
+		filePaths[name] = input.Path
+	}
+
+	// Trace parents and get line numbers
+	currParent := project.Parent
+	currPath := input.Path
+	for n := 1; n < mavenutil.MaxParent; n++ {
+		if currParent.GroupID == "" || currParent.ArtifactID == "" || currParent.Version == "" {
+			break
+		}
+		parentPath := mavenutil.ParentPOMPath(input, currPath, string(currParent.RelativePath))
+		if parentPath == "" {
+			break
+		}
+
+		f, err := input.FS.Open(parentPath)
+		if err != nil {
+			break
+		}
+		parentContent, err := io.ReadAll(f)
+		f.Close()
+		if err != nil {
+			break
+		}
+
+		for name, line := range getLineNumbers(parentContent) {
+			if _, ok := lineNumbers[name]; !ok {
+				lineNumbers[name] = line
+				filePaths[name] = parentPath
+			}
+		}
+
+		var parentProj maven.Project
+		if err := datasource.NewMavenDecoder(bytes.NewReader(parentContent)).Decode(&parentProj); err != nil {
+			break
+		}
+		currParent = parentProj.Parent
+		currPath = parentPath
+	}
+
 	if err := project.Interpolate(); err != nil {
 		err := fmt.Errorf("failed to interpolate pom for %s in %s: %w", project.Name, input.Path, err)
 		log.Errorf(err.Error())
@@ -138,11 +194,28 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Classifier:   string(dep.Classifier),
 			DepGroupVals: []string{},
 		}
+
+		path := input.Path
+		if p, ok := filePaths[dep.Name()]; ok {
+			path = p
+		}
+		line := 0
+		if l, ok := lineNumbers[dep.Name()]; ok {
+			line = l
+		}
+
 		pkgDetails := &extractor.Package{
 			Name:     dep.Name(),
 			Version:  parseResolvedVersion(dep.Version),
 			PURLType: purl.TypeMaven,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.PackageLocation{
+				Descriptor: &location.Location{
+					File: &location.File{
+						Path:       filepath.ToSlash(path),
+						LineNumber: line,
+					},
+				},
+			},
 			Metadata: &metadata,
 		}
 		if scope := strings.TrimSpace(string(dep.Scope)); scope != "" && scope != "compile" {
@@ -153,6 +226,70 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
+}
+
+type depInfo struct {
+	GroupID    string `xml:"groupId"`
+	ArtifactID string `xml:"artifactId"`
+}
+
+func getLineNumbers(content []byte) map[string]int {
+	lns := make(map[string]int)
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		return input, nil
+	}
+
+	// stack to keep track of where we are
+	stack := []string{}
+
+	for {
+		offset := decoder.InputOffset()
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			// ignore errors to handle different encodings or malformed XML
+			// as much as possible
+			continue
+		}
+
+		switch se := token.(type) {
+		case xml.StartElement:
+			stack = append(stack, se.Name.Local)
+			if se.Name.Local == "dependency" {
+				// Check if we are in dependencyManagement
+				inDepMgmt := false
+				for _, name := range stack {
+					if name == "dependencyManagement" {
+						inDepMgmt = true
+						break
+					}
+				}
+
+				var d depInfo
+				if err := decoder.DecodeElement(&d, &se); err == nil {
+					// After DecodeElement, we are at the EndElement of "dependency",
+					// so we need to pop it from stack immediately.
+					stack = stack[:len(stack)-1]
+
+					key := fmt.Sprintf("%s:%s", strings.TrimSpace(d.GroupID), strings.TrimSpace(d.ArtifactID))
+					// We prefer the first occurrence (usually in <dependencies>)
+					// or specifically NOT in <dependencyManagement> if possible.
+					if _, ok := lns[key]; !ok || !inDepMgmt {
+						line := bytes.Count(content[:offset], []byte("\n")) + 1
+						lns[key] = line
+					}
+				}
+			}
+		case xml.EndElement:
+			if len(stack) > 0 {
+				stack = stack[:len(stack)-1]
+			}
+		}
+	}
+	return lns
 }
 
 var _ filesystem.Extractor = Extractor{}
