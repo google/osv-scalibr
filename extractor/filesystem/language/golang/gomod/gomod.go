@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -146,7 +147,14 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 			Name:     name,
 			Version:  version,
 			PURLType: purl.TypeGolang,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.PackageLocation{
+				Descriptor: &location.Location{
+					File: &location.File{
+						Path:       input.Path,
+						LineNumber: require.Syntax.Start.Line,
+					},
+				},
+			},
 		}
 	}
 
@@ -178,20 +186,30 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 				Name:     replace.New.Path,
 				Version:  strings.TrimPrefix(replace.New.Version, "v"),
 				PURLType: purl.TypeGolang,
-				Location: extractor.LocationFromPath(input.Path),
+				Location: extractor.PackageLocation{
+					Descriptor: &location.Location{
+						File: &location.File{
+							Path:       input.Path,
+							LineNumber: replace.Syntax.Start.Line,
+						},
+					},
+				},
 			}
 		}
 	}
 
 	goVersion := ""
+	stdlibLine := 0
 	if parsedLockfile.Go != nil && parsedLockfile.Go.Version != "" {
 		goVersion = parsedLockfile.Go.Version
+		stdlibLine = parsedLockfile.Go.Syntax.Start.Line
 	}
 
 	// Give the toolchain version priority, if present
 	if parsedLockfile.Toolchain != nil && parsedLockfile.Toolchain.Name != "" {
 		version, _, _ := strings.Cut(parsedLockfile.Toolchain.Name, "-")
 		goVersion = strings.TrimPrefix(version, "go")
+		stdlibLine = parsedLockfile.Toolchain.Syntax.Start.Line
 	}
 
 	// Add the Go stdlib as an explicit dependency.
@@ -200,7 +218,14 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 			Name:     "stdlib",
 			Version:  goVersion,
 			PURLType: purl.TypeGolang,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.PackageLocation{
+				Descriptor: &location.Location{
+					File: &location.File{
+						Path:       input.Path,
+						LineNumber: stdlibLine,
+					},
+				},
+			},
 		}
 	}
 

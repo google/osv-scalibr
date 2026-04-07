@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -138,6 +139,17 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
+func locationWithLine(path string, line int) extractor.PackageLocation {
+	return extractor.PackageLocation{
+		Descriptor: &location.Location{
+			File: &location.File{
+				Path:       path,
+				LineNumber: line,
+			},
+		},
+	}
+}
+
 func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -155,7 +167,7 @@ func TestExtract(t *testing.T) {
 					Name:     "testdata",
 					Version:  "10.46.8",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package.json"),
+					Location: locationWithLine("testdata/package.json", 1),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Author: &metadata.Person{
 							Name:  "Developer",
@@ -174,7 +186,7 @@ func TestExtract(t *testing.T) {
 					Name:     "accepts",
 					Version:  "1.3.8",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/deps/accepts/package.json"),
+					Location: locationWithLine("testdata/deps/accepts/package.json", 1),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -199,7 +211,7 @@ func TestExtract(t *testing.T) {
 					Name:     "accepts",
 					Version:  "1.3.8",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/deps/no-person-name/package.json"),
+					Location: locationWithLine("testdata/deps/no-person-name/package.json", 1),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -220,7 +232,7 @@ func TestExtract(t *testing.T) {
 					Name:     "acorn",
 					Version:  "1.2.2",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/deps/with/deps/acorn/package.json"),
+					Location: locationWithLine("testdata/deps/with/deps/acorn/package.json", 1),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Maintainers: []*metadata.Person{
 							{
@@ -274,7 +286,7 @@ func TestExtract(t *testing.T) {
 					Name:     "undici",
 					Version:  "5.28.3",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/undici-package.json"),
+					Location: locationWithLine("testdata/undici-package.json", 1),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -301,7 +313,7 @@ func TestExtract(t *testing.T) {
 					Name:     "jsonparse",
 					Version:  "1.3.1",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/not-vscode.json"),
+					Location: locationWithLine("testdata/not-vscode.json", 1),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Author: &metadata.Person{
 							Name:  "Tim Caswell",
@@ -320,45 +332,45 @@ func TestExtract(t *testing.T) {
 					Name:     "package-with-deps",
 					Version:  "1.2.3",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Location: locationWithLine("testdata/package-with-deps.json", 1),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{},
 				},
 				{
 					Name:     "dep1",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Location: locationWithLine("testdata/package-with-deps.json", 5),
 				},
 				{
 					Name:     "dep2",
 					Version:  "2.0.1",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Location: locationWithLine("testdata/package-with-deps.json", 6),
 				},
 				{
 					Name:     "dep3",
 					Version:  "3.1.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Location: locationWithLine("testdata/package-with-deps.json", 7),
 				},
 				{
 					Name:     "dep4",
 					Version:  "0.4.2",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Location: locationWithLine("testdata/package-with-deps.json", 8),
 				},
 				{
 					Name:     "dep5",
 					Version:  "5.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Location: locationWithLine("testdata/package-with-deps.json", 9),
 				},
 				// dep6 is invalid, so it should not be included.
 				{
 					Name:     "dep7",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Location: locationWithLine("testdata/package-with-deps.json", 11),
 				},
 			},
 		},
