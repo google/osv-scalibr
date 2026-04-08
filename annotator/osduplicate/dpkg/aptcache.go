@@ -112,7 +112,7 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 		}
 	}
 
-	return nil
+	return scanner.Err()
 }
 
 // readerFromExtension returns an io.ReadCloser depending on the file extension
