@@ -25,7 +25,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/fs"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pierrec/lz4/v4"
@@ -42,8 +41,8 @@ type aptCache struct {
 }
 
 // isFromMainOSRepo returns true if a package found in main OS repo index
-func (a *aptCache) isFromMainOSRepo(pkg *extractor.Package) bool {
-	_, exists := a.value[pkg.Name]
+func (a *aptCache) isFromMainOSRepo(pkgName string) bool {
+	_, exists := a.value[pkgName]
 	return exists
 }
 
