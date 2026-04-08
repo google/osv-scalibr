@@ -103,29 +103,9 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 	}
 	defer reader.Close()
 
-	bufReader := bufio.NewReader(reader)
-	skippingLongLine := false
-	for {
-		line, isPrefix, err := bufReader.ReadLine()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-
-		// if the line is too long to fit in the buffer skip it
-		if isPrefix {
-			skippingLongLine = true
-			continue
-		}
-
-		// finish consuming the line (until the first isPrefix is false)
-		if skippingLongLine && !isPrefix {
-			skippingLongLine = false
-			continue
-		}
-
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Bytes()
 		// Check if the start of this line contains a package name
 		if after, ok := bytes.CutPrefix(line, []byte("Package: ")); ok {
 			cache.value[string(after)] = struct{}{}
