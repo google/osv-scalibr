@@ -42,7 +42,7 @@ func NewSuggester(system resolve.System) (PatchSuggester, error) {
 	case resolve.NPM:
 		return nil, errors.New("npm not yet supported")
 	case resolve.PyPI:
-		return nil, errors.New("PyPI not yet supported")
+		return &PythonSuggester{}, nil
 	case resolve.UnknownSystem:
 		return nil, errors.New("unknown system")
 	default:
