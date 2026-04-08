@@ -16,6 +16,7 @@ package dpkg
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"errors"
 	"io"
@@ -103,9 +104,8 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 	}
 	defer reader.Close()
 
-	// Replace Scanner with Reader
 	bufReader := bufio.NewReader(reader)
-
+	skippingLongLine := false
 	for {
 		line, isPrefix, err := bufReader.ReadLine()
 		if err != nil {
@@ -115,20 +115,21 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 			return err
 		}
 
-		// Check if the start of this line contains a package name
-		if after, ok := strings.CutPrefix(string(line), "Package: "); ok {
-			cache.value[after] = struct{}{}
+		// if the line is too long to fit in the buffer skip it
+		if isPrefix {
+			skippingLongLine = true
+			continue
 		}
 
-		// If the line was too long for the buffer, drain the remainder of it.
-		for isPrefix {
-			_, isPrefix, err = bufReader.ReadLine()
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				return err
-			}
+		// finish consuming the line (until the first isPrefix is false)
+		if skippingLongLine && !isPrefix {
+			skippingLongLine = false
+			continue
+		}
+
+		// Check if the start of this line contains a package name
+		if after, ok := bytes.CutPrefix(line, []byte("Package: ")); ok {
+			cache.value[string(after)] = struct{}{}
 		}
 	}
 
