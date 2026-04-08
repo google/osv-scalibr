@@ -128,6 +128,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/deepseekapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -362,6 +363,7 @@ var (
 		{circleci.NewPersonalAccessTokenDetector(), "secrets/circlecipat", 0},
 		{circleci.NewProjectTokenDetector(), "secrets/circleciproject", 0},
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
+		{deepseekapikey.NewDetector(), "secrets/deepseekapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
 		{cratesioapitoken.NewDetector(), "secrets/cratesioapitoken", 0},
