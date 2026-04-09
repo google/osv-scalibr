@@ -39,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/alibabaaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
@@ -118,6 +119,7 @@ var (
 
 	// SecretsValidate lists secret validators.
 	SecretsValidate = initMapFromVelesPlugins([]velesPlugin{
+		fromVeles(alibabaaccesskey.NewValidator(), "secrets/alibabaaccesskeyvalidate", 0),
 		fromVeles(anthropicapikey.NewWorkspaceValidator(), "secrets/anthropicapikeyworkspacevalidate", 0),
 		fromVeles(anthropicapikey.NewModelValidator(), "secrets/anthropicapikeymodelvalidate", 0),
 		fromVeles(bitwardenoauth2access.NewValidator(), "secrets/bitwardenoauth2accessvalidate", 0),

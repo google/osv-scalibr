@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
+	velesalibabaaccesskey "github.com/google/osv-scalibr/veles/secrets/alibabaaccesskey"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
@@ -269,6 +270,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return hashicorpCloudPlatformTokenToProto(t), nil
 	case mariadb.Credentials:
 		return mariadbCredentialsToProto(t), nil
+	case *velesalibabaaccesskey.Credentials:
+		return alibabaAccessKeyCredentialToProto(t), nil
 	case awsaccesskey.Credentials:
 		return awsAccessKeyCredentialToProto(t), nil
 	case bitwardenoauth2access.Token:
@@ -410,6 +413,19 @@ func codeCatalystCredentialsToProto(s codecatalyst.Credentials) *spb.SecretData 
 		Secret: &spb.SecretData_CodeCatalystCredentials_{
 			CodeCatalystCredentials: &spb.SecretData_CodeCatalystCredentials{
 				Url: s.FullURL,
+			},
+		},
+	}
+}
+
+func alibabaAccessKeyCredentialToProto(s *velesalibabaaccesskey.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_AlibabaAccessKey_{
+			AlibabaAccessKey: &spb.SecretData_AlibabaAccessKey{
+				AccessId:      s.AccessID,
+				Secret:        s.Secret,
+				IsRamUser:     s.IsRAMUser,
+				PrincipalName: s.PrincipalName, // Maps Go field to Proto field
 			},
 		},
 	}
@@ -1378,6 +1394,14 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			Port:     creds.Port,
 			User:     creds.User,
 			Password: creds.Password,
+		}, nil
+	case *spb.SecretData_AlibabaAccessKey_:
+		creds := s.GetAlibabaAccessKey()
+		return velesalibabaaccesskey.Credentials{
+			AccessID:      creds.GetAccessId(),
+			Secret:        creds.GetSecret(),
+			IsRAMUser:     creds.GetIsRamUser(),
+			PrincipalName: creds.GetPrincipalName(),
 		}, nil
 	case *spb.SecretData_AwsAccessKeyCredentials_:
 		creds := s.GetAwsAccessKeyCredentials()
