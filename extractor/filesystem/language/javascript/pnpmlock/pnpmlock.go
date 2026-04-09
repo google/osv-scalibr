@@ -218,7 +218,7 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: depGroups,
 			},
 		})
@@ -272,7 +272,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	packages, err := parsePnpmLock(*parsedLockfile)
 	for i := range packages {
-		packages[i].Locations = []string{input.Path}
+		packages[i].Location = extractor.LocationFromPath(input.Path)
 	}
 
 	return inventory.Inventory{Packages: packages}, err

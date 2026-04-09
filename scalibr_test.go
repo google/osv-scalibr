@@ -38,6 +38,7 @@ import (
 	cf "github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
@@ -59,6 +60,15 @@ func fromVelesDetector(t *testing.T, d veles.Detector, name string, ver int) plu
 	p, err := cf.FromVelesDetector(d, name, ver)(nil)
 	if err != nil {
 		t.Fatalf("Failed to create plugin from Veles detector: %v", err)
+	}
+	return p
+}
+
+func fromVelesValidator[S veles.Secret](t *testing.T, v veles.Validator[S], name string, ver int) plugin.Plugin {
+	t.Helper()
+	p, err := ce.FromVelesValidator(v, name, ver)(nil)
+	if err != nil {
+		t.Fatalf("Failed to create plugin from Veles validator: %v", err)
 	}
 	return p
 }
@@ -98,16 +108,16 @@ func TestScan(t *testing.T) {
 		map[string]fe.NamesErr{"file.txt": {Names: []string{pkgName}, Err: nil}},
 	)
 	pkg := &extractor.Package{
-		Name:      pkgName,
-		Locations: []string{"file.txt"},
-		ScanRoot:  tmp,
-		Plugins:   []string{fakeExtractor.Name()},
+		Name:     pkgName,
+		Location: extractor.LocationFromPath("file.txt"),
+		ScanRoot: tmp,
+		Plugins:  []string{fakeExtractor.Name()},
 	}
 	pkgWithAbsolutePath := &extractor.Package{
-		Name:      pkgName,
-		Locations: []string{filepath.Join(tmp, "file.txt")},
-		ScanRoot:  tmp,
-		Plugins:   []string{fakeExtractor.Name()},
+		Name:     pkgName,
+		Location: extractor.LocationFromPath(filepath.Join(tmp, "file.txt")),
+		ScanRoot: tmp,
+		Plugins:  []string{fakeExtractor.Name()},
 	}
 	withLayerMetadata := func(pkg *extractor.Package, ld *extractor.LayerMetadata) *extractor.Package {
 		pkg = deepcopy.Copy(pkg).(*extractor.Package)
@@ -352,7 +362,7 @@ func TestScan(t *testing.T) {
 					{Name: "secrets/veles", Version: 1, Status: success},
 				},
 				Inventory: inventory.Inventory{
-					Secrets: []*inventory.Secret{{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"}},
+					Secrets: []*inventory.Secret{{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("file.txt")}},
 				},
 			},
 		},
@@ -373,8 +383,8 @@ func TestScan(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Secrets: []*inventory.Secret{
-						{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"},
-						{Secret: velestest.NewFakeStringSecret("tent"), Location: "file.txt"},
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("file.txt")},
+						{Secret: velestest.NewFakeStringSecret("tent"), Location: location.FromPath("file.txt")},
 					},
 				},
 			},
@@ -384,7 +394,7 @@ func TestScan(t *testing.T) {
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fromVelesDetector(t, fakeSecretDetector1, "secret-detector", 1),
-					ce.FromVelesValidator(fakeSecretValidator1, "secret-validator", 1)(),
+					fromVelesValidator(t, fakeSecretValidator1, "secret-validator", 1),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -398,7 +408,7 @@ func TestScan(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Secrets: []*inventory.Secret{{
 						Secret:     velestest.NewFakeStringSecret("Con"),
-						Location:   "file.txt",
+						Location:   location.FromPath("file.txt"),
 						Validation: inventory.SecretValidationResult{Status: veles.ValidationValid},
 					}},
 				},
@@ -427,8 +437,8 @@ func TestScan(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Secrets: []*inventory.Secret{
-						{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"},
-						{Secret: velestest.NewFakeStringSecret("Con"), Location: "config"},
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("file.txt")},
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("config")},
 					},
 				},
 			},
@@ -446,11 +456,14 @@ func TestScan(t *testing.T) {
 			// Ignore timestamps.
 			ignoreFields := cmpopts.IgnoreFields(inventory.SecretValidationResult{}, "At")
 
-			ignoreOrder := cmpopts.SortSlices(func(a, b any) bool {
-				return fmt.Sprintf("%+v", a) < fmt.Sprintf("%+v", b)
+			ignorePackageOrder := cmpopts.SortSlices(func(a, b *extractor.Package) bool {
+				return a.Location.Descriptor.File.Path < b.Location.Descriptor.File.Path
+			})
+			ignoreSecretOrder := cmpopts.SortSlices(func(a, b *inventory.Secret) bool {
+				return a.Location.File.Path < b.Location.File.Path
 			})
 
-			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields, ignoreOrder); diff != "" {
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields, ignorePackageOrder, ignoreSecretOrder); diff != "" {
 				t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", tc.cfg, diff)
 			}
 		})
@@ -495,14 +508,14 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "bar",
-							Locations:     []string{"bar.txt"},
+							Location:      extractor.LocationFromPath("bar.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -536,7 +549,7 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -571,14 +584,14 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "baz",
-							Locations:     []string{"baz.txt"},
+							Location:      extractor.LocationFromPath("baz.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(2),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -614,21 +627,21 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "bar",
-							Locations:     []string{"bar.txt"},
+							Location:      extractor.LocationFromPath("bar.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(3),
 						},
 						{
 							Name:          "baz",
-							Locations:     []string{"baz.txt"},
+							Location:      extractor.LocationFromPath("baz.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(2),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -665,28 +678,28 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "bar",
-							Locations:     []string{"bar.txt"},
+							Location:      extractor.LocationFromPath("bar.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(3),
 						},
 						{
 							Name:          "baz",
-							Locations:     []string{"baz.txt"},
+							Location:      extractor.LocationFromPath("baz.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(2),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
 						},
 						{
 							Name:          "foo2",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(4),
@@ -747,11 +760,11 @@ func TestScan_ExtractorOverride(t *testing.T) {
 	e4 := fe.NewDirExtractor("e4", 1, []string{"dir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg4"}}})
 	e5 := fe.NewDirExtractor("e5", 1, []string{"notdir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg5"}}})
 
-	pkg1 := &extractor.Package{Name: "pkg1", Locations: []string{"file1"}, ScanRoot: tmp, Plugins: []string{"e1"}}
-	pkg2 := &extractor.Package{Name: "pkg2", Locations: []string{"file2"}, ScanRoot: tmp, Plugins: []string{"e2"}}
-	pkg3 := &extractor.Package{Name: "pkg3", Locations: []string{"file2"}, ScanRoot: tmp, Plugins: []string{"e3"}}
-	pkg4 := &extractor.Package{Name: "pkg4", Locations: []string{"dir"}, ScanRoot: tmp, Plugins: []string{"e4"}}
-	pkg5 := &extractor.Package{Name: "pkg5", Locations: []string{"dir"}, ScanRoot: tmp, Plugins: []string{"e5"}}
+	pkg1 := &extractor.Package{Name: "pkg1", Location: extractor.LocationFromPath("file1"), ScanRoot: tmp, Plugins: []string{"e1"}}
+	pkg2 := &extractor.Package{Name: "pkg2", Location: extractor.LocationFromPath("file2"), ScanRoot: tmp, Plugins: []string{"e2"}}
+	pkg3 := &extractor.Package{Name: "pkg3", Location: extractor.LocationFromPath("file2"), ScanRoot: tmp, Plugins: []string{"e3"}}
+	pkg4 := &extractor.Package{Name: "pkg4", Location: extractor.LocationFromPath("dir"), ScanRoot: tmp, Plugins: []string{"e4"}}
+	pkg5 := &extractor.Package{Name: "pkg5", Location: extractor.LocationFromPath("dir"), ScanRoot: tmp, Plugins: []string{"e5"}}
 
 	tests := []struct {
 		name              string
@@ -1131,10 +1144,10 @@ func TestAnnotator(t *testing.T) {
 	}
 
 	wantPkgs := []*extractor.Package{{
-		Name:      pkgName,
-		Locations: []string{"tmp/file.txt"},
-		ScanRoot:  tmp,
-		Plugins:   []string{fakeExtractor.Name()},
+		Name:     pkgName,
+		Location: extractor.LocationFromPath("tmp/file.txt"),
+		ScanRoot: tmp,
+		Plugins:  []string{fakeExtractor.Name()},
 		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 			Plugin:          cachedir.Name,
 			Justification:   vex.ComponentNotPresent,

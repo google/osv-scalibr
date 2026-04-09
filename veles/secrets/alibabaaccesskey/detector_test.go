@@ -36,7 +36,7 @@ func TestDetectorAcceptance(t *testing.T) {
 		t,
 		alibabaaccesskey.NewDetector(),
 		fmt.Sprintf("%s:%s", testAccessID, testSecret),
-		alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
+		&alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
 	)
 }
 
@@ -57,7 +57,7 @@ func TestDetector_truePositives(t *testing.T) {
 			name:  "simple matching string no space",
 			input: fmt.Sprintf("%s:%s", testAccessID, testSecret),
 			want: []veles.Secret{
-				alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
+				&alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
 			},
 		},
 		{
@@ -66,7 +66,7 @@ func TestDetector_truePositives(t *testing.T) {
 aliyun_access_key_id = %s
 aliyun_access_key_secret = %s`, testAccessID, testSecret),
 			want: []veles.Secret{
-				alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
+				&alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
 			},
 		},
 		{
@@ -76,7 +76,7 @@ aliyun_access_key_secret = %s`, testAccessID, testSecret),
 				"secret": "%s"
 			}`, testAccessID, testSecret),
 			want: []veles.Secret{
-				alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
+				&alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
 			},
 		},
 		{
@@ -87,7 +87,7 @@ invalid_id: WRONGtHSr51ziCnfuHvwdeDw
 valid_secret: %s
 invalid_secret: WRONG-InvalidSecret123456789012`, testAccessID, testSecret),
 			want: []veles.Secret{
-				alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
+				&alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
 			},
 		},
 		{
@@ -102,8 +102,8 @@ config_app2:
 LTAI5tFmcWVFFahTdzmBnvdz
 bUSdD6sqU249iGR3wUcYHOtpOVQG8y`, testAccessID, testSecret),
 			want: []veles.Secret{
-				alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
-				alibabaaccesskey.Credentials{AccessID: "LTAI5tFmcWVFFahTdzmBnvdz", Secret: "bUSdD6sqU249iGR3wUcYHOtpOVQG8y"},
+				&alibabaaccesskey.Credentials{AccessID: testAccessID, Secret: testSecret},
+				&alibabaaccesskey.Credentials{AccessID: "LTAI5tFmcWVFFahTdzmBnvdz", Secret: "bUSdD6sqU249iGR3wUcYHOtpOVQG8y"},
 			},
 		},
 	}
@@ -142,25 +142,25 @@ func TestDetector_trueNegatives(t *testing.T) {
 		},
 		{
 			name:  "invalid access id format - wrong prefix",
-			input: fmt.Sprintf("WRONGtHSr51ziCnfuHvwdeDw:%s", testSecret),
+			input: "WRONGtHSr51ziCnfuHvwdeDw:" + testSecret,
 		},
 		{
 			name:  "invalid secret format - too short",
-			input: fmt.Sprintf("%s:nyK2q4hL34mCKaEvElY253", testAccessID),
+			input: testAccessID + ":nyK2q4hL34mCKaEvElY253",
 		},
 		{
 			name:  "access ID present but no secret",
-			input: fmt.Sprintf("app_id: %s", testAccessID),
+			input: "app_id: " + testAccessID,
 		},
 		{
 			name:  "secret present but no access ID",
-			input: fmt.Sprintf("app_secret: %s", testSecret),
+			input: "app_secret: " + testSecret,
 		},
 		{
 			name: "access ID and secret are too far apart (exceeds 200 chars)",
-			input: fmt.Sprintf("config_app1:\n%s", testAccessID) +
+			input: "config_app1:\n" + testAccessID +
 				strings.Repeat("\nfiller line with random data", 10) +
-				fmt.Sprintf("\nconfig_app2:\n%s", testSecret),
+				"\nconfig_app2:\n" + testSecret,
 		},
 	}
 

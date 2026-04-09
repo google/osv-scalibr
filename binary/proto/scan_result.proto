@@ -18,6 +18,7 @@ syntax = "proto3";
 
 package scalibr;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "proto/vulnerability.proto";
@@ -94,13 +95,18 @@ message Package {
   // Ecosystem - For software packages this corresponds to an OSV ecosystem
   // value, e.g. PyPI.
   string ecosystem = 27;
+  // TODO(b/400910349): Remove once integrators no longer use this.
+  repeated string locations = 2 [deprecated = true];
   // Paths or source of files related to the package.
-  repeated string locations = 2;
+  PackageLocation location = 68;
   // The names of the plugins that found this software. Set by the
   // core library.
   repeated string plugins = 49;
   // The additional data found in the package.
   // LINT.IfChange
+  optional google.protobuf.Any metadata_any = 69;
+  // Deprecated: use metadata_any instead.
+  // TODO(#1847): Remove once the migration is complete.
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
@@ -145,6 +151,7 @@ message Package {
     UnknownBinaryMetadata unknown_binary_metadata = 64;
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
+    SpackPackageMetadata spack_metadata = 67;
   }
   // LINT.ThenChange(/binary/proto/package_metadata.go)
 
@@ -164,6 +171,15 @@ message Package {
   }
 
   optional ContainerImageMetadataIndexes container_image_metadata_indexes = 57;
+}
+
+// Paths or source of files related to an extracted package.
+message PackageLocation {
+  // Main descriptor this package was extracted from (if applicable).
+  Location desc = 1;
+  // Other locations related to this package, e.g. files installed by the OS
+  // package.
+  repeated Location related = 2;
 }
 
 // Additional identifiers for source code software packages (e.g. NPM).
@@ -481,6 +497,14 @@ message FlatpakPackageMetadata {
   string developer = 9;
 }
 
+// The additional data found in Spack packages.
+message SpackPackageMetadata {
+  string platform = 1;
+  string platform_os = 2;
+  string platform_architecture = 3;
+  string hash = 4;
+}
+
 // The additional data found in MODULE packages.
 message KernelModuleMetadata {
   string package_name = 1;
@@ -741,7 +765,9 @@ message UnknownBinaryAttribution {
 message Secret {
   SecretData secret = 1;
   SecretStatus status = 2;
-  repeated Location locations = 3;
+  // TODO(b/400910349): Remove once integrators no longer use this.
+  repeated LocationLegacy locations = 3 [deprecated = true];
+  Location location = 4;
 }
 
 message SecretData {
@@ -835,7 +861,8 @@ message SecretData {
     PackagistConductorUpdateToken packagist_conductor_update_token = 85;
     ComposerPackagistCredentials composer_http_basic_credentials = 86;
     DiscordBotToken discord_bot_token = 87;
-    AlibabaAccessKey alibaba_access_key = 88;
+    BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
+    AlibabaAccessKey alibaba_access_key = 89;
   }
 
   message GCPSAK {
@@ -1279,6 +1306,12 @@ message SecretData {
     string private_key = 3;
   }
 
+  message BitwardenOAuth2AccessToken {
+    // Bitwarden OAuth2 Access Token
+    string client_id = 1;
+    string client_secret = 2;
+  }
+
   message CursorAPIKey {
     string key = 1;
   }
@@ -1326,7 +1359,9 @@ message SecretStatus {
   }
 }
 
-message Location {
+// The old Location message type used for secrets and sensitive data.
+// TODO(b/400910349): Deprecate this in favor of the Location message.
+message LocationLegacy {
   oneof location {
     Filepath filepath = 1;
     FilepathWithLayerDetails filepath_with_layer_details = 2;
@@ -1350,6 +1385,16 @@ message EnvironmentVariable {
 
 message ContainerCommand {
   string command = 1;
+}
+
+message Location {
+  File file = 1;
+}
+
+message File {
+  string path = 1;
+  // The specific position of the inventory item inside the file.
+  int32 line_number = 2;
 }
 
 message ContainerImageMetadata {

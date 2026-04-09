@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,19 +33,17 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
-	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
-	vulnpb "github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"github.com/google/osv-scalibr/enricher"
+	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
+	vulnpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const testProjPath = "./testdata/goproj"
@@ -131,35 +129,35 @@ func TestEnricher(t *testing.T) {
 func setupPackages() []*extractor.Package {
 	pkgs := []*extractor.Package{
 		{
-			Name:      "stdlib",
-			Version:   "1.19",
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filepath.Join(".", "go.mod")},
-			Plugins:   []string{gomod.Name},
+			Name:     "stdlib",
+			Version:  "1.19",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
+			Plugins:  []string{gomod.Name},
 		},
 		// Affected by GO-2021-0053, but we don't actually call the vulnerable func
 		{
-			Name:      "github.com/gogo/protobuf",
-			Version:   "1.3.1",
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filepath.Join(".", "go.mod")},
-			Plugins:   []string{gomod.Name},
+			Name:     "github.com/gogo/protobuf",
+			Version:  "1.3.1",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
+			Plugins:  []string{gomod.Name},
 		},
 		// Affected by GO-2023-1558, and we do call the vulnerable func
 		{
-			Name:      "github.com/ipfs/go-bitfield",
-			Version:   "1.0.0",
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filepath.Join(".", "go.mod")},
-			Plugins:   []string{gomod.Name},
+			Name:     "github.com/ipfs/go-bitfield",
+			Version:  "1.0.0",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
+			Plugins:  []string{gomod.Name},
 		},
 		// Affected by GO-2024-2937, but only present in the go.mod file, nor present in the code
 		{
-			Name:      "golang.org/x/image",
-			Version:   "0.4.0",
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filepath.Join(".", "go.mod")},
-			Plugins:   []string{gomod.Name},
+			Name:     "golang.org/x/image",
+			Version:  "0.4.0",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
+			Plugins:  []string{gomod.Name},
 		},
 	}
 

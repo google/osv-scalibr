@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
+	"github.com/google/osv-scalibr/detector/cve/npm/canisterworm"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
@@ -98,6 +99,12 @@ var CVE = InitMap{
 	cve20257775.Name: {cve20257775.New},
 }
 
+// SupplyChain related vulnerability detectors.
+var SupplyChain = InitMap{
+	// Malicious NPM for CanisterWorm
+	canisterworm.Name: {canisterworm.New},
+}
+
 // Default detectors that are recommended to be enabled.
 var Default = InitMap{}
 
@@ -110,6 +117,7 @@ var All = concat(
 	Weakcredentials,
 	Untested,
 	CVE,
+	SupplyChain,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -120,6 +128,7 @@ var detectorNames = concat(All, InitMap{
 	"weakcredentials":   vals(Weakcredentials),
 	"untested":          vals(Untested),
 	"cve":               vals(CVE),
+	"supplychain":       vals(SupplyChain),
 	"detectors/default": vals(Default),
 	"default":           vals(Default),
 	"detectors/all":     vals(All),

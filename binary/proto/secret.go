@@ -25,12 +25,14 @@ import (
 	velesonepasswordconnecttoken "github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	velespgpass "github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 	velesalibabaaccesskey "github.com/google/osv-scalibr/veles/secrets/alibabaaccesskey"
 	velesanthropicapikey "github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 	velesazurestorageaccountaccesskey "github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	velesazuretoken "github.com/google/osv-scalibr/veles/secrets/azuretoken"
+	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
 	velescircleci "github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
@@ -138,9 +140,11 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 		return nil, err
 	}
 	return &spb.Secret{
-		Secret:    sec,
-		Status:    res,
-		Locations: secretLocationToProto(s.Location),
+		Secret: sec,
+		Status: res,
+		// TODO(b/400910349) Remove once integrators no longer read this field.
+		Locations: []*spb.LocationLegacy{locationToLegacyProto(&s.Location)},
+		Location:  LocationToProto(&s.Location),
 	}, nil
 }
 
@@ -270,6 +274,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return alibabaAccessKeyCredentialToProto(t), nil
 	case awsaccesskey.Credentials:
 		return awsAccessKeyCredentialToProto(t), nil
+	case bitwardenoauth2access.Token:
+		return bitwardenTokenToProto(t), nil
 	case vapid.Key:
 		return vapidKeyToProto(t), nil
 	case recaptchakey.Key:
@@ -418,7 +424,7 @@ func alibabaAccessKeyCredentialToProto(s *velesalibabaaccesskey.Credentials) *sp
 			AlibabaAccessKey: &spb.SecretData_AlibabaAccessKey{
 				AccessId:      s.AccessID,
 				Secret:        s.Secret,
-				IsRamUser:     s.IsRamUser,
+				IsRamUser:     s.IsRAMUser,
 				PrincipalName: s.PrincipalName, // Maps Go field to Proto field
 			},
 		},
@@ -431,6 +437,16 @@ func awsAccessKeyCredentialToProto(s awsaccesskey.Credentials) *spb.SecretData {
 			AwsAccessKeyCredentials: &spb.SecretData_AwsAccessKeyCredentials{
 				AccessId: s.AccessID,
 				Secret:   s.Secret,
+			},
+		},
+	}
+}
+func bitwardenTokenToProto(s bitwardenoauth2access.Token) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_BitwardenOauth2AccessToken{
+			BitwardenOauth2AccessToken: &spb.SecretData_BitwardenOAuth2AccessToken{
+				ClientSecret: s.ClientSecret,
+				ClientId:     s.ClientID,
 			},
 		},
 	}
@@ -1175,28 +1191,12 @@ func validationStatusToProto(s veles.ValidationStatus) (spb.SecretStatus_SecretS
 	return v, nil
 }
 
-func secretLocationToProto(filepath string) []*spb.Location {
-	return []*spb.Location{
-		{
-			Location: &spb.Location_Filepath{
-				Filepath: &spb.Filepath{
-					Path: filepath,
-				},
-			},
-		},
-	}
-}
-
 // --- Proto to Struct
 
 // SecretToStruct converts a proto Secret to its struct representation.
 func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 	if s == nil {
 		return nil, nil
-	}
-
-	if len(s.GetLocations()) > 1 {
-		return nil, ErrMultipleSecretLocations
 	}
 
 	sec, err := velesSecretToStruct(s.GetSecret())
@@ -1207,14 +1207,15 @@ func SecretToStruct(s *spb.Secret) (*inventory.Secret, error) {
 	if err != nil {
 		return nil, err
 	}
-	var path string
-	if len(s.GetLocations()) > 0 {
-		path = secretLocationToStruct(s.GetLocations()[0])
+
+	loc := location.Location{}
+	if l := LocationToStruct(s.GetLocation()); l != nil {
+		loc = *l
 	}
 
 	return &inventory.Secret{
 		Secret:     sec,
-		Location:   path,
+		Location:   loc,
 		Validation: res,
 	}, nil
 }
@@ -1399,7 +1400,7 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesalibabaaccesskey.Credentials{
 			AccessID:      creds.GetAccessId(),
 			Secret:        creds.GetSecret(),
-			IsRamUser:     creds.GetIsRamUser(),
+			IsRAMUser:     creds.GetIsRamUser(),
 			PrincipalName: creds.GetPrincipalName(),
 		}, nil
 	case *spb.SecretData_AwsAccessKeyCredentials_:
@@ -1407,6 +1408,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return &awsaccesskey.Credentials{
 			AccessID: creds.AccessId,
 			Secret:   creds.Secret,
+		}, nil
+	case *spb.SecretData_BitwardenOauth2AccessToken:
+		creds := s.GetBitwardenOauth2AccessToken()
+		return &bitwardenoauth2access.Token{
+			ClientID:     creds.ClientId,
+			ClientSecret: creds.ClientSecret,
 		}, nil
 	case *spb.SecretData_VapidKey_:
 		t := s.GetVapidKey()
@@ -1701,13 +1708,6 @@ func validationStatusToStruct(s spb.SecretStatus_SecretStatusEnum) (veles.Valida
 		return veles.ValidationUnspecified, fmt.Errorf("%w: %q", ErrUnsupportedValidationType, s)
 	}
 	return v, nil
-}
-
-func secretLocationToStruct(location *spb.Location) string {
-	if location.GetFilepath() != nil {
-		return location.GetFilepath().GetPath()
-	}
-	return ""
 }
 
 func hashicorpVaultTokenToStruct(tokenPB *spb.SecretData_HashiCorpVaultToken) veleshashicorpvault.Token {

@@ -96,7 +96,7 @@ func TestValidator(t *testing.T) {
 		name          string
 		key           alibabaaccesskey.Credentials
 		want          veles.ValidationStatus
-		wantIsRam     bool
+		wantIsRAM     bool
 		wantPrincipal string
 		server        func() *httptest.Server
 	}{
@@ -107,7 +107,7 @@ func TestValidator(t *testing.T) {
 				Secret:   validSecret,
 			},
 			want:          veles.ValidationValid,
-			wantIsRam:     true,
+			wantIsRAM:     true,
 			wantPrincipal: "test-user", // Matches the mock server ARN suffix
 			server:        mockSTSServer(validAccessID, ""),
 		},
@@ -118,7 +118,7 @@ func TestValidator(t *testing.T) {
 				Secret:   validSecret,
 			},
 			want:          veles.ValidationValid,
-			wantIsRam:     false,
+			wantIsRAM:     false,
 			wantPrincipal: "root",
 			server: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,8 +160,8 @@ func TestValidator(t *testing.T) {
 			}
 
 			if got == veles.ValidationValid {
-				if tc.key.IsRamUser != tc.wantIsRam {
-					t.Errorf("IsRamUser = %v, want %v", tc.key.IsRamUser, tc.wantIsRam)
+				if tc.key.IsRAMUser != tc.wantIsRAM {
+					t.Errorf("IsRAMUser = %v, want %v", tc.key.IsRAMUser, tc.wantIsRAM)
 				}
 				if tc.key.PrincipalName != tc.wantPrincipal {
 					t.Errorf("PrincipalName = %q, want %q", tc.key.PrincipalName, tc.wantPrincipal)

@@ -23,12 +23,12 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	"github.com/google/osv-scalibr/enricher/ffa/baseimageattr"
-	govcsource "github.com/google/osv-scalibr/enricher/govulncheck/source"
 	"github.com/google/osv-scalibr/enricher/hcpidentity"
 	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
+	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
@@ -42,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/alibabaaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
@@ -97,23 +98,23 @@ var (
 
 	// LayerDetails enrichers.
 	LayerDetails = InitMap{
-		baseimage.Name: {noCFG(baseimage.NewDefault)},
+		baseimage.Name: {baseimage.New},
 	}
 
 	// License enrichers.
 	License = InitMap{
-		license.Name: {noCFG(license.New)},
+		license.Name: {license.New},
 	}
 
 	// VulnMatching enrichers.
 	VulnMatching = InitMap{
-		osvdev.Name:   {noCFG(osvdev.NewDefault)},
+		osvdev.Name:   {osvdev.New},
 		osvlocal.Name: {osvlocal.New},
 	}
 
 	// VEX related enrichers.
 	VEX = InitMap{
-		filter.Name: {noCFG(filter.New)},
+		filter.Name: {filter.New},
 	}
 
 	// SecretsValidate lists secret validators.
@@ -121,6 +122,7 @@ var (
 		fromVeles(alibabaaccesskey.NewValidator(), "secrets/alibabaaccesskeyvalidate", 0),
 		fromVeles(anthropicapikey.NewWorkspaceValidator(), "secrets/anthropicapikeyworkspacevalidate", 0),
 		fromVeles(anthropicapikey.NewModelValidator(), "secrets/anthropicapikeymodelvalidate", 0),
+		fromVeles(bitwardenoauth2access.NewValidator(), "secrets/bitwardenoauth2accessvalidate", 0),
 		fromVeles(digitaloceanapikey.NewValidator(), "secrets/digitaloceanapikeyvalidate", 0),
 		fromVeles(elasticcloudapikey.NewValidator(), "secrets/elasticcloudapikeyvalidate", 0),
 		fromVeles(pypiapitoken.NewValidator(), "secrets/pypiapitokenvalidate", 0),
@@ -188,18 +190,18 @@ var (
 
 	// SecretsEnrich lists enrichers that add data to detected secrets.
 	SecretsEnrich = InitMap{
-		hcpidentity.Name:      {noCFG(hcpidentity.New)},
-		herokuexpiration.Name: {noCFG(herokuexpiration.New)},
+		hcpidentity.Name:      {hcpidentity.New},
+		herokuexpiration.Name: {herokuexpiration.New},
 	}
 
 	// HuggingfaceMeta enricher.
 	HuggingfaceMeta = InitMap{
-		huggingfacemeta.Name: {noCFG(huggingfacemeta.New)},
+		huggingfacemeta.Name: {huggingfacemeta.New},
 	}
 
 	// Reachability enrichers.
 	Reachability = InitMap{
-		java.Name:       {noCFG(java.NewDefault)},
+		java.Name:       {java.New},
 		govcsource.Name: {govcsource.New},
 		rust.Name:       {rust.New},
 	}
@@ -217,7 +219,7 @@ var (
 
 	// FFA enrichers.
 	FFA = InitMap{
-		baseimage.Name:     {noCFG(baseimage.NewDefault)},
+		baseimage.Name:     {baseimage.New},
 		baseimageattr.Name: {baseimageattr.New},
 	}
 
@@ -270,12 +272,6 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.AppendSeq(make([][]InitFn, 0, len(initMap)), maps.Values(initMap))...)
 }
 
-// Wraps initer functions that don't take any config value to initer functions that do.
-// TODO(b/400910349): Remove once all plugins take config values.
-func noCFG(f func() enricher.Enricher) InitFn {
-	return func(_ *cpb.PluginConfig) (enricher.Enricher, error) { return f(), nil }
-}
-
 // EnricherFromName returns a single enricher based on its exact name.
 func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	initers, ok := enricherNames[name]
@@ -318,7 +314,7 @@ type velesPlugin struct {
 
 func fromVeles[S veles.Secret](validator veles.Validator[S], name string, version int) velesPlugin {
 	return velesPlugin{
-		initFunc: noCFG(convert.FromVelesValidator(validator, name, version)),
+		initFunc: convert.FromVelesValidator(validator, name, version),
 		name:     name,
 	}
 }

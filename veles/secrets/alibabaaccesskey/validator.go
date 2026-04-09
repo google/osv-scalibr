@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,10 +38,12 @@ const (
 	stsEndpoint = "https://sts.aliyuncs.com/"
 	apiVersion  = "2015-04-01"
 
-	// Common Alibaba Cloud API error codes for invalid credentials
-	CodeInvalidAccessKeyId = "InvalidAccessKeyId.NotFound"
-	CodeSignatureMismatch  = "SignatureDoesNotMatch"
-	CodeNoPermission       = "NoPermission"
+	// CodeInvalidAccessKeyID is the Alibaba Cloud API error code for invalid credentials.
+	CodeInvalidAccessKeyID = "InvalidAccessKeyId.NotFound"
+	// CodeSignatureMismatch is the Alibaba Cloud API error code for an invalid signature.
+	CodeSignatureMismatch = "SignatureDoesNotMatch"
+	// CodeNoPermission is the Alibaba Cloud API error code for lacking permissions.
+	CodeNoPermission = "NoPermission"
 )
 
 // Validator is a Veles Validator for Alibaba Cloud Access Keys
@@ -116,10 +119,10 @@ func (v *Validator) Validate(ctx context.Context, key *Credentials) (veles.Valid
 		if err := json.Unmarshal(bodyBytes, &success); err == nil {
 			// Logic to determine Root vs RAM and extract name
 			if strings.HasSuffix(success.Arn, ":root") {
-				key.IsRamUser = false
+				key.IsRAMUser = false
 				key.PrincipalName = "root"
 			} else {
-				key.IsRamUser = true
+				key.IsRAMUser = true
 				// Example: acs:ram::12345:user/saurabh-dev -> saurabh-dev
 				parts := strings.Split(success.Arn, "/")
 				if len(parts) > 1 {
@@ -142,7 +145,7 @@ func (v *Validator) Validate(ctx context.Context, key *Credentials) (veles.Valid
 	}
 
 	switch errResp.Code {
-	case CodeInvalidAccessKeyId, CodeSignatureMismatch:
+	case CodeInvalidAccessKeyID, CodeSignatureMismatch:
 		return veles.ValidationInvalid, nil
 	case CodeNoPermission:
 		return veles.ValidationValid, nil
@@ -195,7 +198,7 @@ func percentEncode(s string) string {
 func generateNonce() string {
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
-		return fmt.Sprintf("%d", time.Now().UnixNano()) // fallback
+		return strconv.FormatInt(time.Now().UnixNano(), 10)
 	}
 	return hex.EncodeToString(bytes)
 }

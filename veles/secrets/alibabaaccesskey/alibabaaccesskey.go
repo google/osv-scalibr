@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+// Package alibabaaccesskey provides a detector and validator for Alibaba Cloud access keys.
 // ref: https://www.alibabacloud.com/help/en/ram/user-guide/create-an-accesskey-pair
 package alibabaaccesskey
 
@@ -19,6 +21,6 @@ type Credentials struct {
 	AccessID string
 	Secret   string
 	// Metadata populated during validation
-	IsRamUser     bool
+	IsRAMUser     bool
 	PrincipalName string
 }

@@ -271,7 +271,7 @@ type fileLocations struct {
 
 func versionLessEqual(lower, upper string) (bool, error) {
 	// Version format looks like this: 3.7.1p2, 3.7, 3.2.3, 2.9p2
-	r, err := semantic.MustParse(lower, "Packagist").CompareStr(upper)
+	r, err := semantic.ParsePackagistVersion(lower).CompareStr(upper)
 
 	return r <= 0, err
 }

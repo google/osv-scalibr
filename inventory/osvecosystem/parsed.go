@@ -99,6 +99,7 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemAlpaquita,
 		osvconstants.EcosystemAlpine,
 		osvconstants.EcosystemAndroid,
+		osvconstants.EcosystemCleanStart,
 		osvconstants.EcosystemBellSoftHardenedContainers,
 		osvconstants.EcosystemBioconductor,
 		osvconstants.EcosystemBitnami,

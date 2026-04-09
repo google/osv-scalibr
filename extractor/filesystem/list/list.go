@@ -34,8 +34,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/nugetcpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
@@ -99,6 +101,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/spack"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/mise"
@@ -107,6 +110,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/bitwardenoauth2access"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/cloudflareapitoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/composerpackagist"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
@@ -289,6 +293,8 @@ var (
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
 		depsjson.Name:         {depsjson.New},
+		csproj.Name:           {csproj.New},
+		nugetcpm.Name:         {nugetcpm.New},
 		packagesconfig.Name:   {packagesconfig.New},
 		packageslockjson.Name: {packageslockjson.New},
 	}
@@ -326,6 +332,7 @@ var (
 		pacman.Name:     {pacman.New},
 		portage.Name:    {portage.New},
 		flatpak.Name:    {flatpak.New},
+		spack.Name:      {spack.New},
 		homebrew.Name:   {homebrew.New},
 		macapps.Name:    {macapps.New},
 		macports.Name:   {macports.New},
@@ -345,6 +352,7 @@ var (
 		codecommit.Name:              {codecommit.New},
 		bitbucket.Name:               {bitbucket.New},
 		cloudflareapitoken.Name:      {cloudflareapitoken.New},
+		bitwardenoauth2access.Name:   {bitwardenoauth2access.New},
 	}
 
 	// SecretDetectors for Detector interface.

@@ -95,7 +95,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		if !slices.Contains(p.Plugins, gobinary.Name) {
 			continue
 		}
-		for _, l := range p.Locations {
+		if l := p.Location.PathOrEmpty(); l != "" {
 			if scanned[l] {
 				continue
 			}

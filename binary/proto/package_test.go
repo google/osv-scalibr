@@ -28,7 +28,8 @@ import (
 
 var (
 	pkgOpts = []cmp.Option{
-		protocmp.IgnoreFields(&spb.Package{}, "id"),
+		// Ignore the non-deterministic ID and the legacy location field.
+		protocmp.IgnoreFields(&spb.Package{}, "id", "locations"),
 	}
 )
 
@@ -46,8 +47,8 @@ func TestPackageToProto(t *testing.T) {
 		},
 		{
 			desc: "success",
-			pkg:  purlDPKGAnnotationPackage,
-			want: purlDPKGAnnotationPackageProto,
+			pkg:  PurlDPKGAnnotationPackage(),
+			want: PurlDPKGAnnotationPackageProto(t),
 		},
 	}
 
@@ -66,7 +67,9 @@ func TestPackageToProto(t *testing.T) {
 				got.Id = ""
 			}
 
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+			opts := append([]cmp.Option{protocmp.Transform()}, pkgOpts...)
+
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Fatalf("PackageToProto(%v) returned diff (-want +got):\n%s", tc.pkg, diff)
 			}
 
@@ -80,7 +83,7 @@ func TestPackageToProto(t *testing.T) {
 			if err != nil {
 				t.Fatalf("PackageToStruct(%v) returned error %v, want nil", got, err)
 			}
-			if diff := cmp.Diff(tc.pkg, gotPB, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.pkg, gotPB, opts...); diff != "" {
 				t.Fatalf("PackageToStruct(%v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})
@@ -101,8 +104,8 @@ func TestPackageToStruct(t *testing.T) {
 		},
 		{
 			desc: "success",
-			pkg:  purlDPKGAnnotationPackageProto,
-			want: purlDPKGAnnotationPackage,
+			pkg:  PurlDPKGAnnotationPackageProto(t),
+			want: PurlDPKGAnnotationPackage(),
 		},
 	}
 
@@ -112,7 +115,9 @@ func TestPackageToStruct(t *testing.T) {
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("PackageToStruct(%v) returned error %v, want error %v", tc.pkg, err, tc.wantErr)
 			}
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+
+			opts := append([]cmp.Option{protocmp.Transform()}, pkgOpts...)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Fatalf("PackageToStruct(%v) returned diff (-want +got):\n%s", tc.pkg, diff)
 			}
 
@@ -128,7 +133,7 @@ func TestPackageToStruct(t *testing.T) {
 			}
 			// Ignore the ID field because it is randomly generated.
 			gotPB.Id = ""
-			if diff := cmp.Diff(tc.pkg, gotPB, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.pkg, gotPB, opts...); diff != "" {
 				t.Fatalf("PackageToProto(%v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})

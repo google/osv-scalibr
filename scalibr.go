@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -419,8 +420,13 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	// Actually convert it to absolute path here.
 	if storeAbsPath {
 		for _, pkg := range scanResult.Inventory.Packages {
-			for i := range pkg.Locations {
-				pkg.Locations[i] = "/" + pkg.Locations[i]
+			if pkg.Location.Descriptor != nil && pkg.Location.Descriptor.File != nil {
+				pkg.Location.Descriptor.File.Path = "/" + pkg.Location.Descriptor.File.Path
+			}
+			for _, r := range pkg.Location.Related {
+				if r.File != nil {
+					r.File.Path = "/" + r.File.Path
+				}
 			}
 		}
 	}
@@ -496,9 +502,7 @@ func CmpPackages(a, b *extractor.Package) int {
 		return res
 	}
 
-	aloc := fmt.Sprintf("%v", a.Locations)
-	bloc := fmt.Sprintf("%v", b.Locations)
-	return cmp.Compare(aloc, bloc)
+	return cmpLocation(a.Location, b.Location)
 }
 
 func cmpStatus(a, b *plugin.Status) int {
@@ -514,6 +518,27 @@ func cmpGenericFindings(a, b *inventory.GenericFinding) int {
 		return cmpString(a.Adv.ID.Reference, b.Adv.ID.Reference)
 	}
 	return cmpString(a.Target.Extra, b.Target.Extra)
+}
+
+func cmpLocation(a, b extractor.PackageLocation) int {
+	res := cmp.Compare(a.Descriptor.PathOrEmpty(), b.Descriptor.PathOrEmpty())
+	if res != 0 {
+		return res
+	}
+
+	res = cmp.Compare(len(a.Related), len(b.Related))
+	if res != 0 {
+		return res
+	}
+
+	l := len(a.Related)
+	aloc := make([]string, l)
+	bloc := make([]string, l)
+	for i := range l {
+		aloc[i] = a.Related[i].PathOrEmpty()
+		bloc[i] = b.Related[i].PathOrEmpty()
+	}
+	return cmpString(strings.Join(aloc, ","), strings.Join(bloc, ","))
 }
 
 func cmpString(a, b string) int {

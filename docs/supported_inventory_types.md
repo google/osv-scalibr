@@ -33,7 +33,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### OS packages
 
 | Inventory Type    | Details                        | Extractor Plugin                             |
-| ----------------- | ------------------------------ | -------------------------------------------- |
+|-------------------| ------------------------------ |----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
@@ -47,6 +47,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Kernel archives   | vmlinuz                        | `os/kernel/vmlinuz`                          |
 | Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
 | SNAP              |                                | `os/snap`                                    |
+| Spack             |                                | `os/spack`                                   |
 | Flatpak           |                                | `os/flatpak`                                 |
 | Homebrew          | OS X                           | `os/homebrew`                                |
 | MacPorts          | OS X                           | `os/macports`                                |
@@ -64,6 +65,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | packages.config                                   | `dotnet/packagesconfig`              |
 |            | deps.json                                         | `dotnet/depsjson`                    |
 |            | portable executables                              | `dotnet/pe`                          |
+|            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
+|            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
@@ -127,6 +130,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Bitwarden OAuth2 access token               | `secrets/bitwardenoauth2access`        |
 | Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
@@ -253,6 +257,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Detects vulnerability CVE-2020-11978 in Apache Airflow.                      | `cve/cve-2020-11978`                     |
 | Detects vulnerability CVE-2024-2912 in BentoML.                              | `cve/cve-2024-2912`                      |
 | Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway               | `cve/cve-2025-7775`                      |
+| Detects malicious NPM packages related to Canister worm                      | `cve/npm/canisterworm`                   |
 | Checks for whether code-server has authentication enabled.                   | `weakcredentials/codeserver`             |
 | Checks for weak passwords in /etc/shadow.                                    | `weakcredentials/etcshadow`              |
 | Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |
@@ -282,11 +287,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Finds vulns in Go source with reachability data using govulncheck. Requires a vulnmatch enricher to be enabled. | `reachability/go/source`            |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
 | Performs reachability analysis for Rust code. (Linux-only) *               | `reachability/rust`                 |
-| Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
+| Resolves transitive dependencies for Java pom.xml files. *                 | `transitivedependency/pomxml`       |
+| Resolves transitive dependencies for Python requirements.txt files.        | `transitivedependency/requirements` |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |
 | Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |
 
-Warning: Plugins marked with * use or mimic native toolchains.
-Any scripts or build-time logic defined within the project will run as-is.
-Please ensure you trust the source code before proceeding.
+Warning: Plugins marked with * are considered "unsafe" and require the
+`--allow-unsafe-plugins` flag. These plugins can be risky when run on untrusted
+artifacts as they may execute build-time logic defined within the project or
+follow external registries specified in the scanned artifacts.
+Please ensure you trust the source code and artifacts before proceeding.
