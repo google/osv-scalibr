@@ -486,6 +486,7 @@ func TestScanContainer(t *testing.T) {
 	testCases := []struct {
 		desc        string
 		chainLayers []image.ChainLayer
+		labels      map[string]string
 		want        *scalibr.ScanResult
 		wantErr     error
 	}{
@@ -493,6 +494,10 @@ func TestScanContainer(t *testing.T) {
 			desc: "Successful_scan_with_1_layer,_2_packages",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
+			},
+			labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
 			},
 			want: &scalibr.ScanResult{
 				Version: version.ScannerVersion,
@@ -524,6 +529,10 @@ func TestScanContainer(t *testing.T) {
 					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 						{
 							LayerMetadata: []*extractor.LayerMetadata{lm(0)},
+							Labels: map[string]string{
+								"label1": "value1",
+								"label2": "value2",
+							},
 						},
 					},
 				},
@@ -721,7 +730,7 @@ func TestScanContainer(t *testing.T) {
 				fakelayerbuilder.FakeTestLayersExtractor{},
 			}}
 
-			fi := fakeimage.New(tc.chainLayers)
+			fi := fakeimage.New(tc.chainLayers, tc.labels)
 			got, err := scalibr.New().ScanContainer(t.Context(), fi, &scanConfig)
 
 			if tc.wantErr != nil {
