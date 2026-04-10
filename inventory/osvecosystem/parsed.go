@@ -135,6 +135,7 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemSwiftURL,
 		osvconstants.EcosystemUbuntu,
 		osvconstants.EcosystemWolfi,
+		osvconstants.EcosystemDockerHardenedImages,
 		// GIT is a pseudo ecosystem that can be used in queries, so should be considered valid.
 		"GIT":
 

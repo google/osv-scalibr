@@ -243,6 +243,15 @@ func TestToEcosystem(t *testing.T) {
 				Suffix:    "11",
 			},
 		},
+		{
+			name: "dhi_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeDHI,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages),
+		},
 	}
 
 	for _, tt := range tests {

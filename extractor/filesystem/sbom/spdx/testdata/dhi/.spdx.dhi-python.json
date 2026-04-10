@@ -1,0 +1,36 @@
+{
+    "spdxVersion": "SPDX-2.3",
+    "dataLicense": "CC0-1.0",
+    "SPDXID": "SPDXRef-dhi-python",
+    "name": "SPDX document for dhi/python 3.14.3-debian13-dev",
+    "documentNamespace": "dhi-python-3.14.3-debian13-dev",
+    "creationInfo": {
+        "creators": [
+            "Organization: Docker, Inc.",
+            "Tool: dhi/build"
+        ],
+        "created": "1970-01-01T00:00:00Z"
+    },
+    "packages": [
+        {
+            "name": "dhi/python",
+            "SPDXID": "SPDXRef-dhi-python",
+            "versionInfo": "3.14.3-debian13-dev",
+            "supplier": "Organization: Docker, Inc.",
+            "originator": "Organization: Docker, Inc.",
+            "downloadLocation": "https://dhi.docker.com/catalog/python",
+            "filesAnalyzed": false,
+            "licenseConcluded": "NOASSERTION",
+            "licenseDeclared": "NOASSERTION",
+            "description": "A minimal Python image / Python 3.14.x (dev)",
+            "externalRefs": [
+                {
+                    "referenceCategory": "PACKAGE-MANAGER",
+                    "referenceType": "purl",
+                    "referenceLocator": "pkg:docker/dhi/python@3.14.3-debian13-dev?platform=linux%2Famd64\u0026os_name=debian\u0026os_version=13"
+                }
+            ],
+            "primaryPackagePurpose": "CONTAINER"
+        }
+    ]
+}
