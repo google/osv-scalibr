@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/google/osv-scalibr/common/io/discard"
 )
 
 // KeyValue represents a key-value pair from an APK record.
@@ -43,6 +45,10 @@ func NewScanner(r io.Reader) *Scanner {
 	return &Scanner{
 		scanner: bufio.NewScanner(r),
 	}
+}
+
+func (s *Scanner) DiscardLongLines() {
+	s.scanner.Split(discard.LongLines(bufio.MaxScanTokenSize))
 }
 
 // Scan reads from the scanner a single APK record.

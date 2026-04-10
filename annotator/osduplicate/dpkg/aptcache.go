@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/osv-scalibr/common/io/discard"
 	"github.com/google/osv-scalibr/fs"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pierrec/lz4/v4"
@@ -104,6 +105,7 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 	defer reader.Close()
 
 	scanner := bufio.NewScanner(reader)
+	scanner.Split(discard.LongLines(bufio.MaxScanTokenSize))
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		// Check if the start of this line contains a package name

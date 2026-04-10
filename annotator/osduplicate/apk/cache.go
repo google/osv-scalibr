@@ -186,6 +186,8 @@ func extractRepositoryIndex(root *fs.ScanRoot, filePath string, cache *mainOSPac
 		}
 
 		scanner := apkutil.NewScanner(tr)
+		scanner.DiscardLongLines()
+
 		for scanner.Scan() {
 			record := scanner.Record()
 			pkgName, ok := record["P"]
