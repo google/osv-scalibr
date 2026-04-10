@@ -284,7 +284,7 @@ ID="centos"
 -- etc/os-release --
 ID="amzn"
 -- etc/yum/yum.conf --
--- /var/cache/yum/aarch64/2/amzn2-core/primary.sqlite.gz --
+-- var/cache/yum/aarch64/2/amzn2-core/primary.sqlite.gz --
 -> testdata/yum-primary.sqlite.gz
 `,
 			want: &mainOSPackages{
@@ -306,7 +306,7 @@ ID="amzn"
 
 			got, err := extractMainPackages(root)
 			if !errors.Is(err, tt.wantErr) {
-				t.Errorf("extractYumMainRepos() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("extractMainPackages() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
@@ -316,7 +316,7 @@ ID="amzn"
 			}
 
 			if diff := cmp.Diff(tt.want, got, opts...); diff != "" {
-				t.Errorf("extractYumMainRepos() (-want +got): %v", diff)
+				t.Errorf("extractMainPackages() (-want +got): %v", diff)
 			}
 		})
 	}

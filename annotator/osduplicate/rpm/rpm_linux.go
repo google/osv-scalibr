@@ -123,7 +123,7 @@ func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs
 	}
 
 	for _, rpmPkg := range rpmPkgs {
-		if mainPackages != nil && mainPackages.Contains(rpmPkg) {
+		if mainPackages != nil && !mainPackages.Contains(rpmPkg) {
 			continue
 		}
 
