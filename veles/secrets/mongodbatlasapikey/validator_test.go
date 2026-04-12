@@ -34,7 +34,7 @@ const (
 
 // mockAtlasServer creates a mock MongoDB Atlas API server for testing.
 // It implements HTTP Digest Authentication.
-func mockAtlasServer(t *testing.T, expectedPublicKey, expectedPrivateKey string, authResponseCode int) *httptest.Server {
+func mockAtlasServer(t *testing.T, expectedPublicKey string, authResponseCode int) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +43,7 @@ func mockAtlasServer(t *testing.T, expectedPublicKey, expectedPrivateKey string,
 		if authHeader == "" {
 			// No auth header: return 401 with Digest challenge.
 			w.Header().Set("Www-Authenticate",
-				fmt.Sprintf(`Digest realm="MMS Public API", nonce="testnonce123", qop="auth", algorithm=MD5`))
+				`Digest realm="MMS Public API", nonce="testnonce123", qop="auth", algorithm=MD5`)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -138,7 +138,7 @@ func TestValidator(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var server *httptest.Server
 			if tc.serverExpectedKey != "" || tc.serverResponseCode != 0 {
-				server = mockAtlasServer(t, tc.serverExpectedKey, "", tc.serverResponseCode)
+				server = mockAtlasServer(t, tc.serverExpectedKey, tc.serverResponseCode)
 				defer server.Close()
 			}
 

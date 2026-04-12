@@ -33,7 +33,7 @@ const (
 // rePublicKey matches MongoDB Atlas public API keys with context labels.
 // Public keys are alphanumeric strings, typically 8 characters long.
 // Matches patterns like: public_api_key = "abcdefgh" or MONGODB_ATLAS_PUBLIC_KEY=abcdefgh
-var rePublicKey = regexp.MustCompile(`(?i)(?:public[_-]?api[_-]?key|MONGODB[_-]?ATLAS[_-]?PUBLIC[_-]?KEY)\s*[=:]\s*["']?([a-z0-9]{8})["']?`)
+var rePublicKey = regexp.MustCompile(`(?i)(?:public[_-]?api[_-]?key|MONGODB[_-]?ATLAS[_-]?PUBLIC[_-]?KEY)\s*[=:]\s*["']?([a-z0-9]{8})(?:[^a-z0-9]|$)`)
 
 // rePrivateKey matches MongoDB Atlas private API keys with context labels.
 // Private keys are UUIDs.
@@ -45,7 +45,7 @@ var rePrivateKey = regexp.MustCompile(`(?i)(?:private[_-]?api[_-]?key|MONGODB[_-
 func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: maxElementLen,
-		MaxDistance:    maxDistance,
+		MaxDistance:   maxDistance,
 		FindA:         findAllMatches(rePublicKey),
 		FindB:         findAllMatches(rePrivateKey),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {

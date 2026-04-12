@@ -17,6 +17,7 @@ package mongodbatlasapikey
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -87,7 +88,7 @@ func (v *Validator) Validate(ctx context.Context, secret APIKey) (veles.Validati
 
 	wwwAuth := resp.Header.Get("Www-Authenticate")
 	if wwwAuth == "" {
-		return veles.ValidationFailed, fmt.Errorf("missing Www-Authenticate header")
+		return veles.ValidationFailed, errors.New("missing Www-Authenticate header")
 	}
 
 	challenge, err := parseDigestChallenge(wwwAuth)
@@ -158,7 +159,7 @@ func parseDigestChallenge(header string) (*digestChallenge, error) {
 	}
 
 	if c.nonce == "" {
-		return nil, fmt.Errorf("missing nonce in digest challenge")
+		return nil, errors.New("missing nonce in digest challenge")
 	}
 
 	return c, nil
@@ -185,13 +186,13 @@ func computeDigestAuth(username, password, method, uri string, c *digestChalleng
 		fmt.Sprintf(`nonce="%s"`, c.nonce),
 		fmt.Sprintf(`uri="%s"`, uri),
 		fmt.Sprintf(`response="%s"`, response),
-		fmt.Sprintf(`algorithm=%s`, c.algorithm),
+		"algorithm=" + c.algorithm,
 	}
 
 	if strings.Contains(c.qop, "auth") {
 		parts = append(parts,
-			fmt.Sprintf(`qop=auth`),
-			fmt.Sprintf(`nc=%s`, nc),
+			"qop=auth",
+			"nc="+nc,
 			fmt.Sprintf(`cnonce="%s"`, cnonce),
 		)
 	}
