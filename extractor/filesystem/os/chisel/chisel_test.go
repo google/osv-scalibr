@@ -15,64 +15,30 @@
 package chisel_test
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	golog "log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/chisel"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	scalibrlog "github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     chisel.Config
-		wantCfg chisel.Config
-	}{
-		{
-			name: "default",
-			cfg:  chisel.DefaultConfig(),
-			wantCfg: chisel.Config{
-				MaxFileSizeBytes: 100 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: chisel.Config{
-				MaxFileSizeBytes: 10,
-			},
-			wantCfg: chisel.Config{
-				MaxFileSizeBytes: 10,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := chisel.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -95,10 +61,11 @@ func TestFileRequired(t *testing.T) {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = chisel.New(chisel.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := chisel.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("chisel.New: %v", err)
+			}
+			e.(*chisel.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -142,7 +109,7 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		cfg              chisel.Config
+		cfg              *cpb.PluginConfig
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -166,8 +133,8 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/chisel/openssl.wall"},
-					PURLType:  "deb",
+					Location: extractor.LocationFromPath("testdata/chisel/openssl.wall"),
+					PURLType: purl.TypeDebian,
 				},
 				{
 					Name:    "libc6",
@@ -181,8 +148,8 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/chisel/openssl.wall"},
-					PURLType:  "deb",
+					Location: extractor.LocationFromPath("testdata/chisel/openssl.wall"),
+					PURLType: purl.TypeDebian,
 				},
 				{
 					Name:    "libssl3t64",
@@ -196,8 +163,8 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/chisel/openssl.wall"},
-					PURLType:  "deb",
+					Location: extractor.LocationFromPath("testdata/chisel/openssl.wall"),
+					PURLType: purl.TypeDebian,
 				},
 				{
 					Name:    "openssl",
@@ -211,8 +178,8 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/chisel/openssl.wall"},
-					PURLType:  "deb",
+					Location: extractor.LocationFromPath("testdata/chisel/openssl.wall"),
+					PURLType: purl.TypeDebian,
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -251,8 +218,8 @@ func TestExtract(t *testing.T) {
 						Maintainer:     "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 						Architecture:   "amd64",
 					},
-					Locations: []string{"testdata/chisel/single.wall"},
-					PURLType:  "deb",
+					Location: extractor.LocationFromPath("testdata/chisel/single.wall"),
+					PURLType: purl.TypeDebian,
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -272,8 +239,8 @@ func TestExtract(t *testing.T) {
 						Maintainer:     "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 						Architecture:   "amd64",
 					},
-					Locations: []string{"testdata/chisel/single.wall"},
-					PURLType:  "deb",
+					Location: extractor.LocationFromPath("testdata/chisel/single.wall"),
+					PURLType: purl.TypeDebian,
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -293,8 +260,8 @@ func TestExtract(t *testing.T) {
 						Maintainer:        "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 						Architecture:      "amd64",
 					},
-					Locations: []string{"testdata/chisel/single.wall"},
-					PURLType:  "deb",
+					Location: extractor.LocationFromPath("testdata/chisel/single.wall"),
+					PURLType: purl.TypeDebian,
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -308,7 +275,6 @@ func TestExtract(t *testing.T) {
 			scalibrlog.SetLogger(logger)
 
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)
@@ -332,8 +298,16 @@ func TestExtract(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
 			}
 
-			e := chisel.New(defaultConfigWith(tt.cfg))
-			got, err := e.Extract(context.Background(), input)
+			cfg := tt.cfg
+			if cfg == nil {
+				cfg = &cpb.PluginConfig{}
+			}
+			e, err := chisel.New(cfg)
+			if err != nil {
+				t.Fatalf("chisel.New: %v", err)
+			}
+			e.(*chisel.Extractor).Stats = collector
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}
@@ -437,8 +411,8 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 				Maintainer:     "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
 				Architecture:   "amd64",
 			},
-			Locations: []string{path},
-			PURLType:  "deb",
+			Location: extractor.LocationFromPath(path),
+			PURLType: purl.TypeDebian,
 		},
 	}}
 
@@ -459,8 +433,11 @@ func TestExtractNonexistentOSRelease(t *testing.T) {
 	// Note that we didn't create any OS release file.
 	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
 
-	e := chisel.New(chisel.DefaultConfig())
-	got, err := e.Extract(context.Background(), input)
+	e, err := chisel.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("chisel.New: %v", err)
+	}
+	got, err := e.Extract(t.Context(), input)
 	if err != nil {
 		t.Fatalf("Extract(%s) error: %v", path, err)
 	}
@@ -476,19 +453,4 @@ func createOsRelease(t *testing.T, root string, content string) {
 	if err != nil {
 		t.Fatalf("write to %s: %v\n", filepath.Join(root, "etc/os-release"), err)
 	}
-}
-
-// defaultConfigWith combines any non-zero fields of cfg with packagejson.DefaultConfig().
-func defaultConfigWith(cfg chisel.Config) chisel.Config {
-	newCfg := chisel.DefaultConfig()
-
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-
-	return newCfg
 }

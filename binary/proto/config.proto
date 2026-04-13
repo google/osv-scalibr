@@ -108,6 +108,7 @@ message PluginSpecificConfig {
     HCPIdentityConfig hcp_identity = 73;
     HerokuExpirationConfig heroku_expiration = 74;
     HuggingfaceMetaConfig huggingface_meta = 75;
+    ChiselConfig chisel = 76;
   }
 }
 
@@ -556,4 +557,11 @@ message QCOW2Config {
   int64 max_file_size_bytes = 1;
   // The password the plugin requires to extract the encrypted .qcow2 file
   string password = 2;
+}
+
+message ChiselConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
 }
