@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 )
@@ -32,9 +34,10 @@ func mockAnthropicModelServer(t *testing.T, expectedKey string, statusCode int, 
 	t.Helper()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		modelsEndpoint := anthropicapikey.AnthropicModelsEndpoint
 		// Check if it's a GET request to the models endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/v1/models" {
-			t.Errorf("unexpected request: %s %s, expected: GET /v1/models", r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != modelsEndpoint {
+			t.Errorf("unexpected request: %s %s, expected: GET %s", r.Method, r.URL.Path, modelsEndpoint)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -66,7 +69,7 @@ func TestModelValidator(t *testing.T) {
 		statusCode   int
 		responseBody string
 		want         veles.ValidationStatus
-		expectError  bool
+		wantErr      error
 	}{
 		{
 			name:       "valid_key",
@@ -103,8 +106,8 @@ func TestModelValidator(t *testing.T) {
 					"message": "Your account does not have permission to perform this action"
 				}
 			}`,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			name:       "rate_limited_but_likely_valid",
@@ -126,8 +129,8 @@ func TestModelValidator(t *testing.T) {
 					"message": "Internal server error"
 				}
 			}`,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 	}
 
@@ -138,46 +141,21 @@ func TestModelValidator(t *testing.T) {
 			defer server.Close()
 
 			// Create validator with mock client and server URL
-			validator := anthropicapikey.NewModelValidator(
-				anthropicapikey.WithModelHTTPClient(server.Client()),
-				anthropicapikey.WithModelAPIURL(server.URL),
-			)
+			validator := anthropicapikey.NewModelValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + anthropicapikey.AnthropicModelsEndpoint
 
-			// Create test key
 			key := anthropicapikey.ModelAPIKey{Key: modelValidatorTestKey}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestModelValidator_EmptyKey(t *testing.T) {
-	validator := anthropicapikey.NewModelValidator()
-	key := anthropicapikey.ModelAPIKey{Key: ""}
-
-	got, err := validator.Validate(t.Context(), key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error for empty key, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

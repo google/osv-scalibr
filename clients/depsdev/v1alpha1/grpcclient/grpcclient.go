@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 
 	pb "deps.dev/api/v3alpha"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
+
+var connections = make(map[string]*grpc.ClientConn, 0)
+var connectionsMu sync.Mutex
 
 const (
 	address = "api.deps.dev:443"
@@ -56,8 +60,15 @@ func New(cfg *Config) (pb.InsightsClient, error) {
 		return nil, fmt.Errorf("address is empty: %w", ErrMalformedConfig)
 	}
 
+	connectionsMu.Lock()
+	defer connectionsMu.Unlock()
+	if conn, ok := connections[cfg.Address]; ok {
+		return pb.NewInsightsClient(conn), nil
+	}
+
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
+		//nolint:gocritic // No need to unlock before exiting, as we are exiting immediately.
 		log.Fatalf("Getting system cert pool: %v", err)
 	}
 	creds := credentials.NewClientTLSFromCert(certPool, "")
@@ -66,6 +77,8 @@ func New(cfg *Config) (pb.InsightsClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	connections[cfg.Address] = conn
 
 	client := pb.NewInsightsClient(conn)
 	return client, nil

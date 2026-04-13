@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,8 +23,13 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
 
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Person represents a person field in a javascript package.json file.
 type Person struct {
@@ -32,6 +37,22 @@ type Person struct {
 	Email string `json:"email"`
 	URL   string `json:"url"`
 }
+
+// NPMPackageSource is the source of the NPM package.
+type NPMPackageSource string
+
+const (
+	// Unknown is when the source of the NPM package is unknown because the lockfile was not found.
+	Unknown NPMPackageSource = "UNKNOWN"
+	// PublicRegistry is the public NPM registry.
+	PublicRegistry NPMPackageSource = "PUBLIC_REGISTRY"
+	// Other is any other remote or private source (e.g. GitHub).
+	// This is used for packages that are not found in the public NPM registry.
+	Other NPMPackageSource = "OTHER"
+	// Local is the local filesystem that stores the package versions.
+	// This is used for when the package is locally-developed or -installed.
+	Local NPMPackageSource = "LOCAL"
+)
 
 // match example: "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me)"
 // ---> name: "Isaac Z. Schlueter" email: "i@izs.me" url: "http://blog.izs.me"
@@ -109,43 +130,61 @@ type JavascriptPackageJSONMetadata struct {
 	// was resolved from the official NPM registry during installation. If false, it means the package
 	// was either installed from a local path, a git repository, or another private registry.
 	// This is to identify name collisions between locally published packages and official NPM packages.
-	FromNPMRepository bool
+	Source NPMPackageSource
 }
 
-// SetProto sets the JavascriptMetadata field in the Package proto.
-func (m *JavascriptPackageJSONMetadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_JavascriptMetadata{
-		JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
-			Author:            m.Author.PersonString(),
-			Contributors:      personsToProto(m.Contributors),
-			Maintainers:       personsToProto(m.Maintainers),
-			FromNpmRepository: m.FromNPMRepository,
-		},
+// ToProto converts the Metadata struct to a JavascriptPackageJSONMetadata proto.
+func ToProto(m *JavascriptPackageJSONMetadata) *pb.JavascriptPackageJSONMetadata {
+	return &pb.JavascriptPackageJSONMetadata{
+		Author:       m.Author.PersonString(),
+		Contributors: personsToProto(m.Contributors),
+		Maintainers:  personsToProto(m.Maintainers),
+		Source:       m.Source.ToProto(),
 	}
 }
+
+// IsProtoable marks the struct as a metadata type.
+func (m *JavascriptPackageJSONMetadata) IsProtoable() {}
 
 // ToStruct converts the JavascriptPackageJSONMetadata proto to a Metadata struct.
 func ToStruct(m *pb.JavascriptPackageJSONMetadata) *JavascriptPackageJSONMetadata {
-	if m == nil {
-		return nil
-	}
-
 	var author *Person
 	if m.GetAuthor() != "" {
 		author = PersonFromString(m.GetAuthor())
 	}
+
 	return &JavascriptPackageJSONMetadata{
-		Author:            author,
-		Maintainers:       personsToStruct(m.GetMaintainers()),
-		Contributors:      personsToStruct(m.GetContributors()),
-		FromNPMRepository: m.GetFromNpmRepository(),
+		Author:       author,
+		Maintainers:  personsToStruct(m.GetMaintainers()),
+		Contributors: personsToStruct(m.GetContributors()),
+		Source:       packageSourceToStruct(m.GetSource()),
+	}
+}
+
+// ToProto converts the NPMPackageSource to the proto enum.
+func (source NPMPackageSource) ToProto() pb.PackageSource {
+	switch source {
+	case PublicRegistry:
+		return pb.PackageSource_PUBLIC_REGISTRY
+	case Local:
+		return pb.PackageSource_LOCAL
+	case Other:
+		return pb.PackageSource_OTHER
+	default:
+		return pb.PackageSource_UNKNOWN
+	}
+}
+
+func packageSourceToStruct(ps pb.PackageSource) NPMPackageSource {
+	switch ps {
+	case pb.PackageSource_PUBLIC_REGISTRY:
+		return PublicRegistry
+	case pb.PackageSource_OTHER:
+		return Other
+	case pb.PackageSource_LOCAL:
+		return Local
+	default:
+		return Unknown
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/purl"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 func TestToPURL(t *testing.T) {
@@ -58,10 +58,10 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "python_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypePyPi,
@@ -72,12 +72,12 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "npm_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypeNPM,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPath("location"),
 				Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
-					FromNPMRepository: false,
+					Source: javascriptmeta.Unknown,
 				},
 			},
 			want: &purl.PackageURL{
@@ -89,10 +89,10 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "hex_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypeHex,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeHex,
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeHex,
@@ -114,7 +114,7 @@ func TestToPURL(t *testing.T) {
 					},
 					CPEs: []string{},
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypePyPi,
@@ -137,7 +137,7 @@ func TestToPURL(t *testing.T) {
 					},
 					CPEs: []string{},
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeCargo,
@@ -156,7 +156,7 @@ func TestToPURL(t *testing.T) {
 					PackageName:       "pkg-name",
 					OSVersionCodename: "jammy",
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeDebian,
@@ -178,7 +178,7 @@ func TestToPURL(t *testing.T) {
 					PackageName:       "pkg-name",
 					OSVersionCodename: "jammy",
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeOpkg,
@@ -223,7 +223,7 @@ func TestToEcosystem(t *testing.T) {
 				Version:  "version",
 				PURLType: purl.TypeGolang,
 			},
-			want: osvecosystem.FromEcosystem(osvschema.EcosystemGo),
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
 		},
 		{
 			name: "os_ecosystem",
@@ -239,9 +239,18 @@ func TestToEcosystem(t *testing.T) {
 				},
 			},
 			want: osvecosystem.Parsed{
-				Ecosystem: osvschema.EcosystemDebian,
+				Ecosystem: osvconstants.EcosystemDebian,
 				Suffix:    "11",
 			},
+		},
+		{
+			name: "dhi_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeDHI,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages),
 		},
 	}
 

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,14 +55,14 @@ func NewVulnList(vulns []resolution.Vulnerability, preamble string, detailsRende
 	slices.SortFunc(vulns, func(a, b resolution.Vulnerability) int {
 		return cmp.Or(
 			-cmp.Compare(severityScore(a), severityScore(b)),
-			cmp.Compare(a.OSV.ID, b.OSV.ID),
+			cmp.Compare(a.OSV.Id, b.OSV.Id),
 		)
 	})
 	items := make([]list.Item, 0, len(vulns))
 	delegate := vulnListItemDelegate{idWidth: 0}
 	for _, v := range vulns {
 		items = append(items, vulnListItem{v})
-		if w := lipgloss.Width(v.OSV.ID); w > delegate.idWidth {
+		if w := lipgloss.Width(v.OSV.Id); w > delegate.idWidth {
 			delegate.idWidth = w
 		}
 	}
@@ -180,7 +180,7 @@ type vulnListItem struct {
 }
 
 func (v vulnListItem) FilterValue() string {
-	return v.OSV.ID
+	return v.OSV.Id
 }
 
 type vulnListItemDelegate struct {
@@ -202,7 +202,7 @@ func (d vulnListItemDelegate) Render(w io.Writer, m list.Model, index int, listI
 		cursor = SelectedTextStyle.Render(">")
 		idStyle = idStyle.Inherit(SelectedTextStyle)
 	}
-	id := idStyle.Render(vuln.OSV.ID)
+	id := idStyle.Render(vuln.OSV.Id)
 	severity := RenderSeverityShort(vuln.OSV.Severity)
 	str := fmt.Sprintf("%s %s  %s  ", cursor, id, severity)
 	fmt.Fprint(w, str)

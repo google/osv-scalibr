@@ -1,0 +1,80 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package plugger contain the logic to find un-registered plugins
+package plugger
+
+import (
+	"fmt"
+	"slices"
+
+	"golang.org/x/tools/go/packages"
+)
+
+// Name is the name of the linter
+var Name = "plugger"
+
+// Config is the config used by the linter
+var Config = &packages.Config{
+	Mode:  packages.NeedName | packages.NeedFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
+	Tests: false,
+}
+
+// Run returns a list of plugins that are not registered.
+//
+// Logic:
+//
+//  1. Find all interfaces matching iPattern.
+//
+//  2. Identify all functions returning those interfaces/their implementation for each pkg.
+//
+//  3. Each constructor must be called at least once outside of the pkg. Note:
+//
+//     Functions inside a package with a common prefix are considered aliases
+//
+//     If no function is called the plugin is considered not registered.
+func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) {
+	pkgs, err := packages.Load(Config, pkgsPattern...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load packages: %w", err)
+	}
+
+	pkgs = FilterNoLintPackages(pkgs)
+	interfaces := FindInterfaces(pkgs, interfaceNames)
+	if len(interfaceNames) != len(interfaces) {
+		return nil, fmt.Errorf("%d interfaces are specified but only %d are found: %v",
+			len(interfaceNames), len(interfaces), interfaces,
+		)
+	}
+	ctrs := FindConstructors(pkgs, interfaces)
+	used := FindUsages(pkgs, ctrs)
+	return notUsed(ctrs, used), nil
+}
+
+// FilterNoLintPackages filters out pkgs which have a nolint directive
+func FilterNoLintPackages(pkgs []*packages.Package) []*packages.Package {
+	return slices.DeleteFunc(pkgs, func(pkg *packages.Package) bool {
+		for _, f := range pkg.Syntax {
+			for _, cg := range f.Comments {
+				if cg.Pos() >= f.Package {
+					break
+				}
+				if hasNoLint(cg, Name) {
+					return true
+				}
+			}
+		}
+		return false
+	})
+}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -37,6 +38,7 @@ import (
 	cf "github.com/google/osv-scalibr/extractor/filesystem/secrets/convert"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
@@ -49,7 +51,27 @@ import (
 	"github.com/google/osv-scalibr/version"
 	"github.com/mohae/deepcopy"
 	"github.com/opencontainers/go-digest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
+
+func fromVelesDetector(t *testing.T, d veles.Detector, name string, ver int) plugin.Plugin {
+	t.Helper()
+	p, err := cf.FromVelesDetector(d, name, ver)(nil)
+	if err != nil {
+		t.Fatalf("Failed to create plugin from Veles detector: %v", err)
+	}
+	return p
+}
+
+func fromVelesValidator[S veles.Secret](t *testing.T, v veles.Validator[S], name string, ver int) plugin.Plugin {
+	t.Helper()
+	p, err := ce.FromVelesValidator(v, name, ver)(nil)
+	if err != nil {
+		t.Fatalf("Failed to create plugin from Veles validator: %v", err)
+	}
+	return p
+}
 
 func TestScan(t *testing.T) {
 	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
@@ -60,7 +82,10 @@ func TestScan(t *testing.T) {
 	pluginFailure := "failed to run plugin"
 	extFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
-		FailureReason: "file.txt: " + pluginFailure,
+		FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+		FileErrors: []*plugin.FileError{
+			{FilePath: "file.txt", ErrorMessage: pluginFailure},
+		},
 	}
 	detFailure := &plugin.ScanStatus{
 		Status:        plugin.ScanStatusFailed,
@@ -75,6 +100,7 @@ func TestScan(t *testing.T) {
 	fs := scalibrfs.DirFS(tmp)
 	tmpRoot := []*scalibrfs.ScanRoot{{FS: fs, Path: tmp}}
 	_ = os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
+	_ = os.WriteFile(filepath.Join(tmp, "config"), []byte("Content"), 0644)
 
 	pkgName := "software"
 	fakeExtractor := fe.New(
@@ -82,9 +108,16 @@ func TestScan(t *testing.T) {
 		map[string]fe.NamesErr{"file.txt": {Names: []string{pkgName}, Err: nil}},
 	)
 	pkg := &extractor.Package{
-		Name:      pkgName,
-		Locations: []string{"file.txt"},
-		Plugins:   []string{fakeExtractor.Name()},
+		Name:     pkgName,
+		Location: extractor.LocationFromPath("file.txt"),
+		ScanRoot: tmp,
+		Plugins:  []string{fakeExtractor.Name()},
+	}
+	pkgWithAbsolutePath := &extractor.Package{
+		Name:     pkgName,
+		Location: extractor.LocationFromPath(filepath.Join(tmp, "file.txt")),
+		ScanRoot: tmp,
+		Plugins:  []string{fakeExtractor.Name()},
 	}
 	withLayerMetadata := func(pkg *extractor.Package, ld *extractor.LayerMetadata) *extractor.Package {
 		pkg = deepcopy.Copy(pkg).(*extractor.Package)
@@ -162,7 +195,7 @@ func TestScan(t *testing.T) {
 		want *scalibr.ScanResult
 	}{
 		{
-			desc: "Successful scan",
+			desc: "Successful_scan",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fakeExtractor,
@@ -188,7 +221,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Global error",
+			desc: "Global_error",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					// Will error due to duplicate non-identical Advisories.
@@ -212,7 +245,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Extractor plugin failed",
+			desc: "Extractor_plugin_failed",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fe.New("python/wheelegg", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: nil, Err: errors.New(pluginFailure)}}),
@@ -236,7 +269,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Detector plugin failed",
+			desc: "Detector_plugin_failed",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fakeExtractor,
@@ -257,7 +290,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Enricher plugin failed",
+			desc: "Enricher_plugin_failed",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fakeExtractor,
@@ -283,7 +316,7 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "Missing scan roots causes error",
+			desc: "Missing_scan_roots_causes_error",
 			cfg: &scalibr.ScanConfig{
 				Plugins:   []plugin.Plugin{fakeExtractor},
 				ScanRoots: []*scalibrfs.ScanRoot{},
@@ -297,10 +330,28 @@ func TestScan(t *testing.T) {
 			},
 		},
 		{
-			desc: "One Veles secret detector",
+			desc: "Store_absolute_paths",
+			cfg: &scalibr.ScanConfig{
+				Plugins:           []plugin.Plugin{fakeExtractor},
+				ScanRoots:         tmpRoot,
+				StoreAbsolutePath: true,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "python/wheelegg", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Packages: []*extractor.Package{pkgWithAbsolutePath},
+				},
+			},
+		},
+		{
+			desc: "One_Veles_secret_detector",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
-					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
+					fromVelesDetector(t, fakeSecretDetector1, "secret-detector", 1),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -311,16 +362,16 @@ func TestScan(t *testing.T) {
 					{Name: "secrets/veles", Version: 1, Status: success},
 				},
 				Inventory: inventory.Inventory{
-					Secrets: []*inventory.Secret{{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"}},
+					Secrets: []*inventory.Secret{{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("file.txt")}},
 				},
 			},
 		},
 		{
-			desc: "Two Veles secret detectors",
+			desc: "Two_Veles_secret_detectors",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
-					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector-1", 1)(),
-					cf.FromVelesDetector(fakeSecretDetector2, "secret-detector-2", 2)(),
+					fromVelesDetector(t, fakeSecretDetector1, "secret-detector-1", 1),
+					fromVelesDetector(t, fakeSecretDetector2, "secret-detector-2", 2),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -332,18 +383,18 @@ func TestScan(t *testing.T) {
 				},
 				Inventory: inventory.Inventory{
 					Secrets: []*inventory.Secret{
-						{Secret: velestest.NewFakeStringSecret("Con"), Location: "file.txt"},
-						{Secret: velestest.NewFakeStringSecret("tent"), Location: "file.txt"},
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("file.txt")},
+						{Secret: velestest.NewFakeStringSecret("tent"), Location: location.FromPath("file.txt")},
 					},
 				},
 			},
 		},
 		{
-			desc: "Veles secret detector with validation",
+			desc: "Veles_secret_detector_with_validation",
 			cfg: &scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
-					cf.FromVelesDetector(fakeSecretDetector1, "secret-detector", 1)(),
-					ce.FromVelesValidator(fakeSecretValidator1, "secret-validator", 1)(),
+					fromVelesDetector(t, fakeSecretDetector1, "secret-detector", 1),
+					fromVelesValidator(t, fakeSecretValidator1, "secret-validator", 1),
 				},
 				ScanRoots: tmpRoot,
 			},
@@ -357,9 +408,38 @@ func TestScan(t *testing.T) {
 				Inventory: inventory.Inventory{
 					Secrets: []*inventory.Secret{{
 						Secret:     velestest.NewFakeStringSecret("Con"),
-						Location:   "file.txt",
+						Location:   location.FromPath("file.txt"),
 						Validation: inventory.SecretValidationResult{Status: veles.ValidationValid},
 					}},
+				},
+			},
+		},
+		{
+			desc: "Veles_secret_detector_with_extractor",
+			cfg: &scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					// use the fakeSecretDetector1 also on config files
+					cf.FromVelesDetectorWithRequire(
+						fakeSecretDetector1, "secret-detector", 1,
+						func(fa filesystem.FileAPI) bool {
+							return strings.HasSuffix(fa.Path(), "config")
+						},
+					),
+				},
+				ScanRoots: tmpRoot,
+			},
+			want: &scalibr.ScanResult{
+				Version: version.ScannerVersion,
+				Status:  success,
+				PluginStatus: []*plugin.Status{
+					{Name: "secret-detector", Version: 1, Status: success},
+					{Name: "secrets/veles", Version: 1, Status: success},
+				},
+				Inventory: inventory.Inventory{
+					Secrets: []*inventory.Secret{
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("file.txt")},
+						{Secret: velestest.NewFakeStringSecret("Con"), Location: location.FromPath("config")},
+					},
 				},
 			},
 		},
@@ -376,7 +456,14 @@ func TestScan(t *testing.T) {
 			// Ignore timestamps.
 			ignoreFields := cmpopts.IgnoreFields(inventory.SecretValidationResult{}, "At")
 
-			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields); diff != "" {
+			ignorePackageOrder := cmpopts.SortSlices(func(a, b *extractor.Package) bool {
+				return a.Location.Descriptor.File.Path < b.Location.Descriptor.File.Path
+			})
+			ignoreSecretOrder := cmpopts.SortSlices(func(a, b *inventory.Secret) bool {
+				return a.Location.File.Path < b.Location.File.Path
+			})
+
+			if diff := cmp.Diff(tc.want, got, fe.AllowUnexported, ignoreFields, ignorePackageOrder, ignoreSecretOrder); diff != "" {
 				t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", tc.cfg, diff)
 			}
 		})
@@ -399,13 +486,18 @@ func TestScanContainer(t *testing.T) {
 	testCases := []struct {
 		desc        string
 		chainLayers []image.ChainLayer
+		labels      map[string]string
 		want        *scalibr.ScanResult
 		wantErr     error
 	}{
 		{
-			desc: "Successful scan with 1 layer, 2 packages",
+			desc: "Successful_scan_with_1_layer,_2_packages",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
+			},
+			labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
 			},
 			want: &scalibr.ScanResult{
 				Version: version.ScannerVersion,
@@ -421,14 +513,14 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "bar",
-							Locations:     []string{"bar.txt"},
+							Location:      extractor.LocationFromPath("bar.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -437,13 +529,17 @@ func TestScanContainer(t *testing.T) {
 					ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 						{
 							LayerMetadata: []*extractor.LayerMetadata{lm(0)},
+							Labels: map[string]string{
+								"label1": "value1",
+								"label2": "value2",
+							},
 						},
 					},
 				},
 			},
 		},
 		{
-			desc: "Successful scan with 2 layers, 1 package deleted in last layer",
+			desc: "Successful_scan_with_2_layers,_1_package_deleted_in_last_layer",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -462,7 +558,7 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -477,7 +573,7 @@ func TestScanContainer(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scan with 3 layers, package readded in last layer",
+			desc: "Successful_scan_with_3_layers,_package_readded_in_last_layer",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -497,14 +593,14 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "baz",
-							Locations:     []string{"baz.txt"},
+							Location:      extractor.LocationFromPath("baz.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(2),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -519,7 +615,7 @@ func TestScanContainer(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scan with 4 layers",
+			desc: "Successful_scan_with_4_layers",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -540,21 +636,21 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "bar",
-							Locations:     []string{"bar.txt"},
+							Location:      extractor.LocationFromPath("bar.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(3),
 						},
 						{
 							Name:          "baz",
-							Locations:     []string{"baz.txt"},
+							Location:      extractor.LocationFromPath("baz.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(2),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
@@ -569,7 +665,7 @@ func TestScanContainer(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scan with 5 layers",
+			desc: "Successful_scan_with_5_layers",
 			chainLayers: []image.ChainLayer{
 				fakeChainLayers[0],
 				fakeChainLayers[1],
@@ -591,28 +687,28 @@ func TestScanContainer(t *testing.T) {
 					Packages: []*extractor.Package{
 						{
 							Name:          "bar",
-							Locations:     []string{"bar.txt"},
+							Location:      extractor.LocationFromPath("bar.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(3),
 						},
 						{
 							Name:          "baz",
-							Locations:     []string{"baz.txt"},
+							Location:      extractor.LocationFromPath("baz.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(2),
 						},
 						{
 							Name:          "foo",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(0),
 						},
 						{
 							Name:          "foo2",
-							Locations:     []string{"foo.txt"},
+							Location:      extractor.LocationFromPath("foo.txt"),
 							PURLType:      "generic",
 							Plugins:       []string{"fake/layerextractor"},
 							LayerMetadata: lm(4),
@@ -634,7 +730,7 @@ func TestScanContainer(t *testing.T) {
 				fakelayerbuilder.FakeTestLayersExtractor{},
 			}}
 
-			fi := fakeimage.New(tc.chainLayers)
+			fi := fakeimage.New(tc.chainLayers, tc.labels)
 			got, err := scalibr.New().ScanContainer(t.Context(), fi, &scanConfig)
 
 			if tc.wantErr != nil {
@@ -673,11 +769,11 @@ func TestScan_ExtractorOverride(t *testing.T) {
 	e4 := fe.NewDirExtractor("e4", 1, []string{"dir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg4"}}})
 	e5 := fe.NewDirExtractor("e5", 1, []string{"notdir"}, map[string]fe.NamesErr{"dir": {Names: []string{"pkg5"}}})
 
-	pkg1 := &extractor.Package{Name: "pkg1", Locations: []string{"file1"}, Plugins: []string{"e1"}}
-	pkg2 := &extractor.Package{Name: "pkg2", Locations: []string{"file2"}, Plugins: []string{"e2"}}
-	pkg3 := &extractor.Package{Name: "pkg3", Locations: []string{"file2"}, Plugins: []string{"e3"}}
-	pkg4 := &extractor.Package{Name: "pkg4", Locations: []string{"dir"}, Plugins: []string{"e4"}}
-	pkg5 := &extractor.Package{Name: "pkg5", Locations: []string{"dir"}, Plugins: []string{"e5"}}
+	pkg1 := &extractor.Package{Name: "pkg1", Location: extractor.LocationFromPath("file1"), ScanRoot: tmp, Plugins: []string{"e1"}}
+	pkg2 := &extractor.Package{Name: "pkg2", Location: extractor.LocationFromPath("file2"), ScanRoot: tmp, Plugins: []string{"e2"}}
+	pkg3 := &extractor.Package{Name: "pkg3", Location: extractor.LocationFromPath("file2"), ScanRoot: tmp, Plugins: []string{"e3"}}
+	pkg4 := &extractor.Package{Name: "pkg4", Location: extractor.LocationFromPath("dir"), ScanRoot: tmp, Plugins: []string{"e4"}}
+	pkg5 := &extractor.Package{Name: "pkg5", Location: extractor.LocationFromPath("dir"), ScanRoot: tmp, Plugins: []string{"e5"}}
 
 	tests := []struct {
 		name              string
@@ -790,7 +886,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			name: "empty",
 		},
 		{
-			name: "no required extractors",
+			name: "no_required_extractors",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo"),
@@ -799,7 +895,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo"},
 		},
 		{
-			name: "required extractor in already enabled",
+			name: "required_extractor_in_already_enabled",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
@@ -809,7 +905,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo", "bar/baz"},
 		},
 		{
-			name: "auto-loaded required extractor",
+			name: "auto-loaded_required_extractor",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
@@ -818,7 +914,7 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo", "python/wheelegg"},
 		},
 		{
-			name: "auto-loaded required extractor by enricher",
+			name: "auto-loaded_required_extractor_by_enricher",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fen.MustNew(t, &fen.Config{Name: "foo", RequiredPlugins: []string{"python/wheelegg"}}),
@@ -827,11 +923,21 @@ func TestEnableRequiredPlugins(t *testing.T) {
 			wantPlugins: []string{"foo", "python/wheelegg"},
 		},
 		{
-			name: "required extractor doesn't exist",
+			name: "required_extractor_doesn't_exist",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					fd.New().WithName("foo").WithRequiredExtractors("bar/baz"),
 				},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			name: "explicit_plugins_enabled",
+			cfg: scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					fd.New().WithName("foo").WithRequiredExtractors("python/wheelegg"),
+				},
+				ExplicitPlugins: true,
 			},
 			wantErr: cmpopts.AnyError,
 		},
@@ -893,7 +999,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 		wantErr error
 	}{
 		{
-			desc: "requirements satisfied",
+			desc: "requirements_satisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
@@ -915,7 +1021,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "one detector's requirements unsatisfied",
+			desc: "one_detector's_requirements_unsatisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
@@ -929,7 +1035,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "one enrichers's requirements unsatisfied",
+			desc: "one_enrichers's_requirements_unsatisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
@@ -950,7 +1056,7 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
-			desc: "both plugin's requirements unsatisfied",
+			desc: "both_plugin's_requirements_unsatisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
 					&fakeExNeedsNetwork{},
@@ -1036,15 +1142,21 @@ func TestAnnotator(t *testing.T) {
 		map[string]fe.NamesErr{"tmp/file.txt": {Names: []string{pkgName}, Err: nil}},
 	)
 
+	anno, err := cachedir.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cfg := &scalibr.ScanConfig{
-		Plugins:   []plugin.Plugin{fakeExtractor, cachedir.New()},
+		Plugins:   []plugin.Plugin{fakeExtractor, anno},
 		ScanRoots: tmpRoot,
 	}
 
 	wantPkgs := []*extractor.Package{{
-		Name:      pkgName,
-		Locations: []string{"tmp/file.txt"},
-		Plugins:   []string{fakeExtractor.Name()},
+		Name:     pkgName,
+		Location: extractor.LocationFromPath("tmp/file.txt"),
+		ScanRoot: tmp,
+		Plugins:  []string{fakeExtractor.Name()},
 		ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 			Plugin:          cachedir.Name,
 			Justification:   vex.ComponentNotPresent,

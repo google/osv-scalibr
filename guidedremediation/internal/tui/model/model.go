@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -91,10 +91,7 @@ func (m Model) setTermSize(w, h int) Model {
 	m.termHeight = h
 
 	// The internal rendering space of the views occupy a percentage of the terminal width
-	viewWidth := int(float64(w) * components.ViewWidthPct)
-	if viewWidth < components.ViewMinWidth {
-		viewWidth = components.ViewMinWidth
-	}
+	viewWidth := max(int(float64(w)*components.ViewWidthPct), components.ViewMinWidth)
 	// The internal height is constant
 	viewHeight := components.ViewMinHeight
 

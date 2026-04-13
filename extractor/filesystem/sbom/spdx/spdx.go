@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ import (
 	"github.com/spdx/tools-golang/spdx"
 	"github.com/spdx/tools-golang/tagvalue"
 	"github.com/spdx/tools-golang/yaml"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -45,7 +47,7 @@ const (
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
-func New() filesystem.Extractor { return &Extractor{} }
+func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
@@ -60,25 +62,42 @@ type extractFunc = func(io.Reader) (*spdx.Document, error)
 
 // Format support based on https://spdx.dev/resources/use/#documents
 var extensionHandlers = map[string]extractFunc{
-	".spdx.json":    json.Read,
-	".spdx":         tagvalue.Read,
-	".spdx.yml":     yaml.Read,
-	".spdx.rdf":     rdf.Read,
-	".spdx.rdf.xml": rdf.Read,
+	".json": json.Read,
+	".spdx": tagvalue.Read,
+	".yml":  yaml.Read,
+	".rdf":  rdf.Read,
+	".xml":  rdf.Read,
 	// No support for .xsl files because those are too ambiguous and could be many other things.
 }
 
 // FileRequired returns true if the specified file is a supported spdx file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	_, isSupported := findExtractor(api.Path())
+	// For Windows
+	path := filepath.ToSlash(api.Path())
+
+	// SPDX files tend to follow these formats:
+	// - <name>.spdx
+	// - <name>.spdx.<format>
+	// - .spdx.<name>.<format>
+	//
+	// In all cases, the file either:
+	// - Ends with `.spdx`
+	// - Contains `.spdx.`
+	base := strings.ToLower(filepath.Base(path))
+	if !(strings.HasSuffix(base, ".spdx") || strings.Contains(base, ".spdx.")) {
+		return false
+	}
+
+	parseSbom := findExtractor(path)
+	isSupported := parseSbom != nil
 	return isSupported
 }
 
 // Extract parses the SPDX SBOM and returns a list purls from the SBOM.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var parseSbom, isSupported = findExtractor(input.Path)
+	parseSbom := findExtractor(input.Path)
 
-	if !isSupported {
+	if parseSbom == nil {
 		return inventory.Inventory{}, errors.New("sbom/spdx extractor: Invalid file format, only JSON, YAML, RDF, and TagValue are supported")
 	}
 
@@ -92,17 +111,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func findExtractor(path string) (extractFunc, bool) {
-	// For Windows
-	path = filepath.ToSlash(path)
-
+func findExtractor(path string) extractFunc {
 	for key := range extensionHandlers {
-		if hasFileExtension(path, key) {
-			return extensionHandlers[key], true
+		if strings.ToLower(filepath.Ext(path)) == key {
+			return extensionHandlers[key]
 		}
 	}
 
-	return nil, false
+	return nil
 }
 
 func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) []*extractor.Package {
@@ -110,8 +126,8 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 
 	for _, spdxPkg := range spdxDoc.Packages {
 		pkg := &extractor.Package{
-			Locations: []string{path},
-			Metadata:  &spdxmeta.Metadata{},
+			Location: extractor.LocationFromPath(path),
+			Metadata: &spdxmeta.Metadata{},
 		}
 		m := pkg.Metadata.(*spdxmeta.Metadata)
 		for _, extRef := range spdxPkg.PackageExternalReferences {
@@ -144,8 +160,4 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 	}
 
 	return results
-}
-
-func hasFileExtension(path string, extension string) bool {
-	return strings.HasSuffix(strings.ToLower(path), extension)
 }

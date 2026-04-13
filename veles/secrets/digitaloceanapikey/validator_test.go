@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 )
@@ -57,9 +59,10 @@ func mockDigitaloceanServer(t *testing.T, expectedKey string, serverResponseCode
 
 		// Check Authorization header
 		authHeader := r.Header.Get("Authorization")
-		if !strings.Contains(authHeader, expectedKey) {
+		if len(expectedKey) > 0 && !strings.Contains(authHeader, expectedKey) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 
 		// Set response
@@ -75,7 +78,7 @@ func TestValidator(t *testing.T) {
 		serverExpectedKey  string
 		serverResponseCode int
 		want               veles.ValidationStatus
-		expectError        bool
+		wantErr            error
 	}{
 		{
 			name:               "valid_key",
@@ -102,11 +105,13 @@ func TestValidator(t *testing.T) {
 			name:               "server_error",
 			serverResponseCode: http.StatusInternalServerError,
 			want:               veles.ValidationFailed,
+			wantErr:            cmpopts.AnyError,
 		},
 		{
 			name:               "bad_gateway",
 			serverResponseCode: http.StatusBadGateway,
 			want:               veles.ValidationFailed,
+			wantErr:            cmpopts.AnyError,
 		},
 	}
 
@@ -122,28 +127,17 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := digitaloceanapikey.NewValidator(
-				digitaloceanapikey.WithClient(client),
-			)
+			validator := digitaloceanapikey.NewValidator()
+			validator.HTTPC = client
 
-			// Create a test key
 			key := digitaloceanapikey.DigitaloceanAPIToken{Key: tc.key}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
@@ -152,7 +146,6 @@ func TestValidator(t *testing.T) {
 }
 
 func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -163,9 +156,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := digitaloceanapikey.NewValidator(
-		digitaloceanapikey.WithClient(client),
-	)
+	validator := digitaloceanapikey.NewValidator()
+	validator.HTTPC = client
 
 	key := digitaloceanapikey.DigitaloceanAPIToken{Key: validatorTestKey}
 
@@ -196,9 +188,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := digitaloceanapikey.NewValidator(
-		digitaloceanapikey.WithClient(client),
-	)
+	validator := digitaloceanapikey.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string

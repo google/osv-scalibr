@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -67,7 +69,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := cargotoml.Extractor{}
+			e, err := cargotoml.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("cargotoml.New: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -101,10 +106,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "hello_world",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/no-dependency.toml"},
+					Name:     "hello_world",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/no-dependency.toml"),
 				},
 			},
 		},
@@ -115,16 +120,16 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "hello_world",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/only-version-dependency.toml"},
+					Name:     "hello_world",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/only-version-dependency.toml"),
 				},
 				{
-					Name:      "regex",
-					Version:   "0.0.1",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/only-version-dependency.toml"},
+					Name:     "regex",
+					Version:  "0.0.1",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/only-version-dependency.toml"),
 				},
 			},
 		},
@@ -136,10 +141,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "hello_world",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/git-dependency-tagged.toml"},
+					Name:     "hello_world",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/git-dependency-tagged.toml"),
 				},
 			},
 		},
@@ -150,10 +155,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "hello_world",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/git-dependency-with-commit.toml"},
+					Name:     "hello_world",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/git-dependency-with-commit.toml"),
 				},
 				{
 					Name:     "regex",
@@ -162,7 +167,7 @@ func TestExtractor_Extract(t *testing.T) {
 						Repo:   "https://github.com/rust-lang/regex.git",
 						Commit: "0c0990399270277832fbb5b91a1fa118e6f63dba",
 					},
-					Locations: []string{"testdata/git-dependency-with-commit.toml"},
+					Location: extractor.LocationFromPath("testdata/git-dependency-with-commit.toml"),
 				},
 			},
 		},
@@ -173,10 +178,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "hello_world",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/git-dependency-with-pr.toml"},
+					Name:     "hello_world",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/git-dependency-with-pr.toml"),
 				},
 			},
 		},
@@ -187,16 +192,16 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "hello_world",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/two-dependencies.toml"},
+					Name:     "hello_world",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/two-dependencies.toml"),
 				},
 				{
-					Name:      "futures",
-					Version:   "0.3",
-					PURLType:  purl.TypeCargo,
-					Locations: []string{"testdata/two-dependencies.toml"},
+					Name:     "futures",
+					Version:  "0.3",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPath("testdata/two-dependencies.toml"),
 				},
 			},
 		},
@@ -204,7 +209,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := cargotoml.Extractor{}
+			extr, err := cargotoml.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("cargotoml.New: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

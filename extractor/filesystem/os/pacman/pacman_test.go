@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,41 +33,9 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     pacman.Config
-		wantCfg pacman.Config
-	}{
-		{
-			name: "default",
-			cfg:  pacman.DefaultConfig(),
-			wantCfg: pacman.Config{
-				MaxFileSizeBytes: 100 * units.MiB,
-			},
-		},
-		{
-			name: "custom",
-			cfg: pacman.Config{
-				MaxFileSizeBytes: 10,
-			},
-			wantCfg: pacman.Config{
-				MaxFileSizeBytes: 10,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := pacman.New(tt.cfg)
-			if !reflect.DeepEqual(got.Config(), tt.wantCfg) {
-				t.Errorf("New(%+v).Config(): got %+v, want %+v", tt.cfg, got.Config(), tt.wantCfg)
-			}
-		})
-	}
-}
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -137,10 +104,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = pacman.New(pacman.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := pacman.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("pacman.New: %v", err)
+			}
+			e.(*pacman.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
@@ -183,7 +151,6 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		osrelease        string
-		cfg              pacman.Config
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -204,7 +171,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID:         "20241201.0.284684",
 						PackageDependencies: "sh, glibc, mpfr",
 					},
-					Locations: []string{"testdata/valid"},
+					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -225,7 +192,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID:         "20241201.0.284684",
 						PackageDependencies: "iana-etc",
 					},
-					Locations: []string{"testdata/valid_one_dep"},
+					Location: extractor.LocationFromPath("testdata/valid_one_dep"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -245,7 +212,7 @@ func TestExtract(t *testing.T) {
 						OSID:           "arch",
 						OSVersionID:    "20241201.0.284684",
 					},
-					Locations: []string{"testdata/valid_no_dep"},
+					Location: extractor.LocationFromPath("testdata/valid_no_dep"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -265,13 +232,13 @@ func TestExtract(t *testing.T) {
 						OSID:                "arch",
 						PackageDependencies: "sh, glibc, mpfr",
 					},
-					Locations: []string{"testdata/valid"},
+					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name: "missing osrelease",
+			name: "missing_osrelease",
 			path: "testdata/valid",
 			wantPackages: []*extractor.Package{
 				{
@@ -283,7 +250,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion:      "5.3.1-1",
 						PackageDependencies: "sh, glibc, mpfr",
 					},
-					Locations: []string{"testdata/valid"},
+					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -310,7 +277,7 @@ func TestExtract(t *testing.T) {
 						OSVersionID:         "20241201.0.284684",
 						PackageDependencies: "sh, glibc, mpfr",
 					},
-					Locations: []string{"testdata/eof_after_dependencies"},
+					Location: extractor.LocationFromPath("testdata/eof_after_dependencies"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -320,10 +287,11 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = pacman.New(pacman.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: 100,
-			})
+			e, err := pacman.New(&cpb.PluginConfig{MaxFileSizeBytes: 100})
+			if err != nil {
+				t.Fatalf("pacman.New: %v", err)
+			}
+			e.(*pacman.Extractor).Stats = collector
 
 			d := t.TempDir()
 			createOsRelease(t, d, tt.osrelease)

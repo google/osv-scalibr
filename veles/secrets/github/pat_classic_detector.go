@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,15 +22,19 @@ import (
 	checksum "github.com/google/osv-scalibr/veles/secrets/github/checksum"
 )
 
-const classicPATMaxLen = 80
+const classicPATBase64MaxLen = 56 // 40 bytes, base64 encoded
 
 var classicPATPattern = regexp.MustCompile(`ghp_[A-Za-z0-9]{36}`)
+
+// base64(ghp_) -> Z2hwX (minus the last incomplete byte)
+var classicPATBase64Pattern = regexp.MustCompile(`Z2hwX[0-9a-zA-Z+/=]{0,51}`)
 
 // NewClassicPATDetector returns a new Veles Detector that finds Github classic personal access tokens
 func NewClassicPATDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: classicPATMaxLen,
-		Re:     classicPATPattern,
+		MaxLen:   classicPATBase64MaxLen,
+		Re:       classicPATPattern,
+		ReBase64: classicPATBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			if !checksum.Validate(match) {
 				return nil, false

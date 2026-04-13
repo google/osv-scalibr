@@ -23,7 +23,8 @@ jobs:
               Welcome to the OSV-SCALIBR patch reward program!
               Your issue has been added to our triage queue and will reviewed
               shortly. The panel usually takes a decision once per week, so it
-              can take up to a week before you hear back from us.
+              can take up to a week before you hear back from us, sometimes longer
+              depending on available capacity.
               Please, do not start the work until the panel has reached a
               decision. Although we always welcome contributions, unapproved
               work is not eligible for a reward.
@@ -53,7 +54,7 @@ jobs:
               useful guides in our documentation:
               * [Writing a new vulnerability detector plugin](https://github.com/google/osv-scalibr/blob/main/docs/new_detector.md)
               * [Writing a new inventory extraction plugin](https://github.com/google/osv-scalibr/blob/main/docs/new_extractor.md)
-              * [Main directory for secret detectors](https://github.com/google/osv-scalibr/tree/main/veles) - More detailed docs will be available soon!
+              * [Writing a new secret detector plugin](https://github.com/google/osv-scalibr/blob/main/docs/new_secret_detector.md)
               * [General style guide](https://github.com/google/osv-scalibr/blob/main/docs/style_guide.md)
 
               *~The OSV-SCALIBR PRP team*

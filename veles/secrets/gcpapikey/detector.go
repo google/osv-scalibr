@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 const maxTokenLength = 39
 
 // keyRe is a regular expression that matches a GCP API key.
-var keyRe = regexp.MustCompile(`AIza[a-zA-Z0-9_-]{35}`)
+var keyRe = regexp.MustCompile(`AIzaSy[ABCD][a-zA-Z0-9_-]{32}`)
 
 // NewDetector returns a new simpletoken.Detector that matches GCP API keys.
 func NewDetector() veles.Detector {

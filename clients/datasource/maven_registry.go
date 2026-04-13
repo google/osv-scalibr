@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,7 +51,9 @@ type MavenRegistryAPIClient struct {
 	registries      []MavenRegistry                // Additional registries specified to fetch projects
 	registryAuths   map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
 	localRegistry   string                         // The local directory that holds Maven manifests
-	googleClient    *http.Client                   // A client for authenticating with Google services, used for Artifact Registry.
+
+	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
+	disableGoogleAuth bool         // If true, do not try to create google.DefaultClient for Artifact Registry.
 
 	// Cache fields
 	mu             *sync.Mutex
@@ -76,7 +78,7 @@ type MavenRegistry struct {
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
-func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string) (*MavenRegistryAPIClient, error) {
+func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string, disableGoogleClient bool) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
@@ -101,11 +103,12 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 
 	client := &MavenRegistryAPIClient{
 		// We assume only downloading releases is allowed on the default registry.
-		defaultRegistry: registry,
-		localRegistry:   localRegistry,
-		mu:              &sync.Mutex{},
-		responses:       NewRequestCache[string, response](),
-		registryAuths:   MakeMavenAuth(globalSettings, userSettings),
+		defaultRegistry:   registry,
+		localRegistry:     localRegistry,
+		mu:                &sync.Mutex{},
+		responses:         NewRequestCache[string, response](),
+		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
+		disableGoogleAuth: disableGoogleClient,
 	}
 	if registry.Parsed.Scheme == artifactRegistryScheme {
 		client.createGoogleClient(ctx)
@@ -116,27 +119,20 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 // NewDefaultMavenRegistryAPIClient creates a new MavenRegistryAPIClient with default settings,
 // using the provided registry URL.
 func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*MavenRegistryAPIClient, error) {
-	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "")
-}
-
-// SetLocalRegistry sets the local directory that stores the downloaded Maven manifests.
-func (m *MavenRegistryAPIClient) SetLocalRegistry(localRegistry string) {
-	if localRegistry != "" {
-		localRegistry = filepath.Join(localRegistry, "maven")
-	}
-	m.localRegistry = localRegistry
+	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false)
 }
 
 // WithoutRegistries makes MavenRegistryAPIClient including its cache but not registries.
 func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 	return &MavenRegistryAPIClient{
-		defaultRegistry: m.defaultRegistry,
-		localRegistry:   m.localRegistry,
-		mu:              m.mu,
-		cacheTimestamp:  m.cacheTimestamp,
-		responses:       m.responses,
-		registryAuths:   m.registryAuths,
-		googleClient:    m.googleClient,
+		defaultRegistry:   m.defaultRegistry,
+		localRegistry:     m.localRegistry,
+		mu:                m.mu,
+		cacheTimestamp:    m.cacheTimestamp,
+		responses:         m.responses,
+		registryAuths:     m.registryAuths,
+		googleClient:      m.googleClient,
+		disableGoogleAuth: m.disableGoogleAuth,
 	}
 }
 
@@ -171,6 +167,7 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 	if err != nil {
 		return err
 	}
+	log.Infof("The default Maven registry is being overwritten from %s to %s", m.defaultRegistry.URL, registry.URL)
 	registry.Parsed = u
 	m.defaultRegistry = registry
 	if registry.Parsed.Scheme == artifactRegistryScheme {
@@ -181,7 +178,7 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 
 // createGoogleClient creates a client for authenticating with Google services.
 func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) {
-	if m.googleClient != nil {
+	if m.googleClient != nil || m.disableGoogleAuth {
 		return
 	}
 	// This is the scope that artifact-registry-go-tools uses.
@@ -195,6 +192,11 @@ func (m *MavenRegistryAPIClient) createGoogleClient(ctx context.Context) {
 	m.googleClient = client
 }
 
+// DisableGoogleAuth prevents the creation of a Google client for authentication purpose.
+func (m *MavenRegistryAPIClient) DisableGoogleAuth() {
+	m.disableGoogleAuth = true
+}
+
 // GetRegistries returns the registries added to this client.
 func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 	return m.registries
@@ -206,6 +208,7 @@ func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 // More about Maven Repository Metadata Model: https://maven.apache.org/ref/3.9.9/maven-repository-metadata/
 // More about Maven Metadata: https://maven.apache.org/repositories/metadata.html
 func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifactID, version string) (maven.Project, error) {
+	var errs []error
 	if !strings.HasSuffix(version, "-SNAPSHOT") {
 		for _, registry := range append(m.registries, m.defaultRegistry) {
 			if !registry.ReleasesEnabled {
@@ -215,9 +218,10 @@ func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifa
 			if err == nil {
 				return project, nil
 			}
+			errs = append(errs, err)
 		}
 
-		return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s", groupID, artifactID, version)
+		return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s:\n%w", groupID, artifactID, version, errors.Join(errs...))
 	}
 
 	for _, registry := range append(m.registries, m.defaultRegistry) {
@@ -227,6 +231,7 @@ func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifa
 		}
 		metadata, err := m.getVersionMetadata(ctx, registry, groupID, artifactID, version)
 		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
 
@@ -243,9 +248,10 @@ func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifa
 		if err == nil {
 			return project, nil
 		}
+		errs = append(errs, err)
 	}
 
-	return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s", groupID, artifactID, version)
+	return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s:\n%w", groupID, artifactID, version, errors.Join(errs...))
 }
 
 // GetVersions returns the list of available versions of a Maven package specified by groupID and artifactID.
@@ -327,7 +333,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 
 	u := requestURL.JoinPath(paths...).String()
 	resp, err := m.responses.Get(u, func() (response, error) {
-		log.Infof("Fetching response from: %s", u)
+		log.Debugf("Fetching response from: %s", u)
 		resp, err := auth.Get(ctx, httpClient, u)
 		if err != nil {
 			return response{}, fmt.Errorf("%w: Maven registry query failed: %w", errAPIFailed, err)
@@ -336,7 +342,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 
 		if !slices.Contains([]int{http.StatusOK, http.StatusNotFound, http.StatusUnauthorized, http.StatusForbidden}, resp.StatusCode) {
 			// Only cache responses with Status OK, NotFound, Unauthorized, or Forbidden
-			return response{}, fmt.Errorf("%w: Maven registry query status: %d", errAPIFailed, resp.StatusCode)
+			return response{}, fmt.Errorf("%w: Maven registry %s query status: %d", errAPIFailed, u, resp.StatusCode)
 		}
 
 		b, err := io.ReadAll(resp.Body)
@@ -357,12 +363,11 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		return err
 	}
 
-	if resp.StatusCode == http.StatusForbidden && isArtifactRegistry {
-		return fmt.Errorf("%w: Maven registry query status: %d (Forbidden). Please check your Application Default Credentials (ADC) have permission to read from %s", errAPIFailed, resp.StatusCode, registry.URL)
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%w: Maven registry query status: %d", errAPIFailed, resp.StatusCode)
+		if resp.StatusCode == http.StatusForbidden && isArtifactRegistry {
+			return fmt.Errorf("%w: Maven registry %s query status: %d (Forbidden). Please check your Application Default Credentials (ADC) have permission to read from %s", errAPIFailed, u, resp.StatusCode, registry.URL)
+		}
+		return fmt.Errorf("%w: Maven registry %s query status: %d", errAPIFailed, u, resp.StatusCode)
 	}
 
 	return NewMavenDecoder(bytes.NewReader(resp.Body)).Decode(dst)

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,72 +19,28 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *metadata.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.SNAPPackageMetadata
 	}{
 		{
-			desc: "nil metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil package",
+			desc: "set_metadata",
 			m: &metadata.Metadata{
 				Name: "name",
 			},
-			p:    nil,
-			want: nil,
-		},
-		{
-			desc: "set metadata",
-			m: &metadata.Metadata{
+			want: &pb.SNAPPackageMetadata{
 				Name: "name",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SnapMetadata{
-					SnapMetadata: &pb.SNAPPackageMetadata{
-						Name: "name",
-					},
-				},
-			},
 		},
 		{
-			desc: "override metadata",
-			m: &metadata.Metadata{
-				Name: "another-name",
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SnapMetadata{
-					SnapMetadata: &pb.SNAPPackageMetadata{
-						Name: "name",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SnapMetadata{
-					SnapMetadata: &pb.SNAPPackageMetadata{
-						Name: "another-name",
-					},
-				},
-			},
-		},
-		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &metadata.Metadata{
 				Name:              "name",
 				Version:           "version",
@@ -95,45 +51,33 @@ func TestSetProto(t *testing.T) {
 				OSVersionCodename: "os-version-codename",
 				OSVersionID:       "os-version-id",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_SnapMetadata{
-					SnapMetadata: &pb.SNAPPackageMetadata{
-						Name:              "name",
-						Version:           "version",
-						Grade:             "grade",
-						Type:              "type",
-						Architectures:     []string{"arch1", "arch2"},
-						OsId:              "osid",
-						OsVersionCodename: "os-version-codename",
-						OsVersionId:       "os-version-id",
-					},
-				},
+			want: &pb.SNAPPackageMetadata{
+				Name:              "name",
+				Version:           "version",
+				Grade:             "grade",
+				Type:              "type",
+				Architectures:     []string{"arch1", "arch2"},
+				OsId:              "osid",
+				OsVersionCodename: "os-version-codename",
+				OsVersionId:       "os-version-id",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := metadata.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := metadata.ToStruct(p.GetSnapMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetSnapMetadata(), diff)
+			gotStruct := metadata.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -146,12 +90,7 @@ func TestToStruct(t *testing.T) {
 		want *metadata.Metadata
 	}{
 		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
-		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.SNAPPackageMetadata{
 				Name: "name",
 			},
@@ -160,7 +99,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.SNAPPackageMetadata{
 				Name:              "name",
 				Version:           "version",
@@ -196,19 +135,12 @@ func TestToStruct(t *testing.T) {
 			}
 
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_SnapMetadata{
-					SnapMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := metadata.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,6 +68,8 @@ type ChainLayer interface {
 // Image is a container image that can be scanned for software inventory. It is composed of a set of
 // layers that can be scanned for software inventory.
 type Image interface {
+	// Labels returns the labels of the image.
+	Labels() map[string]string
 	// Layers returns the layers of the image.
 	Layers() ([]Layer, error)
 	// ChainLayers returns the chain layers of the image.

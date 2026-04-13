@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestPdmExtractor_FileRequired(t *testing.T) {
@@ -73,7 +75,10 @@ func TestPdmExtractor_FileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := pdmlock.Extractor{}
+			e, err := pdmlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("pdmlock.New: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%q, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -106,11 +111,11 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "toml",
-					Version:   "0.10.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/single-package.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "toml",
+					Version:  "0.10.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/single-package.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -123,20 +128,20 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "toml",
-					Version:   "0.10.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "toml",
+					Version:  "0.10.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/two-packages.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "six",
-					Version:   "1.16.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "six",
+					Version:  "1.16.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/two-packages.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -149,29 +154,29 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "toml",
-					Version:   "0.10.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/dev-dependency.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "toml",
+					Version:  "0.10.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/dev-dependency.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "pyroute2",
-					Version:   "0.7.11",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/dev-dependency.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "pyroute2",
+					Version:  "0.7.11",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/dev-dependency.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "win-inet-pton",
-					Version:   "1.1.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/dev-dependency.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "win-inet-pton",
+					Version:  "1.1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/dev-dependency.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -184,29 +189,29 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "toml",
-					Version:   "0.10.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/optional-dependency.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "toml",
+					Version:  "0.10.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/optional-dependency.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "pyroute2",
-					Version:   "0.7.11",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/optional-dependency.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "pyroute2",
+					Version:  "0.7.11",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/optional-dependency.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
 				{
-					Name:      "win-inet-pton",
-					Version:   "1.1.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/optional-dependency.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "win-inet-pton",
+					Version:  "1.1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/optional-dependency.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
@@ -219,11 +224,11 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "toml",
-					Version:   "0.10.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/git-dependency.toml"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "toml",
+					Version:  "0.10.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/git-dependency.toml"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 					SourceCode: &extractor.SourceCodeIdentifier{
@@ -236,7 +241,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := pdmlock.Extractor{}
+			extr, err := pdmlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("pdmlock.New: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,13 +24,20 @@ import (
 // FakeImage is a fake implementation of the image.Image interface for testing purposes.
 type FakeImage struct {
 	FakeChainLayers []image.ChainLayer
+	labels          map[string]string
 }
 
 // New returns a new FakeImage.
-func New(chainLayers []image.ChainLayer) *FakeImage {
+func New(chainLayers []image.ChainLayer, labels map[string]string) *FakeImage {
 	return &FakeImage{
 		FakeChainLayers: chainLayers,
+		labels:          labels,
 	}
+}
+
+// Labels returns the labels of the image.
+func (i *FakeImage) Labels() map[string]string {
+	return i.labels
 }
 
 // Layers returns the layers of the image.

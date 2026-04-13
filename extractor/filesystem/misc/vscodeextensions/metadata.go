@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,15 @@
 
 package vscodeextensions
 
+import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
+
 // Metadata for VS Code extensions.
 type Metadata struct {
 	ID                   string `json:"id"`
@@ -23,4 +32,33 @@ type Metadata struct {
 	Updated              bool   `json:"updated"`
 	IsPreReleaseVersion  bool   `json:"isPreReleaseVersion"`
 	InstalledTimestamp   int64  `json:"installedTimestamp"`
+}
+
+// ToProto converts the Metadata struct to a VSCodeExtensionsMetadata proto.
+func ToProto(m *Metadata) *pb.VSCodeExtensionsMetadata {
+	return &pb.VSCodeExtensionsMetadata{
+		Id:                   m.ID,
+		PublisherId:          m.PublisherID,
+		PublisherDisplayName: m.PublisherDisplayName,
+		TargetPlatform:       m.TargetPlatform,
+		Updated:              m.Updated,
+		IsPreReleaseVersion:  m.IsPreReleaseVersion,
+		InstalledTimestamp:   m.InstalledTimestamp,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
+// ToStruct converts the VSCodeExtensionsMetadata proto to a Metadata struct.
+func ToStruct(m *pb.VSCodeExtensionsMetadata) *Metadata {
+	return &Metadata{
+		ID:                   m.GetId(),
+		PublisherID:          m.GetPublisherId(),
+		PublisherDisplayName: m.GetPublisherDisplayName(),
+		TargetPlatform:       m.GetTargetPlatform(),
+		Updated:              m.GetUpdated(),
+		IsPreReleaseVersion:  m.GetIsPreReleaseVersion(),
+		InstalledTimestamp:   m.GetInstalledTimestamp(),
+	}
 }

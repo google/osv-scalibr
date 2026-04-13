@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,10 +42,10 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "balanced-match",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/one-package.v2.lock"},
+					Name:     "balanced-match",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/one-package.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -59,19 +59,19 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "compare-func",
-					Version:   "2.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/two-packages.v2.lock"},
+					Name:     "compare-func",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/two-packages.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "concat-map",
-					Version:   "0.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/two-packages.v2.lock"},
+					Name:     "concat-map",
+					Version:  "0.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/two-packages.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -85,19 +85,19 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "compare-func",
-					Version:   "2.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-quotes.v2.lock"},
+					Name:     "compare-func",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-quotes.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "concat-map",
-					Version:   "0.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-quotes.v2.lock"},
+					Name:     "concat-map",
+					Version:  "0.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-quotes.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -111,28 +111,28 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "debug",
-					Version:   "4.3.3",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/multiple-versions.v2.lock"},
+					Name:     "debug",
+					Version:  "4.3.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/multiple-versions.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "debug",
-					Version:   "2.6.9",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/multiple-versions.v2.lock"},
+					Name:     "debug",
+					Version:  "2.6.9",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/multiple-versions.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "debug",
-					Version:   "3.2.7",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/multiple-versions.v2.lock"},
+					Name:     "debug",
+					Version:  "3.2.7",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/multiple-versions.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -146,28 +146,28 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@babel/cli",
-					Version:   "7.16.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/scoped-packages.v2.lock"},
+					Name:     "@babel/cli",
+					Version:  "7.16.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped-packages.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "@babel/code-frame",
-					Version:   "7.16.7",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/scoped-packages.v2.lock"},
+					Name:     "@babel/code-frame",
+					Version:  "7.16.7",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped-packages.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "@babel/compat-data",
-					Version:   "7.16.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/scoped-packages.v2.lock"},
+					Name:     "@babel/compat-data",
+					Version:  "7.16.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped-packages.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -181,19 +181,19 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@nicolo-ribaudo/chokidar-2",
-					Version:   "2.1.8-no-fsevents.3",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-prerelease.v2.lock"},
+					Name:     "@nicolo-ribaudo/chokidar-2",
+					Version:  "2.1.8-no-fsevents.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-prerelease.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "gensync",
-					Version:   "1.0.0-beta.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-prerelease.v2.lock"},
+					Name:     "gensync",
+					Version:  "1.0.0-beta.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-prerelease.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -207,19 +207,19 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "domino",
-					Version:   "2.1.6+git",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-build-string.v2.lock"},
+					Name:     "domino",
+					Version:  "2.1.6+git",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-build-string.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "f2435fe1f9f7c91ade0bd472c4723e5eacd7d19a",
 					},
 				},
 				{
-					Name:      "tslib",
-					Version:   "2.6.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-build-string.v2.lock"},
+					Name:     "tslib",
+					Version:  "2.6.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-build-string.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -233,64 +233,64 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@my-scope/my-first-package",
-					Version:   "0.0.6",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.lock"},
+					Name:     "@my-scope/my-first-package",
+					Version:  "0.0.6",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0b824c650d3a03444dbcf2b27a5f3566f6e41358",
 					},
 				},
 				{
-					Name:      "my-second-package",
-					Version:   "0.2.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.lock"},
+					Name:     "my-second-package",
+					Version:  "0.2.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "59e2127b9f9d4fda5f928c4204213b3502cd5bb0",
 					},
 				},
 				{
-					Name:      "@typegoose/typegoose",
-					Version:   "7.2.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.lock"},
+					Name:     "@typegoose/typegoose",
+					Version:  "7.2.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3ed06e5097ab929f69755676fee419318aaec73a",
 					},
 				},
 				{
-					Name:      "vuejs",
-					Version:   "2.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.lock"},
+					Name:     "vuejs",
+					Version:  "2.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0948d999f2fddf9f90991956493f976273c5da1f",
 					},
 				},
 				{
-					Name:      "my-third-package",
-					Version:   "0.16.1-dev",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.lock"},
+					Name:     "my-third-package",
+					Version:  "0.16.1-dev",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "5675a0aed98e067ff6ecccc5ac674fe8995960e0",
 					},
 				},
 				{
-					Name:      "my-node-sdk",
-					Version:   "1.1.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.lock"},
+					Name:     "my-node-sdk",
+					Version:  "1.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "053dea9e0b8af442d8f867c8e690d2fb0ceb1bf5",
 					},
 				},
 				{
-					Name:      "is-really-great",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.lock"},
+					Name:     "is-really-great",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "191eeef50c584714e1fb8927d17ee72b3b8c97c4",
 					},
@@ -304,10 +304,10 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "my-package",
-					Version:   "0.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/files.v2.lock"},
+					Name:     "my-package",
+					Version:  "0.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/files.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -321,28 +321,28 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@babel/helper-validator-identifier",
-					Version:   "7.22.20",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-aliases.v2.lock"},
+					Name:     "@babel/helper-validator-identifier",
+					Version:  "7.22.20",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-aliases.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "ansi-regex",
-					Version:   "6.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-aliases.v2.lock"},
+					Name:     "ansi-regex",
+					Version:  "6.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-aliases.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "ansi-regex",
-					Version:   "5.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/with-aliases.v2.lock"},
+					Name:     "ansi-regex",
+					Version:  "5.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/with-aliases.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
@@ -356,19 +356,19 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@ws/ansi-regex",
-					Version:   "0.0.0-use.local",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/exclude-root.v2.lock"},
+					Name:     "@ws/ansi-regex",
+					Version:  "0.0.0-use.local",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/exclude-root.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
 				},
 				{
-					Name:      "ansi-regex",
-					Version:   "6.1.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/exclude-root.v2.lock"},
+					Name:     "ansi-regex",
+					Version:  "6.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/exclude-root.v2.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"slices"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -68,7 +70,7 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 	inv.ContainerImageMetadata = append(inv.ContainerImageMetadata, cim)
 	fillLayerMetadataFromChainLayers(cim, chainLayers)
 
-	osInfo, err := osrelease.GetOSRelease(chainLayers[len(chainLayers)-1].Layer().FS())
+	osInfo, err := osrelease.GetOSRelease(chainLayers[len(chainLayers)-1].FS())
 	if err == nil {
 		cim.OSInfo = osInfo
 	}
@@ -106,7 +108,7 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 		}
 
 		// If the package has no locations or no filesystem Extractor, it cannot be traced.
-		isPackageTraceable := pkgExtractor != nil && len(pkg.Locations) > 0
+		isPackageTraceable := pkgExtractor != nil && pkg.Location.PathOrEmpty() != ""
 		if !isPackageTraceable {
 			continue
 		}
@@ -117,7 +119,7 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 		}
 
 		var foundOrigin bool
-		fileLocation := pkg.Locations[0]
+		fileLocation := pkg.Location.PathOrEmpty()
 		lastScannedLayerIndex := len(chainLayers) - 1
 
 		// Go backwards through the chain layers and find the first layer where the package is not
@@ -138,7 +140,7 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 				// Check if file still exist in this layer, if not skip extraction.
 				// This is both an optimization, and avoids polluting the log output with false file not found errors.
 				oldPackages = []*extractor.Package{}
-			} else if filesExistInLayer(oldChainLayer, pkg.Locations) {
+			} else if filesExistInLayer(oldChainLayer, pkg.Location) {
 				// Update the extractor config to use the files from the current layer.
 				// We only take extract the first location because other locations are derived from the initial
 				// extraction location. If other locations can no longer be determined from the first location
@@ -164,13 +166,17 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 
 			foundPackage := false
 			for _, oldPKG := range oldPackages {
-				// PURLs are being used as a package key, so if they are different, skip this package.
-				oldPKGPURL := oldPKG.PURL()
-				if oldPKGPURL == nil || oldPKGPURL.String() != pkgPURL {
-					continue
+				// If the package is from unknown binaries extractor, only Locations will be filled
+				// We should skip the purl check
+				if !slices.Contains(pkg.Plugins, unknownbinariesextr.Name) {
+					// PURLs are being used as a package key, so if they are different, skip this package.
+					oldPKGPURL := oldPKG.PURL()
+					if oldPKGPURL == nil || oldPKGPURL.String() != pkgPURL {
+						continue
+					}
 				}
 
-				if !areLocationsEqual(oldPKG.Locations, pkg.Locations) {
+				if !isLocationEqual(oldPKG.Location, pkg.Location) {
 					continue
 				}
 
@@ -198,14 +204,19 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 	}
 }
 
-// areLocationsEqual checks if the package location strings are equal.
-func areLocationsEqual(fileLocations []string, otherFileLocations []string) bool {
-	if len(fileLocations) == 0 || len(otherFileLocations) == 0 {
-		log.Warnf("Empty file locations found. This should not happen.")
+// isLocationEqual checks if two package locations are equal.
+func isLocationEqual(l1 extractor.PackageLocation, l2 extractor.PackageLocation) bool {
+	if l1.Descriptor == nil || l2.Descriptor == nil {
+		log.Warnf("Empty package locations found. This should not happen.")
 		return false
 	}
 
-	return fileLocations[0] == otherFileLocations[0]
+	if l1.Descriptor.File == nil || l2.Descriptor.File == nil {
+		log.Warnf("Non-file locations found. This should not happen.")
+		return false
+	}
+
+	return l1.Descriptor.File.Path == l2.Descriptor.File.Path
 }
 
 // getSingleLayerFSFromChainLayer returns the filesystem of the underlying layer in the chain layer.
@@ -245,16 +256,23 @@ func fillLayerMetadataFromChainLayers(cim *extractor.ContainerImageMetadata, cha
 
 // filesExistInLayer checks if any of the provided files are present in the underlying layer of the
 // chain layer.
-func filesExistInLayer(chainLayer scalibrimage.ChainLayer, fileLocations []string) bool {
+func filesExistInLayer(chainLayer scalibrimage.ChainLayer, loc extractor.PackageLocation) bool {
 	layerFS, err := getLayerFSFromChainLayer(chainLayer)
 	if err != nil {
 		return false
 	}
 
 	// Check if any of the files are present in the underlying layer.
-	for _, fileLocation := range fileLocations {
-		if _, err := layerFS.Stat(fileLocation); err == nil {
+	if loc.Descriptor != nil && loc.Descriptor.File != nil {
+		if _, err := layerFS.Stat(loc.Descriptor.File.Path); err == nil {
 			return true
+		}
+	}
+	for _, r := range loc.Related {
+		if r.File != nil {
+			if _, err := layerFS.Stat(r.File.Path); err == nil {
+				return true
+			}
 		}
 	}
 	return false

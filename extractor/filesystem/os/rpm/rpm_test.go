@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -40,11 +39,13 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -122,10 +123,11 @@ func TestFileRequired(t *testing.T) {
 
 		t.Run(desc, func(t *testing.T) {
 			collector := testcollector.New()
-			var e filesystem.Extractor = rpm.New(rpm.Config{
-				Stats:            collector,
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := rpm.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			e.(*rpm.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -172,7 +174,7 @@ VARIANT="Container Image"`
 
 func TestExtract(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -189,17 +191,17 @@ func TestExtract(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "opensuse/leap:15.5 Packages.db file (NDB)",
+			name: "opensuse/leap:15.5_Packages.db_file_(NDB)",
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:             "testdata/Packages.db",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/Packages.db"},
-					Name:      "aaa_base",
-					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages.db"),
+					Name:     "aaa_base",
+					Version:  "84.87+git20180409.04c9dae-150300.10.3.1",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "aaa_base",
 						Epoch:        0,
@@ -207,20 +209,22 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"GPL-2.0+"},
 				},
 				{
-					Locations: []string{"testdata/Packages.db"},
-					Name:      "bash",
-					Version:   "4.4-150400.25.22",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages.db"),
+					Name:     "bash",
+					Version:  "4.4-150400.25.22",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
 						OSID:         "fedora",
 						OSVersionID:  "38",
@@ -230,10 +234,10 @@ func TestExtract(t *testing.T) {
 					Licenses: []string{"GPL-3.0-or-later"},
 				},
 				{
-					Locations: []string{"testdata/Packages.db"},
-					Name:      "bash-sh",
-					Version:   "4.4-150400.25.22",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages.db"),
+					Name:     "bash-sh",
+					Version:  "4.4-150400.25.22",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash-sh",
 						Epoch:        0,
@@ -241,6 +245,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -250,17 +255,17 @@ func TestExtract(t *testing.T) {
 			wantResults: 137,
 		},
 		{
-			name: "CentOS 7.9.2009 Packages file (Berkley DB)",
+			name: "CentOS_7.9.2009_Packages_file_(Berkley_DB)",
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:             "testdata/Packages",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/Packages"},
-					Name:      "acl",
-					Version:   "2.2.51-15.el7",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages"),
+					Name:     "acl",
+					Version:  "2.2.51-15.el7",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "acl",
 						Epoch:        0,
@@ -268,16 +273,17 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"GPLv2+"},
 				},
 				{
-					Locations: []string{"testdata/Packages"},
-					Name:      "audit-libs",
-					Version:   "2.8.5-4.el7",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages"),
+					Name:     "audit-libs",
+					Version:  "2.8.5-4.el7",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
@@ -285,16 +291,17 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"LGPLv2+"},
 				},
 				{
-					Locations: []string{"testdata/Packages"},
-					Name:      "basesystem",
-					Version:   "10.0-7.el7.centos",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages"),
+					Name:     "basesystem",
+					Version:  "10.0-7.el7.centos",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
@@ -302,6 +309,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "noarch",
 					},
@@ -344,17 +352,17 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
 		},
 		{
-			name: "RockyLinux 9.2.20230513 rpmdb.sqlite file (sqlite3)",
+			name: "RockyLinux_9.2.20230513_rpmdb.sqlite_file_(sqlite3)",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:             "testdata/rpmdb.sqlite",
 			osrelease:        fedora38,
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "alternatives",
-					Version:   "1.20-2.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "alternatives",
+					Version:  "1.20-2.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
@@ -362,16 +370,17 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"GPLv2"},
 				},
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "audit-libs",
-					Version:   "3.0.7-103.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "audit-libs",
+					Version:  "3.0.7-103.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
@@ -379,16 +388,17 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"LGPLv2+"},
 				},
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "basesystem",
-					Version:   "11-13.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "basesystem",
+					Version:  "11-13.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
@@ -396,6 +406,7 @@ func TestExtract(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
 					},
@@ -405,7 +416,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "osrelease: no version_id",
+			name: "osrelease:_no_version_id",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path: "testdata/rpmdb.sqlite",
 			osrelease: `ID=fedora
@@ -413,10 +424,10 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "alternatives",
-					Version:   "1.20-2.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "alternatives",
+					Version:  "1.20-2.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
@@ -429,10 +440,10 @@ func TestExtract(t *testing.T) {
 					Licenses: []string{"GPLv2"},
 				},
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "audit-libs",
-					Version:   "3.0.7-103.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "audit-libs",
+					Version:  "3.0.7-103.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
@@ -445,10 +456,10 @@ func TestExtract(t *testing.T) {
 					Licenses: []string{"LGPLv2+"},
 				},
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "basesystem",
-					Version:   "11-13.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "basesystem",
+					Version:  "11-13.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
@@ -464,7 +475,7 @@ func TestExtract(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "custom rpm",
+			name: "custom_rpm",
 			// https://www.redhat.com/sysadmin/create-rpm-package
 			path: "testdata/Packages_epoch",
 			osrelease: `NAME=Fedora
@@ -478,16 +489,17 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/Packages"},
-					Name:      "hello",
-					Version:   "0.0.1-rls",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages"),
+					Name:     "hello",
+					Version:  "0.0.1-rls",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "hello",
 						Epoch:        1,
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
 						OSID:         "fedora",
 						OSName:       "Fedora",
+						OSPrettyName: "Fedora 32 (Container Image)",
 						OSVersionID:  "32",
 						Architecture: "x86_64",
 					},
@@ -515,10 +527,21 @@ func TestExtract(t *testing.T) {
 			}
 
 			collector := testcollector.New()
-			var e filesystem.Extractor = rpm.New(rpm.Config{
-				Stats:   collector,
-				Timeout: tt.timeoutval,
+			e, err := rpm.New(&cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_Rpm{
+							Rpm: &cpb.RpmConfig{
+								TimeoutSeconds: int64(tt.timeoutval.Seconds()),
+							},
+						},
+					},
+				},
 			})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			e.(*rpm.Extractor).Stats = collector
 
 			input := &filesystem.ScanInput{
 				FS:   scalibrfs.DirFS(filepath.Dir(tmpPath)),
@@ -533,7 +556,7 @@ func TestExtract(t *testing.T) {
 
 			// Update location with the temp path.
 			for _, p := range tt.wantPackages {
-				p.Locations = []string{filepath.Base(tmpPath)}
+				p.Location = extractor.LocationFromPath(filepath.Base(tmpPath))
 			}
 
 			pkgs := got.Packages
@@ -566,7 +589,7 @@ func TestExtract(t *testing.T) {
 
 func TestExtract_VirtualFilesystem(t *testing.T) {
 	// supported OSes
-	if !slices.Contains([]string{"linux"}, runtime.GOOS) {
+	if runtime.GOOS == "windows" {
 		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
 	}
 
@@ -582,16 +605,16 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 		wantErr     error
 	}{
 		{
-			name: "opensuse/leap:15.5 Packages.db file (NDB)",
+			name: "opensuse/leap:15.5_Packages.db_file_(NDB)",
 			// docker run --rm --entrypoint cat opensuse/leap:15.5 /var/lib/rpm/Packages.db > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages.db
 			path:      "testdata/Packages.db",
 			osrelease: fedora38,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/Packages.db"},
-					Name:      "aaa_base",
-					Version:   "84.87+git20180409.04c9dae-150300.10.3.1",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages.db"),
+					Name:     "aaa_base",
+					Version:  "84.87+git20180409.04c9dae-150300.10.3.1",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "aaa_base",
 						Epoch:        0,
@@ -599,20 +622,22 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"GPL-2.0+"},
 				},
 				{
-					Locations: []string{"testdata/Packages.db"},
-					Name:      "bash",
-					Version:   "4.4-150400.25.22",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages.db"),
+					Name:     "bash",
+					Version:  "4.4-150400.25.22",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash",
 						Epoch:        0,
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						SourceRPM:    "bash-4.4-150400.25.22.src.rpm",
 						OSID:         "fedora",
 						OSVersionID:  "38",
@@ -622,10 +647,10 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 					Licenses: []string{"GPL-3.0-or-later"},
 				},
 				{
-					Locations: []string{"testdata/Packages.db"},
-					Name:      "bash-sh",
-					Version:   "4.4-150400.25.22",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages.db"),
+					Name:     "bash-sh",
+					Version:  "4.4-150400.25.22",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "bash-sh",
 						Epoch:        0,
@@ -633,6 +658,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "SUSE LLC <https://www.suse.com/>",
 						Architecture: "x86_64",
 					},
@@ -642,16 +668,16 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 137,
 		},
 		{
-			name: "CentOS 7.9.2009 Packages file (Berkley DB)",
+			name: "CentOS_7.9.2009_Packages_file_(Berkley_DB)",
 			// docker run --rm --entrypoint cat centos:centos7.9.2009 /var/lib/rpm/Packages > third_party/scalibr/extractor/filesystem/os/rpm/testdata/Packages
 			path:      "testdata/Packages",
 			osrelease: fedora38,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/Packages"},
-					Name:      "acl",
-					Version:   "2.2.51-15.el7",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages"),
+					Name:     "acl",
+					Version:  "2.2.51-15.el7",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "acl",
 						Epoch:        0,
@@ -659,16 +685,17 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"GPLv2+"},
 				},
 				{
-					Locations: []string{"testdata/Packages"},
-					Name:      "audit-libs",
-					Version:   "2.8.5-4.el7",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages"),
+					Name:     "audit-libs",
+					Version:  "2.8.5-4.el7",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
@@ -676,16 +703,17 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"LGPLv2+"},
 				},
 				{
-					Locations: []string{"testdata/Packages"},
-					Name:      "basesystem",
-					Version:   "10.0-7.el7.centos",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages"),
+					Name:     "basesystem",
+					Version:  "10.0-7.el7.centos",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
@@ -693,6 +721,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "CentOS",
 						Architecture: "noarch",
 					},
@@ -702,16 +731,16 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 148,
 		},
 		{
-			name: "RockyLinux 9.2.20230513 rpmdb.sqlite file (sqlite3)",
+			name: "RockyLinux_9.2.20230513_rpmdb.sqlite_file_(sqlite3)",
 			// docker run --rm --entrypoint cat rockylinux:9.2.20230513 /var/lib/rpm/rpmdb.sqlite > third_party/scalibr/extractor/filesystem/os/rpm/testdata/rpmdb.sqlite
 			path:      "testdata/rpmdb.sqlite",
 			osrelease: fedora38,
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "alternatives",
-					Version:   "1.20-2.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "alternatives",
+					Version:  "1.20-2.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "alternatives",
 						Epoch:        0,
@@ -719,16 +748,17 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"GPLv2"},
 				},
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "audit-libs",
-					Version:   "3.0.7-103.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "audit-libs",
+					Version:  "3.0.7-103.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "audit-libs",
 						Epoch:        0,
@@ -736,16 +766,17 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "x86_64",
 					},
 					Licenses: []string{"LGPLv2+"},
 				},
 				{
-					Locations: []string{"testdata/rpmdb.sqlite"},
-					Name:      "basesystem",
-					Version:   "11-13.el9",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/rpmdb.sqlite"),
+					Name:     "basesystem",
+					Version:  "11-13.el9",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "basesystem",
 						Epoch:        0,
@@ -753,6 +784,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 						OSID:         "fedora",
 						OSVersionID:  "38",
 						OSName:       "Fedora Linux",
+						OSPrettyName: "Fedora Linux 38 (Container Image)",
 						Vendor:       "Rocky Enterprise Software Foundation",
 						Architecture: "noarch",
 					},
@@ -762,7 +794,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			wantResults: 141,
 		},
 		{
-			name: "custom rpm",
+			name: "custom_rpm",
 			// https://www.redhat.com/sysadmin/create-rpm-package
 			path: "testdata/Packages_epoch",
 			osrelease: `NAME=Fedora
@@ -776,16 +808,17 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 
 			wantPackages: []*extractor.Package{
 				{
-					Locations: []string{"testdata/Packages_epoch"},
-					Name:      "hello",
-					Version:   "0.0.1-rls",
-					PURLType:  purl.TypeRPM,
+					Location: extractor.LocationFromPath("testdata/Packages_epoch"),
+					Name:     "hello",
+					Version:  "0.0.1-rls",
+					PURLType: purl.TypeRPM,
 					Metadata: &rpmmeta.Metadata{
 						PackageName:  "hello",
 						Epoch:        1,
 						SourceRPM:    "hello-0.0.1-rls.src.rpm",
 						OSID:         "fedora",
 						OSName:       "Fedora",
+						OSPrettyName: "Fedora 32 (Container Image)",
 						OSVersionID:  "32",
 						Architecture: "x86_64",
 					},
@@ -838,7 +871,11 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Info: info,
 			}
 
-			got, err := rpm.New(rpm.Config{}).Extract(t.Context(), input)
+			e, err := rpm.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("rpm.New: %v", err)
+			}
+			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.path, err, tt.wantErr)
 			}
@@ -897,7 +934,7 @@ func createOsRelease(t *testing.T, root string, content string) {
 func scalibrFilesInTmp(t *testing.T) []string {
 	t.Helper()
 
-	filenames := []string{}
+	var filenames []string
 	files, err := os.ReadDir(os.TempDir())
 	if err != nil {
 		t.Fatalf("os.ReadDir('%q') error: %v", os.TempDir(), err)

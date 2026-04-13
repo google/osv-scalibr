@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,72 +19,28 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *metadata.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.FlatpakPackageMetadata
 	}{
 		{
-			desc: "nil metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil package",
+			desc: "set_metadata",
 			m: &metadata.Metadata{
 				PackageName: "name",
 			},
-			p:    nil,
-			want: nil,
-		},
-		{
-			desc: "set metadata",
-			m: &metadata.Metadata{
+			want: &pb.FlatpakPackageMetadata{
 				PackageName: "name",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_FlatpakMetadata{
-					FlatpakMetadata: &pb.FlatpakPackageMetadata{
-						PackageName: "name",
-					},
-				},
-			},
 		},
 		{
-			desc: "override metadata",
-			m: &metadata.Metadata{
-				PackageName: "another-name",
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_FlatpakMetadata{
-					FlatpakMetadata: &pb.FlatpakPackageMetadata{
-						PackageName: "name",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_FlatpakMetadata{
-					FlatpakMetadata: &pb.FlatpakPackageMetadata{
-						PackageName: "another-name",
-					},
-				},
-			},
-		},
-		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &metadata.Metadata{
 				PackageName:    "name",
 				PackageID:      "id",
@@ -96,46 +52,34 @@ func TestSetProto(t *testing.T) {
 				OSBuildID:      "os-build-id",
 				Developer:      "developer",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_FlatpakMetadata{
-					FlatpakMetadata: &pb.FlatpakPackageMetadata{
-						PackageName:    "name",
-						PackageId:      "id",
-						PackageVersion: "version",
-						ReleaseDate:    "release-date",
-						OsName:         "os-name",
-						OsId:           "os-id",
-						OsVersionId:    "os-version-id",
-						OsBuildId:      "os-build-id",
-						Developer:      "developer",
-					},
-				},
+			want: &pb.FlatpakPackageMetadata{
+				PackageName:    "name",
+				PackageId:      "id",
+				PackageVersion: "version",
+				ReleaseDate:    "release-date",
+				OsName:         "os-name",
+				OsId:           "os-id",
+				OsVersionId:    "os-version-id",
+				OsBuildId:      "os-build-id",
+				Developer:      "developer",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := metadata.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := metadata.ToStruct(p.GetFlatpakMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetFlatpakMetadata(), diff)
+			gotStruct := metadata.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -147,13 +91,9 @@ func TestToStruct(t *testing.T) {
 		m    *pb.FlatpakPackageMetadata
 		want *metadata.Metadata
 	}{
+
 		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
-		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.FlatpakPackageMetadata{
 				PackageName: "name",
 			},
@@ -162,7 +102,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.FlatpakPackageMetadata{
 				PackageName:    "name",
 				PackageId:      "id",
@@ -195,24 +135,13 @@ func TestToStruct(t *testing.T) {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
-			if tc.m == nil {
-				return
-			}
-
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_FlatpakMetadata{
-					FlatpakMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := metadata.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, gotP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

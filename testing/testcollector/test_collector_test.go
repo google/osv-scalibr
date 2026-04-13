@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ func TestCollector(t *testing.T) {
 		fileExtractedStats *stats.FileExtractedStats
 	}{
 		{
-			name: "file required stats",
+			name: "file_required_stats",
 			fileRequiredStats: &stats.FileRequiredStats{
 				Path:          "testdata/required.txt",
 				Result:        stats.FileRequiredResultOK,
@@ -36,7 +36,7 @@ func TestCollector(t *testing.T) {
 			},
 		},
 		{
-			name: "file extracted stats",
+			name: "file_extracted_stats",
 			fileExtractedStats: &stats.FileExtractedStats{
 				Path:              "testdata/extracted.txt",
 				Result:            stats.FileExtractedResultSuccess,
@@ -45,7 +45,7 @@ func TestCollector(t *testing.T) {
 			},
 		},
 		{
-			name: "both file required and extracted stats",
+			name: "both_file_required_and_extracted_stats",
 			fileRequiredStats: &stats.FileRequiredStats{
 				Path:          "testdata/required.txt",
 				Result:        stats.FileRequiredResultSizeLimitExceeded,

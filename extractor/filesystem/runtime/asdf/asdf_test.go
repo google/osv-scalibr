@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf"
 	asdfmeta "github.com/google/osv-scalibr/extractor/filesystem/runtime/asdf/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -30,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/fakefs"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -47,7 +48,10 @@ func TestFileRequired(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var e filesystem.Extractor = asdf.Extractor{}
+			e, err := asdf.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 			if got := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
 				FileName: filepath.Base(tt.path),
 				FileMode: fs.ModePerm,
@@ -66,7 +70,7 @@ func TestExtract(t *testing.T) {
 		inputConfigFile extracttest.ScanInputMockConfig
 	}{
 		{
-			name: "valid .tool-versions ",
+			name: "valid_.tool-versions_",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/simpleValid/.tool-versions",
 			},
@@ -79,11 +83,11 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/simpleValid/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/simpleValid/.tool-versions"),
 				},
 			},
 		}, {
-			name: "valid .tool-versions multiple versions",
+			name: "valid_.tool-versions_multiple_versions",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiVersions/.tool-versions",
 			},
@@ -96,7 +100,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersions/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "21",
@@ -105,7 +109,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "21",
 					},
-					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersions/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "19.0",
@@ -114,11 +118,11 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "19.0",
 					},
-					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersions/.tool-versions"),
 				},
 			},
 		}, {
-			name: "valid .tool-versions multiple versions with skip values",
+			name: "valid_.tool-versions_multiple_versions_with_skip_values",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiVersionWithSkip/.tool-versions",
 			},
@@ -131,7 +135,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersionWithSkip/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "21",
@@ -140,7 +144,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "21",
 					},
-					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersionWithSkip/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "19.0",
@@ -149,11 +153,11 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "19.0",
 					},
-					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersionWithSkip/.tool-versions"),
 				},
 			},
 		}, {
-			name: "valid .tool-versions multiple lines",
+			name: "valid_.tool-versions_multiple_lines",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validMultiLine/.tool-versions",
 			},
@@ -166,7 +170,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validMultiLine/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiLine/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "20.0",
@@ -175,11 +179,11 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "20.0",
 					},
-					Locations: []string{"testdata/validMultiLine/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiLine/.tool-versions"),
 				},
 			},
 		}, {
-			name: "valid .tool-versions more whitespaces",
+			name: "valid_.tool-versions_more_whitespaces",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/validWhiteSpaces/.tool-versions",
 			},
@@ -192,12 +196,12 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validWhiteSpaces/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validWhiteSpaces/.tool-versions"),
 				},
 			},
 		},
 		{
-			name: "invalid .tool-versions ",
+			name: "invalid_.tool-versions_",
 			inputConfigFile: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid/.tool-versions",
 			},
@@ -207,7 +211,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extr := asdf.Extractor{}
+			extr, err := asdf.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New() error = %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfigFile)
 			defer extracttest.CloseTestScanInput(t, scanInput)

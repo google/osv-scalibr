@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,28 +39,28 @@ func TestConffilePathIterator(t *testing.T) {
 			want:      nil,
 		},
 		{
-			name: "No conffiles files",
+			name: "No_conffiles_files",
 			conffiles: map[string]string{
 				"foo.txt": "foocontents",
 			},
 			want: nil,
 		},
 		{
-			name: "one empty conffiles file",
+			name: "one_empty_conffiles_file",
 			conffiles: map[string]string{
 				"foo.conffiles": "",
 			},
 			want: []string{""},
 		},
 		{
-			name: "one conffiles file with lines",
+			name: "one_conffiles_file_with_lines",
 			conffiles: map[string]string{
 				"foo.conffiles": "/foo\n/bar",
 			},
 			want: []string{"/foo", "/bar"},
 		},
 		{
-			name: "two conffiles files",
+			name: "two_conffiles_files",
 			conffiles: map[string]string{
 				"foo.conffiles": "/foo\n/bar",
 				"baz.conffiles": "/baz",
@@ -68,7 +68,7 @@ func TestConffilePathIterator(t *testing.T) {
 			want: []string{"/foo", "/bar", "/baz"},
 		},
 		{
-			name: "conffiles file with irrelevant files",
+			name: "conffiles_file_with_irrelevant_files",
 			conffiles: map[string]string{
 				"foo.conffiles": "/foo\n/bar",
 				"baz.txt":       "bazcontents",
@@ -150,33 +150,33 @@ func TestListFilePathIterator(t *testing.T) {
 		wantOpen []string
 	}{
 		{
-			name: "empty info dir",
+			name: "empty_info_dir",
 			list: map[string]string{},
 			want: nil,
 		},
 		{
-			name: "No list files",
+			name: "No_list_files",
 			list: map[string]string{
 				"foo.txt": "foocontents",
 			},
 			want: nil,
 		},
 		{
-			name: "one empty list file",
+			name: "one_empty_list_file",
 			list: map[string]string{
 				"foo.list": "",
 			},
 			want: []string{""},
 		},
 		{
-			name: "one list file with lines",
+			name: "one_list_file_with_lines",
 			list: map[string]string{
 				"foo.list": "/foo\n/bar",
 			},
 			want: []string{"/foo", "/bar"},
 		},
 		{
-			name: "two list files",
+			name: "two_list_files",
 			list: map[string]string{
 				"foo.list": "/foo\n/bar",
 				"baz.list": "/baz",
@@ -184,7 +184,7 @@ func TestListFilePathIterator(t *testing.T) {
 			want: []string{"/foo", "/bar", "/baz"},
 		},
 		{
-			name: "list file with irrelevant files",
+			name: "list_file_with_irrelevant_files",
 			list: map[string]string{
 				"foo.list": "/foo\n/bar",
 				"baz.txt":  "bazcontents",

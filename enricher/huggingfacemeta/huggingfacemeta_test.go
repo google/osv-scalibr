@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestEnricher(t *testing.T) {
@@ -57,7 +60,7 @@ func TestEnricher(t *testing.T) {
 		subs []testEnricherSubCase
 	}{
 		{
-			name: "Append role and Fine Grained Scopes",
+			name: "Append_role_and_Fine_Grained_Scopes",
 			subs: []testEnricherSubCase{
 				{
 					name:       "supported",
@@ -66,7 +69,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   huggingfaceapikey.HuggingfaceAPIKey{Key: "foo"},
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -80,7 +83,7 @@ func TestEnricher(t *testing.T) {
 									Role:             "read",
 									FineGrainedScope: []string{"inference.endpoints.infer.write", "repo.content.read"},
 								},
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -93,7 +96,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   huggingfaceapikey.HuggingfaceAPIKey{Key: "foo2"},
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -104,7 +107,7 @@ func TestEnricher(t *testing.T) {
 								Secret: huggingfaceapikey.HuggingfaceAPIKey{
 									Key: "foo2",
 								},
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -116,7 +119,7 @@ func TestEnricher(t *testing.T) {
 						Secrets: []*inventory.Secret{
 							{
 								Secret:   huggingfaceapikey.HuggingfaceAPIKey{Key: "foo3"},
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -126,7 +129,7 @@ func TestEnricher(t *testing.T) {
 								Secret: huggingfaceapikey.HuggingfaceAPIKey{
 									Key: "foo3",
 								},
-								Location: path,
+								Location: location.FromPath(path),
 							},
 						},
 					},
@@ -163,9 +166,17 @@ func TestEnricher(t *testing.T) {
 					defer ts.Close()
 
 					// Use enricher configured against the mock server
-					enricher := huggingfacemeta.NewWithBaseURL(ts.URL)
+					cfg := &cpb.PluginConfig{
+						PluginSpecific: []*cpb.PluginSpecificConfig{
+							{Config: &cpb.PluginSpecificConfig_HuggingfaceMeta{HuggingfaceMeta: &cpb.HuggingfaceMetaConfig{BaseUrl: ts.URL}}},
+						},
+					}
+					enricher, err := huggingfacemeta.New(cfg)
+					if err != nil {
+						t.Fatalf("huggingfacemeta.New(%v): %v", cfg, err)
+					}
 
-					err := enricher.Enrich(t.Context(), nil, &sc.input)
+					err = enricher.Enrich(t.Context(), nil, &sc.input)
 					if !cmp.Equal(err, sc.wantErr, cmpopts.EquateErrors()) {
 						t.Fatalf("Enrich() error: got %v, want %v\n", err, sc.wantErr)
 					}

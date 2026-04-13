@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package purl
 
 import (
-	"strconv"
-
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -27,8 +25,10 @@ import (
 // See https://github.com/package-url/purl-spec/issues/136
 func MakePackageURL(name string, version string, metadata any) *purl.PackageURL {
 	q := make(map[string]string)
-	if m, ok := metadata.(*javascriptmeta.JavascriptPackageJSONMetadata); ok && m.FromNPMRepository {
-		q["from-npm-repository"] = strconv.FormatBool(true)
+	if m, ok := metadata.(*javascriptmeta.JavascriptPackageJSONMetadata); ok {
+		if m.Source != javascriptmeta.Unknown {
+			q["source"] = m.Source.ToProto().String()
+		}
 	}
 	var qualifiers purl.Qualifiers
 	if len(q) > 0 {

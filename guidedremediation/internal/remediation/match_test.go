@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,18 +21,18 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
 	"github.com/google/osv-scalibr/guidedremediation/options"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestMatchVuln(t *testing.T) {
 	var (
 		// ID: VULN-001, Dev: false, Severity: 6.6, Depth: 3, Aliases: CVE-111, OSV-2
 		vuln1 = resolution.Vulnerability{
-			OSV: &osvschema.Vulnerability{
-				ID: "VULN-001",
-				Severity: []osvschema.Severity{
-					{Type: osvschema.SeverityCVSSV3, Score: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:H"}, // 6.6
-					{Type: osvschema.SeverityCVSSV2, Score: "AV:L/AC:L/Au:S/C:P/I:P/A:C"},                   // 5.7
+			OSV: &osvpb.Vulnerability{
+				Id: "VULN-001",
+				Severity: []*osvpb.Severity{
+					{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:H"}, // 6.6
+					{Type: osvpb.Severity_CVSS_V2, Score: "AV:L/AC:L/Au:S/C:P/I:P/A:C"},                   // 5.7
 				},
 				Aliases: []string{"CVE-111", "OSV-2"},
 			},
@@ -65,8 +65,8 @@ func TestMatchVuln(t *testing.T) {
 		}
 		// ID: VULN-002, Dev: true, Severity: N/A, Depth: 2
 		vuln2 = resolution.Vulnerability{
-			OSV: &osvschema.Vulnerability{
-				ID: "VULN-002",
+			OSV: &osvpb.Vulnerability{
+				Id: "VULN-002",
 				// No severity
 			},
 			DevOnly: true,
@@ -99,45 +99,44 @@ func TestMatchVuln(t *testing.T) {
 
 		// ID: VULN-003, Dev: false, Severity: 7.0, Depth: 1
 		vuln3 = resolution.Vulnerability{
-			OSV: &osvschema.Vulnerability{
-				ID: "VULN-003",
-
+			OSV: &osvpb.Vulnerability{
+				Id:      "VULN-003",
 				Aliases: []string{"CVE-111", "OSV-2"},
-				Affected: []osvschema.Affected{
+				Affected: []*osvpb.Affected{
 					{
-						Package: osvschema.Package{
+						Package: &osvpb.Package{
 							Ecosystem: "npm",
 							Name:      "pkg",
 						},
-						Ranges: []osvschema.Range{
+						Ranges: []*osvpb.Range{
 							{
-								Type: osvschema.RangeSemVer,
-								Events: []osvschema.Event{
+								Type: osvpb.Range_SEMVER,
+								Events: []*osvpb.Event{
 									{Introduced: "0"},
 									{Fixed: "1.9.1"},
 								},
 							},
 						},
-						Severity: []osvschema.Severity{
-							{Type: osvschema.SeverityCVSSV4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 9.9
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 9.9
 						},
 					},
 					{
-						Package: osvschema.Package{
+						Package: &osvpb.Package{
 							Ecosystem: "npm",
 							Name:      "pkg",
 						},
-						Ranges: []osvschema.Range{
+						Ranges: []*osvpb.Range{
 							{
-								Type: osvschema.RangeSemVer,
-								Events: []osvschema.Event{
+								Type: osvpb.Range_SEMVER,
+								Events: []*osvpb.Event{
 									{Introduced: "2.0.0"},
 									{Fixed: "2.9.9"},
 								},
 							},
 						},
-						Severity: []osvschema.Severity{
-							{Type: osvschema.SeverityCVSSV4, Score: "CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 7.0
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V4, Score: "CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 7.0
 						},
 					},
 				},
@@ -173,7 +172,7 @@ func TestMatchVuln(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "basic match",
+			name: "basic_match",
 			vuln: vuln1,
 			opt: options.RemediationOptions{
 				DevDeps:  true,
@@ -182,7 +181,7 @@ func TestMatchVuln(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "accept depth",
+			name: "accept_depth",
 			vuln: vuln2,
 			opt: options.RemediationOptions{
 				DevDeps:  true,
@@ -191,7 +190,7 @@ func TestMatchVuln(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "reject depth",
+			name: "reject_depth",
 			vuln: vuln2,
 			opt: options.RemediationOptions{
 				DevDeps:  true,
@@ -200,7 +199,7 @@ func TestMatchVuln(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "accept severity",
+			name: "accept_severity",
 			vuln: vuln1,
 			opt: options.RemediationOptions{
 				DevDeps:     true,
@@ -210,7 +209,7 @@ func TestMatchVuln(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "reject severity",
+			name: "reject_severity",
 			vuln: vuln1,
 			opt: options.RemediationOptions{
 				DevDeps:     true,
@@ -220,7 +219,7 @@ func TestMatchVuln(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "accept unknown severity",
+			name: "accept_unknown_severity",
 			vuln: vuln2,
 			opt: options.RemediationOptions{
 				DevDeps:     true,
@@ -230,7 +229,7 @@ func TestMatchVuln(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "accept non-dev",
+			name: "accept_non-dev",
 			vuln: vuln1,
 			opt: options.RemediationOptions{
 				DevDeps:  false,
@@ -239,7 +238,7 @@ func TestMatchVuln(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "reject dev",
+			name: "reject_dev",
 			vuln: vuln2,
 			opt: options.RemediationOptions{
 				DevDeps:  false,
@@ -248,7 +247,7 @@ func TestMatchVuln(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "reject ID excluded",
+			name: "reject_ID_excluded",
 			vuln: vuln1,
 			opt: options.RemediationOptions{
 				DevDeps:     true,
@@ -258,7 +257,7 @@ func TestMatchVuln(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "accept matching multiple",
+			name: "accept_matching_multiple",
 			vuln: vuln1,
 			opt: options.RemediationOptions{
 				DevDeps:     false,
@@ -269,7 +268,7 @@ func TestMatchVuln(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "reject excluded ID in alias",
+			name: "reject_excluded_ID_in_alias",
 			vuln: vuln1,
 			opt: options.RemediationOptions{
 				DevDeps:     true,
@@ -279,7 +278,7 @@ func TestMatchVuln(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "check per-affected severity",
+			name: "check_per-affected_severity",
 			vuln: vuln3,
 			opt: options.RemediationOptions{
 				DevDeps:     true,

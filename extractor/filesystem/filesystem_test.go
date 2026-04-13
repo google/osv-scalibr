@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -56,7 +57,7 @@ func TestInitWalkContext(t *testing.T) {
 		wantErr        error
 	}{
 		{
-			desc: "valid config with pathsToExtract raises no error",
+			desc: "valid_config_with_pathsToExtract_raises_no_error",
 			scanRoots: map[string][]string{
 				"darwin":  {"/scanroot/"},
 				"linux":   {"/scanroot/"},
@@ -70,7 +71,7 @@ func TestInitWalkContext(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "valid config with dirsToSkip raises no error",
+			desc: "valid_config_with_dirsToSkip_raises_no_error",
 			scanRoots: map[string][]string{
 				"darwin":  {"/scanroot/", "/someotherroot/"},
 				"linux":   {"/scanroot/", "/someotherroot/"},
@@ -84,7 +85,7 @@ func TestInitWalkContext(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			desc: "pathsToExtract not relative to any root raises error",
+			desc: "pathsToExtract_not_relative_to_any_root_raises_error",
 			scanRoots: map[string][]string{
 				"darwin":  {"/scanroot/"},
 				"linux":   {"/scanroot/"},
@@ -98,7 +99,7 @@ func TestInitWalkContext(t *testing.T) {
 			wantErr: filesystem.ErrNotRelativeToScanRoots,
 		},
 		{
-			desc: "dirsToSkip not relative to any root raises error",
+			desc: "dirsToSkip_not_relative_to_any_root_raises_error",
 			scanRoots: map[string][]string{
 				"darwin":  {"/scanroot/"},
 				"linux":   {"/scanroot/"},
@@ -137,6 +138,162 @@ func TestInitWalkContext(t *testing.T) {
 	}
 }
 
+// fakeExtractorFS is a mock extractor for testing embedded filesystem extraction.
+// It simulates extracting an embedded filesystem from a VMDK file (e.g., disk.vmdk)
+// and provides a function to return the embedded filesystem for scanning.
+type fakeExtractorFS struct {
+	name          string                                          // Name of the extractor (e.g., "fake-ex-fs").
+	getEmbeddedFS func(ctx context.Context) (scalibrfs.FS, error) // Function to return the embedded filesystem for disk.vmdk:1.
+}
+
+func (e *fakeExtractorFS) Name() string                       { return e.name }
+func (e *fakeExtractorFS) Version() int                       { return 1 }
+func (e *fakeExtractorFS) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *fakeExtractorFS) FileRequired(api filesystem.FileAPI) bool {
+	path := api.Path()
+	return path == "disk.vmdk"
+}
+func (e *fakeExtractorFS) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	path := input.Path
+	if path != "disk.vmdk" {
+		return inventory.Inventory{}, errors.New("unrecognized path")
+	}
+	return inventory.Inventory{
+		EmbeddedFSs: []*inventory.EmbeddedFS{
+			{
+				Path:          "disk.vmdk:1",
+				GetEmbeddedFS: e.getEmbeddedFS, // Use stored function
+			},
+		},
+	}, nil
+}
+
+// fakeExtractorSoftware is a mock extractor for testing package detection.
+// It simulates detecting a software package from a file (e.g., file.txt) within
+// an embedded filesystem.
+type fakeExtractorSoftware struct {
+	name string // Name of the extractor (e.g., "fake-ex-software").
+}
+
+func (e *fakeExtractorSoftware) Name() string                       { return e.name }
+func (e *fakeExtractorSoftware) Version() int                       { return 1 }
+func (e *fakeExtractorSoftware) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *fakeExtractorSoftware) FileRequired(api filesystem.FileAPI) bool {
+	path := filepath.ToSlash(api.Path())
+	return strings.HasSuffix(path, "file.txt") || strings.HasSuffix(path, "/file.txt") || path == "file.txt" || path == "./file.txt"
+}
+func (e *fakeExtractorSoftware) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	path := filepath.ToSlash(input.Path)
+	if !strings.HasSuffix(path, "file.txt") {
+		return inventory.Inventory{}, errors.New("not a file.txt")
+	}
+	return inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "Software",
+				Location: extractor.LocationFromPath(path),
+				Plugins:  []string{e.Name()},
+			},
+		},
+	}, nil
+}
+
+func TestRun_EmbeddedFS(t *testing.T) {
+	success := &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded}
+	fsys := setupMapFS(t, mapFS{
+		"disk.vmdk": []byte("VMDK Content"),
+	})
+
+	// Create temporary directory for embedded filesystem
+	embeddedDir := t.TempDir()
+	err := os.WriteFile(filepath.Join(embeddedDir, "file.txt"), []byte("Content"), fs.ModePerm)
+	if err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", filepath.Join(embeddedDir, "file.txt"), err)
+	}
+	embeddedFS := scalibrfs.DirFS(embeddedDir)
+
+	fakeExFS := &fakeExtractorFS{
+		name: "fake-ex-fs",
+		getEmbeddedFS: func(ctx context.Context) (scalibrfs.FS, error) {
+			return embeddedFS, nil
+		},
+	}
+	fakeExSoftware := &fakeExtractorSoftware{name: "fake-ex-software"}
+	extractors := []filesystem.Extractor{fakeExFS, fakeExSoftware}
+
+	// Create config with a single ScanRoot
+	config := &filesystem.Config{
+		Extractors: extractors,
+		ScanRoots: []*scalibrfs.ScanRoot{{
+			FS:   fsys,
+			Path: ".",
+		}},
+		Stats: &fakeCollector{},
+	}
+
+	// Run the test
+	gotInv, gotStatus, err := filesystem.Run(t.Context(), config)
+	if err != nil {
+		t.Fatalf("filesystem.Run(%v): %v", config, err)
+	}
+
+	// Expected inventory
+	wantInv := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "Software",
+				Location: extractor.LocationFromPath("disk.vmdk:1:file.txt"),
+				Plugins:  []string{"fake-ex-software", "fake-ex-software"}, // Expect duplicate due to observed behavior
+			},
+		},
+		EmbeddedFSs: []*inventory.EmbeddedFS{
+			{
+				Path:          "disk.vmdk:1",
+				GetEmbeddedFS: fakeExFS.getEmbeddedFS,
+			},
+		},
+	}
+
+	// Expected status
+	wantStatus := []*plugin.Status{
+		{Name: "fake-ex-fs", Version: 1, Status: success},
+		{Name: "fake-ex-software", Version: 1, Status: success},
+	}
+
+	// Sort package locations for comparison
+	for _, p := range gotInv.Packages {
+		sort.Slice(p.Location.Related, func(i, j int) bool {
+			return p.Location.Related[i].File.Path < p.Location.Related[j].File.Path
+		})
+	}
+
+	// Compare inventory
+	if diff := cmp.Diff(wantInv, gotInv, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorFS{}, fakeExtractorSoftware{}), cmpopts.EquateErrors(), cmpopts.IgnoreFields(inventory.EmbeddedFS{}, "GetEmbeddedFS")); diff != "" {
+		t.Errorf("filesystem.Run(%v): unexpected findings (-want +got):\n%s", config, diff)
+	}
+
+	// Deduplicate status entries, keeping the latest for each extractor
+	seen := make(map[string]*plugin.Status)
+	for _, s := range gotStatus {
+		s.Status.FailureReason = ""
+		seen[s.Name] = s
+	}
+	var dedupedStatus []*plugin.Status
+	for _, s := range seen {
+		dedupedStatus = append(dedupedStatus, s)
+	}
+	sort.Slice(dedupedStatus, func(i, j int) bool {
+		return dedupedStatus[i].Name < dedupedStatus[j].Name
+	})
+
+	// Compare status
+	if diff := cmp.Diff(wantStatus, dedupedStatus, cmpopts.SortSlices(func(s1, s2 *plugin.Status) bool {
+		return s1.Name < s2.Name
+	})); diff != "" {
+		t.Errorf("filesystem.Run(%v): unexpected status (-want +got):\n%s", config, diff)
+	}
+}
+
 // A fake extractor that only extracts directories.
 type fakeExtractorDirs struct {
 	dir  string
@@ -155,8 +312,8 @@ func (e fakeExtractorDirs) Extract(ctx context.Context, input *filesystem.ScanIn
 	path := filepath.ToSlash(input.Path)
 	if path == e.dir {
 		return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
-			Name:      e.name,
-			Locations: []string{path},
+			Name:     e.name,
+			Location: extractor.LocationFromPath(path),
 		}}}, nil
 	}
 	return inventory.Inventory{}, errors.New("unrecognized path")
@@ -197,7 +354,6 @@ func TestRunFS(t *testing.T) {
 		dirsToSkip       []string
 		skipDirGlob      string
 		skipDirRegex     string
-		storeAbsPath     bool
 		maxInodes        int
 		maxFileSizeBytes int
 		wantErr          error
@@ -206,18 +362,18 @@ func TestRunFS(t *testing.T) {
 		wantInodeCount   int
 	}{
 		{
-			desc: "Extractors successful",
+			desc: "Extractors_successful",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -227,15 +383,15 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Dir skipped",
+			desc: "Dir_skipped",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD
 			dirsToSkip: []string{path.Join(cwd, "dir1")},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -250,9 +406,9 @@ func TestRunFS(t *testing.T) {
 			dirsToSkip: []string{"dir1"},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -267,9 +423,9 @@ func TestRunFS(t *testing.T) {
 			skipDirRegex: ".*1",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -284,9 +440,9 @@ func TestRunFS(t *testing.T) {
 			skipDirRegex: "/sub$",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -301,14 +457,14 @@ func TestRunFS(t *testing.T) {
 			skipDirRegex: "asdf",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -334,9 +490,9 @@ func TestRunFS(t *testing.T) {
 			skipDirGlob: "**/sub",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -362,14 +518,14 @@ func TestRunFS(t *testing.T) {
 			skipDirGlob: "none",
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -379,18 +535,18 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Duplicate inventory results kept separate",
+			desc: "Duplicate_inventory_results_kept_separate",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2WithPKG1},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name1,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2WithPKG1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2WithPKG1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -400,15 +556,15 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Extract specific file",
+			desc: "Extract_specific_file",
 			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
 			// ScanRoot is CWD
 			pathsToExtract: []string{path.Join(cwd, path2)},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -423,9 +579,9 @@ func TestRunFS(t *testing.T) {
 			pathsToExtract: []string{path2},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -440,9 +596,9 @@ func TestRunFS(t *testing.T) {
 			pathsToExtract: []string{"dir2"},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -469,9 +625,9 @@ func TestRunFS(t *testing.T) {
 			ignoreSubDirs:  true,
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -493,7 +649,7 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 2,
 		},
 		{
-			desc: "nil result",
+			desc: "nil_result",
 			ex: []filesystem.Extractor{
 				// An Extractor that returns nil.
 				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: nil, Err: nil}}),
@@ -505,37 +661,45 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Extraction fails with partial results",
+			desc: "Extraction_fails_with_partial_results",
 			ex:   []filesystem.Extractor{fakeExWithPartialResult},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeExWithPartialResult.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeExWithPartialResult.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status: plugin.ScanStatusPartiallySucceeded,
+					Status:        plugin.ScanStatusPartiallySucceeded,
+					FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+					FileErrors: []*plugin.FileError{
+						{FilePath: path1, ErrorMessage: "extraction failed"},
+					},
 				}},
 			},
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Extraction fails with no results",
+			desc: "Extraction_fails_with_no_results",
 			ex: []filesystem.Extractor{
 				fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: nil, Err: errors.New("extraction failed")}}),
 			},
 			wantPkg: inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status: plugin.ScanStatusFailed,
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details",
+					FileErrors: []*plugin.FileError{
+						{FilePath: path1, ErrorMessage: "extraction failed"},
+					},
 				}},
 			},
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Extraction fails several times",
+			desc: "Extraction_fails_several_times",
 			ex: []filesystem.Extractor{
 				fe.New("ex1", 1, []string{path1, path2}, map[string]fe.NamesErr{
 					path1: {Names: nil, Err: errors.New("extraction failed")},
@@ -545,7 +709,12 @@ func TestRunFS(t *testing.T) {
 			wantPkg: inventory.Inventory{},
 			wantStatus: []*plugin.Status{
 				{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-					Status: plugin.ScanStatusFailed,
+					Status:        plugin.ScanStatusFailed,
+					FailureReason: "encountered 2 error(s) while running plugin; check file-specific errors for details",
+					FileErrors: []*plugin.FileError{
+						{FilePath: path1, ErrorMessage: "extraction failed"},
+						{FilePath: path2, ErrorMessage: "extraction failed"},
+					},
 				}},
 			},
 			wantInodeCount: 6,
@@ -568,14 +737,14 @@ func TestRunFS(t *testing.T) {
 			maxInodes: 6,
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{path2},
-					Plugins:   []string{fakeEx2.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(path2),
+					Plugins:  []string{fakeEx2.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -591,9 +760,9 @@ func TestRunFS(t *testing.T) {
 			maxFileSizeBytes: 10,
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -603,40 +772,18 @@ func TestRunFS(t *testing.T) {
 			wantInodeCount: 6,
 		},
 		{
-			desc: "Extractors successful store absolute path when requested",
-			ex:   []filesystem.Extractor{fakeEx1, fakeEx2},
-			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
-				{
-					Name:      name1,
-					Locations: []string{filepath.Join(cwd, path1)},
-					Plugins:   []string{fakeEx1.Name()},
-				},
-				{
-					Name:      name2,
-					Locations: []string{filepath.Join(cwd, path2)},
-					Plugins:   []string{fakeEx2.Name()},
-				},
-			}},
-			storeAbsPath: true,
-			wantStatus: []*plugin.Status{
-				{Name: "ex1", Version: 1, Status: success},
-				{Name: "ex2", Version: 2, Status: success},
-			},
-			wantInodeCount: 6,
-		},
-		{
-			desc: "Extractor runs on directory",
+			desc: "Extractor_runs_on_directory",
 			ex:   []filesystem.Extractor{fakeEx1, fakeExDirs},
 			wantPkg: inventory.Inventory{Packages: []*extractor.Package{
 				{
-					Name:      name1,
-					Locations: []string{path1},
-					Plugins:   []string{fakeEx1.Name()},
+					Name:     name1,
+					Location: extractor.LocationFromPath(path1),
+					Plugins:  []string{fakeEx1.Name()},
 				},
 				{
-					Name:      name2,
-					Locations: []string{dir1},
-					Plugins:   []string{fakeExDirs.Name()},
+					Name:     name2,
+					Location: extractor.LocationFromPath(dir1),
+					Plugins:  []string{fakeExDirs.Name()},
 				},
 			}},
 			wantStatus: []*plugin.Status{
@@ -679,8 +826,7 @@ func TestRunFS(t *testing.T) {
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},
-				Stats:             fc,
-				StoreAbsolutePath: tc.storeAbsPath,
+				Stats: fc,
 			}
 			wc, err := filesystem.InitWalkContext(
 				t.Context(), config, []*scalibrfs.ScanRoot{{
@@ -690,7 +836,7 @@ func TestRunFS(t *testing.T) {
 			if err != nil {
 				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
 			}
-			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
+			if err = wc.PrepareNewScan(cwd, fsys); err != nil {
 				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
 			}
 			gotInv, gotStatus, err := filesystem.RunFS(t.Context(), config, wc)
@@ -704,18 +850,24 @@ func TestRunFS(t *testing.T) {
 
 			// The order of the locations doesn't matter.
 			for _, p := range gotInv.Packages {
-				sort.Strings(p.Locations)
+				sort.Slice(p.Location.Related, func(i, j int) bool {
+					return p.Location.Related[i].File.Path < p.Location.Related[j].File.Path
+				})
 			}
 
 			if diff := cmp.Diff(tc.wantPkg, gotInv, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorDirs{}), cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("extractor.Run(%v): unexpected findings (-want +got):\n%s", tc.ex, diff)
 			}
 
+			// The order of the statuses doesn't matter.
 			for _, s := range gotStatus {
-				// Failure reason can be non-deterministic depending on the order of
-				// files traversed so we're ignoring it.
-				s.Status.FailureReason = ""
+				if s.Status.FileErrors != nil {
+					sort.Slice(s.Status.FileErrors, func(i, j int) bool {
+						return s.Status.FileErrors[i].FilePath < s.Status.FileErrors[j].FilePath
+					})
+				}
 			}
+
 			sortStatus := func(s1, s2 *plugin.Status) bool {
 				return s1.Name < s2.Name
 			}
@@ -847,8 +999,7 @@ func TestRunFSGitignore(t *testing.T) {
 				ScanRoots: []*scalibrfs.ScanRoot{{
 					FS: fsys, Path: ".",
 				}},
-				Stats:             fc,
-				StoreAbsolutePath: false,
+				Stats: fc,
 			}
 			wc, err := filesystem.InitWalkContext(
 				t.Context(), config, []*scalibrfs.ScanRoot{{
@@ -858,7 +1009,7 @@ func TestRunFSGitignore(t *testing.T) {
 			if err != nil {
 				t.Fatalf("filesystem.InitializeWalkContext(..., %v): %v", fsys, err)
 			}
-			if err = wc.UpdateScanRoot(cwd, fsys); err != nil {
+			if err = wc.PrepareNewScan(cwd, fsys); err != nil {
 				t.Fatalf("wc.UpdateScanRoot(..., %v): %v", fsys, err)
 			}
 			gotInv, _, err := filesystem.RunFS(t.Context(), config, wc)
@@ -987,7 +1138,9 @@ func TestRunFS_ReadError(t *testing.T) {
 	}
 	wantStatus := []*plugin.Status{
 		{Name: "ex1", Version: 1, Status: &plugin.ScanStatus{
-			Status: plugin.ScanStatusFailed, FailureReason: "Open(file): failed to open",
+			Status: plugin.ScanStatusFailed, FailureReason: "encountered 1 error(s) while running plugin; check file-specific errors for details", FileErrors: []*plugin.FileError{
+				{FilePath: "file", ErrorMessage: "Open(file): failed to open"},
+			},
 		}},
 	}
 	fsys := &fakeFS{}
@@ -1003,7 +1156,7 @@ func TestRunFS_ReadError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("filesystem.InitializeWalkContext(%v): %v", config, err)
 	}
-	if err := wc.UpdateScanRoot(".", fsys); err != nil {
+	if err := wc.PrepareNewScan(".", fsys); err != nil {
 		t.Fatalf("wc.UpdateScanRoot(%v): %v", config, err)
 	}
 	gotInv, gotStatus, err := filesystem.RunFS(t.Context(), config, wc)
@@ -1039,31 +1192,31 @@ func TestIsInterestingExecutable(t *testing.T) {
 		wantWindows bool
 	}{
 		{
-			name: "user executable",
+			name: "user_executable",
 			path: "some/path/a",
 			mode: 0766,
 			want: true,
 		},
 		{
-			name: "group executable",
+			name: "group_executable",
 			path: "some/path/a",
 			mode: 0676,
 			want: true,
 		},
 		{
-			name: "other executable",
+			name: "other_executable",
 			path: "some/path/a",
 			mode: 0667,
 			want: true,
 		},
 		{
-			name: "windows exe",
+			name: "windows_exe",
 			path: "some/path/a.exe",
 			mode: 0666,
 			want: true,
 		},
 		{
-			name: "windows dll",
+			name: "windows_dll",
 			path: "some/path/a.dll",
 			mode: 0666,
 			want: true,
@@ -1076,61 +1229,61 @@ func TestIsInterestingExecutable(t *testing.T) {
 			wantWindows: false,
 		},
 		{
-			name: "executable required",
+			name: "executable_required",
 			path: "some/path/a",
 			mode: 0766,
 			want: true,
 		},
 		{
-			name: "unwanted extension",
+			name: "unwanted_extension",
 			path: "some/path/a.html",
 			mode: 0766,
 			want: false,
 		},
 		{
-			name: "another unwanted extension",
+			name: "another_unwanted_extension",
 			path: "some/path/a.txt",
 			mode: 0766,
 			want: false,
 		},
 		{
-			name: "python script without execute permissions",
+			name: "python_script_without_execute_permissions",
 			path: "some/path/a.py",
 			mode: 0666,
 			want: true,
 		},
 		{
-			name: "shell script without execute permissions",
+			name: "shell_script_without_execute_permissions",
 			path: "some/path/a.sh",
 			mode: 0666,
 			want: true,
 		},
 		{
-			name: "shared library without execute permissions",
+			name: "shared_library_without_execute_permissions",
 			path: "some/path/a.so",
 			mode: 0666,
 			want: true,
 		},
 		{
-			name: "binary file without execute permissions",
+			name: "binary_file_without_execute_permissions",
 			path: "some/path/a.bin",
 			mode: 0666,
 			want: true,
 		},
 		{
-			name: "versioned shared library",
+			name: "versioned_shared_library",
 			path: "some/path/library.so.1",
 			mode: 0666,
 			want: true,
 		},
 		{
-			name: "versioned shared library with multiple digits",
+			name: "versioned_shared_library_with_multiple_digits",
 			path: "some/path/library.so.12",
 			mode: 0666,
 			want: true,
 		},
 		{
-			name: "not a versioned shared library",
+			name: "not_a_versioned_shared_library",
 			path: "some/path/library.so.foo",
 			mode: 0666,
 			want: false,

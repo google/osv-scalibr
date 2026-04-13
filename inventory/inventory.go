@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,13 @@
 package inventory
 
 import (
+	"context"
+	"errors"
+	"path/filepath"
+
 	"github.com/google/osv-scalibr/extractor"
+	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory/location"
 )
 
 // Inventory stores the artifacts (e.g. software packages, security findings)
@@ -27,6 +33,30 @@ type Inventory struct {
 	GenericFindings        []*GenericFinding
 	Secrets                []*Secret
 	ContainerImageMetadata []*extractor.ContainerImageMetadata
+	EmbeddedFSs            []*EmbeddedFS
+}
+
+// EmbeddedFS represents a mountable filesystem extracted from
+// within another file (e.g., a disk image, partition, or archive).
+// This is not proto serialized since it's only used as temporary
+// storage to traverse embedded filesystems during extraction.
+type EmbeddedFS struct {
+	// Path is a unique identifier for the embedded filesystem.
+	// It is typically formed by concatenating the path to the source file
+	// with the partition index from which the filesystem was extracted.
+	Path string
+
+	// TempPaths holds temporary files or directories created during extraction.
+	// These should be cleaned up once all extractors, annotators, and detectors
+	// have completed their operations.
+	// TempPaths will be set when there are temporary directories to clean up.
+	TempPaths []string
+
+	// GetEmbeddedFS is a function that mounts or initializes the underlying
+	// embedded filesystem and returns a scalibrfs.FS interface for accessing it.
+	// The returned filesystem should be closed or cleaned up by the caller
+	// when no longer needed.
+	GetEmbeddedFS func(context.Context) (scalibrfs.FS, error)
 }
 
 // Append adds one or more inventories to the current one.
@@ -37,6 +67,7 @@ func (i *Inventory) Append(other ...Inventory) {
 		i.GenericFindings = append(i.GenericFindings, o.GenericFindings...)
 		i.Secrets = append(i.Secrets, o.Secrets...)
 		i.ContainerImageMetadata = append(i.ContainerImageMetadata, o.ContainerImageMetadata...)
+		i.EmbeddedFSs = append(i.EmbeddedFSs, o.EmbeddedFSs...)
 	}
 }
 
@@ -54,8 +85,36 @@ func (i Inventory) IsEmpty() bool {
 	if len(i.Secrets) != 0 {
 		return false
 	}
+	if len(i.EmbeddedFSs) != 0 {
+		return false
+	}
 	if len(i.ContainerImageMetadata) != 0 {
 		return false
 	}
 	return true
+}
+
+// ExpandPathsToAbsolute changes the paths of the inventory
+// items from relative to absolute paths.
+func (i Inventory) ExpandPathsToAbsolute() error {
+	var errs []error
+	for _, p := range i.Packages {
+		absRoot, err := filepath.Abs(p.ScanRoot)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		expandPathToAbsolute(absRoot, p.Location.Descriptor)
+		for _, r := range p.Location.Related {
+			expandPathToAbsolute(absRoot, &r)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func expandPathToAbsolute(absRoot string, l *location.Location) {
+	if l == nil || l.File == nil {
+		return
+	}
+
+	l.File.Path = filepath.Join(absRoot, l.File.Path)
 }

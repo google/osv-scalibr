@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,109 +19,53 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *wheelegg.PythonPackageMetadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.PythonPackageMetadata
 	}{
 		{
-			desc: "nil metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil package",
+			desc: "set_metadata",
 			m: &wheelegg.PythonPackageMetadata{
 				Author: "some-author",
 			},
-			p:    nil,
-			want: nil,
-		},
-		{
-			desc: "set metadata",
-			m: &wheelegg.PythonPackageMetadata{
+			want: &pb.PythonPackageMetadata{
 				Author: "some-author",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_PythonMetadata{
-					PythonMetadata: &pb.PythonPackageMetadata{
-						Author: "some-author",
-					},
-				},
-			},
 		},
 		{
-			desc: "override metadata",
-			m: &wheelegg.PythonPackageMetadata{
-				Author: "some-other-author",
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_PythonMetadata{
-					PythonMetadata: &pb.PythonPackageMetadata{
-						Author: "some-author",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_PythonMetadata{
-					PythonMetadata: &pb.PythonPackageMetadata{
-						Author: "some-other-author",
-					},
-				},
-			},
-		},
-		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &wheelegg.PythonPackageMetadata{
 				Author:      "some-author",
 				AuthorEmail: "some-author@google.com",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_PythonMetadata{
-					PythonMetadata: &pb.PythonPackageMetadata{
-						Author:      "some-author",
-						AuthorEmail: "some-author@google.com",
-					},
-				},
+			want: &pb.PythonPackageMetadata{
+				Author:      "some-author",
+				AuthorEmail: "some-author@google.com",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := wheelegg.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("wheelegg.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := wheelegg.ToStruct(p.GetPythonMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetPythonMetadata(), diff)
+			gotStruct := wheelegg.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -134,12 +78,7 @@ func TestToStruct(t *testing.T) {
 		want *wheelegg.PythonPackageMetadata
 	}{
 		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
-		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.PythonPackageMetadata{
 				Author: "some-author",
 			},
@@ -148,7 +87,7 @@ func TestToStruct(t *testing.T) {
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.PythonPackageMetadata{
 				Author:      "some-author",
 				AuthorEmail: "some-author@google.com",
@@ -172,19 +111,12 @@ func TestToStruct(t *testing.T) {
 			}
 
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_PythonMetadata{
-					PythonMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := wheelegg.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("wheelegg.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

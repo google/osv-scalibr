@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 )
 
 func canonicalizeRubyGemVersion(str string) string {
-	res := ""
+	var res strings.Builder
 
 	checkPrevious := false
 	previousWasDigit := true
@@ -27,7 +27,7 @@ func canonicalizeRubyGemVersion(str string) string {
 	for _, c := range str {
 		if c == 46 {
 			checkPrevious = false
-			res += "."
+			res.WriteString(".")
 
 			continue
 		}
@@ -35,16 +35,16 @@ func canonicalizeRubyGemVersion(str string) string {
 		isDigit := isASCIIDigit(c)
 
 		if checkPrevious && previousWasDigit != isDigit {
-			res += "."
+			res.WriteString(".")
 		}
 
-		res += string(c)
+		res.WriteRune(c)
 
 		previousWasDigit = isDigit
 		checkPrevious = true
 	}
 
-	return res
+	return res.String()
 }
 
 func groupSegments(segs []string) (numbers []string, build []string) {
@@ -114,22 +114,36 @@ func compareRubyGemsComponents(a, b []string) int {
 	return 0
 }
 
-type rubyGemsVersion struct {
-	Original string
-	Segments []string
+// RubyGemsVersion is the representation of a version of a package that is held
+// in the RubyGems ecosystem.
+type RubyGemsVersion struct {
+	original string
+	segments []string
 }
 
-func parseRubyGemsVersion(str string) rubyGemsVersion {
-	return rubyGemsVersion{
+var _ Version = RubyGemsVersion{}
+
+// ParseRubyGemsVersion parses the given string as a RubyGems version.
+func ParseRubyGemsVersion(str string) RubyGemsVersion {
+	return RubyGemsVersion{
 		str,
 		canonicalSegments(strings.Split(canonicalizeRubyGemVersion(str), ".")),
 	}
 }
 
-func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
-	return compareRubyGemsComponents(v.Segments, w.Segments)
+func (v RubyGemsVersion) compare(w RubyGemsVersion) int {
+	return compareRubyGemsComponents(v.segments, w.segments)
 }
 
-func (v rubyGemsVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseRubyGemsVersion(str)), nil
+// Compare compares the given version to the receiver.
+func (v RubyGemsVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(RubyGemsVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v RubyGemsVersion) CompareStr(str string) (int, error) {
+	return v.compare(ParseRubyGemsVersion(str)), nil
 }

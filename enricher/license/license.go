@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	depsdevpb "deps.dev/api/v3"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
@@ -30,6 +29,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	depsdevpb "deps.dev/api/v3"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -44,17 +46,12 @@ var _ enricher.Enricher = &Enricher{}
 
 // Enricher adds license data to software packages by querying deps.dev
 type Enricher struct {
-	client Client
-}
-
-// NewWithClient returns an Enricher which uses a specified deps.dev client.
-func NewWithClient(c Client) enricher.Enricher {
-	return &Enricher{client: c}
+	Client Client
 }
 
 // New creates a new Enricher
-func New() enricher.Enricher {
-	return &Enricher{}
+func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
+	return &Enricher{}, nil
 }
 
 // Name of the Enricher.
@@ -84,12 +81,12 @@ func (Enricher) RequiredPlugins() []string {
 
 // Enrich adds license data to all the packages using deps.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
-	if e.client == nil {
+	if e.Client == nil {
 		depsDevAPIClient, err := datasource.NewCachedInsightsClient(depsdev.DepsdevAPI, "osv-scalibr/"+scalibrversion.ScannerVersion)
 		if err != nil {
 			return fmt.Errorf("cannot connect with deps.dev %w", err)
 		}
-		e.client = depsDevAPIClient
+		e.Client = depsDevAPIClient
 	}
 
 	queries := make([]*depsdevpb.GetVersionRequest, len(inv.Packages))
@@ -144,7 +141,7 @@ func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.
 			continue
 		}
 		g.Go(func() error {
-			resp, err := e.client.GetVersion(ctx, queries[i])
+			resp, err := e.Client.GetVersion(ctx, queries[i])
 			if err != nil {
 				if status.Code(err) == codes.NotFound {
 					return nil
@@ -163,8 +160,13 @@ func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.
 }
 
 func versionQuery(system depsdevpb.System, name string, version string) *depsdevpb.GetVersionRequest {
+	// Matching deps.dev naming convention.
 	if system == depsdevpb.System_GO {
-		version = "v" + version
+		if name == "stdlib" {
+			version = "go" + version
+		} else {
+			version = "v" + version
+		}
 	}
 
 	return &depsdevpb.GetVersionRequest{

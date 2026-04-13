@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/osv-scalibr/common/windows/registry"
 	"golang.org/x/text/encoding/unicode"
@@ -58,7 +59,7 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 		return nil, err
 	}
 
-	var syskey string
+	var syskey strings.Builder
 	currentControlSet := fmt.Sprintf(`ControlSet%03d\Control\Lsa\`, currentSet)
 	for _, k := range syskeyPaths {
 		key, err := s.OpenKey("HKLM", currentControlSet+k)
@@ -71,10 +72,10 @@ func (s *SystemRegistry) Syskey() ([]byte, error) {
 			return nil, err
 		}
 
-		syskey += string(class)
+		syskey.Write(class)
 	}
 
-	decodedKey, err := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder().String(syskey)
+	decodedKey, err := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder().String(syskey.String())
 	if err != nil {
 		return nil, err
 	}

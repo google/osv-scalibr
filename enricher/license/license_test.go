@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ import (
 	"context"
 	"testing"
 
-	depsdevpb "deps.dev/api/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-cpy/cpy"
@@ -29,6 +28,9 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"google.golang.org/protobuf/proto"
+
+	depsdevpb "deps.dev/api/v3"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestEnrich(t *testing.T) {
@@ -47,7 +49,11 @@ func TestEnrich(t *testing.T) {
 	}
 
 	cli := fakeclient.New(licenseMap)
-	e := license.NewWithClient(cli)
+	e, err := license.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("license.New(): %v", err)
+	}
+	e.(*license.Enricher).Client = cli
 
 	tests := []struct {
 		name     string
@@ -153,7 +159,7 @@ func TestEnrich(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
+				tt.ctx = t.Context()
 			}
 
 			var input *enricher.ScanInput

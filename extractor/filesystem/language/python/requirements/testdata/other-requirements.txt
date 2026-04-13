@@ -1,1 +1,1 @@
-transitive-req==1
+pandas==2.2.3

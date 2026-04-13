@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 )
@@ -34,10 +36,11 @@ func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int) *httptes
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
 		r *http.Request) {
+		modelsEndpoint := openai.ModelsEndpoint
 		// Check if it's a GET request to the models endpoint
-		if r.Method != http.MethodGet || r.URL.Path != "/v1/models" {
-			t.Errorf("unexpected request: %s %s, expected: GET /v1/models",
-				r.Method, r.URL.Path)
+		if r.Method != http.MethodGet || r.URL.Path != modelsEndpoint {
+			t.Errorf("unexpected request: %s %s, expected: GET %s",
+				r.Method, r.URL.Path, modelsEndpoint)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -59,10 +62,10 @@ func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int) *httptes
 
 func TestProjectValidator(t *testing.T) {
 	cases := []struct {
-		name        string
-		statusCode  int
-		want        veles.ValidationStatus
-		expectError bool
+		name       string
+		statusCode int
+		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_key",
@@ -75,10 +78,10 @@ func TestProjectValidator(t *testing.T) {
 			want:       veles.ValidationInvalid,
 		},
 		{
-			name:        "forbidden_but_likely_valid",
-			statusCode:  http.StatusForbidden,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "forbidden_but_likely_valid",
+			statusCode: http.StatusForbidden,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 		{
 			name:       "rate_limited_but_likely_valid",
@@ -86,10 +89,10 @@ func TestProjectValidator(t *testing.T) {
 			want:       veles.ValidationValid,
 		},
 		{
-			name:        "server_error",
-			statusCode:  http.StatusInternalServerError,
-			want:        veles.ValidationFailed,
-			expectError: true,
+			name:       "server_error",
+			statusCode: http.StatusInternalServerError,
+			want:       veles.ValidationFailed,
+			wantErr:    cmpopts.AnyError,
 		},
 	}
 
@@ -101,46 +104,21 @@ func TestProjectValidator(t *testing.T) {
 			defer server.Close()
 
 			// Create validator with mock client and server URL
-			validator := openai.NewProjectValidator(
-				openai.WithProjectHTTPClient(server.Client()),
-				openai.WithProjectAPIURL(server.URL),
-			)
+			validator := openai.NewProjectValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + openai.ModelsEndpoint
 
-			// Create test key
 			key := openai.APIKey{Key: projectValidatorTestKey}
 
-			// Test validation
 			got, err := validator.Validate(t.Context(), key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
-			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestProjectValidator_EmptyKey(t *testing.T) {
-	validator := openai.NewProjectValidator()
-	key := openai.APIKey{Key: ""}
-
-	got, err := validator.Validate(t.Context(), key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error for empty key, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

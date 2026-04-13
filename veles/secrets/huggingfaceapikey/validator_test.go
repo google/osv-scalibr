@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -112,9 +112,8 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a validator with a mock client
-			validator := huggingfaceapikey.NewValidator(
-				huggingfaceapikey.WithClient(client),
-			)
+			validator := huggingfaceapikey.NewValidator()
+			validator.HTTPC = client
 
 			// Create a test key
 			key := huggingfaceapikey.HuggingfaceAPIKey{Key: validatorTestKey}
@@ -136,7 +135,6 @@ func TestValidator(t *testing.T) {
 }
 
 func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -146,9 +144,8 @@ func TestValidator_ContextCancellation(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := huggingfaceapikey.NewValidator(
-		huggingfaceapikey.WithClient(client),
-	)
+	validator := huggingfaceapikey.NewValidator()
+	validator.HTTPC = client
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
@@ -177,9 +174,8 @@ func TestValidator_InvalidRequest(t *testing.T) {
 		Transport: &mockTransport{testServer: server},
 	}
 
-	validator := huggingfaceapikey.NewValidator(
-		huggingfaceapikey.WithClient(client),
-	)
+	validator := huggingfaceapikey.NewValidator()
+	validator.HTTPC = client
 
 	testCases := []struct {
 		name     string

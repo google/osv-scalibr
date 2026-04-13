@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ func TestTargetOutsideRoot(t *testing.T) {
 		target: "../../t.txt",
 		want:   true,
 	}, {
-		name: "absolute target outside root",
+		name: "absolute_target_outside_root",
 		path: "a/f.txt",
 		target: func() string {
 			if runtime.GOOS == "windows" {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,15 +21,19 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-const fineGrainedPATMaxLen = 80
+const fineGrainedPATBase64MaxLen = 125 // 92 bytes, base64 encoded
 
 var fineGrainedPATPattern = regexp.MustCompile(`github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}`)
+
+// base64(github_pat_ -> Z2l0aHViX3BhdF (minus the last incomplete byte)
+var fineGrainedPATBase64Pattern = regexp.MustCompile(`Z2l0aHViX3BhdF[0-9a-zA-Z+/=]{0,111}`)
 
 // NewFineGrainedPATDetector returns a new Veles Detector that finds Github fine-grained personal access tokens
 func NewFineGrainedPATDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: fineGrainedPATMaxLen,
-		Re:     fineGrainedPATPattern,
+		MaxLen:   fineGrainedPATBase64MaxLen,
+		Re:       fineGrainedPATPattern,
+		ReBase64: fineGrainedPATBase64Pattern,
 		FromMatch: func(match []byte) (veles.Secret, bool) {
 			return FineGrainedPersonalAccessToken{Token: string(match)}, true
 		},

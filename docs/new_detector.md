@@ -6,22 +6,32 @@ interface and have read access to all files on the filesystem through it.
 
 <!--  See detector/detector.go symbol \bDetector\b -->
 
-<!--  See plugin/plugin.go symbol Plugin -->
+<!--  See plugin/plugin.go symbol \bPlugin\b -->
 
 ## Steps for writing a new detector
 
-See the [CIS benchmark detector](/detector/cis/generic_linux/etcpasswdpermissions/etcpasswdpermissions.go)
+See the [/etc/shadow weak credentials detector](/detector/weakcredentials/etcshadow/etcshadow.go)
 as an example.
 
 1.  Set up your detector package in an [appropriate location](#code-location).
-1.  Create a struct that implements
-    [`Detector`](/detector/detector.go):
+1.  Add a `New()` function that returns your detector struct from the specified
+    plugin config.
+1.  If you'd like to add new plugin-specific config settings for your Detector,
+    1. Add them as a new message to [config.proto](third_party/scalibr/binary/proto/config.proto).
+    1. Re-generate the go_proto:
+
+        ```
+        $ `make protos`
+        ```
+1.  Implement the [`Detector`](/detector/detector.go)
+    interface with your struct:
     *  Implement `Name()` to return a unique name, e.g. `cve/nginxldapauth`.
-    *   Implement `Version()` to return 0. Increase it in the future whenever
-        larger changes are made to the detector.
-    *   Implement `Scan()` (see [param list](#scan-parameters)) to run your
-        detection logic and [return](#output-format) the security findings.
-1.  Appropriately fill the "Description" and "Recommendation" advisory fields
+    *  Implement `Version()` to return 0. Increase it in the future whenever
+       larger changes are made to the detector.
+    *  Implement `DetectedFinding()` to return [generic info](#output-format)
+       about what is detected.
+    *  Implement `Scan()` (see [param list](#scan-parameters)) to run your
+       detection logic and [return](#output-format) the security findings.
 1.  Write tests.
 1.  Register your detector in
     [list.go](/detector/list/list.go)
@@ -56,7 +66,8 @@ Please submit this code separately from the main detector logic.
 All new detectors should be in a sub-folder of
 [detector/](/detector/).
 If there's already a directory that fits the detector's category (e.g. cis)
-place it in there. Otherwise, feel free to create a new directory.
+place it in there. Otherwise, feel free to create a new directory. Feel free
+to ask SCALIBR devs for location suggestions during code review.
 
 ## Scan parameters
 
@@ -82,11 +93,33 @@ software found, or exit early if none are installed. For an example use case see
 ## Output format
 
 Detectors return their vulnerability findings in the
-[`Finding`](https://github.com/google/osv-scalibr/blob/28397d99/detector/detector.go#L47)
-struct. See the comments in the `Finding` struct and
+[`Finding`](/inventory/finding.go)
+struct. Package related vulnerabilities use the `PackageVuln` struct while more
+generic findings use `GenericFinding`. Feel free to add a new struct if you're
+planning to introduce a new category of vulnerabilities to scan for.
+See the comments in the `Finding` struct and
 [existing Detector implementations](/detector/govulncheck/binary/binary.go)
-for guidance on how to fill it out. Keep in mind that findings are uniquely
-identified by the `AdvisoryID` and each detector should return a unique
-`AdvisoryID` for their findings.
+for guidance on how to fill these structs out.
+
+One thing to keep in mind: `GenericFindings` are uniquely identified by the
+`GenericFindingAdvisory` field, including the `AdvisoryID`. A detector should
+always return the same `GenericFindingAdvisory` with its own unique
+`AdvisoryID`. If you want to set target-specific information
+(e.g. which users had weak passwords), you can add it
+to `GenericFindingTargetDetails`.
+
+`PackageVulns` are uniquely identified by the contents of their `Vulnerability`
+field. A detector should thus always return the same `Vulnerability`, with the
+exception of the `DatabaseSpecific` field. If you want to set target-specific
+information (e.g. the exact version of the vulnerable package found), you can
+add it to the `DatabaseSpecific` field of `Vulnerability`.
+
+Since `DetectedFinding()` returns generic info about the vulnerability, you'll
+generally want to return a `GenericFinding` struct with only the
+`GenericFindingAdvisory` or a `PackageVuln` struct with only the `Vulnerability`
+(and no `DatabaseSpecific`) field set.
+
+Make sure you appropriately fill the "Description" and "Recommendation" fields
+of these structs.
 
 In case you have any questions or feedback, feel free to open an issue.

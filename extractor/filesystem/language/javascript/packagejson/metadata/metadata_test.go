@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -136,7 +135,7 @@ func TestPersonString(t *testing.T) {
 			want:  "",
 		},
 		{
-			desc: "person with no name",
+			desc: "person_with_no_name",
 			input: &metadata.Person{
 				Email: "dev@corp.com",
 				URL:   "http://dev.blog.com",
@@ -144,7 +143,7 @@ func TestPersonString(t *testing.T) {
 			want: "",
 		},
 		{
-			desc: "person with no email",
+			desc: "person_with_no_email",
 			input: &metadata.Person{
 				Name: "Developer",
 				URL:  "http://dev.blog.com",
@@ -152,7 +151,7 @@ func TestPersonString(t *testing.T) {
 			want: "Developer (http://dev.blog.com)",
 		},
 		{
-			desc: "person with no url",
+			desc: "person_with_no_url",
 			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
@@ -160,7 +159,7 @@ func TestPersonString(t *testing.T) {
 			want: "Developer <dev@corp.com>",
 		},
 		{
-			desc: "person object",
+			desc: "person_object",
 			input: &metadata.Person{
 				Name:  "Developer",
 				Email: "dev@corp.com",
@@ -235,75 +234,28 @@ func TestPersonFromString(t *testing.T) {
 	}
 }
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *metadata.JavascriptPackageJSONMetadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.JavascriptPackageJSONMetadata
 	}{
 		{
-			desc: "nil metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil package",
+			desc: "set_metadata",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
+				Source: metadata.Unknown,
 			},
-			p:    nil,
-			want: nil,
-		},
-		{
-			desc: "set metadata",
-			m: &metadata.JavascriptPackageJSONMetadata{
-				Author: &metadata.Person{
-					Name:  "some-author",
-					Email: "some-author@google.com",
-				},
-			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_JavascriptMetadata{
-					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
-						Author: "some-author <some-author@google.com>",
-					},
-				},
+			want: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_UNKNOWN,
 			},
 		},
 		{
-			desc: "override metadata",
-			m: &metadata.JavascriptPackageJSONMetadata{
-				Author: &metadata.Person{
-					Name:  "some-other-author",
-					Email: "some-other-author@google.com",
-				},
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_JavascriptMetadata{
-					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
-						Author: "some-author <some-author@google.com>",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_JavascriptMetadata{
-					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
-						Author: "some-other-author <some-other-author@google.com>",
-					},
-				},
-			},
-		},
-		{
-			desc: "set all fields",
+			desc: "set_all_fields",
 			m: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
 					Name:  "some-author",
@@ -329,49 +281,79 @@ func TestSetProto(t *testing.T) {
 						Email: "second-contributor@google.com",
 					},
 				},
-				FromNPMRepository: true,
+				Source: metadata.PublicRegistry,
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_JavascriptMetadata{
-					JavascriptMetadata: &pb.JavascriptPackageJSONMetadata{
-						Author: "some-author <some-author@google.com>",
-						Maintainers: []string{
-							"first-maintainer <first-maintainer@google.com>",
-							"second-maintainer <second-maintainer@google.com>",
-						},
-						Contributors: []string{
-							"first-contributor <first-contributor@google.com>",
-							"second-contributor <second-contributor@google.com>",
-						},
-						FromNpmRepository: true,
-					},
+			want: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Maintainers: []string{
+					"first-maintainer <first-maintainer@google.com>",
+					"second-maintainer <second-maintainer@google.com>",
 				},
+				Contributors: []string{
+					"first-contributor <first-contributor@google.com>",
+					"second-contributor <second-contributor@google.com>",
+				},
+				Source: pb.PackageSource_PUBLIC_REGISTRY,
+			},
+		},
+		{
+			desc: "set_public_registry_NPMResolutionSource",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.PublicRegistry,
+			},
+			want: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_PUBLIC_REGISTRY,
+			},
+		},
+		{
+			desc: "set_other_NPMResolutionSource",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Other,
+			},
+			want: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_OTHER,
+			},
+		},
+		{
+			desc: "set_local_NPMResolutionSource",
+			m: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Local,
+			},
+			want: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_LOCAL,
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := metadata.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := metadata.ToStruct(p.GetJavascriptMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetJavascriptMetadata(), diff)
+			gotStruct := metadata.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -384,12 +366,7 @@ func TestToStruct(t *testing.T) {
 		want *metadata.JavascriptPackageJSONMetadata
 	}{
 		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
-		{
-			desc: "some fields",
+			desc: "some_fields",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author",
 			},
@@ -397,10 +374,11 @@ func TestToStruct(t *testing.T) {
 				Author: &metadata.Person{
 					Name: "some-author",
 				},
+				Source: metadata.Unknown,
 			},
 		},
 		{
-			desc: "all fields",
+			desc: "all_fields",
 			m: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
 				Maintainers: []string{
@@ -411,7 +389,7 @@ func TestToStruct(t *testing.T) {
 					"first-contributor <first-contributor@google.com>",
 					"second-contributor <second-contributor@google.com>",
 				},
-				FromNpmRepository: true,
+				Source: pb.PackageSource_PUBLIC_REGISTRY,
 			},
 			want: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
@@ -438,7 +416,49 @@ func TestToStruct(t *testing.T) {
 						Email: "second-maintainer@google.com",
 					},
 				},
-				FromNPMRepository: true,
+				Source: metadata.PublicRegistry,
+			},
+		},
+		{
+			desc: "set_public_registry_NPMResolutionSource",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_PUBLIC_REGISTRY,
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.PublicRegistry,
+			},
+		},
+		{
+			desc: "set_other_NPMResolutionSource",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_OTHER,
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Other,
+			},
+		},
+		{
+			desc: "set_local_NPMResolutionSource",
+			m: &pb.JavascriptPackageJSONMetadata{
+				Author: "some-author <some-author@google.com>",
+				Source: pb.PackageSource_LOCAL,
+			},
+			want: &metadata.JavascriptPackageJSONMetadata{
+				Author: &metadata.Person{
+					Name:  "some-author",
+					Email: "some-author@google.com",
+				},
+				Source: metadata.Local,
 			},
 		},
 	}
@@ -455,19 +475,12 @@ func TestToStruct(t *testing.T) {
 			}
 
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_JavascriptMetadata{
-					JavascriptMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := metadata.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

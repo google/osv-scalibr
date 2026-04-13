@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,39 @@
 // Package metadata defines a Metadata struct for Java archives.
 package metadata
 
+import (
+	metadataproto "github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+func init() {
+	metadataproto.Register(ToStruct, ToProto)
+}
+
 // Metadata holds parsing information for a Java archive package.
 type Metadata struct {
 	ArtifactID string
 	GroupID    string
 	SHA1       string
+}
+
+// ToProto converts the Metadata struct to a JavaArchiveMetadata proto.
+func ToProto(m *Metadata) *pb.JavaArchiveMetadata {
+	return &pb.JavaArchiveMetadata{
+		ArtifactId: m.ArtifactID,
+		GroupId:    m.GroupID,
+		Sha1:       m.SHA1,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
+// ToStruct converts the JavaArchiveMetadata proto to a Metadata struct.
+func ToStruct(m *pb.JavaArchiveMetadata) *Metadata {
+	return &Metadata{
+		ArtifactID: m.GetArtifactId(),
+		GroupID:    m.GetGroupId(),
+		SHA1:       m.GetSha1(),
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ func (rootNode *RootNode) Insert(path string, vf *virtualFile) error {
 	}
 
 	cursor := &rootNode.Node
-	for _, segment := range strings.Split(path, divider) {
+	for segment := range strings.SplitSeq(path, divider) {
 		next, ok := cursor.children[segment]
 		// Create the segment if it doesn't exist
 		if !ok {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,14 +18,18 @@ package requirements
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"deps.dev/util/pypi"
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	pypiresolve "deps.dev/util/resolve/pypi"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/resolution"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/internal"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/inventory"
@@ -66,28 +70,51 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{requirements.Name}
 }
 
-// NewDefault returns a new enricher with the default configuration.
-func NewDefault() enricher.Enricher {
-	return &Enricher{
-		// Empty string indicates using default registry and no local registry.
-		Client: resolution.NewPyPIRegistryClient("", ""),
+// New creates a new Enricher.
+func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	upstreamRegistry := ""
+	depsDevRequirements := false
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsTransitiveConfig {
+		return c.GetPythonRequirementsTransitive()
+	})
+	if specific != nil {
+		upstreamRegistry = specific.UpstreamRegistry
+		depsDevRequirements = specific.DepsDevRequirements
 	}
-}
 
-// NewEnricher creates a new Enricher.
-func NewEnricher(client resolve.Client) *Enricher {
-	return &Enricher{
-		Client: client,
+	var depClient resolve.Client
+	var err error
+	if depsDevRequirements {
+		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+		}
+	} else {
+		depClient = resolution.NewPyPIRegistryClient(upstreamRegistry, cfg.LocalRegistry)
 	}
+
+	return &Enricher{
+		Client: depClient,
+	}, nil
 }
 
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	pkgGroups := groupPackages(inv.Packages)
+	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
+
+	var errs error
 	for path, pkgMap := range pkgGroups {
-		list := make([]*extractor.Package, 0, len(pkgMap))
+		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
-			list = append(list, indexPkg.pkg)
+			packages = append(packages, indexPkg)
+		}
+		slices.SortFunc(packages, func(a, b internal.PackageWithIndex) int {
+			return a.Index - b.Index
+		})
+
+		list := make([]*extractor.Package, 0, len(packages))
+		for _, indexPkg := range packages {
+			list = append(list, indexPkg.Pkg)
 		}
 		if len(list) == 0 || len(list[0].Metadata.(*requirements.Metadata).HashCheckingModeValues) > 0 {
 			// Do not perform transitive extraction with hash-checking mode.
@@ -98,58 +125,20 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		}
 
 		// For each manifest, perform dependency resolution.
-		pkgs, err := e.resolve(ctx, path, list)
+		pkgs, err := e.resolve(ctx, path, list, input.ScanRoot.Path)
 		if err != nil {
-			log.Warnf("failed resolution: %v", err)
+			log.Warnf("failed resolution for %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
 			continue
 		}
 
-		for _, pkg := range pkgs {
-			indexPkg, ok := pkgMap[pkg.Name]
-			if ok {
-				// This dependency is in manifest, update the version and plugins.
-				i := indexPkg.index
-				inv.Packages[i].Version = pkg.Version
-				inv.Packages[i].Plugins = append(inv.Packages[i].Plugins, Name)
-			} else {
-				// This dependency is not found in manifest, so it's a transitive dependency.
-				inv.Packages = append(inv.Packages, pkg)
-			}
-		}
+		internal.Add(pkgs, inv, Name, pkgMap)
 	}
-	return nil
-}
-
-// packageWithIndex holds the package with its index in inv.Packages
-type packageWithIndex struct {
-	pkg   *extractor.Package
-	index int
-}
-
-// groupPackages groups packages found in requirements.txt by the first location that they are found
-// and returns a map of location -> package name -> package with index.
-func groupPackages(pkgs []*extractor.Package) map[string]map[string]packageWithIndex {
-	result := make(map[string]map[string]packageWithIndex)
-	for i, pkg := range pkgs {
-		if !slices.Contains(pkg.Plugins, requirements.Name) {
-			continue
-		}
-		if len(pkg.Locations) == 0 {
-			log.Warnf("package %s has no locations", pkg.Name)
-			continue
-		}
-		// Use the path where this package is first found.
-		path := pkg.Locations[0]
-		if _, ok := result[path]; !ok {
-			result[path] = make(map[string]packageWithIndex)
-		}
-		result[path][pkg.Name] = packageWithIndex{pkg, i}
-	}
-	return result
+	return errs
 }
 
 // resolve performs dependency resolution for packages found in a single requirements.txt.
-func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Package) ([]*extractor.Package, error) {
+func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Package, scanRoot string) ([]*extractor.Package, error) {
 	overrideClient := resolution.NewOverrideClient(e.Client)
 	resolver := pypiresolve.NewResolver(overrideClient)
 
@@ -207,11 +196,12 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
 		pkgs[i-1] = &extractor.Package{
-			Name:      node.Version.Name,
-			Version:   node.Version.Version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{path},
-			Plugins:   []string{Name},
+			Name:     node.Version.Name,
+			Version:  node.Version.Version,
+			PURLType: purl.TypePyPi,
+			ScanRoot: scanRoot,
+			Location: extractor.LocationFromPath(path),
+			Plugins:  []string{Name},
 		}
 	}
 	return pkgs, nil

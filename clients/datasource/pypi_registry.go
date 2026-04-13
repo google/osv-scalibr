@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,14 +62,6 @@ func NewPyPIRegistryAPIClient(registry string, localRegistry string) *PyPIRegist
 		mu:            &sync.Mutex{},
 		responses:     NewRequestCache[string, response](),
 	}
-}
-
-// SetLocalRegistry sets the local directory that stores the downloaded PyPI manifests.
-func (p *PyPIRegistryAPIClient) SetLocalRegistry(localRegistry string) {
-	if localRegistry != "" {
-		localRegistry = filepath.Join(localRegistry, "pypi")
-	}
-	p.localRegistry = localRegistry
 }
 
 // GetIndex queries the simple API index for a given project.

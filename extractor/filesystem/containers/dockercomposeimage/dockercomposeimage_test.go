@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,10 +25,15 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
-	extr := dockercomposeimage.New(dockercomposeimage.DefaultConfig())
+	extr, err := dockercomposeimage.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("dockercomposeimage.New failed: %v", err)
+	}
 
 	tests := []struct {
 		name string
@@ -41,17 +46,17 @@ func TestFileRequired(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "docker compose file with yml extension",
+			name: "docker_compose_file_with_yml_extension",
 			path: "testdata/docker-compose-1.yml",
 			want: true,
 		},
 		{
-			name: "docker compose file with yaml extension",
+			name: "docker_compose_file_with_yaml_extension",
 			path: "testdata/docker-compose-extending.yaml",
 			want: true,
 		},
 		{
-			name: "not a docker compose file",
+			name: "not_a_docker_compose_file",
 			path: "testdata/docker.conf",
 			want: false,
 		},
@@ -69,56 +74,54 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name         string
-		path         string
-		cfg          dockercomposeimage.Config
-		wantPackages []*extractor.Package
+		name             string
+		path             string
+		maxFileSizeBytes int64
+		wantPackages     []*extractor.Package
 	}{
 		{
-			name: "single stage docker compose file",
+			name: "single_stage_docker_compose_file",
 			path: "testdata/docker-compose-extending.yaml",
-			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "ghcr.io/acme/api",
-					Version:   "1.2.0",
-					Locations: []string{"testdata/docker-compose-extending.yaml"},
-					PURLType:  "docker",
+					Name:     "ghcr.io/acme/api",
+					Version:  "1.2.0",
+					Location: extractor.LocationFromPath("testdata/docker-compose-extending.yaml"),
+					PURLType: "docker",
 				},
 			},
 		},
 		{
-			name: "multi stage docker compose file",
+			name: "multi_stage_docker_compose_file",
 			path: "testdata/docker-compose-1.yml",
-			cfg:  dockercomposeimage.DefaultConfig(),
 			wantPackages: []*extractor.Package{
 				// "image3" and "image6" are not expected because
 				// the version values are set(partially) via environment variables,
 				// the responsible environment variable values are not known at extraction time,
 				// and the version values are imperfectly extracted.
 				{
-					Name:      "image1",
-					Version:   "1.1.1",
-					Locations: []string{"testdata/docker-compose-1.yml"},
-					PURLType:  purl.TypeDocker,
+					Name:     "image1",
+					Version:  "1.1.1",
+					Location: extractor.LocationFromPath("testdata/docker-compose-1.yml"),
+					PURLType: purl.TypeDocker,
 				},
 				{
-					Name:      "image2",
-					Version:   "2.2.2",
-					Locations: []string{"testdata/docker-compose-1.yml"},
-					PURLType:  purl.TypeDocker,
+					Name:     "image2",
+					Version:  "2.2.2",
+					Location: extractor.LocationFromPath("testdata/docker-compose-1.yml"),
+					PURLType: purl.TypeDocker,
 				},
 				{
-					Name:      "image4",
-					Version:   "4.4.4",
-					Locations: []string{"testdata/docker-compose-1.yml"},
-					PURLType:  purl.TypeDocker,
+					Name:     "image4",
+					Version:  "4.4.4",
+					Location: extractor.LocationFromPath("testdata/docker-compose-1.yml"),
+					PURLType: purl.TypeDocker,
 				},
 				{
-					Name:      "image5",
-					Version:   "5.5.5",
-					Locations: []string{"testdata/docker-compose-1.yml"},
-					PURLType:  purl.TypeDocker,
+					Name:     "image5",
+					Version:  "5.5.5",
+					Location: extractor.LocationFromPath("testdata/docker-compose-1.yml"),
+					PURLType: purl.TypeDocker,
 				},
 			},
 		},
@@ -126,7 +129,10 @@ func TestExtract(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := dockercomposeimage.New(tc.cfg)
+			extr, err := dockercomposeimage.New(&cpb.PluginConfig{MaxFileSizeBytes: tc.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("dockercomposeimage.New failed: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,
@@ -152,14 +158,17 @@ func TestExtract_failures(t *testing.T) {
 		path string
 	}{
 		{
-			name: "invalid docker compose file",
+			name: "invalid_docker_compose_file",
 			path: "testdata/docker-compose-yaml-parse-error.yaml",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			extr := dockercomposeimage.New(dockercomposeimage.DefaultConfig())
+			extr, err := dockercomposeimage.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("dockercomposeimage.New failed: %v", err)
+			}
 
 			input := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{
 				Path: tc.path,

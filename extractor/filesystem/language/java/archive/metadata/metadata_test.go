@@ -1,0 +1,103 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package metadata_test
+
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	"google.golang.org/protobuf/testing/protocmp"
+
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+var (
+	metadataStruct1 = &metadata.Metadata{
+		ArtifactID: "artifact-id",
+		GroupID:    "group-id",
+		SHA1:       "sha1",
+	}
+	metadataProto1 = &pb.JavaArchiveMetadata{
+		ArtifactId: "artifact-id",
+		GroupId:    "group-id",
+		Sha1:       "sha1",
+	}
+)
+
+func TestToProto(t *testing.T) {
+	testCases := []struct {
+		desc string
+		m    *metadata.Metadata
+		want *pb.JavaArchiveMetadata
+	}{
+		{
+			desc: "all_fields",
+			m:    metadataStruct1,
+			want: metadataProto1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := metadata.ToProto(tc.m)
+			opts := []cmp.Option{
+				protocmp.Transform(),
+			}
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
+			}
+
+			// Test the reverse conversion for completeness.
+			gotStruct := metadata.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
+			}
+		})
+	}
+}
+
+func TestToStruct(t *testing.T) {
+	testCases := []struct {
+		desc string
+		m    *pb.JavaArchiveMetadata
+		want *metadata.Metadata
+	}{
+
+		{
+			desc: "all_fields",
+			m:    metadataProto1,
+			want: metadataStruct1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := metadata.ToStruct(tc.m)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
+			}
+
+			// Test the reverse conversion for completeness.
+			gotProto := metadata.ToProto(got)
+			opts := []cmp.Option{
+				protocmp.Transform(),
+			}
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
+			}
+		})
+	}
+}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import (
 // tests with cmp.Diff to disregard the order in which the Packages
 // are reported.
 func PackageCmpLess(a, b *extractor.Package) bool {
-	aLoc := fmt.Sprintf("%v", a.Locations)
-	bLoc := fmt.Sprintf("%v", b.Locations)
+	aLoc := a.Location.Descriptor.PathOrEmpty()
+	bLoc := b.Location.Descriptor.PathOrEmpty()
 
 	aSourceCode := fmt.Sprintf("%v", a.SourceCode)
 	bSourceCode := fmt.Sprintf("%v", b.SourceCode)

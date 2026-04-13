@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -115,6 +115,7 @@ type Image struct {
 	config         *Config
 	size           int64
 	BaseImageIndex int
+	labels         map[string]string
 	contentBlob    *os.File
 }
 
@@ -128,6 +129,11 @@ func (img *Image) FS() scalibrfs.FS {
 		return emptyChainLayer.FS()
 	}
 	return img.chainLayers[len(img.chainLayers)-1].FS()
+}
+
+// Labels returns the labels of the image.
+func (img *Image) Labels() map[string]string {
+	return img.labels
 }
 
 // Layers returns the individual layers of the image.
@@ -295,14 +301,18 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		return nil, fmt.Errorf("invalid image config: %w", err)
 	}
 
+	var labels map[string]string
 	var history []v1.History
 
 	configFile, err := v1Image.ConfigFile()
-	// If the config file is not found, then layers will not have history information.
+	// If the config file is not found, then:
+	//  - layers will not have history information.
+	//  - labels will not be populated.
 	if err != nil {
 		log.Warnf("failed to load config file: %v", err)
 	} else {
 		history = configFile.History
+		labels = configFile.Config.Labels
 	}
 
 	v1Layers, err := v1Image.Layers()
@@ -329,6 +339,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		chainLayers:    chainLayers,
 		config:         config,
 		BaseImageIndex: baseImageIndex,
+		labels:         labels,
 		contentBlob:    imageContentBlob,
 	}
 
@@ -640,9 +651,9 @@ func populateEmptyDirectoryNodes(virtualPath string, layer *Layer, chainLayersTo
 	currentChainLayer := chainLayersToFill[0]
 
 	runningDir := "/"
-	dirs := strings.Split(path.Dir(virtualPath), "/")
+	dirs := strings.SplitSeq(path.Dir(virtualPath), "/")
 
-	for _, dir := range dirs {
+	for dir := range dirs {
 		runningDir = path.Join(runningDir, dir)
 
 		// If the directory already exists in the current chain layer, then skip it.

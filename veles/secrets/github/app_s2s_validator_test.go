@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ func TestAppS2STokenValidator(t *testing.T) {
 	cancel()
 
 	mockGithubServer := func(code int) *httptest.Server {
-		return mockgithub.Server(t, "/installation/repositories", code, s2sValidatorTestKey)
+		return mockgithub.Server(t, github.S2SValidationEndpoint, code, s2sValidatorTestKey)
 	}
 
 	cases := []struct {
@@ -66,32 +66,29 @@ func TestAppS2STokenValidator(t *testing.T) {
 			want:   veles.ValidationInvalid,
 		},
 		{
-			name:   "server_error",
-			server: mockGithubServer(http.StatusInternalServerError),
-			want:   veles.ValidationFailed,
+			name:    "server_error",
+			server:  mockGithubServer(http.StatusInternalServerError),
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 		{
-			name:   "bad_gateway",
-			server: mockGithubServer(http.StatusBadGateway),
-			want:   veles.ValidationFailed,
+			name:    "bad_gateway",
+			server:  mockGithubServer(http.StatusBadGateway),
+			want:    veles.ValidationFailed,
+			wantErr: cmpopts.AnyError,
 		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.ctx == nil {
-				tt.ctx = t.Context() //nolint:fatcontext
-			}
-
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: mockgithub.Transport(tt.server),
+				tt.ctx = t.Context()
 			}
 
 			// Create a validator with a mock client
-			validator := github.NewAppS2STokenValidator(
-				github.AppS2STokenWithClient(client),
-			)
+			validator := github.NewAppS2STokenValidator()
+			validator.HTTPC = tt.server.Client()
+			validator.Endpoint = tt.server.URL + github.S2SValidationEndpoint
 
 			// Create a test key
 			key := github.AppServerToServerToken{Token: tt.token}

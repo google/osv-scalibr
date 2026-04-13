@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ func TestSyskey(t *testing.T) {
 		wantErrText string
 	}{
 		{
-			name: "Parses syskey correctly",
+			name: "Parses_syskey_correctly",
 			registry: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{
 					`Select`: &mockregistry.MockKey{
@@ -88,7 +88,7 @@ func TestSyskey(t *testing.T) {
 			want: []byte("\x88\x93\xae\x93\x45\x13\xbd\xdd\x25\x47\x35\x16\x3e\x9d\x33\x00"),
 		},
 		{
-			name: "Parses syskey correctly with different control set",
+			name: "Parses_syskey_correctly_with_different_control_set",
 			registry: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{
 					`Select`: &mockregistry.MockKey{
@@ -116,7 +116,7 @@ func TestSyskey(t *testing.T) {
 			want: []byte("\x88\x93\xae\x93\x45\x13\xbd\xdd\x25\x47\x35\x16\x3e\x9d\x33\x00"),
 		},
 		{
-			name: "Parts of the syskey are missing",
+			name: "Parts_of_the_syskey_are_missing",
 			registry: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{
 					`Select`: &mockregistry.MockKey{
@@ -136,7 +136,7 @@ func TestSyskey(t *testing.T) {
 			wantErrText: `failed to open key`,
 		},
 		{
-			name: "The key does not decode as hexadecimal",
+			name: "The_key_does_not_decode_as_hexadecimal",
 			registry: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{
 					`Select`: &mockregistry.MockKey{
@@ -165,7 +165,7 @@ func TestSyskey(t *testing.T) {
 			wantErrText: `encoding/hex: invalid byte: U+00EF 'ï'`,
 		},
 		{
-			name: "Select registry key not found",
+			name: "Select_registry_key_not_found",
 			registry: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{},
 			},
@@ -173,7 +173,7 @@ func TestSyskey(t *testing.T) {
 			wantErrText: `failed to open key`,
 		},
 		{
-			name: "Current control set not found",
+			name: "Current_control_set_not_found",
 			registry: &mockregistry.MockRegistry{
 				Keys: map[string]registry.Key{
 					`Select`: &mockregistry.MockKey{},

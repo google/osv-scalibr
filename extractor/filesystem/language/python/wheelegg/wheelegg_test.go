@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ import (
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	"github.com/google/osv-scalibr/testing/testcollector"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
@@ -123,10 +125,11 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-			e := wheelegg.New(wheelegg.Config{
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-				Stats:            collector,
-			})
+			e, err := wheelegg.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
+			if err != nil {
+				t.Fatalf("wheelegg.New(%v) error: %v", tt.maxFileSizeBytes, err)
+			}
+			e.(*wheelegg.Extractor).Stats = collector
 
 			// Set a default file size if not specified.
 			fileSizeBytes := tt.fileSizeBytes
@@ -154,7 +157,6 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
-		cfg              wheelegg.Config
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -163,10 +165,10 @@ func TestExtract(t *testing.T) {
 			name: ".dist-info/METADATA",
 			path: "testdata/distinfo_meta",
 			wantPackages: []*extractor.Package{{
-				Name:      "pip",
-				Version:   "22.2.2",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/distinfo_meta"},
+				Name:     "pip",
+				Version:  "22.2.2",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/distinfo_meta"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "The pip developers",
 					AuthorEmail: "distutils-sig@python.org",
@@ -177,10 +179,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg/EGG-INFO/PKG-INFO",
 			path: "testdata/egginfo_pkginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "setuptools",
-				Version:   "57.4.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/egginfo_pkginfo"},
+				Name:     "setuptools",
+				Version:  "57.4.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/egginfo_pkginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Python Packaging Authority",
 					AuthorEmail: "distutils-sig@python.org",
@@ -191,10 +193,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg-info",
 			path: "testdata/egginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "pycups",
-				Version:   "2.0.1",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/egginfo"},
+				Name:     "pycups",
+				Version:  "2.0.1",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/egginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Zdenek Dohnal",
 					AuthorEmail: "zdohnal@redhat.com",
@@ -205,10 +207,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg-info/PKG-INFO",
 			path: "testdata/pkginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "httplib2",
-				Version:   "0.20.4",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/pkginfo"},
+				Name:     "httplib2",
+				Version:  "0.20.4",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/pkginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Joe Gregorio",
 					AuthorEmail: "joe@bitworking.org",
@@ -217,13 +219,13 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "malformed PKG-INFO",
+			name: "malformed_PKG-INFO",
 			path: "testdata/malformed_pkginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "passlib",
-				Version:   "1.7.4",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/malformed_pkginfo"},
+				Name:     "passlib",
+				Version:  "1.7.4",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/malformed_pkginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Eli Collins",
 					AuthorEmail: "elic@assurancetechnologies.com",
@@ -234,10 +236,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
 			wantPackages: []*extractor.Package{{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py3.10.egg"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -248,10 +250,10 @@ func TestExtract(t *testing.T) {
 			name: ".whl",
 			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
 			wantPackages: []*extractor.Package{{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py2.py3-none-any.whl"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -286,10 +288,13 @@ func TestExtract(t *testing.T) {
 			}
 
 			collector := testcollector.New()
-			tt.cfg.Stats = collector
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			e := wheelegg.New(defaultConfigWith(tt.cfg))
+			e, err := wheelegg.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("wheelegg.New() error: %v", err)
+			}
+			e.(*wheelegg.Extractor).Stats = collector
 			got, err := e.Extract(t.Context(), input)
 			if !cmp.Equal(err, tt.wantErr, cmpopts.EquateErrors()) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", tt.name, err, tt.wantErr)
@@ -317,21 +322,11 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-// defaultConfigWith combines any non-zero fields of cfg with wheelegg.DefaultConfig().
-func defaultConfigWith(cfg wheelegg.Config) wheelegg.Config {
-	newCfg := wheelegg.DefaultConfig()
-
-	if cfg.MaxFileSizeBytes > 0 {
-		newCfg.MaxFileSizeBytes = cfg.MaxFileSizeBytes
-	}
-	if cfg.Stats != nil {
-		newCfg.Stats = cfg.Stats
-	}
-	return newCfg
-}
-
 func TestExtractWithoutReadAt(t *testing.T) {
-	var e filesystem.Extractor = wheelegg.New(wheelegg.DefaultConfig())
+	e, err := wheelegg.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("wheelegg.New() error: %v", err)
+	}
 
 	tests := []struct {
 		name         string
@@ -342,10 +337,10 @@ func TestExtractWithoutReadAt(t *testing.T) {
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
 			wantPackages: &extractor.Package{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py3.10.egg"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -356,10 +351,10 @@ func TestExtractWithoutReadAt(t *testing.T) {
 			name: ".whl",
 			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
 			wantPackages: &extractor.Package{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py2.py3-none-any.whl"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -412,7 +407,7 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 		wantResultMetric stats.FileExtractedResult
 	}{
 		{
-			name: "invalid zip file",
+			name: "invalid_zip_file",
 			path: "testdata/does_not_exist.egg",
 			fakeFileInfo: fakefs.FakeFileInfo{
 				FileName: "does_not_exist.egg",
@@ -431,11 +426,14 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 			r := bytes.NewReader(tt.fakeFileBytes)
 
 			collector := testcollector.New()
-			cfg := wheelegg.Config{Stats: collector}
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			e := wheelegg.New(defaultConfigWith(cfg))
-			_, err := e.Extract(t.Context(), input)
+			e, err := wheelegg.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("wheelegg.New() error: %v", err)
+			}
+			e.(*wheelegg.Extractor).Stats = collector
+			_, err = e.Extract(t.Context(), input)
 			if err == nil {
 				t.Fatalf("Extract(%+v) succeeded, want error: %v", tt.name, tt.wantErr)
 			}

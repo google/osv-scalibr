@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,25 @@ package metadata
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/log"
 
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
+
+var (
+	// pattern to match: openEuler version (qualifier)
+	// where (qualifier) is optional. Those without qualifier are considered innovation versions.
+	// version: YY.MM format. e.g. 24.03
+	// qualifier: currently supported are LTS, LTS SPd. e.g. LTS, LTS-SP1, LTS-SP2
+	openEulerPrettyNameRegexp = regexp.MustCompile(`^openEuler\s+([0-9]{2}\.[0-9]{2})(?:\s*\((LTS(?:[- ]SP\d+)?)\))?$`)
 )
 
 // Metadata holds parsing information for an rpm package.
@@ -29,6 +44,8 @@ type Metadata struct {
 	SourceRPM    string
 	Epoch        int
 	OSName       string
+	OSCPEName    string
+	OSPrettyName string
 	OSID         string
 	OSVersionID  string
 	OSBuildID    string
@@ -65,45 +82,69 @@ func (m *Metadata) ToDistro() string {
 	return fmt.Sprintf("%s-%s", id, v)
 }
 
-// SetProto sets the RPMPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_RpmMetadata{
-		RpmMetadata: &pb.RPMPackageMetadata{
-			PackageName:  m.PackageName,
-			SourceRpm:    m.SourceRPM,
-			Epoch:        int32(m.Epoch),
-			OsName:       m.OSName,
-			OsId:         m.OSID,
-			OsVersionId:  m.OSVersionID,
-			OsBuildId:    m.OSBuildID,
-			Vendor:       m.Vendor,
-			Architecture: m.Architecture,
-		},
+// ToProto converts the Metadata struct to a RPMPackageMetadata proto.
+func ToProto(m *Metadata) *pb.RPMPackageMetadata {
+	return &pb.RPMPackageMetadata{
+		PackageName:  m.PackageName,
+		SourceRpm:    m.SourceRPM,
+		Epoch:        int32(m.Epoch),
+		OsName:       m.OSName,
+		OsCpeName:    m.OSCPEName,
+		OsPrettyName: m.OSPrettyName,
+		OsId:         m.OSID,
+		OsVersionId:  m.OSVersionID,
+		OsBuildId:    m.OSBuildID,
+		Vendor:       m.Vendor,
+		Architecture: m.Architecture,
 	}
 }
 
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
 // ToStruct converts the RPMPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.RPMPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:  m.GetPackageName(),
 		SourceRPM:    m.GetSourceRpm(),
 		Epoch:        int(m.GetEpoch()),
 		OSName:       m.GetOsName(),
+		OSCPEName:    m.GetOsCpeName(),
+		OSPrettyName: m.GetOsPrettyName(),
 		OSID:         m.GetOsId(),
 		OSVersionID:  m.GetOsVersionId(),
 		OSBuildID:    m.GetOsBuildId(),
 		Vendor:       m.GetVendor(),
 		Architecture: m.GetArchitecture(),
 	}
+}
+
+// OpenEulerEcosystemSuffix returns the normalized ecosystem suffix for openEuler RPMs with uses of pretty name.
+// e.g. openEuler 24.03 (LTS) -> 24.03-LTS
+func (m *Metadata) OpenEulerEcosystemSuffix() string {
+	if m == nil {
+		return ""
+	}
+
+	prettyName := strings.TrimSpace(m.OSPrettyName)
+	if prettyName != "" {
+		if matches := openEulerPrettyNameRegexp.FindStringSubmatch(prettyName); len(matches) > 0 {
+			version := matches[1]
+			qualifier := strings.TrimSpace(matches[2])
+			if qualifier == "" {
+				return version
+			}
+
+			qualifier = strings.ReplaceAll(qualifier, " ", "-")
+			qualifier = strings.Trim(qualifier, "-")
+			if qualifier == "" {
+				return version
+			}
+
+			return version + "-" + qualifier
+		}
+	}
+
+	versionID := strings.TrimSpace(m.OSVersionID)
+	return versionID
 }

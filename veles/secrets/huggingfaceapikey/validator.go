@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,71 +15,35 @@
 package huggingfaceapikey
 
 import (
-	"context"
-	"fmt"
 	"net/http"
+	"time"
 
-	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-// Validator validates Huggingface API keys via the Huggingface API endpoint.
-type Validator struct {
-	httpC *http.Client
-}
+const (
+	httpClientTimeout   = 10 * time.Second
+	huggingFaceEndpoint = "https://huggingface.co/api/whoami-v2"
+)
 
-// ValidatorOption configures a Validator when creating it via NewValidator.
-type ValidatorOption func(*Validator)
-
-// WithClient configures the http.Client that the Validator uses.
+// NewValidator creates a validator for HuggingFace API keys.
 //
-// By default, it uses http.DefaultClient.
-func WithClient(c *http.Client) ValidatorOption {
-	return func(v *Validator) {
-		v.httpC = c
-	}
-}
-
-// NewValidator creates a new Validator with the given ValidatorOptions.
-func NewValidator(opts ...ValidatorOption) *Validator {
-	v := &Validator{
-		httpC: http.DefaultClient,
-	}
-	for _, opt := range opts {
-		opt(v)
-	}
-	return v
-}
-
-// Validate checks whether the given HuggingfaceAPIKey is valid.
-//
-// It performs a GET request to the Huggingface chat completions endpoint
+// It performs a GET request to the Huggingface whoami endpoint
 // using the API key in the Authorization header. If the request returns
 // HTTP 200, the key is considered valid. If 401 Unauthorized, the key
-// is invalid. Other errors return ValidationFailed.
-func (v *Validator) Validate(ctx context.Context, key HuggingfaceAPIKey) (veles.ValidationStatus, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://huggingface.co/api/whoami-v2", nil)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("unable to create HTTP request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+key.Key)
-
-	res, err := v.httpC.Do(req)
-	if err != nil {
-		return veles.ValidationFailed, fmt.Errorf("HTTP GET failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusOK:
-		return veles.ValidationValid, nil
-	case http.StatusUnauthorized:
-		return veles.ValidationInvalid, nil
-	case http.StatusTooManyRequests:
-		return veles.ValidationValid, nil
-	case http.StatusInternalServerError:
-		return veles.ValidationFailed, fmt.Errorf("unexpected server-side error: %d", res.StatusCode)
-	default:
-		return veles.ValidationFailed, fmt.Errorf("unexpected HTTP status: %d", res.StatusCode)
+// is invalid. If 429 TooManyRequests, we assume rate limiting and treat
+// as valid to avoid false negatives. Other errors return ValidationFailed.
+func NewValidator() *simplevalidate.Validator[HuggingfaceAPIKey] {
+	return &simplevalidate.Validator[HuggingfaceAPIKey]{
+		Endpoint:   huggingFaceEndpoint,
+		HTTPMethod: http.MethodGet,
+		HTTPHeaders: func(k HuggingfaceAPIKey) map[string]string {
+			return map[string]string{
+				"Authorization": "Bearer " + k.Key,
+			}
+		},
+		ValidResponseCodes:   []int{http.StatusOK, http.StatusTooManyRequests},
+		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		HTTPC:                &http.Client{Timeout: httpClientTimeout},
 	}
 }

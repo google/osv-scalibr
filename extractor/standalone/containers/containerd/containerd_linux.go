@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -160,10 +160,10 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 
 	for _, ctr := range ctrMetadata {
 		pkg := &extractor.Package{
-			Name:      ctr.ImageName,
-			Version:   ctr.ImageDigest,
-			Locations: []string{ctr.RootFS},
-			Metadata:  &ctr,
+			Name:     ctr.ImageName,
+			Version:  ctr.ImageDigest,
+			Location: extractor.LocationFromPath(ctr.RootFS),
+			Metadata: &ctr,
 		}
 		result = append(result, pkg)
 	}

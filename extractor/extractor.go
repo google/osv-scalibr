@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package extractor
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -52,39 +54,50 @@ type Package struct {
 	// Source code level package identifiers.
 	SourceCode *SourceCodeIdentifier
 	// Paths or source of files related to the package.
-	Locations []string
+	Location PackageLocation
+	// The scan root that this package was found in.
+	// TODO(b/400910349): Unify Locations and ScanRoot into a single struct.
+	ScanRoot string
 	// The PURL type of this package, e.g. "pypi". Used for purl generation.
 	PURLType string
 	// The names of the Plugins that found this software instance. Set by the core library.
 	Plugins []string
-	// Deprecated - use ExploitabilitySignals instead
-	// TODO(b/400910349): Remove once integrators stop using this.
-	AnnotationsDeprecated []Annotation
 	// Signals to indicate that specific vulnerabilities are not applicable to this package.
 	ExploitabilitySignals []*vex.PackageExploitabilitySignal
 	// Details about the layer that the package was attributed to.
 	LayerMetadata *LayerMetadata
 	// The additional data found in the package.
-	Metadata any
+	Metadata metadata.Protoable
 	// Licenses information of this package
 	Licenses []string
+	// If true, the package version is deprecated (e.g. yanked, unpublished, deprecated)
+	Deprecated bool
 }
 
-// Annotation are additional information about the package.
-// TODO(b/400910349): Remove once integrators switch to PackageExploitabilitySignal.
-type Annotation int64
+// PackageLocation stores the paths of files or artifacts related to the package.
+type PackageLocation struct {
+	// Main descriptor this package was extracted from (if applicable),
+	// e.g. the location of the lockfile.
+	Descriptor *location.Location
+	// Other locations related to this package, e.g. files installed by the OS package.
+	Related []location.Location
+}
 
-const (
-	// Unknown is the default value for the annotation.
-	Unknown Annotation = iota
-	// Transitional packages just point to other packages without having actual code in them. This
-	// happens for example when packages are renamed.
-	Transitional
-	// InsideOSPackage is set for packages that are found inside an OS package.
-	InsideOSPackage
-	// InsideCacheDir is set for packages that are found inside a cache directory.
-	InsideCacheDir
-)
+// PathOrEmpty returns the path of the Package's descriptor
+// or an empty string if the location is not a file path.
+func (p PackageLocation) PathOrEmpty() string {
+	if p.Descriptor == nil || p.Descriptor.File == nil {
+		return ""
+	}
+	return p.Descriptor.File.Path
+}
+
+// LocationFromPath returns a PackageLocation struct based on
+// the file path of the descriptor.
+func LocationFromPath(path string) PackageLocation {
+	loc := location.FromPath(path)
+	return PackageLocation{Descriptor: &loc}
+}
 
 // PURL returns the Package URL of this package.
 func (p *Package) PURL() *purl.PackageURL {

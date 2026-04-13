@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package apk_test
 import (
 	"context"
 	"os"
-	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,14 +25,19 @@ import (
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate/apk"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"google.golang.org/protobuf/proto"
 )
 
 func TestAnnotate(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
 	cancelledContext, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -43,7 +48,7 @@ func TestAnnotate(t *testing.T) {
 
 	tests := []struct {
 		desc     string
-		apkDB    string
+		fakeFS   string
 		packages []*extractor.Package
 		//nolint:containedctx
 		ctx          context.Context
@@ -51,38 +56,42 @@ func TestAnnotate(t *testing.T) {
 		wantPackages []*extractor.Package
 	}{
 		{
-			desc:  "empty_db",
-			apkDB: "testdata/empty",
+			desc:   "empty_db",
+			fakeFS: "testdata/empty",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 			},
 		},
 		{
-			desc:  "some_pkgs_found_in_db",
-			apkDB: "testdata/some",
+			desc:   "one_found_in_db-one_not(empty_cache)",
+			fakeFS: "testdata/nocache",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          apk.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -90,25 +99,60 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "not-in-db",
-					Locations: []string{"path/not/in/db"},
+					Name:     "not-in-db",
+					Location: extractor.LocationFromPath("path/not/in/db"),
 				},
 			},
 		},
 		{
-			desc:  "ctx_cancelled",
-			ctx:   cancelledContext,
-			apkDB: "testdata/some",
+			desc:   "both_found-one_from_main_one_not",
+			fakeFS: "testdata/cache",
 			packages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libcurl",
+					Version:  "8.17.0-r1",
+					Location: extractor.LocationFromPath("usr/lib/libcurl.so.4.8.0"),
+				},
+				{
+					Name:     "orb",
+					Version:  "1.4.10",
+					Location: extractor.LocationFromPath("usr/bin/orb-update"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libstdc++",
-					Locations: []string{"usr/lib/libstdc++.so.6.0.33"},
+					Name:     "libcurl",
+					Version:  "8.17.0-r1",
+					Location: extractor.LocationFromPath("usr/lib/libcurl.so.4.8.0"),
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+						Plugin:          apk.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
+				},
+				{
+					Name:     "orb",
+					Version:  "1.4.10",
+					Location: extractor.LocationFromPath("usr/bin/orb-update"),
+				},
+			},
+		},
+		{
+			desc:   "ctx_cancelled",
+			ctx:    cancelledContext,
+			fakeFS: "testdata/nocache",
+			packages: []*extractor.Package{
+				{
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "libstdc++",
+					Version:  "14.2.0-r6",
+					Location: extractor.LocationFromPath("usr/lib/libstdc++.so.6.0.33"),
 					// No annotations
 				},
 			},
@@ -121,17 +165,28 @@ func TestAnnotate(t *testing.T) {
 			if tt.ctx == nil {
 				tt.ctx = context.Background()
 			}
-
-			tmpPath := setupApkDB(t, tt.apkDB)
+			content, err := os.ReadFile(tt.fakeFS)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fakeFS, err := fakefs.PrepareFS(string(content), fakefs.TarGzModifier)
+			if err != nil {
+				t.Fatal(err)
+			}
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(tmpPath),
+				ScanRoot: &scalibrfs.ScanRoot{FS: fakeFS},
 			}
 
 			// Deep copy the packages to avoid modifying the original inventory that is used in other tests.
 			packages := copier.Copy(tt.packages).([]*extractor.Package)
 			inv := &inventory.Inventory{Packages: packages}
 
-			err := apk.New().Annotate(tt.ctx, input, inv)
+			anno, err := apk.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = anno.Annotate(tt.ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, err, tt.wantErr)
 			}
@@ -142,26 +197,4 @@ func TestAnnotate(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Sets up the apk db
-func setupApkDB(t *testing.T, file string) string {
-	t.Helper()
-	dir := t.TempDir()
-	dbFolder := filepath.Join(dir, "lib/apk/db/")
-	if err := os.MkdirAll(dbFolder, 0777); err != nil {
-		t.Fatalf("error creating directory %q: %v", dbFolder, err)
-	}
-
-	content, err := os.ReadFile(file)
-	if err != nil {
-		t.Fatalf("Error reading content file %q: %v", content, err)
-	}
-
-	dbFile := filepath.Join(dbFolder, "installed")
-	if err := os.WriteFile(dbFile, content, 0644); err != nil {
-		t.Fatalf("Error creating file %q: %v", dbFile, err)
-	}
-
-	return dir
 }

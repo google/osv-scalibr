@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,12 +31,12 @@ package osvdev
 import (
 	"context"
 
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"osv.dev/bindings/go/osvdevexperimental"
 )
 
 // Client is an interface that provides an abstraction on top of the OSV.dev client.
 type Client interface {
 	osvdevexperimental.OSVClientInterface
-	GetVulnByID(ctx context.Context, id string) (*osvschema.Vulnerability, error)
+	GetVulnByID(ctx context.Context, id string) (*osvpb.Vulnerability, error)
 }

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ func newStateChooseStrategy(m Model) stateChooseStrategy {
 		var relockFixes []resolution.Vulnerability
 		for _, v := range m.lockfileGraph.Vulns {
 			if !slices.ContainsFunc(m.relockBaseManifest.Vulns, func(r resolution.Vulnerability) bool {
-				return r.OSV.ID == v.OSV.ID
+				return r.OSV.Id == v.OSV.Id
 			}) {
 				relockFixes = append(relockFixes, v)
 			}

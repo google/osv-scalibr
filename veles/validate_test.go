@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ func TestValidationEngine(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple validators",
+			name: "multiple_validators",
 			engine: veles.NewValidationEngine(
 				veles.WithValidator(velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil)),
 				veles.WithValidator(velestest.NewFakeIntSecretValidator(veles.ValidationInvalid, nil)),
@@ -127,7 +127,7 @@ func TestValidationEngine_errors(t *testing.T) {
 		input  veles.Secret
 	}{
 		{
-			name: "validation error",
+			name: "validation_error",
 			engine: veles.NewValidationEngine(
 				veles.WithValidator(velestest.NewFakeStringSecretValidator(veles.ValidationFailed, errTest)),
 			),

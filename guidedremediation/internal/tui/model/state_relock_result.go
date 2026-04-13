@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -277,7 +277,7 @@ func relockUnfixableVulns(allVulns []resolution.Vulnerability, patches []result.
 	}
 	var unfixableVulns []resolution.Vulnerability
 	for _, v := range allVulns {
-		if _, ok := fixableVulnIDs[v.OSV.ID]; !ok {
+		if _, ok := fixableVulnIDs[v.OSV.Id]; !ok {
 			unfixableVulns = append(unfixableVulns, v)
 		}
 	}
@@ -566,7 +566,7 @@ func (st stateRelockResult) write(m Model) tea.Msg {
 
 func doRelockCmd(opts options.FixVulnsOptions, m manifest.Manifest) tea.Cmd {
 	return func() tea.Msg {
-		resolved, err := remediation.ResolveManifest(context.Background(), opts.ResolveClient, opts.MatcherClient, m, &opts.RemediationOptions)
+		resolved, err := remediation.ResolveManifest(context.Background(), opts.ResolveClient, opts.VulnEnricher, m, &opts.RemediationOptions)
 		if err != nil {
 			return doRelockMsg{err: fmt.Errorf("failed resolving manifest vulnerabilities: %w", err)}
 		}
@@ -581,7 +581,7 @@ type relaxPatchMsg struct {
 
 func doComputeRelaxPatchesCmd(opts options.FixVulnsOptions, resolved *remediation.ResolvedManifest) tea.Cmd {
 	return func() tea.Msg {
-		patches, err := relax.ComputePatches(context.Background(), opts.ResolveClient, opts.MatcherClient, resolved, &opts.RemediationOptions)
+		patches, err := relax.ComputePatches(context.Background(), opts.ResolveClient, opts.VulnEnricher, resolved, &opts.RemediationOptions)
 		if err != nil {
 			return relaxPatchMsg{err: fmt.Errorf("failed computing relax patches: %w", err)}
 		}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,14 +75,13 @@ type response struct {
 
 func TestValidator_Validate(t *testing.T) {
 	realTokenURL := mustURLWithParams(t, endpoint, map[string]string{"access_token": realToken})
-	// shortTokenURL := mustURLWithParams(t, endpoint, map[string]string{"access_token": shortToken})
 
 	tests := []struct {
 		name         string
 		roundTripper *mockRoundTripper
 		token        gcpoauth2access.Token
 		want         veles.ValidationStatus
-		wantErr      bool
+		wantErr      error
 	}{
 		{
 			name: "empty",
@@ -90,7 +89,7 @@ func TestValidator_Validate(t *testing.T) {
 				Token: "",
 			},
 			want:    veles.ValidationFailed,
-			wantErr: true,
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			name: "request_error",
@@ -105,7 +104,7 @@ func TestValidator_Validate(t *testing.T) {
 				Token: realToken,
 			},
 			want:    veles.ValidationFailed,
-			wantErr: true,
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			name: "bad_request",
@@ -138,7 +137,7 @@ func TestValidator_Validate(t *testing.T) {
 				Token: realToken,
 			},
 			want:    veles.ValidationFailed,
-			wantErr: true,
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			name: "unexpected_json",
@@ -156,7 +155,7 @@ func TestValidator_Validate(t *testing.T) {
 				Token: realToken,
 			},
 			want:    veles.ValidationFailed,
-			wantErr: true,
+			wantErr: cmpopts.AnyError,
 		},
 		{
 			name: "valid_token",
@@ -228,20 +227,12 @@ func TestValidator_Validate(t *testing.T) {
 			if tc.roundTripper != nil {
 				tc.roundTripper.t = t
 			}
-			c := &http.Client{Transport: tc.roundTripper}
-			v := gcpoauth2access.NewValidator(
-				gcpoauth2access.WithClient(c),
-			)
+			v := gcpoauth2access.NewValidator()
+			v.HTTPC = &http.Client{Transport: tc.roundTripper}
 
 			got, err := v.Validate(t.Context(), tc.token)
-			if tc.wantErr {
-				if err == nil {
-					t.Errorf("Validate() error: %v, want error: %t", err, tc.wantErr)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() error: %v, want nil", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 			if got != tc.want {
 				t.Errorf("Validate() = %q, want %q", got, tc.want)

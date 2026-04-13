@@ -1,0 +1,4 @@
+This is not a TOML file.
+It contains invalid content that should cause parsing to fail.
+name = "invalid"
+version = "1.0.0"

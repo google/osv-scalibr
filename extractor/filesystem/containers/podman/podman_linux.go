@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,14 +59,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	pkgs := make([]*extractor.Package, 0, len(ctrs))
 	for _, ctr := range ctrs {
-		if !e.cfg.IncludeStopped && ctr.state.Exited {
+		if !e.IncludeStopped && ctr.state.Exited {
 			continue
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      ctr.config.RawImageName,
-			Version:   ctr.config.RootfsImageID,
-			Locations: []string{input.Path},
+			Name:     ctr.config.RawImageName,
+			Version:  ctr.config.RootfsImageID,
+			Location: extractor.LocationFromPath(input.Path),
 			Metadata: &Metadata{
 				ExposedPorts: ctr.config.ExposedPorts,
 				PID:          ctr.state.PID,

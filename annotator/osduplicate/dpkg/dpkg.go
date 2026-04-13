@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -40,7 +42,7 @@ const (
 type Annotator struct{}
 
 // New returns a new Annotator.
-func New() annotator.Annotator { return &Annotator{} }
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
 func (Annotator) Name() string { return Name }
@@ -55,13 +57,19 @@ func (Annotator) Requirements() *plugin.Capabilities {
 
 // Annotate adds annotations to language packages that have already been found in DPKG OS packages.
 func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
-	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results)
+	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results, input.ScanRoot)
 
 	it, err := dpkg.NewListFilePathIterator(input.ScanRoot.FS)
 	if err != nil {
 		return fmt.Errorf("failed to create dpkg file iterator: %w", err)
 	}
 	defer it.Close()
+
+	aptCache, err := extractAptCache(input.ScanRoot)
+	isAptCacheEmpty := errors.Is(err, ErrMissingAptCache)
+	if err != nil && !isAptCacheEmpty {
+		return fmt.Errorf("failed to read the apt cache folder: %w", err)
+	}
 
 	errs := []error{}
 	for {
@@ -80,18 +88,23 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		}
 
 		// Remove leading '/' since SCALIBR fs paths don't include that.
-		filePath = strings.TrimPrefix(filePath, "/")
-		if pkgs, ok := locationToPKGs[filePath]; ok {
-			for _, pkg := range pkgs {
-				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-					Plugin: Name,
-					// TODO(b/425890695): This exclusion doesn't quite match the use case here: The component
-					// is present but already tracked by another Extractor (os/dpkg). We should consider
-					// introducing a new type to better describe these cases.
-					Justification:   vex.ComponentNotPresent,
-					MatchesAllVulns: true,
-				})
+		pkgs := locationToPKGs[strings.TrimPrefix(filePath, "/")]
+
+		for _, pkg := range pkgs {
+			// Do not add duplication annotation on packages which are from non-main repos
+			// since vuln matching can happen only on packages hosted on main repos
+			if !isAptCacheEmpty && !aptCache.isFromMainOSRepo(pkg) {
+				continue
 			}
+
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin: Name,
+				// TODO(b/425890695): This exclusion doesn't quite match the use case here: The component
+				// is present but already tracked by another Extractor (os/dpkg). We should consider
+				// introducing a new type to better describe these cases.
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 	}
 

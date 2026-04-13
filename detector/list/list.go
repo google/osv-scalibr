@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
+	"github.com/google/osv-scalibr/detector/cve/cve20257775"
+	"github.com/google/osv-scalibr/detector/cve/npm/canisterworm"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
@@ -30,15 +32,19 @@ import (
 	"github.com/google/osv-scalibr/detector/cve/untested/cve20242912"
 	"github.com/google/osv-scalibr/detector/endoflife/linuxdistro"
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/google/osv-scalibr/detector/misc/cronjobprivesc"
 	"github.com/google/osv-scalibr/detector/misc/dockersocket"
+	"github.com/google/osv-scalibr/detector/misc/pammisconfig"
 	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the detector initializer function.
-type InitFn func() detector.Detector
+type InitFn func(cfg *cpb.PluginConfig) (detector.Detector, error)
 
 // InitMap is a map of detector names to their initers.
 type InitMap map[string][]InitFn
@@ -74,7 +80,7 @@ var Untested = InitMap{
 
 // Weakcredentials detectors for weak credentials.
 var Weakcredentials = InitMap{
-	codeserver.Name:  {codeserver.NewDefault},
+	codeserver.Name:  {codeserver.New},
 	etcshadow.Name:   {etcshadow.New},
 	filebrowser.Name: {filebrowser.New},
 	winlocal.Name:    {winlocal.New},
@@ -82,7 +88,21 @@ var Weakcredentials = InitMap{
 
 // Misc detectors for miscellaneous security issues.
 var Misc = InitMap{
-	dockersocket.Name: {dockersocket.New},
+	cronjobprivesc.Name: {cronjobprivesc.New},
+	dockersocket.Name:   {dockersocket.New},
+	pammisconfig.Name:   {pammisconfig.New},
+}
+
+// CVE for vulnerabilities that have a CVE associated
+var CVE = InitMap{
+	// CVE-2025-7775 detector
+	cve20257775.Name: {cve20257775.New},
+}
+
+// SupplyChain related vulnerability detectors.
+var SupplyChain = InitMap{
+	// Malicious NPM for CanisterWorm
+	canisterworm.Name: {canisterworm.New},
 }
 
 // Default detectors that are recommended to be enabled.
@@ -96,6 +116,8 @@ var All = concat(
 	Misc,
 	Weakcredentials,
 	Untested,
+	CVE,
+	SupplyChain,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -105,6 +127,8 @@ var detectorNames = concat(All, InitMap{
 	"misc":              vals(Misc),
 	"weakcredentials":   vals(Weakcredentials),
 	"untested":          vals(Untested),
+	"cve":               vals(CVE),
+	"supplychain":       vals(SupplyChain),
 	"detectors/default": vals(Default),
 	"default":           vals(Default),
 	"detectors/all":     vals(All),
@@ -124,11 +148,15 @@ func vals(initMap InitMap) []InitFn {
 }
 
 // DetectorsFromName returns a list of detectors from a name.
-func DetectorsFromName(name string) ([]detector.Detector, error) {
+func DetectorsFromName(name string, cfg *cpb.PluginConfig) ([]detector.Detector, error) {
 	if initers, ok := detectorNames[name]; ok {
 		result := []detector.Detector{}
 		for _, initer := range initers {
-			result = append(result, initer())
+			p, err := initer(cfg)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, p)
 		}
 		return result, nil
 	}

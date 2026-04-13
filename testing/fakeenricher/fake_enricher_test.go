@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/testing/fakeenricher"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestName(t *testing.T) {
@@ -36,7 +37,7 @@ func TestName(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "no name",
+			name: "no_name",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
@@ -62,11 +63,11 @@ func TestVersion(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "zero version",
+			name: "zero_version",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
-			name: "positive version",
+			name: "positive_version",
 			cfg:  &fakeenricher.Config{Version: 7},
 		},
 	}
@@ -88,11 +89,11 @@ func TestRequirements(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "no requirements",
+			name: "no_requirements",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
-			name: "some requirements",
+			name: "some_requirements",
 			cfg: &fakeenricher.Config{
 				Capabilities: &plugin.Capabilities{
 					Network:  plugin.NetworkOnline,
@@ -119,11 +120,11 @@ func TestRequiredPlugins(t *testing.T) {
 		cfg  *fakeenricher.Config
 	}{
 		{
-			name: "no required plugins",
+			name: "no_required_plugins",
 			cfg:  &fakeenricher.Config{},
 		},
 		{
-			name: "some required plugins",
+			name: "some_required_plugins",
 			cfg:  &fakeenricher.Config{RequiredPlugins: []string{"plugin1", "plugin2"}},
 		},
 	}
@@ -156,7 +157,7 @@ func TestEnrich(t *testing.T) {
 		}},
 		PackageVulns: []*inventory.PackageVuln{
 			{
-				Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+				Vulnerability: &osvpb.Vulnerability{Id: "CVE-9012"},
 			},
 		},
 		GenericFindings: []*inventory.GenericFinding{{
@@ -178,7 +179,7 @@ func TestEnrich(t *testing.T) {
 			Version: "3.0",
 		}},
 		PackageVulns: []*inventory.PackageVuln{{
-			Vulnerability: osvschema.Vulnerability{ID: "CVE-9012"},
+			Vulnerability: &osvpb.Vulnerability{Id: "CVE-9012"},
 		}},
 		GenericFindings: []*inventory.GenericFinding{{
 			Adv: &inventory.GenericFindingAdvisory{
@@ -210,7 +211,7 @@ func TestEnrich(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nothing to enrich",
+			name: "nothing_to_enrich",
 			cfg: &fakeenricher.Config{
 				WantEnrich: map[uint64]fakeenricher.InventoryAndErr{
 					fakeenricher.MustHash(t, nil, &inventory.Inventory{}): fakeenricher.InventoryAndErr{
@@ -222,7 +223,7 @@ func TestEnrich(t *testing.T) {
 			wantInv: &inventory.Inventory{},
 		},
 		{
-			name: "enrich packages and findings",
+			name: "enrich_packages_and_findings",
 			cfg: &fakeenricher.Config{
 				WantEnrich: map[uint64]fakeenricher.InventoryAndErr{
 					fakeenricher.MustHash(t, input1, inventory1): fakeenricher.InventoryAndErr{
@@ -243,7 +244,7 @@ func TestEnrich(t *testing.T) {
 			if !cmp.Equal(gotErr, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Enricher{%+v}.Enrich(%+v, %+v) error: got %v, want %v\n", tc.cfg, tc.input, tc.inv, gotErr, tc.wantErr)
 			}
-			if diff := cmp.Diff(tc.wantInv, tc.inv); diff != "" {
+			if diff := cmp.Diff(tc.wantInv, tc.inv, protocmp.Transform()); diff != "" {
 				t.Errorf("Enricher{%+v}.Enrich(%+v, %+v) returned unexpected diff (-want +got):\n%s", tc.cfg, tc.input, tc.inv, diff)
 			}
 		})

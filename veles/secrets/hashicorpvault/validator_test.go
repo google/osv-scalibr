@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 )
 
@@ -28,37 +30,34 @@ func TestTokenValidator_Validate(t *testing.T) {
 		name           string
 		statusCode     int
 		expectedStatus veles.ValidationStatus
-		expectError    bool
+		wantErr        error
 	}{
 		{
 			name:           "valid token",
 			statusCode:     http.StatusOK,
 			expectedStatus: veles.ValidationValid,
-			expectError:    false,
 		},
 		{
 			name:           "invalid token - unauthorized",
 			statusCode:     http.StatusUnauthorized,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
 			name:           "invalid token - forbidden",
 			statusCode:     http.StatusForbidden,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
 			name:           "server error",
 			statusCode:     http.StatusInternalServerError,
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 		{
 			name:           "bad gateway",
 			statusCode:     http.StatusBadGateway,
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 	}
 
@@ -80,19 +79,15 @@ func TestTokenValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewTokenValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			serverURL := server.URL
+			validator := NewTokenValidator(serverURL)
+			validator.HTTPC = server.Client()
 
 			token := Token{Token: "hvs.test-token"}
 			status, err := validator.Validate(t.Context(), token)
 
-			if test.expectError && err == nil {
-				t.Fatal("Expected error, got nil")
-			}
-			if !test.expectError && err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+			if diff := cmp.Diff(test.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			if status != test.expectedStatus {
@@ -108,67 +103,64 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 		credentials    AppRoleCredentials
 		statusCode     int
 		expectedStatus veles.ValidationStatus
-		expectError    bool
+		wantErr        error
 	}{
 		{
-			name: "valid credentials",
+			name: "valid_credentials",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     http.StatusOK,
 			expectedStatus: veles.ValidationValid,
-			expectError:    false,
 		},
 		{
-			name: "invalid credentials - unauthorized",
+			name: "invalid_credentials_-_unauthorized",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "invalid-secret",
 			},
 			statusCode:     http.StatusUnauthorized,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
-			name: "invalid credentials - bad request",
+			name: "invalid_credentials_-_bad_request",
 			credentials: AppRoleCredentials{
 				RoleID:   "invalid-role-id",
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     http.StatusBadRequest,
 			expectedStatus: veles.ValidationInvalid,
-			expectError:    false,
 		},
 		{
-			name: "server error",
+			name: "server_error",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     http.StatusInternalServerError,
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 		{
-			name: "missing role_id",
+			name: "missing_role_id",
 			credentials: AppRoleCredentials{
 				RoleID:   "",
 				SecretID: "87654321-4321-4321-4321-210987654321",
 			},
 			statusCode:     0, // Won't make HTTP request
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 		{
-			name: "missing secret_id",
+			name: "missing_secret_id",
 			credentials: AppRoleCredentials{
 				RoleID:   "12345678-1234-1234-1234-123456789012",
 				SecretID: "",
 			},
 			statusCode:     0, // Won't make HTTP request
 			expectedStatus: veles.ValidationFailed,
-			expectError:    true,
+			wantErr:        cmpopts.AnyError,
 		},
 	}
 
@@ -190,29 +182,25 @@ func TestAppRoleValidator_Validate(t *testing.T) {
 			}))
 			defer server.Close()
 
-			validator := NewAppRoleValidator(
-				WithClient(server.Client()),
-				WithVaultURL(server.URL),
-			)
+			serverURL := server.URL
+			validator := NewAppRoleValidator(serverURL)
+			validator.HTTPC = server.Client()
 
 			status, err := validator.Validate(t.Context(), test.credentials)
 
-			if test.expectError && err == nil {
-				t.Fatal("Expected error, got nil")
-			}
-			if !test.expectError && err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+			if diff := cmp.Diff(test.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			if status != test.expectedStatus {
-				t.Errorf("Expected status %v, got %v", test.expectedStatus, status)
+				t.Errorf("Validate(): Expected status %v, got %v", test.expectedStatus, status)
 			}
 		})
 	}
 }
 
 func TestValidator_InvalidVaultURL(t *testing.T) {
-	validator := NewTokenValidator(WithVaultURL("://invalid-url"))
+	validator := NewTokenValidator("://invalid-url")
 	token := Token{Token: "hvs.test-token"}
 	status, err := validator.Validate(t.Context(), token)
 
@@ -226,7 +214,7 @@ func TestValidator_InvalidVaultURL(t *testing.T) {
 
 func TestValidator_NetworkError(t *testing.T) {
 	// Use a URL that will cause a network error
-	validator := NewTokenValidator(WithVaultURL("http://localhost:1"))
+	validator := NewTokenValidator("http://localhost:1")
 	token := Token{Token: "hvs.test-token"}
 	status, err := validator.Validate(t.Context(), token)
 
@@ -245,10 +233,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	validator := NewTokenValidator(
-		WithClient(server.Client()),
-		WithVaultURL(server.URL),
-	)
+	serverURL := server.URL
+	validator := NewTokenValidator(serverURL)
+	validator.HTTPC = server.Client()
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // Cancel immediately

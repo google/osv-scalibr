@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,6 +39,10 @@ var cimProtoForTest = &pb.ContainerImageMetadata{
 			},
 		},
 	},
+	Labels: map[string]string{
+		"label1": "value1",
+		"label2": "value2",
+	},
 }
 
 var cimStructForTest = func() *extractor.ContainerImageMetadata {
@@ -54,6 +58,10 @@ var cimStructForTest = func() *extractor.ContainerImageMetadata {
 				{Repository: "base-image", Registry: "ghcr.io", Plugin: "baseimage", ChainID: d1},
 			},
 		},
+		Labels: map[string]string{
+			"label1": "value1",
+			"label2": "value2",
+		},
 	}
 	for _, lm := range c.LayerMetadata {
 		lm.ParentContainer = c
@@ -64,12 +72,14 @@ var cimStructForTest = func() *extractor.ContainerImageMetadata {
 var pkgWithLayerStruct = &extractor.Package{
 	Name:          "withlayer",
 	Version:       "1.0",
+	Location:      extractor.LocationFromPath("/file1"),
 	LayerMetadata: cimStructForTest.LayerMetadata[0],
 }
 
 var pkgWithLayerProto = &pb.Package{
-	Name:    "withlayer",
-	Version: "1.0",
+	Name:     "withlayer",
+	Version:  "1.0",
+	Location: pkgLocProtoFromPath("/file1"),
 	ContainerImageMetadataIndexes: &pb.Package_ContainerImageMetadataIndexes{
 		LayerIndex:          0,
 		ContainerImageIndex: 0,

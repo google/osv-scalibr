@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ func checkManifest(t *testing.T, name string, got manifest.Manifest, want testMa
 }
 
 func TestRead(t *testing.T) {
-	rw, err := npm.GetReadWriter("")
+	rw, err := npm.GetReadWriter()
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -121,6 +121,9 @@ func TestRead(t *testing.T) {
 		},
 		System: resolve.NPM,
 		Requirements: []resolve.RequirementVersion{
+			{
+				VersionKey: makeVK(t, "@scoped/pkg.name", "1.0.0", resolve.Requirement),
+			},
 			{
 				Type:       aliasType(t, "cliui"), // sorts on aliased name, not real package name
 				VersionKey: makeVK(t, "@isaacs/cliui", "^8.0.2", resolve.Requirement),
@@ -140,6 +143,9 @@ func TestRead(t *testing.T) {
 				VersionKey: makeVK(t, "lodash", "4.17.17", resolve.Requirement),
 			},
 			{
+				VersionKey: makeVK(t, "lodash.merge", "4.6.1", resolve.Requirement),
+			},
+			{
 				VersionKey: makeVK(t, "string-width", "^5.1.2", resolve.Requirement),
 			},
 			{
@@ -157,7 +163,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestReadWithWorkspaces(t *testing.T) {
-	rw, err := npm.GetReadWriter("")
+	rw, err := npm.GetReadWriter()
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -250,7 +256,7 @@ func TestReadWithWorkspaces(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	rw, err := npm.GetReadWriter("")
+	rw, err := npm.GetReadWriter()
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -267,6 +273,18 @@ func TestWrite(t *testing.T) {
 					Name:        "lodash",
 					VersionFrom: "4.17.17",
 					VersionTo:   "^4.17.21",
+				},
+				// Test cases for names with dots to ensure they are escaped correctly.
+				// gjson/sjson use dots as path separators, so names with dots must be escaped.
+				{
+					Name:        "lodash.merge",
+					VersionFrom: "4.6.1",
+					VersionTo:   "4.6.2",
+				},
+				{
+					Name:        "@scoped/pkg.name",
+					VersionFrom: "1.0.0",
+					VersionTo:   "1.1.0",
 				},
 				{
 					Name:        "eslint",

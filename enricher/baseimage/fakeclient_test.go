@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@ package baseimage_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 )
 
@@ -35,8 +33,9 @@ type config struct {
 }
 
 type clientFake struct {
-	reqRespErrs []reqRespErr
-	reqNum      int
+	reqRespErrs        map[baseimage.Request]reqRespErr
+	reqNum             int
+	expectedRequestNum int
 }
 
 func newClientFake(cfg *config) (*clientFake, error) {
@@ -44,10 +43,13 @@ func newClientFake(cfg *config) (*clientFake, error) {
 		return nil, errors.New("config is nil")
 	}
 	// Defense copy to avoid mutating the config.
-	reqRespErrs := make([]reqRespErr, len(cfg.ReqRespErrs))
-	copy(reqRespErrs, cfg.ReqRespErrs)
+	reqRespErrs := make(map[baseimage.Request]reqRespErr, len(cfg.ReqRespErrs))
+	for _, reqRespErr := range cfg.ReqRespErrs {
+		reqRespErrs[*reqRespErr.req] = reqRespErr
+	}
 	client := &clientFake{
-		reqRespErrs: reqRespErrs,
+		reqRespErrs:        reqRespErrs,
+		expectedRequestNum: len(cfg.ReqRespErrs),
 	}
 	return client, nil
 }
@@ -64,15 +66,11 @@ func mustNewClientFake(t *testing.T, cfg *config) *clientFake {
 func (c *clientFake) QueryContainerImages(ctx context.Context, req *baseimage.Request) (*baseimage.Response, error) {
 	defer func() { c.reqNum++ }()
 
-	if c.reqNum >= len(c.reqRespErrs) {
+	if c.reqNum >= c.expectedRequestNum {
 		return nil, errors.New("out of range")
 	}
 
-	rre := c.reqRespErrs[c.reqNum]
-	wantReq := rre.req
-	if diff := cmp.Diff(wantReq, req); diff != "" {
-		return nil, fmt.Errorf("expected request  diff (-want +got):\n%s", diff)
-	}
+	rre := c.reqRespErrs[*req]
 
 	return rre.resp, rre.err
 }

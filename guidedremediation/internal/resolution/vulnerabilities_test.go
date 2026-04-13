@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
-	"github.com/google/osv-scalibr/guidedremediation/internal/matchertest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/resolution"
+	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 )
 
 func TestFindVulnerabilities(t *testing.T) {
@@ -79,7 +79,7 @@ test 1.0.0
 		charlieNode resolve.NodeID = 4
 	)
 
-	vulnMatcher := matchertest.NewMockVulnerabilityMatcher(t, "testdata/vulnerabilities.yaml")
+	vulnEnricher := vulnenrichertest.NewMockVulnerabilityEnricher(t, "testdata/vulnerabilities.json")
 	type vuln struct {
 		ID    string
 		Nodes []resolve.NodeID
@@ -113,13 +113,13 @@ test 1.0.0
 		},
 	}
 
-	vulns, err := resolution.FindVulnerabilities(t.Context(), vulnMatcher, m.Groups(), g)
+	vulns, err := resolution.FindVulnerabilities(t.Context(), vulnEnricher, m.Groups(), g)
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := make([]vuln, len(vulns))
 	for i, v := range vulns {
-		got[i].ID = v.OSV.ID
+		got[i].ID = v.OSV.Id
 		for _, sg := range v.Subgraphs {
 			got[i].Nodes = append(got[i].Nodes, sg.Dependency)
 		}

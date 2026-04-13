@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ func TestGetProject(t *testing.T) {
 
 func TestGetProjectSnapshot(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "")
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false)
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -252,7 +252,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 func TestMavenLocalRegistry(t *testing.T) {
 	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false)
 	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
 	resp := []byte(`
 	<project>

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,15 @@
 // Package metadata provides metadata structures to annotate Windows packages.
 package metadata
 
+import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+)
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
+
 // OSVersion provides metadata about the OS version.
 type OSVersion struct {
 	// Product name of the OS, e.g. "windows_server_2019".
@@ -23,20 +32,21 @@ type OSVersion struct {
 	FullVersion string
 }
 
-// WingetPackage provides metadata about a package installed via Windows Package Manager.
-type WingetPackage struct {
-	// Name is the display name of the package.
-	Name string
-	// ID is the unique package identifier.
-	ID string
-	// Version is the installed version.
-	Version string
-	// Moniker is the short name/alias for the package.
-	Moniker string
-	// Channel is the release channel.
-	Channel string
-	// Tags are package categories/tags.
-	Tags []string
-	// Commands are executable commands provided by the package.
-	Commands []string
+// ToProto converts the OSVersion struct to a WindowsOSVersion proto.
+func ToProto(m *OSVersion) *pb.WindowsOSVersion {
+	return &pb.WindowsOSVersion{
+		Product:     m.Product,
+		FullVersion: m.FullVersion,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *OSVersion) IsProtoable() {}
+
+// ToStruct converts the WindowsOSVersion proto to a Metadata struct.
+func ToStruct(m *pb.WindowsOSVersion) *OSVersion {
+	return &OSVersion{
+		Product:     m.GetProduct(),
+		FullVersion: m.GetFullVersion(),
+	}
 }

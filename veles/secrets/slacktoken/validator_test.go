@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,29 +18,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
 )
-
-// mockTransport redirects requests to the test server
-type mockTransport struct {
-	testServer *httptest.Server
-}
-
-func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL
-	if req.URL.Host == "slack.com" {
-		testURL, _ := url.Parse(m.testServer.URL)
-		req.URL.Scheme = testURL.Scheme
-		req.URL.Host = testURL.Host
-	}
-	return http.DefaultTransport.RoundTrip(req)
-}
 
 // mockSlackServer creates a mock Slack API server for testing
 func mockSlackServer(t *testing.T, expectedKey string, responseBody string, expectedEndpoint string) *httptest.Server {
@@ -84,7 +69,7 @@ func TestAppLevelTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
+		wantErr           error
 	}{
 		{
 			name:              "valid_app_level_token",
@@ -109,6 +94,7 @@ func TestAppLevelTokenValidator(t *testing.T) {
 			responseBody:      `{"ok":false,"error":"server_error"}`,
 			expectedEndpoint:  "/api/auth.test",
 			want:              veles.ValidationFailed,
+			wantErr:           slacktoken.ErrAPIQueryFailed,
 		},
 	}
 
@@ -118,28 +104,14 @@ func TestAppLevelTokenValidator(t *testing.T) {
 			server := mockSlackServer(t, tc.serverExpectedKey, tc.responseBody, tc.expectedEndpoint)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
+			validator := slacktoken.NewAppLevelTokenValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 
-			// Create a validator with a mock client
-			validator := slacktoken.NewAppLevelTokenValidator(
-				slacktoken.WithClientAppLevelToken(client),
-			)
-
-			// Test validation
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 			}
 
 			// Check validation status
@@ -158,7 +130,6 @@ func TestAppConfigAccessTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_access_token",
@@ -184,28 +155,14 @@ func TestAppConfigAccessTokenValidator(t *testing.T) {
 			server := mockSlackServer(t, tc.serverExpectedKey, tc.responseBody, tc.expectedEndpoint)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
+			validator := slacktoken.NewAppConfigAccessTokenValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 
-			// Create a validator with a mock client
-			validator := slacktoken.NewAppConfigAccessTokenValidator(
-				slacktoken.WithClientAppConfigAccessToken(client),
-			)
-
-			// Test validation
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
 			}
 
 			// Check validation status
@@ -224,7 +181,6 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 		responseBody      string
 		expectedEndpoint  string
 		want              veles.ValidationStatus
-		expectError       bool
 	}{
 		{
 			name:              "valid_refresh_token",
@@ -250,28 +206,14 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 			server := mockSlackServer(t, tc.serverExpectedKey, tc.responseBody, tc.expectedEndpoint)
 			defer server.Close()
 
-			// Create a client with custom transport
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
+			validator := slacktoken.NewAppConfigRefreshTokenValidator()
+			validator.HTTPC = server.Client()
+			validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 
-			// Create a validator with a mock client
-			validator := slacktoken.NewAppConfigRefreshTokenValidator(
-				slacktoken.WithClientAppConfigRefreshToken(client),
-			)
-
-			// Test validation
 			got, err := validator.Validate(t.Context(), tc.key)
 
-			// Check error expectation
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("Validate() expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Validate() unexpected error: %v", err)
-				}
+			if err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
 			}
 
 			// Check validation status
@@ -283,32 +225,22 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 }
 
 func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response significantly
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Sleep longer than the context timeout to trigger cancellation
-		time.Sleep(100 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"ok":true"}`))
 	}))
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	// Test with App Level Token validator
 	t.Run("app_level_token", func(t *testing.T) {
-		validator := slacktoken.NewAppLevelTokenValidator(
-			slacktoken.WithClientAppLevelToken(client),
-		)
-
+		validator := slacktoken.NewAppLevelTokenValidator()
+		validator.HTTPC = server.Client()
+		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		key := slacktoken.SlackAppLevelToken{Token: testAppLevelToken}
 
-		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
-		defer cancel()
+		// Create a cancelled context
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
 
 		// Test validation with cancelled context
 		got, err := validator.Validate(ctx, key)
@@ -323,15 +255,12 @@ func TestValidator_ContextCancellation(t *testing.T) {
 
 	// Test with App Config Access Token validator
 	t.Run("app_config_access_token", func(t *testing.T) {
-		validator := slacktoken.NewAppConfigAccessTokenValidator(
-			slacktoken.WithClientAppConfigAccessToken(client),
-		)
-
+		validator := slacktoken.NewAppConfigAccessTokenValidator()
+		validator.HTTPC = server.Client()
+		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		key := slacktoken.SlackAppConfigAccessToken{Token: testAppConfigAccessToken}
-
-		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
-		defer cancel()
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
 
 		// Test validation with cancelled context
 		got, err := validator.Validate(ctx, key)
@@ -346,15 +275,14 @@ func TestValidator_ContextCancellation(t *testing.T) {
 
 	// Test with App Config Refresh Token validator
 	t.Run("app_config_refresh_token", func(t *testing.T) {
-		validator := slacktoken.NewAppConfigRefreshTokenValidator(
-			slacktoken.WithClientAppConfigRefreshToken(client),
-		)
-
+		validator := slacktoken.NewAppConfigRefreshTokenValidator()
+		validator.HTTPC = server.Client()
+		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		key := slacktoken.SlackAppConfigRefreshToken{Token: testAppConfigRefreshToken}
 
-		// Create context with a very short timeout
-		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
-		defer cancel()
+		// Create a cancelled context
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
 
 		// Test validation with cancelled context
 		got, err := validator.Validate(ctx, key)
@@ -373,17 +301,10 @@ func TestValidator_InvalidRequest(t *testing.T) {
 	server := mockSlackServer(t, "any-key", `{"ok":false,"error":"invalid_auth"}`, "/api/auth.test")
 	defer server.Close()
 
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	// Test with App Level Token validator
 	t.Run("app_level_token", func(t *testing.T) {
-		validator := slacktoken.NewAppLevelTokenValidator(
-			slacktoken.WithClientAppLevelToken(client),
-		)
-
+		validator := slacktoken.NewAppLevelTokenValidator()
+		validator.HTTPC = server.Client()
+		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		testCases := []struct {
 			name     string
 			key      slacktoken.SlackAppLevelToken
@@ -417,10 +338,9 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 	// Test with App Config Access Token validator
 	t.Run("app_config_access_token", func(t *testing.T) {
-		validator := slacktoken.NewAppConfigAccessTokenValidator(
-			slacktoken.WithClientAppConfigAccessToken(client),
-		)
-
+		validator := slacktoken.NewAppConfigAccessTokenValidator()
+		validator.HTTPC = server.Client()
+		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		testCases := []struct {
 			name     string
 			key      slacktoken.SlackAppConfigAccessToken
@@ -454,10 +374,9 @@ func TestValidator_InvalidRequest(t *testing.T) {
 
 	// Test with App Config Refresh Token validator
 	t.Run("app_config_refresh_token", func(t *testing.T) {
-		validator := slacktoken.NewAppConfigRefreshTokenValidator(
-			slacktoken.WithClientAppConfigRefreshToken(client),
-		)
-
+		validator := slacktoken.NewAppConfigRefreshTokenValidator()
+		validator.HTTPC = server.Client()
+		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
 		testCases := []struct {
 			name     string
 			key      slacktoken.SlackAppConfigRefreshToken

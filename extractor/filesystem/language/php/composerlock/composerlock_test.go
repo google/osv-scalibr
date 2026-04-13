@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestExtractor_FileRequired(t *testing.T) {
@@ -67,7 +69,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := composerlock.Extractor{}
+			e, err := composerlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("composerlock.New: %v", err)
+			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
 				t.Errorf("FileRequired(%s, FileInfo) got = %v, want %v", tt.inputPath, got, tt.want)
@@ -87,6 +92,14 @@ func TestExtractor_Extract(t *testing.T) {
 			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
+			Name: "null json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.jsontest",
+			},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
+		},
+		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.json",
@@ -100,14 +113,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/one-package.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/one-package.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -120,14 +133,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/one-package-dev.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/one-package-dev.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -140,26 +153,26 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "theseer/tokenizer",
-					Version:   "1.1.3",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages.json"},
+					Name:     "theseer/tokenizer",
+					Version:  "1.1.3",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -172,26 +185,26 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "sentry/sdk",
-					Version:   "2.0.4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages-alt.json"},
+					Name:     "sentry/sdk",
+					Version:  "2.0.4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages-alt.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4c115873c86ad5bd0ac6d962db70ca53bf8fb874",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "theseer/tokenizer",
-					Version:   "1.1.3",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/two-packages-alt.json"},
+					Name:     "theseer/tokenizer",
+					Version:  "1.1.3",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/two-packages-alt.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -204,50 +217,50 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "drupal/core",
-					Version:   "10.4.5",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "drupal/core",
+					Version:  "10.4.5",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "5247dbaa65b42b601058555f4a8b2bd541f5611f",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "drupal/tfa",
-					Version:   "2.0.0-alpha4",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "drupal/tfa",
+					Version:  "2.0.0-alpha4",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "drupal/field_time",
-					Version:   "1.0.0-beta5",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "drupal/field_time",
+					Version:  "1.0.0-beta5",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "theseer/tokenizer",
-					Version:   "1.1.3",
-					PURLType:  purl.TypeComposer,
-					Locations: []string{"testdata/drupal-packages.json"},
+					Name:     "theseer/tokenizer",
+					Version:  "1.1.3",
+					PURLType: purl.TypeComposer,
+					Location: extractor.LocationFromPath("testdata/drupal-packages.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "11336f6f84e16a720dae9d8e6ed5019efa85a0f9",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -257,7 +270,10 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr := composerlock.Extractor{}
+			extr, err := composerlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("composerlock.New: %v", err)
+			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
