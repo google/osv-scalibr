@@ -98,7 +98,7 @@ func extractMainPackages(root *fs.ScanRoot) (*mainOSPackages, error) {
 	// since cache folder may be removed
 	extractors := []cacheExtractor{
 		{indicators: []string{"etc/dnf/dnf.conf"}, extract: extractDnfMainRepos},
-		{indicators: []string{"etc/yum/yum.conf"}, extract: extractYumMainRepos},
+		{indicators: []string{"etc/yum/yum.conf", "etc/yum.conf"}, extract: extractYumMainRepos},
 		// currently there is no support for zypper since every OS using zypper is handled at Vendor level
 	}
 
