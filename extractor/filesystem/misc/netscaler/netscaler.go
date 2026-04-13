@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/fsmetadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 
@@ -147,13 +148,13 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var inv inventory.Inventory
 	// Add findings in a package so detectors can use it later.
 	inv.Packages = append(inv.Packages, &extractor.Package{
-		Name:      "NetScaler",
-		Version:   Version,
-		Locations: []string{versionLocation},
+		Name:     "NetScaler",
+		Version:  Version,
+		Location: extractor.LocationFromPath(versionLocation),
 		// This is required because the filesystem passed to the detectors
 		// is different from the filesystem where we found the artifacts
 		// in case of embeddedfs extractors.
-		Metadata: input.FS,
+		Metadata: &fsmetadata.Metadata{FS: input.FS},
 	})
 	return inv, nil
 }

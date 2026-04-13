@@ -71,7 +71,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	return inventory.Inventory{
 		Packages: []*extractor.Package{
 			{
-				Locations: []string{input.Path},
+				Location: extractor.LocationFromPath(input.Path),
 				Metadata: &UnknownBinaryMetadata{
 					FileHash: fileHash,
 				},

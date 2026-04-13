@@ -34,11 +34,11 @@ func pkg(t *testing.T, name string, version string, location string) *extractor.
 	t.Helper()
 
 	return &extractor.Package{
-		Name:      name,
-		Version:   version,
-		PURLType:  purl.TypePyPi,
-		Locations: []string{location},
-		Metadata: osv.DepGroupMetadata{
+		Name:     name,
+		Version:  version,
+		PURLType: purl.TypePyPi,
+		Location: extractor.LocationFromPath(location),
+		Metadata: &osv.DepGroupMetadata{
 			DepGroupVals: []string{},
 		},
 	}
@@ -152,14 +152,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "ruff",
-					Version:   "0.8.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/source-git.lock"},
+					Name:     "ruff",
+					Version:  "0.8.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/source-git.lock"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "84748be16341b76e073d117329f7f5f4ee2941ad",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -173,30 +173,30 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				pkg(t, "emoji", "2.14.0", "testdata/grouped-packages.lock"),
 				{
-					Name:      "click",
-					Version:   "8.1.7",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "click",
+					Version:  "8.1.7",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/grouped-packages.lock"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"cli"},
 					},
 				},
 				pkg(t, "colorama", "0.4.6", "testdata/grouped-packages.lock"),
 				{
-					Name:      "black",
-					Version:   "24.10.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "black",
+					Version:  "24.10.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/grouped-packages.lock"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
-					Name:      "flake8",
-					Version:   "7.1.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/grouped-packages.lock"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "flake8",
+					Version:  "7.1.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/grouped-packages.lock"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"test"},
 					},
 				},

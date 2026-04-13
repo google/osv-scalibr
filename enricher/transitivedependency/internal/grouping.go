@@ -29,20 +29,20 @@ type PackageWithIndex struct {
 	Index int
 }
 
-// GroupPackagesFromPlugin groups packages that were added by a particular plugin by the first location
-// that they are found and returns a map of location -> package name -> package with index.
+// GroupPackagesFromPlugin groups packages that were added by a particular plugin by their
+// descriptor's path and returns a map of path -> package name -> package with index.
 func GroupPackagesFromPlugin(pkgs []*extractor.Package, pluginName string) map[string]map[string]PackageWithIndex {
 	result := make(map[string]map[string]PackageWithIndex)
 	for i, pkg := range pkgs {
 		if !slices.Contains(pkg.Plugins, pluginName) {
 			continue
 		}
-		if len(pkg.Locations) == 0 {
-			log.Warnf("package %s has no locations", pkg.Name)
+		if pkg.Location.Descriptor == nil || pkg.Location.Descriptor.File == nil {
+			log.Warnf("package %s has no descriptor path", pkg.Name)
 			continue
 		}
 		// Use the path where this package is first found.
-		path := pkg.Locations[0]
+		path := pkg.Location.Descriptor.File.Path
 		if _, ok := result[path]; !ok {
 			result[path] = make(map[string]PackageWithIndex)
 		}

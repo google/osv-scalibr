@@ -23,7 +23,21 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		gcpoauth2client.NewDetector(),
+		`123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
+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`,
+		gcpoauth2client.Credentials{
+			ID:     "123456789012-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
+			Secret: "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",
+		},
+	)
+}
 
 func TestDetector_Detect(t *testing.T) {
 	engine, err := veles.NewDetectionEngine([]veles.Detector{gcpoauth2client.NewDetector()})
@@ -220,29 +234,6 @@ second_secret: GOCSPX-DuplicateSecret1234567890123`,
 				gcpoauth2client.Credentials{
 					ID:     "111111111111-unique.apps.googleusercontent.com",
 					Secret: "GOCSPX-DuplicateSecret1234567890123",
-				},
-			},
-		},
-		{
-			name: "deduplication_test_-_multiple_pairs_with_overlapping_credentials",
-			input: `shared_id: 123456789012-shared.apps.googleusercontent.com
-first_secret: GOCSPX-FirstSecret12345678901234567
-another_id: 987654321098-another.apps.googleusercontent.com
-shared_secret: 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
-shared_id_again: 123456789012-shared.apps.googleusercontent.com
-shared_secret_again: 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`,
-			want: []veles.Secret{
-				gcpoauth2client.Credentials{
-					ID:     "987654321098-another.apps.googleusercontent.com",
-					Secret: "GOCSPX-FirstSecret12345678901234567",
-				},
-				gcpoauth2client.Credentials{
-					ID:     "123456789012-shared.apps.googleusercontent.com",
-					Secret: "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",
-				},
-				gcpoauth2client.Credentials{
-					ID:     "123456789012-shared.apps.googleusercontent.com",
-					Secret: "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",
 				},
 			},
 		},

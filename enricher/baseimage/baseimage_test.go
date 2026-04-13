@@ -28,49 +28,9 @@ import (
 	"github.com/opencontainers/go-digest"
 	"github.com/opencontainers/image-spec/identity"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
-
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     *baseimage.Config
-		wantErr error
-	}{
-		{
-			name:    "nil config",
-			wantErr: cmpopts.AnyError,
-		},
-		{
-			name:    "nil client",
-			cfg:     &baseimage.Config{},
-			wantErr: cmpopts.AnyError,
-		},
-		{
-			name: "valid_config",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{}),
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := baseimage.New(tc.cfg)
-			if !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
-				t.Errorf("New(%v) returned an unexpected error: %v", tc.cfg, err)
-			}
-			if err != nil && got == nil {
-				return
-			}
-			opts := []cmp.Option{
-				cmp.AllowUnexported(clientFake{}),
-			}
-			if diff := cmp.Diff(tc.cfg, got.Config(), opts...); diff != "" {
-				t.Errorf("New(%v) returned an unexpected diff (-want +got): %v", tc.cfg, diff)
-			}
-		})
-	}
-}
 
 func TestVersion(t *testing.T) {
 	e := baseimage.Enricher{}
@@ -153,36 +113,32 @@ func TestEnrich(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		cfg     *baseimage.Config
+		client  baseimage.Client
 		inv     *inventory.Inventory
 		want    *inventory.Inventory
 		wantErr error
 	}{
 		{
-			name: "no_image_metadata_to_enrich",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{}),
-			},
-			inv:  &inventory.Inventory{},
-			want: &inventory.Inventory{},
+			name:   "no_image_metadata_to_enrich",
+			client: mustNewClientFake(t, &config{}),
+			inv:    &inventory.Inventory{},
+			want:   &inventory.Inventory{},
 		},
 		{
 			name: "enrich_layers",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-					{
-						req:  &baseimage.Request{ChainID: lm123ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
-					},
-					{
-						req: &baseimage.Request{ChainID: lm12ChainID},
-					},
-					{
-						req:  &baseimage.Request{ChainID: lm1ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
-					},
-				}}),
-			},
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lm123ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm12ChainID},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+				},
+			}}),
 			inv: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lm3}},
@@ -217,14 +173,12 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			name: "same_layer_chainID_in_different_images,_should_use_cache",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-					{
-						req:  &baseimage.Request{ChainID: lm1ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
-					},
-				}}),
-			},
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+				},
+			}}),
 			inv: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					{LayerMetadata: []*extractor.LayerMetadata{lm1}},
@@ -266,21 +220,19 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			name: "client_error_on_last_layer",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-					{
-						req: &baseimage.Request{ChainID: lm12ErrChainID},
-						err: clientErr,
-					},
-					{
-						req: &baseimage.Request{ChainID: lm12ChainID},
-					},
-					{
-						req:  &baseimage.Request{ChainID: lm1ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
-					},
-				}}),
-			},
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req: &baseimage.Request{ChainID: lm12ErrChainID},
+					err: clientErr,
+				},
+				{
+					req: &baseimage.Request{ChainID: lm12ChainID},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+				},
+			}}),
 			inv: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lmErr}},
@@ -303,21 +255,19 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			name: "client_error_on_first_layer",
-			cfg: &baseimage.Config{
-				Client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-					{
-						req:  &baseimage.Request{ChainID: lmErr23ChainID},
-						resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
-					},
-					{
-						req: &baseimage.Request{ChainID: lmErr2ChainID},
-					},
-					{
-						req: &baseimage.Request{ChainID: lmErrDiffID.String()},
-						err: clientErr,
-					},
-				}}),
-			},
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lmErr23ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
+				},
+				{
+					req: &baseimage.Request{ChainID: lmErr2ChainID},
+				},
+				{
+					req: &baseimage.Request{ChainID: lmErrDiffID.String()},
+					err: clientErr,
+				},
+			}}),
 			inv: &inventory.Inventory{
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					{LayerMetadata: []*extractor.LayerMetadata{lmErr, lm2, lm3}},
@@ -340,7 +290,12 @@ func TestEnrich(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := mustNew(t, tc.cfg)
+			enr, err := baseimage.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			e := enr.(*baseimage.Enricher)
+			e.Client = tc.client
 			inv := deepcopy.Copy(tc.inv).(*inventory.Inventory)
 			if err := e.Enrich(t.Context(), nil, inv); !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Enrich(%v) returned error: %v, want error: %v\n", tc.inv, err, tc.wantErr)
@@ -354,13 +309,4 @@ func TestEnrich(t *testing.T) {
 			}
 		})
 	}
-}
-
-func mustNew(t *testing.T, cfg *baseimage.Config) *baseimage.Enricher {
-	t.Helper()
-	e, err := baseimage.New(cfg)
-	if err != nil {
-		t.Fatalf("Failed to create base image enricher: %v", err)
-	}
-	return e
 }

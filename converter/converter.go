@@ -25,6 +25,7 @@ import (
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
@@ -98,13 +99,12 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 		if cpes := extractCPEs(pkg); len(cpes) > 0 {
 			comp.CPE = cpes[0]
 		}
-		if len(pkg.Locations) > 0 {
-			occ := make([]cyclonedx.EvidenceOccurrence, 0, len((pkg.Locations)))
-			for _, loc := range pkg.Locations {
-				occ = append(occ, cyclonedx.EvidenceOccurrence{
-					Location: loc,
-				})
-			}
+		occ := []cyclonedx.EvidenceOccurrence{}
+		occ = appendOccurrenceFromLocation(pkg.Location.Descriptor, occ)
+		for _, r := range pkg.Location.Related {
+			occ = appendOccurrenceFromLocation(&r, occ)
+		}
+		if len(occ) > 0 {
 			comp.Evidence = &cyclonedx.Evidence{
 				Occurrences: &occ,
 			}
@@ -125,4 +125,13 @@ func extractCPEs(p *extractor.Package) []string {
 		return m.CPEs
 	}
 	return nil
+}
+
+func appendOccurrenceFromLocation(l *location.Location, occ []cyclonedx.EvidenceOccurrence) []cyclonedx.EvidenceOccurrence {
+	if l != nil && l.File != nil {
+		occ = append(occ, cyclonedx.EvidenceOccurrence{
+			Location: l.File.Path,
+		})
+	}
+	return occ
 }

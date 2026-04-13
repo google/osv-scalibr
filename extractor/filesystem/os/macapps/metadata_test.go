@@ -19,68 +19,24 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macapps"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *macapps.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.MacAppsMetadata
 	}{
-		{
-			desc: "nil_metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil_package",
-			m: &macapps.Metadata{
-				CFBundleDisplayName: "display-name",
-			},
-			p:    nil,
-			want: nil,
-		},
 		{
 			desc: "set_metadata",
 			m: &macapps.Metadata{
 				CFBundleDisplayName: "display-name",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_MacAppsMetadata{
-					MacAppsMetadata: &pb.MacAppsMetadata{
-						BundleDisplayName: "display-name",
-					},
-				},
-			},
-		},
-		{
-			desc: "override_metadata",
-			m: &macapps.Metadata{
-				CFBundleDisplayName: "another-display-name",
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_MacAppsMetadata{
-					MacAppsMetadata: &pb.MacAppsMetadata{
-						BundleDisplayName: "display-name",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_MacAppsMetadata{
-					MacAppsMetadata: &pb.MacAppsMetadata{
-						BundleDisplayName: "another-display-name",
-					},
-				},
+			want: &pb.MacAppsMetadata{
+				BundleDisplayName: "display-name",
 			},
 		},
 		{
@@ -97,47 +53,35 @@ func TestSetProto(t *testing.T) {
 				KSProductID:                "product-id",
 				KSUpdateURL:                "update-url",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_MacAppsMetadata{
-					MacAppsMetadata: &pb.MacAppsMetadata{
-						BundleDisplayName:        "display-name",
-						BundleIdentifier:         "bundle-identifier",
-						BundleShortVersionString: "1.2.3",
-						BundleExecutable:         "executable",
-						BundleName:               "name",
-						BundlePackageType:        "package-type",
-						BundleSignature:          "signature",
-						BundleVersion:            "1.2.3",
-						ProductId:                "product-id",
-						UpdateUrl:                "update-url",
-					},
-				},
+			want: &pb.MacAppsMetadata{
+				BundleDisplayName:        "display-name",
+				BundleIdentifier:         "bundle-identifier",
+				BundleShortVersionString: "1.2.3",
+				BundleExecutable:         "executable",
+				BundleName:               "name",
+				BundlePackageType:        "package-type",
+				BundleSignature:          "signature",
+				BundleVersion:            "1.2.3",
+				ProductId:                "product-id",
+				UpdateUrl:                "update-url",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := macapps.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := macapps.ToStruct(p.GetMacAppsMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetMacAppsMetadata(), diff)
+			gotStruct := macapps.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -149,11 +93,6 @@ func TestToStruct(t *testing.T) {
 		m    *pb.MacAppsMetadata
 		want *macapps.Metadata
 	}{
-		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
 		{
 			desc: "some_fields",
 			m: &pb.MacAppsMetadata{
@@ -204,19 +143,12 @@ func TestToStruct(t *testing.T) {
 			}
 
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_MacAppsMetadata{
-					MacAppsMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := macapps.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

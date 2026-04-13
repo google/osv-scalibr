@@ -19,7 +19,6 @@ import (
 	"context"
 	"path/filepath"
 	"regexp"
-	"slices"
 
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/inventory"
@@ -75,7 +74,10 @@ func (Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, resul
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if slices.ContainsFunc(pkg.Locations, isInsideCacheDir) {
+		if pkg.Location.Descriptor == nil {
+			continue
+		}
+		if isInsideCacheDir(pkg.Location.Descriptor.File.Path) {
 			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
 				Plugin:          Name,
 				Justification:   vex.ComponentNotPresent,

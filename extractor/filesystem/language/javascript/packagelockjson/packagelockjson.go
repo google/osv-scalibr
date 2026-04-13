@@ -18,6 +18,7 @@ package packagelockjson
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"path"
@@ -299,6 +300,10 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		return nil, fmt.Errorf("could not extract: %w", err)
 	}
 
+	if parsedLockfile == nil {
+		return nil, errors.New("could not extract: decoded null JSON value")
+	}
+
 	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile)))
 	result := make([]*extractor.Package, len(packages))
 
@@ -314,10 +319,10 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			},
 			Version:  pkg.Version,
 			PURLType: purl.TypeNPM,
-			Metadata: osv.DepGroupMetadata{
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: pkg.DepGroups,
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		}
 	}
 

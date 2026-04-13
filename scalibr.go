@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -344,6 +345,12 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		},
 	}
 
+	storeAbsPath := config.StoreAbsolutePath
+	// We want to store absolute paths in the inventory,
+	// but paths should be relative to root of the imagefs
+	// (always '/' as we only support linux containers)
+	config.StoreAbsolutePath = false
+
 	// Suppress running enrichers until after layer details are populated.
 	var enrichers []enricher.Enricher
 	var nonEnricherPlugins []plugin.Plugin
@@ -389,6 +396,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
 
+	// TODO: b/500769263 - Harmonize with trace.PopulateLayerDetails() by using same cim in both.
+	if cims := scanResult.Inventory.ContainerImageMetadata; len(cims) > 0 {
+		cims[len(cims)-1].Labels = img.Labels()
+	}
+
 	// Run enrichers with the updated inventory.
 	enrichers, err = ce.SetupVelesEnrichers(enrichers)
 	if err != nil {
@@ -409,11 +421,18 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		scanResult.Status.FailureReason = err.Error()
 	}
 
-	if config.StoreAbsolutePath {
-		err := scanResult.Inventory.ExpandPathsToAbsolute()
-		if err != nil {
-			scanResult.Status.Status = plugin.ScanStatusFailed
-			scanResult.Status.FailureReason = err.Error()
+	// Since we skipped storing absolute path in the main Scan function.
+	// Actually convert it to absolute path here.
+	if storeAbsPath {
+		for _, pkg := range scanResult.Inventory.Packages {
+			if pkg.Location.Descriptor != nil && pkg.Location.Descriptor.File != nil {
+				pkg.Location.Descriptor.File.Path = "/" + pkg.Location.Descriptor.File.Path
+			}
+			for _, r := range pkg.Location.Related {
+				if r.File != nil {
+					r.File.Path = "/" + r.File.Path
+				}
+			}
 		}
 	}
 
@@ -488,9 +507,7 @@ func CmpPackages(a, b *extractor.Package) int {
 		return res
 	}
 
-	aloc := fmt.Sprintf("%v", a.Locations)
-	bloc := fmt.Sprintf("%v", b.Locations)
-	return cmp.Compare(aloc, bloc)
+	return cmpLocation(a.Location, b.Location)
 }
 
 func cmpStatus(a, b *plugin.Status) int {
@@ -506,6 +523,27 @@ func cmpGenericFindings(a, b *inventory.GenericFinding) int {
 		return cmpString(a.Adv.ID.Reference, b.Adv.ID.Reference)
 	}
 	return cmpString(a.Target.Extra, b.Target.Extra)
+}
+
+func cmpLocation(a, b extractor.PackageLocation) int {
+	res := cmp.Compare(a.Descriptor.PathOrEmpty(), b.Descriptor.PathOrEmpty())
+	if res != 0 {
+		return res
+	}
+
+	res = cmp.Compare(len(a.Related), len(b.Related))
+	if res != 0 {
+		return res
+	}
+
+	l := len(a.Related)
+	aloc := make([]string, l)
+	bloc := make([]string, l)
+	for i := range l {
+		aloc[i] = a.Related[i].PathOrEmpty()
+		bloc[i] = b.Related[i].PathOrEmpty()
+	}
+	return cmpString(strings.Join(aloc, ","), strings.Join(bloc, ","))
 }
 
 func cmpString(a, b string) int {

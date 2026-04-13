@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/cis/generic_linux/etcpasswdpermissions"
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
+	"github.com/google/osv-scalibr/detector/cve/npm/canisterworm"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202011978"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202016846"
 	"github.com/google/osv-scalibr/detector/cve/untested/cve202233891"
@@ -33,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/misc/cronjobprivesc"
 	"github.com/google/osv-scalibr/detector/misc/dockersocket"
+	"github.com/google/osv-scalibr/detector/misc/pammisconfig"
 	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
@@ -88,12 +90,19 @@ var Weakcredentials = InitMap{
 var Misc = InitMap{
 	cronjobprivesc.Name: {cronjobprivesc.New},
 	dockersocket.Name:   {dockersocket.New},
+	pammisconfig.Name:   {pammisconfig.New},
 }
 
 // CVE for vulnerabilities that have a CVE associated
 var CVE = InitMap{
 	// CVE-2025-7775 detector
 	cve20257775.Name: {cve20257775.New},
+}
+
+// SupplyChain related vulnerability detectors.
+var SupplyChain = InitMap{
+	// Malicious NPM for CanisterWorm
+	canisterworm.Name: {canisterworm.New},
 }
 
 // Default detectors that are recommended to be enabled.
@@ -108,6 +117,7 @@ var All = concat(
 	Weakcredentials,
 	Untested,
 	CVE,
+	SupplyChain,
 )
 
 var detectorNames = concat(All, InitMap{
@@ -118,6 +128,7 @@ var detectorNames = concat(All, InitMap{
 	"weakcredentials":   vals(Weakcredentials),
 	"untested":          vals(Untested),
 	"cve":               vals(CVE),
+	"supplychain":       vals(SupplyChain),
 	"detectors/default": vals(Default),
 	"default":           vals(Default),
 	"detectors/all":     vals(All),

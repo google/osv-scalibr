@@ -37,7 +37,7 @@ func createTestDir(t *testing.T) string {
 	t.Helper()
 
 	//nolint:usetesting // we need to customize the directory name to replace in snapshots
-	p, err := os.MkdirTemp("", "osv-scanner-test-*")
+	p, err := os.MkdirTemp("", "osv-scalibr-test-*")
 	if err != nil {
 		t.Fatalf("could not create test directory: %v", err)
 	}
@@ -50,7 +50,7 @@ func createTestDir(t *testing.T) string {
 	return p
 }
 
-const userAgent = "osv-scanner_scan/" + scalibrversion.ScannerVersion
+const userAgent = "osv-scalibr_test/" + scalibrversion.ScannerVersion
 
 func expectDBToHaveOSVs(
 	t *testing.T,

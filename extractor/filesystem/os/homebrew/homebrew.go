@@ -68,7 +68,9 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{OS: plugin.OSMac} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{OS: plugin.OSUnix}
+}
 
 // FileRequired returns true if the specified file path matches the homebrew path.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
@@ -107,10 +109,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, nil
 	}
 	pkg := &extractor.Package{
-		Name:      p.AppName,
-		Version:   p.AppVersion,
-		PURLType:  purl.TypeBrew,
-		Locations: []string{input.Path},
+		Name:     p.AppName,
+		Version:  p.AppVersion,
+		PURLType: purl.TypeBrew,
+		Location: extractor.LocationFromPath(input.Path),
 	}
 
 	// If we found a formula file path, parse it and attach the metadata to the package.

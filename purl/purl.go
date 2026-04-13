@@ -23,9 +23,11 @@ import (
 	"github.com/package-url/packageurl-go"
 )
 
-// These are the known purl types as defined in the spec. Some of these require
-// special treatment during parsing.
-// https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
+// PURL types according to the spec, with some custom types that are not yet standardized.
+// Some of these require special treatment during parsing.
+//
+// The official types are listed at:
+// https://github.com/package-url/purl-spec/tree/main/types-doc
 const (
 	// TypeAlpm is a pkg:alpm purl.
 	TypeAlpm = "alpm"
@@ -81,6 +83,8 @@ const (
 	TypeNix = "nix"
 	// TypeNPM is a pkg:npm purl.
 	TypeNPM = "npm"
+	// TypeJSR is a pkg:jsr purl.
+	TypeJSR = "jsr"
 	// TypePacman is a pkg:pacman purl.
 	TypePacman = "pacman"
 	// TypeNuget is a pkg:nuget purl.
@@ -121,6 +125,12 @@ const (
 	TypeLua = "lua"
 	// TypeChocolatey is pkg:chocolatey purl
 	TypeChocolatey = "chocolatey"
+	// TypeSpack is pkg:spack purl
+	TypeSpack = "spack"
+	// TypeCPAN is pkg:cpan purl
+	TypeCPAN = "cpan"
+	// TypeDHI is a pkg:dhi purl.
+	TypeDHI = "dhi"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -215,6 +225,7 @@ func validType(t string) bool {
 		TypeMaven:      true,
 		TypeNix:        true,
 		TypeNPM:        true,
+		TypeJSR:        true,
 		TypeNuget:      true,
 		TypeOCI:        true,
 		TypeOpam:       true,
@@ -231,6 +242,8 @@ func validType(t string) bool {
 		TypeWinget:     true,
 		TypeChocolatey: true,
 		TypeMise:       true,
+		TypeCPAN:       true,
+		TypeDHI:        true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

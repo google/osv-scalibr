@@ -1,3 +1,4 @@
+# Test fixture only — do not install with pip
 [packages]
 direct1 = "==1.0.0"
 direct2 = ">=1.0.0,<2.0.0"

@@ -65,6 +65,12 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	}
 	defer it.Close()
 
+	aptCache, err := extractAptCache(input.ScanRoot)
+	isAptCacheEmpty := errors.Is(err, ErrMissingAptCache)
+	if err != nil && !isAptCacheEmpty {
+		return fmt.Errorf("failed to read the apt cache folder: %w", err)
+	}
+
 	errs := []error{}
 	for {
 		// Return if canceled or exceeding deadline.
@@ -82,18 +88,23 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		}
 
 		// Remove leading '/' since SCALIBR fs paths don't include that.
-		filePath = strings.TrimPrefix(filePath, "/")
-		if pkgs, ok := locationToPKGs[filePath]; ok {
-			for _, pkg := range pkgs {
-				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-					Plugin: Name,
-					// TODO(b/425890695): This exclusion doesn't quite match the use case here: The component
-					// is present but already tracked by another Extractor (os/dpkg). We should consider
-					// introducing a new type to better describe these cases.
-					Justification:   vex.ComponentNotPresent,
-					MatchesAllVulns: true,
-				})
+		pkgs := locationToPKGs[strings.TrimPrefix(filePath, "/")]
+
+		for _, pkg := range pkgs {
+			// Do not add duplication annotation on packages which are from non-main repos
+			// since vuln matching can happen only on packages hosted on main repos
+			if !isAptCacheEmpty && !aptCache.isFromMainOSRepo(pkg) {
+				continue
 			}
+
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin: Name,
+				// TODO(b/425890695): This exclusion doesn't quite match the use case here: The component
+				// is present but already tracked by another Extractor (os/dpkg). We should consider
+				// introducing a new type to better describe these cases.
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 	}
 
