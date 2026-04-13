@@ -170,9 +170,9 @@ func parseDigestChallenge(header string) (*digestChallenge, error) {
 // This mirrors clients/datasource/http_auth.go which uses the same pattern.
 func computeDigestAuth(username, password, method, uri string, c *digestChallenge) string {
 	//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617), not used for password storage.
-	ha1 := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s", username, c.realm, password))))
+	ha1 := fmt.Sprintf("%x", md5.Sum(fmt.Appendf(nil, "%s:%s:%s", username, c.realm, password)))
 	//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617).
-	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s", method, uri))))
+	ha2 := fmt.Sprintf("%x", md5.Sum(fmt.Appendf(nil, "%s:%s", method, uri)))
 
 	nc := "00000001"
 	cnonce := fmt.Sprintf("%08x", rand.Int31())
@@ -180,10 +180,10 @@ func computeDigestAuth(username, password, method, uri string, c *digestChalleng
 	var response string
 	if strings.Contains(c.qop, "auth") {
 		//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617).
-		response = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s:%s:%s:%s", ha1, c.nonce, nc, cnonce, "auth", ha2))))
+		response = fmt.Sprintf("%x", md5.Sum(fmt.Appendf(nil, "%s:%s:%s:%s:%s:%s", ha1, c.nonce, nc, cnonce, "auth", ha2)))
 	} else {
 		//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617).
-		response = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s", ha1, c.nonce, ha2))))
+		response = fmt.Sprintf("%x", md5.Sum(fmt.Appendf(nil, "%s:%s:%s", ha1, c.nonce, ha2)))
 	}
 
 	parts := []string{
