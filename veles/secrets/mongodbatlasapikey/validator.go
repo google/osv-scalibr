@@ -165,19 +165,25 @@ func parseDigestChallenge(header string) (*digestChallenge, error) {
 	return c, nil
 }
 
-// computeDigestAuth computes the Authorization header for HTTP Digest Authentication.
+// computeDigestAuth computes the Authorization header for HTTP Digest Authentication
+// (RFC 2617). MD5 is mandated by the protocol — MongoDB Atlas Admin API v1.0 requires it.
+// This mirrors clients/datasource/http_auth.go which uses the same pattern.
 func computeDigestAuth(username, password, method, uri string, c *digestChallenge) string {
-	ha1 := md5sum(fmt.Sprintf("%s:%s:%s", username, c.realm, password))
-	ha2 := md5sum(fmt.Sprintf("%s:%s", method, uri))
+	//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617), not used for password storage.
+	ha1 := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s", username, c.realm, password))))
+	//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617).
+	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s", method, uri))))
 
 	nc := "00000001"
 	cnonce := fmt.Sprintf("%08x", rand.Int31())
 
 	var response string
 	if strings.Contains(c.qop, "auth") {
-		response = md5sum(fmt.Sprintf("%s:%s:%s:%s:%s:%s", ha1, c.nonce, nc, cnonce, "auth", ha2))
+		//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617).
+		response = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s:%s:%s:%s", ha1, c.nonce, nc, cnonce, "auth", ha2))))
 	} else {
-		response = md5sum(fmt.Sprintf("%s:%s:%s", ha1, c.nonce, ha2))
+		//nolint:gosec // MD5 is required by HTTP Digest Auth (RFC 2617).
+		response = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s", ha1, c.nonce, ha2))))
 	}
 
 	parts := []string{
@@ -198,8 +204,4 @@ func computeDigestAuth(username, password, method, uri string, c *digestChalleng
 	}
 
 	return "Digest " + strings.Join(parts, ", ")
-}
-
-func md5sum(s string) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
