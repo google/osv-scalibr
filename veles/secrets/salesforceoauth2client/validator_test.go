@@ -26,12 +26,29 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestClientID = "3MVG123456789.AB_CDEF.ABC123456789ABC123456789ABC1"
 const validatorTestClientSecret = "123456789ABCDEFABC1234567895123456789ABCDEFABC1234567895"
 const validatorTestURL = "yuvrajapp.my.salesforce.com"
 const validatorExpectedBase64Data = "M01WRzEyMzQ1Njc4OS5BQl9DREVGLkFCQzEyMzQ1Njc4OUFCQzEyMzQ1Njc4OUFCQzE6MTIzNDU2Nzg5QUJDREVGQUJDMTIzNDU2Nzg5NTEyMzQ1Njc4OUFCQ0RFRkFCQzEyMzQ1Njc4OTU="
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := salesforceoauth2client.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		salesforceoauth2client.NewValidator(),
+		velestest.WithTrueNegatives(salesforceoauth2client.Credentials{
+			ID:     validatorTestClientID,
+			Secret: "wrong-secret",
+			URL:    validatorTestURL,
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

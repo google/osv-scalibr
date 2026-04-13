@@ -26,11 +26,26 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	paystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestSK = "sk_live_51PvZzqA"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := paystacksecretkey.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		paystacksecretkey.NewValidator(),
+		velestest.WithTrueNegatives(paystacksecretkey.PaystackSecret{
+			Key: "sk_live_osvscalibr_invalid000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

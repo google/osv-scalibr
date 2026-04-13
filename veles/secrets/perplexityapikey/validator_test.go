@@ -26,9 +26,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "pplx-test123456789012345678901234567890123456789012345678"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := perplexityapikey.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		perplexityapikey.NewValidator(),
+		velestest.WithTrueNegatives(perplexityapikey.PerplexityAPIKey{
+			Key: "pplx-osvscalibr-invalid000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

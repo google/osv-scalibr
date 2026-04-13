@@ -26,9 +26,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "essu_VWtSQlNXNWFjMEpWWVZsbFVUZDBORmRQTldJNmNuWnVYMU5yY1ZGdlJ6aHVlRE5rWmxGelIyUk9kdz09AAAAANx5Zs4="
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := elasticcloudapikey.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		elasticcloudapikey.NewValidator(),
+		velestest.WithTrueNegatives(elasticcloudapikey.ElasticCloudAPIKey{
+			Key: "essu_osvscalibr_invalid00000000000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

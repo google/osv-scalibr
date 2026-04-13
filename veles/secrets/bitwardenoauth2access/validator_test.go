@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -91,6 +92,21 @@ func mockBitwardenServer(t *testing.T, expectedClientID, expectedClientSecret st
 
 		w.WriteHeader(http.StatusBadRequest)
 	}))
+}
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := bitwardenoauth2access.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		bitwardenoauth2access.NewValidator(),
+		velestest.WithTrueNegatives(bitwardenoauth2access.Token{
+			ClientID:     validatorTestClientID,
+			ClientSecret: "invalid_secret_1234567890",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
 }
 
 func TestValidator(t *testing.T) {

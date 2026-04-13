@@ -26,12 +26,41 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestAPIKey        = "PMAK-68b96bd4ae8d2b0001db8a86-192b1cb49020c70a4d0c814ab71de822d7"
 	validatorTestCollectionKey = "PMAT-01K4A58P2HS2Q43TXHSXFRDBZX"
 )
+
+func TestAcceptAPIValidator(t *testing.T) {
+	brokenValidator := postmanapikey.NewAPIValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		postmanapikey.NewAPIValidator(),
+		velestest.WithTrueNegatives(postmanapikey.PostmanAPIKey{
+			Key: "PMAK-osvscalibr-invalid-000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptCollectionValidator(t *testing.T) {
+	brokenValidator := postmanapikey.NewCollectionValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		postmanapikey.NewCollectionValidator(),
+		velestest.WithTrueNegatives(postmanapikey.PostmanCollectionToken{
+			Key: "PMAT-osvscalibr-invalid-000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server for the configured hosts.
 type mockTransport struct {

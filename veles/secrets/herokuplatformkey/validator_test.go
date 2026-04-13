@@ -24,11 +24,26 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	herokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestKey = "HRKU-AALJCYR7SRzPkj9_BGqhi1jAI1J5P4WfD6ITENvdVydAPCnNcAlrMMahHrTo"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := herokuplatformkey.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		herokuplatformkey.NewValidator(),
+		velestest.WithTrueNegatives(herokuplatformkey.HerokuSecret{
+			Key: "HRKU-osvscalibr-invalid0000000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

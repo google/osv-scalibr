@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/supabase"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -31,6 +32,49 @@ const (
 	validatorTestSecretKey  = "sb_secret_abcdefghijklmnopqrstuvwxyz123456"
 	validatorTestProjectRef = "lphyfymaepklpuvaecry"
 )
+
+func TestAcceptPATValidator(t *testing.T) {
+	brokenValidator := supabase.NewPATValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		supabase.NewPATValidator(),
+		velestest.WithTrueNegatives(supabase.PAT{
+			Token: "sbp_osvscalibr000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptProjectSecretKeyValidator(t *testing.T) {
+	brokenValidator := supabase.NewProjectSecretKeyValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		supabase.NewProjectSecretKeyValidator(),
+		velestest.WithMalformedSecrets(supabase.ProjectSecretKey{
+			Key:        validatorTestSecretKey,
+			ProjectRef: "",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[supabase.ProjectSecretKey](),
+	)
+}
+
+func TestAcceptServiceRoleJWTValidator(t *testing.T) {
+	brokenValidator := supabase.NewServiceRoleJWTValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		supabase.NewServiceRoleJWTValidator(),
+		velestest.WithMalformedSecrets(supabase.ServiceRoleJWT{Token: "not-a-jwt"}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[supabase.ServiceRoleJWT](),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

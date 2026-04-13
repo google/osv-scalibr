@@ -25,9 +25,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = `pypi-AgEIc433aS5vcmcffDgyZDA0MzFkLWMzZjEtNDlhNy1iOWQwLfflMjE5NmNkMjhjNQACKlszLCI22UBiYzQ2Yi05YjNhhTQ5NmItYWIxMHYhMGI3MmEyOWI5MzYiXQAABiCJBI80LFFz0JvS6UIj2LzgV9N-BQnBAD2123Dyu9xs33`
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := pypiapitoken.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		pypiapitoken.NewValidator(),
+		velestest.WithTrueNegatives(pypiapitoken.PyPIAPIToken{
+			Token: "pypi-osvscalibr-invalid0000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockPyPIServer creates a mock PyPI API server for testing
 func mockPyPIServer(t *testing.T, expectedKey string, serverResponseCode int) *httptest.Server {

@@ -25,7 +25,21 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := gcpsak.NewValidator(gcpsak.WithClient(velestest.BrokenClient))
+
+	velestest.AcceptValidator(
+		t,
+		gcpsak.NewValidator(),
+		velestest.WithTrueNegatives(gcpsak.GCPSAK{
+			ServiceAccount: "osvscalibr-fake@fake-project.iam.gserviceaccount.com",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 const (
 	pathPrefix = "/robot/v1/metadata/x509/"

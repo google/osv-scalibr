@@ -26,9 +26,38 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "grokx-test12345678901234567890123456789012345678901234567890"
+
+func TestAcceptAPIValidator(t *testing.T) {
+	brokenValidator := grokxaiapikey.NewAPIValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		grokxaiapikey.NewAPIValidator(),
+		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIAPIKey{
+			Key: "grokx-osvscalibr-invalid000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptManagementAPIValidator(t *testing.T) {
+	brokenValidator := grokxaiapikey.NewManagementAPIValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		grokxaiapikey.NewManagementAPIValidator(),
+		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIManagementKey{
+			Key: "xai-token-osvscalibr-invalid000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockAPIServer creates a mock x.ai /v1/api-key endpoint for testing API validator.
 func mockAPIServer(t *testing.T, expectedKey string, statusCode int, body any) *httptest.Server {

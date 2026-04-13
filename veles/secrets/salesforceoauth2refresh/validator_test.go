@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -34,6 +35,22 @@ const (
 	validatorTestRefresh        = "123456789ABCDEFABC1234567895123459876ABCDEFABC1234567895"
 	validatorExpectedBase64Data = "M01WRzEyMzQ1Njc4OS5BQl9DREVGLkFCQzEyMzQ1Njc4OUFCQzEyMzQ1Njc4OUFCQzE6MTIzNDU2Nzg5QUJDREVGQUJDMTIzNDU2Nzg5NTEyMzQ1Njc4OUFCQ0RFRkFCQzEyMzQ1Njc4OTU="
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := salesforceoauth2refresh.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		salesforceoauth2refresh.NewValidator(),
+		velestest.WithTrueNegatives(salesforceoauth2refresh.Credentials{
+			ID:      validatorTestClientID,
+			Secret:  validatorTestClientSecret,
+			Refresh: "osvscalibr-not-a-real-refresh-token",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

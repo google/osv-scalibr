@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorValidTestKey = "cioAbCdEfGhIjKlMnOpQrStUvWxYz123456"
@@ -77,6 +78,18 @@ func mockCratesioServer(t *testing.T, expectedKey string) *httptest.Server {
 			return
 		}
 	}))
+}
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := cratesioapitoken.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		cratesioapitoken.NewValidator(),
+		velestest.WithTrueNegatives(cratesioapitoken.CratesIOAPItoken{Token: "random_string"}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
 }
 
 func TestValidator(t *testing.T) {

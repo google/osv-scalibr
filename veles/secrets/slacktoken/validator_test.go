@@ -25,7 +25,50 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptAppLevelTokenValidator(t *testing.T) {
+	brokenValidator := slacktoken.NewAppLevelTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		slacktoken.NewAppLevelTokenValidator(),
+		velestest.WithTrueNegatives(slacktoken.SlackAppLevelToken{
+			Token: "xapp-1-A000-OSVSCALIBR-00000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptAppConfigAccessTokenValidator(t *testing.T) {
+	brokenValidator := slacktoken.NewAppConfigAccessTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		slacktoken.NewAppConfigAccessTokenValidator(),
+		velestest.WithTrueNegatives(slacktoken.SlackAppConfigAccessToken{
+			Token: "xoxe.xoxp-1-MsNw-osvscalibr-invalid-000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptAppConfigRefreshTokenValidator(t *testing.T) {
+	brokenValidator := slacktoken.NewAppConfigRefreshTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		slacktoken.NewAppConfigRefreshTokenValidator(),
+		velestest.WithTrueNegatives(slacktoken.SlackAppConfigRefreshToken{
+			Token: "xoxe-1-OSVSCALIBR-invalid-000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockSlackServer creates a mock Slack API server for testing
 func mockSlackServer(t *testing.T, expectedKey string, responseBody string, expectedEndpoint string) *httptest.Server {

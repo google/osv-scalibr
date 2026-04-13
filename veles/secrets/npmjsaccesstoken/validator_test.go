@@ -24,9 +24,24 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "npm_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := npmjsaccesstoken.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		npmjsaccesstoken.NewValidator(),
+		velestest.WithTrueNegatives(npmjsaccesstoken.NpmJsAccessToken{
+			Token: "npm_osvscalibrinvalid00000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

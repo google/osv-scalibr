@@ -24,7 +24,80 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/packagist"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptAPIKeyValidator(t *testing.T) {
+	brokenValidator := packagist.NewAPIKeyValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		packagist.NewAPIKeyValidator(),
+		velestest.WithTrueNegatives(packagist.APIKey{
+			Key: "packagist_ack_osvscalibrinvalid000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptAPISecretValidator(t *testing.T) {
+	brokenValidator := packagist.NewAPISecretValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		packagist.NewAPISecretValidator(),
+		velestest.WithTrueNegatives(packagist.APISecret{
+			Secret: "osvscalibr-fake-secret",
+			Key:    "osvscalibr-fake-key",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptOrgReadTokenValidator(t *testing.T) {
+	brokenValidator := packagist.NewOrgReadTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		packagist.NewOrgReadTokenValidator(),
+		velestest.WithMalformedSecrets(packagist.OrgReadToken{Token: "tok", RepoURL: ""}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[packagist.OrgReadToken](),
+	)
+}
+
+func TestAcceptOrgUpdateTokenValidator(t *testing.T) {
+	brokenValidator := packagist.NewOrgUpdateTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		packagist.NewOrgUpdateTokenValidator(),
+		velestest.WithMalformedSecrets(packagist.OrgUpdateToken{Token: "tok", RepoURL: ""}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[packagist.OrgUpdateToken](),
+	)
+}
+
+func TestAcceptUserUpdateTokenValidator(t *testing.T) {
+	brokenValidator := packagist.NewUserUpdateTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		packagist.NewUserUpdateTokenValidator(),
+		velestest.WithMalformedSecrets(packagist.UserUpdateToken{
+			Token:    "tok",
+			Username: "",
+			RepoURL:  "",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[packagist.UserUpdateToken](),
+	)
+}
 
 func TestAPIKeyValidator(t *testing.T) {
 	cases := []struct {

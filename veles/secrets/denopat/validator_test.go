@@ -26,11 +26,40 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestDdpPat = "ddp_qz538MNyqwfETb1ikqeqHiqA9Aa9Pv22yzmw"
 
 const validatorTestDdoPat = "ddo_4nkT2HnlnbPpGbW5RVE7DsIyfMJ3bN3YeqZT"
+
+func TestAcceptUserTokenValidator(t *testing.T) {
+	brokenValidator := denopat.NewUserTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		denopat.NewUserTokenValidator(),
+		velestest.WithTrueNegatives(denopat.DenoUserPAT{
+			Pat: "ddp_invalid000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptOrgTokenValidator(t *testing.T) {
+	brokenValidator := denopat.NewOrgTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		denopat.NewOrgTokenValidator(),
+		velestest.WithTrueNegatives(denopat.DenoOrgPAT{
+			Pat: "ddo_invalid000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

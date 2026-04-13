@@ -26,9 +26,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "abcdefghij1234567890ABCDEFGHIJ12"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := mistralapikey.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		mistralapikey.NewValidator(),
+		velestest.WithTrueNegatives(mistralapikey.MistralAPIKey{
+			Key: "osvscalibrinvalidmistralkey000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server.
 type mockTransport struct {

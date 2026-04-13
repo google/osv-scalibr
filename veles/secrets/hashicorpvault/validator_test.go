@@ -23,7 +23,34 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptTokenValidator(t *testing.T) {
+	brokenValidator := NewTokenValidator("https://example.com")
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		NewTokenValidator("https://example.com"),
+		velestest.WithMalformedSecrets(Token{Token: ""}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[Token](),
+	)
+}
+
+func TestAcceptAppRoleValidator(t *testing.T) {
+	brokenValidator := NewAppRoleValidator("https://example.com")
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		NewAppRoleValidator("https://example.com"),
+		velestest.WithMalformedSecrets(AppRoleCredentials{RoleID: "", SecretID: ""}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[AppRoleCredentials](),
+	)
+}
 
 func TestTokenValidator_Validate(t *testing.T) {
 	tests := []struct {

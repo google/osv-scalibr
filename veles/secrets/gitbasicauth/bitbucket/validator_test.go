@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 var (
@@ -34,6 +35,19 @@ var (
 	validatorTestBadRepoURL  = "https://x-token-auth:token@bitbucket.org/workspace/bad-project-repo.git"
 	badHostURL               = "https://x-token-auth:token@bad-host.com/workspace/bad-project-repo.git"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := bitbucket.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		bitbucket.NewValidator(),
+		velestest.WithMalformedSecrets(bitbucket.Credentials{FullURL: badHostURL}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[bitbucket.Credentials](),
+	)
+}
 
 func TestValidator(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())

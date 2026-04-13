@@ -24,7 +24,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := sendgrid.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		sendgrid.NewValidator(),
+		velestest.WithTrueNegatives(sendgrid.APIKey{
+			Key: "SG.osvscalibr-invalid0000000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockSendGridServer creates a mock SendGrid API server for testing.
 func mockSendGridServer(t *testing.T, expectedKey string, statusCode int, expectedEndpoint string) *httptest.Server {

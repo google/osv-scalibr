@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 var (
@@ -33,6 +34,19 @@ var (
 	validatorTestBadRepoURL  = "https://user:pat@git.region.codecatalyst.aws/v1/space/project/bad-repo"
 	badHostURL               = "https://user:pat@bad-host.com/v1/space/project/bad-repo"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := codecatalyst.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		codecatalyst.NewValidator(),
+		velestest.WithMalformedSecrets(codecatalyst.Credentials{FullURL: badHostURL}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[codecatalyst.Credentials](),
+	)
+}
 
 func TestValidator(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())

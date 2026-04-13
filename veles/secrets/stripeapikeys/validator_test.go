@@ -39,12 +39,41 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	stripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestSK = "sk_live_51PvZzqABcD1234EfGhIjKlMnOpQrStUvWxYz0123456789abcdefghijklmnopQRSTuvWXYZabcd12345678"
 	validatorTestRK = "rk_live_51PvZzABcDEfGhIjKlMnOpQrStUvWxYz0123456789abcdefGHIJKLMNOPQRSTUVWXYZabcd12345678"
 )
+
+func TestAcceptSecretKeyValidator(t *testing.T) {
+	brokenValidator := stripeapikeys.NewSecretKeyValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		stripeapikeys.NewSecretKeyValidator(),
+		velestest.WithTrueNegatives(stripeapikeys.StripeSecretKey{
+			Key: "sk_live_00000000000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptRestrictedKeyValidator(t *testing.T) {
+	brokenValidator := stripeapikeys.NewRestrictedKeyValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		stripeapikeys.NewRestrictedKeyValidator(),
+		velestest.WithTrueNegatives(stripeapikeys.StripeRestrictedKey{
+			Key: "rk_live_00000000000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server for the configured hosts.
 type mockTransport struct {

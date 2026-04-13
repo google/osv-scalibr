@@ -26,9 +26,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "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"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := huggingfaceapikey.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		huggingfaceapikey.NewValidator(),
+		velestest.WithTrueNegatives(huggingfaceapikey.HuggingfaceAPIKey{
+			Key: "hf_osvscalibr_invalid000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

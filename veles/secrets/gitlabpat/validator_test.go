@@ -25,9 +25,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestPat = "glpat-bzox79Of-KE9FD2LjoXXF4CvyxA.01.0r0l8l6ir"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := gitlabpat.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		gitlabpat.NewValidator(),
+		velestest.WithTrueNegatives(gitlabpat.GitlabPAT{
+			Pat: "glpat-osvscalibr-invalid0000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 type redirectTransport struct {
 	redirectTo     string
