@@ -285,4 +285,3 @@ func TestVersion_Compare_Debian_InvalidVersion(t *testing.T) {
 		t.Errorf("expected ErrInvalidVersion, got '%v'", err)
 	}
 }
-

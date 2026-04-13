@@ -108,37 +108,6 @@ type alpineLetterComponent struct {
 	number *big.Int
 }
 
-// AlpineVersion represents a version of an Alpine package.
-//
-// According to https://github.com/alpinelinux/apk-tools/blob/master/doc/apk-package.5.scd#package-info-metadata
-//
-// Currently the APK version specification is as follows:
-// *number{.number}...{letter}{\_suffix{number}}...{~hash}{-r#}*
-
-// Each *number* component is a sequence of digits (0-9).
-
-// The *letter* portion can follow only after end of all the numeric
-// version components. The *letter* is a single lower case letter (a-z).
-
-// Optionally one or more *\_suffix{number}* components can follow.
-// The list of valid suffixes (and their sorting order) is:
-// *alpha*, *beta*, *pre*, *rc*, <no suffix>, *cvs*, *svn*, *git*, *hg*, *p*.
-
-// This can be followed with an optional *{~hash}* to indicate a commit
-// hash from where it was built. This can be any length string of
-// lower case hexadecimal digits (0-9a-f).
-
-// Finally an optional package build component *-r{number}* can follow.
-//
-// 
-// The above doesn't quite capture handling of 'invalid' versions, observing the behaviour
-// on Alpine v10 (apk-tools 2.10.6):
-// - the *letter* component is actually {letter}{number}* and may repeat
-//   e.g. 1.0a9b10c11_pre1
-// - versions are compared up to the first invalid token, and the invalid remainder is not compared
-//   e.g. 1.0apple = 1.0abc
-// - a version with an invalid version is considered greater than the same version without one
-//   e.g. 1.0a < 1.0a_invalid
 type alpineComponentType int
 
 const (
@@ -149,6 +118,36 @@ const (
 	componentBuild
 )
 
+// AlpineVersion represents a version of an Alpine package.
+//
+// According to https://github.com/alpinelinux/apk-tools/blob/master/doc/apk-package.5.scd#package-info-metadata
+//
+// Currently the APK version specification is as follows:
+// *number{.number}...{letter}{\_suffix{number}}...{~hash}{-r#}*
+//
+// Each *number* component is a sequence of digits (0-9).
+//
+// The *letter* portion can follow only after end of all the numeric
+// version components. The *letter* is a single lower case letter (a-z).
+//
+// Optionally one or more *\_suffix{number}* components can follow.
+// The list of valid suffixes (and their sorting order) is:
+// *alpha*, *beta*, *pre*, *rc*, <no suffix>, *cvs*, *svn*, *git*, *hg*, *p*.
+//
+// This can be followed with an optional *{~hash}* to indicate a commit
+// hash from where it was built. This can be any length string of
+// lower case hexadecimal digits (0-9a-f).
+//
+// Finally an optional package build component *-r{number}* can follow.
+//
+// The above doesn't quite capture handling of 'invalid' versions, observing the behaviour
+// on Alpine v10 (apk-tools 2.10.6):
+//   - the *letter* component is actually {letter}{number}* and may repeat
+//     e.g. 1.0a9b10c11_pre1
+//   - versions are compared up to the first invalid token, and the invalid remainder is not compared
+//     e.g. 1.0apple = 1.0abc
+//   - a version with an invalid version is considered greater than the same version without one
+//     e.g. 1.0a < 1.0a_invalid
 type AlpineVersion struct {
 	// the original string that was parsed
 	original string
