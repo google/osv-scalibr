@@ -123,6 +123,9 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 // Enrich enriches the inventory in pom.xml files with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, pomxml.Name)
+	if len(pkgGroups) > 0 {
+		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
+	}
 
 	var errs error
 	for path, pkgMap := range pkgGroups {
