@@ -63,34 +63,13 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
 
-	depInlineRe, err := regexp.Compile(`libraryDependencies\s*\+=\s*"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*"([0-9]+(?:\.[0-9]+)*)"`)
-	if err != nil {
-		return nil, fmt.Errorf("sbt: failed to compile depInline regex: %w", err)
-	}
-	depVarRe, err := regexp.Compile(`libraryDependencies\s*\+=\s*"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*([a-zA-Z_][a-zA-Z0-9_]*)`)
-	if err != nil {
-		return nil, fmt.Errorf("sbt: failed to compile depVar regex: %w", err)
-	}
-	seqBlockRe, err := regexp.Compile(`(?s)libraryDependencies\s*\+\+=\s*Seq\s*\((.*?)\)`)
-	if err != nil {
-		return nil, fmt.Errorf("sbt: failed to compile seqBlock regex: %w", err)
-	}
-	seqDepInlineRe, err := regexp.Compile(`"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*"([0-9]+(?:\.[0-9]+)*)"`)
-	if err != nil {
-		return nil, fmt.Errorf("sbt: failed to compile seqDepInline regex: %w", err)
-	}
-	seqDepVarRe, err := regexp.Compile(`"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*([a-zA-Z_][a-zA-Z0-9_]*)`)
-	if err != nil {
-		return nil, fmt.Errorf("sbt: failed to compile seqDepVar regex: %w", err)
-	}
-
 	return &Extractor{
 		maxFileSizeBytes: maxFileSizeBytes,
-		depInlineRe:      depInlineRe,
-		depVarRe:         depVarRe,
-		seqBlockRe:       seqBlockRe,
-		seqDepInlineRe:   seqDepInlineRe,
-		seqDepVarRe:      seqDepVarRe,
+		depInlineRe:      regexp.MustCompile(`libraryDependencies\s*\+=\s*"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*"([0-9]+(?:\.[0-9]+)*)"`),
+		depVarRe:         regexp.MustCompile(`libraryDependencies\s*\+=\s*"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*([a-zA-Z_][a-zA-Z0-9_]*)`),
+		seqBlockRe:       regexp.MustCompile(`(?s)libraryDependencies\s*\+\+=\s*Seq\s*\((.*?)\)`),
+		seqDepInlineRe:   regexp.MustCompile(`"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*"([0-9]+(?:\.[0-9]+)*)"`),
+		seqDepVarRe:      regexp.MustCompile(`"([^"]+)"\s*%%?%?\s*"([^"]+)"\s*%\s*([a-zA-Z_][a-zA-Z0-9_]*)`),
 	}, nil
 }
 
