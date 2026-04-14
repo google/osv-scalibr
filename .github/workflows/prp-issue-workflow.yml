@@ -28,7 +28,7 @@ jobs:
               Please, do not start the work until the panel has reached a
               decision. Although we always welcome contributions, unapproved
               work is not eligible for a reward.
-              For more details of this program, please see the [rules page](https://bughunters.google.com/about/rules/open-source/osv-scalibr-patch-rewards-program-rules).
+              For more details, please see the [rules page](https://bughunters.google.com/about/rules/open-source/osv-scalibr-patch-rewards-program-rules).
               *~The OSV-SCALIBR PRP team*
       - name: Assign to author
         continue-on-error: true
