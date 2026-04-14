@@ -22,12 +22,13 @@ jobs:
           BODY: |
               Welcome to the OSV-SCALIBR patch reward program!
               Your issue has been added to our triage queue and will reviewed
-              shortly. The panel usually takes a decision once per week, so it
-              can take up to a week before you hear back from us, sometimes longer
-              depending on available capacity.
+              shortly. The panel usually makes a decision once every other week,
+              so it can take up to two weeks before you hear back from us,
+              sometimes longer depending on available capacity.
               Please, do not start the work until the panel has reached a
               decision. Although we always welcome contributions, unapproved
               work is not eligible for a reward.
+              For more details of this program, please see the [rules page](https://bughunters.google.com/about/rules/open-source/osv-scalibr-patch-rewards-program-rules#software-inventory-extractors).
               *~The OSV-SCALIBR PRP team*
       - name: Assign to author
         continue-on-error: true
