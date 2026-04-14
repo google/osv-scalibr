@@ -98,30 +98,23 @@ func AcceptValidator[S veles.Secret](t *testing.T, v veles.Validator[S], opts ..
 	}
 
 	// At least one sample secret is needed to test context cancellation and transport errors.
-	var sampleSecret S
-	hasSample := false
-	if len(cfg.trueNegatives) > 0 {
-		sampleSecret = cfg.trueNegatives[0]
-		hasSample = true
-	} else if len(cfg.malformed) > 0 {
-		sampleSecret = cfg.malformed[0]
-		hasSample = true
+	if len(cfg.trueNegatives) == 0 {
+		t.Fatal("AcceptValidator requires at least one test secret. Use WithTrueNegatives to provide invalid but syntactically correct secrets.")
 	}
-
-	if !hasSample {
-		t.Fatal("AcceptValidator requires at least one test secret. Use WithTrueNegatives or WithMalformedSecrets.")
-	}
+	sampleSecret := cfg.trueNegatives[0]
 
 	t.Run("cancelled-ctx", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
+		expected := ctx.Err()
+
 		status, err := cfg.v.Validate(ctx, sampleSecret)
 		if status != veles.ValidationFailed {
 			t.Errorf("Validate() with cancelled context returned status %v, want %v", status, veles.ValidationFailed)
 		}
-		if err == nil {
-			t.Fatal("Validate() with cancelled context returned nil error, want non-nil error")
+		if !errors.Is(err, expected) {
+			t.Errorf("Validate() with cancelled context returned error: %v, want: %v", err, expected)
 		}
 	})
 
@@ -135,7 +128,7 @@ func AcceptValidator[S veles.Secret](t *testing.T, v veles.Validator[S], opts ..
 			t.Errorf("Validate() with unreachable service returned status %v, want %v", status, veles.ValidationFailed)
 		}
 		if err == nil {
-			t.Fatal("Validate() with unreachable service returned nil error, want non-nil error")
+			t.Error("Validate() with unreachable service returned nil error, want non-nil error")
 		}
 	})
 

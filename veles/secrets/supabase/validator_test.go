@@ -53,6 +53,10 @@ func TestAcceptProjectSecretKeyValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		supabase.NewProjectSecretKeyValidator(),
+		velestest.WithTrueNegatives(supabase.ProjectSecretKey{
+			Key:        validatorTestSecretKey,
+			ProjectRef: validatorTestProjectRef,
+		}),
 		velestest.WithMalformedSecrets(supabase.ProjectSecretKey{
 			Key:        validatorTestSecretKey,
 			ProjectRef: "",
@@ -69,6 +73,9 @@ func TestAcceptServiceRoleJWTValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		supabase.NewServiceRoleJWTValidator(),
+		velestest.WithTrueNegatives(supabase.ServiceRoleJWT{
+			Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwaHlmeW1hZXBrbHB1dmFlY3J5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI2MTAzOSwiZXhwIjoyMDg0ODM3MDM5fQ.signature",
+		}),
 		velestest.WithMalformedSecrets(supabase.ServiceRoleJWT{Token: "not-a-jwt"}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[supabase.ServiceRoleJWT](),

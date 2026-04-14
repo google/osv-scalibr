@@ -43,6 +43,7 @@ func TestAcceptValidator(t *testing.T) {
 		t,
 		codecommit.NewValidator(),
 		velestest.WithMalformedSecrets(codecommit.Credentials{FullURL: badHostURL}),
+		velestest.WithTrueNegatives(codecommit.Credentials{FullURL: validatorTestURL}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[codecommit.Credentials](),
 	)

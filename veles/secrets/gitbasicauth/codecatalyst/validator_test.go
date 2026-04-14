@@ -43,6 +43,7 @@ func TestAcceptValidator(t *testing.T) {
 		t,
 		codecatalyst.NewValidator(),
 		velestest.WithMalformedSecrets(codecatalyst.Credentials{FullURL: badHostURL}),
+		velestest.WithTrueNegatives(codecatalyst.Credentials{FullURL: validatorTestURL}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[codecatalyst.Credentials](),
 	)

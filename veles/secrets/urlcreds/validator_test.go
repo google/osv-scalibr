@@ -58,6 +58,7 @@ func TestAcceptValidator(t *testing.T) {
 		t,
 		urlcreds.NewValidator(),
 		velestest.WithMalformedSecrets(urlcreds.Credentials{FullURL: ":::not-a-valid-url"}),
+		velestest.WithTrueNegatives(urlcreds.Credentials{FullURL: "http://admin:pass@domain.com/resource"}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[urlcreds.Credentials](),
 	)

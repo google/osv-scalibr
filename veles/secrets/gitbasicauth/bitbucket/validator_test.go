@@ -43,7 +43,7 @@ func TestAcceptValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		bitbucket.NewValidator(),
-		velestest.WithMalformedSecrets(bitbucket.Credentials{FullURL: badHostURL}),
+		velestest.WithTrueNegatives(bitbucket.Credentials{FullURL: validatorTokenURL}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[bitbucket.Credentials](),
 	)

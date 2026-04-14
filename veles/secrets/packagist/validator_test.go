@@ -63,7 +63,7 @@ func TestAcceptOrgReadTokenValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		packagist.NewOrgReadTokenValidator(),
-		velestest.WithMalformedSecrets(packagist.OrgReadToken{Token: "tok", RepoURL: ""}),
+		velestest.WithTrueNegatives(packagist.OrgReadToken{Token: "tok", RepoURL: "http://example.com"}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[packagist.OrgReadToken](),
 	)
@@ -76,7 +76,7 @@ func TestAcceptOrgUpdateTokenValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		packagist.NewOrgUpdateTokenValidator(),
-		velestest.WithMalformedSecrets(packagist.OrgUpdateToken{Token: "tok", RepoURL: ""}),
+		velestest.WithTrueNegatives(packagist.OrgUpdateToken{Token: "tok", RepoURL: "http://example.com"}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[packagist.OrgUpdateToken](),
 	)
@@ -89,10 +89,10 @@ func TestAcceptUserUpdateTokenValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		packagist.NewUserUpdateTokenValidator(),
-		velestest.WithMalformedSecrets(packagist.UserUpdateToken{
+		velestest.WithTrueNegatives(packagist.UserUpdateToken{
 			Token:    "tok",
-			Username: "",
-			RepoURL:  "",
+			Username: "test",
+			RepoURL:  "http://example.com",
 		}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[packagist.UserUpdateToken](),

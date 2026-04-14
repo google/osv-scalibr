@@ -39,7 +39,6 @@ func TestAcceptValidator(t *testing.T) {
 			Secret:   "osvscalibrfakefakefakefakefakefakefakefake",
 		}),
 		velestest.WithBrokenTransport(brokenValidator),
-		velestest.WithoutOnline[gcshmackey.HMACKey](),
 	)
 }
 

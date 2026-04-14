@@ -32,7 +32,7 @@ func TestAcceptTokenValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		NewTokenValidator("https://example.com"),
-		velestest.WithMalformedSecrets(Token{Token: ""}),
+		velestest.WithTrueNegatives(Token{Token: "token"}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[Token](),
 	)
@@ -45,7 +45,10 @@ func TestAcceptAppRoleValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		NewAppRoleValidator("https://example.com"),
-		velestest.WithMalformedSecrets(AppRoleCredentials{RoleID: "", SecretID: ""}),
+		velestest.WithTrueNegatives(AppRoleCredentials{
+			RoleID:   "12345678-1234-1234-1234-123456789012",
+			SecretID: "87654321-4321-4321-4321-210987654321",
+		}),
 		velestest.WithBrokenTransport(brokenValidator),
 		velestest.WithoutOnline[AppRoleCredentials](),
 	)
