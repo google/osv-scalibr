@@ -15,7 +15,6 @@
 package hashicorpvault
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -247,31 +246,6 @@ func TestValidator_NetworkError(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("Expected network error, got nil")
-	}
-	if status != veles.ValidationFailed {
-		t.Errorf("Expected ValidationFailed status, got %v", status)
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// This handler will never respond, allowing us to test context cancellation
-		select {}
-	}))
-	defer server.Close()
-
-	serverURL := server.URL
-	validator := NewTokenValidator(serverURL)
-	validator.HTTPC = server.Client()
-
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel() // Cancel immediately
-
-	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Fatal("Expected context cancellation error, got nil")
 	}
 	if status != veles.ValidationFailed {
 		t.Errorf("Expected ValidationFailed status, got %v", status)

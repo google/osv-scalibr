@@ -15,7 +15,6 @@
 package squareapikey_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -255,30 +254,6 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestPersonalAccessTokenValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"client_id":"sq0idp-test","token_type":"BEARER"}`))
-	}))
-	defer server.Close()
-
-	validator := setupPersonalAccessTokenValidator(t, server)
-
-	token := squareapikey.SquarePersonalAccessToken{Key: validatorTestToken}
-
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	got, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

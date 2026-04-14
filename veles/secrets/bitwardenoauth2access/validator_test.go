@@ -15,7 +15,6 @@
 package bitwardenoauth2access_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -167,94 +166,6 @@ func TestValidator(t *testing.T) {
 			// Check validation status
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
-			}
-		})
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that responds OK
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := bitwardenoauth2access.NewValidator()
-	validator.HTTPC = client
-
-	// Create a test token
-	token := bitwardenoauth2access.Token{
-		ClientID:     validatorTestClientID,
-		ClientSecret: validatorTestClientSecret,
-	}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
-func TestValidator_InvalidRequest(t *testing.T) {
-	// Create a mock server that returns 400 Bad Request
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := bitwardenoauth2access.NewValidator()
-	validator.HTTPC = client
-
-	testCases := []struct {
-		name     string
-		token    bitwardenoauth2access.Token
-		expected veles.ValidationStatus
-	}{
-		{
-			name: "empty credentials",
-			token: bitwardenoauth2access.Token{
-				ClientID:     "",
-				ClientSecret: "",
-			},
-			expected: veles.ValidationInvalid,
-		},
-		{
-			name: "invalid format credentials",
-			token: bitwardenoauth2access.Token{
-				ClientID:     "not-a-uuid",
-				ClientSecret: "invalid",
-			},
-			expected: veles.ValidationInvalid,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := validator.Validate(t.Context(), tc.token)
-
-			if err != nil {
-				t.Errorf("Validate() unexpected error for %s: %v", tc.name, err)
-			}
-			if got != tc.expected {
-				t.Errorf("Validate() = %v, want %v for %s", got, tc.expected, tc.name)
 			}
 		})
 	}

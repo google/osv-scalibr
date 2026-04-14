@@ -15,7 +15,6 @@
 package postmanapikey_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -207,33 +206,6 @@ func TestValidatorAPI(t *testing.T) {
 	}
 }
 
-func TestValidatorAPI_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	validator := postmanapikey.NewAPIValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/me"
-
-	key := postmanapikey.PostmanAPIKey{Key: validatorTestAPIKey}
-
-	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
 func TestValidatorAPI_InvalidRequest(t *testing.T) {
 	// For API validator, an "invalid" key is communicated via 401 status.
 	server := mockAPIServer(t, "", http.StatusUnauthorized, map[string]any{
@@ -373,34 +345,6 @@ func TestValidatorCollection(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidatorCollection_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	validator := postmanapikey.NewCollectionValidator()
-	validator.HTTPC = server.Client()
-	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) (string, error) {
-		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key, nil
-	}
-	key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
-
-	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

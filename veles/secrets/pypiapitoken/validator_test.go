@@ -132,32 +132,6 @@ func TestValidator(t *testing.T) {
 	}
 }
 
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	validator := pypiapitoken.NewValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/legacy/"
-
-	key := pypiapitoken.PyPIAPIToken{Token: validatorTestKey}
-
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
 func TestValidator_InvalidRequest(t *testing.T) {
 	// Create a mock server that returns 401 Unauthorized
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

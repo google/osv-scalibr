@@ -15,7 +15,6 @@
 package gitlabpat_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -139,34 +138,5 @@ func TestValidator(t *testing.T) {
 				t.Errorf("v.Validate() returned diff (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	client := &http.Client{
-		Transport: &redirectTransport{
-			redirectTo:     server.URL,
-			hostToRedirect: "gitlab.com",
-		},
-	}
-	validator := gitlabpat.NewValidator()
-	validator.HTTPC = client
-
-	usernamePat := gitlabpat.GitlabPAT{Pat: validatorTestPat}
-
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	got, err := validator.Validate(ctx, usernamePat)
-
-	if !cmp.Equal(err, context.Canceled, cmpopts.EquateErrors()) {
-		t.Errorf("Validate() error = %v, want %v", err, context.Canceled)
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

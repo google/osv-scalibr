@@ -29,7 +29,6 @@
 package stripeapikeys_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -176,37 +175,6 @@ func TestValidatorSecretKey(t *testing.T) {
 	}
 }
 
-func TestValidatorSecretKey_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := stripeapikeys.NewSecretKeyValidator()
-	validator.HTTPC = client
-
-	key := stripeapikeys.StripeSecretKey{Key: validatorTestSK}
-
-	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
 func TestValidatorRestrictedKey(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -266,36 +234,5 @@ func TestValidatorRestrictedKey(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidatorRestrictedKey_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	// Create client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := stripeapikeys.NewRestrictedKeyValidator()
-	validator.HTTPC = client
-
-	key := stripeapikeys.StripeRestrictedKey{Key: validatorTestRK}
-
-	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }

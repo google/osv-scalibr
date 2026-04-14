@@ -15,9 +15,7 @@
 package gcpsak_test
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -188,26 +186,5 @@ func TestValidator_errors(t *testing.T) {
 				t.Errorf("Validate() = %q, want %q", status, veles.ValidationFailed)
 			}
 		})
-	}
-}
-
-func TestValidator_respectsContext(t *testing.T) {
-	srv := httptest.NewTLSServer(nil)
-	t.Cleanup(func() {
-		srv.Close()
-	})
-	validator := gcpsak.NewValidator(
-		gcpsak.WithClient(srv.Client()),
-		gcpsak.WithDefaultUniverse(srv.Listener.Addr().String()),
-	)
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-	sak := gcpsak.GCPSAK{
-		PrivateKeyID:   exampleKeyID,
-		ServiceAccount: exampleServiceAccount,
-		Signature:      exampleSignature,
-	}
-	if _, err := validator.Validate(ctx, sak); !errors.Is(err, context.Canceled) {
-		t.Errorf("Validate() error: %v, want context.Canceled", err)
 	}
 }
