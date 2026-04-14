@@ -43,9 +43,10 @@ func TestAcceptValidator(t *testing.T) {
 		salesforceoauth2client.NewValidator(),
 		velestest.WithTrueNegatives(salesforceoauth2client.Credentials{
 			ID:     validatorTestClientID,
-			Secret: "wrong-secret",
+			Secret: validatorTestClientSecret,
 			URL:    validatorTestURL,
 		}),
+		velestest.WithoutOnline[salesforceoauth2client.Credentials](),
 		velestest.WithBrokenTransport(brokenValidator),
 	)
 }

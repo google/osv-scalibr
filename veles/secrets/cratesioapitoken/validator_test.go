@@ -86,7 +86,10 @@ func TestAcceptValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		cratesioapitoken.NewValidator(),
-		velestest.WithTrueNegatives(cratesioapitoken.CratesIOAPItoken{Token: "random_string"}),
+		velestest.WithTrueNegatives(
+			cratesioapitoken.CratesIOAPItoken{Token: "randomKey"},
+			cratesioapitoken.CratesIOAPItoken{Token: validatorValidTestKey},
+		),
 		velestest.WithBrokenTransport(brokenValidator),
 	)
 }

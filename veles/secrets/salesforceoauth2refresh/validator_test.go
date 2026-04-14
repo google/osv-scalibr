@@ -46,7 +46,7 @@ func TestAcceptValidator(t *testing.T) {
 		velestest.WithTrueNegatives(salesforceoauth2refresh.Credentials{
 			ID:      validatorTestClientID,
 			Secret:  validatorTestClientSecret,
-			Refresh: "osvscalibr-not-a-real-refresh-token",
+			Refresh: "refresh_token",
 		}),
 		velestest.WithBrokenTransport(brokenValidator),
 	)

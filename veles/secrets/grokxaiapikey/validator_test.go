@@ -37,9 +37,7 @@ func TestAcceptAPIValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		grokxaiapikey.NewAPIValidator(),
-		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIAPIKey{
-			Key: "grokx-osvscalibr-invalid000000000000000000000000000000000000000000",
-		}),
+		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}),
 		velestest.WithBrokenTransport(brokenValidator),
 	)
 }
@@ -51,9 +49,7 @@ func TestAcceptManagementAPIValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		grokxaiapikey.NewManagementAPIValidator(),
-		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIManagementKey{
-			Key: "xai-token-osvscalibr-invalid000000000000000000000000000000000000",
-		}),
+		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}),
 		velestest.WithBrokenTransport(brokenValidator),
 	)
 }

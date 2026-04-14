@@ -40,9 +40,10 @@ func TestAcceptValidator(t *testing.T) {
 	velestest.AcceptValidator(
 		t,
 		salesforceoauth2access.NewValidator(),
-		velestest.WithTrueNegatives(salesforceoauth2access.Token{
-			Token: "00Dosvscalibr-not-a-real-access-token-invalid000000000000000000",
-		}),
+		velestest.WithTrueNegatives(
+			salesforceoauth2access.Token{Token: validatorTestToken},
+			salesforceoauth2access.Token{Token: "randomKey"},
+		),
 		velestest.WithBrokenTransport(brokenValidator),
 	)
 }

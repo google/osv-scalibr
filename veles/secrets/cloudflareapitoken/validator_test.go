@@ -76,7 +76,7 @@ func TestAcceptValidator(t *testing.T) {
 		t,
 		cloudflareapitoken.NewValidator(),
 		velestest.WithTrueNegatives(cloudflareapitoken.CloudflareAPIToken{
-			Token: "invalid_token_7awgM4jG5SQvxcvmNzhKj8P",
+			Token: validatorTestToken,
 		}),
 		velestest.WithBrokenTransport(brokenValidator),
 	)
