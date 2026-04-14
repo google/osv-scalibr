@@ -22,7 +22,7 @@ jobs:
           BODY: |
               Welcome to the OSV-SCALIBR patch reward program!
               Your issue has been added to our triage queue and will reviewed
-              shortly. The panel usually makes a decision once every other week,
+              shortly. The panel usually takes a decision once every other week,
               so it can take up to two weeks before you hear back from us,
               sometimes longer depending on available capacity.
               Please, do not start the work until the panel has reached a
