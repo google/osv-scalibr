@@ -35,11 +35,15 @@ type testConfig[S veles.Secret] struct {
 	withoutOnline bool
 }
 
+// AcceptValidatorOption allows to configure the acceptance test
 type AcceptValidatorOption[S veles.Secret] func(*testConfig[S])
 
-var BrokenClient = newBrokenTCPClient()
+// BrokenClient is an http.Client that simulates a network failure ("connection refused") on any dial attempt.
+// It is designed to be passed into the WithBrokenTransport option to verify that a Validator
+// implementation returns veles.ValidationFailed on network error.
+var BrokenClient = newBrokenClient()
 
-func newBrokenTCPClient() *http.Client {
+func newBrokenClient() *http.Client {
 	transport := &http.Transport{
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return nil, &net.OpError{
