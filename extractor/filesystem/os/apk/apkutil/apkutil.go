@@ -47,6 +47,7 @@ func NewScanner(r io.Reader) *Scanner {
 	}
 }
 
+// DiscardLongLines makes the scanner discard long lines
 func (s *Scanner) DiscardLongLines() {
 	s.scanner.Split(discard.LongLines(bufio.MaxScanTokenSize))
 }

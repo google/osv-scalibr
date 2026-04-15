@@ -100,7 +100,6 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		pkgs := locationToPKGs[strings.TrimPrefix(filePath, "/")]
 
 		for _, pkg := range pkgs {
-
 			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
 				Plugin: Name,
 				// TODO(b/425890695): This exclusion doesn't quite match the use case here: The component
