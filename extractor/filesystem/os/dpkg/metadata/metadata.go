@@ -16,8 +16,6 @@
 package metadata
 
 import (
-	"github.com/google/osv-scalibr/log"
-
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -46,7 +44,6 @@ func (m *Metadata) ToNamespace() string {
 	if m.OSID != "" {
 		return m.OSID
 	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
 	// TODO(b/298152210): Implement metric
 	return "linux"
 }
@@ -59,10 +56,8 @@ func (m *Metadata) ToDistro() string {
 	}
 	// fallback: e.g. 22.04
 	if m.OSVersionID != "" {
-		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
 		return m.OSVersionID
 	}
-	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
 	return ""
 }
 
