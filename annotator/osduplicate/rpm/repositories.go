@@ -11,10 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package rpm
 
 import (
 	"compress/gzip"
+	"context"
 	"database/sql"
 	"encoding/xml"
 	"errors"
@@ -38,7 +40,9 @@ const (
 )
 
 var (
-	ErrMissingCache  = errors.New("rpm cache is empty")
+	// ErrMissingCache is returned if the package manager is properly detected but the cache is missing
+	ErrMissingCache = errors.New("rpm cache is empty")
+	// ErrMissingOSInfo is returned if there was an error extracting the OS version
 	ErrMissingOSInfo = errors.New("unable to extract os information")
 )
 
@@ -58,7 +62,7 @@ func (m *mainOSPackages) Contains(pkg *rpmdb.PackageInfo) bool {
 	return exists
 }
 
-func extractMainPackages(root *fs.ScanRoot) (*mainOSPackages, error) {
+func extractMainPackages(ctx context.Context, root *fs.ScanRoot) (*mainOSPackages, error) {
 	content, err := osrelease.GetOSRelease(root.FS)
 	if err != nil {
 		return nil, errors.Join(ErrMissingOSInfo, err)
@@ -91,7 +95,7 @@ func extractMainPackages(root *fs.ScanRoot) (*mainOSPackages, error) {
 	type cacheExtractor struct {
 		indicators []string
 		// extract given a root and OS id returns a collection of mainOSPackages
-		extract func(*fs.ScanRoot, string) (*mainOSPackages, error)
+		extract func(context.Context, *fs.ScanRoot, string) (*mainOSPackages, error)
 	}
 
 	// use config files as indicators to reliably detect the correct package manager
@@ -106,7 +110,7 @@ func extractMainPackages(root *fs.ScanRoot) (*mainOSPackages, error) {
 		if !hasPackageManager(root, e.indicators) {
 			continue
 		}
-		return e.extract(root, osID)
+		return e.extract(ctx, root, osID)
 	}
 
 	return nil, errors.New("package manager not supported")
@@ -143,7 +147,7 @@ func isMainDnfRepo(osID, dirName string) bool {
 	}
 }
 
-func extractDnfMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
+func extractDnfMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
 	entries, err := iofs.ReadDir(root.FS, dnfRepoListDir)
 	if err != nil {
 		if errors.Is(err, iofs.ErrNotExist) {
@@ -180,8 +184,8 @@ func extractDnfMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error
 		for _, e := range repoEntries {
 			if !e.IsDir() && strings.HasSuffix(e.Name(), "primary.xml.gz") {
 				filePath := filepath.Join(path, e.Name())
-				// dnf uses the same repository format as libsolv
-				if err := parseLibsolvRepo(root.FS, filePath, cache); err != nil {
+				// dnf uses the same repository format as zypper (libsolv)
+				if err := parseLibsolvRepo(ctx, root.FS, filePath, cache); err != nil {
 					return nil, err
 				}
 			}
@@ -203,7 +207,7 @@ func isMainYumRepo(osID, repoID string) bool {
 	}
 }
 
-func extractYumMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
+func extractYumMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
 	// initially read the YUM cache dir to detect if it has been pruned
 	entries, err := iofs.ReadDir(root.FS, yumRepoListDir)
 	if err != nil {
@@ -225,7 +229,7 @@ func extractYumMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error
 	// WalkDir allows us to find primary.sqlite.gz regardless of directory depth.
 	err = iofs.WalkDir(root.FS, yumRepoListDir, func(path string, d iofs.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		if d.IsDir() {
 			return nil
@@ -249,7 +253,7 @@ func extractYumMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error
 			return nil
 		}
 
-		return parseYumRepo(root.FS, path, cache)
+		return parseYumRepo(ctx, root.FS, path, cache)
 	})
 
 	if err != nil {
@@ -260,7 +264,7 @@ func extractYumMainRepos(root *fs.ScanRoot, osID string) (*mainOSPackages, error
 }
 
 // parseYumRepo decompresses a YUM primary.sqlite.gz file to disk and queries it.
-func parseYumRepo(fsys fs.FS, path string, cache *mainOSPackages) error {
+func parseYumRepo(ctx context.Context, fsys fs.FS, path string, cache *mainOSPackages) error {
 	file, err := fsys.Open(path)
 	if err != nil {
 		return err
@@ -293,7 +297,7 @@ func parseYumRepo(fsys fs.FS, path string, cache *mainOSPackages) error {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT rpm_sourcerpm FROM packages")
+	rows, err := db.QueryContext(ctx, "SELECT rpm_sourcerpm FROM packages")
 	if err != nil {
 		return err
 	}
@@ -319,7 +323,7 @@ type rpmPackage struct {
 // parseLibsolvRepo parses repository information contained in primary.xml.gz files
 //
 // zypper and dnf share the same underlying cache implementation
-func parseLibsolvRepo(fsys fs.FS, path string, cache *mainOSPackages) error {
+func parseLibsolvRepo(ctx context.Context, fsys fs.FS, path string, cache *mainOSPackages) error {
 	file, err := fsys.Open(path)
 	if err != nil {
 		return err
@@ -334,28 +338,32 @@ func parseLibsolvRepo(fsys fs.FS, path string, cache *mainOSPackages) error {
 
 	decoder := xml.NewDecoder(gzReader)
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		token, err := decoder.Token()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return err
 		}
 
-		switch se := token.(type) {
-		case xml.StartElement:
-			if se.Name.Local != "package" {
-				continue
-			}
+		se, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if se.Name.Local != "package" {
+			continue
+		}
 
-			var pkg rpmPackage
-			if err := decoder.DecodeElement(&pkg, &se); err != nil {
-				return err
-			}
+		var pkg rpmPackage
+		if err := decoder.DecodeElement(&pkg, &se); err != nil {
+			return err
+		}
 
-			if pkg.SourceRPM != "" {
-				cache.value[pkg.SourceRPM] = struct{}{}
-			}
+		if pkg.SourceRPM != "" {
+			cache.value[pkg.SourceRPM] = struct{}{}
 		}
 	}
 

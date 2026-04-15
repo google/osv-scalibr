@@ -304,7 +304,7 @@ ID="amzn"
 			}
 			root := &scalibrfs.ScanRoot{FS: mfs}
 
-			got, err := extractMainPackages(root)
+			got, err := extractMainPackages(t.Context(), root)
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("extractMainPackages() error = %v, wantErr %v", err, tt.wantErr)
 				return
