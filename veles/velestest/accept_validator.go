@@ -85,7 +85,7 @@ func WithoutOnline[S veles.Secret]() AcceptValidatorOption[S] {
 	}
 }
 
-// AcceptValidator is an acceptance test for Veles Detector implementations.
+// AcceptValidator is an acceptance test for Veles Validator implementations.
 func AcceptValidator[S veles.Secret](t *testing.T, v veles.Validator[S], opts ...AcceptValidatorOption[S]) {
 	t.Helper()
 
