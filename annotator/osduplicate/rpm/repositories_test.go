@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -102,6 +103,10 @@ func TestIsMainYumRepo(t *testing.T) {
 }
 
 func TestExtractMainPackages(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
+	}
+
 	tests := []struct {
 		name    string
 		txt     string
