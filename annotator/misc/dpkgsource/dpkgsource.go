@@ -38,14 +38,23 @@ const (
 	Name = "misc/dpkg-source"
 )
 
-// FetchAptCachePolicy to allow for mocking in testing.
-var FetchAptCachePolicy = aptCachePolicy
-
 // Annotator adds repository source context for extracted Debian packages from dpkg extractor.
-type Annotator struct{}
+type Annotator struct {
+	fetchAptCachePolicy func(context.Context, []*extractor.Package) (map[string]string, error)
+}
 
 // New returns a new Annotator.
-func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return Annotator{}, nil }
+func New(_ *cpb.PluginConfig) (annotator.Annotator, error) {
+	return Annotator{
+		fetchAptCachePolicy: runAptCachePolicyBinary,
+	}, nil
+}
+
+func newForTest(fetchAptCachePolicy func(context.Context, []*extractor.Package) (map[string]string, error)) annotator.Annotator {
+	return Annotator{
+		fetchAptCachePolicy: fetchAptCachePolicy,
+	}
+}
 
 // Name returns the name of the annotator.
 func (Annotator) Name() string { return Name }
@@ -61,7 +70,7 @@ func (Annotator) Requirements() *plugin.Capabilities {
 // Annotate adds repository source context for extracted Debian packages from dpkg extractor.
 func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	// Call apt-cache policy once with all packages.
-	dpkgToSources, err := FetchAptCachePolicy(ctx, results.Packages)
+	dpkgToSources, err := a.fetchAptCachePolicy(ctx, results.Packages)
 	if err != nil {
 		return fmt.Errorf("%s halted while fetching apt-cache policy: %w", a.Name(), err)
 	}
@@ -91,7 +100,20 @@ func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, res
 	return nil
 }
 
-func aptCachePolicy(ctx context.Context, packages []*extractor.Package) (map[string]string, error) {
+func runAptCachePolicyBinary(ctx context.Context, packages []*extractor.Package) (map[string]string, error) {
+	// Call apt-cache policy once with all package names.
+	args := buildAptCachePolicyArgs(packages)
+	cmd := exec.CommandContext(ctx, "apt-cache", args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("calling apt-cache policy failed: %w", err)
+	}
+
+	// Return packages mapped to package sources.
+	return mapPackageToSource(ctx, string(output))
+}
+
+func buildAptCachePolicyArgs(packages []*extractor.Package) []string {
 	// List all installed Debian package names.
 	var pkgNames []string
 	for _, pkg := range packages {
@@ -100,22 +122,17 @@ func aptCachePolicy(ctx context.Context, packages []*extractor.Package) (map[str
 		}
 		pkgNames = append(pkgNames, pkg.Metadata.(*metadata.Metadata).PackageName)
 	}
-
 	// Call apt-cache policy once with all package names.
-	args := append([]string{"policy"}, pkgNames...)
-	cmd := exec.CommandContext(ctx, "apt-cache", args...)
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("calling apt-cache policy failed: %w", err)
-	}
-
-	// Return packages mapped to package sources.
-	return MapPackageToSource(ctx, string(output))
+	args := append([]string{
+		"policy",
+		"--", // prevent command injection via package names starting with a dash.
+	}, pkgNames...)
+	return args
 }
 
-// MapPackageToSource parses the output of "apt-cache policy" and returns a map
+// mapPackageToSource parses the output of "apt-cache policy" and returns a map
 // from package names to their repository sources.
-func MapPackageToSource(ctx context.Context, aptCacheOutput string) (map[string]string, error) {
+func mapPackageToSource(ctx context.Context, aptCacheOutput string) (map[string]string, error) {
 	// Parse apt-cache policy output and map package names to repository sources.
 	dpkgSource := make(map[string]string)
 	var pkgName string

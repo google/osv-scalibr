@@ -103,7 +103,6 @@ message Package {
   // core library.
   repeated string plugins = 49;
   // The additional data found in the package.
-  // LINT.IfChange
   optional google.protobuf.Any metadata_any = 69;
   // Deprecated: use metadata_any instead.
   // TODO(#1847): Remove once the migration is complete.
@@ -153,7 +152,6 @@ message Package {
     JavascriptDenoMetadata deno_metadata = 66;
     SpackPackageMetadata spack_metadata = 67;
   }
-  // LINT.ThenChange(/binary/proto/package_metadata.go)
 
   // Signals to indicate that specific vulnerabilities are not applicable to
   // this package.
@@ -1400,6 +1398,9 @@ message ContainerImageMetadata {
 
   // Key value map of OS info from /etc/os-release.
   map<string, string> os_info = 4;
+
+  // Labels of the container image.
+  map<string, string> labels = 5;
 }
 
 message BaseImageChain {
