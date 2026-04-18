@@ -21,6 +21,8 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/argocdimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/argoworkflowimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
@@ -311,6 +313,8 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
+		argocdimage.Name:        {argocdimage.New},
+		argoworkflowimage.Name: {argoworkflowimage.New},
 		containerd.Name:         {containerd.New},
 		k8simage.Name:           {k8simage.New},
 		podman.Name:             {podman.New},

@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: multi-source-app
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: registry-1.docker.io
+      chart: bitnamicharts/nginx
+      targetRevision: 1.16.1
+    - repoURL: ghcr.io
+      chart: my-org/my-chart
+      targetRevision: 2.0.0
+    - repoURL: https://github.com/my-org/my-repo.git
+      path: deploy/manifests
+      targetRevision: v3.1.0
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: my-namespace
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kustomize-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/my-org/my-repo.git
+    path: overlays/production
+    targetRevision: main
+    kustomize:
+      images:
+        - myregistry.io/myapp:v2.0.0
+        - oldname=newregistry.io/newapp:v1.5.0
+        - myregistry.io/sidecar@sha256:abc123def456
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: production
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: no-version-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: registry-1.docker.io
+    chart: bitnamicharts/redis
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: redis
