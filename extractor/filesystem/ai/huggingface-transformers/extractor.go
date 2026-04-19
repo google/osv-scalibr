@@ -37,7 +37,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 // It extracts the transformers_version field from the JSON config and generates a PURL.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var config struct {
-		Version string ` + "`" + `json:"transformers_version"` + "`" + `
+		Version string `json:"transformers_version"`
 	}
 
 	if err := json.NewDecoder(input.Reader).Decode(&config); err != nil {
@@ -51,10 +51,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{
 		Packages: []*extractor.Package{
 			{
-				Name:      "transformers",
-				Version:   config.Version,
-				PURLType:  purl.TypePyPi,
-				Location:  extractor.LocationFromPath(input.Path),
+				Name:     "transformers",
+				Version:  config.Version,
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath(input.Path),
 			},
 		},
 	}, nil
