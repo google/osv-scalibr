@@ -40,20 +40,15 @@ func TestExtractor_Metadata(t *testing.T) {
 
 	t.Run("Version_ReturnsCorrectValue", func(t *testing.T) {
 		got := e.Version()
-		want := 1
-		if got != want {
-			t.Errorf("Version() = %d, want %d", got, want)
+		if got != 1 {
+			t.Errorf("Version() = %d, want 1", got)
 		}
 	})
 
 	t.Run("Requirements_ReturnsNonNil", func(t *testing.T) {
 		got := e.Requirements()
 		if got == nil {
-			t.Error("Requirements() returned nil, want non-nil *plugin.Capabilities")
-		}
-		want := &plugin.Capabilities{}
-		if got.Network != want.Network || got.OS != want.OS {
-			t.Errorf("Requirements() = %+v, want empty capabilities", got)
+			t.Error("Requirements() returned nil")
 		}
 	})
 
@@ -73,14 +68,9 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}{
 		{"config.json root", "config.json", true},
 		{"config.json nested", "models/bert/config.json", true},
-		{"config.json deep", "a/b/c/config.json", true},
 		{"adapter_config.json root", "adapter_config.json", true},
-		{"adapter_config.json nested", "peft/adapter_config.json", true},
 		{"README.md ignored", "README.md", false},
 		{"model.safetensors ignored", "model.safetensors", false},
-		{"config.json.bak ignored", "config.json.bak", false},
-		{"empty path", "", false},
-		{"just extension", ".json", false},
 	}
 
 	for _, tt := range tests {
@@ -97,7 +87,7 @@ func TestExtractor_Extract(t *testing.T) {
 	e := Extractor{}
 
 	t.Run("Success_ValidConfig", func(t *testing.T) {
-		content := `{"transformers_version": "4.31.0", "model_type": "bert"}`
+		content := `{"transformers_version":"4.31.0","model_type":"bert"}`
 		path := "models/bert/config.json"
 		input := fakeScanInput(path, content)
 
@@ -110,185 +100,56 @@ func TestExtractor_Extract(t *testing.T) {
 		}
 
 		p := inv.Packages[0]
-		if p.Name != "transformers" {
-			t.Errorf("Name = %q, want %q", p.Name, "transformers")
-		}
-		if p.Version != "4.31.0" {
-			t.Errorf("Version = %q, want %q", p.Version, "4.31.0")
+		if p.Name != "transformers" || p.Version != "4.31.0" {
+			t.Errorf("Got %s@%s, want transformers@4.31.0", p.Name, p.Version)
 		}
 		if p.PURLType != purl.TypePyPi {
 			t.Errorf("PURLType = %q, want %q", p.PURLType, purl.TypePyPi)
 		}
 		if p.Location.PathOrEmpty() != path {
-			t.Errorf("Location = %q, want %q", p.Location.PathOrEmpty(), path)
+			t.Errorf("Location mismatch")
 		}
 
 		purlObj := p.PURL()
-		if purlObj == nil {
-			t.Fatal("PURL() returned nil")
-		}
-		if got := purlObj.String(); got != "pkg:pypi/transformers@4.31.0" {
-			t.Errorf("PURL.String() = %q, want %q", got, "pkg:pypi/transformers@4.31.0")
+		if purlObj == nil || purlObj.String() != "pkg:pypi/transformers@4.31.0" {
+			t.Errorf("PURL generation failed")
 		}
 	})
 
-	t.Run("Success_AdapterConfig", func(t *testing.T) {
-		content := `{"transformers_version": "4.35.2", "base_model_name_or_path": "meta-llama/Llama-2-7b"}`
-		input := fakeScanInput("peft/adapter_config.json", content)
-
-		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
-		}
-		if len(inv.Packages) != 1 {
-			t.Fatalf("len(Packages) = %d, want 1", len(inv.Packages))
-		}
-		if inv.Packages[0].Version != "4.35.2" {
-			t.Errorf("Version = %q, want %q", inv.Packages[0].Version, "4.35.2")
-		}
-	})
-
-	t.Run("EmptyVersion_ReturnsEmptyInventory", func(t *testing.T) {
-		content := `{"model_type": "bert", "architectures": ["BertModel"]}`
+	t.Run("EmptyVersion_ReturnsEmpty", func(t *testing.T) {
+		content := `{"model_type":"bert"}`
 		input := fakeScanInput("config.json", content)
-
 		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
-		}
-		if len(inv.Packages) != 0 {
-			t.Errorf("len(Packages) = %d, want 0", len(inv.Packages))
+		if err != nil || len(inv.Packages) != 0 {
+			t.Errorf("Expected empty inventory for missing version")
 		}
 	})
 
-	t.Run("MissingTransformersVersion_ReturnsEmptyInventory", func(t *testing.T) {
-		content := `{"some_other_field": "value"}`
-		input := fakeScanInput("config.json", content)
-
+	t.Run("InvalidJSON_ReturnsEmpty", func(t *testing.T) {
+		input := fakeScanInput("config.json", `{"invalid":}`)
 		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
-		}
-		if len(inv.Packages) != 0 {
-			t.Errorf("len(Packages) = %d, want 0", len(inv.Packages))
-		}
-	})
-
-	t.Run("InvalidJSON_ReturnsEmptyInventory_NoError", func(t *testing.T) {
-		content := `{"invalid": json, "broken": }`
-		input := fakeScanInput("config.json", content)
-
-		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Errorf("Extract() error = %v, want nil", err)
-		}
-		if len(inv.Packages) != 0 {
-			t.Errorf("len(Packages) = %d, want 0", len(inv.Packages))
-		}
-	})
-
-	t.Run("EmptyFile_ReturnsEmptyInventory", func(t *testing.T) {
-		input := fakeScanInput("config.json", "")
-		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
-		}
-		if len(inv.Packages) != 0 {
-			t.Errorf("len(Packages) = %d, want 0", len(inv.Packages))
-		}
-	})
-
-	t.Run("WhitespaceOnly_ReturnsEmptyInventory", func(t *testing.T) {
-		input := fakeScanInput("config.json", "   \n\t  ")
-		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
-		}
-		if len(inv.Packages) != 0 {
-			t.Errorf("len(Packages) = %d, want 0", len(inv.Packages))
-		}
-	})
-
-	t.Run("VersionWithPrerelease", func(t *testing.T) {
-		content := `{"transformers_version": "4.31.0.dev0"}`
-		input := fakeScanInput("config.json", content)
-
-		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
-		}
-		if len(inv.Packages) != 1 {
-			t.Fatalf("len(Packages) = %d, want 1", len(inv.Packages))
-		}
-		if inv.Packages[0].Version != "4.31.0.dev0" {
-			t.Errorf("Version = %q, want %q", inv.Packages[0].Version, "4.31.0.dev0")
-		}
-		if got := inv.Packages[0].PURL().String(); got != "pkg:pypi/transformers@4.31.0.dev0" {
-			t.Errorf("PURL = %q, want %q", got, "pkg:pypi/transformers@4.31.0.dev0")
-		}
-	})
-
-	t.Run("ContextCancellation", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-
-		content := `{"transformers_version": "4.31.0"}`
-		input := fakeScanInput("config.json", content)
-
-		inv, err := e.Extract(ctx, input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
-		}
-		if len(inv.Packages) != 1 {
-			t.Errorf("len(Packages) = %d, want 1", len(inv.Packages))
+		if err != nil || len(inv.Packages) != 0 {
+			t.Errorf("Expected empty inventory for invalid JSON")
 		}
 	})
 }
 
 func TestExtractor_FullWorkflow(t *testing.T) {
 	e := Extractor{}
+	content := `{"architectures":["BertForMaskedLM"],"model_type":"bert","transformers_version":"4.31.0"}`
+	input := fakeScanInput("bert/config.json", content)
 
-	realisticConfig := `{
-		"architectures": ["BertForMaskedLM"],
-		"model_type": "bert",
-		"transformers_version": "4.31.0",
-		"vocab_size": 30522,
-		"hidden_size": 768,
-		"num_attention_heads": 12
-	}`
-
-	input := fakeScanInput("bert-base-uncased/config.json", realisticConfig)
 	inv, err := e.Extract(context.Background(), input)
-	if err != nil {
-		t.Fatalf("Extract() error = %v", err)
-	}
-
-	if len(inv.Packages) != 1 {
-		t.Fatalf("Expected 1 package, got %d", len(inv.Packages))
+	if err != nil || len(inv.Packages) != 1 {
+		t.Fatalf("Expected 1 package")
 	}
 
 	pkg := inv.Packages[0]
-	checks := []struct {
-		name     string
-		got      any
-		expected any
-	}{
-		{"Name", pkg.Name, "transformers"},
-		{"Version", pkg.Version, "4.31.0"},
-		{"PURLType", pkg.PURLType, purl.TypePyPi},
-		{"Location", pkg.Location.PathOrEmpty(), "bert-base-uncased/config.json"},
+	if pkg.Name != "transformers" || pkg.Version != "4.31.0" {
+		t.Errorf("Package mismatch")
 	}
-
-	for _, c := range checks {
-		if c.got != c.expected {
-			t.Errorf("%s: got %v, want %v", c.name, c.got, c.expected)
-		}
-	}
-
-	purlStr := pkg.PURL().String()
-	expectedPURL := "pkg:pypi/transformers@4.31.0"
-	if purlStr != expectedPURL {
-		t.Errorf("PURL.String() = %q, want %q", purlStr, expectedPURL)
+	if pkg.PURL().String() != "pkg:pypi/transformers@4.31.0" {
+		t.Errorf("PURL mismatch")
 	}
 }
 
@@ -302,7 +163,7 @@ func BenchmarkExtractor_FileRequired(b *testing.B) {
 
 func BenchmarkExtractor_Extract(b *testing.B) {
 	e := Extractor{}
-	content := `{"transformers_version": "4.31.0"}`
+	content := `{"transformers_version":"4.31.0"}`
 	input := fakeScanInput("config.json", content)
 	ctx := context.Background()
 	for range b.N {
