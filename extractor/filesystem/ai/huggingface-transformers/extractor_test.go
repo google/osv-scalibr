@@ -127,8 +127,8 @@ func TestExtractor_Extract(t *testing.T) {
 		if purlObj == nil {
 			t.Fatal("PURL() returned nil")
 		}
-		if got := purlObj.String(); got != "pkg:pypi/transformers@3.31.0" {
-			t.Errorf("PURL.String() = %q, want %q", got, "pkg:pypi/transformers@3.31.0")
+		if got := purlObj.String(); got != "pkg:pypi/transformers@4.31.0" {
+			t.Errorf("PURL.String() = %q, want %q", got, "pkg:pypi/transformers@4.31.0")
 		}
 	})
 
@@ -223,7 +223,7 @@ func TestExtractor_Extract(t *testing.T) {
 		if inv.Packages[0].Version != "4.31.0.dev0" {
 			t.Errorf("Version = %q, want %q", inv.Packages[0].Version, "4.31.0.dev0")
 		}
-		if got := inv.Packages[0].PURL().String(); got != "pkg:pypi/transformers@3.31.0.dev0" {
+		if got := inv.Packages[0].PURL().String(); got != "pkg:pypi/transformers@4.31.0.dev0" {
 			t.Errorf("PURL = %q, want %q", got, "pkg:pypi/transformers@4.31.0.dev0")
 		}
 	})
@@ -252,7 +252,7 @@ func TestExtractor_FullWorkflow(t *testing.T) {
 		"architectures": ["BertForMaskedLM"],
 		"model_type": "bert",
 		"transformers_version": "4.31.0",
-		"vocabsize": 30522,
+		"vocab_size": 30522,
 		"hidden_size": 768,
 		"num_attention_heads": 12
 	}`
@@ -273,10 +273,10 @@ func TestExtractor_FullWorkflow(t *testing.T) {
 		got      interface{}
 		expected interface{}
 	}{
-		{"Name", pk.Name, "transformers"},
-		{"Version", pk.Version, "4.31.0"},
-		{"PURLType", pk.PURLType, purl.TypePyPi},
-		{"Location", pk.Location.PathOrEmpty(), "bert-base-uncased/config.json"},
+		{"Name", pkg.Name, "transformers"},
+		{"Version", pkg.Version, "4.31.0"},
+		{"PURLType", pkg.PURLType, purl.TypePyPi},
+		{"Location", pkg.Location.PathOrEmpty(), "bert-base-uncased/config.json"},
 	}
 
 	for _, c := range checks {
