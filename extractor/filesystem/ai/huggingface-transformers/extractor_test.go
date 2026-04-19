@@ -12,8 +12,8 @@ import (
 
 // FakeFileAPI mocks filesystem.FileAPI for testing.
 type FakeFileAPI struct {
-	path string
 	filesystem.FileAPI
+	path string
 }
 
 // Path returns the mock file path.
@@ -270,8 +270,8 @@ func TestExtractor_FullWorkflow(t *testing.T) {
 	pkg := inv.Packages[0]
 	checks := []struct {
 		name     string
-		got      interface{}
-		expected interface{}
+		got      any
+		expected any
 	}{
 		{"Name", pkg.Name, "transformers"},
 		{"Version", pkg.Version, "4.31.0"},
@@ -295,7 +295,7 @@ func TestExtractor_FullWorkflow(t *testing.T) {
 func BenchmarkExtractor_FileRequired(b *testing.B) {
 	e := Extractor{}
 	api := FakeFileAPI{path: "models/bert/config.json"}
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = e.FileRequired(api)
 	}
 }
@@ -305,7 +305,7 @@ func BenchmarkExtractor_Extract(b *testing.B) {
 	content := `{"transformers_version": "4.31.0"}`
 	input := fakeScanInput("config.json", content)
 	ctx := context.Background()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = e.Extract(ctx, input)
 	}
 }
