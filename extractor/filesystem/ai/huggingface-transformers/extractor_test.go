@@ -97,7 +97,7 @@ func TestExtractor_Extract(t *testing.T) {
 	e := Extractor{}
 
 	t.Run("Success_ValidConfig", func(t *testing.T) {
-		content := `{"transformers_version": "4.31.0", "model_type": "bert"}`
+		content := ` + "`" + `{"transformers_version": "4.31.0", "model_type": "bert"}` + "`" + `
 		path := "models/bert/config.json"
 		input := fakeScanInput(path, content)
 
@@ -133,7 +133,7 @@ func TestExtractor_Extract(t *testing.T) {
 	})
 
 	t.Run("Success_AdapterConfig", func(t *testing.T) {
-		content := `{"transformers_version": "4.35.2", "base_model_name_or_path": "meta-llama/Llama-2-7b"}`
+		content := ` + "`" + `{"transformers_version": "4.35.2", "base_model_name_or_path": "meta-llama/Llama-2-7b"}` + "`" + `
 		input := fakeScanInput("peft/adapter_config.json", content)
 
 		inv, err := e.Extract(context.Background(), input)
@@ -149,7 +149,7 @@ func TestExtractor_Extract(t *testing.T) {
 	})
 
 	t.Run("EmptyVersion_ReturnsEmptyInventory", func(t *testing.T) {
-		content := `{"model_type": "bert", "architectures": ["BertModel"]}`
+		content := ` + "`" + `{"model_type": "bert", "architectures": ["BertModel"]}` + "`" + `
 		input := fakeScanInput("config.json", content)
 
 		inv, err := e.Extract(context.Background(), input)
@@ -162,7 +162,7 @@ func TestExtractor_Extract(t *testing.T) {
 	})
 
 	t.Run("MissingTransformersVersion_ReturnsEmptyInventory", func(t *testing.T) {
-		content := `{"some_other_field": "value"}`
+		content := ` + "`" + `{"some_other_field": "value"}` + "`" + `
 		input := fakeScanInput("config.json", content)
 
 		inv, err := e.Extract(context.Background(), input)
@@ -175,7 +175,7 @@ func TestExtractor_Extract(t *testing.T) {
 	})
 
 	t.Run("InvalidJSON_ReturnsEmptyInventory_NoError", func(t *testing.T) {
-		content := `{"invalid": json, "broken": }`
+		content := ` + "`" + `{"invalid": json, "broken": }` + "`" + `
 		input := fakeScanInput("config.json", content)
 
 		inv, err := e.Extract(context.Background(), input)
@@ -210,7 +210,7 @@ func TestExtractor_Extract(t *testing.T) {
 	})
 
 	t.Run("VersionWithPrerelease", func(t *testing.T) {
-		content := `{"transformers_version": "4.31.0.dev0"}`
+		content := ` + "`" + `{"transformers_version": "4.31.0.dev0"}` + "`" + `
 		input := fakeScanInput("config.json", content)
 
 		inv, err := e.Extract(context.Background(), input)
@@ -232,7 +232,7 @@ func TestExtractor_Extract(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		content := `{"transformers_version": "4.31.0"}`
+		content := ` + "`" + `{"transformers_version": "4.31.0"}` + "`" + `
 		input := fakeScanInput("config.json", content)
 
 		inv, err := e.Extract(ctx, input)
@@ -248,14 +248,14 @@ func TestExtractor_Extract(t *testing.T) {
 func TestExtractor_FullWorkflow(t *testing.T) {
 	e := Extractor{}
 
-	realisticConfig := `{
+	realisticConfig := ` + "`" + `{
 		"architectures": ["BertForMaskedLM"],
 		"model_type": "bert",
 		"transformers_version": "4.31.0",
 		"vocab_size": 30522,
 		"hidden_size": 768,
 		"num_attention_heads": 12
-	}`
+	}` + "`" + `
 
 	input := fakeScanInput("bert-base-uncased/config.json", realisticConfig)
 	inv, err := e.Extract(context.Background(), input)
@@ -302,7 +302,7 @@ func BenchmarkExtractor_FileRequired(b *testing.B) {
 
 func BenchmarkExtractor_Extract(b *testing.B) {
 	e := Extractor{}
-	content := `{"transformers_version": "4.31.0"}`
+	content := ` + "`" + `{"transformers_version": "4.31.0"}` + "`" + `
 	input := fakeScanInput("config.json", content)
 	ctx := context.Background()
 	for i := 0; i < b.N; i++ {
