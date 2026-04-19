@@ -14,8 +14,6 @@ import (
 )
 
 // Extractor implements filesystem.Extractor for Hugging Face Transformers models.
-// It scans config.json and adapter_config.json files to extract the transformers_version
-// field and generates a PURL identifier for vulnerability matching.
 type Extractor struct{}
 
 // Name returns the unique identifier for this extractor.
@@ -28,14 +26,12 @@ func (e Extractor) Version() int { return 1 }
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired determines if the extractor should process the given file.
-// It returns true for config.json and adapter_config.json files.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	base := filepath.Base(api.Path())
 	return base == "config.json" || base == "adapter_config.json"
 }
 
 // Extract parses the input file and returns an inventory containing the transformers package.
-// It extracts the transformers_version field from the JSON config and generates a PURL.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var config struct {
 		Version string `json:"transformers_version"`
