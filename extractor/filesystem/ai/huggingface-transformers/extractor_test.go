@@ -10,7 +10,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// FakeFileAPI mocks the filesystem.FileAPI interface for testing.
+// FakeFileAPI mocks filesystem.FileAPI for testing.
 type FakeFileAPI struct {
 	path string
 	filesystem.FileAPI
@@ -19,7 +19,7 @@ type FakeFileAPI struct {
 // Path returns the mock file path.
 func (f FakeFileAPI) Path() string { return f.path }
 
-// fakeScanInput is a helper function to create a filesystem.ScanInput for testing.
+// fakeScanInput is a helper to create filesystem.ScanInput for testing.
 func fakeScanInput(path, content string) *filesystem.ScanInput {
 	return &filesystem.ScanInput{
 		Path:   path,
@@ -31,14 +31,18 @@ func TestExtractor_Metadata(t *testing.T) {
 	e := Extractor{}
 
 	t.Run("Name_ReturnsCorrectValue", func(t *testing.T) {
-		if got := e.Name(); got != "ai/huggingface-transformers" {
-			t.Errorf("Name() = %q, want %q", got, "ai/huggingface-transformers")
+		got := e.Name()
+		want := "ai/huggingface-transformers"
+		if got != want {
+			t.Errorf("Name() = %q, want %q", got, want)
 		}
 	})
 
 	t.Run("Version_ReturnsCorrectValue", func(t *testing.T) {
-		if got := e.Version(); got != 1 {
-			t.Errorf("Version() = %d, want 1", got)
+		got := e.Version()
+		want := 1
+		if got != want {
+			t.Errorf("Version() = %d, want %d", got, want)
 		}
 	})
 
