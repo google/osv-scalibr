@@ -1,3 +1,4 @@
+// Package aimodels provides extractors for AI/ML model inventory scanning.
 package aimodels
 
 import (
@@ -41,7 +42,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	if err := json.NewDecoder(input.Reader).Decode(&config); err != nil {
-		return inventory.Inventory{}, nil
+		return inventory.Inventory{}, err
 	}
 
 	if config.Version == "" {
