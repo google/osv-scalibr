@@ -42,12 +42,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var config struct {
 		Version string `json:"transformers_version"`
 	}
+
+	// NOTE: We return nil error on JSON decode failure to avoid crashing the scanner
+	// when encountering non-HuggingFace config.json files or malformed JSON.
+	//nolint:nilerr
 	if err := json.NewDecoder(input.Reader).Decode(&config); err != nil {
-		return inventory.Inventory{}, err
+		return inventory.Inventory{}, nil
 	}
+
 	if config.Version == "" {
 		return inventory.Inventory{}, nil
 	}
+
 	return inventory.Inventory{
 		Packages: []*extractor.Package{{
 			Name:      "transformers",
