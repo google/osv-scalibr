@@ -66,9 +66,8 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
 
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.ChiselConfig { return c.GetChisel() })
-	if specific.GetMaxFileSizeBytes() > 0 {
-		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
+	if cfg.GetMaxFileSizeBytes() > 0 {
+		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
 
 	e := &Extractor{
@@ -171,6 +170,8 @@ func (e Extractor) extractFromInput(_ context.Context, input *filesystem.ScanInp
 		}
 
 		p := &extractor.Package{
+			// Note that the package names and versions are binary package names and versions from the chisel manifest,
+			// instead of the source package names and versions.
 			Name:     chiselPackage.Name,
 			Version:  pkgVersion,
 			PURLType: purl.TypeDebian,

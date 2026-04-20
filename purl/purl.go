@@ -41,8 +41,6 @@ const (
 	TypeCocoapods = "cocoapods"
 	// TypeCargo is a pkg:cargo purl.
 	TypeCargo = "cargo"
-	// TypeChisel is a pkg:chisel purl.
-	TypeChisel = "chisel"
 	// TypeJulia is a pkg:julia purl.
 	TypeJulia = "julia"
 	// TypeComposer is a pkg:composer purl.

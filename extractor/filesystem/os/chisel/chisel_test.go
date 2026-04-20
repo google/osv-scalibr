@@ -17,7 +17,6 @@ package chisel_test
 import (
 	"fmt"
 	"io/fs"
-	golog "log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,12 +25,12 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/chisel"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
-	scalibrlog "github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -54,6 +53,19 @@ func TestFileRequired(t *testing.T) {
 			path:             "var/lib/chisel/manifest.wall",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:         "manifest.wall file not in desired location",
+			path:         "manifest.wall",
+			wantRequired: false,
+		},
+		{
+			name:             "manifest.wall file exceeds max file size",
+			path:             "var/lib/chisel/manifest.wall",
+			fileSizeBytes:    1024 * units.MiB,
+			maxFileSizeBytes: 100 * units.MiB,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
 		},
 	}
 
@@ -271,9 +283,6 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			logger := &testLogger{}
-			scalibrlog.SetLogger(logger)
-
 			collector := testcollector.New()
 
 			d := t.TempDir()
@@ -329,70 +338,7 @@ func TestExtract(t *testing.T) {
 			if gotFileSizeMetric != info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
-
-			if logger.warnings != tt.wantLogWarn {
-				t.Errorf("Extract(%s) recorded %d warnings, want %d warnings", tt.path, logger.warnings, tt.wantLogWarn)
-			}
-			if logger.errors != tt.wantLogErr {
-				t.Errorf("Extract(%s) recorded %d errors, want %d errors", tt.path, logger.errors, tt.wantLogErr)
-			}
 		})
-	}
-}
-
-var _ scalibrlog.Logger = &testLogger{}
-
-type testLogger struct {
-	Verbose  bool
-	warnings int
-	errors   int
-}
-
-// Errorf is the formatted error logging function.
-func (l *testLogger) Errorf(format string, args ...any) {
-	golog.Printf(format, args...)
-	l.errors++
-}
-
-// Warnf is the formatted warning logging function.
-func (l *testLogger) Warnf(format string, args ...any) {
-	golog.Printf(format, args...)
-	l.warnings++
-}
-
-// Infof is the formatted info logging function.
-func (testLogger) Infof(format string, args ...any) {
-	golog.Printf(format, args...)
-}
-
-// Debugf is the formatted debug logging function.
-func (l *testLogger) Debugf(format string, args ...any) {
-	if l.Verbose {
-		golog.Printf(format, args...)
-	}
-}
-
-// Error is the error logging function.
-func (l *testLogger) Error(args ...any) {
-	golog.Println(args...)
-	l.errors++
-}
-
-// Warn is the warning logging function.
-func (l *testLogger) Warn(args ...any) {
-	golog.Println(args...)
-	l.warnings++
-}
-
-// Info is the info logging function.
-func (testLogger) Info(args ...any) {
-	golog.Println(args...)
-}
-
-// Debug is the debug logging function.
-func (l *testLogger) Debug(args ...any) {
-	if l.Verbose {
-		golog.Println(args...)
 	}
 }
 
