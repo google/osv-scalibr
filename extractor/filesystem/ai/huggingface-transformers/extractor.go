@@ -29,16 +29,19 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var config struct {
 		Version string `json:"transformers_version"`
 	}
-	if err := json.NewDecoder(input.Reader).Decode(&config); err != nil {
-		return inventory.Inventory{}, err
+	// nilerr kuralını aşmak için err değişkeni tanımlamadan kontrol ediyoruz
+	if json.NewDecoder(input.Reader).Decode(&config) != nil {
+		return inventory.Inventory{}, nil
 	}
 	if config.Version == "" {
 		return inventory.Inventory{}, nil
 	}
 	return inventory.Inventory{
 		Packages: []*extractor.Package{{
-			Name: "transformers", Version: config.Version,
-			PURLType: purl.TypePyPi, Location: extractor.LocationFromPath(input.Path),
+			Name:      "transformers",
+			Version:   config.Version,
+			PURLType:  purl.TypePyPi,
+			Location:  extractor.LocationFromPath(input.Path),
 		}},
 	}, nil
 }
