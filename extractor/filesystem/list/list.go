@@ -314,7 +314,7 @@ var (
 	// Containers extractors.
 	Containers = InitMap{
 		argocdimage.Name:        {argocdimage.New},
-		argoworkflowimage.Name: {argoworkflowimage.New},
+		argoworkflowimage.Name:  {argoworkflowimage.New},
 		containerd.Name:         {containerd.New},
 		k8simage.Name:           {k8simage.New},
 		podman.Name:             {podman.New},
