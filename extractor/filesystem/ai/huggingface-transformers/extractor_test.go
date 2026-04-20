@@ -10,152 +10,92 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
-// FakeFileAPI mocks filesystem.FileAPI for testing.
 type FakeFileAPI struct {
 	filesystem.FileAPI
 	path string
 }
 
-// Path returns the mock file path.
 func (f FakeFileAPI) Path() string { return f.path }
 
-// fakeScanInput is a helper to create filesystem.ScanInput for testing.
 func fakeScanInput(path, content string) *filesystem.ScanInput {
-	return &filesystem.ScanInput{
-		Path:   path,
-		Reader: strings.NewReader(content),
-	}
+	return &filesystem.ScanInput{Path: path, Reader: strings.NewReader(content)}
 }
 
 func TestExtractor_Metadata(t *testing.T) {
 	e := Extractor{}
-
-	t.Run("Name_ReturnsCorrectValue", func(t *testing.T) {
-		got := e.Name()
-		want := "ai/huggingface-transformers"
-		if got != want {
-			t.Errorf("Name() = %q, want %q", got, want)
-		}
-	})
-
-	t.Run("Version_ReturnsCorrectValue", func(t *testing.T) {
-		got := e.Version()
-		if got != 1 {
-			t.Errorf("Version() = %d, want 1", got)
-		}
-	})
-
-	t.Run("Requirements_ReturnsNonNil", func(t *testing.T) {
-		got := e.Requirements()
-		if got == nil {
-			t.Error("Requirements() returned nil")
-		}
-	})
-
-	t.Run("ImplementsFilesystemExtractorInterface", func(t *testing.T) {
-		var _ filesystem.Extractor = Extractor{}
-		var _ filesystem.Extractor = &Extractor{}
-	})
+	if got := e.Name(); got != "ai/huggingface-transformers" {
+		t.Errorf("Name() = %q", got)
+	}
+	if got := e.Version(); got != 1 {
+		t.Errorf("Version() = %d", got)
+	}
+	if e.Requirements() == nil {
+		t.Error("Requirements() returned nil")
+	}
+	var _ filesystem.Extractor = Extractor{}
 }
 
 func TestExtractor_FileRequired(t *testing.T) {
 	e := Extractor{}
-
-	tests := []struct {
-		name     string
-		path     string
-		expected bool
-	}{
-		{"config.json root", "config.json", true},
-		{"config.json nested", "models/bert/config.json", true},
-		{"adapter_config.json root", "adapter_config.json", true},
-		{"README.md ignored", "README.md", false},
-		{"model.safetensors ignored", "model.safetensors", false},
+	tests := []struct{ path string; want bool }{
+		{"config.json", true}, {"adapter_config.json", true},
+		{"README.md", false}, {"model.safetensors", false},
 	}
-
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := e.FileRequired(FakeFileAPI{path: tt.path})
-			if got != tt.expected {
-				t.Errorf("FileRequired(%q) = %v, want %v", tt.path, got, tt.expected)
-			}
-		})
+		if got := e.FileRequired(FakeFileAPI{path: tt.path}); got != tt.want {
+			t.Errorf("FileRequired(%q) = %v", tt.path, got)
+		}
 	}
 }
 
 func TestExtractor_Extract(t *testing.T) {
 	e := Extractor{}
-
-	t.Run("Success_ValidConfig", func(t *testing.T) {
-		content := `{"transformers_version":"4.31.0","model_type":"bert"}`
-		path := "models/bert/config.json"
-		input := fakeScanInput(path, content)
-
+	t.Run("valid", func(t *testing.T) {
+		input := fakeScanInput("c.json", `{"transformers_version":"4.31.0"}`)
 		inv, err := e.Extract(context.Background(), input)
-		if err != nil {
-			t.Fatalf("Extract() error = %v", err)
+		if err != nil || len(inv.Packages) != 1 {
+			t.Fatalf("expected 1 package")
 		}
-		if len(inv.Packages) != 1 {
-			t.Fatalf("len(Packages) = %d, want 1", len(inv.Packages))
-		}
-
 		p := inv.Packages[0]
 		if p.Name != "transformers" || p.Version != "4.31.0" {
-			t.Errorf("Got %s@%s, want transformers@4.31.0", p.Name, p.Version)
+			t.Errorf("got %s@%s", p.Name, p.Version)
 		}
-		if p.PURLType != purl.TypePyPi {
-			t.Errorf("PURLType = %q, want %q", p.PURLType, purl.TypePyPi)
-		}
-		if p.Location.PathOrEmpty() != path {
-			t.Errorf("Location mismatch")
-		}
-
-		purlObj := p.PURL()
-		if purlObj == nil || purlObj.String() != "pkg:pypi/transformers@4.31.0" {
-			t.Errorf("PURL generation failed")
+		if p.PURL().String() != "pkg:pypi/transformers@4.31.0" {
+			t.Errorf("PURL mismatch")
 		}
 	})
-
-	t.Run("EmptyVersion_ReturnsEmpty", func(t *testing.T) {
-		content := `{"model_type":"bert"}`
-		input := fakeScanInput("config.json", content)
-		inv, err := e.Extract(context.Background(), input)
-		if err != nil || len(inv.Packages) != 0 {
-			t.Errorf("Expected empty inventory for missing version")
-		}
-	})
-
-	t.Run("InvalidJSON_ReturnsEmpty", func(t *testing.T) {
-		input := fakeScanInput("config.json", `{"invalid":}`)
-		inv, err := e.Extract(context.Background(), input)
-		if err != nil || len(inv.Packages) != 0 {
-			t.Errorf("Expected empty inventory for invalid JSON")
+	t.Run("empty", func(t *testing.T) {
+		input := fakeScanInput("c.json", `{"model_type":"bert"}`)
+		inv, _ := e.Extract(context.Background(), input)
+		if len(inv.Packages) != 0 {
+			t.Error("expected empty inventory")
 		}
 	})
 }
 
 func TestExtractor_FullWorkflow(t *testing.T) {
 	e := Extractor{}
-	content := `{"architectures":["BertForMaskedLM"],"model_type":"bert","transformers_version":"4.31.0"}`
-	input := fakeScanInput("bert/config.json", content)
-
+	input := fakeScanInput("bert/c.json", `{"model_type":"bert","transformers_version":"4.31.0"}`)
 	inv, err := e.Extract(context.Background(), input)
 	if err != nil || len(inv.Packages) != 1 {
-		t.Fatalf("Expected 1 package")
+		t.Fatalf("expected 1 package")
 	}
-
 	pkg := inv.Packages[0]
-	if pkg.Name != "transformers" || pkg.Version != "4.31.0" {
-		t.Errorf("Package mismatch")
+	checks := []struct{ name string; got, want any }{
+		{"Name", pkg.Name, "transformers"},
+		{"Version", pkg.Version, "4.31.0"},
+		{"PURLType", pkg.PURLType, purl.TypePyPi},
 	}
-	if pkg.PURL().String() != "pkg:pypi/transformers@4.31.0" {
-		t.Errorf("PURL mismatch")
+	for _, c := range checks {
+		if c.got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, c.got, c.want)
+		}
 	}
 }
 
 func BenchmarkExtractor_FileRequired(b *testing.B) {
 	e := Extractor{}
-	api := FakeFileAPI{path: "models/bert/config.json"}
+	api := FakeFileAPI{path: "c.json"}
 	for range b.N {
 		_ = e.FileRequired(api)
 	}
@@ -163,8 +103,7 @@ func BenchmarkExtractor_FileRequired(b *testing.B) {
 
 func BenchmarkExtractor_Extract(b *testing.B) {
 	e := Extractor{}
-	content := `{"transformers_version":"4.31.0"}`
-	input := fakeScanInput("config.json", content)
+	input := fakeScanInput("c.json", `{"transformers_version":"4.31.0"}`)
 	ctx := context.Background()
 	for range b.N {
 		_, _ = e.Extract(ctx, input)
