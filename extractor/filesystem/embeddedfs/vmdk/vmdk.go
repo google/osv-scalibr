@@ -317,10 +317,14 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 				if zerr != nil {
 					return fmt.Errorf("zlib reader at lba %d: %w", lba, zerr)
 				}
-				dec, derr := io.ReadAll(zr)
+				// Limit decompression to one grain to prevent decompression bomb attacks.
+				dec, derr := io.ReadAll(io.LimitReader(zr, grainBytes+1))
 				zr.Close()
 				if derr != nil && !errors.Is(derr, io.EOF) {
 					return fmt.Errorf("zlib read at lba %d: %w", lba, derr)
+				}
+				if int64(len(dec)) > grainBytes {
+					return fmt.Errorf("decompressed grain at lba %d exceeds grain size %d", lba, grainBytes)
 				}
 				if int64(len(dec)) < grainBytes {
 					tmp := make([]byte, grainBytes)
