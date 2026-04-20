@@ -56,10 +56,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	return inventory.Inventory{
 		Packages: []*extractor.Package{{
-			Name:      "transformers",
-			Version:   config.Version,
-			PURLType:  purl.TypePyPi,
-			Location:  extractor.LocationFromPath(input.Path),
+			Name:     "transformers",
+			Version:  config.Version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPath(input.Path),
 		}},
 	}, nil
 }
