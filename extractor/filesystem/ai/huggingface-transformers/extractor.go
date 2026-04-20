@@ -29,7 +29,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var config struct {
 		Version string `json:"transformers_version"`
 	}
-	// nilerr kuralını aşmak için err değişkeni tanımlamadan kontrol ediyoruz
+	// nilerr kuralını aşmak için err değişkeni kullanmadan inline kontrol
 	if json.NewDecoder(input.Reader).Decode(&config) != nil {
 		return inventory.Inventory{}, nil
 	}
