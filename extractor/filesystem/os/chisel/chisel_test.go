@@ -125,8 +125,6 @@ func TestExtract(t *testing.T) {
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
-		wantLogWarn      int
-		wantLogErr       int
 	}{
 		{
 			name:      "valid manifest wall file",
