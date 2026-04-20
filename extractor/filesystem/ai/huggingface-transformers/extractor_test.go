@@ -9,13 +9,17 @@ import (
 	"github.com/google/osv-scalibr/purl"
 )
 
+// FakeFileAPI mocks filesystem.FileAPI for testing.
 type FakeFileAPI struct {
 	filesystem.FileAPI
+
 	path string
 }
 
+// Path returns the mock file path.
 func (f FakeFileAPI) Path() string { return f.path }
 
+// fakeScanInput is a helper to create filesystem.ScanInput for testing.
 func fakeScanInput(path, content string) *filesystem.ScanInput {
 	return &filesystem.ScanInput{Path: path, Reader: strings.NewReader(content)}
 }
@@ -36,7 +40,10 @@ func TestExtractor_Metadata(t *testing.T) {
 
 func TestExtractor_FileRequired(t *testing.T) {
 	e := Extractor{}
-	tests := []struct{ path string; want bool }{
+	tests := []struct {
+		path string
+		want bool
+	}{
 		{"config.json", true}, {"adapter_config.json", true},
 		{"README.md", false}, {"model.safetensors", false},
 	}
@@ -80,7 +87,11 @@ func TestExtractor_FullWorkflow(t *testing.T) {
 		t.Fatalf("expected 1 package")
 	}
 	pkg := inv.Packages[0]
-	checks := []struct{ name string; got, want any }{
+	checks := []struct {
+		name string
+		got  any
+		want any
+	}{
 		{"Name", pkg.Name, "transformers"},
 		{"Version", pkg.Version, "4.31.0"},
 		{"PURLType", pkg.PURLType, purl.TypePyPi},
