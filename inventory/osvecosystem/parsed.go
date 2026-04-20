@@ -94,25 +94,31 @@ func (p Parsed) GetValidity() error {
 	}
 
 	// Missing ecosystems here would be caught by the "exhaustive" linter
+	//exhaustive:enforce
 	switch p.Ecosystem {
 	case osvconstants.EcosystemAlmaLinux,
 		osvconstants.EcosystemAlpaquita,
 		osvconstants.EcosystemAlpine,
 		osvconstants.EcosystemAndroid,
-		osvconstants.EcosystemCleanStart,
+		osvconstants.EcosystemAzureLinux,
 		osvconstants.EcosystemBellSoftHardenedContainers,
 		osvconstants.EcosystemBioconductor,
 		osvconstants.EcosystemBitnami,
 		osvconstants.EcosystemChainguard,
+		osvconstants.EcosystemCleanStart,
 		osvconstants.EcosystemConanCenter,
 		osvconstants.EcosystemCRAN,
 		osvconstants.EcosystemCratesIO,
 		osvconstants.EcosystemDebian,
+		osvconstants.EcosystemDockerHardenedImages,
+		osvconstants.EcosystemEcho,
+		osvconstants.EcosystemFreeBSD,
 		osvconstants.EcosystemGHC,
 		osvconstants.EcosystemGitHubActions,
 		osvconstants.EcosystemGo,
 		osvconstants.EcosystemHackage,
 		osvconstants.EcosystemHex,
+		osvconstants.EcosystemJulia,
 		osvconstants.EcosystemKubernetes,
 		osvconstants.EcosystemLinux,
 		osvconstants.EcosystemMageia,
@@ -130,12 +136,13 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemPyPI,
 		osvconstants.EcosystemRedHat,
 		osvconstants.EcosystemRockyLinux,
+		osvconstants.EcosystemRoot,
 		osvconstants.EcosystemRubyGems,
 		osvconstants.EcosystemSUSE,
 		osvconstants.EcosystemSwiftURL,
 		osvconstants.EcosystemUbuntu,
+		osvconstants.EcosystemVSCode,
 		osvconstants.EcosystemWolfi,
-		osvconstants.EcosystemDockerHardenedImages,
 		// GIT is a pseudo ecosystem that can be used in queries, so should be considered valid.
 		"GIT":
 
