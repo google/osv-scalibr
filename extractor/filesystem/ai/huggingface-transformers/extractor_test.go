@@ -44,8 +44,10 @@ func TestExtractor_FileRequired(t *testing.T) {
 		path string
 		want bool
 	}{
-		{"config.json", true}, {"adapter_config.json", true},
-		{"README.md", false}, {"model.safetensors", false},
+		{"config.json", true},
+		{"adapter_config.json", true},
+		{"README.md", false},
+		{"model.safetensors", false},
 	}
 	for _, tt := range tests {
 		if got := e.FileRequired(FakeFileAPI{path: tt.path}); got != tt.want {
@@ -56,6 +58,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 
 func TestExtractor_Extract(t *testing.T) {
 	e := Extractor{}
+
 	t.Run("valid", func(t *testing.T) {
 		input := fakeScanInput("c.json", `{"transformers_version":"4.31.0"}`)
 		inv, err := e.Extract(context.Background(), input)
@@ -70,11 +73,28 @@ func TestExtractor_Extract(t *testing.T) {
 			t.Errorf("PURL mismatch")
 		}
 	})
+
 	t.Run("empty", func(t *testing.T) {
 		input := fakeScanInput("c.json", `{"model_type":"bert"}`)
-		inv, _ := e.Extract(context.Background(), input)
+		inv, err := e.Extract(context.Background(), input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if len(inv.Packages) != 0 {
 			t.Error("expected empty inventory")
+		}
+	})
+
+	// NOTE: Test that invalid JSON is handled gracefully without returning an error,
+	// matching the behavior in Extract() to avoid scanner crashes.
+	t.Run("invalid_json", func(t *testing.T) {
+		input := fakeScanInput("config.json", `{invalid_json: true`)
+		inv, err := e.Extract(context.Background(), input)
+		if err != nil {
+			t.Fatalf("expected nil error on invalid json, got: %v", err)
+		}
+		if len(inv.Packages) != 0 {
+			t.Error("expected empty inventory on invalid json")
 		}
 	})
 }
