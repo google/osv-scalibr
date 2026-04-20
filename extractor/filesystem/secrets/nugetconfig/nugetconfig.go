@@ -95,7 +95,7 @@ type packageSourceCredsSection struct {
 }
 
 type packageSource struct {
-	XMLName xml.Name       `xml:"packageSource"`
+	XMLName xml.Name       `xml:""`
 	Add     []keyValuePair `xml:"add"`
 }
 
