@@ -17,6 +17,9 @@ package datasource
 import (
 	"encoding/base64"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/google/osv-scalibr/clients/clienttest"
@@ -95,5 +98,114 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 
 	if len(GetVersions) != 1 {
 		t.Errorf("WithoutRegistries() returned client with %d versions, want 1", len(GetVersions))
+	}
+}
+
+func TestDefaultRegistryUsesSettingsAuth(t *testing.T) {
+	var authHeaders []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeaders = append(authHeaders, r.Header.Get("Authorization"))
+		if r.Header.Get("Authorization") == "" {
+			w.Header().Set("WWW-Authenticate", "Basic realm=\"Registry\"")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		_, _ = w.Write([]byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <version>1.0.0</version>
+	</project>
+	`))
+	}))
+	defer srv.Close()
+
+	client, err := NewMavenRegistryAPIClient(t.Context(), MavenRegistry{
+		URL:             srv.URL,
+		ID:              "trusted",
+		ReleasesEnabled: true,
+	}, "", true)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient() error = %v", err)
+	}
+	client.registryAuths = map[string]*HTTPAuthentication{
+		"trusted": {
+			SupportedMethods: []HTTPAuthMethod{AuthBasic},
+			Username:         "demo-user",
+			Password:         "demo-pass",
+		},
+	}
+
+	if _, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0"); err != nil {
+		t.Fatalf("GetProject() error = %v", err)
+	}
+
+	want := []string{"", "Basic ZGVtby11c2VyOmRlbW8tcGFzcw=="}
+	if !reflect.DeepEqual(authHeaders, want) {
+		t.Fatalf("authorization headers got = %v, want %v", authHeaders, want)
+	}
+}
+
+func TestAddedRegistryDoesNotUseSettingsAuth(t *testing.T) {
+	var attackerAuthHeaders []string
+	attacker := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attackerAuthHeaders = append(attackerAuthHeaders, r.Header.Get("Authorization"))
+		if r.Header.Get("Authorization") == "" {
+			w.Header().Set("WWW-Authenticate", "Basic realm=\"Attacker\"")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		_, _ = w.Write([]byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <version>1.0.0</version>
+	</project>
+	`))
+	}))
+	defer attacker.Close()
+
+	trusted := clienttest.NewMockHTTPServer(t)
+	trusted.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <version>1.0.0</version>
+	</project>
+	`))
+
+	client, err := NewMavenRegistryAPIClient(t.Context(), MavenRegistry{
+		URL:             trusted.URL,
+		ID:              "trusted",
+		ReleasesEnabled: true,
+	}, "", true)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient() error = %v", err)
+	}
+	client.registryAuths = map[string]*HTTPAuthentication{
+		"attacker": {
+			SupportedMethods: []HTTPAuthMethod{AuthBasic},
+			Username:         "demo-user",
+			Password:         "demo-pass",
+		},
+	}
+
+	if err := client.AddRegistry(t.Context(), MavenRegistry{
+		URL:             attacker.URL,
+		ID:              "attacker",
+		ReleasesEnabled: true,
+	}); err != nil {
+		t.Fatalf("AddRegistry() error = %v", err)
+	}
+
+	if _, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0"); err != nil {
+		t.Fatalf("GetProject() error = %v", err)
+	}
+
+	want := []string{""}
+	if !reflect.DeepEqual(attackerAuthHeaders, want) {
+		t.Fatalf("attacker authorization headers got = %v, want %v", attackerAuthHeaders, want)
 	}
 }
