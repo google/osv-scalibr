@@ -296,9 +296,8 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 				DepGroupVals: depGroups,
 				IsTransitive: !isDirect,
 			},
-			ScanRoot: input.Root,
 			// TODO(#408): Add merged paths in here as well
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromScanRootAndPath(input.Root, input.Path),
 			Plugins:  []string{Name},
 		}
 		details[pkg.Name] = &pkg

@@ -55,9 +55,6 @@ type Package struct {
 	SourceCode *SourceCodeIdentifier
 	// Paths or source of files related to the package.
 	Location PackageLocation
-	// The scan root that this package was found in.
-	// TODO(b/400910349): Unify Locations and ScanRoot into a single struct.
-	ScanRoot string
 	// The PURL type of this package, e.g. "pypi". Used for purl generation.
 	PURLType string
 	// The names of the Plugins that found this software instance. Set by the core library.
@@ -76,6 +73,8 @@ type Package struct {
 
 // PackageLocation stores the paths of files or artifacts related to the package.
 type PackageLocation struct {
+	// The scan root that this package was found in.
+	ScanRoot string
 	// Main descriptor this package was extracted from (if applicable),
 	// e.g. the location of the lockfile.
 	Descriptor *location.Location
@@ -97,6 +96,13 @@ func (p PackageLocation) PathOrEmpty() string {
 func LocationFromPath(path string) PackageLocation {
 	loc := location.FromPath(path)
 	return PackageLocation{Descriptor: &loc}
+}
+
+// LocationFromScanRootAndPath returns a PackageLocation struct based on
+// the file path of the descriptor and the ScanRoot.
+func LocationFromScanRootAndPath(scanRoot, path string) PackageLocation {
+	loc := location.FromPath(path)
+	return PackageLocation{ScanRoot: scanRoot, Descriptor: &loc}
 }
 
 // PURL returns the Package URL of this package.

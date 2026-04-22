@@ -199,8 +199,7 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 			Name:     node.Version.Name,
 			Version:  node.Version.Version,
 			PURLType: purl.TypePyPi,
-			ScanRoot: scanRoot,
-			Location: extractor.LocationFromPath(path),
+			Location: extractor.LocationFromScanRootAndPath(scanRoot, path),
 			Plugins:  []string{Name},
 		}
 	}

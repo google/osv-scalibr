@@ -99,7 +99,7 @@ func (i Inventory) IsEmpty() bool {
 func (i Inventory) ExpandPathsToAbsolute() error {
 	var errs []error
 	for _, p := range i.Packages {
-		absRoot, err := filepath.Abs(p.ScanRoot)
+		absRoot, err := filepath.Abs(p.Location.ScanRoot)
 		if err != nil {
 			errs = append(errs, err)
 		}
