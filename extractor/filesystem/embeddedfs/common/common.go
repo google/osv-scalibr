@@ -38,6 +38,7 @@ import (
 	"github.com/dsoprea/go-exfat"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/tempdir"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
 	"www.velocidex.com/golang/go-ntfs/parser"
 )
@@ -376,13 +377,13 @@ type CloserWithTmpPaths interface {
 }
 
 // GetDiskPartitions opens a raw disk image and returns its partitions along with the disk handle.
-func GetDiskPartitions(tmpRawPath string) ([]part.Partition, *disk.Disk, error) {
+func GetDiskPartitions(rawDiskIMGPath string) ([]part.Partition, *disk.Disk, error) {
 	// Open the raw disk image with go-diskfs
-	disk, err := diskfs.Open(tmpRawPath, diskfs.WithOpenMode(diskfs.ReadOnly))
+	disk, err := diskfs.Open(rawDiskIMGPath, diskfs.WithOpenMode(diskfs.ReadOnly))
 	if err != nil {
 		disk.Close()
-		os.Remove(tmpRawPath)
-		return nil, nil, fmt.Errorf("failed to open raw disk image %s: %w", tmpRawPath, err)
+		os.Remove(rawDiskIMGPath)
+		return nil, nil, fmt.Errorf("failed to open raw disk image %s: %w", rawDiskIMGPath, err)
 	}
 
 	partitions, err := disk.GetPartitionTable()
@@ -399,23 +400,37 @@ func GetDiskPartitions(tmpRawPath string) ([]part.Partition, *disk.Disk, error) 
 }
 
 // NewPartitionEmbeddedFSGetter creates a lazy getter function for an embedded filesystem from a disk partition.
-func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.Partition, disk *disk.Disk, tmpRawPath string, refMu *sync.Mutex, refCount *int32) func(context.Context) (scalibrfs.FS, error) {
+func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.Partition, disk *disk.Disk, pluginDir string, rawDiskIMGPath string, refMu *sync.Mutex, refCount *int32) func(context.Context) (scalibrfs.FS, error) {
 	return func(ctx context.Context) (scalibrfs.FS, error) {
 		// Get partition offset and size (already multiplied by sector size)
 		offset := p.GetStart()
 		size := p.GetSize()
 
 		// Open raw image for filesystem parsers
-		f, err := os.Open(tmpRawPath)
+		f, err := os.Open(rawDiskIMGPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to open raw image %s: %w", tmpRawPath, err)
+			return nil, fmt.Errorf("failed to open raw image %s: %w", rawDiskIMGPath, err)
 		}
 
 		section := io.NewSectionReader(f, offset, size)
 		fsType := DetectFilesystem(section, 0)
 
 		// Create a temporary directory for extracted files
-		tempDir, err := os.MkdirTemp("", fmt.Sprintf("scalibr-%s-part-%s-%d-", pluginName, fsType, partitionIndex))
+		// Disk layout will be similar to the following in the OS set temporary directory:
+		// ├── osv-scalibr-run-953505549
+		// │				└── extractor
+		// │				    └── vdi
+		// |						└── valid.vdi 								<--- File discovered by the extractor
+		// │				        	├── partition-1-ext4					<--- A folder containing partition data
+		// │				        	│				└── private-key1.pem
+		// │				        	├── partition-2-exfat
+		// │				        	│				└── private-key2.pem
+		// │				        	├── partition-3-fat32
+		// │				        	│				└── private-key3.pem
+		// │				        	├── partition-4-ntfs
+		// │				        	│				└── private-key4.pem
+		// │				        	└── vdi-12345.raw 						<--- Converted disk image
+		tempDir, err := tempdir.CreateDir(filepath.Join(pluginDir, fmt.Sprintf("partition-%d-%s", partitionIndex, strings.ToLower(fsType))))
 		if err != nil {
 			f.Close()
 			return nil, fmt.Errorf("failed to create temporary directory for %s partition %d: %w", fsType, partitionIndex, err)
@@ -427,7 +442,7 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 			Section:        section,
 			PartitionIndex: partitionIndex,
 			TempDir:        tempDir,
-			TmpRawPath:     tmpRawPath,
+			RawDiskIMGPath: rawDiskIMGPath,
 			RefMu:          refMu,
 			RefCount:       refCount,
 		}
@@ -463,7 +478,7 @@ type generateFSParams struct {
 	Section        *io.SectionReader
 	PartitionIndex int
 	TempDir        string
-	TmpRawPath     string
+	RawDiskIMGPath string
 	RefMu          *sync.Mutex
 	RefCount       *int32
 }
@@ -483,7 +498,7 @@ func generateEXTFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	return &EmbeddedDirFS{
 		FS:       scalibrfs.DirFS(params.TempDir),
 		File:     params.File,
-		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
 		RefCount: params.RefCount,
 		RefMu:    params.RefMu,
 	}, nil
@@ -501,9 +516,9 @@ func generateFAT32FS(params generateFSParams) (*EmbeddedDirFS, error) {
 	if !ok {
 		return nil, fmt.Errorf("partition %d is not a FAT32 filesystem", params.PartitionIndex)
 	}
-	f, err := os.Open(params.TmpRawPath)
+	f, err := os.Open(params.RawDiskIMGPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to reopen raw image %s: %w", params.TmpRawPath, err)
+		return nil, fmt.Errorf("failed to reopen raw image %s: %w", params.RawDiskIMGPath, err)
 	}
 	if err := ExtractAllRecursiveFat32(fat32fs, "/", params.TempDir); err != nil {
 		f.Close()
@@ -515,7 +530,7 @@ func generateFAT32FS(params generateFSParams) (*EmbeddedDirFS, error) {
 	return &EmbeddedDirFS{
 		FS:       scalibrfs.DirFS(params.TempDir),
 		File:     f,
-		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
 		RefCount: params.RefCount,
 		RefMu:    params.RefMu,
 	}, nil
@@ -532,7 +547,7 @@ func generateEXFATFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	return &EmbeddedDirFS{
 		FS:       scalibrfs.DirFS(params.TempDir),
 		File:     params.File,
-		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
 		RefCount: params.RefCount,
 		RefMu:    params.RefMu,
 	}, nil
@@ -557,7 +572,7 @@ func generateNTFSFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	return &EmbeddedDirFS{
 		FS:       scalibrfs.DirFS(params.TempDir),
 		File:     params.File,
-		TmpPaths: []string{params.TempDir, params.TmpRawPath},
+		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
 		RefCount: params.RefCount,
 		RefMu:    params.RefMu,
 	}, nil
@@ -660,13 +675,7 @@ func (fi *fileInfo) Sys() any {
 
 // TARToTempDir extracts a tar file into a temporary directory
 // that can be used to traverse its contents recursively.
-func TARToTempDir(reader io.Reader) (string, error) {
-	// Create a temporary directory for extracted files
-	tempDir, err := os.MkdirTemp("", "scalibr-archive-")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temporary directory: %w", err)
-	}
-
+func TARToTempDir(pluginDir string, reader io.Reader) error {
 	// Extract the tar archive
 	var extractErr error
 	tr := tar.NewReader(reader)
@@ -686,7 +695,7 @@ loop:
 			break
 		}
 
-		target := filepath.Join(tempDir, hdr.Name)
+		target := filepath.Join(pluginDir, hdr.Name)
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0755); err != nil {
@@ -716,9 +725,9 @@ loop:
 	}
 
 	if extractErr != nil {
-		os.Remove(tempDir)
-		return "", extractErr
+		os.Remove(pluginDir)
+		return extractErr
 	}
 
-	return tempDir, nil
+	return nil
 }
