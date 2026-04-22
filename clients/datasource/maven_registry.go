@@ -75,6 +75,11 @@ type MavenRegistry struct {
 	ID               string
 	ReleasesEnabled  bool
 	SnapshotsEnabled bool
+
+	// settings.xml credentials are keyed by server ID only. Repositories
+	// discovered from pom.xml are untrusted input, so they must not inherit
+	// those credentials unless a caller explicitly opts in.
+	AllowSettingsAuth bool
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
@@ -87,6 +92,7 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 		// Gives the default registry an ID so it is not overwritten by registry without an ID in pom.xml.
 		registry.ID = "default"
 	}
+	registry.AllowSettingsAuth = true
 	u, err := url.Parse(registry.URL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid Maven registry %s: %w", registry.URL, err)
@@ -168,6 +174,7 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 		return err
 	}
 	log.Infof("The default Maven registry is being overwritten from %s to %s", m.defaultRegistry.URL, registry.URL)
+	registry.AllowSettingsAuth = true
 	registry.Parsed = u
 	m.defaultRegistry = registry
 	if registry.Parsed.Scheme == artifactRegistryScheme {
@@ -278,7 +285,7 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 	}
 
 	var project maven.Project
-	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
+	if err := m.get(ctx, m.registryAuth(registry), registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
 		return maven.Project{}, err
 	}
 
@@ -288,7 +295,7 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 // getVersionMetadata fetches a version level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID, version string) (maven.Metadata, error) {
 	var metadata maven.Metadata
-	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml"}, &metadata); err != nil {
+	if err := m.get(ctx, m.registryAuth(registry), registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
 	}
 
@@ -298,11 +305,19 @@ func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registr
 // GetArtifactMetadata fetches an artifact level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID string) (maven.Metadata, error) {
 	var metadata maven.Metadata
-	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
+	if err := m.get(ctx, m.registryAuth(registry), registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
 	}
 
 	return metadata, nil
+}
+
+func (m *MavenRegistryAPIClient) registryAuth(registry MavenRegistry) *HTTPAuthentication {
+	if !registry.AllowSettingsAuth {
+		return nil
+	}
+
+	return m.registryAuths[registry.ID]
 }
 
 func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
