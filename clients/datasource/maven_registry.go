@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -44,6 +46,51 @@ const mavenCentral = "https://repo.maven.apache.org/maven2"
 const artifactRegistryScheme = "artifactregistry"
 
 var errAPIFailed = errors.New("API query failed")
+
+// errUntrustedRegistry indicates a Maven registry URL sourced from an
+// untrusted location (e.g. a pom.xml <repositories> entry) failed
+// validation and must not be queried.
+var errUntrustedRegistry = errors.New("untrusted Maven registry URL")
+
+// lookupHost is indirected through a package variable so tests can stub
+// DNS resolution when validating untrusted registry URLs.
+var lookupHost = net.LookupHost
+
+// validateUntrustedRegistryURL enforces the rules applied to Maven
+// registry URLs that originate from untrusted sources such as a scanned
+// pom.xml. The URL must use http or https, have a non-empty host, and
+// resolve exclusively to public unicast addresses. Any loopback, link
+// local, private, unspecified or multicast address causes rejection to
+// prevent server-side request forgery against internal services, cloud
+// metadata endpoints, and the local host.
+func validateUntrustedRegistryURL(u *url.URL) error {
+	if u == nil {
+		return fmt.Errorf("%w: nil URL", errUntrustedRegistry)
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return fmt.Errorf("%w: scheme %q not allowed", errUntrustedRegistry, u.Scheme)
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("%w: empty host", errUntrustedRegistry)
+	}
+	addrs, err := lookupHost(host)
+	if err != nil {
+		return fmt.Errorf("%w: resolving %q: %w", errUntrustedRegistry, host, err)
+	}
+	for _, a := range addrs {
+		ip, err := netip.ParseAddr(a)
+		if err != nil {
+			return fmt.Errorf("%w: parsing resolved address %q: %w", errUntrustedRegistry, a, err)
+		}
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
+			ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
+			return fmt.Errorf("%w: host %q resolves to non-public address %s", errUntrustedRegistry, host, a)
+		}
+	}
+	return nil
+}
 
 // MavenRegistryAPIClient defines a client to fetch metadata from a Maven registry.
 type MavenRegistryAPIClient struct {
@@ -75,6 +122,15 @@ type MavenRegistry struct {
 	ID               string
 	ReleasesEnabled  bool
 	SnapshotsEnabled bool
+
+	// TrustedForAuth indicates whether this registry originates from a
+	// trusted source (the tool's own configuration) and is therefore
+	// eligible to be sent credentials from the user's settings.xml. It
+	// must remain false for registries discovered in scanned pom.xml
+	// files, otherwise an attacker-controlled pom.xml could reuse a
+	// known settings.xml server ID to exfiltrate the associated
+	// credentials to an attacker-controlled URL.
+	TrustedForAuth bool
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
@@ -92,6 +148,10 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 		return nil, fmt.Errorf("invalid Maven registry %s: %w", registry.URL, err)
 	}
 	registry.Parsed = u
+	// The default registry is configured by the tool itself, not by
+	// content scanned from a user-supplied pom.xml, and is therefore
+	// trusted to receive credentials from settings.xml.
+	registry.TrustedForAuth = true
 
 	if localRegistry != "" {
 		localRegistry = filepath.Join(localRegistry, "maven")
@@ -137,7 +197,30 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 }
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
+//
+// AddRegistry is the entry point for Maven registries discovered while
+// scanning untrusted pom.xml files, so it validates the URL against
+// validateUntrustedRegistryURL and always records the registry as
+// untrusted for authentication purposes. Callers that need to register
+// a trusted registry must construct the client via
+// NewMavenRegistryAPIClient with the registry supplied at construction
+// time.
 func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry MavenRegistry) error {
+	u, err := url.Parse(registry.URL)
+	if err != nil {
+		return err
+	}
+	if err := validateUntrustedRegistryURL(u); err != nil {
+		log.Warnf("Rejecting Maven registry %q from pom.xml: %v", registry.URL, err)
+		return err
+	}
+	registry.Parsed = u
+	// Registries reached through AddRegistry always originate from
+	// untrusted scanned content. Force TrustedForAuth off so
+	// settings.xml credentials are never attached to requests against
+	// them, regardless of what the caller passed in.
+	registry.TrustedForAuth = false
+
 	if registry.ID == m.defaultRegistry.ID {
 		return m.updateDefaultRegistry(ctx, registry)
 	}
@@ -148,12 +231,6 @@ func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry Maven
 		}
 	}
 
-	u, err := url.Parse(registry.URL)
-	if err != nil {
-		return err
-	}
-
-	registry.Parsed = u
 	m.registries = append(m.registries, registry)
 	if registry.Parsed.Scheme == artifactRegistryScheme {
 		m.createGoogleClient(ctx)
@@ -163,12 +240,14 @@ func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry Maven
 }
 
 func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, registry MavenRegistry) error {
-	u, err := url.Parse(registry.URL)
-	if err != nil {
-		return err
+	if registry.Parsed == nil {
+		u, err := url.Parse(registry.URL)
+		if err != nil {
+			return err
+		}
+		registry.Parsed = u
 	}
 	log.Infof("The default Maven registry is being overwritten from %s to %s", m.defaultRegistry.URL, registry.URL)
-	registry.Parsed = u
 	m.defaultRegistry = registry
 	if registry.Parsed.Scheme == artifactRegistryScheme {
 		m.createGoogleClient(ctx)
@@ -200,6 +279,18 @@ func (m *MavenRegistryAPIClient) DisableGoogleAuth() {
 // GetRegistries returns the registries added to this client.
 func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 	return m.registries
+}
+
+// authFor returns the HTTP authentication to attach to requests for the
+// given registry. Authentication from settings.xml is only returned for
+// registries marked TrustedForAuth; untrusted registries (those added
+// from scanned pom.xml content) always receive a nil authentication so
+// the caller's credentials cannot be leaked to an attacker-chosen URL.
+func (m *MavenRegistryAPIClient) authFor(registry MavenRegistry) *HTTPAuthentication {
+	if !registry.TrustedForAuth {
+		return nil
+	}
+	return m.registryAuths[registry.ID]
 }
 
 // GetProject fetches a pom.xml specified by groupID, artifactID and version and parses it to maven.Project.
@@ -278,7 +369,7 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 	}
 
 	var project maven.Project
-	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
+	if err := m.get(ctx, m.authFor(registry), registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, fmt.Sprintf("%s-%s.pom", artifactID, snapshot)}, &project); err != nil {
 		return maven.Project{}, err
 	}
 
@@ -288,7 +379,7 @@ func (m *MavenRegistryAPIClient) getProject(ctx context.Context, registry MavenR
 // getVersionMetadata fetches a version level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID, version string) (maven.Metadata, error) {
 	var metadata maven.Metadata
-	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml"}, &metadata); err != nil {
+	if err := m.get(ctx, m.authFor(registry), registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, version, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
 	}
 
@@ -298,7 +389,7 @@ func (m *MavenRegistryAPIClient) getVersionMetadata(ctx context.Context, registr
 // GetArtifactMetadata fetches an artifact level maven-metadata.xml and parses it to maven.Metadata.
 func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, registry MavenRegistry, groupID, artifactID string) (maven.Metadata, error) {
 	var metadata maven.Metadata
-	if err := m.get(ctx, m.registryAuths[registry.ID], registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
+	if err := m.get(ctx, m.authFor(registry), registry, []string{strings.ReplaceAll(groupID, ".", "/"), artifactID, "maven-metadata.xml"}, &metadata); err != nil {
 		return maven.Metadata{}, err
 	}
 
