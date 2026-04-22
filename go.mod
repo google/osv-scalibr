@@ -15,6 +15,7 @@ require (
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
 	github.com/aead/serpent v0.0.0-20160714141033-fba169763ea6
 	github.com/bazelbuild/buildtools v0.0.0-20250826111327-4006b543a694
+	github.com/canonical/chisel-manifest v1.2.0
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.5
 	github.com/charmbracelet/lipgloss v1.1.0
