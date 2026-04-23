@@ -29,14 +29,17 @@ func TestConvertVMDKZlibBombRejected(t *testing.T) {
 	// Craft a stream-optimized VMDK with a single grain whose zlib payload
 	// decompresses to more than grainBytes (65536 bytes).
 	const grainSize = 128 // sectors per grain
-	const grainBytes = grainSize * SectorSize // 65536
 	const overhead = 4
 
 	// Compress 1 MB of zeros — decompresses to 1 MB >> grainBytes (65536).
 	var zbuf bytes.Buffer
 	zw := zlib.NewWriter(&zbuf)
-	zw.Write(bytes.Repeat([]byte{0}, 1<<20)) // 1 MB
-	zw.Close()
+	if _, err := zw.Write(bytes.Repeat([]byte{0}, 1<<20)); err != nil { // 1 MB
+		t.Fatalf("zw.Write: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zw.Close: %v", err)
+	}
 	compressed := zbuf.Bytes()
 
 	// Build header: CompressAlgorithm=1 → isStream=true; GDOffset=2 → skip readFooterIfGDAtEnd.
@@ -54,41 +57,45 @@ func TestConvertVMDKZlibBombRejected(t *testing.T) {
 	hdr.CompressAlgorithm = 1
 
 	var buf bytes.Buffer
-	binary.Write(&buf, binary.LittleEndian, &hdr)
+	bwrite := func(v any) {
+		if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
+			t.Fatalf("binary.Write: %v", err)
+		}
+	}
+
+	bwrite(&hdr)
 	// Pad to OverHead sectors.
 	buf.Write(make([]byte, overhead*SectorSize-buf.Len()))
 
 	// Grain marker: val(8 LE) + size(4 LE) + compressed payload, padded to sector.
-	binary.Write(&buf, binary.LittleEndian, uint64(0))               // LBA
-	binary.Write(&buf, binary.LittleEndian, uint32(len(compressed))) // compressed size
+	bwrite(uint64(0))               // LBA
+	bwrite(uint32(len(compressed))) // compressed size
 	buf.Write(compressed)
 	if pad := (SectorSize - (buf.Len() % SectorSize)) % SectorSize; pad > 0 {
 		buf.Write(make([]byte, pad))
 	}
 
 	// EOS marker.
-	binary.Write(&buf, binary.LittleEndian, uint64(0))  // val
-	binary.Write(&buf, binary.LittleEndian, uint32(0))  // size=0
-	binary.Write(&buf, binary.LittleEndian, uint32(0))  // type=EOS
+	bwrite(uint64(0)) // val
+	bwrite(uint32(0)) // size=0
+	bwrite(uint32(0)) // type=EOS
 	buf.Write(make([]byte, SectorSize-16))
 
 	// Write to temp file (convertVMDKToRaw requires a file path).
-	tmp, err := os.CreateTemp("", "vmdk-zlib-bomb-*.vmdk")
+	tmp, err := os.CreateTemp(t.TempDir(), "vmdk-zlib-bomb-*.vmdk")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmp.Name())
 	if _, err := tmp.Write(buf.Bytes()); err != nil {
 		t.Fatal(err)
 	}
 	tmp.Close()
 
-	outRaw, err := os.CreateTemp("", "vmdk-zlib-bomb-out-*.raw")
+	outRaw, err := os.CreateTemp(t.TempDir(), "vmdk-zlib-bomb-out-*.raw")
 	if err != nil {
 		t.Fatal(err)
 	}
 	outRaw.Close()
-	defer os.Remove(outRaw.Name())
 
 	err = convertVMDKToRaw(tmp.Name(), outRaw.Name())
 	if err == nil {
