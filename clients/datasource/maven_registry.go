@@ -152,6 +152,12 @@ func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry Maven
 	if err != nil {
 		return err
 	}
+	// Reject non-HTTPS URLs when credentials are configured for this registry ID.
+	// An untrusted pom.xml could otherwise redirect a credentialed registry ID to an
+	// attacker-controlled HTTP endpoint and steal credentials via a 401 challenge.
+	if _, hasAuth := m.registryAuths[registry.ID]; hasAuth && u.Scheme != "https" && u.Scheme != artifactRegistryScheme {
+		return fmt.Errorf("maven registry %q URL %q must use https:// to prevent exfiltration of configured credentials", registry.ID, registry.URL)
+	}
 
 	registry.Parsed = u
 	m.registries = append(m.registries, registry)
@@ -166,6 +172,12 @@ func (m *MavenRegistryAPIClient) updateDefaultRegistry(ctx context.Context, regi
 	u, err := url.Parse(registry.URL)
 	if err != nil {
 		return err
+	}
+	// Reject non-HTTPS URLs when credentials are configured for this registry ID.
+	// An untrusted pom.xml could otherwise redirect a credentialed registry ID to an
+	// attacker-controlled HTTP endpoint and steal credentials via a 401 challenge.
+	if _, hasAuth := m.registryAuths[registry.ID]; hasAuth && u.Scheme != "https" && u.Scheme != artifactRegistryScheme {
+		return fmt.Errorf("maven registry %q URL %q must use https:// to prevent exfiltration of configured credentials", registry.ID, registry.URL)
 	}
 	log.Infof("The default Maven registry is being overwritten from %s to %s", m.defaultRegistry.URL, registry.URL)
 	registry.Parsed = u
