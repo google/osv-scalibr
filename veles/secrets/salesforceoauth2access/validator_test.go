@@ -26,11 +26,27 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestToken = "00D123456789!AB_CDEF.ABC123456789ABC123456789ABC12ABC123456789ABC123456789ABC12"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := salesforceoauth2access.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		salesforceoauth2access.NewValidator(),
+		velestest.WithTrueNegatives(
+			salesforceoauth2access.Token{Token: validatorTestToken},
+			salesforceoauth2access.Token{Token: "randomKey"},
+		),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

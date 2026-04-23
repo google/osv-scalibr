@@ -15,7 +15,6 @@
 package squareapikey_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -27,9 +26,39 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/squareapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestToken = "EAAAl-fFiBHM5-4l4faqdYXgciyn9_MoC3hzKh3UfR0WOmrr_o4BOiPK8ZPiUXVs"
+
+func TestAcceptPersonalAccessTokenValidator(t *testing.T) {
+	brokenValidator := squareapikey.NewPersonalAccessTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		squareapikey.NewPersonalAccessTokenValidator(),
+		velestest.WithTrueNegatives(squareapikey.SquarePersonalAccessToken{
+			Key: "EAAAinvalidtokeninvalidtokeninvalidtokeninvalidtokeninvalid",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptOAuthApplicationSecretValidator(t *testing.T) {
+	brokenValidator := squareapikey.NewOAuthApplicationSecretValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		squareapikey.NewOAuthApplicationSecretValidator(),
+		velestest.WithTrueNegatives(squareapikey.SquareOAuthApplicationSecret{
+			ID:  "sq0idp-wuPhZFY8etbvhybDEdHllQ",
+			Key: "sq0csp-INVALID_SECRET_INVALID_SECRET_INVALID",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
@@ -225,30 +254,6 @@ func TestPersonalAccessTokenValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestPersonalAccessTokenValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"client_id":"sq0idp-test","token_type":"BEARER"}`))
-	}))
-	defer server.Close()
-
-	validator := setupPersonalAccessTokenValidator(t, server)
-
-	token := squareapikey.SquarePersonalAccessToken{Key: validatorTestToken}
-
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	got, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 
