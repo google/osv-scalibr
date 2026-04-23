@@ -105,6 +105,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
 |            | Cargo.toml                                        | `rust/cargotoml`                     |
 |            | Rust binaries                                     | `rust/cargoauditable`                |
+| Scala      | build.sbt                                         | `scala/sbt`                          |
 | Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
