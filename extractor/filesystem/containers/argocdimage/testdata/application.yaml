@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: registry-1.docker.io
+    path: bitnamicharts/nginx
+    targetRevision: 1.16.1
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: my-namespace
