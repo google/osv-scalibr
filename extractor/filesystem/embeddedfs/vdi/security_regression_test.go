@@ -43,11 +43,10 @@ func TestConvertVDIOOMRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := os.CreateTemp("", "vdi-oom-out-*.raw")
+	out, err := os.CreateTemp(t.TempDir(), "vdi-oom-out-*.raw")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(out.Name())
 	defer out.Close()
 
 	if err := convertVDIToRaw(bytes.NewReader(buf.Bytes()), out); err == nil {
