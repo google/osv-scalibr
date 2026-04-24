@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io/fs"
+	"os"
 	"strings"
 	"testing/fstest"
 
@@ -95,5 +96,23 @@ func TarGzModifier(name string, f *fstest.MapFile) error {
 	gw.Close()
 
 	f.Data = buf.Bytes()
+	return nil
+}
+
+// SimLinkModifier dynamically loads a file content from a specific location, example:
+//
+//	-- /path/to/file --
+//	-> testdata/file
+func SimLinkModifier(name string, f *fstest.MapFile) error {
+	after, ok := bytes.CutPrefix(f.Data, []byte("-> "))
+	if !ok {
+		return nil
+	}
+	fixturePath := strings.TrimSpace(string(after))
+	b, err := os.ReadFile(fixturePath)
+	if err != nil {
+		return err
+	}
+	f.Data = b
 	return nil
 }

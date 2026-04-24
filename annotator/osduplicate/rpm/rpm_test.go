@@ -16,8 +16,6 @@ package rpm_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -31,6 +29,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -50,7 +49,7 @@ func TestAnnotate(t *testing.T) {
 	tests := []struct {
 		desc     string
 		packages []*extractor.Package
-		dbPaths  map[string]string
+		fakeFS   string
 		//nolint:containedctx
 		ctx          context.Context
 		wantErr      error
@@ -73,9 +72,10 @@ func TestAnnotate(t *testing.T) {
 		},
 		{
 			desc: "some_pkgs_found_in_Packages",
-			dbPaths: map[string]string{
-				"usr/lib/sysimage/rpm/Packages": "testdata/Packages",
-			},
+			fakeFS: `
+-- usr/lib/sysimage/rpm/Packages --
+-> testdata/Packages
+`,
 			packages: []*extractor.Package{
 				{
 					Name:     "pyxattr",
@@ -104,9 +104,10 @@ func TestAnnotate(t *testing.T) {
 		},
 		{
 			desc: "some_pkg_found_in_Packages.db",
-			dbPaths: map[string]string{
-				"var/lib/rpm/Packages.db": "testdata/Packages.db",
-			},
+			fakeFS: `
+-- var/lib/rpm/Packages.db --
+-> testdata/Packages.db
+`,
 			packages: []*extractor.Package{
 				{
 					Name:     "cracklib",
@@ -135,9 +136,10 @@ func TestAnnotate(t *testing.T) {
 		},
 		{
 			desc: "some_pkg_found_in_rpmdb.sqlite",
-			dbPaths: map[string]string{
-				"usr/share/rpm/rpmdb.sqlite": "testdata/rpmdb.sqlite",
-			},
+			fakeFS: `
+-- usr/share/rpm/rpmdb.sqlite --
+-> testdata/rpmdb.sqlite
+`,
 			packages: []*extractor.Package{
 				{
 					Name:     "python3-gpg",
@@ -166,11 +168,14 @@ func TestAnnotate(t *testing.T) {
 		},
 		{
 			desc: "some_pkg_found_in_multiple_dbs",
-			dbPaths: map[string]string{
-				"var/lib/rpm/Packages":              "testdata/Packages",
-				"usr/lib/sysimage/rpm/Packages.db":  "testdata/Packages.db",
-				"usr/lib/sysimage/rpm/rpmdb.sqlite": "testdata/rpmdb.sqlite",
-			},
+			fakeFS: `
+-- var/lib/rpm/Packages --
+-> testdata/Packages
+-- usr/lib/sysimage/rpm/Packages.db --
+-> testdata/Packages.db
+-- usr/lib/sysimage/rpm/rpmdb.sqlite --
+-> testdata/rpmdb.sqlite
+`,
 			packages: []*extractor.Package{
 				{
 					// From Packages
@@ -229,9 +234,10 @@ func TestAnnotate(t *testing.T) {
 		{
 			desc: "ctx_cancelled",
 			ctx:  cancelledContext,
-			dbPaths: map[string]string{
-				"usr/lib/sysimage/rpm/Packages": "testdata/Packages",
-			},
+			fakeFS: `
+-- var/lib/rpm/Packages --
+-> testdata/Packages
+`,
 			packages: []*extractor.Package{
 				{
 					Name:     "pyxattr",
@@ -247,6 +253,9 @@ func TestAnnotate(t *testing.T) {
 			},
 			wantErr: cmpopts.AnyError,
 		},
+		// Note: End-to-end tests for main OS packages are omitted here due to the complexity of mocking RPM databases.
+		// Comprehensive E2E testing will instead be implemented at: https://github.com/google/security-testbeds
+		// using real docker images
 	}
 
 	for _, fsType := range []string{"virtual_fs", "real_fs"} {
@@ -256,9 +265,12 @@ func TestAnnotate(t *testing.T) {
 					tt.ctx = t.Context()
 				}
 
-				tmpPath := setupRPMDBs(t, tt.dbPaths)
+				mfs, err := fakefs.PrepareFS(tt.fakeFS, fakefs.SimLinkModifier)
+				if err != nil {
+					t.Fatal(err)
+				}
 				input := &annotator.ScanInput{
-					ScanRoot: scalibrfs.RealFSScanRoot(tmpPath),
+					ScanRoot: &scalibrfs.ScanRoot{FS: mfs},
 				}
 
 				if fsType == "virtual_fs" {
@@ -287,30 +299,4 @@ func TestAnnotate(t *testing.T) {
 			})
 		}
 	}
-}
-
-// setupRPMDBs creates a temporary test directory with the RPM database paths
-// and contents specified in the supplied path -> content map.
-// Returns the path of the created tmp dir.
-func setupRPMDBs(t *testing.T, dbPaths map[string]string) string {
-	t.Helper()
-	root := t.TempDir()
-	for dbPath, contentFile := range dbPaths {
-		dbDir := filepath.Join(root, filepath.Dir(dbPath))
-		if err := os.MkdirAll(dbDir, 0777); err != nil {
-			t.Fatalf("error creating directory %q: %v", dbDir, err)
-		}
-
-		content, err := os.ReadFile(contentFile)
-		if err != nil {
-			t.Fatalf("Error reading content file %q: %v", contentFile, err)
-		}
-
-		dbFile := filepath.Join(root, dbPath)
-		if err := os.WriteFile(dbFile, content, 0644); err != nil {
-			t.Fatalf("Error creating file %q: %v", dbFile, err)
-		}
-	}
-
-	return root
 }
