@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/annotator"
@@ -87,16 +88,18 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			break
 		}
 
+		// Do not add duplication annotation on packages which are from non-main repos
+		// since vuln matching can happen only on packages hosted on main repos
+		pkgName := trimExtension(it.Name())
+		if !isAptCacheEmpty && !aptCache.isFromMainOSRepo(pkgName) {
+			it.Skip()
+			continue
+		}
+
 		// Remove leading '/' since SCALIBR fs paths don't include that.
 		pkgs := locationToPKGs[strings.TrimPrefix(filePath, "/")]
 
 		for _, pkg := range pkgs {
-			// Do not add duplication annotation on packages which are from non-main repos
-			// since vuln matching can happen only on packages hosted on main repos
-			if !isAptCacheEmpty && !aptCache.isFromMainOSRepo(pkg) {
-				continue
-			}
-
 			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
 				Plugin: Name,
 				// TODO(b/425890695): This exclusion doesn't quite match the use case here: The component
@@ -109,4 +112,8 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	}
 
 	return errors.Join(errs...)
+}
+
+func trimExtension(filename string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename))
 }

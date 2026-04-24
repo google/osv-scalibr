@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"path/filepath"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/fs/diriterate"
@@ -32,13 +33,27 @@ const (
 	infoDirPath = "var/lib/dpkg/info"
 )
 
+// dpkgFileInfo groups the state of the file currently being processed.
+type dpkgFileInfo struct {
+	listPath string
+	reader   io.ReadCloser
+	scanner  *bufio.Scanner
+}
+
+// close cleanly shuts down the active file.
+func (f *dpkgFileInfo) close() error {
+	if f.reader != nil {
+		return f.reader.Close()
+	}
+	return nil
+}
+
 // filePathIterator is an iterator over all paths found in dpkg files with a specific extension.
 type filePathIterator struct {
-	rootFs            scalibrfs.FS
-	dirs              *diriterate.DirIterator
-	currentFileReader io.ReadCloser
-	currentScanner    *bufio.Scanner
-	fileExt           string
+	rootFs  scalibrfs.FS
+	dirs    *diriterate.DirIterator
+	fileExt string
+	current *dpkgFileInfo
 }
 
 func newFilePathIterator(rootFs scalibrfs.FS, fileExt string) (*filePathIterator, error) {
@@ -65,13 +80,13 @@ func (it *filePathIterator) Next(ctx context.Context) (string, error) {
 	}
 
 	for {
-		if it.currentScanner != nil && it.currentScanner.Scan() {
-			return it.currentScanner.Text(), nil
+		if it.current != nil && it.current.scanner.Scan() {
+			return it.current.scanner.Text(), nil
 		}
-		if it.currentFileReader != nil {
-			it.currentFileReader.Close()
-			it.currentFileReader = nil
-			it.currentScanner = nil
+
+		if it.current != nil {
+			it.current.close()
+			it.current = nil
 		}
 
 		listPath, err := it.nextFileWithExt()
@@ -83,8 +98,28 @@ func (it *filePathIterator) Next(ctx context.Context) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		it.currentFileReader = reader
-		it.currentScanner = bufio.NewScanner(reader)
+
+		it.current = &dpkgFileInfo{
+			listPath: listPath,
+			reader:   reader,
+			scanner:  bufio.NewScanner(reader),
+		}
+	}
+}
+
+// Name returns the path of the dpkg info file currently being processed.
+func (it *filePathIterator) Name() string {
+	if it.current != nil {
+		return filepath.Base(it.current.listPath)
+	}
+	return ""
+}
+
+// Skip skips the current dpkg info file.
+func (it *filePathIterator) Skip() {
+	if it.current != nil {
+		it.current.close()
+		it.current = nil
 	}
 }
 
@@ -107,8 +142,9 @@ func (it *filePathIterator) nextFileWithExt() (string, error) {
 // Close closes the iterator and releases any resources.
 func (it *filePathIterator) Close() error {
 	var errs []error
-	if it.currentFileReader != nil {
-		if err := it.currentFileReader.Close(); err != nil {
+
+	if it.current != nil {
+		if err := it.current.close(); err != nil {
 			errs = append(errs, err)
 		}
 	}
