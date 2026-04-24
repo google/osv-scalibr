@@ -414,12 +414,12 @@ func getGDGT(hdr sparseExtentHeader) (*gdgtInfo, error) {
 	GTs := uint32((GTEs + uint64(hdr.NumGTEsPerGT) - 1) / uint64(hdr.NumGTEsPerGT))
 	GDsectors := uint32((uint64(GTs)*4 + SectorSize - 1) / SectorSize)
 	GTsectors := uint32((uint64(hdr.NumGTEsPerGT)*4 + SectorSize - 1) / SectorSize)
-	totalSectors := int64(GDsectors + GTsectors*GTs)
+	totalSectors := int64(GDsectors) + int64(GTsectors)*int64(GTs)
 	totalBytes := totalSectors * SectorSize
 	if totalBytes > 1<<31 {
 		return nil, fmt.Errorf("gd/gt allocation too large: %d bytes", totalBytes)
 	}
-	gdarr := make([]uint32, (GDsectors*SectorSize)/4+(GTsectors*GTs*SectorSize)/4)
+	gdarr := make([]uint32, (int64(GDsectors)*SectorSize/4)+(int64(GTsectors)*int64(GTs)*SectorSize/4))
 	info := &gdgtInfo{
 		GTEs:      GTEs,
 		GTs:       GTs,

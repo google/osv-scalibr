@@ -194,6 +194,9 @@ func convertVDIToRaw(in io.Reader, out io.Writer) error {
 			curPos = int64(hdr.OffsetBmap)
 		}
 
+		if hdr.BlocksInImage > 2*1024*1024 {
+			return fmt.Errorf("BlocksInImage %d exceeds maximum allowed value", hdr.BlocksInImage)
+		}
 		indices := make([]uint32, hdr.BlocksInImage)
 		if err := binary.Read(in, binary.LittleEndian, &indices); err != nil {
 			return fmt.Errorf("failed to read block map: %w", err)
