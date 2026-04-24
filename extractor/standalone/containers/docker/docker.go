@@ -19,12 +19,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/moby/moby/client"
 )
 
 const (
@@ -62,20 +61,20 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	if e.client == nil {
 		var err error
-		e.client, err = client.NewClientWithOpts(client.WithAPIVersionNegotiation())
+		e.client, err = client.New()
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("cannot connect with docker %w", err)
 		}
 	}
 
 	// extract running containers
-	containers, err := e.client.ContainerList(ctx, container.ListOptions{})
+	result, err := e.client.ContainerList(ctx, client.ContainerListOptions{})
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("error fetching containers: %w", err)
 	}
 
-	pkgs := make([]*extractor.Package, 0, len(containers))
-	for _, ctr := range containers {
+	pkgs := make([]*extractor.Package, 0, len(result.Items))
+	for _, ctr := range result.Items {
 		pkgs = append(pkgs, &extractor.Package{
 			Name:    ctr.Image,
 			Version: ctr.ImageID,

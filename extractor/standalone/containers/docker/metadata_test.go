@@ -15,14 +15,16 @@
 package docker_test
 
 import (
+	"net/netip"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/go-cmp/cmp"
-	metadata "github.com/google/osv-scalibr/extractor/standalone/containers/docker"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/moby/moby/api/types/container"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	metadata "github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 )
 
 var (
@@ -30,15 +32,15 @@ var (
 		ImageName:   "test-image-name",
 		ImageDigest: "test-image-digest",
 		ID:          "test-id",
-		Ports: []container.Port{
+		Ports: []container.PortSummary{
 			{
-				IP:          "127.0.0.1",
+				IP:          netip.MustParseAddr("127.0.0.1"),
 				PrivatePort: 8080,
 				PublicPort:  8080,
 				Type:        "tcp",
 			},
 			{
-				IP:          "127.0.0.1",
+				IP:          netip.MustParseAddr("127.0.0.1"),
 				PrivatePort: 8081,
 				PublicPort:  8081,
 				Type:        "udp",
@@ -91,7 +93,7 @@ func TestToProto(t *testing.T) {
 
 			// Test the reverse conversion for completeness.
 			gotStruct := metadata.ToStruct(got)
-			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+			if diff := cmp.Diff(tc.m, gotStruct, cmpopts.EquateComparable(netip.Addr{})); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
@@ -115,7 +117,7 @@ func TestToStruct(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := metadata.ToStruct(tc.m)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateComparable(netip.Addr{})); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
