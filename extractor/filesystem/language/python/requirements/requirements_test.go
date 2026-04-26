@@ -16,6 +16,7 @@ package requirements_test
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -635,4 +636,124 @@ func TestExtract(t *testing.T) {
 // where only the Descriptor is set (no Related files).
 func loc(path string, line int) extractor.PackageLocation {
 	return extractor.PackageLocation{Descriptor: &location.Location{File: &location.File{Path: path, LineNumber: line}}}
+}
+
+func TestExtract_RecursiveIncludeSymlinkEscapeRejected(t *testing.T) {
+	base := t.TempDir()
+	scanRoot := filepath.Join(base, "service-a")
+	outsideRoot := filepath.Join(base, "service-b")
+
+	if err := os.MkdirAll(scanRoot, 0755); err != nil {
+		t.Fatalf("os.MkdirAll(%q): %v", scanRoot, err)
+	}
+	if err := os.MkdirAll(outsideRoot, 0755); err != nil {
+		t.Fatalf("os.MkdirAll(%q): %v", outsideRoot, err)
+	}
+
+	requirementsPath := filepath.Join(scanRoot, "requirements.txt")
+	if err := os.WriteFile(requirementsPath, []byte("-r deps/requirements.txt\n"), 0644); err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", requirementsPath, err)
+	}
+
+	if err := os.Symlink("../service-b", filepath.Join(scanRoot, "deps")); err != nil {
+		t.Skipf("os.Symlink(): %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(outsideRoot, "requirements.txt"), []byte("django==1.2\n"), 0644); err != nil {
+		t.Fatalf("os.WriteFile(outside requirements): %v", err)
+	}
+
+	r, err := os.Open(requirementsPath)
+	if err != nil {
+		t.Fatalf("os.Open(%q): %v", requirementsPath, err)
+	}
+	defer r.Close()
+
+	info, err := r.Stat()
+	if err != nil {
+		t.Fatalf("Stat(): %v", err)
+	}
+
+	e, err := requirements.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("requirements.New(): %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		FS:     scalibrfs.DirFS(scanRoot),
+		Path:   "requirements.txt",
+		Root:   scanRoot,
+		Info:   info,
+		Reader: r,
+	}
+
+	got, err := e.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract(): %v", err)
+	}
+
+	if containsPackageName(got.Packages, "django") {
+		t.Fatalf("Extract() included outside-root package django from %q: %+v", outsideRoot, got.Packages)
+	}
+}
+
+func TestExtract_RecursiveIncludeInRootStillWorks(t *testing.T) {
+	base := t.TempDir()
+	scanRoot := filepath.Join(base, "service-a")
+	depsDir := filepath.Join(scanRoot, "deps")
+
+	if err := os.MkdirAll(depsDir, 0755); err != nil {
+		t.Fatalf("os.MkdirAll(%q): %v", depsDir, err)
+	}
+
+	requirementsPath := filepath.Join(scanRoot, "requirements.txt")
+	if err := os.WriteFile(requirementsPath, []byte("-r deps/requirements.txt\n"), 0644); err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", requirementsPath, err)
+	}
+
+	if err := os.WriteFile(filepath.Join(depsDir, "requirements.txt"), []byte("six==1.16.0\n"), 0644); err != nil {
+		t.Fatalf("os.WriteFile(in-root requirements): %v", err)
+	}
+
+	r, err := os.Open(requirementsPath)
+	if err != nil {
+		t.Fatalf("os.Open(%q): %v", requirementsPath, err)
+	}
+	defer r.Close()
+
+	info, err := r.Stat()
+	if err != nil {
+		t.Fatalf("Stat(): %v", err)
+	}
+
+	e, err := requirements.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("requirements.New(): %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		FS:     scalibrfs.DirFS(scanRoot),
+		Path:   "requirements.txt",
+		Root:   scanRoot,
+		Info:   info,
+		Reader: r,
+	}
+
+	got, err := e.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract(): %v", err)
+	}
+
+	if !containsPackageName(got.Packages, "six") {
+		t.Fatalf("Extract() did not include in-root package six: %+v", got.Packages)
+	}
+}
+
+func containsPackageName(pkgs []*extractor.Package, name string) bool {
+	for _, p := range pkgs {
+		if p.Name == name {
+			return true
+		}
+	}
+	return false
 }
