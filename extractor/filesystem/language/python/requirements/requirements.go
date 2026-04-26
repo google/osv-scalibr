@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -149,13 +150,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	pkgs = append(pkgs, newRepos...)
 
 	// Process all the recursive files that we found.
-	extraPKG := extractFromExtraPaths(input.Path, extraPaths, input.FS)
+	extraPKG := extractFromExtraPaths(input.Path, extraPaths, input.FS, input.Root)
 	pkgs = append(pkgs, extraPKG...)
 
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.FS) []*extractor.Package {
+func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.FS, root string) []*extractor.Package {
 	// File paths with packages already found in this extraction.
 	// We store these to remove duplicates in diamond dependency cases and prevent
 	// infinite loops in misconfigured lockfiles with cyclical deps.
@@ -166,6 +167,11 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		inc := extraPaths[0]
 		extraPaths = extraPaths[1:]
 		if _, exists := found[inc.path]; exists {
+			continue
+		}
+		if !pathWithinScanRoot(root, inc.path) {
+			log.Warnf("skipping recursive requirements include outside scan root: %s", inc.path)
+			found[inc.path] = true
 			continue
 		}
 		newPKG, newPaths, err := openAndExtractFromFile(inc.path, fs)
@@ -186,6 +192,36 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 	}
 
 	return pkgs
+}
+
+func pathWithinScanRoot(root, path string) bool {
+	if root == "" {
+		// Virtual filesystems do not expose a real host path that can be
+		// symlink-resolved. Keep existing behavior for virtual scan roots.
+		return true
+	}
+
+	rootAbs, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	rootReal, err := filepath.EvalSymlinks(rootAbs)
+	if err != nil {
+		return false
+	}
+
+	target := filepath.Join(rootAbs, filepath.FromSlash(path))
+	targetReal, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		return false
+	}
+
+	rel, err := filepath.Rel(rootReal, targetReal)
+	if err != nil {
+		return false
+	}
+
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) && !filepath.IsAbs(rel)
 }
 
 func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Package, pathQueue, error) {
