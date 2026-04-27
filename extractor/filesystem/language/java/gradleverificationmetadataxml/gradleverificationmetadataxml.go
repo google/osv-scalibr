@@ -16,15 +16,19 @@
 package gradleverificationmetadataxml
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 
@@ -34,7 +38,18 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "java/gradleverificationmetadataxml"
+
+	tagComponent = "component"
+	attrGroup    = "group"
+	attrName     = "name"
+	attrVersion  = "version"
 )
+
+// pkgKey is a key for indexing packages by group, name, and version.
+// This is used for faster lookup when matching packages to their line number locations in the file.
+type pkgKey struct {
+	group, name, version string
+}
 
 type gradleVerificationMetadataFile struct {
 	Components []struct {
@@ -69,10 +84,13 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from verification-metadata.xml files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	content, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not read input: %w", err)
+	}
+
 	var parsedLockfile *gradleVerificationMetadataFile
-
-	err := xml.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	err = xml.NewDecoder(bytes.NewReader(content)).Decode(&parsedLockfile)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
@@ -88,11 +106,96 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 				ArtifactID: component.Name,
 				GroupID:    component.Group,
 			},
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.PackageLocation{
+				Descriptor: &location.Location{
+					File: &location.File{
+						Path:       input.Path,
+						LineNumber: 0, // will be populated later in a "second pass"
+					},
+				},
+			},
 		})
 	}
 
+	// Populate the packages with line number information.
+	//
+	// We use a "two-pass" approach to identify the component line number that defines a package.
+	// The initial decoding above unmarshals the XML into a Package struct, with no information about
+	// the file line number where the struct was defined.
+	// Populating the line numbers for these packages in a "second pass" is more maintainable and
+	// simpler than unmarshalling the XML into a struct AND recording line numbers in a single pass.
+	if err := e.populateLineNumbers(content, packages); err != nil {
+		return inventory.Inventory{}, err
+	}
+
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+// populateLineNumbers identifies the line number in the file where each extracted package was
+// defined.
+func (e Extractor) populateLineNumbers(content []byte, packages []*extractor.Package) error {
+	// Use map to index packages by groupID, artifactID, and version.
+	// Note that a valid file would not have duplicates of these keys.
+	// However, if there are duplicates, we will only record package information for the first one
+	// encountered.
+	pkgMap := make(map[pkgKey][]*extractor.Package)
+	for _, pkg := range packages {
+		meta := pkg.Metadata.(*javalockfile.Metadata)
+		key := pkgKey{group: meta.GroupID, name: meta.ArtifactID, version: pkg.Version}
+		pkgMap[key] = append(pkgMap[key], pkg)
+	}
+
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	lineNum := 1
+	lastOffset := int64(0) // byte position
+	for {
+		t, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to decode tokens: %w", err)
+		}
+		offset := decoder.InputOffset() // new byte position
+
+		// Update running line count based on the number of newlines characters between last offset and
+		// current offset.
+		lineNum += bytes.Count(content[lastOffset:offset], []byte{'\n'})
+		lastOffset = offset
+
+		switch element := t.(type) {
+		case xml.StartElement:
+			if element.Name.Local == tagComponent {
+				key := pkgKey{
+					group:   attr(element.Attr, attrGroup),
+					name:    attr(element.Attr, attrName),
+					version: attr(element.Attr, attrVersion),
+				}
+
+				pkgs, ok := pkgMap[key]
+				if ok {
+					for _, pkg := range pkgs {
+						if pkg.Location.Descriptor.File.LineNumber == 0 {
+							pkg.Location.Descriptor.File.LineNumber = lineNum
+							break
+						}
+					}
+				} else {
+					log.Warnf("Could not identify line number for package with key %v", key)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func attr(attrs []xml.Attr, name string) string {
+	for _, attr := range attrs {
+		if attr.Name.Local == name {
+			return attr.Value
+		}
+	}
+	return ""
 }
 
 var _ filesystem.Extractor = Extractor{}

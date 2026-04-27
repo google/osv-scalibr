@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 
@@ -133,7 +134,14 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.apache.pdfbox:pdfbox",
 					Version:  "2.0.17",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/one-package.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/one-package.xml",
+								LineNumber: 10,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "pdfbox", GroupID: "org.apache.pdfbox"},
 				},
 			},
@@ -148,14 +156,28 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.apache.pdfbox:pdfbox",
 					Version:  "2.0.17",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/two-packages.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/two-packages.xml",
+								LineNumber: 10,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "pdfbox", GroupID: "org.apache.pdfbox"},
 				},
 				{
 					Name:     "com.github.javaparser:javaparser-core",
 					Version:  "3.6.11",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/two-packages.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/two-packages.xml",
+								LineNumber: 18,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "javaparser-core", GroupID: "com.github.javaparser"},
 				},
 			},
@@ -170,126 +192,252 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "androidx.activity:activity",
 					Version:  "1.2.1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 10,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity",
 					Version:  "1.2.3",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 15,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity",
 					Version:  "1.5.1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 23,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity",
 					Version:  "1.6.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 28,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity",
 					Version:  "1.7.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 36,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity",
 					Version:  "1.7.2",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 44,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity-compose",
 					Version:  "1.5.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 52,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity-compose", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity-compose",
 					Version:  "1.7.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 57,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity-compose", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity-compose",
 					Version:  "1.7.2",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 65,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity-compose", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity-ktx",
 					Version:  "1.5.1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 73,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity-ktx", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity-ktx",
 					Version:  "1.7.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 78,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity-ktx", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "androidx.activity:activity-ktx",
 					Version:  "1.7.2",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 86,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "activity-ktx", GroupID: "androidx.activity"},
 				},
 				{
 					Name:     "io.ktor:ktor-serialization-jvm",
 					Version:  "2.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 94,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "ktor-serialization-jvm", GroupID: "io.ktor"},
 				},
 				{
 					Name:     "io.ktor:ktor-serialization-jvm",
 					Version:  "2.0.0-beta-1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 99,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "ktor-serialization-jvm", GroupID: "io.ktor"},
 				},
 				{
 					Name:     "io.ktor:ktor-serialization-jvm",
 					Version:  "2.0.3",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 104,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "ktor-serialization-jvm", GroupID: "io.ktor"},
 				},
 				{
 					Name:     "com.google.auto.service:auto-service",
 					Version:  "1.0-rc4",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 109,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "auto-service", GroupID: "com.google.auto.service"},
 				},
 				{
 					Name:     "com.google.auto.service:auto-service",
 					Version:  "1.0.1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 118,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "auto-service", GroupID: "com.google.auto.service"},
 				},
 				{
 					Name:     "com.google.auto.service:auto-service",
 					Version:  "1.1.1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/multiple-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multiple-versions.xml",
+								LineNumber: 123,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "auto-service", GroupID: "com.google.auto.service"},
 				},
 			},
@@ -304,77 +452,154 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "com.google:google",
 					Version:  "1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 4,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "google", GroupID: "com.google"},
 				},
 				{
 					Name:     "com.almworks.sqlite4java:sqlite4java",
 					Version:  "0.282",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 163,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "sqlite4java", GroupID: "com.almworks.sqlite4java"},
 				},
 				{
 					Name:     "com.google.errorprone:javac",
 					Version:  "9+181-r4173-1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 9,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "javac", GroupID: "com.google.errorprone"},
 				},
 				{
 					Name:     "com.android.tools.build:aapt2",
 					Version:  "8.3.0-10880808",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 17,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "aapt2", GroupID: "com.android.tools.build"},
 				},
 				{
 					Name:     "com.android.tools.build:aapt2-proto",
 					Version:  "8.3.0-10880808",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 28,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "aapt2-proto", GroupID: "com.android.tools.build"},
 				},
 				{
 					Name:     "com.android.tools.build:transform-api",
 					Version:  "2.0.0-deprecated-use-gradle-api",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 36,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "transform-api", GroupID: "com.android.tools.build"},
 				},
 				{
 					Name:     "com.android.tools.build.jetifier:jetifier-core",
 					Version:  "1.0.0-beta10",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 41,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "jetifier-core", GroupID: "com.android.tools.build.jetifier"},
 				},
 				{
 					Name:     "com.google.apis:google-api-services-androidpublisher",
 					Version:  "v3-rev20231115-2.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 49,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "google-api-services-androidpublisher", GroupID: "com.google.apis"},
 				},
 				{
 					Name:     "com.google.devtools.ksp:symbol-processing",
 					Version:  "1.9.22-1.0.17",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 54,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "symbol-processing", GroupID: "com.google.devtools.ksp"},
 				},
 				{
 					Name:     "com.google.devtools.ksp:symbol-processing-api",
 					Version:  "1.9.22-1.0.17",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 59,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "symbol-processing-api", GroupID: "com.google.devtools.ksp"},
 				},
 				{
 					Name:     "com.google.devtools.ksp:symbol-processing-gradle-plugin",
 					Version:  "1.9.22-1.0.17",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 67,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{
 						ArtifactID: "symbol-processing-gradle-plugin",
 						GroupID:    "com.google.devtools.ksp",
@@ -384,120 +609,342 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "com.google.guava:guava",
 					Version:  "32.0.0-jre",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 75,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "guava", GroupID: "com.google.guava"},
 				},
 				{
 					Name:     "com.google.guava:guava",
 					Version:  "32.1.3-jre",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 80,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "guava", GroupID: "com.google.guava"},
 				},
 				{
 					Name:     "com.google.guava:listenablefuture",
 					Version:  "9999.0-empty-to-avoid-conflict-with-guava",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 88,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "listenablefuture", GroupID: "com.google.guava"},
 				},
 				{
 					Name:     "com.google.testing.platform:core",
 					Version:  "0.0.9-alpha02",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 93,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "core", GroupID: "com.google.testing.platform"},
 				},
 				{
 					Name:     "com.jakewharton.android.repackaged:dalvik-dx",
 					Version:  "9.0.0_r3",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 98,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "dalvik-dx", GroupID: "com.jakewharton.android.repackaged"},
 				},
 				{
 					Name:     "com.vaadin.external.google:android-json",
 					Version:  "0.0.20131108.vaadin1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 103,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "android-json", GroupID: "com.vaadin.external.google"},
 				},
 				{
 					Name:     "de.mannodermaus.gradle.plugins:android-junit5",
 					Version:  "1.10.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 108,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "android-junit5", GroupID: "de.mannodermaus.gradle.plugins"},
 				},
 				{
 					Name:     "io.netty:netty-codec-http",
 					Version:  "4.1.93.Final",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 116,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "netty-codec-http", GroupID: "io.netty"},
 				},
 				{
 					Name:     "io.netty:netty-codec-http2",
 					Version:  "4.1.93.Final",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 121,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "netty-codec-http2", GroupID: "io.netty"},
 				},
 				{
 					Name:     "javax.inject:javax.inject",
 					Version:  "1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 126,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "javax.inject", GroupID: "javax.inject"},
 				},
 				{
 					Name:     "junit:junit",
 					Version:  "4.13.2",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 157,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "junit", GroupID: "junit"},
 				},
 				{
 					Name:     "org.apache:apache",
 					Version:  "13",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 172,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "apache", GroupID: "org.apache"},
 				},
 				{
 					Name:     "org.jetbrains.intellij.deps:trove4j",
 					Version:  "1.0.20200330",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 131,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "trove4j", GroupID: "org.jetbrains.intellij.deps"},
 				},
 				{
 					Name:     "org.json:json",
 					Version:  "20180813",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 151,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "json", GroupID: "org.json"},
 				},
 				{
 					Name:     "org.tensorflow:tensorflow-lite-metadata",
 					Version:  "0.1.0-rc2",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 136,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "tensorflow-lite-metadata", GroupID: "org.tensorflow"},
 				},
 				{
 					Name:     "org.tukaani:xz",
 					Version:  "1.9",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 141,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "xz", GroupID: "org.tukaani"},
 				},
 				{
 					Name:     "org.whitesource:pecoff4j",
 					Version:  "0.0.2.1",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/odd-versions.xml"),
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/odd-versions.xml",
+								LineNumber: 146,
+							},
+						},
+					},
 					Metadata: &javalockfile.Metadata{ArtifactID: "pecoff4j", GroupID: "org.whitesource"},
+				},
+			},
+		},
+		{
+			Name: "duplicates",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/duplicates.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "org.apache.pdfbox:pdfbox",
+					Version:  "2.0.17",
+					PURLType: purl.TypeMaven,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/duplicates.xml",
+								LineNumber: 5,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{ArtifactID: "pdfbox", GroupID: "org.apache.pdfbox"},
+				},
+				{
+					Name:     "org.apache.pdfbox:pdfbox",
+					Version:  "2.0.17",
+					PURLType: purl.TypeMaven,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/duplicates.xml",
+								LineNumber: 12,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{ArtifactID: "pdfbox", GroupID: "org.apache.pdfbox"},
+				},
+			},
+		},
+		{
+			Name: "single quotes",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/single-quotes.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "org.apache.pdfbox:pdfbox",
+					Version:  "2.0.17",
+					PURLType: purl.TypeMaven,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/single-quotes.xml",
+								LineNumber: 5,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{ArtifactID: "pdfbox", GroupID: "org.apache.pdfbox"},
+				},
+			},
+		},
+		{
+			Name: "attribute order",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/attribute-order.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "org.apache.pdfbox:pdfbox",
+					Version:  "2.0.17",
+					PURLType: purl.TypeMaven,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/attribute-order.xml",
+								LineNumber: 6,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{ArtifactID: "pdfbox", GroupID: "org.apache.pdfbox"},
+				},
+			},
+		},
+
+		{
+			Name: "multi-line",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multi-line.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "org.apache.pdfbox:pdfbox",
+					Version:  "2.0.17",
+					PURLType: purl.TypeMaven,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/multi-line.xml",
+								LineNumber: 8,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{ArtifactID: "pdfbox", GroupID: "org.apache.pdfbox"},
 				},
 			},
 		},
