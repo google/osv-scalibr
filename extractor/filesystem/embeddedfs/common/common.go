@@ -658,6 +658,11 @@ func (fi *fileInfo) Sys() any {
 	return nil
 }
 
+// MaxTAREntryBytes caps individual TAR entry extraction.
+// io.Copy on an unchecked tar.Reader allows an attacker-controlled hdr.Size to
+// exhaust disk space. 2 GiB covers any realistic single package/image layer.
+const MaxTAREntryBytes = 2 << 30 // 2 GiB
+
 // TARToTempDir extracts a tar file into a temporary directory
 // that can be used to traverse its contents recursively.
 func TARToTempDir(reader io.Reader) (string, error) {
@@ -694,6 +699,13 @@ loop:
 				break loop
 			}
 		case tar.TypeReg:
+			// Reject entries that declare more than the per-entry cap.
+			// Without this check an attacker-crafted TAR header can direct
+			// io.Copy to write an arbitrarily large file to disk.
+			if hdr.Size > MaxTAREntryBytes {
+				extractErr = fmt.Errorf("TAR entry %q size %d exceeds safety limit %d", hdr.Name, hdr.Size, MaxTAREntryBytes)
+				break loop
+			}
 			dir := filepath.Dir(target)
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				extractErr = fmt.Errorf("failed to create directory %s: %w", dir, err)
@@ -704,12 +716,19 @@ loop:
 				extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
 				break loop
 			}
-			if _, err := io.Copy(outFile, tr); err != nil {
-				outFile.Close()
+			// LimitReader is a second defensive layer: even if hdr.Size is 0
+			// (sparse entry) the copy is bounded to MaxTAREntryBytes+1 so that
+			// reads beyond the cap return an error rather than filling the disk.
+			n, err := io.Copy(outFile, io.LimitReader(tr, MaxTAREntryBytes+1))
+			outFile.Close()
+			if err != nil {
 				extractErr = fmt.Errorf("failed to copy file %s: %w", target, err)
 				break loop
 			}
-			outFile.Close()
+			if n > MaxTAREntryBytes {
+				extractErr = fmt.Errorf("TAR entry %q exceeded extraction limit %d bytes", hdr.Name, MaxTAREntryBytes)
+				break loop
+			}
 		default:
 			// Skip other types (symlinks, etc.) for now
 		}

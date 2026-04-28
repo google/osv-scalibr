@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 
@@ -34,6 +35,12 @@ import (
 const (
 	// Name is the unique identifier for the archive extractor.
 	Name = "embeddedfs/archive"
+
+	// maxGzipDecompressedBytes caps total decompressed output for .tar.gz files.
+	// maxFileSizeBytes only checks the compressed size; without this cap a
+	// decompression bomb (e.g. 1 MB → 100 GB) exhausts disk space.
+	// 8 GiB covers the largest realistic OCI image layer.
+	maxGzipDecompressedBytes = 8 << 30 // 8 GiB
 )
 
 // Extractor implements the filesystem.Extractor interface for archive extraction.
@@ -106,7 +113,9 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("gzip.NewReader(%q): %w", input.Path, err)
 		}
-		tempDir, err = common.TARToTempDir(reader)
+		// LimitReader caps total decompressed bytes: maxFileSizeBytes checks only
+		// the compressed size, so a small .tar.gz can expand to exhaust disk space.
+		tempDir, err = common.TARToTempDir(io.LimitReader(reader, maxGzipDecompressedBytes))
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 		}
