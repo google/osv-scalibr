@@ -53,6 +53,7 @@ type MavenRegistryAPIClient struct {
 	localRegistry   string                         // The local directory that holds Maven manifests
 	localProjects   map[maven.ProjectKey]string    // Paths to projects available in the local source tree.
 
+	httpClient        *http.Client // Custom HTTP client for regular queries.
 	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
 	disableGoogleAuth bool         // If true, do not try to create google.DefaultClient for Artifact Registry.
 
@@ -79,7 +80,17 @@ type MavenRegistry struct {
 }
 
 // NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
-func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string, disableGoogleClient bool) (*MavenRegistryAPIClient, error) {
+func NewMavenRegistryAPIClient(
+	ctx context.Context,
+	registry MavenRegistry,
+	localRegistry string,
+	disableGoogleClient bool,
+	httpClient *http.Client,
+	googleClient *http.Client,
+) (*MavenRegistryAPIClient, error) {
+	if httpClient == nil {
+		return nil, errors.New("httpClient must be configured for MavenRegistryAPIClient")
+	}
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
@@ -110,8 +121,10 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 		responses:         NewRequestCache[string, response](),
 		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
 		disableGoogleAuth: disableGoogleClient,
+		httpClient:        httpClient,
+		googleClient:      googleClient,
 	}
-	if registry.Parsed.Scheme == artifactRegistryScheme {
+	if registry.Parsed.Scheme == artifactRegistryScheme && googleClient == nil {
 		client.createGoogleClient(ctx)
 	}
 	return client, nil
@@ -120,7 +133,7 @@ func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, loca
 // NewDefaultMavenRegistryAPIClient creates a new MavenRegistryAPIClient with default settings,
 // using the provided registry URL.
 func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*MavenRegistryAPIClient, error) {
-	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false)
+	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false, &http.Client{}, nil)
 }
 
 // AddLocalProject adds a project to the local projects map.
@@ -141,6 +154,7 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 		cacheTimestamp:    m.cacheTimestamp,
 		responses:         m.responses,
 		registryAuths:     m.registryAuths,
+		httpClient:        m.httpClient,
 		googleClient:      m.googleClient,
 		disableGoogleAuth: m.disableGoogleAuth,
 		localProjects:     m.localProjects,
@@ -345,7 +359,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		}
 	}
 
-	httpClient := http.DefaultClient
+	httpClient := m.httpClient
 	requestURL := *registry.Parsed
 	isArtifactRegistry := requestURL.Scheme == artifactRegistryScheme
 	if isArtifactRegistry {

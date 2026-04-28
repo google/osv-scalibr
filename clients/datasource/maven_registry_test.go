@@ -16,6 +16,7 @@ package datasource_test
 
 import (
 	"bytes"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -55,7 +56,7 @@ func TestGetProject(t *testing.T) {
 
 func TestGetProjectSnapshot(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false, &http.Client{}, nil)
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -252,7 +253,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 func TestMavenLocalRegistry(t *testing.T) {
 	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false, &http.Client{}, nil)
 	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
 	resp := []byte(`
 	<project>
