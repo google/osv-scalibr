@@ -19,25 +19,28 @@ import (
 	"context"
 	"slices"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 )
 
-type fakeClient struct {
+// FakeClient is a fake implementation of the Docker client.
+type FakeClient struct {
 	ctrs []container.Summary
 }
 
 // New creates a new fake docker client.
 func New(ctrs []container.Summary) docker.Client {
-	return &fakeClient{
+	return &FakeClient{
 		ctrs: ctrs,
 	}
 }
 
-func (f *fakeClient) ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error) {
+// ContainerList returns a list of containers, optionally filtering out non-running ones.
+func (f *FakeClient) ContainerList(ctx context.Context, options client.ContainerListOptions) (client.ContainerListResult, error) {
 	ctrs := slices.Clone(f.ctrs)
 	if !options.All {
 		ctrs = slices.DeleteFunc(ctrs, func(ctr container.Summary) bool { return ctr.State != "running" })
 	}
-	return ctrs, nil
+	return client.ContainerListResult{Items: ctrs}, nil
 }
