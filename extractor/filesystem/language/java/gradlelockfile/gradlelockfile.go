@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 
@@ -99,8 +100,9 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	packages := make([]*extractor.Package, 0)
 	scanner := bufio.NewScanner(input.Reader)
-
+	lineNum := 0
 	for scanner.Scan() {
+		lineNum++
 		lockLine := strings.TrimSpace(scanner.Text())
 		if !isGradleLockFileDepLine(lockLine) {
 			continue
@@ -111,7 +113,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
-		pkg.Location = extractor.LocationFromPath(input.Path)
+		pkg.Location = extractor.PackageLocation{
+			Descriptor: &location.Location{
+				File: &location.File{
+					Path:       input.Path,
+					LineNumber: lineNum,
+				},
+			},
+		}
 
 		packages = append(packages, pkg)
 	}
