@@ -31,12 +31,13 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 // FromCapabilities returns all plugins that can run under the specified
 // capabilities (OS, direct filesystem access, network access, etc.) of the
 // scanning environment.
-func FromCapabilities(capabs *plugin.Capabilities, cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
+func FromCapabilities(capabs *plugin.Capabilities, cfg *config.PluginConfig) ([]plugin.Plugin, error) {
 	all, err := All(cfg)
 	if err != nil {
 		return nil, err
@@ -45,10 +46,11 @@ func FromCapabilities(capabs *plugin.Capabilities, cfg *cpb.PluginConfig) ([]plu
 }
 
 // FromNames returns a deduplicated list of plugins from a list of names.
-func FromNames(names []string, cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
+func FromNames(names []string, cfg *config.PluginConfig) ([]plugin.Plugin, error) {
 	if cfg == nil {
-		// Do the nil check here instead of in individual plugin initers.
-		cfg = &cpb.PluginConfig{}
+		cfg = &config.PluginConfig{ProtoConfig: &cpb.PluginConfig{}}
+	} else if cfg.ProtoConfig == nil {
+		cfg.ProtoConfig = &cpb.PluginConfig{}
 	}
 	resultMap := make(map[string]plugin.Plugin)
 	for _, name := range names {
@@ -88,7 +90,7 @@ func FromNames(names []string, cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
 }
 
 // FromName returns a single plugin based on its exact name.
-func FromName(name string, cfg *cpb.PluginConfig) (plugin.Plugin, error) {
+func FromName(name string, cfg *config.PluginConfig) (plugin.Plugin, error) {
 	plugins, err := FromNames([]string{name}, cfg)
 	if err != nil {
 		return nil, err
@@ -103,10 +105,11 @@ func FromName(name string, cfg *cpb.PluginConfig) (plugin.Plugin, error) {
 // Note that these plugins have different capability Requirements and can't all
 // be run on the same host (e.g. some are Linux-only while others are Windows-only)
 // Prefer using FromCapabilities instead.
-func All(cfg *cpb.PluginConfig) ([]plugin.Plugin, error) {
+func All(cfg *config.PluginConfig) ([]plugin.Plugin, error) {
 	if cfg == nil {
-		// Do the nil check here instead of in individual plugin initers.
-		cfg = &cpb.PluginConfig{}
+		cfg = &config.PluginConfig{ProtoConfig: &cpb.PluginConfig{}}
+	} else if cfg.ProtoConfig == nil {
+		cfg.ProtoConfig = &cpb.PluginConfig{}
 	}
 	all := []plugin.Plugin{}
 	for _, initers := range fl.All {

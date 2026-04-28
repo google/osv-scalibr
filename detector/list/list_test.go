@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	dl "github.com/google/osv-scalibr/detector/list"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 var (
@@ -31,7 +32,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range dl.All {
 		for _, initer := range initers {
-			p, err := initer(&cpb.PluginConfig{})
+			p, err := initer(&config.PluginConfig{ProtoConfig: &cpb.PluginConfig{}})
 			if err != nil {
 				t.Fatalf("initer(): %v", err)
 			}
@@ -85,7 +86,7 @@ func TestDetectorsFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := dl.DetectorsFromName(tc.name, &cpb.PluginConfig{})
+			got, err := dl.DetectorsFromName(tc.name, &config.PluginConfig{ProtoConfig: &cpb.PluginConfig{}})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("dl.DetectorsFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}

@@ -28,12 +28,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 // InitFn is the extractor initializer function.
-type InitFn func(cfg *cpb.PluginConfig) (standalone.Extractor, error)
+type InitFn func(cfg *config.PluginConfig) (standalone.Extractor, error)
 
 // InitMap is a map of extractor names to their initers.
 type InitMap map[string][]InitFn
@@ -94,11 +93,11 @@ func vals(initMap InitMap) []InitFn {
 // Wraps initer functions that don't take any config value to initer functions that do.
 // TODO(b/400910349): Remove once all plugins take config values.
 func noCFG(f func() standalone.Extractor) InitFn {
-	return func(_ *cpb.PluginConfig) (standalone.Extractor, error) { return f(), nil }
+	return func(_ *config.PluginConfig) (standalone.Extractor, error) { return f(), nil }
 }
 
 // ExtractorsFromName returns a list of extractors from a name.
-func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]standalone.Extractor, error) {
+func ExtractorsFromName(name string, cfg *config.PluginConfig) ([]standalone.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
 		result := []standalone.Extractor{}
 		for _, initer := range initers {

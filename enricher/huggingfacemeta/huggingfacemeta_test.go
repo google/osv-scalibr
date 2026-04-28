@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 func TestEnricher(t *testing.T) {
@@ -166,10 +167,13 @@ func TestEnricher(t *testing.T) {
 					defer ts.Close()
 
 					// Use enricher configured against the mock server
-					cfg := &cpb.PluginConfig{
-						PluginSpecific: []*cpb.PluginSpecificConfig{
-							{Config: &cpb.PluginSpecificConfig_HuggingfaceMeta{HuggingfaceMeta: &cpb.HuggingfaceMetaConfig{BaseUrl: ts.URL}}},
+					cfg := &config.PluginConfig{
+						ProtoConfig: &cpb.PluginConfig{
+							PluginSpecific: []*cpb.PluginSpecificConfig{
+								{Config: &cpb.PluginSpecificConfig_HuggingfaceMeta{HuggingfaceMeta: &cpb.HuggingfaceMetaConfig{BaseUrl: ts.URL}}},
+							},
 						},
+						ClientFactories: config.NewClientFactoriesImpl(),
 					}
 					enricher, err := huggingfacemeta.New(cfg)
 					if err != nil {

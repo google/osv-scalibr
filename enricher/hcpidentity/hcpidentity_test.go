@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 func TestEnrich_PopulatesServicePrincipal(t *testing.T) {
@@ -51,10 +52,13 @@ func TestEnrich_PopulatesServicePrincipal(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	cfg := &cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: srv.URL}}},
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: srv.URL}}},
+			},
 		},
+		ClientFactories: config.NewClientFactoriesImpl(),
 	}
 	e, err := New(cfg)
 	if err != nil {
@@ -85,10 +89,13 @@ func TestEnrich_SkipsOnNon200(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	cfg := &cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: srv.URL}}},
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: srv.URL}}},
+			},
 		},
+		ClientFactories: config.NewClientFactoriesImpl(),
 	}
 	e, err := New(cfg)
 	if err != nil {
@@ -109,10 +116,13 @@ func TestEnrich_ConnectionError(t *testing.T) {
 	base := srv.URL
 	srv.Close()
 
-	cfg := &cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: base}}},
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: base}}},
+			},
 		},
+		ClientFactories: config.NewClientFactoriesImpl(),
 	}
 	e, err := New(cfg)
 	if err != nil {
@@ -129,7 +139,7 @@ func TestEnrich_ConnectionError(t *testing.T) {
 }
 
 func TestEnrich_SkipsNonHCPSecret(t *testing.T) {
-	e, err := New(&cpb.PluginConfig{})
+	e, err := New(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -140,7 +150,7 @@ func TestEnrich_SkipsNonHCPSecret(t *testing.T) {
 }
 
 func TestEnrich_ContextCanceled(t *testing.T) {
-	e, err := New(&cpb.PluginConfig{})
+	e, err := New(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

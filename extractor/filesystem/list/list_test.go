@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 var (
@@ -31,7 +32,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			p, err := initer(&cpb.PluginConfig{})
+			p, err := initer(&config.PluginConfig{ProtoConfig: &cpb.PluginConfig{}})
 			if err != nil {
 				t.Fatalf("initer(): %v", err)
 			}
@@ -64,7 +65,7 @@ func TestExtractorsFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := el.ExtractorsFromName(tc.name, &cpb.PluginConfig{})
+			got, err := el.ExtractorsFromName(tc.name, &config.PluginConfig{ProtoConfig: &cpb.PluginConfig{}})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("el.ExtractorsFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}

@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -42,7 +43,7 @@ func TestRequirements(t *testing.T) {
 	var err error
 
 	// we should be online by default
-	e, err = New(&cpb.PluginConfig{})
+	e, err = New(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 
 	if err != nil {
 		t.Errorf("New() = %v, want nil", err)
@@ -53,11 +54,16 @@ func TestRequirements(t *testing.T) {
 	}
 
 	// we should not be online
-	e, err = New(&cpb.PluginConfig{PluginSpecific: []*cpb.PluginSpecificConfig{
-		{Config: &cpb.PluginSpecificConfig_Osvlocal{
-			Osvlocal: &cpb.OSVLocalConfig{Download: false},
-		}},
-	}})
+	e, err = New(&config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_Osvlocal{
+					Osvlocal: &cpb.OSVLocalConfig{Download: false},
+				}},
+			},
+		},
+		ClientFactories: config.NewClientFactoriesImpl(),
+	})
 
 	if err != nil {
 		t.Errorf("New() = %v, want nil", err)

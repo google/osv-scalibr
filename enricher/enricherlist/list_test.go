@@ -20,9 +20,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	el "github.com/google/osv-scalibr/enricher/enricherlist"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 var (
@@ -32,7 +32,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			p, err := initer(&cpb.PluginConfig{})
+			p, err := initer(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 			if err != nil {
 				t.Fatalf("initer(): %v", err)
 			}
@@ -64,7 +64,7 @@ func TestEnrichersFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := el.EnrichersFromName(tc.name, &cpb.PluginConfig{})
+			got, err := el.EnrichersFromName(tc.name, &config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("el.EnrichersFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}
