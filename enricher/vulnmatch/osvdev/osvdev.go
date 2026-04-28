@@ -18,6 +18,7 @@ package osvdev
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"slices"
 	"time"
@@ -33,6 +34,7 @@ import (
 	"osv.dev/bindings/go/osvdevexperimental"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	osvapipb "osv.dev/bindings/go/api"
 )
@@ -59,15 +61,26 @@ type Enricher struct {
 }
 
 // New creates a new Enricher with the given configuration.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
+
 	client := osvdev.DefaultClient()
+	client.HTTPClient = httpClient
 	client.Config.UserAgent = "osv-scalibr/" + scalibrversion.ScannerVersion
 
 	initialQueryTimeout := 5 * time.Minute
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OSVDevConfig { return c.GetOsvdev() })
-	if specific != nil {
-		if specific.InitialQueryTimeoutSeconds > 0 {
-			initialQueryTimeout = time.Duration(specific.InitialQueryTimeoutSeconds) * time.Second
+	if cfg != nil && cfg.ProtoConfig != nil {
+		specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.OSVDevConfig { return c.GetOsvdev() })
+		if specific != nil {
+			if specific.InitialQueryTimeoutSeconds > 0 {
+				initialQueryTimeout = time.Duration(specific.InitialQueryTimeoutSeconds) * time.Second
+			}
 		}
 	}
 

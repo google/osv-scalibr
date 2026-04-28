@@ -110,6 +110,16 @@ func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClie
 	}, nil
 }
 
+// NewCachedInsightsClientWithConn creates a CachedInsightsClient with a provided connection.
+func NewCachedInsightsClientWithConn(conn grpc.ClientConnInterface) *CachedInsightsClient {
+	return &CachedInsightsClient{
+		InsightsClient:    pb.NewInsightsClient(conn),
+		packageCache:      NewRequestCache[packageKey, *pb.Package](),
+		versionCache:      NewRequestCache[versionKey, *pb.Version](),
+		requirementsCache: NewRequestCache[versionKey, *pb.Requirements](),
+	}
+}
+
 // GetPackage returns metadata about a package by querying deps.dev API.
 func (c *CachedInsightsClient) GetPackage(ctx context.Context, in *pb.GetPackageRequest, opts ...grpc.CallOption) (*pb.Package, error) {
 	return c.packageCache.Get(makePackageKey(in.GetPackageKey()), func() (*pb.Package, error) {

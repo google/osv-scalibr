@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -91,10 +92,13 @@ func TestEnrich_DefiniteExpireTime(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	cfg := &cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+			},
 		},
+		ClientFactories: config.NewClientFactoriesImpl(),
 	}
 	e, err := New(cfg)
 	if err != nil {
@@ -125,10 +129,13 @@ func TestEnrich_IndefiniteExpireTime(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	cfg := &cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+			},
 		},
+		ClientFactories: config.NewClientFactoriesImpl(),
 	}
 	e, err := New(cfg)
 	if err != nil {
@@ -153,10 +160,13 @@ func TestEnrich_SkipsOnNon200(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	cfg := &cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+			},
 		},
+		ClientFactories: config.NewClientFactoriesImpl(),
 	}
 	e, err := New(cfg)
 	if err != nil {
@@ -177,10 +187,13 @@ func TestEnrich_ConnectionError(t *testing.T) {
 	base := srv.URL
 	srv.Close()
 
-	cfg := &cpb.PluginConfig{
-		PluginSpecific: []*cpb.PluginSpecificConfig{
-			{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: base}}},
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: base}}},
+			},
 		},
+		ClientFactories: config.NewClientFactoriesImpl(),
 	}
 	e, err := New(cfg)
 	if err != nil {
@@ -197,7 +210,7 @@ func TestEnrich_ConnectionError(t *testing.T) {
 }
 
 func TestEnrich_SkipsNonHerokuSecret(t *testing.T) {
-	e, err := New(&cpb.PluginConfig{})
+	e, err := New(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -208,7 +221,7 @@ func TestEnrich_SkipsNonHerokuSecret(t *testing.T) {
 }
 
 func TestEnrich_ContextCanceled(t *testing.T) {
-	e, err := New(&cpb.PluginConfig{})
+	e, err := New(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

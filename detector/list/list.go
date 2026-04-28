@@ -17,6 +17,7 @@ package list
 
 import (
 	"fmt"
+	"github.com/google/osv-scalibr/plugin/config"
 	"maps"
 	"slices"
 
@@ -44,65 +45,74 @@ import (
 )
 
 // InitFn is the detector initializer function.
-type InitFn func(cfg *cpb.PluginConfig) (detector.Detector, error)
+type InitFn func(cfg *config.PluginConfig) (detector.Detector, error)
+
+func protoCfg(f func(cfg *cpb.PluginConfig) (detector.Detector, error)) InitFn {
+	return func(cfg *config.PluginConfig) (detector.Detector, error) {
+		if cfg != nil {
+			return f(cfg.ProtoConfig)
+		}
+		return f(&cpb.PluginConfig{})
+	}
+}
 
 // InitMap is a map of detector names to their initers.
 type InitMap map[string][]InitFn
 
 // CIS scanning related detectors.
 var CIS = InitMap{
-	etcpasswdpermissions.Name: {etcpasswdpermissions.New},
+	etcpasswdpermissions.Name: {protoCfg(etcpasswdpermissions.New)},
 }
 
 // Govulncheck detectors.
-var Govulncheck = InitMap{binary.Name: {binary.New}}
+var Govulncheck = InitMap{binary.Name: {protoCfg(binary.New)}}
 
 // EndOfLife detectors.
-var EndOfLife = InitMap{linuxdistro.Name: {linuxdistro.New}}
+var EndOfLife = InitMap{linuxdistro.Name: {protoCfg(linuxdistro.New)}}
 
 // Untested CVE scanning related detectors - since they don't have proper testing they
 // might not work as expected in the future.
 // TODO(b/405223999): Add tests.
 var Untested = InitMap{
 	// CVE-2023-38408 OpenSSH detector.
-	cve202338408.Name: {cve202338408.New},
+	cve202338408.Name: {protoCfg(cve202338408.New)},
 	// CVE-2022-33891 Spark UI detector.
-	cve202233891.Name: {cve202233891.New},
+	cve202233891.Name: {protoCfg(cve202233891.New)},
 	// CVE-2020-16846 Salt detector.
-	cve202016846.Name: {cve202016846.New},
+	cve202016846.Name: {protoCfg(cve202016846.New)},
 	// CVE-2023-6019 Ray Dashboard detector.
-	cve20236019.Name: {cve20236019.New},
+	cve20236019.Name: {protoCfg(cve20236019.New)},
 	// CVE-2020-11978 Apache Airflow detector.
-	cve202011978.Name: {cve202011978.New},
+	cve202011978.Name: {protoCfg(cve202011978.New)},
 	// CVE-2024-2912 BentoML detector.
-	cve20242912.Name: {cve20242912.New},
+	cve20242912.Name: {protoCfg(cve20242912.New)},
 }
 
 // Weakcredentials detectors for weak credentials.
 var Weakcredentials = InitMap{
-	codeserver.Name:  {codeserver.New},
-	etcshadow.Name:   {etcshadow.New},
-	filebrowser.Name: {filebrowser.New},
-	winlocal.Name:    {winlocal.New},
+	codeserver.Name:  {protoCfg(codeserver.New)},
+	etcshadow.Name:   {protoCfg(etcshadow.New)},
+	filebrowser.Name: {protoCfg(filebrowser.New)},
+	winlocal.Name:    {protoCfg(winlocal.New)},
 }
 
 // Misc detectors for miscellaneous security issues.
 var Misc = InitMap{
-	cronjobprivesc.Name: {cronjobprivesc.New},
-	dockersocket.Name:   {dockersocket.New},
-	pammisconfig.Name:   {pammisconfig.New},
+	cronjobprivesc.Name: {protoCfg(cronjobprivesc.New)},
+	dockersocket.Name:   {protoCfg(dockersocket.New)},
+	pammisconfig.Name:   {protoCfg(pammisconfig.New)},
 }
 
 // CVE for vulnerabilities that have a CVE associated
 var CVE = InitMap{
 	// CVE-2025-7775 detector
-	cve20257775.Name: {cve20257775.New},
+	cve20257775.Name: {protoCfg(cve20257775.New)},
 }
 
 // SupplyChain related vulnerability detectors.
 var SupplyChain = InitMap{
 	// Malicious NPM for CanisterWorm
-	canisterworm.Name: {canisterworm.New},
+	canisterworm.Name: {protoCfg(canisterworm.New)},
 }
 
 // Default detectors that are recommended to be enabled.
@@ -148,7 +158,7 @@ func vals(initMap InitMap) []InitFn {
 }
 
 // DetectorsFromName returns a list of detectors from a name.
-func DetectorsFromName(name string, cfg *cpb.PluginConfig) ([]detector.Detector, error) {
+func DetectorsFromName(name string, cfg *config.PluginConfig) ([]detector.Detector, error) {
 	if initers, ok := detectorNames[name]; ok {
 		result := []detector.Detector{}
 		for _, initer := range initers {

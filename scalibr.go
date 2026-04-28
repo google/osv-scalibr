@@ -45,13 +45,12 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/google/osv-scalibr/result"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/version"
 	"go.uber.org/multierr"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 var (
@@ -119,7 +118,7 @@ type ScanConfig struct {
 	// isn't configured instead of enabling required plugins automatically.
 	ExplicitPlugins bool
 	// Optional: Configuration to apply to auto-enabled required plugins.
-	RequiredPluginConfig *cpb.PluginConfig
+	RequiredPluginConfig *config.PluginConfig
 }
 
 // EnableRequiredPlugins adds those plugins to the config that are required by enabled

@@ -32,7 +32,7 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -49,7 +49,7 @@ const (
 func TestScan(t *testing.T) {
 	jar := filepath.Join("testdata", reachableJar)
 
-	enr, err := java.New(&cpb.PluginConfig{})
+	enr, err := java.New(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("Javareach enricher init failed: %s", err)
 	}

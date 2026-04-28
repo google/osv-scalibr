@@ -19,13 +19,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	pl "github.com/google/osv-scalibr/plugin/list"
 )
 
 func TestExtractorNamesUnique(t *testing.T) {
-	all, err := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("pl.All(): %v", err)
 	}
@@ -47,7 +47,7 @@ func TestExtractorNamesUnique(t *testing.T) {
 }
 
 func TestDetectorNamesUnique(t *testing.T) {
-	all, err := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("pl.All(): %v", err)
 	}
@@ -62,7 +62,7 @@ func TestDetectorNamesUnique(t *testing.T) {
 }
 
 func TestAnnotatorNamesUnique(t *testing.T) {
-	all, err := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("pl.All(): %v", err)
 	}
@@ -77,7 +77,7 @@ func TestAnnotatorNamesUnique(t *testing.T) {
 }
 
 func TestEnricherNamesUnique(t *testing.T) {
-	all, err := pl.All(&cpb.PluginConfig{})
+	all, err := pl.All(&config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("pl.All(): %v", err)
 	}
@@ -95,7 +95,7 @@ func TestFromCapabilities(t *testing.T) {
 	capab := &plugin.Capabilities{OS: plugin.OSLinux}
 	want := []string{"os/snap", "weakcredentials/etcshadow"} // Available for Linux
 	dontWant := []string{"windows/dismpatch"}                // Not available for Linux
-	plugins, err := pl.FromCapabilities(capab, &cpb.PluginConfig{})
+	plugins, err := pl.FromCapabilities(capab, &config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 	if err != nil {
 		t.Fatalf("pl.FromCapabilities(%v): %v", capab, err)
 	}
@@ -148,7 +148,7 @@ func TestFromNames(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := pl.FromNames(tc.names, &cpb.PluginConfig{})
+			got, err := pl.FromNames(tc.names, &config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("pl.FromNames(%v) error got diff (-want +got):\n%s", tc.names, diff)
 			}
@@ -190,7 +190,7 @@ func TestFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := pl.FromName(tc.name, &cpb.PluginConfig{})
+			got, err := pl.FromName(tc.name, &config.PluginConfig{ClientFactories: config.NewClientFactoriesImpl()})
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("pl.FromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}

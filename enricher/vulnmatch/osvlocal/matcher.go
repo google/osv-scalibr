@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 
@@ -39,10 +40,11 @@ type localMatcher struct {
 	// failedDBs keeps track of the errors when getting databases for each ecosystem
 	failedDBs map[osvconstants.Ecosystem]error
 	// userAgent sets the user agent requests for db zips are made with
-	userAgent string
+	userAgent  string
+	httpClient *http.Client
 }
 
-func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zippedDBRemoteHost string) (*localMatcher, error) {
+func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zippedDBRemoteHost string, httpClient *http.Client) (*localMatcher, error) {
 	dbBasePath, err := setupLocalDBDirectory(localDBPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not create %s: %w", dbBasePath, err)
@@ -56,6 +58,7 @@ func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zipp
 		downloadDB: downloadDB,
 		userAgent:  userAgent,
 		failedDBs:  make(map[osvconstants.Ecosystem]error),
+		httpClient: httpClient,
 	}, nil
 }
 
@@ -107,6 +110,7 @@ func (matcher *localMatcher) loadDBFromCache(ctx context.Context, eco osvconstan
 		matcher.userAgent,
 		!matcher.downloadDB,
 		invs,
+		matcher.httpClient,
 	)
 
 	if err != nil {
