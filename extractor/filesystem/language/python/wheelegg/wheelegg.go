@@ -201,8 +201,19 @@ func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*ex
 	}
 	defer r.Close()
 
+	// Cap decompressed bytes to defend against zip-bombs: a small wheel can
+	// hide METADATA / PKG-INFO members whose deflate ratio is many orders of
+	// magnitude (e.g. 1KB compressed -> 1GB of `Foo: AAAA...\n` continuation
+	// lines that the textproto MIME reader buffers into RAM). FileRequired's
+	// Stat() check sees only the outer file size, not any inner member.
+	limit := e.maxFileSizeBytes
+	if limit <= 0 {
+		limit = defaultMaxFileSizeBytes
+	}
+	limited := io.LimitReader(r, limit)
+
 	// TODO(b/280438976): Store the path inside the zip file.
-	p, err := e.extractSingleFile(r, input.Path)
+	p, err := e.extractSingleFile(limited, input.Path)
 	if err != nil {
 		return nil, err
 	}
