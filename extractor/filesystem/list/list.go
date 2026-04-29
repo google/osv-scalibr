@@ -158,6 +158,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/privatekey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/agentsandboxexfil"
+	"github.com/google/osv-scalibr/veles/secrets/geminiagentidentity"
+	"github.com/google/osv-scalibr/veles/secrets/googleaistudiokey"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
@@ -364,6 +367,9 @@ var (
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
+		{agentsandboxexfil.NewDetector(), "secrets/agentsandboxexfil", 0},
+		{geminiagentidentity.NewDetector(), "secrets/geminiagentidentity", 0},
+		{googleaistudiokey.NewDetector(), "secrets/googleaistudiokey", 0},
 		{cratesioapitoken.NewDetector(), "secrets/cratesioapitoken", 0},
 		{npmjsaccesstoken.NewDetector(), "secrets/npmjsaccesstoken", 0},
 		{slacktoken.NewAppConfigAccessTokenDetector(), "secrets/slackappconfigaccesstoken", 0},
