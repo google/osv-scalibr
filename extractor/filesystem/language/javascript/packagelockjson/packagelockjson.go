@@ -106,8 +106,14 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 		// E.g. npm:string-width@^4.2.0
 		if strings.HasPrefix(detail.Version, "npm:") {
 			i := strings.LastIndex(detail.Version, "@")
-			name = detail.Version[4:i]
-			finalVersion = detail.Version[i+1:]
+			// A malformed alias such as "npm:" or "npm:foo" (no '@' separator)
+			// would otherwise cause a runtime panic via a negative-index slice.
+			// Reject the malformed alias by leaving name/version unchanged so
+			// the dependency surfaces under its original key in the report.
+			if i > 4 {
+				name = detail.Version[4:i]
+				finalVersion = detail.Version[i+1:]
+			}
 		}
 
 		// we can't resolve a version from a "file:" dependency

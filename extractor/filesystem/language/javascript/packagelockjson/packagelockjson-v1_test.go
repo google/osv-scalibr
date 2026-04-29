@@ -845,6 +845,38 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			},
 		},
 		{
+			// Regression: a malformed alias such as "npm:no-at-here" or "npm:"
+			// must not panic the extractor. The dependency must be reported under
+			// its outer key (the safe fallback) rather than crashing the whole
+			// scan via a negative-index slice expression.
+			Name: "alias malformed",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/alias-malformed.v1.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "trapdoor",
+					Version:    "npm:no-at-here",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPath("testdata/alias-malformed.v1.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "empty-alias",
+					Version:    "npm:",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPath("testdata/alias-malformed.v1.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "optional package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.v1.json",
