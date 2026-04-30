@@ -24,6 +24,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/osv-scalibr/annotator"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -100,8 +101,32 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 		}
 	}
 
+	// This is required to prevent passing packages from embedded filesystems to
+	// plugins that issue commands on packages.
+	//
+	// Some enricher plugins require the system to be in a running state to perform
+	// tasks such as executing commands or running binaries on the target filesystem.
+	// Embedded filesystems, however, are not mounted as live systems; they are
+	// extracted to the local filesystem for analysis by Scalibr.
+	//
+	// This is particularly important when the embedded filesystem contains binaries
+	// for an architecture different from the one Scalibr is currently running on,
+	// since emulation is not currently supported.
+	//
+	// Therefore, packages originating from embedded filesystems are filtered out and
+	// not supplied to plugins that require a running system.
+	filteredInventory := annotator.FilterOutEmbeddedPackages(inventory)
+
 	for _, e := range config.Enrichers {
-		err := e.Enrich(ctx, input, inventory)
+		var err error
+
+		capabilities := e.Requirements()
+		if capabilities == nil || !capabilities.RunningSystem {
+			err = e.Enrich(ctx, input, inventory)
+		} else {
+			err = e.Enrich(ctx, input, filteredInventory)
+		}
+
 		// TODO - b/410630503: Support partial success.
 		statuses = append(statuses, plugin.StatusFromErr(e, false, err, nil))
 	}
