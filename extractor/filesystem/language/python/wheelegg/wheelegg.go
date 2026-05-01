@@ -18,6 +18,7 @@ package wheelegg
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -32,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
@@ -211,27 +213,39 @@ func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*ex
 }
 
 func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Package, error) {
-	p, err := parse(r)
+	content, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("wheelegg.parse: %w", err)
 	}
 
-	p.Location = extractor.LocationFromPath(path)
+	p, err := parse(bytes.NewReader(content))
+	if err != nil {
+		return nil, fmt.Errorf("wheelegg.parse: %w", err)
+	}
+
+	line := findNameLine(content, p.Name)
+	if line == 0 {
+		log.Warnf("Line number not found for name %q in file %q", p.Name, path)
+	}
+	p.Location = extractor.LocationFromPathAndLine(path, line)
 	return p, nil
 }
 
 func parse(r io.Reader) (*extractor.Package, error) {
-	rd := textproto.NewReader(bufio.NewReader(r))
-	h, err := rd.ReadMIMEHeader()
+	h, err := textproto.NewReader(bufio.NewReader(r)).ReadMIMEHeader()
 	name := h.Get("Name")
-	version := h.Get("version")
+	version := h.Get("Version")
 	if name == "" || version == "" {
 		// In case we got name and version but also an error, we ignore the error. This can happen in
 		// malformed files like passlib 1.7.4.
-		if err != nil {
-			return nil, fmt.Errorf("ReadMIMEHeader(): %w %s %s", err, h.Get("Name"), h.Get("version"))
+		if errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("file is empty: %w", err)
 		}
-		return nil, fmt.Errorf("Name or version is empty (name: %q, version: %q)", name, version)
+		if err != nil {
+			return nil, fmt.Errorf("ReadMIMEHeader(): %w %s %s", err, h.Get("Name"), h.Get("Version"))
+		}
+
+		return nil, fmt.Errorf("Name or Version is empty (name: %q, version: %q)", name, version)
 	}
 
 	return &extractor.Package{
@@ -240,7 +254,35 @@ func parse(r io.Reader) (*extractor.Package, error) {
 		PURLType: purl.TypePyPi,
 		Metadata: &PythonPackageMetadata{
 			Author:      h.Get("Author"),
-			AuthorEmail: h.Get("Author-email"),
+			AuthorEmail: h.Get("Author-Email"),
 		},
 	}, nil
+}
+
+// findNameLine returns the source line number where the package name is defined.
+// If the line is not found, it returns 0.
+func findNameLine(content []byte, name string) int {
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	for lineNumber := 1; scanner.Scan(); lineNumber++ {
+		line := scanner.Text()
+		// Empty line indicates the end of the metadata.
+		if len(strings.TrimSpace(line)) == 0 {
+			break
+		}
+
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		if strings.EqualFold(key, "Name") && strings.EqualFold(val, name) {
+			return lineNumber
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Warnf("wheelegg: failed to scan metadata content: %v", err)
+	}
+	return 0
 }
