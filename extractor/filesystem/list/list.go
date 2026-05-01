@@ -446,6 +446,7 @@ var (
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
+		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
