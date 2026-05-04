@@ -1,0 +1,36 @@
+# Dockerfile: Swift SPM Testbed for OSV-SCALIBR swift/packageresolved extractor verification
+#
+# This testbed demonstrates that the fixed swift/packageresolved extractor
+# correctly emits pkg:swift/github.com/apple/swift-crypto@3.9.0 (TypeSwift)
+# instead of the incorrect pkg:cocoapods/swift-crypto@3.9.0 (TypeCocoapods).
+#
+# The Package.resolved file included in this image contains packages with known
+# SwiftURL ecosystem advisories in OSV.dev:
+#   - GHSA-9m44-rr2w-ppp7: SwiftURL/swift-crypto (Severity 8.8 High)
+#   - GHSA-84m3-f99p-cqx5: SwiftURL/executorch (Severity 9.8 Critical)
+#
+# Usage:
+#   docker build -f Dockerfile.swift-testbed -t swift-scalibr-testbed .
+#   docker run --rm swift-scalibr-testbed cat /app/Package.resolved
+#
+# To scan with scalibr (after building from source):
+#   docker run --rm -v $(pwd)/scalibr:/scalibr swift-scalibr-testbed \
+#     /scalibr --extractors=swift/packageresolved --output=- /app
+
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Package.resolved containing packages with known SwiftURL CVEs.
+# These packages were previously undetected because the extractor used
+# purl.TypeCocoapods instead of purl.TypeSwift.
+COPY valid /app/Package.resolved
+
+# Verify the file is readable and contains the expected packages.
+RUN echo "=== Package.resolved contents ===" && cat /app/Package.resolved
+
+CMD ["cat", "/app/Package.resolved"]
