@@ -1,0 +1,3 @@
+name: emptyenv
+channels:
+  - defaults

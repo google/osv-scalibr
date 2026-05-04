@@ -64,6 +64,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condaenv"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
@@ -227,6 +228,7 @@ var (
 		poetrylock.Name:   {poetrylock.New},
 		pylock.Name:       {pylock.New},
 		condameta.Name:    {condameta.New},
+		condaenv.Name:     {condaenv.New},
 		uvlock.Name:       {uvlock.New},
 	}
 	// PythonArtifact extractors for Python.
@@ -259,7 +261,9 @@ var (
 		cabal.Name:     {cabal.New},
 	}
 	// RSource extractors for R source extractors
-	RSource = InitMap{renvlock.Name: {renvlock.New}}
+	RSource = InitMap{
+		renvlock.Name: {renvlock.New},
+	}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {gemspec.New},

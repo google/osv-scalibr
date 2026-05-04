@@ -42,6 +42,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
 | RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
+| Photon OS         | VMware Photon OS (tdnf/RPM)    | `os/photon`                                  |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
 | Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
 | Kernel modules    | .ko                            | `os/kernel/module`                           |
@@ -97,10 +98,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | poetry.lock                                       | `python/poetrylock`                  |
 |            | Pipfile.lock                                      | `python/pipfilelock`                 |
 |            | pdm.lock                                          | `python/pdmlock`                     |
-|            | Conda packages                                    | `python/condameta`                   |
+|            | Conda packages (conda-meta)                       | `python/condameta`                   |
+|            | Conda environment.yml                             | `python/condaenv`                    |
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
 | R          | renv.lock                                         | `r/renvlock`                         |
+|            | Installed R packages (DESCRIPTION files)          | `r/rpkg`                             |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
