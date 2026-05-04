@@ -1,0 +1,131 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package mongodbatlasapikey_test
+
+import (
+	"runtime"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/extractor/filesystem/secrets/mongodbatlasapikey"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
+	"github.com/google/osv-scalibr/testing/extracttest"
+	mongodbatlasapikeydetector "github.com/google/osv-scalibr/veles/secrets/mongodbatlasapikey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+)
+
+func TestExtractor_FileRequired(t *testing.T) {
+	tests := []struct {
+		inputPath string
+		want      bool
+		isWindows bool
+	}{
+		{inputPath: "", want: false},
+
+		// linux
+		{inputPath: `/Users/example-user/.config/atlascli/config.toml`, want: true},
+		{inputPath: `/Users/example-user/.config/mongocli/config.toml`, want: true},
+		{inputPath: `/Users/example-user/.config/atlascli/other.toml`, want: false},
+		{inputPath: `/Users/example-user/bad/path`, want: false},
+
+		// windows
+		{inputPath: `C:\Users\USERNAME\.config\atlascli\config.toml`, isWindows: true, want: true},
+		{inputPath: `C:\Users\USERNAME\.config\mongocli\config.toml`, isWindows: true, want: true},
+		{inputPath: `C:\Users\USERNAME\another\bad\path`, isWindows: true, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.inputPath, func(t *testing.T) {
+			if tt.isWindows && runtime.GOOS != "windows" {
+				t.Skipf("Skipping test %q for %q", t.Name(), runtime.GOOS)
+			}
+			e, err := mongodbatlasapikey.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("mongodbatlasapikey.New failed: %v", err)
+			}
+			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
+			if got != tt.want {
+				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtractor_Extract(t *testing.T) {
+	tests := []*struct {
+		Name        string
+		Path        string
+		WantSecrets []*inventory.Secret
+		WantErr     error
+	}{
+		{
+			Name:        "empty",
+			Path:        "empty",
+			WantSecrets: nil,
+		},
+		{
+			Name: "atlascli_config",
+			Path: "atlascli_config",
+			WantSecrets: []*inventory.Secret{
+				{
+					Secret: mongodbatlasapikeydetector.APIKey{
+						PublicKey:  "abcdef01",
+						PrivateKey: "12345678-abcd-1234-abcd-123456789012",
+					},
+					Location: location.FromPath("atlascli_config"),
+				},
+			},
+		},
+		{
+			Name:        "random_content",
+			Path:        "random_content",
+			WantSecrets: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			extr, err := mongodbatlasapikey.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("mongodbatlasapikey.New failed: %v", err)
+			}
+
+			inputCfg := extracttest.ScanInputMockConfig{
+				Path:         tt.Path,
+				FakeScanRoot: "testdata",
+			}
+
+			scanInput := extracttest.GenerateScanInputMock(t, inputCfg)
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(t.Context(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.Path, diff)
+				return
+			}
+
+			wantInv := inventory.Inventory{Secrets: tt.WantSecrets}
+			opts := []cmp.Option{cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.EquateEmpty()}
+			if diff := cmp.Diff(wantInv, got, opts...); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.Path, diff)
+			}
+		})
+	}
+}
