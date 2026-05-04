@@ -1,20 +1,22 @@
 # Dockerfile: Swift SPM Testbed for OSV-SCALIBR swift/packageresolved extractor verification
 #
-# This testbed demonstrates that the fixed swift/packageresolved extractor
-# correctly emits pkg:swift/github.com/apple/swift-crypto@3.9.0 (TypeSwift)
-# instead of the incorrect pkg:cocoapods/swift-crypto@3.9.0 (TypeCocoapods).
+# This testbed verifies that the swift/packageresolved extractor correctly
+# identifies packages from Package.resolved with the SwiftURL ecosystem.
+# The extractor emits purl.TypeSwift with the canonical URL-based name, e.g.:
+#   pkg:swift/github.com/apple/swift-crypto@3.0.0
 #
-# The Package.resolved file included in this image contains packages with known
-# SwiftURL ecosystem advisories in OSV.dev:
-#   - GHSA-9m44-rr2w-ppp7: SwiftURL/swift-crypto (Severity 8.8 High)
-#   - GHSA-84m3-f99p-cqx5: SwiftURL/executorch (Severity 9.8 Critical)
+# This Package.resolved contains packages with known SwiftURL advisories in OSV.dev:
+#   - GHSA-9m44-rr2w-ppp7  SwiftURL/swift-crypto@3.0.0    Severity 8.8 (High)
+#   - GHSA-xvr7-p2c6-j83w  SwiftURL/swift-nio-http2@1.29.0 Severity 6.3 (Medium)
 #
 # Usage:
 #   docker build -f Dockerfile.swift-testbed -t swift-scalibr-testbed .
 #   docker run --rm swift-scalibr-testbed cat /app/Package.resolved
 #
 # To scan with scalibr (after building from source):
-#   docker run --rm -v $(pwd)/scalibr:/scalibr swift-scalibr-testbed \
+#   docker run --rm \
+#     -v $(pwd)/scalibr:/scalibr \
+#     swift-scalibr-testbed \
 #     /scalibr --extractors=swift/packageresolved --output=- /app
 
 FROM ubuntu:24.04
@@ -25,12 +27,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Package.resolved containing packages with known SwiftURL CVEs.
-# These packages were previously undetected because the extractor used
-# purl.TypeCocoapods instead of purl.TypeSwift.
-COPY valid /app/Package.resolved
+# Copy Package.resolved containing packages with known SwiftURL CVEs.
+# swift-crypto@3.0.0 is affected by GHSA-9m44-rr2w-ppp7 (Severity 8.8 High).
+# swift-nio-http2@1.29.0 is affected by GHSA-xvr7-p2c6-j83w (Severity 6.3 Medium).
+COPY cve-packages /app/Package.resolved
 
-# Verify the file is readable and contains the expected packages.
-RUN echo "=== Package.resolved contents ===" && cat /app/Package.resolved
+# Verify the Package.resolved is present and readable.
+RUN echo "=== /app/Package.resolved ===" && cat /app/Package.resolved
+
+# Show expected PURL output from the extractor.
+RUN echo "" && \
+    echo "=== Expected PURL output from extractor ===" && \
+    echo "pkg:swift/github.com/apple/swift-crypto@3.0.0" && \
+    echo "pkg:swift/github.com/apple/swift-nio@2.65.0" && \
+    echo "pkg:swift/github.com/apple/swift-nio-http2@1.29.0"
 
 CMD ["cat", "/app/Package.resolved"]
