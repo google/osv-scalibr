@@ -99,6 +99,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/macports"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/nix"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/photon"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
@@ -324,6 +325,7 @@ var (
 		dpkg.Name:       {dpkg.New},
 		apk.Name:        {apk.New},
 		rpm.Name:        {rpm.New},
+		photon.Name:     {photon.New},
 		cos.Name:        {cos.New},
 		snap.Name:       {snap.New},
 		nix.Name:        {nix.New},
