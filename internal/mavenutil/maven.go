@@ -200,16 +200,39 @@ func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string
 	path := filepath.ToSlash(filepath.Join(filepath.Dir(currentPath), relativePath))
 	if info, err := input.FS.Stat(path); err == nil {
 		if !info.IsDir() {
-			return path
+			if isSafePath(input, path) {
+				return path
+			}
+			return ""
 		}
 		// Current path is a directory, so look for pom.xml in the directory.
 		path = filepath.ToSlash(filepath.Join(path, "pom.xml"))
 		if _, err := input.FS.Stat(path); err == nil {
-			return path
+			if isSafePath(input, path) {
+				return path
+			}
+			return ""
 		}
 	}
 
 	return ""
+}
+
+// isSafePath checks if the path is safe to read (not escaping the scan root via symlinks).
+func isSafePath(input *filesystem.ScanInput, path string) bool {
+	if input.Root == "" {
+		return true
+	}
+	fullPath := filepath.Join(input.Root, path)
+	resolvedPath, err := filepath.EvalSymlinks(fullPath)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(input.Root, resolvedPath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return false
+	}
+	return true
 }
 
 // GetDependencyManagement returns managed dependencies in the specified Maven project by fetching remote pom.xml.
