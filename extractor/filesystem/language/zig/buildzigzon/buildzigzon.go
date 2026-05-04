@@ -165,6 +165,9 @@ var versionRe = regexp.MustCompile(`\.version\s*=\s*"([^"]*)"`)
 func (e Extractor) parseNameVersionInfo(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	packages := []*extractor.Package{}
 	content, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("could not extract: %w", err)
+	}
 	contentStr := string(content)
 	parsedPackageName := ""
 	parsedVersionName := ""
@@ -178,10 +181,6 @@ func (e Extractor) parseNameVersionInfo(ctx context.Context, input *filesystem.S
 	}
 	if versionName != nil {
 		parsedVersionName = versionName[1]
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("could not extract: %w", err)
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -254,31 +253,32 @@ func (e Extractor) parseDependenciesField(ctx context.Context, input *filesystem
 }
 
 func (e Extractor) extractDepBlock(contentStr string) (string, error) {
-	depsBlock := ""
 	depsLoc := depsStartRe.FindStringIndex(contentStr)
-
 	if depsLoc == nil {
 		return "", errors.New("could not find .deps")
 	}
-	// Find the opening brace
+
 	start := strings.Index(contentStr[depsLoc[0]:], "{") + depsLoc[0]
 	depth := 0
 	for i := start; i < len(contentStr); i++ {
+		// Skip line comments to avoid counting braces inside them.
+		if i+1 < len(contentStr) && contentStr[i] == '/' && contentStr[i+1] == '/' {
+			for i < len(contentStr) && contentStr[i] != '\n' {
+				i++
+			}
+			continue
+		}
 		switch contentStr[i] {
 		case '{':
 			depth++
 		case '}':
 			depth--
 			if depth == 0 {
-				depsBlock = contentStr[start+1 : i]
-				return depsBlock, nil
+				return contentStr[start+1 : i], nil
 			}
 		}
 	}
-	if depsBlock == "" {
-		return "", errors.New("could not find .deps")
-	}
-	return depsBlock, nil
+	return "", errors.New("could not find .deps")
 }
 
 func (e Extractor) parseDependencyList(dependencyBlock string) []Dependency {
@@ -297,6 +297,13 @@ func (e Extractor) parseDependencyList(dependencyBlock string) []Dependency {
 		depth := 0
 		bodyEnd := absBodyStart
 		for i := absBodyStart; i < len(dependencyBlock); i++ {
+			// Skip line comments.
+			if i+1 < len(dependencyBlock) && dependencyBlock[i] == '/' && dependencyBlock[i+1] == '/' {
+				for i < len(dependencyBlock) && dependencyBlock[i] != '\n' {
+					i++
+				}
+				continue
+			}
 			switch dependencyBlock[i] {
 			case '{':
 				depth++

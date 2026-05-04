@@ -136,6 +136,20 @@ func TestExtractForArtifactMode(t *testing.T) {
 			},
 		},
 		{
+			name: "valid new version build.zig.zon file with commented out braces",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/new.build.commentedbraces.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:      "hello_world",
+					Version:   "0.0.0",
+					PURLType:  purl.TypeZig,
+					Locations: []string{"testdata/new.build.commentedbraces.zig.zon"},
+				},
+			},
+		},
+		{
 			name: "missing name field in build.zig.zon file",
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/withoutname.build.zig.zon",
