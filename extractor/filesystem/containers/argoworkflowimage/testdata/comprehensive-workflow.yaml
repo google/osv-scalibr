@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: comprehensive-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+    - name: build
+      container:
+        image: docker.io/library/golang:1.21
+    - name: test
+      script:
+        image: python:3.11-slim
+        command: [python]
+        source: |
+          print("hello")
+    - name: with-sidecars
+      container:
+        image: nginx:1.25
+      sidecars:
+        - name: redis
+          image: redis:7.2@sha256:abc123
+    - name: with-init
+      container:
+        image: busybox
+      initContainers:
+        - name: init
+          image: alpine:3.18
