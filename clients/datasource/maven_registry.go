@@ -306,9 +306,18 @@ func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, regist
 }
 
 func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
+	for _, p := range paths {
+		if strings.Contains(p, "..") {
+			return fmt.Errorf("invalid path component containing '..': %s", p)
+		}
+	}
+
 	filePath := ""
 	if m.localRegistry != "" {
 		filePath = filepath.Join(append([]string{m.localRegistry}, paths...)...)
+		if !strings.HasPrefix(filePath, m.localRegistry) {
+			return fmt.Errorf("path traversal detected: %s", filePath)
+		}
 		file, err := os.Open(filePath)
 		if err == nil {
 			defer file.Close()
