@@ -31,6 +31,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -47,8 +49,11 @@ const (
 func TestScan(t *testing.T) {
 	jar := filepath.Join("testdata", reachableJar)
 
-	mockClient := mockClient(t)
-	enr := java.NewEnricher(mockClient)
+	enr, err := java.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("Javareach enricher init failed: %s", err)
+	}
+	enr.(*java.Enricher).Client = mockClient(t)
 
 	pkgs := setupPackages([]string{testJar})
 	input := enricher.ScanInput{
@@ -60,7 +65,7 @@ func TestScan(t *testing.T) {
 	inv := inventory.Inventory{
 		Packages: pkgs,
 	}
-	err := enr.Enrich(t.Context(), &input, &inv)
+	err = enr.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("Javareach enrich failed: %s", err)
 	}
@@ -117,21 +122,21 @@ func setupPackages(names []string) []*extractor.Package {
 
 	for _, n := range names {
 		reachablePkg := &extractor.Package{
-			Name:      reachablePkgName,
-			Version:   version,
-			PURLType:  purl.TypeMaven,
-			Metadata:  &archivemeta.Metadata{ArtifactID: reachableArtifactID, GroupID: reachableGroupID},
-			Locations: []string{filepath.Join("testdata", n)},
-			Plugins:   []string{archive.Name},
+			Name:     reachablePkgName,
+			Version:  version,
+			PURLType: purl.TypeMaven,
+			Metadata: &archivemeta.Metadata{ArtifactID: reachableArtifactID, GroupID: reachableGroupID},
+			Location: extractor.LocationFromPath(filepath.Join("testdata", n)),
+			Plugins:  []string{archive.Name},
 		}
 
 		unreachablePkg := &extractor.Package{
-			Name:      unreachablePkgName,
-			Version:   version,
-			PURLType:  purl.TypeMaven,
-			Metadata:  &archivemeta.Metadata{ArtifactID: unreachableArtifactID, GroupID: unreachableGroupID},
-			Locations: []string{filepath.Join("testdata", n)},
-			Plugins:   []string{archive.Name},
+			Name:     unreachablePkgName,
+			Version:  version,
+			PURLType: purl.TypeMaven,
+			Metadata: &archivemeta.Metadata{ArtifactID: unreachableArtifactID, GroupID: unreachableGroupID},
+			Location: extractor.LocationFromPath(filepath.Join("testdata", n)),
+			Plugins:  []string{archive.Name},
 		}
 
 		pkgs = append(pkgs, reachablePkg, unreachablePkg)

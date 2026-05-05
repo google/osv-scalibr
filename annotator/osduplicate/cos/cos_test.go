@@ -61,18 +61,18 @@ func TestAnnotate(t *testing.T) {
 			desc: "some_pkgs_found_in_cos_pkg_folder",
 			packages: []*extractor.Package{
 				{
-					Name:      "file-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+					Name:     "file-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"),
 				},
 				{
-					Name:      "file-not-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+					Name:     "file-not-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/file/not/in/pkgs"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+					Name:     "file-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          cos.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -80,8 +80,8 @@ func TestAnnotate(t *testing.T) {
 					}},
 				},
 				{
-					Name:      "file-not-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+					Name:     "file-not-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/file/not/in/pkgs"),
 				},
 			},
 		},
@@ -89,22 +89,22 @@ func TestAnnotate(t *testing.T) {
 			desc: "some_pkgs_outside_mutable_dir",
 			packages: []*extractor.Package{
 				{
-					Name:      "file-in-mutable-dir",
-					Locations: []string{"mnt/stateful_partition/in/mutable/dir"},
+					Name:     "file-in-mutable-dir",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/in/mutable/dir"),
 				},
 				{
-					Name:      "file-not-in-mutable-dir",
-					Locations: []string{"not/in/mutable/dir"},
+					Name:     "file-not-in-mutable-dir",
+					Location: extractor.LocationFromPath("not/in/mutable/dir"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file-in-mutable-dir",
-					Locations: []string{"mnt/stateful_partition/in/mutable/dir"},
+					Name:     "file-in-mutable-dir",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/in/mutable/dir"),
 				},
 				{
-					Name:      "file-not-in-mutable-dir",
-					Locations: []string{"not/in/mutable/dir"},
+					Name:     "file-not-in-mutable-dir",
+					Location: extractor.LocationFromPath("not/in/mutable/dir"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 						Plugin:          cos.Name,
 						Justification:   vex.ComponentNotPresent,
@@ -120,23 +120,23 @@ func TestAnnotate(t *testing.T) {
 			},
 			packages: []*extractor.Package{
 				{
-					Name:      "file-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+					Name:     "file-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"),
 				},
 				{
-					Name:      "file-not-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+					Name:     "file-not-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/file/not/in/pkgs"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+					Name:     "file-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"),
 					// Expect no exploitability signals.
 				},
 				{
-					Name:      "file-not-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/file/not/in/pkgs"},
+					Name:     "file-not-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/file/not/in/pkgs"),
 				},
 			},
 		},
@@ -144,16 +144,16 @@ func TestAnnotate(t *testing.T) {
 			desc: "cos_os_packages",
 			packages: []*extractor.Package{
 				{
-					Name:      "os-pkg",
-					Locations: []string{"etc/cos-package-info.json"},
-					Plugins:   []string{cosextractor.Name},
+					Name:     "os-pkg",
+					Location: extractor.LocationFromPath("etc/cos-package-info.json"),
+					Plugins:  []string{cosextractor.Name},
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "os-pkg",
-					Locations: []string{"etc/cos-package-info.json"},
-					Plugins:   []string{cosextractor.Name},
+					Name:     "os-pkg",
+					Location: extractor.LocationFromPath("etc/cos-package-info.json"),
+					Plugins:  []string{cosextractor.Name},
 				},
 			},
 		},
@@ -167,14 +167,14 @@ func TestAnnotate(t *testing.T) {
 			ctx:  cancelledContext,
 			packages: []*extractor.Package{
 				{
-					Name:      "file-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+					Name:     "file-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file-in-cos-pkgs",
-					Locations: []string{"mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"},
+					Name:     "file-in-cos-pkgs",
+					Location: extractor.LocationFromPath("mnt/stateful_partition/var_overlay/db/pkg/path/to/file-in-cos-pkgs"),
 					// No exploitability signals
 				},
 			},

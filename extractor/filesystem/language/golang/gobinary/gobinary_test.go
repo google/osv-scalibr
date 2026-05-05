@@ -444,7 +444,7 @@ func createPackagesWithMain(pkgs []*extractor.Package, location string) []*extra
 	// Main package
 	mainName := strings.Split(strings.TrimPrefix(location, "testdata/"), "-")[0]
 	res = append(res, &extractor.Package{
-		Name: mainName, Version: "(devel)", Locations: []string{location},
+		Name: mainName, Version: "(devel)", Location: extractor.LocationFromPath(location),
 		PURLType: purl.TypeGolang,
 	})
 	return res
@@ -454,10 +454,10 @@ func createPackages(pkgs []*extractor.Package, location string) []*extractor.Pac
 	res := []*extractor.Package{}
 	for _, p := range pkgs {
 		res = append(res, &extractor.Package{
-			Name:      p.Name,
-			Version:   p.Version,
-			Locations: []string{location},
-			PURLType:  purl.TypeGolang,
+			Name:     p.Name,
+			Version:  p.Version,
+			Location: extractor.LocationFromPath(location),
+			PURLType: purl.TypeGolang,
 		})
 	}
 	return res

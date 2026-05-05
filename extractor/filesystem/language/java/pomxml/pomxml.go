@@ -139,11 +139,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			DepGroupVals: []string{},
 		}
 		pkgDetails := &extractor.Package{
-			Name:      dep.Name(),
-			Version:   parseResolvedVersion(dep.Version),
-			PURLType:  purl.TypeMaven,
-			Locations: []string{input.Path},
-			Metadata:  &metadata,
+			Name:     dep.Name(),
+			Version:  parseResolvedVersion(dep.Version),
+			PURLType: purl.TypeMaven,
+			Location: extractor.LocationFromPath(input.Path),
+			Metadata: &metadata,
 		}
 		if scope := strings.TrimSpace(string(dep.Scope)); scope != "" && scope != "compile" {
 			// Only append non-default scope (compile is the default scope).

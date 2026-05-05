@@ -131,10 +131,10 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		}
 
 		extPkg := &extractor.Package{
-			Name:      pkg.ID,
-			Version:   pkg.Version,
-			PURLType:  purl.TypeWinget,
-			Locations: []string{input.Path},
+			Name:     pkg.ID,
+			Version:  pkg.Version,
+			PURLType: purl.TypeWinget,
+			Location: extractor.LocationFromPath(input.Path),
 			Metadata: &metadata.Metadata{
 				Name:     pkg.Name,
 				ID:       pkg.ID,

@@ -86,7 +86,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	addPkgDetails(details, parsedLockfile.PackagesDev, "dev")
 
 	for key := range details {
-		details[key].Locations = []string{input.Path}
+		details[key].Location = extractor.LocationFromPath(input.Path)
 	}
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
@@ -119,7 +119,7 @@ func addPkgDetails(details map[string]*extractor.Package, packages map[string]pi
 				Name:     name,
 				Version:  version,
 				PURLType: purl.TypePyPi,
-				Metadata: osv.DepGroupMetadata{
+				Metadata: &osv.DepGroupMetadata{
 					DepGroupVals: groupSlice,
 				},
 			}

@@ -109,11 +109,11 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	for _, lockPackage := range parsedLockfile.Packages {
 		pkgDetails := &extractor.Package{
-			Name:      lockPackage.Name,
-			Version:   lockPackage.Version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{input.Path},
-			Metadata: osv.DepGroupMetadata{
+			Name:     lockPackage.Name,
+			Version:  lockPackage.Version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPath(input.Path),
+			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: resolveGroups(lockPackage),
 			},
 		}

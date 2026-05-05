@@ -161,7 +161,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 				PackageVersion: version,
 				Type:           library.Type,
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		}
 		packages = append(packages, p)
 	}

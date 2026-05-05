@@ -22,6 +22,8 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -32,8 +34,8 @@ const (
 )
 
 // New returns a new enricher.
-func New() enricher.Enricher {
-	return &Enricher{}
+func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	return &Enricher{}, nil
 }
 
 // Enricher removes vulnerabilities that have VEX signals associated.

@@ -27,6 +27,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -46,20 +48,18 @@ type Enricher struct {
 }
 
 // New creates a new Enricher using the default Veles Validators.
-func New() enricher.Enricher {
-	return &Enricher{
-		baseURL:    defaultBaseURL,
-		httpClient: http.DefaultClient,
+func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	baseURL := defaultBaseURL
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.HuggingfaceMetaConfig {
+		return c.GetHuggingfaceMeta()
+	})
+	if specific.GetBaseUrl() != "" {
+		baseURL = specific.GetBaseUrl()
 	}
-}
-
-// NewWithBaseURL creates a new Enricher that uses the provided base URL for the Hugging Face API.
-// Useful for tests with a httptest.Server.
-func NewWithBaseURL(baseURL string) enricher.Enricher {
 	return &Enricher{
 		baseURL:    baseURL,
 		httpClient: http.DefaultClient,
-	}
+	}, nil
 }
 
 // Name of the Enricher.

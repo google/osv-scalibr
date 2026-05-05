@@ -35,7 +35,7 @@ func BuildLocationToPKGsMap(results *inventory.Inventory, scanRoot *scalibrfs.Sc
 	}
 pkgLoop:
 	for _, pkg := range results.Packages {
-		if len(pkg.Locations) == 0 {
+		if pkg.Location.Descriptor == nil || pkg.Location.Descriptor.File == nil {
 			continue
 		}
 		// Skip packages found by OS extractors since those are not OS duplicates.
@@ -44,10 +44,7 @@ pkgLoop:
 				continue pkgLoop
 			}
 		}
-		// The descriptor file (e.g. lockfile) is always stored in the first element.
-		// TODO(b/400910349): Separate locations into a dedicated "descriptor file"
-		// and "other files" field.
-		loc := pkg.Locations[0]
+		loc := pkg.Location.Descriptor.File.Path
 
 		// If ScanConfig.StoreAbsolutePath is on, this will be an absolute path.
 		// Convert to relative in these cases.

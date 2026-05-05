@@ -135,11 +135,11 @@ func TestExtract(t *testing.T) {
 	name1 := "package"
 	name2 := "another package"
 	multiplePackages := []*extractor.Package{{
-		Name:      name1,
-		Locations: []string{"some path"},
+		Name:     name1,
+		Location: extractor.LocationFromPath("some path"),
 	}, {
-		Name:      name2,
-		Locations: []string{"some path"},
+		Name:     name2,
+		Location: extractor.LocationFromPath("some path"),
 	}}
 
 	type args struct {

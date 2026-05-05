@@ -224,7 +224,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 		pkg := parseYarnPackageGroup(group)
-		pkg.Locations = []string{input.Path}
+		pkg.Location = extractor.LocationFromPath(input.Path)
 		packages = append(packages, pkg)
 	}
 

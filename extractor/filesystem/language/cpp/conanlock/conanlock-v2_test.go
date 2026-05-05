@@ -37,17 +37,24 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			WantPackages: []*extractor.Package{},
 		},
 		{
+			Name: "null json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.v2.jsontest",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "decoded null JSON value"},
+		},
+		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.v2.json",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "zlib",
-					Version:   "1.2.11",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/one-package.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "zlib",
+					Version:  "1.2.11",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/one-package.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -60,11 +67,11 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "zlib",
-					Version:   "1.2.11",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/no-name.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "zlib",
+					Version:  "1.2.11",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/no-name.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -77,20 +84,20 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "zlib",
-					Version:   "1.2.11",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/two-packages.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "zlib",
+					Version:  "1.2.11",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/two-packages.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
 				{
-					Name:      "bzip2",
-					Version:   "1.0.8",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/two-packages.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "bzip2",
+					Version:  "1.0.8",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/two-packages.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -103,47 +110,47 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "zlib",
-					Version:   "1.2.13",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "zlib",
+					Version:  "1.2.13",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
 				{
-					Name:      "bzip2",
-					Version:   "1.0.8",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "bzip2",
+					Version:  "1.0.8",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
 				{
-					Name:      "freetype",
-					Version:   "2.12.1",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "freetype",
+					Version:  "2.12.1",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
 				{
-					Name:      "libpng",
-					Version:   "1.6.39",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "libpng",
+					Version:  "1.6.39",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
 				{
-					Name:      "brotli",
-					Version:   "1.0.9",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "brotli",
+					Version:  "1.0.9",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"requires"},
 					},
 				},
@@ -156,11 +163,11 @@ func TestExtractor_Extract_v2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "ninja",
-					Version:   "1.11.1",
-					PURLType:  purl.TypeConan,
-					Locations: []string{"testdata/one-package-dev.v2.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "ninja",
+					Version:  "1.11.1",
+					PURLType: purl.TypeConan,
+					Location: extractor.LocationFromPath("testdata/one-package-dev.v2.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"build-requires"},
 					},
 				},

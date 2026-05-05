@@ -50,7 +50,7 @@ func TestExtract(t *testing.T) {
 						Version:    "1",
 						RuleName:   "maven.install",
 					},
-					Locations: []string{"testdata/MODULE.bazel"},
+					Location: extractor.LocationFromPath("testdata/MODULE.bazel"),
 				},
 				{
 					Name:     "group2:artifact2",
@@ -63,7 +63,7 @@ func TestExtract(t *testing.T) {
 						Version:    "2",
 						RuleName:   "maven.install",
 					},
-					Locations: []string{"testdata/MODULE.bazel"},
+					Location: extractor.LocationFromPath("testdata/MODULE.bazel"),
 				},
 				{
 					Name:     "group3:artifact3",
@@ -76,7 +76,7 @@ func TestExtract(t *testing.T) {
 						Version:    "3",
 						RuleName:   "maven.install",
 					},
-					Locations: []string{"testdata/MODULE.bazel"},
+					Location: extractor.LocationFromPath("testdata/MODULE.bazel"),
 				},
 				{
 					Name:     "group4:artifact4",
@@ -89,7 +89,7 @@ func TestExtract(t *testing.T) {
 						Version:    "4",
 						RuleName:   "maven.install",
 					},
-					Locations: []string{"testdata/MODULE.bazel"},
+					Location: extractor.LocationFromPath("testdata/MODULE.bazel"),
 				},
 				{
 					Name:     "group5:artifact5",
@@ -102,7 +102,7 @@ func TestExtract(t *testing.T) {
 						Version:    "5",
 						RuleName:   "maven.artifact",
 					},
-					Locations: []string{"testdata/MODULE.bazel"},
+					Location: extractor.LocationFromPath("testdata/MODULE.bazel"),
 				},
 				{
 					Name:     "group6:artifact6",
@@ -115,7 +115,7 @@ func TestExtract(t *testing.T) {
 						Version:    "6",
 						RuleName:   "maven_install",
 					},
-					Locations: []string{"testdata/MODULE.bazel"},
+					Location: extractor.LocationFromPath("testdata/MODULE.bazel"),
 				},
 				{
 					Name:     "group7:artifact7",
@@ -128,7 +128,7 @@ func TestExtract(t *testing.T) {
 						Version:    "7",
 						RuleName:   "maven_install",
 					},
-					Locations: []string{"testdata/MODULE.bazel"},
+					Location: extractor.LocationFromPath("testdata/MODULE.bazel"),
 				},
 			},
 		},

@@ -129,10 +129,10 @@ func TestExtract(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "ExtUtils-Helpers",
-					Version:   "0.028",
-					PURLType:  purl.TypeCPAN,
-					Locations: []string{"testdata/META_correct1.json"},
+					Name:     "ExtUtils-Helpers",
+					Version:  "0.028",
+					PURLType: purl.TypeCPAN,
+					Location: extractor.LocationFromPath("testdata/META_correct1.json"),
 				},
 			},
 		},
@@ -143,10 +143,10 @@ func TestExtract(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "Class-Data-Inheritable",
-					Version:   "0.08",
-					PURLType:  purl.TypeCPAN,
-					Locations: []string{"testdata/META_correct.yml"},
+					Name:     "Class-Data-Inheritable",
+					Version:  "0.08",
+					PURLType: purl.TypeCPAN,
+					Location: extractor.LocationFromPath("testdata/META_correct.yml"),
 				},
 			},
 		},
@@ -157,10 +157,10 @@ func TestExtract(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "URI",
-					Version:   "5.34",
-					PURLType:  purl.TypeCPAN,
-					Locations: []string{"testdata/META_correct2.json"},
+					Name:     "URI",
+					Version:  "5.34",
+					PURLType: purl.TypeCPAN,
+					Location: extractor.LocationFromPath("testdata/META_correct2.json"),
 				},
 			},
 		},
@@ -184,6 +184,13 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/invalid_json.jsontest",
 			},
 			wantErr: extracttest.ContainsErrStr{Str: "could not extract"},
+		},
+		{
+			name: "null json file",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.jsontest",
+			},
+			wantErr: extracttest.ContainsErrStr{Str: "decoded null JSON value"},
 		},
 		{
 			name: "invalid yml file",

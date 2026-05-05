@@ -99,8 +99,9 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	packages := make([]*extractor.Package, 0)
 	scanner := bufio.NewScanner(input.Reader)
-
+	lineNum := 0
 	for scanner.Scan() {
+		lineNum++
 		lockLine := strings.TrimSpace(scanner.Text())
 		if !isGradleLockFileDepLine(lockLine) {
 			continue
@@ -111,7 +112,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
-		pkg.Locations = []string{input.Path}
+		pkg.Location = extractor.LocationFromPathAndLine(input.Path, lineNum)
 
 		packages = append(packages, pkg)
 	}

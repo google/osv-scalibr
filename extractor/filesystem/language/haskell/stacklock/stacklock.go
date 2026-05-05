@@ -147,10 +147,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			pkgVersion := matches[2]
 
 			p := &extractor.Package{
-				Name:      pkgName,
-				Version:   pkgVersion,
-				PURLType:  purl.TypeHaskell,
-				Locations: []string{input.Path},
+				Name:     pkgName,
+				Version:  pkgVersion,
+				PURLType: purl.TypeHaskell,
+				Location: extractor.LocationFromPath(input.Path),
 			}
 
 			packages = append(packages, p)

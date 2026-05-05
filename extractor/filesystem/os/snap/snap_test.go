@@ -173,10 +173,10 @@ func TestExtract(t *testing.T) {
 			osrelease: DebianBookworm,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "core",
-					Version:   "16-2.61.4-20240607",
-					PURLType:  purl.TypeSnap,
-					Locations: []string{"testdata/single-arch.yaml"},
+					Name:     "core",
+					Version:  "16-2.61.4-20240607",
+					PURLType: purl.TypeSnap,
+					Location: extractor.LocationFromPath("testdata/single-arch.yaml"),
 					Metadata: &snapmeta.Metadata{
 						Name:              "core",
 						Version:           "16-2.61.4-20240607",
@@ -197,10 +197,10 @@ func TestExtract(t *testing.T) {
 			osrelease: DebianBookworm,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "core",
-					Version:   "16-2.61.4-20240607",
-					PURLType:  purl.TypeSnap,
-					Locations: []string{"testdata/multi-arch.yaml"},
+					Name:     "core",
+					Version:  "16-2.61.4-20240607",
+					PURLType: purl.TypeSnap,
+					Location: extractor.LocationFromPath("testdata/multi-arch.yaml"),
 					Metadata: &snapmeta.Metadata{
 						Name:              "core",
 						Version:           "16-2.61.4-20240607",

@@ -148,9 +148,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 				Name:     pkgName,
 				Version:  info.Resolved,
 				PURLType: purl.TypeNuget,
-				Locations: []string{
-					input.Path,
-				},
+				Location: extractor.LocationFromPath(input.Path),
 			}
 			res = append(res, pkg)
 		}

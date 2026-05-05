@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	depsdevpb "deps.dev/api/v3"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -45,17 +46,12 @@ var _ enricher.Enricher = &Enricher{}
 
 // Enricher adds license data to software packages by querying deps.dev
 type Enricher struct {
-	client Client
-}
-
-// NewWithClient returns an Enricher which uses a specified deps.dev client.
-func NewWithClient(c Client) enricher.Enricher {
-	return &Enricher{client: c}
+	Client Client
 }
 
 // New creates a new Enricher
-func New() enricher.Enricher {
-	return &Enricher{}
+func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
+	return &Enricher{}, nil
 }
 
 // Name of the Enricher.
@@ -85,12 +81,12 @@ func (Enricher) RequiredPlugins() []string {
 
 // Enrich adds license data to all the packages using deps.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
-	if e.client == nil {
+	if e.Client == nil {
 		depsDevAPIClient, err := datasource.NewCachedInsightsClient(depsdev.DepsdevAPI, "osv-scalibr/"+scalibrversion.ScannerVersion)
 		if err != nil {
 			return fmt.Errorf("cannot connect with deps.dev %w", err)
 		}
-		e.client = depsDevAPIClient
+		e.Client = depsDevAPIClient
 	}
 
 	queries := make([]*depsdevpb.GetVersionRequest, len(inv.Packages))
@@ -145,7 +141,7 @@ func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.
 			continue
 		}
 		g.Go(func() error {
-			resp, err := e.client.GetVersion(ctx, queries[i])
+			resp, err := e.Client.GetVersion(ctx, queries[i])
 			if err != nil {
 				if status.Code(err) == codes.NotFound {
 					return nil

@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -100,7 +101,7 @@ func TestExtract(t *testing.T) {
 						VerifierSalt:      "JD6cq4PDx8biZ_WIEo8sJQ",
 						VerifierLocalHash: "lLjGM419fBfty9S-a7BwXBLsl40QL0xWmReBF2r9hM8",
 					},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 			},
 		},

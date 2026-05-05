@@ -61,9 +61,9 @@ func TestExtract(t *testing.T) {
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", "/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs")},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "image1",
-					Version:   "digest1",
-					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
+					Name:     "image1",
+					Version:  "digest1",
+					Location: extractor.LocationFromPath("/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"),
 					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
@@ -75,9 +75,9 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "image2",
-					Version:   "digest2",
-					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"},
+					Name:     "image2",
+					Version:  "digest2",
+					Location: extractor.LocationFromPath("/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"),
 					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
@@ -98,9 +98,9 @@ func TestExtract(t *testing.T) {
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456789", "image1", "digest1", ""), fakeclient.NewFakeContainer("567890123", "image2", "digest2", "")},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "image1",
-					Version:   "digest1",
-					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"},
+					Name:     "image1",
+					Version:  "digest1",
+					Location: extractor.LocationFromPath("/run/containerd/io.containerd.runtime.v2.task/default/123456789/rootfs"),
 					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
@@ -112,9 +112,9 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "image2",
-					Version:   "digest2",
-					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"},
+					Name:     "image2",
+					Version:  "digest2",
+					Location: extractor.LocationFromPath("/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890123/rootfs"),
 					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",
@@ -135,9 +135,9 @@ func TestExtract(t *testing.T) {
 			ctrs:       []containerd.Container{fakeclient.NewFakeContainer("123456788", "image1", "digest1", "test/rootfs"), fakeclient.NewFakeContainer("567890122", "image2", "digest2", "test2/rootfs")},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "image1",
-					Version:   "digest1",
-					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/default/123456788/test/rootfs"},
+					Name:     "image1",
+					Version:  "digest1",
+					Location: extractor.LocationFromPath("/run/containerd/io.containerd.runtime.v2.task/default/123456788/test/rootfs"),
 					Metadata: &md.Metadata{
 						Namespace:   "default",
 						ImageName:   "image1",
@@ -149,9 +149,9 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "image2",
-					Version:   "digest2",
-					Locations: []string{"/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890122/test2/rootfs"},
+					Name:     "image2",
+					Version:  "digest2",
+					Location: extractor.LocationFromPath("/run/containerd/io.containerd.runtime.v2.task/k8s.io/567890122/test2/rootfs"),
 					Metadata: &md.Metadata{
 						Namespace:   "k8s.io",
 						ImageName:   "image2",

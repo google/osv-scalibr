@@ -26,20 +26,22 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // FromVelesValidator converts a Veles Validator into a SCALIBR Enricher plugin.
 // This allows enabling Veles Validators individually like regular SCALIBR plugins.
 // The wrapped Enricher does not do any enrichment on its own - it's a placeholder plugin
 // that is used to configure the Veles validator before the scan starts.
-func FromVelesValidator[S veles.Secret](velesValidator veles.Validator[S], name string, version int) func() enricher.Enricher {
-	return func() enricher.Enricher {
+func FromVelesValidator[S veles.Secret](velesValidator veles.Validator[S], name string, version int) func(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+	return func(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 		return &validatorWrapper{
 			velesValidator: veles.NewGenericValidator(velesValidator),
 			typ:            reflect.TypeFor[S](),
 			name:           name,
 			version:        version,
-		}
+		}, nil
 	}
 }
 

@@ -35,7 +35,7 @@ func vaultURL(cfg *cpb.PluginConfig) string {
 // The enricher is initialized with the vault URL from the config. If the URL is not set,
 // an empty string is used, which will cause the validation to fail.
 func NewTokenValidatorEnricher(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
-	return convert.FromVelesValidator(hashicorpvault.NewTokenValidator(vaultURL(cfg)), "secrets/hashicorpvaulttokenvalidate", 0)(), nil
+	return convert.FromVelesValidator(hashicorpvault.NewTokenValidator(vaultURL(cfg)), "secrets/hashicorpvaulttokenvalidate", 0)(cfg)
 }
 
 // NewAppRoleValidatorEnricher returns an enricher for Hashicorp app role validation.
@@ -43,5 +43,5 @@ func NewTokenValidatorEnricher(cfg *cpb.PluginConfig) (enricher.Enricher, error)
 // The enricher is initialized with the vault URL from the config. If the URL is not set,
 // an empty string is used, which will cause the validation to fail.
 func NewAppRoleValidatorEnricher(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
-	return convert.FromVelesValidator(hashicorpvault.NewAppRoleValidator(vaultURL(cfg)), "secrets/hashicorpvaultapprolevalidate", 0)(), nil
+	return convert.FromVelesValidator(hashicorpvault.NewAppRoleValidator(vaultURL(cfg)), "secrets/hashicorpvaultapprolevalidate", 0)(cfg)
 }

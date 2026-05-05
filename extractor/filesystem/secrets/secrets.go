@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
 )
@@ -105,7 +106,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	for _, s := range secrets {
 		i.Secrets = append(i.Secrets, &inventory.Secret{
 			Secret:   s,
-			Location: input.Path,
+			Location: location.FromPath(input.Path),
 		})
 	}
 	return i, nil

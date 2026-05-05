@@ -216,7 +216,7 @@ func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Packa
 		return nil, fmt.Errorf("wheelegg.parse: %w", err)
 	}
 
-	p.Locations = []string{path}
+	p.Location = extractor.LocationFromPath(path)
 	return p, nil
 }
 

@@ -178,11 +178,11 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 	}
 
 	p := &extractor.Package{
-		Name:      metadata.CFBundleName,
-		Version:   metadata.CFBundleShortVersionString,
-		PURLType:  purl.TypeMacApps,
-		Metadata:  &metadata,
-		Locations: []string{input.Path},
+		Name:     metadata.CFBundleName,
+		Version:  metadata.CFBundleShortVersionString,
+		PURLType: purl.TypeMacApps,
+		Metadata: &metadata,
+		Location: extractor.LocationFromPath(input.Path),
 	}
 
 	return p, nil

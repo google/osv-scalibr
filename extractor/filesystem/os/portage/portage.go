@@ -170,7 +170,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 			OSID:           osRelease["ID"],
 			OSVersionID:    osRelease["VERSION_ID"],
 		},
-		Locations: []string{input.Path},
+		Location: extractor.LocationFromPath(input.Path),
 	}
 
 	return []*extractor.Package{p}, nil

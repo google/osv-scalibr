@@ -127,10 +127,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	var result []*extractor.Package
 	for _, pkg := range packages {
 		result = append(result, &extractor.Package{
-			Name:      pkg.Name,
-			Version:   pkg.Version,
-			PURLType:  purl.TypeCocoapods,
-			Locations: []string{input.Path},
+			Name:     pkg.Name,
+			Version:  pkg.Version,
+			PURLType: purl.TypeCocoapods,
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

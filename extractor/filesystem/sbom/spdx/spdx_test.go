@@ -59,6 +59,16 @@ func TestFileRequired(t *testing.T) {
 			wantIsRequired: true,
 		},
 		{
+			name:           ".sbom.spdx.json",
+			path:           "testdata/.sbom.spdx.json",
+			wantIsRequired: true,
+		},
+		{
+			name:           ".spdx.sbom.json",
+			path:           "testdata/.spdx.sbom.json",
+			wantIsRequired: true,
+		},
+		{
 			name:           "sbom.spdx.yml",
 			path:           "testdata/sbom.spdx.yml",
 			wantIsRequired: true,
@@ -117,7 +127,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.json"),
 				},
 				{
 					Name:     "openssl",
@@ -125,7 +135,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.json"),
 				},
 			},
 		},
@@ -140,7 +150,7 @@ func TestExtract(t *testing.T) {
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						PURL: getPURL("nginx", "1.21.1"),
 					},
-					Locations: []string{"testdata/purl_and_cpe.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/purl_and_cpe.spdx.json"),
 				},
 				{
 					Name:     "openssl",
@@ -148,7 +158,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/purl_and_cpe.spdx.json"},
+					Location: extractor.LocationFromPath("testdata/purl_and_cpe.spdx.json"),
 				},
 			},
 		},
@@ -161,7 +171,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx"),
 				},
 				{
 					Name:     "openssl",
@@ -169,7 +179,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx"),
 				},
 			},
 		},
@@ -182,7 +192,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx.yml"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.yml"),
 				},
 				{
 					Name:     "openssl",
@@ -190,7 +200,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx.yml"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.yml"),
 				},
 			},
 		},
@@ -203,7 +213,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 					},
-					Locations: []string{"testdata/sbom.spdx.rdf"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.rdf"),
 				},
 				{
 					Name:     "openssl",
@@ -211,7 +221,74 @@ func TestExtract(t *testing.T) {
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
-					Locations: []string{"testdata/sbom.spdx.rdf"},
+					Location: extractor.LocationFromPath("testdata/sbom.spdx.rdf"),
+				},
+			},
+		},
+		{
+			name: "dhi/.spdx.dhi-pkg-python.json",
+			path: "testdata/dhi/.spdx.dhi-pkg-python.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "pkg-python",
+					PURLType: purl.TypeDocker,
+					Metadata: &spdxmeta.Metadata{
+						PURL: &purl.PackageURL{
+							Type:      purl.TypeDocker,
+							Namespace: "dhi",
+							Name:      "pkg-python",
+							Version:   "3.14.3-debian13",
+							Qualifiers: purl.QualifiersFromMap(map[string]string{
+								"platform":   "linux/amd64",
+								"os_name":    "debian",
+								"os_version": "13",
+							}),
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/dhi/.spdx.dhi-pkg-python.json"),
+				},
+			},
+		},
+		{
+			name: "dhi/.spdx.dhi-python.json",
+			path: "testdata/dhi/.spdx.dhi-python.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "python",
+					PURLType: purl.TypeDocker,
+					Metadata: &spdxmeta.Metadata{
+						PURL: &purl.PackageURL{
+							Type:      purl.TypeDocker,
+							Namespace: "dhi",
+							Name:      "python",
+							Version:   "3.14.3-debian13-dev",
+							Qualifiers: purl.QualifiersFromMap(map[string]string{
+								"platform":   "linux/amd64",
+								"os_name":    "debian",
+								"os_version": "13",
+							}),
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/dhi/.spdx.dhi-python.json"),
+				},
+			},
+		},
+		{
+			name: "dhi/.spdx.python.json",
+			path: "testdata/dhi/.spdx.python.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "python",
+					PURLType: purl.TypeDHI,
+					Metadata: &spdxmeta.Metadata{
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeDHI,
+							Name:       "python",
+							Version:    "3.14.3",
+							Qualifiers: purl.Qualifiers{},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/dhi/.spdx.python.json"),
 				},
 			},
 		},

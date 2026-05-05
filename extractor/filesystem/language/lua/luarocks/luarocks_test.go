@@ -96,10 +96,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/rocks-5.4/aesfileencrypt/0.1.3-1/aesfileencrypt-0.1.3-1.rockspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "aesfileencrypt",
-					Version:   "0.1.3-1",
-					PURLType:  purl.TypeLua,
-					Locations: []string{"testdata/rocks-5.4/aesfileencrypt/0.1.3-1/aesfileencrypt-0.1.3-1.rockspec"},
+					Name:     "aesfileencrypt",
+					Version:  "0.1.3-1",
+					PURLType: purl.TypeLua,
+					Location: extractor.LocationFromPath("testdata/rocks-5.4/aesfileencrypt/0.1.3-1/aesfileencrypt-0.1.3-1.rockspec"),
 				},
 			},
 		},
@@ -108,10 +108,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/rocks-5.2/lua-resty-jwt/0.2.3-0/lua-resty-jwt-0.2.3-0.rockspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "lua-resty-jwt",
-					Version:   "0.2.3-0",
-					PURLType:  purl.TypeLua,
-					Locations: []string{"testdata/rocks-5.2/lua-resty-jwt/0.2.3-0/lua-resty-jwt-0.2.3-0.rockspec"},
+					Name:     "lua-resty-jwt",
+					Version:  "0.2.3-0",
+					PURLType: purl.TypeLua,
+					Location: extractor.LocationFromPath("testdata/rocks-5.2/lua-resty-jwt/0.2.3-0/lua-resty-jwt-0.2.3-0.rockspec"),
 				},
 			},
 		},
@@ -120,10 +120,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/rocks-5.4/gversion/dev-0/gversion-dev-0.rockspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "gversion",
-					Version:   "dev-0",
-					PURLType:  purl.TypeLua,
-					Locations: []string{"testdata/rocks-5.4/gversion/dev-0/gversion-dev-0.rockspec"},
+					Name:     "gversion",
+					Version:  "dev-0",
+					PURLType: purl.TypeLua,
+					Location: extractor.LocationFromPath("testdata/rocks-5.4/gversion/dev-0/gversion-dev-0.rockspec"),
 				},
 			},
 		},

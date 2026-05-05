@@ -19,62 +19,22 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *depsjson.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.DEPSJSONMetadata
 	}{
-		{
-			desc: "nil_metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil_package",
-			m:    &depsjson.Metadata{PackageName: "some-package"},
-			p:    nil,
-			want: nil,
-		},
 		{
 			desc: "set_metadata",
 			m:    &depsjson.Metadata{PackageName: "some-package"},
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DepsjsonMetadata{
-					DepsjsonMetadata: &pb.DEPSJSONMetadata{
-						PackageName: "some-package",
-					},
-				},
-			},
-		},
-		{
-			desc: "override_metadata",
-			m:    &depsjson.Metadata{PackageName: "another-package"},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DepsjsonMetadata{
-					DepsjsonMetadata: &pb.DEPSJSONMetadata{
-						PackageName: "some-package",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DepsjsonMetadata{
-					DepsjsonMetadata: &pb.DEPSJSONMetadata{
-						PackageName: "another-package",
-					},
-				},
+			want: &pb.DEPSJSONMetadata{
+				PackageName: "some-package",
 			},
 		},
 		{
@@ -84,40 +44,28 @@ func TestSetProto(t *testing.T) {
 				PackageVersion: "1.0.0",
 				Type:           "package",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DepsjsonMetadata{
-					DepsjsonMetadata: &pb.DEPSJSONMetadata{
-						PackageName:    "some-package",
-						PackageVersion: "1.0.0",
-						Type:           "package",
-					},
-				},
+			want: &pb.DEPSJSONMetadata{
+				PackageName:    "some-package",
+				PackageVersion: "1.0.0",
+				Type:           "package",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := depsjson.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("depsjson.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := depsjson.ToStruct(p.GetDepsjsonMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetDepsjsonMetadata(), diff)
+			gotStruct := depsjson.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -129,11 +77,7 @@ func TestToStruct(t *testing.T) {
 		m    *pb.DEPSJSONMetadata
 		want *depsjson.Metadata
 	}{
-		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
+
 		{
 			desc: "some_fields",
 			m: &pb.DEPSJSONMetadata{
@@ -165,24 +109,13 @@ func TestToStruct(t *testing.T) {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
-			if tc.m == nil {
-				return
-			}
-
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_DepsjsonMetadata{
-					DepsjsonMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := depsjson.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("depsjson.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

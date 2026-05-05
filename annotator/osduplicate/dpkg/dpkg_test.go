@@ -25,11 +25,11 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
-	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -47,109 +47,169 @@ func TestAnnotate(t *testing.T) {
 	)
 
 	tests := []struct {
-		desc         string
-		packages     []*extractor.Package
-		infoContents map[string]string
+		desc     string
+		packages []*extractor.Package
+		txt      string
 		//nolint:containedctx
 		ctx          context.Context
 		wantErr      error
 		wantPackages []*extractor.Package
 	}{
 		{
-			desc:         "missing_info_dir",
-			infoContents: nil,
+			desc: "missing_info_dir",
+			txt:  ``,
 		},
 		{
-			desc:         "empty_info_dir",
-			infoContents: map[string]string{},
+			desc: "empty_info_dir",
+			txt: `
+-- var/lib/dpkg/info/.keep --
+			`,
 			packages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 		},
 		{
 			desc: "some_pkgs_found_in_info",
-			infoContents: map[string]string{
-				"some.list":       "/some/path\n/path/to/file-in-info\n/some/other/path",
-				"some.other.list": "/some/other/path",
-			},
+			txt: `
+-- var/lib/dpkg/info/some.list --
+/some/path
+/path/to/file-in-info
+/some/other/path
+-- var/lib/dpkg/info/some.other.list --
+/some/other/path
+`,
 			packages: []*extractor.Package{
 				{
-					Name:      "file-in-info",
-					Locations: []string{"path/to/file-in-info"},
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
 				},
 				{
-					Name:      "file-not-in-info",
-					Locations: []string{"path/to/file-not-in-info"},
+					Name:     "file-not-in-info",
+					Location: extractor.LocationFromPath("path/to/file-not-in-info"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file-in-info",
-					Locations: []string{"path/to/file-in-info"},
-					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{{
 						Plugin:          dpkg.Name,
 						Justification:   vex.ComponentNotPresent,
 						MatchesAllVulns: true,
 					}},
 				},
 				{
-					Name:      "file-not-in-info",
-					Locations: []string{"path/to/file-not-in-info"},
+					Name:     "file-not-in-info",
+					Location: extractor.LocationFromPath("path/to/file-not-in-info"),
+				},
+			},
+		},
+		{
+			desc: "some_pkgs_found_in_info_but_not_in_main_repo",
+			txt: `
+-- var/lib/dpkg/info/some.list --
+/some/path
+/path/to/file-in-info
+/some/other/path
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
+Package: curl
+`,
+			packages: []*extractor.Package{
+				{
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+				},
+			},
+		},
+		{
+			desc: "some_pkgs_found_in_info_and_in_main_repo",
+			txt: `
+-- var/lib/dpkg/info/some.list --
+/some/path
+/path/to/file-in-info
+/some/other/path
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
+Package: file-in-info
+`,
+			packages: []*extractor.Package{
+				{
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "file-in-info",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
 				},
 			},
 		},
 		{
 			desc: "pkg_found_in_file_with_wrong_extension",
-			infoContents: map[string]string{
-				"some.notlist": "/path/to/file",
-			},
+			txt: `
+-- var/lib/dpkg/info/some.notlist --
+/path/to/file
+`,
 			packages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 					// No exploitability signals
 				},
 			},
 		},
 		{
 			desc: "pkg_has_no_location",
-			infoContents: map[string]string{
-				"some.list": "/path/to/file",
-			},
+			txt: `
+-- var/lib/dpkg/info/some.list --
+/path/to/file
+`,
 			packages:     []*extractor.Package{{Name: "file"}},
 			wantPackages: []*extractor.Package{{Name: "file"}},
 		},
 		{
 			desc: "ctx_cancelled",
 			ctx:  cancelledContext,
-			infoContents: map[string]string{
-				"some.list": "/path/to/file",
-			},
+			txt: `
+-- var/lib/dpkg/info/some.list --
+/path/to/file
+`,
 			packages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "file",
-					Locations: []string{"path/to/file"},
+					Name:     "file",
+					Location: extractor.LocationFromPath("path/to/file"),
 					// No exploitability signals
 				},
 			},
@@ -159,18 +219,20 @@ func TestAnnotate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			var root string
-			if tt.infoContents != nil {
-				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, false)
-			} else {
-				root = t.TempDir()
-			}
-			if tt.ctx == nil {
-				tt.ctx = t.Context()
+			fs, err := fakefs.PrepareFS(tt.txt)
+			if err != nil {
+				t.Fatal(err)
 			}
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(root),
+				ScanRoot: &scalibrfs.ScanRoot{FS: fs},
 			}
+
+			// Ensure context is never nil (default to test context)
+			ctx := tt.ctx
+			if ctx == nil {
+				ctx = t.Context()
+			}
+
 			// Deep copy the packages to avoid modifying the original inventory that is used in other tests.
 			packages := copier.Copy(tt.packages).([]*extractor.Package)
 			inv := &inventory.Inventory{Packages: packages}
@@ -180,9 +242,9 @@ func TestAnnotate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = anno.Annotate(tt.ctx, input, inv)
+			err = anno.Annotate(ctx, input, inv)
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
-				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, tt.wantErr, err)
+				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, err, tt.wantErr)
 			}
 
 			want := &inventory.Inventory{Packages: tt.wantPackages}

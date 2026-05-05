@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/common"
@@ -515,11 +516,11 @@ func TestToSPDX23(t *testing.T) {
 			desc: "One_location_reported",
 			inv: inventory.Inventory{
 				Packages: []*extractor.Package{{
-					Name:      "software",
-					Version:   "1.2.3",
-					PURLType:  purl.TypePyPi,
-					Plugins:   []string{wheelegg.Name},
-					Locations: []string{"/file1"},
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+					Location: extractor.LocationFromPath("/file1"),
 				}},
 			},
 			want: &v2_3.Document{
@@ -602,14 +603,20 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple_locations_reported",
+			desc: "related_locations_reported",
 			inv: inventory.Inventory{
 				Packages: []*extractor.Package{{
-					Name:      "software",
-					Version:   "1.2.3",
-					Plugins:   []string{wheelegg.Name},
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"/file1", "/file2", "/file3"},
+					Name:     "software",
+					Version:  "1.2.3",
+					Plugins:  []string{wheelegg.Name},
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Related: []location.Location{
+							{File: &location.File{Path: "/file1"}},
+							{File: &location.File{Path: "/file2"}},
+							{File: &location.File{Path: "/file3"}},
+						},
+					},
 				}},
 			},
 			want: &v2_3.Document{

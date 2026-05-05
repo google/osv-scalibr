@@ -154,10 +154,10 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		}
 
 		result = append(result, &extractor.Package{
-			Name:      pkg.ID,
-			Version:   pkg.Version,
-			PURLType:  purl.TypeNuget,
-			Locations: []string{input.Path},
+			Name:     pkg.ID,
+			Version:  pkg.Version,
+			PURLType: purl.TypeNuget,
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

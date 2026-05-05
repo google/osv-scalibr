@@ -70,11 +70,11 @@ func TestScan(t *testing.T) {
 	got := findings.PackageVulns[0]
 	want := &inventory.PackageVuln{
 		Package: &extractor.Package{
-			Name:      binaryName,
-			Version:   "1.2.3",
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filepath.Join("testdata", binaryName)},
-			Plugins:   []string{gobinary.Name},
+			Name:     binaryName,
+			Version:  "1.2.3",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join("testdata", binaryName)),
+			Plugins:  []string{gobinary.Name},
 		},
 		Vulnerability: &osvpb.Vulnerability{
 			Id:        "GO-2022-1144",
@@ -153,11 +153,11 @@ func setupPackageIndex(names []string) *packageindex.PackageIndex {
 	var pkgs []*extractor.Package
 	for _, n := range names {
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      n,
-			Version:   "1.2.3",
-			PURLType:  purl.TypeGolang,
-			Locations: []string{filepath.Join("testdata", n)},
-			Plugins:   []string{gobinary.Name},
+			Name:     n,
+			Version:  "1.2.3",
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPath(filepath.Join("testdata", n)),
+			Plugins:  []string{gobinary.Name},
 		})
 	}
 	px, _ := packageindex.New(pkgs)

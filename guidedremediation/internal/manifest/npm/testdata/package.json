@@ -12,6 +12,8 @@
     "cliui": "npm:@isaacs/cliui@^8.0.2",
     "jquery": "latest",
     "lodash": "4.17.17",
+    "lodash.merge": "4.6.1",
+    "@scoped/pkg.name": "1.0.0",
     "string-width": "^5.1.2",
     "string-width-aliased": "npm:string-width@^4.2.3"
   },

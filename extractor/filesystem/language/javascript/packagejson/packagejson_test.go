@@ -152,10 +152,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "testdata",
-					Version:   "10.46.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package.json"},
+					Name:     "testdata",
+					Version:  "10.46.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Author: &metadata.Person{
 							Name:  "Developer",
@@ -171,10 +171,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/deps/accepts/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "accepts",
-					Version:   "1.3.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/deps/accepts/package.json"},
+					Name:     "accepts",
+					Version:  "1.3.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/deps/accepts/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -196,10 +196,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/deps/no-person-name/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "accepts",
-					Version:   "1.3.8",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/deps/no-person-name/package.json"},
+					Name:     "accepts",
+					Version:  "1.3.8",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/deps/no-person-name/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -217,10 +217,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/deps/with/deps/acorn/package.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "acorn",
-					Version:   "1.2.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/deps/with/deps/acorn/package.json"},
+					Name:     "acorn",
+					Version:  "1.2.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/deps/with/deps/acorn/package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Maintainers: []*metadata.Person{
 							{
@@ -274,9 +274,7 @@ func TestExtract(t *testing.T) {
 					Name:     "undici",
 					Version:  "5.28.3",
 					PURLType: purl.TypeNPM,
-					Locations: []string{
-						"testdata/undici-package.json",
-					},
+					Location: extractor.LocationFromPath("testdata/undici-package.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Contributors: []*metadata.Person{
 							{
@@ -300,10 +298,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/not-vscode.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "jsonparse",
-					Version:   "1.3.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/not-vscode.json"},
+					Name:     "jsonparse",
+					Version:  "1.3.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/not-vscode.json"),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
 						Author: &metadata.Person{
 							Name:  "Tim Caswell",
@@ -319,48 +317,48 @@ func TestExtract(t *testing.T) {
 			includeDeps: true,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "package-with-deps",
-					Version:   "1.2.3",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
-					Metadata:  &metadata.JavascriptPackageJSONMetadata{},
+					Name:     "package-with-deps",
+					Version:  "1.2.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{},
 				},
 				{
-					Name:      "dep1",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep1",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep2",
-					Version:   "2.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep2",
+					Version:  "2.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep3",
-					Version:   "3.1.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep3",
+					Version:  "3.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep4",
-					Version:   "0.4.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep4",
+					Version:  "0.4.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				{
-					Name:      "dep5",
-					Version:   "5.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep5",
+					Version:  "5.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 				// dep6 is invalid, so it should not be included.
 				{
-					Name:      "dep7",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-with-deps.json"},
+					Name:     "dep7",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/package-with-deps.json"),
 				},
 			},
 		},

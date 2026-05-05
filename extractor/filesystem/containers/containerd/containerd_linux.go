@@ -143,10 +143,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	for _, ctr := range ctrMetadata {
 		pkg := &extractor.Package{
-			Name:      ctr.ImageName,
-			Version:   ctr.ImageDigest,
-			Locations: []string{input.Path},
-			Metadata:  &ctr,
+			Name:     ctr.ImageName,
+			Version:  ctr.ImageDigest,
+			Location: extractor.LocationFromPath(input.Path),
+			Metadata: &ctr,
 		}
 		pkgs = append(pkgs, pkg)
 	}

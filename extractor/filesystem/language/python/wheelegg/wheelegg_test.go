@@ -165,10 +165,10 @@ func TestExtract(t *testing.T) {
 			name: ".dist-info/METADATA",
 			path: "testdata/distinfo_meta",
 			wantPackages: []*extractor.Package{{
-				Name:      "pip",
-				Version:   "22.2.2",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/distinfo_meta"},
+				Name:     "pip",
+				Version:  "22.2.2",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/distinfo_meta"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "The pip developers",
 					AuthorEmail: "distutils-sig@python.org",
@@ -179,10 +179,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg/EGG-INFO/PKG-INFO",
 			path: "testdata/egginfo_pkginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "setuptools",
-				Version:   "57.4.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/egginfo_pkginfo"},
+				Name:     "setuptools",
+				Version:  "57.4.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/egginfo_pkginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Python Packaging Authority",
 					AuthorEmail: "distutils-sig@python.org",
@@ -193,10 +193,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg-info",
 			path: "testdata/egginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "pycups",
-				Version:   "2.0.1",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/egginfo"},
+				Name:     "pycups",
+				Version:  "2.0.1",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/egginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Zdenek Dohnal",
 					AuthorEmail: "zdohnal@redhat.com",
@@ -207,10 +207,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg-info/PKG-INFO",
 			path: "testdata/pkginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "httplib2",
-				Version:   "0.20.4",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/pkginfo"},
+				Name:     "httplib2",
+				Version:  "0.20.4",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/pkginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Joe Gregorio",
 					AuthorEmail: "joe@bitworking.org",
@@ -222,10 +222,10 @@ func TestExtract(t *testing.T) {
 			name: "malformed_PKG-INFO",
 			path: "testdata/malformed_pkginfo",
 			wantPackages: []*extractor.Package{{
-				Name:      "passlib",
-				Version:   "1.7.4",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/malformed_pkginfo"},
+				Name:     "passlib",
+				Version:  "1.7.4",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/malformed_pkginfo"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Eli Collins",
 					AuthorEmail: "elic@assurancetechnologies.com",
@@ -236,10 +236,10 @@ func TestExtract(t *testing.T) {
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
 			wantPackages: []*extractor.Package{{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py3.10.egg"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -250,10 +250,10 @@ func TestExtract(t *testing.T) {
 			name: ".whl",
 			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
 			wantPackages: []*extractor.Package{{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py2.py3-none-any.whl"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -337,10 +337,10 @@ func TestExtractWithoutReadAt(t *testing.T) {
 			name: ".egg",
 			path: "testdata/monotonic-1.6-py3.10.egg",
 			wantPackages: &extractor.Package{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py3.10.egg"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py3.10.egg"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",
@@ -351,10 +351,10 @@ func TestExtractWithoutReadAt(t *testing.T) {
 			name: ".whl",
 			path: "testdata/monotonic-1.6-py2.py3-none-any.whl",
 			wantPackages: &extractor.Package{
-				Name:      "monotonic",
-				Version:   "1.6",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/monotonic-1.6-py2.py3-none-any.whl"},
+				Name:     "monotonic",
+				Version:  "1.6",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/monotonic-1.6-py2.py3-none-any.whl"),
 				Metadata: &wheelegg.PythonPackageMetadata{
 					Author:      "Ori Livneh",
 					AuthorEmail: "ori@wikimedia.org",

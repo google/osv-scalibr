@@ -91,10 +91,10 @@ func TestExtract(t *testing.T) {
 			path: "/root/.nimble/pkgs/arrayutils-0.2.0/arrayutils.nimble",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "arrayutils",
-					Version:   "0.2.0",
-					PURLType:  purl.TypeNim,
-					Locations: []string{"/root/.nimble/pkgs/arrayutils-0.2.0/arrayutils.nimble"},
+					Name:     "arrayutils",
+					Version:  "0.2.0",
+					PURLType: purl.TypeNim,
+					Location: extractor.LocationFromPath("/root/.nimble/pkgs/arrayutils-0.2.0/arrayutils.nimble"),
 				},
 			},
 		},
@@ -103,10 +103,10 @@ func TestExtract(t *testing.T) {
 			path: "/root/.nimble/pkgs2/libsodium-0.6.0-a2bcc3d783446e393eacf5759dda821f0f714796/libsodium.nimble",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libsodium",
-					Version:   "0.6.0",
-					PURLType:  purl.TypeNim,
-					Locations: []string{"/root/.nimble/pkgs2/libsodium-0.6.0-a2bcc3d783446e393eacf5759dda821f0f714796/libsodium.nimble"},
+					Name:     "libsodium",
+					Version:  "0.6.0",
+					PURLType: purl.TypeNim,
+					Location: extractor.LocationFromPath("/root/.nimble/pkgs2/libsodium-0.6.0-a2bcc3d783446e393eacf5759dda821f0f714796/libsodium.nimble"),
 				},
 			},
 		},
@@ -115,10 +115,10 @@ func TestExtract(t *testing.T) {
 			path: "/root/.nimble/pkgs2/libp2p-1.12.0-336ec68bcd5f13337666dac935007f450a48a9be/libp2p.nimble",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "libp2p",
-					Version:   "1.12.0",
-					PURLType:  purl.TypeNim,
-					Locations: []string{"/root/.nimble/pkgs2/libp2p-1.12.0-336ec68bcd5f13337666dac935007f450a48a9be/libp2p.nimble"},
+					Name:     "libp2p",
+					Version:  "1.12.0",
+					PURLType: purl.TypeNim,
+					Location: extractor.LocationFromPath("/root/.nimble/pkgs2/libp2p-1.12.0-336ec68bcd5f13337666dac935007f450a48a9be/libp2p.nimble"),
 				},
 			},
 		},
@@ -127,10 +127,10 @@ func TestExtract(t *testing.T) {
 			path: "/root/.nimble/pkgs2/bearssl_pkey_decoder-0.1.0-21b42e2e6ddca6c875d3fc50f36a5115abf51714/bearssl_pkey_decoder.nimble",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "bearssl_pkey_decoder",
-					Version:   "0.1.0",
-					PURLType:  purl.TypeNim,
-					Locations: []string{"/root/.nimble/pkgs2/bearssl_pkey_decoder-0.1.0-21b42e2e6ddca6c875d3fc50f36a5115abf51714/bearssl_pkey_decoder.nimble"},
+					Name:     "bearssl_pkey_decoder",
+					Version:  "0.1.0",
+					PURLType: purl.TypeNim,
+					Location: extractor.LocationFromPath("/root/.nimble/pkgs2/bearssl_pkey_decoder-0.1.0-21b42e2e6ddca6c875d3fc50f36a5115abf51714/bearssl_pkey_decoder.nimble"),
 				},
 			},
 		},
@@ -139,10 +139,10 @@ func TestExtract(t *testing.T) {
 			path: "/root/.nimble/pkgs2/secp256k1-0.6.0.3.2-0cda1744a5d85c872128c50e826b979a6c0f5471/secp256k1.nimble",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "secp256k1",
-					Version:   "0.6.0.3.2",
-					PURLType:  purl.TypeNim,
-					Locations: []string{"/root/.nimble/pkgs2/secp256k1-0.6.0.3.2-0cda1744a5d85c872128c50e826b979a6c0f5471/secp256k1.nimble"},
+					Name:     "secp256k1",
+					Version:  "0.6.0.3.2",
+					PURLType: purl.TypeNim,
+					Location: extractor.LocationFromPath("/root/.nimble/pkgs2/secp256k1-0.6.0.3.2-0cda1744a5d85c872128c50e826b979a6c0f5471/secp256k1.nimble"),
 				},
 			},
 		},

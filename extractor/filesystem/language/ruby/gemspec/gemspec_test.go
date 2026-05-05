@@ -136,10 +136,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/yaml-0.2.1.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "yaml",
-					Version:   "0.2.1",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/yaml-0.2.1.gemspec"},
+					Name:     "yaml",
+					Version:  "0.2.1",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/yaml-0.2.1.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -149,10 +149,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/rss-0.2.9.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "rss",
-					Version:   "0.2.9",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/rss-0.2.9.gemspec"},
+					Name:     "rss",
+					Version:  "0.2.9",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/rss-0.2.9.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -162,10 +162,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant/version_constant.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app",
-					Version:   "1.2.3",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant/version_constant.gemspec"},
+					Name:     "example_app",
+					Version:  "1.2.3",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant/version_constant.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -175,10 +175,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_freeze/version_constant_freeze.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_freeze",
-					Version:   "2.3.4",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_freeze/version_constant_freeze.gemspec"},
+					Name:     "example_app_freeze",
+					Version:  "2.3.4",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_freeze/version_constant_freeze.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -188,10 +188,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_inline.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_inline",
-					Version:   "3.0.0",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_inline.gemspec"},
+					Name:     "example_inline",
+					Version:  "3.0.0",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_inline.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -201,10 +201,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_join/version_constant_join.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_join",
-					Version:   "4.5.6",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_join/version_constant_join.gemspec"},
+					Name:     "example_app_join",
+					Version:  "4.5.6",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_join/version_constant_join.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -214,10 +214,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_join_multiline/version_constant_join_multiline.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_join_multiline",
-					Version:   "7.8.9",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_join_multiline/version_constant_join_multiline.gemspec"},
+					Name:     "example_app_join_multiline",
+					Version:  "7.8.9",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_join_multiline/version_constant_join_multiline.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -227,10 +227,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_expand/version_constant_expand.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_expand",
-					Version:   "5.6.7",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_expand/version_constant_expand.gemspec"},
+					Name:     "example_app_expand",
+					Version:  "5.6.7",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_expand/version_constant_expand.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -240,10 +240,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_dirname/version_constant_dirname.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_dirname",
-					Version:   "8.9.0",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_dirname/version_constant_dirname.gemspec"},
+					Name:     "example_app_dirname",
+					Version:  "8.9.0",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_dirname/version_constant_dirname.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -253,10 +253,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_require/version_constant_require.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_require",
-					Version:   "0.9.9",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_require/version_constant_require.gemspec"},
+					Name:     "example_app_require",
+					Version:  "0.9.9",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_require/version_constant_require.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -266,10 +266,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_conditional/version_constant_conditional.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_conditional",
-					Version:   "9.0.1",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_conditional/version_constant_conditional.gemspec"},
+					Name:     "example_app_conditional",
+					Version:  "9.0.1",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_conditional/version_constant_conditional.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -279,10 +279,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_expand_join/version_constant_expand_join.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app_expand_join",
-					Version:   "6.7.8",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_expand_join/version_constant_expand_join.gemspec"},
+					Name:     "example_app_expand_join",
+					Version:  "6.7.8",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_expand_join/version_constant_expand_join.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -316,10 +316,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_class/version_constant_class.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app",
-					Version:   "3.0.0",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_class/version_constant_class.gemspec"},
+					Name:     "example_app",
+					Version:  "3.0.0",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_class/version_constant_class.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -329,10 +329,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/version_constant_different_casing/version_constant_different_casing.gemspec",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "example_app",
-					Version:   "4.0.0",
-					PURLType:  purl.TypeGem,
-					Locations: []string{"testdata/version_constant_different_casing/version_constant_different_casing.gemspec"},
+					Name:     "example_app",
+					Version:  "4.0.0",
+					PURLType: purl.TypeGem,
+					Location: extractor.LocationFromPath("testdata/version_constant_different_casing/version_constant_different_casing.gemspec"),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,

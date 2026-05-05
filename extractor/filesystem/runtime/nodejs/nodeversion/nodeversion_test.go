@@ -84,7 +84,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &metadata.Metadata{
 						NodeJsVersion: "20.1.0",
 					},
-					Locations: []string{"testdata/simpleValidWithComments.node-version"},
+					Location: extractor.LocationFromPath("testdata/simpleValidWithComments.node-version"),
 				},
 			},
 		},
@@ -101,7 +101,7 @@ func TestExtract(t *testing.T) {
 					Metadata: &metadata.Metadata{
 						NodeJsVersion: "24.04",
 					},
-					Locations: []string{"testdata/validWhiteSpaces.node-version"},
+					Location: extractor.LocationFromPath("testdata/validWhiteSpaces.node-version"),
 				},
 			},
 		},

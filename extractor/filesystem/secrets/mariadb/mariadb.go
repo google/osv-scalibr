@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -205,7 +206,7 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 		if !isSecret(s) {
 			continue
 		}
-		res = append(res, &inventory.Secret{Secret: *s, Location: path})
+		res = append(res, &inventory.Secret{Secret: *s, Location: location.FromPath(path)})
 	}
 
 	return res, nil

@@ -53,14 +53,14 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/one-package.v2.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/one-package.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -73,14 +73,14 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/one-package-dev.v2.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/one-package-dev.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -93,26 +93,26 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/two-packages.v2.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/two-packages.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/two-packages.v2.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/two-packages.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -125,26 +125,26 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/scoped-packages.v2.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped-packages.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "@babel/code-frame",
-					Version:   "7.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/scoped-packages.v2.json"},
+					Name:     "@babel/code-frame",
+					Version:  "7.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped-packages.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -157,62 +157,62 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "postcss",
-					Version:   "6.0.23",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
+					Name:     "postcss",
+					Version:  "6.0.23",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "postcss",
-					Version:   "7.0.16",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
+					Name:     "postcss",
+					Version:  "7.0.16",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "postcss-calc",
-					Version:   "7.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
+					Name:     "postcss-calc",
+					Version:  "7.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "6.1.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
+					Name:     "supports-color",
+					Version:  "6.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/nested-dependencies.v2.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -225,26 +225,26 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "supports-color",
-					Version:   "6.1.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/nested-dependencies-dup.v2.json"},
+					Name:     "supports-color",
+					Version:  "6.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies-dup.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "2.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/nested-dependencies-dup.v2.json"},
+					Name:     "supports-color",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested-dependencies-dup.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -257,170 +257,170 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@segment/analytics.js-integration-facebook-pixel",
-					Version:   "2.4.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "@segment/analytics.js-integration-facebook-pixel",
+					Version:  "2.4.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3b1bb80b302c2e552685dc8a029797ec832ea7c9",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "ansi-styles",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "ansi-styles",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "babel-preset-php",
-					Version:   "1.1.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "babel-preset-php",
+					Version:  "1.1.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-1",
-					Version:   "3.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-1",
+					Version:  "3.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-1",
-					Version:   "3.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-1",
+					Version:  "3.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "be5935f8d2595bcd97b05718ef1eeae08d812e10",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-2",
-					Version:   "2.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-2",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-2",
-					Version:   "2.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-2",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82dcc8e914dabd9305ab9ae580709a7825e824f5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-3",
-					Version:   "2.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-3",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-3",
-					Version:   "3.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-3",
+					Version:  "3.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82ae8802978da40d7f1be5ad5943c9e550ab2c89",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-4",
-					Version:   "3.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-4",
+					Version:  "3.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "is-number-5",
-					Version:   "3.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "is-number-5",
+					Version:  "3.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "postcss-calc",
-					Version:   "7.0.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "postcss-calc",
+					Version:  "7.0.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "raven-js",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "raven-js",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c2b377e7a254264fd4a1fe328e4e3cfc9e245570",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "slick-carousel",
-					Version:   "1.7.1",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.v2.json"},
+					Name:     "slick-carousel",
+					Version:  "1.7.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "280b560161b751ba226d50c7db1e0a14a78c2de0",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -433,38 +433,38 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "etag",
-					Version:   "1.8.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/files.v2.json"},
+					Name:     "etag",
+					Version:  "1.8.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/files.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "abbrev",
-					Version:   "1.0.9",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/files.v2.json"},
+					Name:     "abbrev",
+					Version:  "1.0.9",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/files.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "abbrev",
-					Version:   "2.3.4",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/files.v2.json"},
+					Name:     "abbrev",
+					Version:  "2.3.4",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/files.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -477,38 +477,38 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "@babel/code-frame",
-					Version:   "7.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/alias.v2.json"},
+					Name:     "@babel/code-frame",
+					Version:  "7.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/alias.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "string-width",
-					Version:   "4.2.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/alias.v2.json"},
+					Name:     "string-width",
+					Version:  "4.2.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/alias.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "string-width",
-					Version:   "5.1.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/alias.v2.json"},
+					Name:     "string-width",
+					Version:  "5.1.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/alias.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -521,26 +521,26 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/optional-package.v2.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/optional-package.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/optional-package.v2.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/optional-package.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "optional"},
 					},
 				},
@@ -553,38 +553,38 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "eslint",
-					Version:   "1.2.3",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/same-package-different-groups.v2.json"},
+					Name:     "eslint",
+					Version:  "1.2.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/same-package-different-groups.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "table",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/same-package-different-groups.v2.json"},
+					Name:     "table",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/same-package-different-groups.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "ajv",
-					Version:   "5.5.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/same-package-different-groups.v2.json"},
+					Name:     "ajv",
+					Version:  "5.5.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/same-package-different-groups.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -597,38 +597,38 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "ansi-regex",
-					Version:   "6.2.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					Name:     "ansi-regex",
+					Version:  "6.2.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/bundled-dependencies.v3.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"bundled"},
 					},
 				},
 				{
-					Name:      "semver",
-					Version:   "7.7.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					Name:     "semver",
+					Version:  "7.7.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/bundled-dependencies.v3.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"bundled", "dev"},
 					},
 				},
 				{
-					Name:      "strip-ansi",
-					Version:   "7.1.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/bundled-dependencies.v3.json"},
+					Name:     "strip-ansi",
+					Version:  "7.1.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/bundled-dependencies.v3.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},

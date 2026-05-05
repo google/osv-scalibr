@@ -136,7 +136,7 @@ func (e Extractor) convertCdxBomToPackage(cdxBom *cyclonedx.BOM, path string) []
 	enumerateComponents(*cdxBom.Components, &results)
 
 	for p := range results {
-		results[p].Locations = []string{path}
+		results[p].Location = extractor.LocationFromPath(path)
 	}
 
 	return results

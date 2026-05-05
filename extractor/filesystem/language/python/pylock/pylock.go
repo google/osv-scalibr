@@ -107,10 +107,10 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 		}
 
 		pkgDetails := &extractor.Package{
-			Name:      lockPackage.Name,
-			Version:   lockPackage.Version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{input.Path},
+			Name:     lockPackage.Name,
+			Version:  lockPackage.Version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 		if lockPackage.VCS.Commit != "" {
 			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{

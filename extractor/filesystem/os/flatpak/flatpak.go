@@ -192,7 +192,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Pac
 			OSBuildID:      m["BUILD_ID"],
 			Developer:      f.Developer,
 		},
-		Locations: []string{input.Path},
+		Location: extractor.LocationFromPath(input.Path),
 	}
 
 	return p, nil

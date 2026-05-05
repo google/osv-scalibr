@@ -179,7 +179,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				OSID:           m["ID"],
 				OSVersionID:    m["VERSION_ID"],
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		}
 
 		if len(pkgDependencies) != 0 {

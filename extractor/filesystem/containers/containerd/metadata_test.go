@@ -20,66 +20,22 @@ import (
 	"github.com/google/go-cmp/cmp"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	tests := []struct {
 		desc string
 		m    *containerd.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.ContainerdContainerMetadata
 	}{
-		{
-			desc: "nil metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil package",
-			m: &containerd.Metadata{
-				Namespace: "test-ns",
-			},
-			p:    nil,
-			want: nil,
-		},
 		{
 			desc: "set_metadata",
 			m: &containerd.Metadata{
 				Namespace: "test-ns",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_ContainerdContainerMetadata{
-					ContainerdContainerMetadata: &pb.ContainerdContainerMetadata{
-						NamespaceName: "test-ns",
-					},
-				},
-			},
-		},
-		{
-			desc: "override_metadata",
-			m: &containerd.Metadata{
-				Namespace: "another-ns",
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_ContainerdContainerMetadata{
-					ContainerdContainerMetadata: &pb.ContainerdContainerMetadata{
-						NamespaceName: "test-ns",
-					},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_ContainerdContainerMetadata{
-					ContainerdContainerMetadata: &pb.ContainerdContainerMetadata{
-						NamespaceName: "another-ns",
-					},
-				},
+			want: &pb.ContainerdContainerMetadata{
+				NamespaceName: "test-ns",
 			},
 		},
 		{
@@ -99,50 +55,38 @@ func TestSetProto(t *testing.T) {
 				UpperDir:     "/upper",
 				WorkDir:      "/work",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_ContainerdContainerMetadata{
-					ContainerdContainerMetadata: &pb.ContainerdContainerMetadata{
-						NamespaceName: "test-ns",
-						ImageName:     "test-image",
-						ImageDigest:   "sha256:123",
-						Runtime:       "runc",
-						Id:            "container-id",
-						PodName:       "test-pod",
-						PodNamespace:  "pod-ns",
-						Pid:           1234,
-						Snapshotter:   "overlayfs",
-						SnapshotKey:   "sha256:456",
-						LowerDir:      "/lower",
-						UpperDir:      "/upper",
-						WorkDir:       "/work",
-					},
-				},
+			want: &pb.ContainerdContainerMetadata{
+				NamespaceName: "test-ns",
+				ImageName:     "test-image",
+				ImageDigest:   "sha256:123",
+				Runtime:       "runc",
+				Id:            "container-id",
+				PodName:       "test-pod",
+				PodNamespace:  "pod-ns",
+				Pid:           1234,
+				Snapshotter:   "overlayfs",
+				SnapshotKey:   "sha256:456",
+				LowerDir:      "/lower",
+				UpperDir:      "/upper",
+				WorkDir:       "/work",
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := containerd.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("containerd.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := containerd.ToStruct(p.GetContainerdContainerMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetApkMetadata(), diff)
+			gotStruct := containerd.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -154,11 +98,7 @@ func TestToStruct(t *testing.T) {
 		m    *pb.ContainerdContainerMetadata
 		want *containerd.Metadata
 	}{
-		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
+
 		{
 			desc: "some_fields",
 			m: &pb.ContainerdContainerMetadata{
@@ -210,24 +150,13 @@ func TestToStruct(t *testing.T) {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
-			if tc.m == nil {
-				return
-			}
-
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_ContainerdContainerMetadata{
-					ContainerdContainerMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := containerd.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("containerd.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

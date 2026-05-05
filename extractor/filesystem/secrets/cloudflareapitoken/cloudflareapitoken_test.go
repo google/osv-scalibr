@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/fakefs"
 	velescloudflare "github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
 )
@@ -214,7 +215,7 @@ description = "My worker"`,
 			wantInventory := inventory.Inventory{
 				Secrets: []*inventory.Secret{
 					{
-						Location: tt.path,
+						Location: location.FromPath(tt.path),
 						Secret:   velescloudflare.CloudflareAPIToken{Token: tt.wantSecret},
 					},
 				},

@@ -121,7 +121,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			fmt.Errorf("error during parsing the typescript file: %w", err)
 	}
 	for _, p := range pkgs {
-		p.Locations = []string{inputPath}
+		p.Location = extractor.LocationFromPath(inputPath)
 	}
 
 	return inventory.Inventory{Packages: pkgs}, nil

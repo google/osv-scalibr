@@ -321,7 +321,6 @@ func TestValidatorManagement(t *testing.T) {
 }
 
 func TestValidatorManagement_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(`{"code":7,"message":"team mismatch"}`))

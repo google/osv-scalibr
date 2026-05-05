@@ -83,7 +83,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/simpleValid/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/simpleValid/.tool-versions"),
 				},
 			},
 		}, {
@@ -100,7 +100,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersions/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "21",
@@ -109,7 +109,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "21",
 					},
-					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersions/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "19.0",
@@ -118,7 +118,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "19.0",
 					},
-					Locations: []string{"testdata/validMultiVersions/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersions/.tool-versions"),
 				},
 			},
 		}, {
@@ -135,7 +135,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersionWithSkip/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "21",
@@ -144,7 +144,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "21",
 					},
-					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersionWithSkip/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "19.0",
@@ -153,7 +153,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "19.0",
 					},
-					Locations: []string{"testdata/validMultiVersionWithSkip/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiVersionWithSkip/.tool-versions"),
 				},
 			},
 		}, {
@@ -170,7 +170,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validMultiLine/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiLine/.tool-versions"),
 				}, {
 					Name:     "nodejs",
 					Version:  "20.0",
@@ -179,7 +179,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "20.0",
 					},
-					Locations: []string{"testdata/validMultiLine/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validMultiLine/.tool-versions"),
 				},
 			},
 		}, {
@@ -196,7 +196,7 @@ func TestExtract(t *testing.T) {
 						ToolName:    "nodejs",
 						ToolVersion: "24.04",
 					},
-					Locations: []string{"testdata/validWhiteSpaces/.tool-versions"},
+					Location: extractor.LocationFromPath("testdata/validWhiteSpaces/.tool-versions"),
 				},
 			},
 		},

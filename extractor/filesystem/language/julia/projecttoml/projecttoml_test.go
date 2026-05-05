@@ -93,10 +93,10 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "StaticArraysCore",
-					Version:   "1.4.3",
-					PURLType:  purl.TypeJulia,
-					Locations: []string{"testdata/project.toml"},
+					Name:     "StaticArraysCore",
+					Version:  "1.4.3",
+					PURLType: purl.TypeJulia,
+					Location: extractor.LocationFromPath("testdata/project.toml"),
 				},
 			},
 		},

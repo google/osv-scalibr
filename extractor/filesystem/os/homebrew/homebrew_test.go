@@ -136,10 +136,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "rclone",
-					Version:   "1.67.0",
-					PURLType:  purl.TypeBrew,
-					Locations: []string{"testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json"},
+					Name:     "rclone",
+					Version:  "1.67.0",
+					PURLType: purl.TypeBrew,
+					Location: extractor.LocationFromPath("testdata/Cellar/rclone/1.67.0/INSTALL_RECEIPT.json"),
 					Metadata: &metadata.Metadata{
 						URL:  "https://github.com/rclone/rclone/archive/refs/tags/v1.67.0.tar.gz",
 						Head: "https://github.com/rclone/rclone.git",
@@ -156,10 +156,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "testapp",
-					Version:   "1.1.1",
-					PURLType:  purl.TypeBrew,
-					Locations: []string{"testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh"},
+					Name:     "testapp",
+					Version:  "1.1.1",
+					PURLType: purl.TypeBrew,
+					Location: extractor.LocationFromPath("testdata/Caskroom/testapp/1.1.1/testapp.wrapper.sh"),
 				},
 			},
 		},
@@ -173,10 +173,10 @@ func TestExtract(t *testing.T) {
 			path: "testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "android-platform-tools",
-					Version:   "35.0.2",
-					PURLType:  purl.TypeBrew,
-					Locations: []string{"testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties"},
+					Name:     "android-platform-tools",
+					Version:  "35.0.2",
+					PURLType: purl.TypeBrew,
+					Location: extractor.LocationFromPath("testdata/Caskroom/android-platform-tools/35.0.2/platform-tools/source.properties"),
 				},
 			},
 		},

@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -102,7 +103,7 @@ func (e *Extractor) Extract(ctx context.Context,
 				Username: creds.Username,
 				Password: creds.Password,
 			},
-			Location: input.Path,
+			Location: location.FromPath(input.Path),
 		})
 	}
 

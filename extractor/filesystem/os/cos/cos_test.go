@@ -161,10 +161,10 @@ func TestExtract(t *testing.T) {
 			osrelease: cosOSRlease,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "python-exec",
-					Version:   "17162.336.16",
-					PURLType:  purl.TypeCOS,
-					Locations: []string{"testdata/single.json"},
+					Name:     "python-exec",
+					Version:  "17162.336.16",
+					PURLType: purl.TypeCOS,
+					Location: extractor.LocationFromPath("testdata/single.json"),
 					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",
@@ -183,10 +183,10 @@ func TestExtract(t *testing.T) {
 			osrelease: cosOSRlease,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "python-exec",
-					Version:   "17162.336.16",
-					PURLType:  purl.TypeCOS,
-					Locations: []string{"testdata/multiple.json"},
+					Name:     "python-exec",
+					Version:  "17162.336.16",
+					PURLType: purl.TypeCOS,
+					Location: extractor.LocationFromPath("testdata/multiple.json"),
 					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",
@@ -197,10 +197,10 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "zlib",
-					Version:   "17162.336.17",
-					PURLType:  purl.TypeCOS,
-					Locations: []string{"testdata/multiple.json"},
+					Name:     "zlib",
+					Version:  "17162.336.17",
+					PURLType: purl.TypeCOS,
+					Location: extractor.LocationFromPath("testdata/multiple.json"),
 					Metadata: &cosmeta.Metadata{
 						Name:          "zlib",
 						Version:       "17162.336.17",
@@ -211,10 +211,10 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "baselayout",
-					Version:   "17162.336.18",
-					PURLType:  purl.TypeCOS,
-					Locations: []string{"testdata/multiple.json"},
+					Name:     "baselayout",
+					Version:  "17162.336.18",
+					PURLType: purl.TypeCOS,
+					Location: extractor.LocationFromPath("testdata/multiple.json"),
 					Metadata: &cosmeta.Metadata{
 						Name:          "baselayout",
 						Version:       "17162.336.18",
@@ -225,10 +225,10 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "ncurses",
-					Version:   "17162.336.19",
-					PURLType:  purl.TypeCOS,
-					Locations: []string{"testdata/multiple.json"},
+					Name:     "ncurses",
+					Version:  "17162.336.19",
+					PURLType: purl.TypeCOS,
+					Location: extractor.LocationFromPath("testdata/multiple.json"),
 					Metadata: &cosmeta.Metadata{
 						Name:          "ncurses",
 						Version:       "17162.336.19",
@@ -247,10 +247,10 @@ func TestExtract(t *testing.T) {
 			osrelease: cosOSRleaseNoVersionID,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "python-exec",
-					Version:   "17162.336.16",
-					PURLType:  purl.TypeCOS,
-					Locations: []string{"testdata/single.json"},
+					Name:     "python-exec",
+					Version:  "17162.336.16",
+					PURLType: purl.TypeCOS,
+					Location: extractor.LocationFromPath("testdata/single.json"),
 					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",
@@ -267,10 +267,10 @@ func TestExtract(t *testing.T) {
 			osrelease: cosOSRleaseNoVersions,
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "python-exec",
-					Version:   "17162.336.16",
-					PURLType:  purl.TypeCOS,
-					Locations: []string{"testdata/single.json"},
+					Name:     "python-exec",
+					Version:  "17162.336.16",
+					PURLType: purl.TypeCOS,
+					Location: extractor.LocationFromPath("testdata/single.json"),
 					Metadata: &cosmeta.Metadata{
 						Name:          "python-exec",
 						Version:       "17162.336.16",

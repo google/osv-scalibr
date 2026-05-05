@@ -129,19 +129,19 @@ func TestExtract(t *testing.T) {
 			path: "testdata/deno.json",
 			wantPackages: []*extractor.Package{
 				{
-					Name:      "chalk",
-					Version:   "1.0.0",
-					Locations: []string{"testdata/deno.json"},
-					PURLType:  purl.TypeNPM,
+					Name:     "chalk",
+					Version:  "1.0.0",
+					Location: extractor.LocationFromPath("testdata/deno.json"),
+					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
 						URL: "npm:chalk@1",
 					},
 				},
 				{
-					Name:      "std1/path1",
-					Version:   "^1",
-					PURLType:  purl.TypeJSR,
-					Locations: []string{"testdata/deno.json"},
+					Name:     "std1/path1",
+					Version:  "^1",
+					PURLType: purl.TypeJSR,
+					Location: extractor.LocationFromPath("testdata/deno.json"),
 					Metadata: &denometadata.DenoMetadata{
 						URL: "jsr:@std1/path1@^1",
 					},

@@ -18,6 +18,7 @@ package composerlock
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -81,14 +82,14 @@ func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []str
 	}
 
 	return &extractor.Package{
-		Name:      pkg.Name,
-		Version:   pkg.Version,
-		PURLType:  purl.TypeComposer,
-		Locations: []string{input.Path},
+		Name:     pkg.Name,
+		Version:  pkg.Version,
+		PURLType: purl.TypeComposer,
+		Location: extractor.LocationFromPath(input.Path),
 		SourceCode: &extractor.SourceCodeIdentifier{
 			Commit: commit,
 		},
-		Metadata: osv.DepGroupMetadata{
+		Metadata: &osv.DepGroupMetadata{
 			DepGroupVals: groups,
 		},
 	}
@@ -102,6 +103,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	if parsedLockfile == nil {
+		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
 	}
 
 	packages := make(

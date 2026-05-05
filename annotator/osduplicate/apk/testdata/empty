@@ -1,0 +1,5 @@
+-- lib/apk/db/installed --
+-- etc/apk/arch --
+aarch64
+-- etc/apk/repositories --
+https://dl-cdn.alpinelinux.org/alpine/v3.23/community

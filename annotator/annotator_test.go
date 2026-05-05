@@ -54,7 +54,7 @@ func (failingAnnotator) Annotate(ctx context.Context, input *annotator.ScanInput
 func TestRun(t *testing.T) {
 	inv := &inventory.Inventory{
 		Packages: []*extractor.Package{
-			{Name: "package1", Version: "1.0", Locations: []string{"tmp/package.json"}},
+			{Name: "package1", Version: "1.0", Location: extractor.LocationFromPath("tmp/package.json")},
 		},
 	}
 
@@ -93,9 +93,9 @@ func TestRun(t *testing.T) {
 			wantInv: &inventory.Inventory{
 				Packages: []*extractor.Package{
 					{
-						Name:      "package1",
-						Version:   "1.0",
-						Locations: []string{"tmp/package.json"},
+						Name:     "package1",
+						Version:  "1.0",
+						Location: extractor.LocationFromPath("tmp/package.json"),
 						ExploitabilitySignals: []*vex.PackageExploitabilitySignal{&vex.PackageExploitabilitySignal{
 							Plugin:          cachedir.Name,
 							Justification:   vex.ComponentNotPresent,

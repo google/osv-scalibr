@@ -46,6 +46,9 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		if m.OSID == "alpaquita" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpaquita, Suffix: m.OSVersionID}
 		}
+		if m.OSID == "clnstrt" || m.OSID == "cleanstart" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemCleanStart, Suffix: ""}
+		}
 		if m.OSID == "bellsoft-hardened-containers" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemBellSoftHardenedContainers, Suffix: m.OSVersionID}
 		}

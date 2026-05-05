@@ -86,10 +86,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		packages = append(packages, &extractor.Package{
-			Name:      pkg.Package,
-			Version:   pkg.Version,
-			PURLType:  purl.TypeCran,
-			Locations: []string{input.Path},
+			Name:     pkg.Package,
+			Version:  pkg.Version,
+			PURLType: purl.TypeCran,
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

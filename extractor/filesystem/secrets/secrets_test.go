@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
 	"github.com/google/osv-scalibr/veles/velestest"
@@ -144,7 +145,7 @@ func TestExtract(t *testing.T) {
 			want: []*inventory.Secret{
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 			},
 		},
@@ -155,11 +156,11 @@ func TestExtract(t *testing.T) {
 			want: []*inventory.Secret{
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 			},
 		},
@@ -170,15 +171,15 @@ func TestExtract(t *testing.T) {
 			want: []*inventory.Secret{
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 				{
 					Secret:   velestest.NewFakeStringSecret("FOO"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 				{
 					Secret:   velestest.NewFakeStringSecret("BAR"),
-					Location: path,
+					Location: location.FromPath(path),
 				},
 			},
 		},
