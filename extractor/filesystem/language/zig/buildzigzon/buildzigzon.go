@@ -188,10 +188,10 @@ func (e Extractor) parseNameVersionInfo(ctx context.Context, input *filesystem.S
 	}
 	if parsedPackageName != "" && parsedVersionName != "" {
 		pkg := &extractor.Package{
-			Name:      parsedPackageName,
-			Version:   parsedVersionName,
-			PURLType:  purl.TypeZig,
-			Locations: []string{input.Path},
+			Name:     parsedPackageName,
+			Version:  parsedVersionName,
+			PURLType: purl.TypeZig,
+			Location: extractor.LocationFromPath(input.Path),
 		}
 		packages = append(packages, pkg)
 	}
@@ -240,10 +240,10 @@ func (e Extractor) parseDependenciesField(ctx context.Context, input *filesystem
 	for _, d := range depsList {
 		if d.Name != "" && d.Version != "" {
 			pkg := &extractor.Package{
-				Name:      d.Name,
-				Version:   d.Version,
-				PURLType:  purl.TypeZig,
-				Locations: []string{input.Path},
+				Name:     d.Name,
+				Version:  d.Version,
+				PURLType: purl.TypeZig,
+				Location: extractor.LocationFromPath(input.Path),
 			}
 			packages = append(packages, pkg)
 		}
