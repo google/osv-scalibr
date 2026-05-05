@@ -3328,6 +3328,61 @@ func (x *ElixirMixLockConfig) GetMaxFileSizeBytes() int64 {
 	return 0
 }
 
+type ZigBuildZigZonConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	ScanDependencies bool  `protobuf:"varint,2,opt,name=scan_dependencies,json=scanDependencies,proto3" json:"scan_dependencies,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ZigBuildZigZonConfig) Reset() {
+	*x = ZigBuildZigZonConfig{}
+	mi := &file_proto_config_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ZigBuildZigZonConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ZigBuildZigZonConfig) ProtoMessage() {}
+
+func (x *ZigBuildZigZonConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ZigBuildZigZonConfig.ProtoReflect.Descriptor instead.
+func (*ZigBuildZigZonConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *ZigBuildZigZonConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
+func (x *ZigBuildZigZonConfig) GetScanDependencies() bool {
+	if x != nil {
+		return x.ScanDependencies
+	}
+	return false
+}
+
 type HaskellStacklockConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The maximum file size the plugin will process.
@@ -3340,7 +3395,7 @@ type HaskellStacklockConfig struct {
 
 func (x *HaskellStacklockConfig) Reset() {
 	*x = HaskellStacklockConfig{}
-	mi := &file_proto_config_proto_msgTypes[47]
+	mi := &file_proto_config_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3352,7 +3407,7 @@ func (x *HaskellStacklockConfig) String() string {
 func (*HaskellStacklockConfig) ProtoMessage() {}
 
 func (x *HaskellStacklockConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[47]
+	mi := &file_proto_config_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3365,7 +3420,7 @@ func (x *HaskellStacklockConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HaskellStacklockConfig.ProtoReflect.Descriptor instead.
 func (*HaskellStacklockConfig) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{47}
+	return file_proto_config_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *HaskellStacklockConfig) GetMaxFileSizeBytes() int64 {
@@ -3387,7 +3442,7 @@ type HaskellCabalConfig struct {
 
 func (x *HaskellCabalConfig) Reset() {
 	*x = HaskellCabalConfig{}
-	mi := &file_proto_config_proto_msgTypes[48]
+	mi := &file_proto_config_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3399,7 +3454,7 @@ func (x *HaskellCabalConfig) String() string {
 func (*HaskellCabalConfig) ProtoMessage() {}
 
 func (x *HaskellCabalConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[48]
+	mi := &file_proto_config_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3412,7 +3467,7 @@ func (x *HaskellCabalConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HaskellCabalConfig.ProtoReflect.Descriptor instead.
 func (*HaskellCabalConfig) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{48}
+	return file_proto_config_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *HaskellCabalConfig) GetMaxFileSizeBytes() int64 {
@@ -3446,7 +3501,7 @@ type JavaArchiveConfig struct {
 
 func (x *JavaArchiveConfig) Reset() {
 	*x = JavaArchiveConfig{}
-	mi := &file_proto_config_proto_msgTypes[49]
+	mi := &file_proto_config_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3458,7 +3513,7 @@ func (x *JavaArchiveConfig) String() string {
 func (*JavaArchiveConfig) ProtoMessage() {}
 
 func (x *JavaArchiveConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[49]
+	mi := &file_proto_config_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3471,7 +3526,7 @@ func (x *JavaArchiveConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavaArchiveConfig.ProtoReflect.Descriptor instead.
 func (*JavaArchiveConfig) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{49}
+	return file_proto_config_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *JavaArchiveConfig) GetMaxFileSizeBytes() int64 {
@@ -3530,7 +3585,7 @@ type JavascriptPackageJsonConfig struct {
 
 func (x *JavascriptPackageJsonConfig) Reset() {
 	*x = JavascriptPackageJsonConfig{}
-	mi := &file_proto_config_proto_msgTypes[50]
+	mi := &file_proto_config_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3542,7 +3597,7 @@ func (x *JavascriptPackageJsonConfig) String() string {
 func (*JavascriptPackageJsonConfig) ProtoMessage() {}
 
 func (x *JavascriptPackageJsonConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[50]
+	mi := &file_proto_config_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3555,7 +3610,7 @@ func (x *JavascriptPackageJsonConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JavascriptPackageJsonConfig.ProtoReflect.Descriptor instead.
 func (*JavascriptPackageJsonConfig) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{50}
+	return file_proto_config_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *JavascriptPackageJsonConfig) GetMaxFileSizeBytes() int64 {
@@ -3568,61 +3623,6 @@ func (x *JavascriptPackageJsonConfig) GetMaxFileSizeBytes() int64 {
 func (x *JavascriptPackageJsonConfig) GetIncludeDependencies() bool {
 	if x != nil {
 		return x.IncludeDependencies
-	}
-	return false
-}
-
-type ZigBuildZigZonConfig struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The maximum file size the plugin will process.
-	// If set, this overrides the global max_file_size_bytes configuration
-	// for this specific plugin.
-	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
-	ScanDependencies bool  `protobuf:"varint,2,opt,name=scan_dependencies,json=scanDependencies,proto3" json:"scan_dependencies,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *ZigBuildZigZonConfig) Reset() {
-	*x = ZigBuildZigZonConfig{}
-	mi := &file_proto_config_proto_msgTypes[51]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ZigBuildZigZonConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ZigBuildZigZonConfig) ProtoMessage() {}
-
-func (x *ZigBuildZigZonConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[51]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ZigBuildZigZonConfig.ProtoReflect.Descriptor instead.
-func (*ZigBuildZigZonConfig) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{51}
-}
-
-func (x *ZigBuildZigZonConfig) GetMaxFileSizeBytes() int64 {
-	if x != nil {
-		return x.MaxFileSizeBytes
-	}
-	return 0
-}
-
-func (x *ZigBuildZigZonConfig) GetScanDependencies() bool {
-	if x != nil {
-		return x.ScanDependencies
 	}
 	return false
 }
@@ -4412,7 +4412,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x16SwiftPodfileLockConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"D\n" +
 	"\x13ElixirMixLockConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"G\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"r\n" +
+	"\x14ZigBuildZigZonConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12+\n" +
+	"\x11scan_dependencies\x18\x02 \x01(\bR\x10scanDependencies\"G\n" +
 	"\x16HaskellStacklockConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"C\n" +
 	"\x12HaskellCabalConfig\x12-\n" +
@@ -4429,10 +4432,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"_hash_jars\"\x7f\n" +
 	"\x1bJavascriptPackageJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x121\n" +
-	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependencies\"r\n" +
-	"\x14ZigBuildZigZonConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12+\n" +
-	"\x11scan_dependencies\x18\x02 \x01(\bR\x10scanDependencies\"P\n" +
+	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependencies\"P\n" +
 	"\x1fJavascriptPackageLockJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"I\n" +
 	"\x18PythonRequirementsConfig\x12-\n" +
@@ -4527,11 +4527,11 @@ var file_proto_config_proto_goTypes = []any{
 	(*SwiftPackageResolvedConfig)(nil),         // 44: scalibr.SwiftPackageResolvedConfig
 	(*SwiftPodfileLockConfig)(nil),             // 45: scalibr.SwiftPodfileLockConfig
 	(*ElixirMixLockConfig)(nil),                // 46: scalibr.ElixirMixLockConfig
-	(*HaskellStacklockConfig)(nil),             // 47: scalibr.HaskellStacklockConfig
-	(*HaskellCabalConfig)(nil),                 // 48: scalibr.HaskellCabalConfig
-	(*JavaArchiveConfig)(nil),                  // 49: scalibr.JavaArchiveConfig
-	(*JavascriptPackageJsonConfig)(nil),        // 50: scalibr.JavascriptPackageJsonConfig
-	(*ZigBuildZigZonConfig)(nil),               // 51: scalibr.ZigBuildZigZonConfig
+	(*ZigBuildZigZonConfig)(nil),               // 47: scalibr.ZigBuildZigZonConfig
+	(*HaskellStacklockConfig)(nil),             // 48: scalibr.HaskellStacklockConfig
+	(*HaskellCabalConfig)(nil),                 // 49: scalibr.HaskellCabalConfig
+	(*JavaArchiveConfig)(nil),                  // 50: scalibr.JavaArchiveConfig
+	(*JavascriptPackageJsonConfig)(nil),        // 51: scalibr.JavascriptPackageJsonConfig
 	(*JavascriptPackageLockJsonConfig)(nil),    // 52: scalibr.JavascriptPackageLockJsonConfig
 	(*PythonRequirementsConfig)(nil),           // 53: scalibr.PythonRequirementsConfig
 	(*PythonSetupConfig)(nil),                  // 54: scalibr.PythonSetupConfig
@@ -4582,10 +4582,10 @@ var file_proto_config_proto_depIdxs = []int32{
 	44, // 33: scalibr.PluginSpecificConfig.swift_package_resolved:type_name -> scalibr.SwiftPackageResolvedConfig
 	45, // 34: scalibr.PluginSpecificConfig.swift_podfile_lock:type_name -> scalibr.SwiftPodfileLockConfig
 	46, // 35: scalibr.PluginSpecificConfig.elixir_mix_lock:type_name -> scalibr.ElixirMixLockConfig
-	47, // 36: scalibr.PluginSpecificConfig.haskell_stacklock:type_name -> scalibr.HaskellStacklockConfig
-	48, // 37: scalibr.PluginSpecificConfig.haskell_cabal:type_name -> scalibr.HaskellCabalConfig
-	49, // 38: scalibr.PluginSpecificConfig.java_archive:type_name -> scalibr.JavaArchiveConfig
-	50, // 39: scalibr.PluginSpecificConfig.javascript_package_json:type_name -> scalibr.JavascriptPackageJsonConfig
+	48, // 36: scalibr.PluginSpecificConfig.haskell_stacklock:type_name -> scalibr.HaskellStacklockConfig
+	49, // 37: scalibr.PluginSpecificConfig.haskell_cabal:type_name -> scalibr.HaskellCabalConfig
+	50, // 38: scalibr.PluginSpecificConfig.java_archive:type_name -> scalibr.JavaArchiveConfig
+	51, // 39: scalibr.PluginSpecificConfig.javascript_package_json:type_name -> scalibr.JavascriptPackageJsonConfig
 	52, // 40: scalibr.PluginSpecificConfig.javascript_package_lock_json:type_name -> scalibr.JavascriptPackageLockJsonConfig
 	53, // 41: scalibr.PluginSpecificConfig.python_requirements:type_name -> scalibr.PythonRequirementsConfig
 	54, // 42: scalibr.PluginSpecificConfig.python_setup:type_name -> scalibr.PythonSetupConfig
@@ -4608,7 +4608,7 @@ var file_proto_config_proto_depIdxs = []int32{
 	38, // 59: scalibr.PluginSpecificConfig.hcp_identity:type_name -> scalibr.HCPIdentityConfig
 	37, // 60: scalibr.PluginSpecificConfig.heroku_expiration:type_name -> scalibr.HerokuExpirationConfig
 	36, // 61: scalibr.PluginSpecificConfig.huggingface_meta:type_name -> scalibr.HuggingfaceMetaConfig
-	51, // 62: scalibr.PluginSpecificConfig.buildzigzon:type_name -> scalibr.ZigBuildZigZonConfig
+	47, // 62: scalibr.PluginSpecificConfig.buildzigzon:type_name -> scalibr.ZigBuildZigZonConfig
 	63, // [63:63] is the sub-list for method output_type
 	63, // [63:63] is the sub-list for method input_type
 	63, // [63:63] is the sub-list for extension type_name
@@ -4685,7 +4685,7 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_HuggingfaceMeta)(nil),
 		(*PluginSpecificConfig_Buildzigzon)(nil),
 	}
-	file_proto_config_proto_msgTypes[49].OneofWrappers = []any{}
+	file_proto_config_proto_msgTypes[50].OneofWrappers = []any{}
 	file_proto_config_proto_msgTypes[59].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
