@@ -23,6 +23,7 @@ import (
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
@@ -129,6 +130,18 @@ func MakePackageURL(name string, version string, purlType string, metadata any) 
 		}
 		if m.PlatformOS != "" {
 			q[purl.Distro] = m.Platform + "-" + m.PlatformOS
+		}
+
+	case *freebsdmeta.Metadata:
+		name = m.PackageName
+		if distro := m.ToDistro(); distro != "" {
+			q[purl.Distro] = distro
+		}
+		if m.Origin != "" {
+			q[purl.Origin] = m.Origin
+		}
+		if m.Arch != "" {
+			q[purl.Arch] = m.Arch
 		}
 
 	default:

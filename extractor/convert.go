@@ -75,7 +75,7 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	case purl.TypeGithub:
 		return githubPURL(p.Name, p.Version)
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeFlatpak, purl.TypeApk, purl.TypeCOS, purl.TypeRPM,
-		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix:
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix, purl.TypeFreeBSD:
 		return ospurl.MakePackageURL(p.Name, p.Version, p.PURLType, p.Metadata)
 	case "windows":
 		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
@@ -108,8 +108,7 @@ func githubPURL(name, version string) *purl.PackageURL {
 func toEcosystem(p *Package) osvecosystem.Parsed {
 	switch p.PURLType {
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeApk, purl.TypeRPM,
-		purl.TypeSnap, purl.TypePacman, purl.TypePortage:
-
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeFreeBSD:
 		return osecosystem.MakeEcosystem(p.Metadata)
 	case purl.TypePyPi:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPyPI)
