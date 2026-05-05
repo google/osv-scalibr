@@ -108,6 +108,7 @@ message PluginSpecificConfig {
     HCPIdentityConfig hcp_identity = 73;
     HerokuExpirationConfig heroku_expiration = 74;
     HuggingfaceMetaConfig huggingface_meta = 75;
+    ZigBuildZigZonConfig buildzigzon = 76;
   }
 }
 
@@ -427,6 +428,14 @@ message ElixirMixLockConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message ZigBuildZigZonConfig{
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  bool scan_dependencies = 2;
 }
 
 message HaskellStacklockConfig {
