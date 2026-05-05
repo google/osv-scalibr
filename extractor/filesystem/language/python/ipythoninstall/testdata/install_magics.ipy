@@ -1,0 +1,5 @@
+%pip install pandas==2.2.2
+%conda install scipy=1.14.1
+%mamba install scikit-learn=1.5.0
+%micromamba install polars=0.20.31
+%uv pip install anyio==4.6.2.post1

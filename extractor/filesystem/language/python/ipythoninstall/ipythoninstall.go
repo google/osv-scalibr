@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net/url"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -48,7 +50,7 @@ var (
 		".ipyw":  true,
 	}
 
-	installCmdRe  = regexp.MustCompile(`^(?:!|%)(pip|conda|uv)\b`)
+	installCmdRe  = regexp.MustCompile(`^(?:!|%)(pip|conda|mamba|micromamba|uv)\b`)
 	packageSpecRe = regexp.MustCompile(`^([A-Za-z0-9._-]+)(==|===|~=|>=|<=|>|<|=)?([A-Za-z0-9*._+-]+)?$`)
 )
 
@@ -102,7 +104,7 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 			pkgs = append(pkgs, &extractor.Package{
 				Name:     pkg.name,
 				Version:  pkg.version,
-				PURLType: purl.TypePyPi,
+				PURLType: pkg.purlType,
 				Location: extractor.LocationFromPath(input.Path),
 			})
 		}
@@ -163,8 +165,9 @@ func sourceLines(source interface{}) []string {
 }
 
 type parsedPackage struct {
-	name    string
-	version string
+	name     string
+	version  string
+	purlType string
 }
 
 func packagesFromCommand(line string) []parsedPackage {
@@ -176,6 +179,8 @@ func packagesFromCommand(line string) []parsedPackage {
 	if len(match) < 2 {
 		return nil
 	}
+	command := match[1]
+	purlType := packagePURLType(command)
 
 	tokens := strings.Fields(trimmed)
 	if len(tokens) < 3 {
@@ -196,7 +201,14 @@ func packagesFromCommand(line string) []parsedPackage {
 	var pkgs []parsedPackage
 	for _, tok := range tokens[installIdx+1:] {
 		tok = strings.Trim(tok, " \t\r\n,;\"'")
-		if tok == "" || strings.HasPrefix(tok, "-") || strings.Contains(tok, "/") || strings.Contains(tok, "://") {
+		if tok == "" || strings.HasPrefix(tok, "-") {
+			continue
+		}
+		if strings.Contains(tok, "/") || strings.Contains(tok, "://") {
+			if pkg, ok := condaPackageFromURL(tok); isCondaInstallCommand(command) && ok {
+				pkg.purlType = purlType
+				pkgs = append(pkgs, pkg)
+			}
 			continue
 		}
 		if cut, ok := strings.CutPrefix(tok, "conda-forge::"); ok {
@@ -209,7 +221,47 @@ func packagesFromCommand(line string) []parsedPackage {
 		if parts[1] == "" {
 			continue
 		}
-		pkgs = append(pkgs, parsedPackage{name: parts[1], version: parts[3]})
+		pkgs = append(pkgs, parsedPackage{name: parts[1], version: parts[3], purlType: purlType})
 	}
 	return pkgs
+}
+
+func packagePURLType(command string) string {
+	if isCondaInstallCommand(command) {
+		return purl.TypeConda
+	}
+	return purl.TypePyPi
+}
+
+func isCondaInstallCommand(command string) bool {
+	return command == "conda" || command == "mamba" || command == "micromamba"
+}
+
+func condaPackageFromURL(raw string) (parsedPackage, bool) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return parsedPackage{}, false
+	}
+	filename := path.Base(u.Path)
+	filename = strings.TrimSuffix(filename, ".tar.bz2")
+	filename = strings.TrimSuffix(filename, ".conda")
+	if filename == "" || filename == "." || filename == path.Base(u.Path) {
+		return parsedPackage{}, false
+	}
+
+	buildIdx := strings.LastIndex(filename, "-")
+	if buildIdx == -1 {
+		return parsedPackage{}, false
+	}
+	withoutBuild := filename[:buildIdx]
+	versionIdx := strings.LastIndex(withoutBuild, "-")
+	if versionIdx == -1 {
+		return parsedPackage{}, false
+	}
+	name := withoutBuild[:versionIdx]
+	version := withoutBuild[versionIdx+1:]
+	if name == "" || version == "" {
+		return parsedPackage{}, false
+	}
+	return parsedPackage{name: name, version: version}, true
 }

@@ -66,8 +66,8 @@ func TestExtract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{Name: "pandas", Version: "2.2.2", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/inline.ipynb")},
 				{Name: "numpy", Version: "", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/inline.ipynb")},
-				{Name: "scikit-learn", Version: "1.5.0", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/inline.ipynb")},
-				{Name: "polars", Version: "0.20.31", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/inline.ipynb")},
+				{Name: "scikit-learn", Version: "1.5.0", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/inline.ipynb")},
+				{Name: "polars", Version: "0.20.31", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/inline.ipynb")},
 			},
 		},
 		{
@@ -77,6 +77,31 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{Name: "uvicorn", Version: "0.34.2", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/inline.ipy")},
+			},
+		},
+		{
+			Name: "documented install magics",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/install_magics.ipy",
+			},
+			WantPackages: []*extractor.Package{
+				{Name: "pandas", Version: "2.2.2", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
+				{Name: "scipy", Version: "1.14.1", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
+				{Name: "scikit-learn", Version: "1.5.0", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
+				{Name: "polars", Version: "0.20.31", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
+				{Name: "anyio", Version: "4.6.2.post1", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
+			},
+		},
+		{
+			Name: "conda install URLs",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/conda_urls.ipy",
+			},
+			WantPackages: []*extractor.Package{
+				{Name: "requests", Version: "2.32.3", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/conda_urls.ipy")},
+				{Name: "certifi", Version: "2025.4.26", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/conda_urls.ipy")},
+				{Name: "plainpkg", Version: "1.2.3", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/conda_urls.ipy")},
+				{Name: "jupyterlab", Version: "4.3.0", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/conda_urls.ipy")},
 			},
 		},
 	}
