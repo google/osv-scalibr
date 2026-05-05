@@ -316,15 +316,17 @@ func (e Extractor) parseDependencyList(dependencyBlock string) []Dependency {
 			}
 		}
 	foundEnd:
-		entryContent := dependencyBlock[absBodyStart+1 : bodyEnd]
+		if absBodyStart < bodyEnd {
+			entryContent := dependencyBlock[absBodyStart+1 : bodyEnd]
 
-		dep := e.parseSingleDep(entryContent)
-		deps = append(deps, dep)
+			dep := e.parseSingleDep(entryContent)
+			deps = append(deps, dep)
 
-		pos = absStart + 1
-		// Advance past this whole entry to avoid re-matching nested keys
-		if bodyEnd > pos {
-			pos = bodyEnd + 1
+			pos = absStart + 1
+			// Advance past this whole entry to avoid re-matching nested keys
+			if bodyEnd > pos {
+				pos = bodyEnd + 1
+			}
 		}
 	}
 	return deps
