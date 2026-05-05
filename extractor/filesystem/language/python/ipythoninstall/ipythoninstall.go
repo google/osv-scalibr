@@ -47,7 +47,6 @@ var (
 	ipythonExts = map[string]bool{
 		".ipynb": true,
 		".ipy":   true,
-		".ipyw":  true,
 	}
 
 	installCmdRe  = regexp.MustCompile(`^(?:!|%)(pip|conda|mamba|micromamba|uv)\b`)
