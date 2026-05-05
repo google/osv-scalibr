@@ -90,6 +90,7 @@ func TestExtract(t *testing.T) {
 				{Name: "scikit-learn", Version: "1.5.0", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
 				{Name: "polars", Version: "0.20.31", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
 				{Name: "anyio", Version: "4.6.2.post1", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
+				{Name: "fastapi", Version: "0.115.0", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
 			},
 		},
 		{

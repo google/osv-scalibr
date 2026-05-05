@@ -52,6 +52,11 @@ func TestPackagesFromCommandInstallMagics(t *testing.T) {
 			line: "%uv pip install anyio==4.6.2.post1",
 			want: []parsedPackage{{name: "anyio", version: "4.6.2.post1", purlType: purl.TypePyPi}},
 		},
+		{
+			name: "uv add",
+			line: "%uv add fastapi==0.115.0",
+			want: []parsedPackage{{name: "fastapi", version: "0.115.0", purlType: purl.TypePyPi}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -60,6 +65,13 @@ func TestPackagesFromCommandInstallMagics(t *testing.T) {
 				t.Errorf("packagesFromCommand(%q) diff (-want +got):\n%s", tt.line, diff)
 			}
 		})
+	}
+}
+
+func TestPackagesFromCommandAddOnlyAppliesToUV(t *testing.T) {
+	line := "%pip add should-not-parse==1.0.0"
+	if got := packagesFromCommand(line); len(got) != 0 {
+		t.Errorf("packagesFromCommand(%q) = %+v, want nil", line, got)
 	}
 }
 

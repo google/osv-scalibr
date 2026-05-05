@@ -186,19 +186,13 @@ func packagesFromCommand(line string) []parsedPackage {
 		return nil
 	}
 
-	installIdx := -1
-	for i := 1; i < len(tokens); i++ {
-		if tokens[i] == "install" {
-			installIdx = i
-			break
-		}
-	}
-	if installIdx == -1 || installIdx+1 >= len(tokens) {
+	pkgStartIdx := packageStartIndex(command, tokens)
+	if pkgStartIdx == -1 || pkgStartIdx >= len(tokens) {
 		return nil
 	}
 
 	var pkgs []parsedPackage
-	for _, tok := range tokens[installIdx+1:] {
+	for _, tok := range tokens[pkgStartIdx:] {
 		tok = strings.Trim(tok, " \t\r\n,;\"'")
 		if tok == "" || strings.HasPrefix(tok, "-") {
 			continue
@@ -223,6 +217,15 @@ func packagesFromCommand(line string) []parsedPackage {
 		pkgs = append(pkgs, parsedPackage{name: parts[1], version: parts[3], purlType: purlType})
 	}
 	return pkgs
+}
+
+func packageStartIndex(command string, tokens []string) int {
+	for i := 1; i < len(tokens); i++ {
+		if tokens[i] == "install" || command == "uv" && tokens[i] == "add" {
+			return i + 1
+		}
+	}
+	return -1
 }
 
 func packagePURLType(command string) string {

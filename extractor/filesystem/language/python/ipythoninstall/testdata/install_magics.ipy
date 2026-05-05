@@ -3,3 +3,4 @@
 %mamba install scikit-learn=1.5.0
 %micromamba install polars=0.20.31
 %uv pip install anyio==4.6.2.post1
+%uv add fastapi==0.115.0
