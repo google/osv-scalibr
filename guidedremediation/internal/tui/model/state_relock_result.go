@@ -39,6 +39,9 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
+var execCommandContext = exec.CommandContext
+var execLookPath = exec.LookPath
+
 type stateRelockResult struct {
 	currRes      *remediation.ResolvedManifest // In-progress relock result, with user-selected patches applied
 	currErrs     []result.ResolveError         // In-progress relock errors
@@ -534,7 +537,7 @@ func (st stateRelockResult) write(m Model) tea.Msg {
 
 	// shell out to npm to write the package-lock.json file.
 	dir := filepath.Dir(m.options.Manifest)
-	npmPath, err := exec.LookPath("npm")
+	npmPath, err := execLookPath("npm")
 	if err != nil {
 		return writeMsg{fmt.Errorf("cannot find npm executable: %w", err)}
 	}
@@ -548,13 +551,13 @@ func (st stateRelockResult) write(m Model) tea.Msg {
 		return fmt.Errorf("failed removing old node_modules/: %w", err)
 	}
 
-	c := exec.CommandContext(context.Background(), npmPath, "install", "--package-lock-only")
+	c := execCommandContext(context.Background(), npmPath, "install", "--package-lock-only", "--ignore-scripts")
 	c.Dir = dir
 
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		if err != nil {
 			// try again with "--legacy-peer-deps"
-			c = exec.CommandContext(context.Background(), npmPath, "install", "--package-lock-only", "--legacy-peer-deps")
+			c = execCommandContext(context.Background(), npmPath, "install", "--package-lock-only", "--legacy-peer-deps", "--ignore-scripts")
 			c.Dir = dir
 
 			return tea.ExecProcess(c, func(err error) tea.Msg { return writeMsg{err} })()
