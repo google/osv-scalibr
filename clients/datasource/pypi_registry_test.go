@@ -15,6 +15,8 @@
 package datasource_test
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -211,4 +213,32 @@ func TestPyPILocalRegistry(t *testing.T) {
 	if string(content) != jsonResp {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), jsonResp)
 	}
+}
+
+func TestPyPILocalRegistryRejectsTraversalURLPath(t *testing.T) {
+	tempDir := t.TempDir()
+	payload := []byte("WAVE10_PYPI_CACHE_TRAVERSAL_PAYLOAD")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(payload)
+	}))
+	t.Cleanup(srv.Close)
+	client := datasource.NewPyPIRegistryAPIClient(srv.URL, tempDir)
+
+	_, err := client.GetFile(t.Context(), srv.URL+"/../../escape/outside/pwned.whl")
+	if err == nil {
+		t.Fatal("GetFile() succeeded with traversal URL path, want error")
+	}
+
+	cacheRoot := filepath.Join(tempDir, "pypi")
+	escaped := filepath.Join(tempDir, "escape", "outside", "pwned.whl")
+	if _, err := os.Stat(filepath.Join(cacheRoot, "escape", "outside", "pwned.whl")); err == nil {
+		t.Fatal("test setup error: file stayed under PyPI cache root")
+	}
+	if _, err := os.Stat(escaped); err == nil {
+		t.Fatalf("escaped cache file exists: %s", escaped)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("failed to stat escaped cache file %s: %v", escaped, err)
+	}
+	t.Logf("cache root: %s", cacheRoot)
 }

@@ -308,7 +308,11 @@ func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, regist
 func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
 	filePath := ""
 	if m.localRegistry != "" {
-		filePath = filepath.Join(append([]string{m.localRegistry}, paths...)...)
+		var err error
+		filePath, err = localRegistryPath("Maven", m.localRegistry, paths)
+		if err != nil {
+			return err
+		}
 		file, err := os.Open(filePath)
 		if err == nil {
 			defer file.Close()
