@@ -98,6 +98,7 @@ import (
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/gitrepo"
+	jenkinsplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/jenkins/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
@@ -523,6 +524,7 @@ var (
 		wordpressplugins.Name: {protoCfg(wordpressplugins.New)},
 		chromeextensions.Name: {protoCfg(chromeextensions.New)},
 		netscaler.Name:        {protoCfg(netscaler.New)},
+		jenkinsplugins.Name:   {protoCfg(jenkinsplugins.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
