@@ -110,6 +110,7 @@ message PluginSpecificConfig {
     HerokuExpirationConfig heroku_expiration = 74;
     HuggingfaceMetaConfig huggingface_meta = 75;
     ContainerdRuntimeConfig containerd_runtime = 76;
+    DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
   }
 }
 
@@ -395,6 +396,13 @@ message DotnetPeConfig {
 }
 
 message DotnetPaketConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message DotnetProjectAssetsJsonConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
