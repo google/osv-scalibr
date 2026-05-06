@@ -228,6 +228,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                               | Extractor Plugin    |
 |------------------------------------| ------------------- |
+| Jenkins plugins                    | `jenkins/plugins`   |
 | Wordpress plugins                  | `wordpress/plugins` |
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |
