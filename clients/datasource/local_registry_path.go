@@ -26,7 +26,7 @@ func localRegistryPath(kind, root string, paths []string) (string, error) {
 		if elem == "" || path.IsAbs(elem) || strings.Contains(elem, `\`) {
 			return "", fmt.Errorf("invalid %s local registry cache path %q", kind, paths)
 		}
-		for _, part := range strings.Split(elem, "/") {
+		for part := range strings.SplitSeq(elem, "/") {
 			if part == "" || part == "." || part == ".." {
 				return "", fmt.Errorf("invalid %s local registry cache path %q", kind, paths)
 			}
