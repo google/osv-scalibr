@@ -28,6 +28,11 @@ import (
 func GetOSRelease(fs scalibrfs.FS) (map[string]string, error) {
 	paths := []string{"etc/os-release", "usr/lib/os-release"}
 
+	if _, err := fs.Stat("etc"); os.IsNotExist(err) {
+		// Probably not a linux filesystem
+		return nil, nil
+	}
+
 	for _, p := range paths {
 		f, err := fs.Open(p)
 		if err != nil {

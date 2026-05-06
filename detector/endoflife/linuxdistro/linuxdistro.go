@@ -91,6 +91,9 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	if err != nil {
 		return inventory.Finding{}, err
 	}
+	if osRelease == nil {
+		return inventory.Finding{}, nil
+	}
 	distro, ok := osRelease["ID"]
 	if !ok {
 		return inventory.Finding{}, err
