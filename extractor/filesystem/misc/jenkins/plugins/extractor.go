@@ -65,7 +65,7 @@ type Extractor struct {
 // e := New(&cpb.PluginConfig{})
 // ```
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	maxFileSizeBytes := int64(defaultMaxFileSizeBytes)
+	maxFileSizeBytes := defaultMaxFileSizeBytes
 	if cfg.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
