@@ -83,6 +83,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	jenkinsplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/jenkins/plugins"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
@@ -451,6 +452,7 @@ var (
 		wordpressplugins.Name: {wordpressplugins.New},
 		chromeextensions.Name: {chromeextensions.New},
 		netscaler.Name:        {netscaler.New},
+		jenkinsplugins.Name:   {jenkinsplugins.New},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
