@@ -17,7 +17,9 @@ package parser
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -75,23 +77,12 @@ func WriteLockfilePatches(path string, patches []result.Patch, rw lockfile.ReadW
 }
 
 func fsAndPath(path string) (scalibrfs.FS, string, error) {
-	// We need a DirFS that can potentially access files in parent directories from the file.
-	// But you cannot escape the base directory of dirfs.
-	// e.g. "pkg/core/pom.xml" may have a parent at "pkg/parent/pom.xml",
-	// if we had fsys := scalibrfs.DirFS("pkg/core"), we can't do fsys.Open("../parent/pom.xml")
-	//
-	// Since we don't know ahead of time which files might be needed,
-	// we must use the system root as the directory.
-
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Get the path relative to the root (i.e. without the leading '/')
-	// On Windows, we need the path relative to the drive letter,
-	// which also means we can't open files across drives.
-	root := filepath.VolumeName(absPath) + "/"
+	root := findWorkspaceRoot(absPath)
 	relPath, err := filepath.Rel(root, absPath)
 	if err != nil {
 		return nil, "", err
@@ -99,4 +90,30 @@ func fsAndPath(path string) (scalibrfs.FS, string, error) {
 	relPath = filepath.ToSlash(relPath)
 
 	return scalibrfs.DirFS(root), relPath, nil
+}
+
+func findWorkspaceRoot(absPath string) string {
+	dir := filepath.Dir(absPath)
+	markerFiles := []string{".git", "WORKSPACE", "go.mod"}
+
+	for {
+		for _, marker := range markerFiles {
+			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
+				return dir
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+
+	cwd, err := os.Getwd()
+	if err == nil {
+		if absPath == cwd || strings.HasPrefix(absPath, cwd+string(filepath.Separator)) {
+			return cwd
+		}
+	}
+	return filepath.Dir(absPath)
 }
