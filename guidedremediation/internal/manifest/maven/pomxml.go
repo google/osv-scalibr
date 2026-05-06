@@ -543,15 +543,36 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 			return err
 		}
 		// Write the patched parent relative to the new outputPath
-		relativePatch, err := filepath.Rel(original.FilePath(), patchPath)
+		relativePatch, err := filepath.Rel(filepath.Dir(original.FilePath()), patchPath)
 		if err != nil {
 			return err
 		}
-		patchPath = filepath.Join(outputPath, relativePatch)
-		if err := os.MkdirAll(filepath.Dir(patchPath), 0755); err != nil {
+
+		outDir := filepath.Dir(outputPath)
+		newPatchPath := filepath.Join(outDir, relativePatch)
+
+		origDir := filepath.Clean(filepath.Dir(original.FilePath()))
+		baseOutputDir := filepath.Clean(outDir)
+
+		volOrig := filepath.VolumeName(origDir)
+		relOrig := origDir[len(volOrig):]
+		cleanRelOrig := strings.Trim(filepath.ToSlash(relOrig), "/")
+		if cleanRelOrig != "." && cleanRelOrig != "" {
+			depth := strings.Count(cleanRelOrig, "/") + 1
+			for i := 0; i < depth; i++ {
+				baseOutputDir = filepath.Dir(baseOutputDir)
+			}
+		}
+
+		rel, err := filepath.Rel(baseOutputDir, newPatchPath)
+		if err != nil || strings.HasPrefix(rel, "..") {
+			return fmt.Errorf("patched manifest path %q escapes base output directory %q", newPatchPath, baseOutputDir)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(newPatchPath), 0755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(patchPath, out.Bytes(), 0644); err != nil {
+		if err := os.WriteFile(newPatchPath, out.Bytes(), 0644); err != nil {
 			return err
 		}
 	}
