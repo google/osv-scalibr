@@ -114,8 +114,8 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 
 type notebook struct {
 	Cells []struct {
-		CellType string      `json:"cell_type"`
-		Source   interface{} `json:"source"`
+		CellType string `json:"cell_type"`
+		Source   any    `json:"source"`
 	} `json:"cells"`
 }
 
@@ -131,9 +131,7 @@ func commandsFromReader(r io.Reader, ext string) ([]string, error) {
 			if cell.CellType != "code" {
 				continue
 			}
-			for _, line := range sourceLines(cell.Source) {
-				commands = append(commands, line)
-			}
+			commands = append(commands, sourceLines(cell.Source)...)
 		}
 		return commands, nil
 	}
@@ -146,11 +144,11 @@ func commandsFromReader(r io.Reader, ext string) ([]string, error) {
 	return commands, s.Err()
 }
 
-func sourceLines(source interface{}) []string {
+func sourceLines(source any) []string {
 	switch v := source.(type) {
 	case string:
 		return strings.Split(v, "\n")
-	case []interface{}:
+	case []any:
 		var lines []string
 		for _, part := range v {
 			if s, ok := part.(string); ok {
