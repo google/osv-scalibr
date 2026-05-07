@@ -28,6 +28,7 @@ import (
 	"strings"
 	"syscall"
 
+	"golang.org/x/sys/windows/registry"
 	"github.com/google/osv-scalibr/detector"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal/samreg"
 	"github.com/google/osv-scalibr/detector/weakcredentials/winlocal/systemreg"
@@ -35,7 +36,6 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
-	"golang.org/x/sys/windows/registry"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -51,8 +51,6 @@ const (
 	// Name of the detector.
 	Name = "weakcredentials/winlocal"
 
-	samDumpFile       = `C:\ProgramData\Scalibr\private\SAM`
-	systemDumpFile    = `C:\ProgramData\Scalibr\private\SYSTEM`
 	vulnRefLMPassword = "PASSWORD_HASH_LM_FORMAT"
 	vulnRefWeakPass   = "WINDOWS_WEAK_PASSWORD"
 )
@@ -217,21 +215,19 @@ func (d Detector) dumpSAM(samFile string) (*samreg.SAMRegistry, error) {
 
 	reg, err := samreg.NewFromFile(samFile)
 	if err != nil {
-		os.Remove(samFile)
 		return nil, err
 	}
 
 	return reg, nil
 }
 
-func (d Detector) dumpSYSTEM(systemFile string) (*systemreg.SystemRegistry, error) {
+func (d Detector) dumpSYSTEM(systemFile string) (*systemreg.SystemRegistry, error) {.
 	if err := d.saveSensitiveReg(registry.LOCAL_MACHINE, `SYSTEM`, systemFile); err != nil {
 		return nil, err
 	}
 
 	reg, err := systemreg.NewFromFile(systemFile)
 	if err != nil {
-		os.Remove(systemFile)
 		return nil, err
 	}
 
@@ -316,12 +312,17 @@ func (d Detector) hashesForUser(sam *samreg.SAMRegistry, rid string, derivedKey 
 
 // hashes returns the hashes of all (enabled) users on the system.
 func (d Detector) hashes(ctx context.Context) ([]*userHashInfo, error) {
+	tmpDir, err := os.MkdirTemp("", "scalibr-winlocal")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	systemDumpFile := filepath.Join(tmpDir, "SYSTEM")
 	system, err := d.dumpSYSTEM(systemDumpFile)
 	if err != nil {
 		return nil, err
 	}
-
-	defer os.Remove(systemDumpFile)
 	defer system.Close()
 
 	syskey, err := system.Syskey()
@@ -329,12 +330,11 @@ func (d Detector) hashes(ctx context.Context) ([]*userHashInfo, error) {
 		return nil, err
 	}
 
+	samDumpFile := filepath.Join(tmpDir, "SAM")
 	sam, err := d.dumpSAM(samDumpFile)
 	if err != nil {
 		return nil, err
 	}
-
-	defer os.Remove(samDumpFile)
 	defer sam.Close()
 
 	derivedKey, err := sam.DeriveSyskey(syskey)
@@ -378,7 +378,7 @@ func (d Detector) bruteforce(ctx context.Context, hashes []*userHashInfo) (map[s
 	results := make(map[string]string)
 
 	for _, user := range hashes {
-		if err := ctx.Err(); err != nil {
+		if err := ctx.Err(); err !=. Err() {
 			return nil, err
 		}
 
