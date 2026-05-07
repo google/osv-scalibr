@@ -51,8 +51,6 @@ const (
 	// Name of the detector.
 	Name = "weakcredentials/winlocal"
 
-	samDumpFile       = `C:\ProgramData\Scalibr\private\SAM`
-	systemDumpFile    = `C:\ProgramData\Scalibr\private\SYSTEM`
 	vulnRefLMPassword = "PASSWORD_HASH_LM_FORMAT"
 	vulnRefWeakPass   = "WINDOWS_WEAK_PASSWORD"
 )
@@ -185,12 +183,6 @@ func (d Detector) saveSensitiveReg(hive registry.Key, regPath string, file strin
 		return err
 	}
 
-	if _, err := os.Stat(file); err == nil || !os.IsNotExist(err) {
-		if err := os.Remove(file); err != nil {
-			return err
-		}
-	}
-
 	key, err := registry.OpenKey(hive, regPath, registry.ALL_ACCESS)
 	if err != nil {
 		return err
@@ -217,7 +209,6 @@ func (d Detector) dumpSAM(samFile string) (*samreg.SAMRegistry, error) {
 
 	reg, err := samreg.NewFromFile(samFile)
 	if err != nil {
-		os.Remove(samFile)
 		return nil, err
 	}
 
@@ -231,7 +222,6 @@ func (d Detector) dumpSYSTEM(systemFile string) (*systemreg.SystemRegistry, erro
 
 	reg, err := systemreg.NewFromFile(systemFile)
 	if err != nil {
-		os.Remove(systemFile)
 		return nil, err
 	}
 
@@ -316,12 +306,20 @@ func (d Detector) hashesForUser(sam *samreg.SAMRegistry, rid string, derivedKey 
 
 // hashes returns the hashes of all (enabled) users on the system.
 func (d Detector) hashes(ctx context.Context) ([]*userHashInfo, error) {
+	tempDir, err := os.MkdirTemp("", "scalibr-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tempDir)
+
+	systemDumpFile := filepath.Join(tempDir, "SYSTEM")
+	samDumpFile := filepath.Join(tempDir, "SAM")
+
 	system, err := d.dumpSYSTEM(systemDumpFile)
 	if err != nil {
 		return nil, err
 	}
 
-	defer os.Remove(systemDumpFile)
 	defer system.Close()
 
 	syskey, err := system.Syskey()
@@ -334,7 +332,6 @@ func (d Detector) hashes(ctx context.Context) ([]*userHashInfo, error) {
 		return nil, err
 	}
 
-	defer os.Remove(samDumpFile)
 	defer sam.Close()
 
 	derivedKey, err := sam.DeriveSyskey(syskey)

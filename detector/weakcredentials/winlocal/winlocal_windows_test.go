@@ -17,6 +17,7 @@
 package winlocal
 
 import (
+	"os"
 	"slices"
 	"testing"
 
@@ -162,5 +163,31 @@ func TestBruteforce(t *testing.T) {
 				t.Errorf("bruteforce(...) unexpected diff (-want +got): %v", diff)
 			}
 		})
+	}
+}
+
+func TestSaveSensitiveRegDoesNotDeleteExistingFiles(t *testing.T) {
+	d := Detector{}
+
+	// Create a dummy file
+	f, err := os.CreateTemp("", "scalibr-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	f.Close()
+	tempFile := f.Name()
+	defer os.Remove(tempFile)
+
+	// Call saveSensitiveReg with an invalid registry path
+	// In the vulnerable code, this would arbitrarily delete tempFile before failing.
+	// In the fixed code, it should fail without deleting tempFile.
+	err = d.saveSensitiveReg(0, "INVALID_PATH_DOES_NOT_EXIST", tempFile)
+	if err == nil {
+		t.Errorf("saveSensitiveReg unexpectedly succeeded")
+	}
+
+	// Verify the file still exists
+	if _, err := os.Stat(tempFile); os.IsNotExist(err) {
+		t.Errorf("saveSensitiveReg insecurely deleted the target file: %v", err)
 	}
 }
