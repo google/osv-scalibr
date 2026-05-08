@@ -80,18 +80,18 @@ func fsAndPath(path string) (scalibrfs.FS, string, error) {
 	// e.g. "pkg/core/pom.xml" may have a parent at "pkg/parent/pom.xml",
 	// if we had fsys := scalibrfs.DirFS("pkg/core"), we can't do fsys.Open("../parent/pom.xml")
 	//
-	// Since we don't know ahead of time which files might be needed,
-	// we must use the system root as the directory.
+	// To allow this, we set the FS root to be the current working directory.
+	// We assume that the tool is run from the workspace root.
+	root, err := filepath.Abs(".")
+	if err != nil {
+		return nil, "", err
+	}
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Get the path relative to the root (i.e. without the leading '/')
-	// On Windows, we need the path relative to the drive letter,
-	// which also means we can't open files across drives.
-	root := filepath.VolumeName(absPath) + "/"
 	relPath, err := filepath.Rel(root, absPath)
 	if err != nil {
 		return nil, "", err
