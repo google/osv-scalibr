@@ -24,7 +24,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/google/osv-scalibr/annotator"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -115,7 +115,7 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 	//
 	// Therefore, packages originating from embedded filesystems are filtered out and
 	// not supplied to plugins that require a running system.
-	filteredInventory := annotator.FilterOutEmbeddedPackages(inventory)
+	filteredInventory := common.FilterOutEmbeddedPackages(inventory)
 
 	for _, e := range config.Enrichers {
 		var err error

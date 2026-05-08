@@ -17,9 +17,8 @@ package annotator
 
 import (
 	"context"
-	"strings"
 
-	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -61,7 +60,7 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 
 	// Filter out packages from embedded filesystems to prevent passing them to
 	// plugins that require a live running system (e.g. to execute commands).
-	filteredInventory := filterOutEmbeddedPackages(inventory)
+	filteredInventory := common.FilterOutEmbeddedPackages(inventory)
 
 	for _, a := range config.Annotators {
 		var err error
@@ -76,34 +75,4 @@ func Run(ctx context.Context, config *Config, inventory *inventory.Inventory) ([
 		statuses = append(statuses, plugin.StatusFromErr(a, false, err, nil))
 	}
 	return statuses, nil
-}
-
-// filterOutEmbeddedPackages removes packages from the supplied inventory that belong to embedded filesystems.
-func filterOutEmbeddedPackages(inv *inventory.Inventory) *inventory.Inventory {
-	if inv == nil {
-		return &inventory.Inventory{}
-	}
-	filtered := *inv // shallow copy
-
-	var pkgs []*extractor.Package
-	for _, p := range inv.Packages {
-		if !isPackageFromEmbeddedFS(p) {
-			pkgs = append(pkgs, p)
-		}
-	}
-
-	filtered.Packages = pkgs
-	return &filtered
-}
-
-func isPackageFromEmbeddedFS(pkg *extractor.Package) bool {
-	location := pkg.Location.PathOrEmpty()
-	if location == "" {
-		return false
-	}
-
-	parts := strings.Split(location, ":")
-
-	// Embedded FS typically has at least one ":" separator.
-	return len(parts) >= 2
 }
