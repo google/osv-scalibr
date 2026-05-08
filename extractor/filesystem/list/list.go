@@ -40,6 +40,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/nugetcpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/paketdependencies"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/paketlock"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
@@ -83,6 +85,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
@@ -293,11 +296,13 @@ var (
 	}
 	// DotnetSource extractors for Dotnet (.NET).
 	DotnetSource = InitMap{
-		depsjson.Name:         {depsjson.New},
-		csproj.Name:           {csproj.New},
-		nugetcpm.Name:         {nugetcpm.New},
-		packagesconfig.Name:   {packagesconfig.New},
-		packageslockjson.Name: {packageslockjson.New},
+		csproj.Name:            {csproj.New},
+		depsjson.Name:          {depsjson.New},
+		nugetcpm.Name:          {nugetcpm.New},
+		packagesconfig.Name:    {packagesconfig.New},
+		packageslockjson.Name:  {packageslockjson.New},
+		paketdependencies.Name: {paketdependencies.New},
+		paketlock.Name:         {paketlock.New},
 	}
 	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
@@ -455,10 +460,11 @@ var (
 
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
-		asdf.Name:        {asdf.New},
-		mise.Name:        {mise.New},
-		nvm.Name:         {nvm.New},
-		nodeversion.Name: {nodeversion.New},
+		asdf.Name:          {asdf.New},
+		githubactions.Name: {githubactions.New},
+		mise.Name:          {mise.New},
+		nvm.Name:           {nvm.New},
+		nodeversion.Name:   {nodeversion.New},
 	}
 
 	// EmbeddedFS extractors.
