@@ -1,0 +1,21 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example.reactor</groupId>
+  <artifactId>sibling-a</artifactId>
+  <version>1.0.0</version>
+
+  <dependencies>
+    <!-- Sibling reactor module that is never published to a remote registry. -->
+    <dependency>
+      <groupId>com.example.reactor</groupId>
+      <artifactId>sibling-b</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <!-- A real external dep that should still resolve through the registry. -->
+    <dependency>
+      <groupId>org.direct</groupId>
+      <artifactId>alice</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+</project>

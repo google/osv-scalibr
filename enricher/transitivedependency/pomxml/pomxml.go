@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
+	scalibrfspkg "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -127,37 +128,111 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
 	}
 
+	// Build a "reactor" of all pom.xml files discovered in this scan, keyed by
+	// their Maven coordinates. This lets us resolve dependencies between
+	// sibling modules (a Maven multi-module / reactor build) without having
+	// them published to a remote registry.
+	reactor := buildReactor(input.ScanRoot.FS, slices.Collect(maps.Keys(pkgGroups)))
+
 	var errs error
 	for path, pkgMap := range pkgGroups {
-		f, err := input.ScanRoot.FS.Open(path)
+		// Process each pom.xml inside a closure so that f.Close() runs at the
+		// end of every iteration via defer. Without the closure, the defers
+		// would accumulate until Enrich returned, holding open one file
+		// descriptor per pom.xml in a (potentially very large) reactor.
+		func() {
+			f, err := input.ScanRoot.FS.Open(path)
+			if err != nil {
+				log.Warnf("failed to open %q: %v", path, err)
+				errs = errors.Join(errs, fmt.Errorf("failed to open %q: %w", path, err))
+				return
+			}
+			defer f.Close()
 
-		if err != nil {
-			log.Warnf("failed to open %s: %v", path, err)
-			errs = errors.Join(errs, fmt.Errorf("failed to open %s: %w", path, err))
-			continue
-		}
+			enrichedInv, err := e.extract(ctx, &filesystem.ScanInput{
+				Path:   path,
+				Reader: f,
+				Info:   nil,
+				FS:     input.ScanRoot.FS,
+				Root:   input.ScanRoot.Path,
+			}, reactor)
+			if err != nil {
+				log.Warnf("failed resolution for %q: %v", path, err)
+				errs = errors.Join(errs, fmt.Errorf("failed resolution for %q: %w", path, err))
+				return
+			}
 
-		enrichedInv, err := e.extract(ctx, &filesystem.ScanInput{
-			Path:   path,
-			Reader: f,
-			Info:   nil,
-			FS:     input.ScanRoot.FS,
-			Root:   input.ScanRoot.Path,
-		})
-
-		if err != nil {
-			log.Warnf("failed resolution for %s: %v", path, err)
-			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
-			continue
-		}
-
-		internal.Add(enrichedInv.Packages, inv, Name, pkgMap)
+			internal.Add(enrichedInv.Packages, inv, Name, pkgMap)
+		}()
 	}
 
 	return errs
 }
 
-func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+// reactorEntry identifies a pom.xml that lives in the same scan as the project
+// currently being enriched. It exists so that dependencies between sibling
+// modules in a Maven multi-module build do not require the modules to be
+// published to a remote registry.
+type reactorEntry struct {
+	groupID    string
+	artifactID string
+	version    string
+}
+
+func (r reactorEntry) name() string { return r.groupID + ":" + r.artifactID }
+
+// buildReactor reads every pom.xml path that the extractor discovered in this
+// scan and returns a deduped list of their Maven coordinates. groupID and
+// version are inherited from <parent> if the child does not specify them, in
+// line with how Maven itself computes effective coordinates.
+//
+// Errors reading or decoding individual poms are intentionally not propagated:
+// a malformed sibling should not stop the rest of the reactor from being
+// assembled, and the caller (Enrich) will surface a more useful error when it
+// tries to extract from that pom in the main loop.
+func buildReactor(fsys scalibrfspkg.FS, paths []string) []reactorEntry {
+	seen := make(map[string]reactorEntry, len(paths))
+	for _, path := range paths {
+		f, err := fsys.Open(path)
+		if err != nil {
+			log.Debugf("reactor: failed to open %q: %v", path, err)
+			continue
+		}
+		var proj maven.Project
+		err = datasource.NewMavenDecoder(f).Decode(&proj)
+		// Discard close error: we are reading, so a close failure cannot
+		// affect data integrity, and Enrich will report a more actionable
+		// error if this file is unusable.
+		_ = f.Close()
+		if err != nil {
+			log.Debugf("reactor: failed to decode %q: %v", path, err)
+			continue
+		}
+		key := mavenutil.ProjectKey(proj)
+		if key.GroupID == "" || key.ArtifactID == "" || key.Version == "" {
+			continue
+		}
+		entry := reactorEntry{
+			groupID:    string(key.GroupID),
+			artifactID: string(key.ArtifactID),
+			version:    string(key.Version),
+		}
+		// Dedupe by full coordinate. Multiple pom.xml files declaring the
+		// same coordinate would be a configuration error in the scanned tree;
+		// keep the first one we saw.
+		fullKey := entry.name() + ":" + entry.version
+		if _, ok := seen[fullKey]; !ok {
+			seen[fullKey] = entry
+		}
+	}
+	out := make([]reactorEntry, 0, len(seen))
+	for _, v := range seen {
+		out = append(out, v)
+	}
+	return out
+}
+
+func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput, reactor []reactorEntry) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
@@ -216,6 +291,30 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 	}
 
 	overrideClient := resolution.NewOverrideClient(e.DepClient)
+	// Pre-register every sibling pom.xml in the same scan so that the resolver
+	// can satisfy reactor-internal dependencies without going to the network.
+	// We deliberately register each sibling with no requirements: the sibling
+	// will get its own external transitive dependencies discovered when the
+	// enricher processes that sibling's pom.xml separately. Including a
+	// sibling's deps here would double-count and risk infinite recursion if
+	// the reactor has a dependency cycle.
+	for _, r := range reactor {
+		// Skip the project we're currently resolving; that's added below as
+		// the root via overrideClient.AddVersion(root, reqs).
+		if r.name() == project.ProjectKey.Name() && r.version == string(project.Version) {
+			continue
+		}
+		overrideClient.AddVersion(resolve.Version{
+			VersionKey: resolve.VersionKey{
+				PackageKey: resolve.PackageKey{
+					System: resolve.Maven,
+					Name:   r.name(),
+				},
+				VersionType: resolve.Concrete,
+				Version:     r.version,
+			},
+		}, nil)
+	}
 	resolver := mavenresolve.NewResolver(overrideClient)
 
 	// Resolve the dependencies.

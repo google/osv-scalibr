@@ -1,0 +1,14 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example.reactor</groupId>
+  <artifactId>sibling-b</artifactId>
+  <version>1.0.0</version>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.direct</groupId>
+      <artifactId>bob</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+  </dependencies>
+</project>
