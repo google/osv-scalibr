@@ -257,14 +257,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 			Name:     name,
 			Version:  version,
 			PURLType: purl.TypePyPi,
-			Location: extractor.PackageLocation{
-				Descriptor: &location.Location{
-					File: &location.File{
-						Path:       filepath.ToSlash(path),
-						LineNumber: startLine,
-					},
-				},
-			},
+			Location: extractor.LocationFromPathAndLine(filepath.ToSlash(path), startLine),
 			Metadata: &Metadata{
 				HashCheckingModeValues: hashOptions,
 				VersionComparator:      comp,

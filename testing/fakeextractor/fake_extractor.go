@@ -42,6 +42,7 @@ type fakeExtractor struct {
 	requiredFiles  map[string]bool
 	pathToNamesErr map[string]NamesErr
 	dirExtractor   bool
+	requirements   *plugin.Capabilities
 }
 
 // AllowUnexported is a utility function to be used with cmp.Diff to
@@ -82,6 +83,16 @@ func NewDirExtractor(name string, version int, requiredFiles []string, pathToNam
 	return ext
 }
 
+// NewWithRequirements returns a fake fakeExtractor with custom requirements.
+//
+// The fakeExtractor returns FileRequired(path) = true for any path in requiredFiles.
+// The fakeExtractor returns the package and error from pathToNamesErr given the same path to Extract(...).
+func NewWithRequirements(name string, version int, requiredFiles []string, pathToNamesErr map[string]NamesErr, reqs *plugin.Capabilities) filesystem.Extractor {
+	ext := New(name, version, requiredFiles, pathToNamesErr).(*fakeExtractor)
+	ext.requirements = reqs
+	return ext
+}
+
 // Name returns the extractor's name.
 func (e *fakeExtractor) Name() string { return e.name }
 
@@ -90,6 +101,9 @@ func (e *fakeExtractor) Version() int { return e.version }
 
 // Requirements returns the extractor's requirements.
 func (e *fakeExtractor) Requirements() *plugin.Capabilities {
+	if e.requirements != nil {
+		return e.requirements
+	}
 	return &plugin.Capabilities{
 		ExtractFromDirs: e.dirExtractor,
 	}

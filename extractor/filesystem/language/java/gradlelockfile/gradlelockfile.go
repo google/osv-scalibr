@@ -27,7 +27,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 
@@ -113,14 +112,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
-		pkg.Location = extractor.PackageLocation{
-			Descriptor: &location.Location{
-				File: &location.File{
-					Path:       input.Path,
-					LineNumber: lineNum,
-				},
-			},
-		}
+		pkg.Location = extractor.LocationFromPathAndLine(input.Path, lineNum)
 
 		packages = append(packages, pkg)
 	}

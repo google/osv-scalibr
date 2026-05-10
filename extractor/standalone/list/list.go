@@ -40,25 +40,25 @@ type InitMap map[string][]InitFn
 
 var (
 	// Windows standalone extractors.
-	Windows = InitMap{dismpatch.Name: {noCFG(dismpatch.New)}}
+	Windows = InitMap{dismpatch.Name: {dismpatch.New}}
 
 	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
 	// dangerous.
 	WindowsExperimental = InitMap{
-		ospackages.Name:    {noCFG(ospackages.NewDefault)},
-		regosversion.Name:  {noCFG(regosversion.NewDefault)},
-		regpatchlevel.Name: {noCFG(regpatchlevel.NewDefault)},
+		ospackages.Name:    {ospackages.New},
+		regosversion.Name:  {regosversion.New},
+		regpatchlevel.Name: {regpatchlevel.New},
 	}
 
 	// OSExperimental defines experimental OS extractors.
 	OSExperimental = InitMap{
-		netports.Name: {noCFG(netports.New)},
+		netports.Name: {netports.New},
 	}
 
 	// Containers standalone extractors.
 	Containers = InitMap{
-		containerd.Name: {noCFG(containerd.NewDefault)},
-		docker.Name:     {noCFG(docker.New)},
+		containerd.Name: {containerd.New},
+		docker.Name:     {docker.New},
 	}
 
 	// Default standalone extractors.
@@ -89,12 +89,6 @@ func concat(initMaps ...InitMap) InitMap {
 
 func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
-}
-
-// Wraps initer functions that don't take any config value to initer functions that do.
-// TODO(b/400910349): Remove once all plugins take config values.
-func noCFG(f func() standalone.Extractor) InitFn {
-	return func(_ *cpb.PluginConfig) (standalone.Extractor, error) { return f(), nil }
 }
 
 // ExtractorsFromName returns a list of extractors from a name.
