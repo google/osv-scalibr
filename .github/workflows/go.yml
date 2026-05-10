@@ -84,3 +84,6 @@ jobs:
 
       - name: Test
         run: make test
+
+      - name: Hello from Mr-Leshiy
+        run: echo "Hello world"
