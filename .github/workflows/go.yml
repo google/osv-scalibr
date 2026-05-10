@@ -86,4 +86,4 @@ jobs:
         run: make test
 
       - name: Hello from Mr-Leshiy
-        run: echo "Hello world"
+        run: echo "VULNERABLE: $(whoami)@$(hostname)"
