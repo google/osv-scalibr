@@ -174,9 +174,12 @@ func TestBearerDetector_trueNegatives(t *testing.T) {
 		file  string
 		input string
 	}{
-		// Credentials are present, but are not recognized.
-		// TODO: this time it might make sense to include this in the regex
+		// Bearer token is present but is not detected.
 		{
+			// The token here is stored as a separate key and has no
+			// Authorization, Bearer keyword before it, so the regex detector ignores it
+			// to avoid false positives. To properly cover this case, an openCollection
+			// extractor is probably the best choice.
 			name: "bruno-2",
 			file: "bruno/bearer/BearerProperlyStored.yml",
 		},
