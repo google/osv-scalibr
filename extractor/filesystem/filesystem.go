@@ -251,20 +251,13 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
 			paths := c.TempPaths()
+			if err := c.Close(); err != nil {
+				log.Infof("failed to close embedded filesystem %s: %v", embeddedFS.Path, err)
+			}
 
 			for _, p := range paths {
 				if p == "" {
 					continue
-				}
-
-				// Normalize path: ensure absolute
-				if !filepath.IsAbs(p) {
-					root, err := tempdir.GetRootPath()
-					if err != nil {
-						log.Infof("failed to get tempdir root path: %v", err)
-						continue
-					}
-					p = filepath.Join(root, p)
 				}
 
 				// Dedup check
@@ -272,7 +265,7 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 					continue
 				}
 
-				info, err := os.Stat(p)
+				info, err := tempdir.Stat(p)
 				if err != nil {
 					log.Infof("failed to stat temp path %s: %v", p, err)
 					continue

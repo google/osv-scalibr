@@ -71,13 +71,13 @@ type headerExtension struct {
 }
 
 // convertQCOW2ToRaw converts a QCOW2 file to a raw disk image.
-func convertQCOW2ToRaw(inputPath string, outputPath string, password string) error {
+func convertQCOW2ToRaw(inputPath string, outputFile *os.File, password string) error {
 	if inputPath == "" {
-		return errors.New("convertVMDKToRaw(): must supply an input file")
+		return errors.New("convertQCOW2ToRaw(): must supply an input file")
 	}
 
-	if outputPath == "" {
-		return errors.New("convertVMDKToRaw(): must supply an output file")
+	if outputFile == nil {
+		return errors.New("convertQCOW2ToRaw(): must supply an output file")
 	}
 
 	inputFile, err := os.Open(inputPath)
@@ -117,12 +117,6 @@ func convertQCOW2ToRaw(inputPath string, outputPath string, password string) err
 	if err != nil {
 		return fmt.Errorf("failed to read L1 table: %w", err)
 	}
-
-	outputFile, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer outputFile.Close()
 
 	if err := writeRawImage(header, l1Table, inputFile, outputFile, crypto, fileSize); err != nil {
 		return fmt.Errorf("conversion failed: %w", err)

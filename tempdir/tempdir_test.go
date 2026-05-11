@@ -4,8 +4,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/tempdir"
 )
 
@@ -46,17 +48,17 @@ func TestCreateDir(t *testing.T) {
 	}
 
 	name := "testdir"
-	path, root, err := tempdir.CreateDir(name)
+	root, err := tempdir.CreateDir(name)
 	if err != nil {
 		t.Fatalf("CreateDir() failed: %v", err)
 	}
 	defer root.Close()
 
-	if path == "" {
-		t.Fatal("CreateDir returned empty path")
+	if root == nil || root.Name() == "" {
+		t.Fatal("CreateDir returned root with empty Name")
 	}
 
-	info, err := os.Stat(filepath.Join(rootPath, path))
+	info, err := os.Stat(filepath.Join(rootPath, root.Name()))
 	if err != nil {
 		t.Fatalf("Directory does not exist: %v", err)
 	}
@@ -67,7 +69,7 @@ func TestCreateDir(t *testing.T) {
 
 func TestCreateNestedDir(t *testing.T) {
 	name := "nested/testdir"
-	_, root, err := tempdir.CreateDir(name)
+	root, err := tempdir.CreateDir(name)
 	if err != nil {
 		t.Fatalf("CreateDir() failed: %v", err)
 	}
@@ -83,19 +85,19 @@ func TestCreatePluginDir(t *testing.T) {
 	plugin := "qcow2"
 	filename := "test.img"
 
-	path, root, err := tempdir.CreatePluginDir(pluginType, plugin, filename)
+	root, err := tempdir.CreatePluginDir(pluginType, plugin, filename)
 	if err != nil {
 		t.Fatalf("CreatePluginDir() failed: %v", err)
 	}
 	defer root.Close()
 
-	if _, err := os.Stat(filepath.Join(rootPathHelper(t), path)); err != nil {
+	if _, err := os.Stat(filepath.Join(rootPathHelper(t), root.Name())); err != nil {
 		t.Fatalf("Directory not created: %v", err)
 	}
 
 	expectedSuffix := filepath.Join(string(pluginType), plugin, filepath.Base(filename))
-	if !strings.HasSuffix(path, expectedSuffix) {
-		t.Fatalf("Unexpected directory structure: got %s, expected suffix %s", path, expectedSuffix)
+	if !strings.HasSuffix(root.Name(), expectedSuffix) {
+		t.Fatalf("Unexpected directory structure: got %s, expected suffix %s", root.Name(), expectedSuffix)
 	}
 
 	t.Logf("Root.Name() is: %q", root.Name())
@@ -123,7 +125,7 @@ func TestCreateFile_DefaultRoot(t *testing.T) {
 
 func TestCreateFile_InSubDir(t *testing.T) {
 	dir := "subdir1/subdir2"
-	_, subRoot, err := tempdir.CreateDir(dir)
+	subRoot, err := tempdir.CreateDir(dir)
 	if err != nil {
 		t.Fatalf("CreateDir() failed: %v", err)
 	}
@@ -144,9 +146,74 @@ func TestCreateFile_InSubDir(t *testing.T) {
 	}
 }
 
+func TestStat(t *testing.T) {
+	name := "stat_test"
+	root, err := tempdir.CreateDir(name)
+	if err != nil {
+		t.Fatalf("CreateDir failed: %v", err)
+	}
+	defer root.Close()
+
+	info, err := tempdir.Stat(name)
+	if err != nil {
+		t.Fatalf("Stat() failed: %v", err)
+	}
+	if !info.IsDir() {
+		t.Fatal("Expected directory from Stat()")
+	}
+}
+
+func TestEmbeddedDirFSClose(t *testing.T) {
+	pluginRoot, err := tempdir.CreateDir("test_close_plugin")
+	if err != nil {
+		t.Fatalf("CreateDir failed: %v", err)
+	}
+
+	partitionRoot, err := tempdir.CreateDir("test_close_partition")
+	if err != nil {
+		t.Fatalf("CreateDir failed: %v", err)
+	}
+
+	// Create a dummy file
+	f, err := os.CreateTemp("", "dummy_raw")
+	if err != nil {
+		t.Fatalf("CreateTemp failed: %v", err)
+	}
+	dummyPath := f.Name()
+	defer os.Remove(dummyPath)
+
+	var refCount int32 = 1
+	var refMu sync.Mutex
+
+	edfs := &common.EmbeddedDirFS{
+		Root:       partitionRoot,
+		PluginRoot: pluginRoot,
+		File:       f,
+		RefCount:   &refCount,
+		RefMu:      &refMu,
+	}
+
+	if err := edfs.Close(); err != nil {
+		t.Fatalf("Close() failed: %v", err)
+	}
+
+	if refCount != 0 {
+		t.Fatalf("Expected RefCount 0, got %d", refCount)
+	}
+
+	// Verify that PartitionRoot and PluginRoot are closed by trying to use them.
+	if _, err := partitionRoot.Stat("."); err == nil {
+		t.Fatal("Expected error using closed partitionRoot, got nil")
+	}
+
+	if _, err := pluginRoot.Stat("."); err == nil {
+		t.Fatal("Expected error using closed pluginRoot, got nil")
+	}
+}
+
 func TestRemoveAll(t *testing.T) {
 	name := "cleanup_test"
-	_, root, err := tempdir.CreateDir(name)
+	root, err := tempdir.CreateDir(name)
 	if err != nil {
 		t.Fatalf("CreateDir failed: %v", err)
 	}
@@ -164,7 +231,7 @@ func TestRemoveAll(t *testing.T) {
 }
 
 func TestRemoveRoot(t *testing.T) {
-	_, root, err := tempdir.CreateDir("root_cleanup_test")
+	root, err := tempdir.CreateDir("root_cleanup_test")
 	if err != nil {
 		t.Fatalf("CreateDir failed: %v", err)
 	}

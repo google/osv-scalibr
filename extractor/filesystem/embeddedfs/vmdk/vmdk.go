@@ -163,19 +163,19 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// │				        	├── partition-4-ntfs
 	// │				        	│				└── private-key4.pem
 	// │				        	└── vmdk-12345.raw						<--- Converted disk image
-	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "vmdk", input.Path)
+	pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "vmdk", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}
 
 	// Create a temporary file for the raw disk image
-	rawDiskIMGPath, _, err := tempdir.CreateFile(pluginRoot, "vmdk-*.raw")
+	rawDiskIMGPath, tmpRaw, err := tempdir.CreateFile(pluginRoot, "vmdk-*.raw")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}
 
 	// Convert VMDK to raw
-	if err := convertVMDKToRaw(vmdkPath, rawDiskIMGPath); err != nil {
+	if err := convertVMDKToRaw(vmdkPath, tmpRaw); err != nil {
 		os.Remove(rawDiskIMGPath)
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", vmdkPath, err)
 	}
@@ -195,7 +195,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var embeddedFSs []*inventory.EmbeddedFS
 	for i, p := range partitionList {
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
-		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, pluginDir, pluginRoot, rawDiskIMGPath, &refMu, &refCount)
+		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, pluginRoot, rawDiskIMGPath, &refMu, &refCount)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
 			Path:          fmt.Sprintf("%s:%d", vmdkPath, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,
@@ -550,17 +550,15 @@ func convertMonolithicSparse(f *os.File, out *os.File, hdr sparseExtentHeader) e
 }
 
 // convertVMDKToRaw converts a VMDK file to a raw disk image.
-func convertVMDKToRaw(inPath string, outPath string) error {
+func convertVMDKToRaw(inPath string, out *os.File) error {
+	if out == nil {
+		return errors.New("convertVMDKToRaw(): must supply an output file")
+	}
 	in, err := os.Open(inPath)
 	if err != nil {
 		return err
 	}
 	defer in.Close()
-	out, err := os.Create(outPath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
 
 	hdr, err := readHeaderAt(in, 0)
 	if err != nil {

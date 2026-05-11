@@ -103,12 +103,12 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// │				└── extractor
 	// │				    └── ova
 	// |						└── valid.ova 					<--- A directory with the name set to the file discovered by the extractor
-	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "ova", input.Path)
+	pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "ova", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}
 
-	err = common.TARToTempDir(pluginDir, pluginRoot, input.Reader)
+	err = common.TARToTempDir(pluginRoot, input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 	}
@@ -120,7 +120,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 			FS:       &common.RootFSWrapper{Root: pluginRoot, FS: pluginRoot.FS()},
 			Root:     pluginRoot,
 			File:     nil,
-			TmpPaths: []string{pluginDir},
+			TmpPaths: []string{pluginRoot.Name()},
 			RefCount: &refCount,
 			RefMu:    &refMu,
 		}, nil

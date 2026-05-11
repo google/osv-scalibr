@@ -145,7 +145,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// │				        	├── partition-4-ntfs
 	// │				        	│				└── private-key4.pem
 	// │				        	└── vdi-1234.raw						<--- Converted disk image
-	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "vdi", input.Path)
+	pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "vdi", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}
@@ -177,7 +177,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var embeddedFSs []*inventory.EmbeddedFS
 	for i, p := range partitionList {
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
-		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vdi", partitionIndex, p, disk, pluginDir, pluginRoot, rawDiskIMGPath, &refMu, &refCount)
+		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vdi", partitionIndex, p, disk, pluginRoot, rawDiskIMGPath, &refMu, &refCount)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
 			Path:          fmt.Sprintf("%s:%d", input.Path, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,

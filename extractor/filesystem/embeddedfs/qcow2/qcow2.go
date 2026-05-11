@@ -129,19 +129,19 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// │				        	├── partition-4-ntfs
 	// │				        	│				└── private-key4.pem
 	// │				        	└── qcow2-12345.raw						<--- Converted disk image
-	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "qcow2", input.Path)
+	pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "qcow2", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}
 
 	// Create a temporary file for the raw disk image
-	rawDiskIMGPath, _, err := tempdir.CreateFile(pluginRoot, "qcow2-*.raw")
+	rawDiskIMGPath, tmpRaw, err := tempdir.CreateFile(pluginRoot, "qcow2-*.raw")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}
 
 	// Convert QCOW2 to raw
-	if err := convertQCOW2ToRaw(qcow2Path, rawDiskIMGPath, e.password); err != nil {
+	if err := convertQCOW2ToRaw(qcow2Path, tmpRaw, e.password); err != nil {
 		os.Remove(rawDiskIMGPath)
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", input.Path, err)
 	}
@@ -161,7 +161,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var embeddedFSs []*inventory.EmbeddedFS
 	for i, p := range partitionList {
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
-		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("qcow2", partitionIndex, p, disk, pluginDir, pluginRoot, rawDiskIMGPath, &refMu, &refCount)
+		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("qcow2", partitionIndex, p, disk, pluginRoot, rawDiskIMGPath, &refMu, &refCount)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
 			Path:          fmt.Sprintf("%s:%d", input.Path, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,

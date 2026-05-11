@@ -73,21 +73,21 @@ func GetRootPath() (string, error) {
 }
 
 // CreateDir creates and opens a subdirectory as a new os.Root (chroot-like).
-func CreateDir(name string) (string, *os.Root, error) {
+func CreateDir(name string) (*os.Root, error) {
 	r, err := Root()
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	// Ensure dir exists
 	if err := r.MkdirAll(name, 0o755); err != nil && !os.IsExist(err) {
-		return "", nil, err
+		return nil, err
 	}
 
 	newRoot, err := r.OpenRoot(name)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
-	return name, newRoot, nil
+	return newRoot, nil
 }
 
 // PluginType defines the type of plugin for directory layout.
@@ -104,7 +104,7 @@ const (
 
 // CreatePluginDir returns a sub-root for a plugin.
 // Layout: <SCALIBR-TMP-ROOT>/<pluginType>/<pluginName>/<filename>
-func CreatePluginDir(pluginType PluginType, pluginName, filename string) (string, *os.Root, error) {
+func CreatePluginDir(pluginType PluginType, pluginName, filename string) (*os.Root, error) {
 	dir := filepath.Join(string(pluginType), pluginName, filepath.Base(filename))
 	return CreateDir(dir)
 }
@@ -161,7 +161,16 @@ func nextRandom() string {
 	return hex.EncodeToString(buf)
 }
 
-// RemoveAll removes a specific subdirectory
+// Stat returns the FileInfo for a file relative to the temp root.
+func Stat(name string) (os.FileInfo, error) {
+	r, err := Root()
+	if err != nil {
+		return nil, err
+	}
+	return r.Stat(name)
+}
+
+// RemoveAll removes a path relative to the temp root.
 func RemoveAll(name string) error {
 	r, err := Root()
 	if err != nil {
@@ -169,10 +178,6 @@ func RemoveAll(name string) error {
 	}
 	if debug {
 		return nil
-	}
-	if filepath.IsAbs(name) {
-		err = os.RemoveAll(name)
-		return err
 	}
 	return r.RemoveAll(name)
 }

@@ -398,7 +398,7 @@ func GetDiskPartitions(rawDiskIMGPath string) ([]part.Partition, *disk.Disk, err
 }
 
 // NewPartitionEmbeddedFSGetter creates a lazy getter function for an embedded filesystem from a disk partition.
-func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.Partition, disk *disk.Disk, pluginDir string, pluginRoot *os.Root, rawDiskIMGPath string, refMu *sync.Mutex, refCount *int32) func(context.Context) (scalibrfs.FS, error) {
+func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.Partition, disk *disk.Disk, pluginRoot *os.Root, rawDiskIMGPath string, refMu *sync.Mutex, refCount *int32) func(context.Context) (scalibrfs.FS, error) {
 	return func(ctx context.Context) (scalibrfs.FS, error) {
 		// Get partition offset and size (already multiplied by sector size)
 		offset := p.GetStart()
@@ -439,18 +439,16 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 			return nil, fmt.Errorf("failed to open partition directory %s: %w", partitionSubDir, err)
 		}
 
-		rootPath, err := tempdir.GetRootPath()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get scalibr per run directory: %w", err)
-		}
+
 		params := generateFSParams{
 			File:           f,
 			Disk:           disk,
 			Section:        section,
 			PartitionIndex: partitionIndex,
-			TempDir:        filepath.Join(rootPath, pluginDir, partitionSubDir),
+			PluginRoot:     pluginRoot,
+			TempDir:        filepath.Join(pluginRoot.Name(), partitionSubDir),
 			PartitionRoot:  partitionRoot,
-			RawDiskIMGPath: rawDiskIMGPath,
+			RelRawPath:     filepath.Join(pluginRoot.Name(), filepath.Base(rawDiskIMGPath)),
 			RefMu:          refMu,
 			RefCount:       refCount,
 		}
@@ -460,7 +458,6 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 		case "ext4":
 			fsys, err = generateEXTFS(params)
 		case "FAT32":
-			f.Close()
 			fsys, err = generateFAT32FS(params)
 		case "exFAT":
 			fsys, err = generateEXFATFS(params)
@@ -471,9 +468,7 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 		}
 		if err != nil {
 			partitionRoot.Close()
-			if fsType != "FAT32" {
-				f.Close()
-			}
+			f.Close()
 			if errRemove := pluginRoot.RemoveAll(partitionSubDir); errRemove != nil {
 				return nil, fmt.Errorf("%w; %w", err, errRemove)
 			}
@@ -489,9 +484,10 @@ type generateFSParams struct {
 	Disk           *disk.Disk
 	Section        *io.SectionReader
 	PartitionIndex int
+	PluginRoot     *os.Root
 	PartitionRoot  *os.Root
 	TempDir        string
-	RawDiskIMGPath string
+	RelRawPath     string
 	RefMu          *sync.Mutex
 	RefCount       *int32
 }
@@ -509,18 +505,18 @@ func generateEXTFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:     params.PartitionRoot,
-		File:     params.File,
-		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
-		RefCount: params.RefCount,
-		RefMu:    params.RefMu,
+		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:       params.PartitionRoot,
+		PluginRoot: params.PluginRoot,
+		File:       params.File,
+		Disk:       params.Disk,
+		TmpPaths:   []string{params.TempDir, params.RelRawPath},
+		RefCount:   params.RefCount,
+		RefMu:      params.RefMu,
 	}, nil
 }
 
 // generateFAT32FS generates a FAT32 filesystem and extracts files to a temporary directory.
-// Note that unlike in the other generator functions, the file is expected to be closed
-// as disk.GetFilesystem() will reopen it.
 func generateFAT32FS(params generateFSParams) (*EmbeddedDirFS, error) {
 	fs, err := params.Disk.GetFilesystem(params.PartitionIndex)
 	if err != nil {
@@ -530,24 +526,21 @@ func generateFAT32FS(params generateFSParams) (*EmbeddedDirFS, error) {
 	if !ok {
 		return nil, fmt.Errorf("partition %d is not a FAT32 filesystem", params.PartitionIndex)
 	}
-	f, err := os.Open(params.RawDiskIMGPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to reopen raw image %s: %w", params.RawDiskIMGPath, err)
-	}
 	if err := ExtractAllRecursiveFat32(fat32fs, "/", params.PartitionRoot); err != nil {
-		f.Close()
 		return nil, fmt.Errorf("failed to extract FAT32 files for partition %d: %w", params.PartitionIndex, err)
 	}
 	params.RefMu.Lock()
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:     params.PartitionRoot,
-		File:     f,
-		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
-		RefCount: params.RefCount,
-		RefMu:    params.RefMu,
+		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:       params.PartitionRoot,
+		PluginRoot: params.PluginRoot,
+		File:       params.File,
+		Disk:       params.Disk,
+		TmpPaths:   []string{params.TempDir, params.RelRawPath},
+		RefCount:   params.RefCount,
+		RefMu:      params.RefMu,
 	}, nil
 }
 
@@ -560,12 +553,14 @@ func generateEXFATFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:     params.PartitionRoot,
-		File:     params.File,
-		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
-		RefCount: params.RefCount,
-		RefMu:    params.RefMu,
+		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:       params.PartitionRoot,
+		PluginRoot: params.PluginRoot,
+		File:       params.File,
+		Disk:       params.Disk,
+		TmpPaths:   []string{params.TempDir, params.RelRawPath},
+		RefCount:   params.RefCount,
+		RefMu:      params.RefMu,
 	}, nil
 }
 
@@ -586,23 +581,27 @@ func generateNTFSFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:     params.PartitionRoot,
-		File:     params.File,
-		TmpPaths: []string{params.TempDir, params.RawDiskIMGPath},
-		RefCount: params.RefCount,
-		RefMu:    params.RefMu,
+		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:       params.PartitionRoot,
+		PluginRoot: params.PluginRoot,
+		File:       params.File,
+		Disk:       params.Disk,
+		TmpPaths:   []string{params.TempDir, params.RelRawPath},
+		RefCount:   params.RefCount,
+		RefMu:      params.RefMu,
 	}, nil
 }
 
 // EmbeddedDirFS wraps scalibrfs.DirFS to include reference counting and cleanup.
 type EmbeddedDirFS struct {
-	FS       scalibrfs.FS
-	Root     *os.Root
-	File     *os.File
-	TmpPaths []string
-	RefCount *int32
-	RefMu    *sync.Mutex
+	FS         scalibrfs.FS
+	Root       *os.Root
+	PluginRoot *os.Root
+	File       *os.File
+	Disk       *disk.Disk
+	TmpPaths   []string
+	RefCount   *int32
+	RefMu      *sync.Mutex
 }
 
 // Open opens the specified file from the embedded filesystem.
@@ -652,6 +651,17 @@ func (e *EmbeddedDirFS) Close() error {
 	if *e.RefCount == 0 {
 		err := e.File.Close()
 		e.File = nil // Prevent double close
+
+		if e.Disk != nil {
+			e.Disk.Close()
+			e.Disk = nil
+		}
+
+		if e.PluginRoot != nil {
+			e.PluginRoot.Close()
+			e.PluginRoot = nil
+		}
+
 		if err != nil {
 			return fmt.Errorf("failed to close raw file: %w", err)
 		}
@@ -729,7 +739,7 @@ func (fi *fileInfo) Sys() any {
 
 // TARToTempDir extracts a tar file into a temporary directory
 // that can be used to traverse its contents recursively.
-func TARToTempDir(pluginDir string, pluginRoot *os.Root, reader io.Reader) error {
+func TARToTempDir(pluginRoot *os.Root, reader io.Reader) error {
 	// Extract the tar archive
 	var extractErr error
 	tr := tar.NewReader(reader)
@@ -777,7 +787,7 @@ loop:
 	}
 
 	if extractErr != nil {
-		if err := tempdir.RemoveAll(pluginDir); err != nil {
+		if err := tempdir.RemoveAll(pluginRoot.Name()); err != nil {
 			return fmt.Errorf("%w; %w", extractErr, err)
 		}
 		return extractErr
