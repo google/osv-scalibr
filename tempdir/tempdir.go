@@ -17,10 +17,13 @@
 package tempdir
 
 import (
-	"fmt"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 )
@@ -87,65 +90,75 @@ func CreateDir(name string) (string, *os.Root, error) {
 	return name, newRoot, nil
 }
 
-// CreateExtractorDir returns a sub-root for the extractor.
-// Layout: <SCALIBR-TMP-ROOT>/extractor/<plugin>/<filename>
-func CreateExtractorDir(plugin, filename string) (string, *os.Root, error) {
-	dir := filepath.Join("extractor", plugin, filepath.Base(filename))
+// PluginType defines the type of plugin for directory layout.
+type PluginType string
+
+const (
+	// Extractor represents an extraction plugin.
+	Extractor PluginType = "extractor"
+	// Enricher represents an enrichment plugin.
+	Enricher PluginType = "enricher"
+	// Detector represents a detection plugin.
+	Detector PluginType = "detector"
+)
+
+// CreatePluginDir returns a sub-root for a plugin.
+// Layout: <SCALIBR-TMP-ROOT>/<pluginType>/<pluginName>/<filename>
+func CreatePluginDir(pluginType PluginType, pluginName, filename string) (string, *os.Root, error) {
+	dir := filepath.Join(string(pluginType), pluginName, filepath.Base(filename))
 	return CreateDir(dir)
 }
 
-// CreateEnricherDir returns a sub-root for the enricher.
-// Layout: <SCALIBR-TMP-ROOT>/enricher/<plugin>/<filename>
-func CreateEnricherDir(plugin, filename string) (string, *os.Root, error) {
-	dir := filepath.Join("enricher", plugin, filepath.Base(filename))
-	return CreateDir(dir)
-}
-
-// CreateDetectorDir returns a sub-root for the detector.
-// Layout: <SCALIBR-TMP-ROOT>/enricher/<plugin>/<filename>
-func CreateDetectorDir(plugin, filename string) (string, *os.Root, error) {
-	dir := filepath.Join("detector", plugin, filepath.Base(filename))
-	return CreateDir(dir)
-}
-
-// CreateFile creates a temp file under the given (sub)directory using os.Root.
-// Since os.Root does not have CreateTemp yet, we implement it manually.
-func CreateFile(dir, pattern string) (string, *os.File, error) {
-	r, err := Root()
-	if err != nil {
-		return "", nil, err
-	}
-
-	targetDir := "."
-	if dir != "" {
-		targetDir = dir
-		if err := r.MkdirAll(targetDir, 0o755); err != nil {
-			return "", nil, fmt.Errorf("failed to create dir %s: %w", targetDir, err)
+// CreateFile creates a temp file under the given subRoot using os.Root.
+// If subRoot is nil, it uses the global tempdir Root.
+func CreateFile(subRoot *os.Root, pattern string) (string, *os.File, error) {
+	if subRoot == nil {
+		var err error
+		subRoot, err = Root()
+		if err != nil {
+			return "", nil, err
 		}
 	}
 
-	// os.Root.CreateTemp is not available
-	f, err := os.CreateTemp("", pattern) // temporary in default temp
+	relDir := "."
+	if subRoot != root {
+		relDir = subRoot.Name()
+	}
+
+	name, f, err := createTemp(subRoot, pattern)
 	if err != nil {
 		return "", nil, err
 	}
-	fname := f.Name()
-	f.Close()
+	return filepath.Join(rootPath, relDir, name), f, nil
+}
 
-	// Move it under our root (safer than CreateTemp with full path)
-	newName := filepath.Join(rootPath, targetDir, filepath.Base(fname))
-	if err := os.Rename(fname, newName); err != nil {
-		os.Remove(fname)
-		return "", nil, err
+func createTemp(subRoot *os.Root, pattern string) (string, *os.File, error) {
+	prefix, suffix := prefixAndSuffix(pattern)
+	for i := 0; i < 10000; i++ {
+		name := prefix + nextRandom() + suffix
+		f, err := subRoot.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600)
+		if os.IsExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", nil, err
+		}
+		return name, f, nil
 	}
+	return "", nil, errors.New("failed to generate unique temp file")
+}
 
-	finalF, err := r.OpenFile(filepath.Join(targetDir, filepath.Base(newName)), os.O_RDWR, 0o666)
-	if err != nil {
-		os.Remove(newName)
-		return "", nil, err
+func prefixAndSuffix(pattern string) (prefix, suffix string) {
+	if pos := strings.LastIndexByte(pattern, '*'); pos != -1 {
+		return pattern[:pos], pattern[pos+1:]
 	}
+	return pattern, ""
+}
 
-	return newName, finalF, nil
+func nextRandom() string {
+	buf := make([]byte, 4)
+	rand.Read(buf)
+	return hex.EncodeToString(buf)
 }
 
 // RemoveAll removes a specific subdirectory

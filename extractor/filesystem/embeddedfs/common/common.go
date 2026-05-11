@@ -460,6 +460,7 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 		case "ext4":
 			fsys, err = generateEXTFS(params)
 		case "FAT32":
+			f.Close()
 			fsys, err = generateFAT32FS(params)
 		case "exFAT":
 			fsys, err = generateEXFATFS(params)

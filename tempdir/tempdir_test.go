@@ -78,13 +78,14 @@ func TestCreateNestedDir(t *testing.T) {
 	}
 }
 
-func TestCreateExtractorDir(t *testing.T) {
+func TestCreatePluginDir(t *testing.T) {
+	pluginType := tempdir.Extractor
 	plugin := "qcow2"
 	filename := "test.img"
 
-	path, root, err := tempdir.CreateExtractorDir(plugin, filename)
+	path, root, err := tempdir.CreatePluginDir(pluginType, plugin, filename)
 	if err != nil {
-		t.Fatalf("CreateExtractorDir() failed: %v", err)
+		t.Fatalf("CreatePluginDir() failed: %v", err)
 	}
 	defer root.Close()
 
@@ -92,44 +93,16 @@ func TestCreateExtractorDir(t *testing.T) {
 		t.Fatalf("Directory not created: %v", err)
 	}
 
-	expectedSuffix := filepath.Join("extractor", plugin, filepath.Base(filename))
+	expectedSuffix := filepath.Join(string(pluginType), plugin, filepath.Base(filename))
 	if !strings.HasSuffix(path, expectedSuffix) {
 		t.Fatalf("Unexpected directory structure: got %s, expected suffix %s", path, expectedSuffix)
 	}
-}
 
-func TestCreateEnricherDir(t *testing.T) {
-	plugin := "osv"
-	filename := "package.json"
-
-	path, root, err := tempdir.CreateEnricherDir(plugin, filename)
-	if err != nil {
-		t.Fatalf("CreateEnricherDir() failed: %v", err)
-	}
-	defer root.Close()
-
-	if _, err := os.Stat(filepath.Join(rootPathHelper(t), path)); err != nil {
-		t.Fatalf("Directory not created: %v", err)
-	}
-}
-
-func TestCreateDetectorDir(t *testing.T) {
-	plugin := "secrets"
-	filename := "dump.txt"
-
-	path, root, err := tempdir.CreateDetectorDir(plugin, filename)
-	if err != nil {
-		t.Fatalf("CreateDetectorDir() failed: %v", err)
-	}
-	defer root.Close()
-
-	if _, err := os.Stat(filepath.Join(rootPathHelper(t), path)); err != nil {
-		t.Fatalf("Directory not created: %v", err)
-	}
+	t.Logf("Root.Name() is: %q", root.Name())
 }
 
 func TestCreateFile_DefaultRoot(t *testing.T) {
-	path, file, err := tempdir.CreateFile("", "test-*.txt")
+	path, file, err := tempdir.CreateFile(nil, "test-*.txt")
 	if err != nil {
 		t.Fatalf("CreateFile() failed: %v", err)
 	}
@@ -150,7 +123,13 @@ func TestCreateFile_DefaultRoot(t *testing.T) {
 
 func TestCreateFile_InSubDir(t *testing.T) {
 	dir := "subdir1/subdir2"
-	path, file, err := tempdir.CreateFile(dir, "nested-*.log")
+	_, subRoot, err := tempdir.CreateDir(dir)
+	if err != nil {
+		t.Fatalf("CreateDir() failed: %v", err)
+	}
+	defer subRoot.Close()
+
+	path, file, err := tempdir.CreateFile(subRoot, "nested-*.log")
 	if err != nil {
 		t.Fatalf("CreateFile() failed: %v", err)
 	}

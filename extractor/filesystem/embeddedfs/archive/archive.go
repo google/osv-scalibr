@@ -103,7 +103,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// |						└── valid.tar 					<--- A directory with the name set to the file discovered by the extractor
 	// │				        	├── bin						<--- A folder containing archive data
 	// │				        	│				└── bash	<--- A file inside /bin directory
-	pluginDir, pluginRoot, err := tempdir.CreateExtractorDir("archive", input.Path)
+	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "archive", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}

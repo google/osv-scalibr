@@ -103,7 +103,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// │				└── extractor
 	// │				    └── ova
 	// |						└── valid.ova 					<--- A directory with the name set to the file discovered by the extractor
-	pluginDir, pluginRoot, err := tempdir.CreateExtractorDir("ova", input.Path)
+	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "ova", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}

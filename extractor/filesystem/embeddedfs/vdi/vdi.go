@@ -145,13 +145,13 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// │				        	├── partition-4-ntfs
 	// │				        	│				└── private-key4.pem
 	// │				        	└── vdi-1234.raw						<--- Converted disk image
-	pluginDir, pluginRoot, err := tempdir.CreateExtractorDir("vdi", input.Path)
+	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "vdi", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}
 
 	// Create a temporary file for the raw disk image
-	rawDiskIMGPath, tmpRaw, err := tempdir.CreateFile(pluginDir, "vdi-*.raw")
+	rawDiskIMGPath, tmpRaw, err := tempdir.CreateFile(pluginRoot, "vdi-*.raw")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}

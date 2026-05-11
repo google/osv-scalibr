@@ -129,13 +129,13 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// │				        	├── partition-4-ntfs
 	// │				        	│				└── private-key4.pem
 	// │				        	└── qcow2-12345.raw						<--- Converted disk image
-	pluginDir, pluginRoot, err := tempdir.CreateExtractorDir("qcow2", input.Path)
+	pluginDir, pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "qcow2", input.Path)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
 	}
 
 	// Create a temporary file for the raw disk image
-	rawDiskIMGPath, _, err := tempdir.CreateFile(pluginDir, "qcow2-*.raw")
+	rawDiskIMGPath, _, err := tempdir.CreateFile(pluginRoot, "qcow2-*.raw")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}
