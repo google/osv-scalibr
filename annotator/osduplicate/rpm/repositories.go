@@ -47,18 +47,28 @@ var (
 )
 
 type mainOSPackages struct {
-	vendorOnly     bool
-	trustedVendors []string
-	value          map[string]struct{}
+	// mainPackageVendors contains a list of vendor names that exclusively
+	// distribute main OS packages. For example, in RHEL, there are no "extra"
+	// repositories provided by the OS vendor; every package published by
+	// "Red Hat, Inc." is inherently a default package. Packages added from
+	// third-party repositories (like EPEL) will naturally have a different vendor.
+	//
+	// For OSes where "extra" repositories exist, relying on the vendor field
+	// is not enough. In those cases, this field will be left empty.
+	mainPackageVendors []string
+
+	// mainRepoPackages is a set of known source RPM names extracted directly
+	// from the package manager's main repository caches
+	mainRepoPackages map[string]struct{}
 }
 
 func (m *mainOSPackages) Contains(pkg *rpmdb.PackageInfo) bool {
-	if m.vendorOnly {
-		return slices.ContainsFunc(m.trustedVendors, func(v string) bool {
+	if len(m.mainPackageVendors) > 0 {
+		return slices.ContainsFunc(m.mainPackageVendors, func(v string) bool {
 			return strings.Contains(pkg.Vendor, v)
 		})
 	}
-	_, exists := m.value[pkg.SourceRpm]
+	_, exists := m.mainRepoPackages[pkg.SourceRpm]
 	return exists
 }
 
@@ -69,25 +79,19 @@ func extractMainPackages(ctx context.Context, root *fs.ScanRoot) (*mainOSPackage
 	}
 	osID := strings.ToLower(content["ID"])
 
-	// Bypass cache parsing entirely for OS distributions where Vendor matches are reliable
+	// Bypass cache parsing for OS distributions where the Vendor field alone is sufficient.
 	//
-	// Using the Vendor as a mean to classify a package to be from a default repo or not
-	// may result in false positives in cases where an rpm package has the same Vendor as other packages
-	// published under main repositories while being publish in non default repositories.
+	// For distributions like RHEL and SLES/openSUSE, the OS vendor does not publish
+	// "extra" or non-default repositories. Therefore, any package matching their vendor
+	// string is inherently a main OS package.
 	//
-	// With RHEL, SLES, openSUSE packages the Vendor seems reliable and is preferred since it doesn't need the cache
-	// folder to be refreshed to work.
+	// This approach is preferred because it avoids relying on the presence or
+	// freshness of the package manager's cache.
 	switch {
 	case osID == "rhel":
-		return &mainOSPackages{
-			vendorOnly:     true,
-			trustedVendors: []string{"Red Hat, Inc."},
-		}, nil
+		return &mainOSPackages{mainPackageVendors: []string{"Red Hat, Inc."}}, nil
 	case osID == "sles" || strings.HasPrefix(osID, "sles_") || strings.HasPrefix(osID, "opensuse"):
-		return &mainOSPackages{
-			vendorOnly:     true,
-			trustedVendors: []string{"openSUSE", "SUSE LLC <https://www.suse.com/>"},
-		}, nil
+		return &mainOSPackages{mainPackageVendors: []string{"openSUSE", "SUSE LLC <https://www.suse.com/>"}}, nil
 	}
 
 	// extract the cache from different folders depending on the installed package manager
@@ -161,7 +165,7 @@ func extractDnfMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*
 	}
 
 	cache := &mainOSPackages{
-		value: make(map[string]struct{}),
+		mainRepoPackages: make(map[string]struct{}),
 	}
 
 	for _, entry := range entries {
@@ -222,7 +226,7 @@ func extractYumMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*
 	}
 
 	cache := &mainOSPackages{
-		value: make(map[string]struct{}),
+		mainRepoPackages: make(map[string]struct{}),
 	}
 
 	// YUM caches are nested (e.g. /var/cache/yum/x86_64/7/base/repodata)
@@ -309,7 +313,7 @@ func parseYumRepo(ctx context.Context, fsys fs.FS, path string, cache *mainOSPac
 			return err
 		}
 		if sourceRpm.Valid && sourceRpm.String != "" {
-			cache.value[sourceRpm.String] = struct{}{}
+			cache.mainRepoPackages[sourceRpm.String] = struct{}{}
 		}
 	}
 
@@ -363,7 +367,7 @@ func parseLibsolvRepo(ctx context.Context, fsys fs.FS, path string, cache *mainO
 		}
 
 		if pkg.SourceRPM != "" {
-			cache.value[pkg.SourceRPM] = struct{}{}
+			cache.mainRepoPackages[pkg.SourceRPM] = struct{}{}
 		}
 	}
 

@@ -120,9 +120,8 @@ func TestExtractMainPackages(t *testing.T) {
 ID="rhel"
 `,
 			want: &mainOSPackages{
-				vendorOnly:     true,
-				trustedVendors: []string{"Red Hat, Inc."},
-				value:          map[string]struct{}{},
+				mainPackageVendors: []string{"Red Hat, Inc."},
+				mainRepoPackages:   map[string]struct{}{},
 			},
 		},
 		{
@@ -132,9 +131,8 @@ ID="rhel"
 ID="sles_sap"
 `,
 			want: &mainOSPackages{
-				vendorOnly:     true,
-				trustedVendors: []string{"openSUSE", "SUSE LLC <https://www.suse.com/>"},
-				value:          map[string]struct{}{},
+				mainPackageVendors: []string{"openSUSE", "SUSE LLC <https://www.suse.com/>"},
+				mainRepoPackages:   map[string]struct{}{},
 			},
 		},
 		{
@@ -185,7 +183,7 @@ ID="almalinux"
 				</package>
 </metadata>`,
 			want: &mainOSPackages{
-				value: map[string]struct{}{},
+				mainRepoPackages: map[string]struct{}{},
 			},
 		},
 		{
@@ -248,7 +246,7 @@ ID="rocky"
 </metadata>
 `,
 			want: &mainOSPackages{
-				value: map[string]struct{}{
+				mainRepoPackages: map[string]struct{}{
 					"bash-5.1.8-9.el9.src.rpm":      {},
 					"golang-1.25.3-1.el9_7.src.rpm": {},
 				},
@@ -264,7 +262,7 @@ ID="centos"
 -> testdata/yum-primary.sqlite.gz
 `,
 			want: &mainOSPackages{
-				value: map[string]struct{}{},
+				mainRepoPackages: map[string]struct{}{},
 			},
 		},
 		{
@@ -277,7 +275,7 @@ ID="centos"
 -> testdata/yum-primary.sqlite.gz
 `,
 			want: &mainOSPackages{
-				value: map[string]struct{}{
+				mainRepoPackages: map[string]struct{}{
 					"golang-1.13.14-1.amzn2.0.1.src.rpm": {},
 					"curl-7.55.1-12.amzn2.0.6.src.rpm":   {},
 				},
@@ -293,7 +291,7 @@ ID="amzn"
 -> testdata/yum-primary.sqlite.gz
 `,
 			want: &mainOSPackages{
-				value: map[string]struct{}{
+				mainRepoPackages: map[string]struct{}{
 					"golang-1.13.14-1.amzn2.0.1.src.rpm": {},
 					"curl-7.55.1-12.amzn2.0.6.src.rpm":   {},
 				},
