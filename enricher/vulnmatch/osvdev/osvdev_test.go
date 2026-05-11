@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev/fakeclient"
 	"github.com/google/osv-scalibr/extractor"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
@@ -532,5 +533,51 @@ func TestEnrich(t *testing.T) {
 				t.Errorf("Enrich(%v): unexpected diff (-want +got): %v", tt.packages, diff)
 			}
 		})
+	}
+}
+
+func TestEnrich_UsesDebianSourceNameForOSVQueries(t *testing.T) {
+	pkg := &extractor.Package{
+		Name:     "util-linux-extra",
+		Version:  "2.38.1-5+b1",
+		PURLType: purl.TypeDebian,
+		Metadata: &dpkgmeta.Metadata{
+			PackageName: "util-linux-extra",
+			SourceName:  "util-linux",
+			OSID:        "Debian",
+			OSVersionID: "12",
+		},
+	}
+
+	vuln := &osvpb.Vulnerability{
+		Id: "GHSA-test-debian-source-name",
+		Affected: []*osvpb.Affected{
+			{
+				Package: &osvpb.Package{
+					Ecosystem: "Debian:12",
+					Name:      "util-linux",
+				},
+				Versions: []string{"2.38.1-5+b1"},
+			},
+		},
+	}
+
+	client := fakeclient.New(map[string][]*osvpb.Vulnerability{
+		"util-linux:2.38.1-5+b1:": {vuln},
+	})
+
+	e := osvdev.NewWithClient(client, 0)
+	inv := &inventory.Inventory{Packages: []*extractor.Package{pkg}}
+
+	if err := e.Enrich(t.Context(), &enricher.ScanInput{}, inv); err != nil {
+		t.Fatalf("Enrich() error: %v", err)
+	}
+
+	if len(inv.PackageVulns) != 1 {
+		t.Fatalf("expected 1 vulnerability match, got %d", len(inv.PackageVulns))
+	}
+
+	if inv.PackageVulns[0].Vulnerability.GetId() != vuln.GetId() {
+		t.Fatalf("expected vulnerability %q, got %q", vuln.GetId(), inv.PackageVulns[0].Vulnerability.GetId())
 	}
 }
