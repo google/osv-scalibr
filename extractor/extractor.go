@@ -117,11 +117,8 @@ func LocationFromPathAndLine(path string, line int) PackageLocation {
 // Some ecosystems preserve multiple package name forms in metadata; when that happens,
 // the canonical advisory identity should be preferred over the human-readable Name field.
 func (p *Package) OSVPackageName() string {
-	switch m := p.Metadata.(type) {
-	case *dpkgmeta.Metadata:
-		if m.SourceName != "" {
-			return m.SourceName
-		}
+	if m, ok := p.Metadata.(*dpkgmeta.Metadata); ok && m.SourceName != "" {
+		return m.SourceName
 	}
 
 	return p.Name
