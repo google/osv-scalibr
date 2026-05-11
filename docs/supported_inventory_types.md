@@ -65,6 +65,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | .NET       | packages.lock.json                                | `dotnet/packageslockjson`            |
 |            | packages.config                                   | `dotnet/packagesconfig`              |
 |            | deps.json                                         | `dotnet/depsjson`                    |
+|            | paket.dependencies                                | `dotnet/paketdependencies`           |
+|            | paket.lock                                        | `dotnet/paketlock`                   |
 |            | portable executables                              | `dotnet/pe`                          |
 |            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
 |            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
@@ -226,14 +228,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type                                  | Extractor Plugin    |
-|---------------------------------------| ------------------- |
-| Wordpress plugins                     | `wordpress/plugins` |
-| VSCode extensions                     | `vscode/extensions` |
-| Chrome extensions                     | `chrome/extensions` |
-| Maven entries in Bazel build files    | `os/bazelmaven`     |
-| NetScaler installations               | `netscaler`         |
-| GitHub Actions workflow dependencies  | `github/actions`    |
+| Type                               | Extractor Plugin    |
+|------------------------------------| ------------------- |
+| Wordpress plugins                  | `wordpress/plugins` |
+| VSCode extensions                  | `vscode/extensions` |
+| Chrome extensions                  | `chrome/extensions` |
+| Maven entries in Bazel build files | `os/bazelmaven`     |
+| NetScaler installations            | `netscaler`         |
+| GitHub Actions workflow dependencies| `github/actions`    |
 
 ### EmbeddedFS
 
