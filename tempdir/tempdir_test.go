@@ -237,12 +237,14 @@ func TestRemoveRoot(t *testing.T) {
 	}
 	root.Close()
 
+	path := rootPathHelper(t)
+
 	err = tempdir.RemoveRoot()
 	if err != nil {
 		t.Fatalf("RemoveRoot() failed: %v", err)
 	}
 
-	if _, err := os.Stat(rootPathHelper(t)); !os.IsNotExist(err) {
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatalf("Root directory still exists after cleanup")
 	}
 }

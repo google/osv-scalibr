@@ -29,11 +29,13 @@ import (
 )
 
 var (
-	root     *os.Root
-	errRoot  error
-	once     sync.Once
-	debug    bool
-	rootPath string
+	root       *os.Root
+	errRoot    error
+	once       sync.Once
+	debug      bool
+	rootPath   string
+	subRoots   []*os.Root
+	subRootsMu sync.Mutex
 )
 
 // SetDebug disables automatic cleanup when enabled.
@@ -73,6 +75,7 @@ func GetRootPath() (string, error) {
 }
 
 // CreateDir creates and opens a subdirectory as a new os.Root (chroot-like).
+// The caller is responsible for closing the returned *os.Root when it is no longer needed.
 func CreateDir(name string) (*os.Root, error) {
 	r, err := Root()
 	if err != nil {
@@ -87,6 +90,9 @@ func CreateDir(name string) (*os.Root, error) {
 	if err != nil {
 		return nil, err
 	}
+	subRootsMu.Lock()
+	subRoots = append(subRoots, newRoot)
+	subRootsMu.Unlock()
 	return newRoot, nil
 }
 
@@ -104,6 +110,7 @@ const (
 
 // CreatePluginDir returns a sub-root for a plugin.
 // Layout: <SCALIBR-TMP-ROOT>/<pluginType>/<pluginName>/<filename>
+// The caller is responsible for closing the returned *os.Root when it is no longer needed.
 func CreatePluginDir(pluginType PluginType, pluginName, filename string) (*os.Root, error) {
 	dir := filepath.Join(string(pluginType), pluginName, filepath.Base(filename))
 	return CreateDir(dir)
@@ -182,25 +189,31 @@ func RemoveAll(name string) error {
 	return r.RemoveAll(name)
 }
 
-// RemoveRoot removes the entire temp root.
+// RemoveRoot removes the entire temp root after closing all subroots.
 func RemoveRoot() error {
 	if debug {
 		return nil
 	}
-	if root == nil {
-		return nil
+	subRootsMu.Lock()
+	for _, sr := range subRoots {
+		if sr != nil {
+			_ = sr.Close()
+		}
 	}
-	root.Close()
-	err := os.RemoveAll(rootPath)
-	return err
-}
+	subRoots = nil
+	subRootsMu.Unlock()
 
-// CloseRoot for manual
-func CloseRoot() error {
 	if root != nil {
-		return root.Close()
+		_ = root.Close()
+		root = nil
 	}
-	return nil
+	var err error
+	if rootPath != "" {
+		err = os.RemoveAll(rootPath)
+		rootPath = ""
+	}
+	once = sync.Once{} // Reset once for subsequent tests
+	return err
 }
 
 // setupSignalCleanup automatically cleans temp directory on interrupts.
@@ -209,8 +222,6 @@ func setupSignalCleanup() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	go func() {
 		<-c
-		if !debug && rootPath != "" {
-			os.RemoveAll(rootPath)
-		}
+		_ = RemoveRoot()
 	}()
 }

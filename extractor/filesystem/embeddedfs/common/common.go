@@ -429,14 +429,10 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 		// │				        	│				└── private-key4.pem
 		// │				        	└── vdi-12345.raw 						<--- Converted disk image
 		partitionSubDir := fmt.Sprintf("partition-%d-%s", partitionIndex, strings.ToLower(fsType))
-		// Ensure dir exists
-		if err := pluginRoot.MkdirAll(partitionSubDir, 0o755); err != nil && !os.IsExist(err) {
-			return nil, fmt.Errorf("failed to create partition directory %s: %w", partitionSubDir, err)
-		}
-		partitionRoot, err := pluginRoot.OpenRoot(partitionSubDir)
+		partitionRoot, err := tempdir.CreateDir(filepath.Join(pluginRoot.Name(), partitionSubDir))
 		if err != nil {
 			f.Close()
-			return nil, fmt.Errorf("failed to open partition directory %s: %w", partitionSubDir, err)
+			return nil, fmt.Errorf("failed to create partition directory %s: %w", partitionSubDir, err)
 		}
 
 
