@@ -89,6 +89,20 @@ func TestMakeEcosystemAPK(t *testing.T) {
 			},
 			want: "BellSoft Hardened Containers:stream",
 		},
+		{
+			desc: "Wolfi",
+			metadata: &apkmeta.Metadata{
+				OSID: "wolfi",
+			},
+			want: "Wolfi",
+		},
+		{
+			desc: "Chainguard",
+			metadata: &apkmeta.Metadata{
+				OSID: "chainguard",
+			},
+			want: "Chainguard",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
