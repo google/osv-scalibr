@@ -69,7 +69,7 @@ func TestIsMainDnfRepo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.osID+"_"+tt.dirName, func(t *testing.T) {
-			if got := isMainDnfRepo(tt.osID, tt.dirName); got != tt.want {
+			if got := isMainDNFRepo(tt.osID, tt.dirName); got != tt.want {
 				t.Errorf("isMainDnfRepo(%q, %q) = %v, want %v", tt.osID, tt.dirName, got, tt.want)
 			}
 		})

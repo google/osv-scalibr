@@ -105,7 +105,7 @@ func extractMainPackages(ctx context.Context, root *fs.ScanRoot) (*mainOSPackage
 	// use config files as indicators to reliably detect the correct package manager
 	// since cache folder may be removed
 	extractors := []cacheExtractor{
-		{indicators: []string{"etc/dnf/dnf.conf"}, extract: extractDnfMainRepos},
+		{indicators: []string{"etc/dnf/dnf.conf"}, extract: extractDNFMainRepos},
 		{indicators: []string{"etc/yum/yum.conf", "etc/yum.conf"}, extract: extractYumMainRepos},
 		// currently there is no support for zypper since every OS using zypper is handled at Vendor level
 	}
@@ -129,8 +129,8 @@ func hasPackageManager(root *fs.ScanRoot, indicators []string) bool {
 	return false
 }
 
-// isMainDnfRepo strictly matches the extracted repo ID based on the OS
-func isMainDnfRepo(osID, dirName string) bool {
+// isMainDNFRepo strictly matches the extracted repo ID based on the OS
+func isMainDNFRepo(osID, dirName string) bool {
 	// usually repo folder have the following naming structure
 	// repo_name-hash
 	//
@@ -151,7 +151,7 @@ func isMainDnfRepo(osID, dirName string) bool {
 	}
 }
 
-func extractDnfMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
+func extractDNFMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*mainOSPackages, error) {
 	entries, err := iofs.ReadDir(root.FS, dnfRepoListDir)
 	if err != nil {
 		if errors.Is(err, iofs.ErrNotExist) {
@@ -174,7 +174,7 @@ func extractDnfMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*
 		}
 		name := entry.Name()
 
-		if !isMainDnfRepo(osID, name) {
+		if !isMainDNFRepo(osID, name) {
 			continue
 		}
 
