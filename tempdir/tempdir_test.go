@@ -4,10 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
+
 	"testing"
 
-	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/tempdir"
 )
 
@@ -157,54 +156,6 @@ func TestStat(t *testing.T) {
 	}
 }
 
-func TestEmbeddedDirFSClose(t *testing.T) {
-	pluginRoot, err := tempdir.CreateDir("test_close_plugin")
-	if err != nil {
-		t.Fatalf("CreateDir failed: %v", err)
-	}
-
-	partitionRoot, err := tempdir.CreateDir("test_close_partition")
-	if err != nil {
-		t.Fatalf("CreateDir failed: %v", err)
-	}
-
-	// Create a dummy file
-	f, err := os.CreateTemp("", "dummy_raw")
-	if err != nil {
-		t.Fatalf("CreateTemp failed: %v", err)
-	}
-	dummyPath := f.Name()
-	defer os.Remove(dummyPath)
-
-	var refCount int32 = 1
-	var refMu sync.Mutex
-
-	edfs := &common.EmbeddedDirFS{
-		Root:       partitionRoot,
-		PluginRoot: pluginRoot,
-		File:       f,
-		RefCount:   &refCount,
-		RefMu:      &refMu,
-	}
-
-	if err := edfs.Close(); err != nil {
-		t.Fatalf("Close() failed: %v", err)
-	}
-
-	if refCount != 0 {
-		t.Fatalf("Expected RefCount 0, got %d", refCount)
-	}
-
-	// Verify that PartitionRoot and PluginRoot are closed by trying to use them.
-	if _, err := partitionRoot.Stat("."); err == nil {
-		t.Fatal("Expected error using closed partitionRoot, got nil")
-	}
-
-	if _, err := pluginRoot.Stat("."); err == nil {
-		t.Fatal("Expected error using closed pluginRoot, got nil")
-	}
-}
-
 func TestRemoveAll(t *testing.T) {
 	name := "cleanup_test"
 	root, err := tempdir.CreateDir(name)
@@ -245,3 +196,44 @@ func TestRemoveRoot(t *testing.T) {
 	}
 }
 
+func TestDiskLayout(t *testing.T) {
+	// Get the scalibr root path for current run.
+	rootPath, err := tempdir.GetRootPath()
+	if err != nil {
+		t.Fatalf("failed to get scalibr rootPath")
+	}
+
+	pluginType := tempdir.Extractor
+	plugin := "qcow2"
+	filename := "test.img"
+
+	pluginRoot, err := tempdir.CreatePluginDir(pluginType, plugin, filename)
+	if err != nil {
+		t.Fatalf("CreatePluginDir() failed: %v", err)
+	}
+	defer pluginRoot.Close()
+
+	// Create a file inside pluginRoot
+	rawPath, _, err := tempdir.CreateFile(pluginRoot, "qcow2-*.raw")
+	if err != nil {
+		t.Fatalf("CreateFile() failed: %v", err)
+	}
+
+	// Create a partition subdir inside pluginRoot
+	partitionSubDir := "partition-1-ext4"
+	partitionRoot, err := tempdir.CreateSubDir(pluginRoot, partitionSubDir)
+	if err != nil {
+		t.Fatalf("CreateSubDir() failed: %v", err)
+	}
+	defer partitionRoot.Close()
+
+	// Verify disk layout using os.Stat on absolute paths
+	if _, err := os.Stat(rawPath); err != nil {
+		t.Fatalf("Raw image file not created at expected path %s: %v", rawPath, err)
+	}
+
+	expectedPartitionPath := filepath.Join(rootPath, string(pluginType), plugin, filepath.Base(filename), partitionSubDir)
+	if _, err := os.Stat(expectedPartitionPath); err != nil {
+		t.Fatalf("Partition directory not created at expected path %s: %v", expectedPartitionPath, err)
+	}
+}

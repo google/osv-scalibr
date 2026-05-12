@@ -103,6 +103,22 @@ func CreateDir(name string) (*os.Root, error) {
 	return newRoot, nil
 }
 
+// CreateSubDir creates and opens a subdirectory under a given parent root.
+// The caller is responsible for closing the returned *os.Root when it is no longer needed.
+func CreateSubDir(parent *os.Root, name string) (*os.Root, error) {
+	if err := parent.MkdirAll(name, 0o755); err != nil && !os.IsExist(err) {
+		return nil, err
+	}
+	subRoot, err := parent.OpenRoot(name)
+	if err != nil {
+		return nil, err
+	}
+	subRootsMu.Lock()
+	subRoots = append(subRoots, subRoot)
+	subRootsMu.Unlock()
+	return subRoot, nil
+}
+
 // PluginType defines the type of plugin for directory layout.
 type PluginType string
 
@@ -180,6 +196,21 @@ func Stat(name string) (os.FileInfo, error) {
 	return r.Stat(name)
 }
 
+// CleanupRoot closes the provided os.Root and removes its directory if debug mode is disabled.
+func CleanupRoot(r *os.Root) error {
+	if r == nil {
+		return nil
+	}
+	path := r.Name()
+	err := r.Close()
+	if !debug {
+		if removeErr := os.RemoveAll(path); removeErr != nil {
+			return removeErr
+		}
+	}
+	return err
+}
+
 // RemoveAll removes a path relative to the temp root.
 func RemoveAll(name string) error {
 	r, err := Root()
@@ -198,7 +229,10 @@ func RemoveRoot() error {
 		return nil
 	}
 	subRootsMu.Lock()
-	for _, sr := range subRoots {
+	// Close subroots in reverse order of creation (LIFO) to ensure
+	// that sub-directories are closed before their parent directories.
+	for i := len(subRoots) - 1; i >= 0; i-- {
+		sr := subRoots[i]
 		if sr != nil {
 			_ = sr.Close()
 		}

@@ -188,14 +188,14 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	}
 
 	// Create a reference counter for the temporary file
-	var refCount int32
+	var numOfPartitionsLeft int32 = int32(len(partitionList))
 	var refMu sync.Mutex
 
 	// Create an Embedded filesystem for each valid partition
 	var embeddedFSs []*inventory.EmbeddedFS
 	for i, p := range partitionList {
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
-		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, pluginRoot, rawDiskIMGPath, &refMu, &refCount)
+		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, pluginRoot, rawDiskIMGPath, &refMu, &numOfPartitionsLeft)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
 			Path:          fmt.Sprintf("%s:%d", vmdkPath, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,

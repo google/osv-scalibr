@@ -117,12 +117,12 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var refMu sync.Mutex
 	getEmbeddedFS := func(ctx context.Context) (scalibrfs.FS, error) {
 		return &common.EmbeddedDirFS{
-			FS:       &common.RootFSWrapper{Root: pluginRoot, FS: pluginRoot.FS()},
-			Root:     pluginRoot,
-			File:     nil,
-			TmpPaths: []string{pluginRoot.Name()},
-			RefCount: &refCount,
-			RefMu:    &refMu,
+			FS:                  &common.RootFSWrapper{Root: pluginRoot, FS: pluginRoot.FS()},
+			Root:                pluginRoot,
+			File:                nil,
+			TmpPaths:            []string{pluginRoot.Name()},
+			NumOfPartitionsLeft: &refCount,
+			RefMu:               &refMu,
 		}, nil
 	}
 	var inv inventory.Inventory

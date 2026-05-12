@@ -38,6 +38,7 @@ import (
 	"github.com/dsoprea/go-exfat"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/tempdir"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
 	"www.velocidex.com/golang/go-ntfs/parser"
@@ -382,7 +383,8 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, destRoot *os.Root) erro
 // CloserWithTmpPaths is an interface for filesystems that provide temporary paths for cleanup.
 type CloserWithTmpPaths interface {
 	scalibrfs.FS
-	Close() error
+	// CloseAndCleanup attempts to close and cleanup any fully scanned images.
+	CloseAndCleanup() error
 	TempPaths() []string
 }
 
@@ -409,7 +411,7 @@ func GetDiskPartitions(rawDiskIMGPath string) ([]part.Partition, *disk.Disk, err
 }
 
 // NewPartitionEmbeddedFSGetter creates a lazy getter function for an embedded filesystem from a disk partition.
-func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.Partition, disk *disk.Disk, pluginRoot *os.Root, rawDiskIMGPath string, refMu *sync.Mutex, refCount *int32) func(context.Context) (scalibrfs.FS, error) {
+func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.Partition, disk *disk.Disk, pluginRoot *os.Root, rawDiskIMGPath string, refMu *sync.Mutex, numOfPartitionsLeft *int32) func(context.Context) (scalibrfs.FS, error) {
 	return func(ctx context.Context) (scalibrfs.FS, error) {
 		// Get partition offset and size (already multiplied by sector size)
 		offset := p.GetStart()
@@ -440,24 +442,23 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 		// │				        	│				└── private-key4.pem
 		// │				        	└── vdi-12345.raw 						<--- Converted disk image
 		partitionSubDir := fmt.Sprintf("partition-%d-%s", partitionIndex, strings.ToLower(fsType))
-		partitionRoot, err := tempdir.CreateDir(partitionSubDir)
+		partitionRoot, err := tempdir.CreateSubDir(pluginRoot, partitionSubDir)
 		if err != nil {
 			f.Close()
 			return nil, fmt.Errorf("failed to create partition directory %s: %w", partitionSubDir, err)
 		}
 
-
 		params := generateFSParams{
-			File:           f,
-			Disk:           disk,
-			Section:        section,
-			PartitionIndex: partitionIndex,
-			PluginRoot:     pluginRoot,
-			TempDir:        filepath.Join(pluginRoot.Name(), partitionSubDir),
-			PartitionRoot:  partitionRoot,
-			RelRawPath:     filepath.Join(pluginRoot.Name(), filepath.Base(rawDiskIMGPath)),
-			RefMu:          refMu,
-			RefCount:       refCount,
+			File:                f,
+			Disk:                disk,
+			Section:             section,
+			PartitionIndex:      partitionIndex,
+			PluginRoot:          pluginRoot,
+			TempDir:             filepath.Join(pluginRoot.Name(), partitionSubDir),
+			PartitionRoot:       partitionRoot,
+			RawPath:             filepath.Join(pluginRoot.Name(), filepath.Base(rawDiskIMGPath)),
+			RefMu:               refMu,
+			numOfPartitionsLeft: numOfPartitionsLeft,
 		}
 
 		var fsys scalibrfs.FS
@@ -487,16 +488,16 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 
 // generateFSParams holds parameters for generating embedded filesystems.
 type generateFSParams struct {
-	File           *os.File
-	Disk           *disk.Disk
-	Section        *io.SectionReader
-	PartitionIndex int
-	PluginRoot     *os.Root
-	PartitionRoot  *os.Root
-	TempDir        string
-	RelRawPath     string
-	RefMu          *sync.Mutex
-	RefCount       *int32
+	File                *os.File
+	Disk                *disk.Disk
+	Section             *io.SectionReader
+	PartitionIndex      int
+	PluginRoot          *os.Root
+	PartitionRoot       *os.Root
+	TempDir             string
+	RawPath             string
+	RefMu               *sync.Mutex
+	numOfPartitionsLeft *int32
 }
 
 // generateEXTFS generates an ext4 filesystem and extracts files to a temporary directory.
@@ -508,18 +509,16 @@ func generateEXTFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	if err := ExtractAllRecursiveExt(fs, "/", params.PartitionRoot); err != nil {
 		return nil, fmt.Errorf("failed to extract ext4 files for partition %d: %w", params.PartitionIndex, err)
 	}
-	params.RefMu.Lock()
-	*params.RefCount++
-	params.RefMu.Unlock()
+
 	return &EmbeddedDirFS{
-		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:       params.PartitionRoot,
-		PluginRoot: params.PluginRoot,
-		File:       params.File,
-		Disk:       params.Disk,
-		TmpPaths:   []string{params.TempDir, params.RelRawPath},
-		RefCount:   params.RefCount,
-		RefMu:      params.RefMu,
+		FS:                  &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:                params.PartitionRoot,
+		PluginRoot:          params.PluginRoot,
+		File:                params.File,
+		Disk:                params.Disk,
+		TmpPaths:            []string{params.TempDir, params.RawPath},
+		NumOfPartitionsLeft: params.numOfPartitionsLeft,
+		RefMu:               params.RefMu,
 	}, nil
 }
 
@@ -536,18 +535,16 @@ func generateFAT32FS(params generateFSParams) (*EmbeddedDirFS, error) {
 	if err := ExtractAllRecursiveFat32(fat32fs, "/", params.PartitionRoot); err != nil {
 		return nil, fmt.Errorf("failed to extract FAT32 files for partition %d: %w", params.PartitionIndex, err)
 	}
-	params.RefMu.Lock()
-	*params.RefCount++
-	params.RefMu.Unlock()
+
 	return &EmbeddedDirFS{
-		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:       params.PartitionRoot,
-		PluginRoot: params.PluginRoot,
-		File:       params.File,
-		Disk:       params.Disk,
-		TmpPaths:   []string{params.TempDir, params.RelRawPath},
-		RefCount:   params.RefCount,
-		RefMu:      params.RefMu,
+		FS:                  &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:                params.PartitionRoot,
+		PluginRoot:          params.PluginRoot,
+		File:                params.File,
+		Disk:                params.Disk,
+		TmpPaths:            []string{params.TempDir, params.RawPath},
+		NumOfPartitionsLeft: params.numOfPartitionsLeft,
+		RefMu:               params.RefMu,
 	}, nil
 }
 
@@ -556,18 +553,16 @@ func generateEXFATFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	if err := ExtractAllRecursiveExFAT(params.Section, params.PartitionRoot); err != nil {
 		return nil, fmt.Errorf("failed to extract exFAT files for partition %d: %w", params.PartitionIndex, err)
 	}
-	params.RefMu.Lock()
-	*params.RefCount++
-	params.RefMu.Unlock()
+
 	return &EmbeddedDirFS{
-		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:       params.PartitionRoot,
-		PluginRoot: params.PluginRoot,
-		File:       params.File,
-		Disk:       params.Disk,
-		TmpPaths:   []string{params.TempDir, params.RelRawPath},
-		RefCount:   params.RefCount,
-		RefMu:      params.RefMu,
+		FS:                  &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:                params.PartitionRoot,
+		PluginRoot:          params.PluginRoot,
+		File:                params.File,
+		Disk:                params.Disk,
+		TmpPaths:            []string{params.TempDir, params.RawPath},
+		NumOfPartitionsLeft: params.numOfPartitionsLeft,
+		RefMu:               params.RefMu,
 	}, nil
 }
 
@@ -584,18 +579,16 @@ func generateNTFSFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	if err := ExtractAllRecursiveNtfs(fs, "/", params.PartitionRoot); err != nil {
 		return nil, fmt.Errorf("failed to extract NTFS files for partition %d: %w", params.PartitionIndex, err)
 	}
-	params.RefMu.Lock()
-	*params.RefCount++
-	params.RefMu.Unlock()
+
 	return &EmbeddedDirFS{
-		FS:         &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
-		Root:       params.PartitionRoot,
-		PluginRoot: params.PluginRoot,
-		File:       params.File,
-		Disk:       params.Disk,
-		TmpPaths:   []string{params.TempDir, params.RelRawPath},
-		RefCount:   params.RefCount,
-		RefMu:      params.RefMu,
+		FS:                  &RootFSWrapper{Root: params.PartitionRoot, FS: params.PartitionRoot.FS()},
+		Root:                params.PartitionRoot,
+		PluginRoot:          params.PluginRoot,
+		File:                params.File,
+		Disk:                params.Disk,
+		TmpPaths:            []string{params.TempDir, params.RawPath},
+		NumOfPartitionsLeft: params.numOfPartitionsLeft,
+		RefMu:               params.RefMu,
 	}, nil
 }
 
@@ -606,9 +599,11 @@ type EmbeddedDirFS struct {
 	PluginRoot *os.Root
 	File       *os.File
 	Disk       *disk.Disk
-	TmpPaths   []string
-	RefCount   *int32
-	RefMu      *sync.Mutex
+	// TmpPaths contain full absolute paths to the temporary paths thats part of this EmbeddedDirFS
+	TmpPaths []string
+	// NumOfPartitionsLeft is the number of partitions left to scan.
+	NumOfPartitionsLeft *int32
+	RefMu               *sync.Mutex
 }
 
 // Open opens the specified file from the embedded filesystem.
@@ -640,32 +635,40 @@ func (e *EmbeddedDirFS) Stat(name string) (fs.FileInfo, error) {
 	return e.FS.Stat(name)
 }
 
-// Close closes the underlying file without removing temporary paths.
-func (e *EmbeddedDirFS) Close() error {
+// CloseAndCleanup closes the underlying file and removes temporary paths if all partitions are scanned.
+// It will attempt to close and cleanup any fully scanned images.
+func (e *EmbeddedDirFS) CloseAndCleanup() error {
 	e.RefMu.Lock()
 	defer e.RefMu.Unlock()
-
-	// Close the partition root if it's not nil
-	if e.Root != nil {
-		e.Root.Close()
-		e.Root = nil
-	}
 
 	if e.File == nil {
 		return nil // Already closed
 	}
-	*e.RefCount--
-	if *e.RefCount == 0 {
+	*e.NumOfPartitionsLeft--
+
+	// Always cleanup the partition specific directory when closing that partition (if not in debug)
+	if e.Root != nil {
+		if err := tempdir.CleanupRoot(e.Root); err != nil {
+			log.Infof("failed to cleanup partition root: %v", err)
+		}
+		e.Root = nil
+	}
+
+	if *e.NumOfPartitionsLeft == 0 {
 		err := e.File.Close()
 		e.File = nil // Prevent double close
 
 		if e.Disk != nil {
-			e.Disk.Close()
+			if e.Disk.Backend != nil {
+				e.Disk.Close()
+			}
 			e.Disk = nil
 		}
 
 		if e.PluginRoot != nil {
-			e.PluginRoot.Close()
+			if err := tempdir.CleanupRoot(e.PluginRoot); err != nil {
+				log.Infof("failed to cleanup plugin root: %v", err)
+			}
 			e.PluginRoot = nil
 		}
 
