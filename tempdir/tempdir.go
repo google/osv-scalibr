@@ -160,7 +160,7 @@ func CreateFile(subRoot *os.Root, pattern string) (string, *os.File, error) {
 
 func createTemp(subRoot *os.Root, pattern string) (string, *os.File, error) {
 	prefix, suffix := prefixAndSuffix(pattern)
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		name := prefix + nextRandom() + suffix
 		f, err := subRoot.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600)
 		if os.IsExist(err) {
@@ -183,7 +183,7 @@ func prefixAndSuffix(pattern string) (prefix, suffix string) {
 
 func nextRandom() string {
 	buf := make([]byte, 4)
-	rand.Read(buf)
+	_, _ = rand.Read(buf)
 	return hex.EncodeToString(buf)
 }
 

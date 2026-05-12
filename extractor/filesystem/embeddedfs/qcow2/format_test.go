@@ -142,8 +142,7 @@ func TestAlignUp(t *testing.T) {
 }
 
 func TestConvertQCOW2ToRawMissingArgs(t *testing.T) {
-	dummyF, _ := os.CreateTemp("", "dummy")
-	defer os.Remove(dummyF.Name())
+	dummyF, _ := os.CreateTemp(t.TempDir(), "dummy")
 	defer dummyF.Close()
 
 	if err := convertQCOW2ToRaw("", dummyF, ""); err == nil {

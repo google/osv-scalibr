@@ -31,6 +31,7 @@ func FindInterfaces(pkgs []*packages.Package, interfaceNames []string) []*types.
 
 	for _, pkg := range pkgs {
 		wg.Add(1)
+		//nolint:modernize
 		go func() {
 			defer wg.Done()
 			for ident, obj := range pkg.TypesInfo.Defs {

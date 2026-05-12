@@ -36,6 +36,7 @@ func TestRequestCache(t *testing.T) {
 	for i := range numKeys {
 		for range requestsPerKey {
 			wg.Add(1)
+			//nolint:modernize
 			go func() {
 				t.Helper()
 				_, _ = requestCache.Get(i, func() (int, error) {

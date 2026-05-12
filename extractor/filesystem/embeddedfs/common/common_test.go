@@ -34,12 +34,10 @@ func TestEmbeddedDirFSCloseAndCleanup(t *testing.T) {
 	}
 
 	// Create a dummy file
-	f, err := os.CreateTemp("", "dummy_raw")
+	f, err := os.CreateTemp(t.TempDir(), "dummy_raw")
 	if err != nil {
 		t.Fatalf("CreateTemp failed: %v", err)
 	}
-	dummyPath := f.Name()
-	defer os.Remove(dummyPath)
 
 	var refCount int32 = 1
 	var refMu sync.Mutex

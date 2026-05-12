@@ -188,7 +188,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	}
 
 	// Create a reference counter for the temporary file
-	var numOfPartitionsLeft int32 = int32(len(partitionList))
+	numOfPartitionsLeft := int32(len(partitionList))
 	var refMu sync.Mutex
 
 	// Create an Embedded filesystem for each valid partition
