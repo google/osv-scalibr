@@ -33,7 +33,6 @@ var (
 	errRoot    error
 	once       sync.Once
 	debug      bool
-	rootPath   string
 	subRoots   []*os.Root
 	subRootsMu sync.Mutex
 )
@@ -45,11 +44,12 @@ func SetDebug(enabled bool) {
 
 // initRoot creates the root directory once.
 func initRoot() {
-	rootPath, errRoot = os.MkdirTemp("", "osv-scalibr-run-*")
-	if errRoot != nil {
+	path, err := os.MkdirTemp("", "osv-scalibr-run-*")
+	if err != nil {
+		errRoot = err
 		return
 	}
-	root, errRoot = os.OpenRoot(rootPath)
+	root, errRoot = os.OpenRoot(path)
 	if errRoot != nil {
 		return
 	}
@@ -71,7 +71,7 @@ func GetRootPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return rootPath, nil
+	return root.Name(), nil
 }
 
 // CreateDir creates and opens a subdirectory as a new os.Root (chroot-like).
@@ -80,6 +80,13 @@ func CreateDir(name string) (*os.Root, error) {
 	r, err := Root()
 	if err != nil {
 		return nil, err
+	}
+	if filepath.IsAbs(name) {
+		var err error
+		name, err = filepath.Rel(r.Name(), name)
+		if err != nil {
+			return nil, err
+		}
 	}
 	// Ensure dir exists
 	if err := r.MkdirAll(name, 0o755); err != nil && !os.IsExist(err) {
@@ -127,16 +134,12 @@ func CreateFile(subRoot *os.Root, pattern string) (string, *os.File, error) {
 		}
 	}
 
-	relDir := "."
-	if subRoot != root {
-		relDir = subRoot.Name()
-	}
-
 	name, f, err := createTemp(subRoot, pattern)
 	if err != nil {
 		return "", nil, err
 	}
-	return filepath.Join(rootPath, relDir, name), f, nil
+
+	return filepath.Join(subRoot.Name(), name), f, nil
 }
 
 func createTemp(subRoot *os.Root, pattern string) (string, *os.File, error) {
@@ -203,14 +206,12 @@ func RemoveRoot() error {
 	subRoots = nil
 	subRootsMu.Unlock()
 
-	if root != nil {
-		_ = root.Close()
-		root = nil
-	}
 	var err error
-	if rootPath != "" {
-		err = os.RemoveAll(rootPath)
-		rootPath = ""
+	if root != nil {
+		path := root.Name()
+		root.Close()
+		root = nil
+		err = os.RemoveAll(path)
 	}
 	once = sync.Once{} // Reset once for subsequent tests
 	return err

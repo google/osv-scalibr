@@ -20,7 +20,7 @@ func TestRootCreation(t *testing.T) {
 		t.Fatal("Root() returned nil")
 	}
 
-	info, err := os.Stat(rootPathHelper(t))
+	info, err := os.Stat(root.Name())
 	if err != nil {
 		t.Fatalf("Root directory does not exist: %v", err)
 	}
@@ -41,12 +41,6 @@ func TestRootIsSingleton(t *testing.T) {
 }
 
 func TestCreateDir(t *testing.T) {
-	// Get the scalibr root path for current run.
-	rootPath, err := tempdir.GetRootPath()
-	if err != nil {
-		t.Fatalf("failed to get scalibr rootPath")
-	}
-
 	name := "testdir"
 	root, err := tempdir.CreateDir(name)
 	if err != nil {
@@ -58,7 +52,7 @@ func TestCreateDir(t *testing.T) {
 		t.Fatal("CreateDir returned root with empty Name")
 	}
 
-	info, err := os.Stat(filepath.Join(rootPath, root.Name()))
+	info, err := os.Stat(root.Name())
 	if err != nil {
 		t.Fatalf("Directory does not exist: %v", err)
 	}
@@ -75,7 +69,7 @@ func TestCreateNestedDir(t *testing.T) {
 	}
 	defer root.Close()
 
-	if _, err := os.Stat(filepath.Join(rootPathHelper(t), name)); err != nil {
+	if _, err := os.Stat(root.Name()); err != nil {
 		t.Fatalf("Nested directory not created: %v", err)
 	}
 }
@@ -91,7 +85,7 @@ func TestCreatePluginDir(t *testing.T) {
 	}
 	defer root.Close()
 
-	if _, err := os.Stat(filepath.Join(rootPathHelper(t), root.Name())); err != nil {
+	if _, err := os.Stat(root.Name()); err != nil {
 		t.Fatalf("Directory not created: %v", err)
 	}
 
@@ -224,8 +218,7 @@ func TestRemoveAll(t *testing.T) {
 		t.Fatalf("RemoveAll() failed: %v", err)
 	}
 
-	fullPath := filepath.Join(rootPathHelper(t), name)
-	if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+	if _, err := os.Stat(name); !os.IsNotExist(err) {
 		t.Fatalf("Directory still exists after removal")
 	}
 }
@@ -237,7 +230,10 @@ func TestRemoveRoot(t *testing.T) {
 	}
 	root.Close()
 
-	path := rootPathHelper(t)
+	path, err := tempdir.GetRootPath()
+	if err != nil {
+		t.Fatalf("GetRootPath failed: %v", err)
+	}
 
 	err = tempdir.RemoveRoot()
 	if err != nil {
@@ -249,12 +245,3 @@ func TestRemoveRoot(t *testing.T) {
 	}
 }
 
-// Helper to get root path safely
-func rootPathHelper(t *testing.T) string {
-	t.Helper()
-	path, err := tempdir.GetRootPath()
-	if err != nil {
-		t.Fatalf("GetRootPath failed: %v", err)
-	}
-	return path
-}
