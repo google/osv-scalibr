@@ -1,6 +1,6 @@
 module github.com/google/osv-scalibr
 
-go 1.25
+go 1.26
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.14
