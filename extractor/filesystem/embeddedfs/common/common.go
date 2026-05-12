@@ -307,6 +307,14 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath string, destRoot *o
 	return nil
 }
 
+// isInvalidEntry checks for ".", "..", "$"-prefixed, and "/"-containing entries in ExFAT.
+func isInvalidEntryExFAT(entry string) bool {
+	if entry == "" || entry == "." || entry == ".." || strings.HasPrefix(entry, "$") || strings.Contains(entry, "/") {
+		return true
+	}
+	return false
+}
+
 // ExtractAllRecursiveExFAT extracts all files from an exFAT filesystem to a temporary directory recursively.
 func ExtractAllRecursiveExFAT(section *io.SectionReader, destRoot *os.Root) error {
 	er := exfat.NewExfatReader(section)
@@ -327,6 +335,10 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, destRoot *os.Root) erro
 	for _, relPath := range files {
 		node := nodes[relPath]
 		resPath := strings.ReplaceAll(relPath, "\\", string(os.PathSeparator))
+
+		if isInvalidEntryExFAT(resPath) {
+			continue
+		}
 
 		sde := node.StreamDirectoryEntry()
 		if node.IsDirectory() {
@@ -379,7 +391,6 @@ func GetDiskPartitions(rawDiskIMGPath string) ([]part.Partition, *disk.Disk, err
 	// Open the raw disk image with go-diskfs
 	disk, err := diskfs.Open(rawDiskIMGPath, diskfs.WithOpenMode(diskfs.ReadOnly))
 	if err != nil {
-		disk.Close()
 		os.Remove(rawDiskIMGPath)
 		return nil, nil, fmt.Errorf("failed to open raw disk image %s: %w", rawDiskIMGPath, err)
 	}
@@ -429,7 +440,7 @@ func NewPartitionEmbeddedFSGetter(pluginName string, partitionIndex int, p part.
 		// │				        	│				└── private-key4.pem
 		// │				        	└── vdi-12345.raw 						<--- Converted disk image
 		partitionSubDir := fmt.Sprintf("partition-%d-%s", partitionIndex, strings.ToLower(fsType))
-		partitionRoot, err := tempdir.CreateDir(filepath.Join(pluginRoot.Name(), partitionSubDir))
+		partitionRoot, err := tempdir.CreateDir(partitionSubDir)
 		if err != nil {
 			f.Close()
 			return nil, fmt.Errorf("failed to create partition directory %s: %w", partitionSubDir, err)

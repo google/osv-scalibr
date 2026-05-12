@@ -184,8 +184,9 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 	// Process embedded filesystems
 	var additionalInv inventory.Inventory
-	// seenRawFiles contain raw disk image files which are deleted
+	// seenMap is used for deduplication
 	seenMap := map[string]struct{}{}
+	// rawDiskImageFiles contains raw disk image files to be deleted
 	var rawDiskImageFiles []string
 	for _, embeddedFS := range inv.EmbeddedFSs {
 		// Mount the embedded filesystem
