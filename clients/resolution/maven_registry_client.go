@@ -32,7 +32,7 @@ type MavenRegistryClient struct {
 	api *datasource.MavenRegistryAPIClient
 }
 
-// NewMavenRegistryClient makes a new MavenRegistryClient.
+// NewMavenRegistryClient makes a new MavenRegistryClient. If disableGoogleAuth is true, Google Application Default Credentials will not be initialized.
 func NewMavenRegistryClient(ctx context.Context, remote, local string, disableGoogleAuth bool) (*MavenRegistryClient, error) {
 	client, err := datasource.NewMavenRegistryAPIClient(ctx, datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local, disableGoogleAuth)
 	if err != nil {

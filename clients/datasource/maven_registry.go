@@ -77,8 +77,8 @@ type MavenRegistry struct {
 	SnapshotsEnabled bool
 }
 
-// NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient.
-func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string, disableGoogleClient bool) (*MavenRegistryAPIClient, error) {
+// NewMavenRegistryAPIClient returns a new MavenRegistryAPIClient. If disableGoogleAuth is true, Google Application Default Credentials will not be initialized.
+func NewMavenRegistryAPIClient(ctx context.Context, registry MavenRegistry, localRegistry string, disableGoogleAuth bool) (*MavenRegistryAPIClient, error) {
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
