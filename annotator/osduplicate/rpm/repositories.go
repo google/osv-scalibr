@@ -129,7 +129,14 @@ func hasPackageManager(root *fs.ScanRoot, indicators []string) bool {
 	return false
 }
 
-// isMainDNFRepo strictly matches the extracted repo ID based on the OS
+// isMainDNFRepo identifies whether a given directory corresponds to a supported DNF repository based on the OS.
+//
+// The identification logic is based on empirical research of standard OS images and locally listing
+// the available default repositories. A comprehensive list of repositories can be found at https://pkgs.org/.
+//
+// Note: Certain default or "official" repositories (such as the `extras` repository in AlmaLinux) are
+// intentionally excluded from this list because upstream vendors do not provide security advisories
+// for the packages within them.
 func isMainDNFRepo(osID, dirName string) bool {
 	// usually repo folder have the following naming structure
 	// repo_name-hash
@@ -199,7 +206,13 @@ func extractDNFMainRepos(ctx context.Context, root *fs.ScanRoot, osID string) (*
 	return cache, nil
 }
 
-// isMainYumRepo strictly matches the repo directory name based on the OS
+// isMainYumRepo identifies whether a given repoID corresponds to a supported YUM repository based on the OS.
+//
+// The identification logic is based on empirical research of standard OS images and locally listing
+// the available default repositories. A list of repositories can be found at https://pkgs.org/.
+//
+// Note: Certain default or "official" repositories are intentionally excluded from this list
+// because upstream vendors do not provide security advisories for the packages within them.
 func isMainYumRepo(osID, repoID string) bool {
 	switch osID {
 	case "amzn":
