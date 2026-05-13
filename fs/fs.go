@@ -45,6 +45,9 @@ type ScanRoot struct {
 	// The path of the scan root. Empty if this is a virtual filesystem and the
 	// scanning environment doesn't support the DirectFS requirement.
 	Path string
+	// Optional: The underlying OS root used for sandboxing.
+	// Stored here for lifecycle management (Close upon scan completion).
+	OSRoot *os.Root
 }
 
 // IsVirtual returns true if the scan root represents the root of a virtual
@@ -70,6 +73,16 @@ func (r *ScanRoot) WithAbsolutePath() (*ScanRoot, error) {
 // DirFS returns an FS implementation that accesses the real filesystem at the given root.
 func DirFS(root string) FS {
 	return os.DirFS(root).(FS)
+}
+
+// OpenRoot opens the named directory and returns a ScanRoot.
+// The caller is responsible for closing the OSRoot field of the returned ScanRoot.
+func OpenRoot(path string) (*ScanRoot, error) {
+	r, err := os.OpenRoot(path)
+	if err != nil {
+		return nil, err
+	}
+	return &ScanRoot{FS: r.FS().(FS), Path: path, OSRoot: r}, nil
 }
 
 // RealFSScanRoots returns a one-element ScanRoot array representing the given

@@ -407,11 +407,21 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			globPattern := parts[1]
 			extractor, ok := pluginMap[pluginName]
 			if !ok {
+				for _, opened := range scanRoots {
+					if opened.OSRoot != nil {
+						opened.OSRoot.Close()
+					}
+				}
 				return nil, fmt.Errorf("plugin %q specified in --extractor-override not found or not a filesystem extractor", pluginName)
 			}
 			g, err := glob.Compile(globPattern)
 			if err != nil {
 				// This should not happen due to ValidateFlags.
+				for _, opened := range scanRoots {
+					if opened.OSRoot != nil {
+						opened.OSRoot.Close()
+					}
+				}
 				return nil, fmt.Errorf("invalid glob pattern %q in extractor override: %w", globPattern, err)
 			}
 			overrides = append(overrides, extractorOverride{
@@ -605,16 +615,20 @@ func multiStringToList(arg []string) []string {
 func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	if f.RemoteImage != "" {
 		imageOptions := f.scanRemoteImageOptions()
-		fs, err := scalibrimage.NewFromRemoteName(f.RemoteImage, *imageOptions...)
+		fsys, err := scalibrimage.NewFromRemoteName(f.RemoteImage, *imageOptions...)
 		if err != nil {
 			return nil, err
 		}
 		// We're scanning a virtual filesystem that describes the remote container.
-		return []*scalibrfs.ScanRoot{{FS: fs, Path: ""}}, nil
+		return []*scalibrfs.ScanRoot{{FS: fsys, Path: ""}}, nil
 	}
 
 	if len(f.Root) != 0 {
-		return scalibrfs.RealFSScanRoots(f.Root), nil
+		sr, err := scalibrfs.OpenRoot(f.Root)
+		if err != nil {
+			return nil, err
+		}
+		return []*scalibrfs.ScanRoot{sr}, nil
 	}
 
 	// If ImageTarball is set, do not set the root.
@@ -636,7 +650,16 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 		return nil, err
 	}
 	for _, r := range scanRootPaths {
-		scanRoots = append(scanRoots, &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(r), Path: r})
+		sr, err := scalibrfs.OpenRoot(r)
+		if err != nil {
+			for _, opened := range scanRoots {
+				if opened.OSRoot != nil {
+					opened.OSRoot.Close()
+				}
+			}
+			return nil, err
+		}
+		scanRoots = append(scanRoots, sr)
 	}
 	return scanRoots, nil
 }

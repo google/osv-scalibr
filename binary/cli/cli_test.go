@@ -256,6 +256,7 @@ func TestValidateFlags(t *testing.T) {
 }
 
 func TestGetScanConfig_ScanRoots(t *testing.T) {
+	tmpDir := t.TempDir()
 	for _, tc := range []struct {
 		desc          string
 		flags         map[string]*cli.Flags
@@ -277,14 +278,14 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 		{
 			desc: "Scan root are provided and used",
 			flags: map[string]*cli.Flags{
-				"darwin":  {Root: "/root"},
-				"linux":   {Root: "/root"},
-				"windows": {Root: "C:\\myroot"},
+				"darwin":  {Root: tmpDir},
+				"linux":   {Root: tmpDir},
+				"windows": {Root: tmpDir},
 			},
 			wantScanRoots: map[string][]string{
-				"darwin":  {"/root"},
-				"linux":   {"/root"},
-				"windows": {"C:\\myroot"},
+				"darwin":  {tmpDir},
+				"linux":   {tmpDir},
+				"windows": {tmpDir},
 			},
 		},
 		{
@@ -471,6 +472,18 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 			flags, ok := tc.flags[runtime.GOOS]
 			if !ok {
 				t.Fatalf("Current system %q not supported, please add test cases", runtime.GOOS)
+			}
+
+			if tc.desc == "Ignore paths outside root" {
+				tmp := t.TempDir()
+				flags.Root = tmp
+				if runtime.GOOS == "windows" {
+					flags.DirsToSkip = []string{filepath.Join(tmp, "dir1") + ",c:\\dir2"}
+					wantDirsToSkip = []string{filepath.Join(tmp, "dir1")}
+				} else {
+					flags.DirsToSkip = []string{filepath.Join(tmp, "dir1") + ",/dir2"}
+					wantDirsToSkip = []string{filepath.Join(tmp, "dir1")}
+				}
 			}
 
 			cfg, err := flags.GetScanConfig()

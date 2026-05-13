@@ -88,12 +88,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		err := fmt.Errorf("could not extract pom from %s: %w", input.Path, err)
-		log.Errorf(err.Error())
+		log.Error(err.Error())
 		return inventory.Inventory{}, err
 	}
 	if err := project.Interpolate(); err != nil {
 		err := fmt.Errorf("failed to interpolate pom for %s in %s: %w", project.Name, input.Path, err)
-		log.Errorf(err.Error())
+		log.Error(err.Error())
 		return inventory.Inventory{}, err
 	}
 
@@ -104,7 +104,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		InitialParentIndex: 1,
 	}); err != nil {
 		err := fmt.Errorf("failed to merge parents for %s in %s: %w", project.Name, input.Path, err)
-		log.Errorf(err.Error())
+		log.Error(err.Error())
 		return inventory.Inventory{}, err
 	}
 	// Process the dependencies:
@@ -122,7 +122,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		g, a, found := strings.Cut(dep.Name(), ":")
 		if !found {
 			err := fmt.Errorf("invalid package name %q for %s in %s", dep.Name(), project.Name, input.Path)
-			log.Errorf(err.Error())
+			log.Error(err.Error())
 			return inventory.Inventory{}, err
 		}
 

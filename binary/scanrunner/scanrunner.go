@@ -43,6 +43,15 @@ func RunScan(flags *cli.Flags) int {
 		log.Errorf("%v.GetScanConfig(): %v", flags, err)
 		return 1
 	}
+	defer func() {
+		for _, sr := range cfg.ScanRoots {
+			if sr.OSRoot != nil {
+				if err := sr.OSRoot.Close(); err != nil {
+					log.Errorf("Failed to close scan root %s: %v", sr.Path, err)
+				}
+			}
+		}
+	}()
 
 	log.Infof("Running scan with %d plugins", len(cfg.Plugins))
 	if len(cfg.PathsToExtract) > 0 {
