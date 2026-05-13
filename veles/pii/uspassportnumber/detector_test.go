@@ -15,6 +15,7 @@
 package uspassportnumber
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -32,7 +33,7 @@ func TestDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		NewDetector(),
-		validUSPassportNumber,
+		fmt.Sprintf(`passport:"%s"`, validUSPassportNumber),
 		USPassportNumber{Value: validUSPassportNumber},
 	)
 }
@@ -50,55 +51,55 @@ func TestDetector(t *testing.T) {
 	}{
 		{
 			name: "log_json_pretty",
-			input: `{
+			input: fmt.Sprintf(`{
 			"level": "INFO",
 			"user_id": "1234",
-			"passport_number": "A12345678"
+			"passport_number": "%s"
 		}
-		`,
-			want: []veles.Secret{USPassportNumber{Value: "A12345678"}},
+		`, validUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
 		},
 		{
 			name:  "log_json_minified",
-			input: `{"level":"INFO","user_id":"1234","passport_number":"A12345678"}`,
-			want:  []veles.Secret{USPassportNumber{Value: "A12345678"}},
+			input: fmt.Sprintf(`{"level":"INFO","user_id":"1234","passport_number":"%s"}`, validUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
 		},
 		{
 			name: "log_xml_pretty",
-			input: `<log>
+			input: fmt.Sprintf(`<log>
 			<user_id>1234</user_id>
-			<passport_number>A12345678</passport_number>
+			<passport_number>%s</passport_number>
 		</log>
-		`,
-			want: []veles.Secret{USPassportNumber{Value: "A12345678"}},
+		`, validUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
 		},
 		{
 			name:  "log_xml_minified",
-			input: `<log><user_id>1234</user_id><passport_number>A12345678</passport_number></log>`,
-			want:  []veles.Secret{USPassportNumber{Value: "A12345678"}},
+			input: fmt.Sprintf("<log><user_id>1234</user_id><passport_number>%s</passport_number></log>", validUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
 		},
 		{
 			name: "log_yaml",
-			input: `user_id: "1234"
-		passport_number: A12345678
-		`,
-			want: []veles.Secret{USPassportNumber{Value: "A12345678"}},
+			input: fmt.Sprintf(`user_id: "1234"
+		passport_number: %s
+		`, validUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
 		},
 		{
 			name: "log_csv",
-			input: `user_id,passport_number
-		000,000
-		000,000
-		000,000
-		000,000
-		000,000
-		000,000
-		000,000
-		000,000
-		000,000
-		1234,A12345678
-		`,
-			want: []veles.Secret{USPassportNumber{Value: "A12345678"}},
+			input: fmt.Sprintf(`user_id,passport_number
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		1234,%s
+		`, validUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
 		},
 	}
 
@@ -129,6 +130,18 @@ func TestDetector_NoMatch(t *testing.T) {
 		{
 			name:  "valid_number_no_context_keyword",
 			input: `A12345678`,
+		},
+		{
+			name:  "malformed_number_missing_digit",
+			input: `A1234567`,
+		},
+		{
+			name:  "malformed_number_missing_letter",
+			input: `A1234567`,
+		},
+		{
+			name:  "valid_number_incorrect_context",
+			input: fmt.Sprintf("Lorem ipsum dolor sit amet %s, consectetur adipiscing elit", validUSPassportNumber),
 		},
 	}
 
