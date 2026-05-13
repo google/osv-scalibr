@@ -18,5 +18,6 @@
 package uspassportnumber
 
 type USPassportNumber struct {
+	// Extracted passport number
 	Value string
 }

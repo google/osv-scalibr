@@ -31,10 +31,11 @@ var (
 	passportNumberRe = regexp.MustCompile(`\b[A-Za-z][0-9]{8}\b`)
 )
 
+// A match is considered successful only if the context keyword is also matched near to the value
 func NewDetector() veles.Detector {
 	return &pair.Detector{
-		MaxElementLen: max(maxKeywordLen, maxPassportNumberLen),
-		MaxDistance:   1 << 10,
+		MaxElementLen: maxPassportNumberLen,
+		MaxDistance:   1 << 10, // The context keyword should be within 1Kb of data from the detected value
 		FindA:         pair.FindAllMatches(passportNumberRe),
 		FindB:         pair.FindAllMatches(keywordRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
