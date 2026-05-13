@@ -244,7 +244,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	// Defer cleanup of all temporary files and directories created during extraction.
 	defer func() {
 		// Remove the root temporary directory and all it's subdirectories that we created for this run of scalibr.
-		if err := tempdir.RemoveRoot(); err != nil {
+		if err := tempdir.RemoveGlobalTempRoot(); err != nil {
 			log.Infof("Failed to remove tempdir root: %v", err)
 		}
 	}()

@@ -201,30 +201,17 @@ func CleanupRoot(r *os.Root) error {
 	if r == nil {
 		return nil
 	}
-	path := r.Name()
 	err := r.Close()
 	if !debug {
-		if removeErr := os.RemoveAll(path); removeErr != nil {
+		if removeErr := os.RemoveAll(r.Name()); removeErr != nil {
 			return removeErr
 		}
 	}
 	return err
 }
 
-// RemoveAll removes a path relative to the temp root.
-func RemoveAll(name string) error {
-	r, err := Root()
-	if err != nil {
-		return err
-	}
-	if debug {
-		return nil
-	}
-	return r.RemoveAll(name)
-}
-
-// RemoveRoot removes the entire temp root after closing all subroots.
-func RemoveRoot() error {
+// RemoveGlobalTempRoot removes the entire temp root after closing all subroots.
+func RemoveGlobalTempRoot() error {
 	if debug {
 		return nil
 	}
@@ -257,6 +244,6 @@ func setupSignalCleanup() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	go func() {
 		<-c
-		_ = RemoveRoot()
+		_ = RemoveGlobalTempRoot()
 	}()
 }

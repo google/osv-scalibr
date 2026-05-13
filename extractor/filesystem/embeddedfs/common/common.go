@@ -797,7 +797,7 @@ loop:
 	}
 
 	if extractErr != nil {
-		if err := tempdir.RemoveAll(pluginRoot.Name()); err != nil {
+		if err := tempdir.CleanupRoot(pluginRoot); err != nil {
 			return fmt.Errorf("%w; %w", extractErr, err)
 		}
 		return extractErr

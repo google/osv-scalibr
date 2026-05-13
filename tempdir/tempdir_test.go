@@ -156,24 +156,6 @@ func TestStat(t *testing.T) {
 	}
 }
 
-func TestRemoveAll(t *testing.T) {
-	name := "cleanup_test"
-	root, err := tempdir.CreateDir(name)
-	if err != nil {
-		t.Fatalf("CreateDir failed: %v", err)
-	}
-	root.Close()
-
-	err = tempdir.RemoveAll(name)
-	if err != nil {
-		t.Fatalf("RemoveAll() failed: %v", err)
-	}
-
-	if _, err := os.Stat(name); !os.IsNotExist(err) {
-		t.Fatalf("Directory still exists after removal")
-	}
-}
-
 func TestRemoveRoot(t *testing.T) {
 	root, err := tempdir.CreateDir("root_cleanup_test")
 	if err != nil {
@@ -186,7 +168,7 @@ func TestRemoveRoot(t *testing.T) {
 		t.Fatalf("GetRootPath failed: %v", err)
 	}
 
-	err = tempdir.RemoveRoot()
+	err = tempdir.RemoveGlobalTempRoot()
 	if err != nil {
 		t.Fatalf("RemoveRoot() failed: %v", err)
 	}
