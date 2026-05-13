@@ -20,8 +20,8 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/compose-spec/compose-go/v2 v2.10.2
-	github.com/containerd/containerd v1.7.31
-	github.com/containerd/containerd/api v1.11.0
+	github.com/containerd/containerd v1.7.23
+	github.com/containerd/containerd/api v1.9.0
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/diskfs/go-diskfs v1.7.0
 	github.com/docker/docker v28.5.2+incompatible
@@ -40,7 +40,7 @@ require (
 	github.com/masahiro331/go-ext4-filesystem v0.0.0-20260423010602-fe51f5b5e52b
 	github.com/michaelkedar/xml v0.0.0-20250626233154-4ec9e090d1cd
 	github.com/micromdm/plist v0.2.2
-	github.com/moby/buildkit v0.29.0
+	github.com/moby/buildkit v0.25.2
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/muesli/reflow v0.3.0
 	github.com/opencontainers/go-digest v1.0.0
