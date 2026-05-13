@@ -59,6 +59,16 @@ func TestFileRequired(t *testing.T) {
 			wantIsRequired: true,
 		},
 		{
+			name:           ".sbom.spdx.json",
+			path:           "testdata/.sbom.spdx.json",
+			wantIsRequired: true,
+		},
+		{
+			name:           ".spdx.sbom.json",
+			path:           "testdata/.spdx.sbom.json",
+			wantIsRequired: true,
+		},
+		{
 			name:           "sbom.spdx.yml",
 			path:           "testdata/sbom.spdx.yml",
 			wantIsRequired: true,
@@ -212,6 +222,73 @@ func TestExtract(t *testing.T) {
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx.rdf"),
+				},
+			},
+		},
+		{
+			name: "dhi/.spdx.dhi-pkg-python.json",
+			path: "testdata/dhi/.spdx.dhi-pkg-python.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "pkg-python",
+					PURLType: purl.TypeDocker,
+					Metadata: &spdxmeta.Metadata{
+						PURL: &purl.PackageURL{
+							Type:      purl.TypeDocker,
+							Namespace: "dhi",
+							Name:      "pkg-python",
+							Version:   "3.14.3-debian13",
+							Qualifiers: purl.QualifiersFromMap(map[string]string{
+								"platform":   "linux/amd64",
+								"os_name":    "debian",
+								"os_version": "13",
+							}),
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/dhi/.spdx.dhi-pkg-python.json"),
+				},
+			},
+		},
+		{
+			name: "dhi/.spdx.dhi-python.json",
+			path: "testdata/dhi/.spdx.dhi-python.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "python",
+					PURLType: purl.TypeDocker,
+					Metadata: &spdxmeta.Metadata{
+						PURL: &purl.PackageURL{
+							Type:      purl.TypeDocker,
+							Namespace: "dhi",
+							Name:      "python",
+							Version:   "3.14.3-debian13-dev",
+							Qualifiers: purl.QualifiersFromMap(map[string]string{
+								"platform":   "linux/amd64",
+								"os_name":    "debian",
+								"os_version": "13",
+							}),
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/dhi/.spdx.dhi-python.json"),
+				},
+			},
+		},
+		{
+			name: "dhi/.spdx.python.json",
+			path: "testdata/dhi/.spdx.python.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "python",
+					PURLType: purl.TypeDHI,
+					Metadata: &spdxmeta.Metadata{
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeDHI,
+							Name:       "python",
+							Version:    "3.14.3",
+							Qualifiers: purl.Qualifiers{},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/dhi/.spdx.python.json"),
 				},
 			},
 		},

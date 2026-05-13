@@ -23,9 +23,11 @@ import (
 	"github.com/package-url/packageurl-go"
 )
 
-// These are the known purl types as defined in the spec. Some of these require
-// special treatment during parsing.
-// https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst
+// PURL types according to the spec, with some custom types that are not yet standardized.
+// Some of these require special treatment during parsing.
+//
+// The official types are listed at:
+// https://github.com/package-url/purl-spec/tree/main/types-doc
 const (
 	// TypeAlpm is a pkg:alpm purl.
 	TypeAlpm = "alpm"
@@ -127,6 +129,8 @@ const (
 	TypeSpack = "spack"
 	// TypeCPAN is pkg:cpan purl
 	TypeCPAN = "cpan"
+	// TypeDHI is a pkg:dhi purl.
+	TypeDHI = "dhi"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -239,6 +243,7 @@ func validType(t string) bool {
 		TypeChocolatey: true,
 		TypeMise:       true,
 		TypeCPAN:       true,
+		TypeDHI:        true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

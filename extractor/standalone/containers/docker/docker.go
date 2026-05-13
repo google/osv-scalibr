@@ -25,6 +25,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -38,9 +40,7 @@ type Extractor struct {
 }
 
 // New returns an extractor
-func New() standalone.Extractor {
-	return &Extractor{}
-}
+func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) { return &Extractor{}, nil }
 
 // NewWithClient returns an extractor which uses a specified docker client.
 func NewWithClient(c Client) standalone.Extractor {

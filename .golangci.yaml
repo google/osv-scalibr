@@ -12,7 +12,6 @@ linters:
     - dupl             # Some interfaces end up having several lines of similar code as others
     - err113           #
     - exhaustruct      #
-    - exhaustive       # TODO(#1225): work on enabling this
     - forcetypeassert  #
     - funcorder        #
     - funlen           #
@@ -111,6 +110,8 @@ linters:
         - -SA5011 # seems prone to false positives in tests
         - -QF1001 # apply De Morgan's law
         - -QF1003 # use tagged switch on prefix
+    exhaustive:
+      explicit-exhaustive-switch: true
   exclusions:
     generated: lax
     presets:

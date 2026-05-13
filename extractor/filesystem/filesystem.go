@@ -149,6 +149,9 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 		}
 
 		for _, p := range newInv.Packages {
+			// We unconditionally set ScanRoot to the top-level scan root.
+			// This preserves the behavior where packages from embedded filesystems
+			// are also attributed to the top-level scan root.
 			p.ScanRoot = config.ScanRoots[i].Path
 		}
 
@@ -201,13 +204,24 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 			Path: "", // Virtual filesystem
 		}
 
-		// Reuse the existing config, updating only necessary fields
-		config.ScanRoots = []*scalibrfs.ScanRoot{newScanRoot}
+		// Create a copy of the config to avoid side effects.
+		recConfig := *config
+		recConfig.ScanRoots = []*scalibrfs.ScanRoot{newScanRoot}
 		// Clear PathsToExtract to scan entire mounted filesystem
-		config.PathsToExtract = []string{}
+		recConfig.PathsToExtract = []string{}
+
+		// Filter out extractors that require a running system.
+		// Note: If users explicitly specify extractors for a given path through ExtractorOverride we leave that unmodified.
+		var filteredExtractors []Extractor
+		for _, ex := range config.Extractors {
+			if !ex.Requirements().RunningSystem {
+				filteredExtractors = append(filteredExtractors, ex)
+			}
+		}
+		recConfig.Extractors = filteredExtractors
 
 		// Run extractors on the mounted filesystem using Run
-		mountedInv, mountedStatus, err := Run(ctx, config)
+		mountedInv, mountedStatus, err := Run(ctx, &recConfig)
 		if err != nil {
 			status = append(status, &plugin.Status{
 				Name:    "EmbeddedFS",

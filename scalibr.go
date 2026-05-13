@@ -396,6 +396,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
 
+	// TODO: b/500769263 - Harmonize with trace.PopulateLayerDetails() by using same cim in both.
+	if cims := scanResult.Inventory.ContainerImageMetadata; len(cims) > 0 {
+		cims[len(cims)-1].Labels = img.Labels()
+	}
+
 	// Run enrichers with the updated inventory.
 	enrichers, err = ce.SetupVelesEnrichers(enrichers)
 	if err != nil {

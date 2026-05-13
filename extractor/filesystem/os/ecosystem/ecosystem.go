@@ -39,6 +39,15 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	osVersionID := ""
 	switch m := metadata.(type) {
 	case *apkmeta.Metadata:
+		// Check for specific distros that use APK but map to different ecosystems.
+		// These checks must come before the version == "" guard because rolling
+		// distros (Wolfi, Chainguard) may not set VERSION_ID in os-release.
+		if m.OSID == "wolfi" {
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemWolfi)
+		}
+		if m.OSID == "chainguard" {
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemChainguard)
+		}
 		version := m.ToDistro()
 		if version == "" {
 			return osvecosystem.FromEcosystem(osvconstants.EcosystemAlpine)

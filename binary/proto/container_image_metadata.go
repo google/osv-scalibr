@@ -84,6 +84,7 @@ func containerImageMetadataToProto(cim *extractor.ContainerImageMetadata) *spb.C
 		OsInfo:          cim.OSInfo,
 		LayerMetadata:   layerMetadata,
 		BaseImageChains: baseImageChains,
+		Labels:          cim.Labels,
 	}
 }
 
@@ -156,5 +157,6 @@ func containerImageMetadataToStruct(cim *spb.ContainerImageMetadata) *extractor.
 		OSInfo:        cim.GetOsInfo(),
 		LayerMetadata: layerMetadata,
 		BaseImages:    baseImages,
+		Labels:        cim.GetLabels(),
 	}
 }

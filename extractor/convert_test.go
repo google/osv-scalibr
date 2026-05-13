@@ -190,6 +190,21 @@ func TestToPURL(t *testing.T) {
 				}),
 			},
 		},
+		{
+			name: "github_purl",
+			pkg: &extractor.Package{
+				Name:     "actions/checkout",
+				Version:  "v4",
+				PURLType: purl.TypeGithub,
+				Location: extractor.LocationFromPath("location"),
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeGithub,
+				Namespace: "actions",
+				Name:      "checkout",
+				Version:   "v4",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -242,6 +257,24 @@ func TestToEcosystem(t *testing.T) {
 				Ecosystem: osvconstants.EcosystemDebian,
 				Suffix:    "11",
 			},
+		},
+		{
+			name: "dhi_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeDHI,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages),
+		},
+		{
+			name: "github_actions_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "actions/checkout",
+				Version:  "v4",
+				PURLType: purl.TypeGithub,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions),
 		},
 	}
 

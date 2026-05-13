@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dpkgsource_test
+package dpkgsource
 
 import (
 	"context"
@@ -21,8 +21,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/annotator"
-	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/inventory"
@@ -30,25 +28,76 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func TestBuildAptCachePolicyArgs(t *testing.T) {
+	tests := []struct {
+		name     string
+		packages []*extractor.Package
+		want     []string
+	}{
+		{
+			name:     "empty_input",
+			packages: []*extractor.Package{},
+			want:     []string{"policy", "--"},
+		},
+		{
+			name: "single_package",
+			packages: []*extractor.Package{
+				{
+					Name:     "libfoo",
+					Version:  "1.0",
+					PURLType: purl.TypeDebian,
+					Metadata: &dpkgmetadata.Metadata{
+						PackageName: "libfoo",
+					},
+				},
+			},
+			want: []string{"policy", "--", "libfoo"},
+		},
+		{
+			name: "multiple_packages",
+			packages: []*extractor.Package{
+				{
+					Name:     "libfoo",
+					Version:  "1.0",
+					PURLType: purl.TypeDebian,
+					Metadata: &dpkgmetadata.Metadata{
+						PackageName: "libfoo",
+					},
+				},
+				{
+					Name:     "-olibbar",
+					Version:  "1.0",
+					PURLType: purl.TypeDebian,
+					Metadata: &dpkgmetadata.Metadata{
+						PackageName: "-olibbar",
+					},
+				},
+			},
+			want: []string{"policy", "--", "libfoo", "-olibbar"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildAptCachePolicyArgs(tt.packages)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("buildAptCachePolicyArgs(%v) returned an unexpected diff (-want +got):\n%s", tt.packages, diff)
+			}
+		})
+	}
+}
+
 func TestAnnotate_DPKGSource(t *testing.T) {
 	copier := cpy.New(
 		cpy.Func(proto.Clone),
 		cpy.IgnoreAllUnexported(),
 	)
 
-	origFetchAptCachePolicy := dpkgsource.FetchAptCachePolicy
-	defer func() { dpkgsource.FetchAptCachePolicy = origFetchAptCachePolicy }()
-
-	mockPolicyResults := map[string]string{
-		"libfoo": "http://deb.debian.org/debian",
-		"libbar": "/var/lib/dpkg/status",
-	}
-	dpkgsource.FetchAptCachePolicy = mockGetAptCachePolicy(mockPolicyResults)
-
-	annotatorInstance, err := dpkgsource.New(&cpb.PluginConfig{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	dpkgSource := newForTest(
+		mockGetAptCachePolicy(map[string]string{
+			"libfoo": "http://deb.debian.org/debian",
+			"libbar": "/var/lib/dpkg/status",
+		}),
+	)
 
 	testCases := []struct {
 		name  string
@@ -163,7 +212,7 @@ func TestAnnotate_DPKGSource(t *testing.T) {
 			}
 			inv := &inventory.Inventory{Packages: inputPackagesCopy}
 
-			err := annotatorInstance.Annotate(t.Context(), &annotator.ScanInput{}, inv)
+			err := dpkgSource.Annotate(t.Context(), &annotator.ScanInput{}, inv)
 			if err != nil {
 				t.Fatalf("Annotate() unexpected error: %v", err)
 			}
@@ -289,13 +338,13 @@ pkg2:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := dpkgsource.MapPackageToSource(t.Context(), tt.aptCacheOutput)
+			got, err := mapPackageToSource(t.Context(), tt.aptCacheOutput)
 			if err != nil {
-				t.Fatalf("MapPackageToSource(%q) returned an unexpected error: %v", tt.aptCacheOutput, err)
+				t.Fatalf("mapPackageToSource(%q) returned an unexpected error: %v", tt.aptCacheOutput, err)
 			}
 
 			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("MapPackageToSource(%q) returned an unexpected diff (-want +got):\n%s", tt.aptCacheOutput, diff)
+				t.Errorf("mapPackageToSource(%q) returned an unexpected diff (-want +got):\n%s", tt.aptCacheOutput, diff)
 			}
 		})
 	}

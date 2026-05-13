@@ -173,6 +173,13 @@ func buildCases(t *testing.T) []testCase {
 				Suffix:    "Pro:18.04:LTS",
 			},
 		},
+		{
+			string: "Docker Hardened Images",
+			parsed: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemDockerHardenedImages,
+				Suffix:    "",
+			},
+		},
 	}
 }
 

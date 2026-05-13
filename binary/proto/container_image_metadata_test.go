@@ -39,6 +39,10 @@ var cimProtoForTest = &pb.ContainerImageMetadata{
 			},
 		},
 	},
+	Labels: map[string]string{
+		"label1": "value1",
+		"label2": "value2",
+	},
 }
 
 var cimStructForTest = func() *extractor.ContainerImageMetadata {
@@ -53,6 +57,10 @@ var cimStructForTest = func() *extractor.ContainerImageMetadata {
 			{
 				{Repository: "base-image", Registry: "ghcr.io", Plugin: "baseimage", ChainID: d1},
 			},
+		},
+		Labels: map[string]string{
+			"label1": "value1",
+			"label2": "value2",
 		},
 	}
 	for _, lm := range c.LayerMetadata {
