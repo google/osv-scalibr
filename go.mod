@@ -117,9 +117,9 @@ require (
 	github.com/djherbis/times v1.6.0 // indirect
 	github.com/docker/cli v28.2.2+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.9.7 // indirect
-	github.com/docker/go-connections v0.7.0 // indirect
-	github.com/docker/go-events v0.0.0-20250808211157-605354379745 // indirect
+	github.com/docker/docker-credential-helpers v0.9.3 // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
+	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
