@@ -259,7 +259,7 @@ func TestRunScan(t *testing.T) {
 			if result.Status.Status != tc.wantScanStatus {
 				t.Errorf("Unexpected scan status, want %v got %v", tc.wantScanStatus, result.Status.Status)
 			}
-			gotPS := []spb.ScanStatus_ScanStatusEnum{}
+			var gotPS []spb.ScanStatus_ScanStatusEnum
 			for _, s := range result.PluginStatus {
 				gotPS = append(gotPS, s.Status.Status)
 			}
