@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/tempdir"
 )
 
 const (
@@ -147,35 +148,54 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		}()
 	}
 
+	// Create the plugin directory.
+	// Disk layout will be similar to the following in the OS set temporary directory:
+	// ├── osv-scalibr-run-953505549
+	// │				└── extractor
+	// │				    └── vmdk
+	// |						└── valid.vmdk 								<--- A directory with the name set to the file discovered by the extractor
+	// │				        	├── partition-1-ext4					<--- A folder containing partition data
+	// │				        	│				└── private-key1.pem
+	// │				        	├── partition-2-exfat
+	// │				        	│				└── private-key2.pem
+	// │				        	├── partition-3-fat32
+	// │				        	│				└── private-key3.pem
+	// │				        	├── partition-4-ntfs
+	// │				        	│				└── private-key4.pem
+	// │				        	└── vmdk-12345.raw						<--- Converted disk image
+	pluginRoot, err := tempdir.CreatePluginDir(tempdir.Extractor, "vmdk", input.Path)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to create plugin dir: %w", err)
+	}
+
 	// Create a temporary file for the raw disk image
-	tmpRaw, err := os.CreateTemp("", "scalibr-vmdk-raw-*.raw")
+	rawDiskIMGPath, tmpRaw, err := tempdir.CreateFile(pluginRoot, "vmdk-*.raw")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}
-	tmpRawPath := tmpRaw.Name()
 
 	// Convert VMDK to raw
-	if err := convertVMDKToRaw(vmdkPath, tmpRawPath); err != nil {
-		os.Remove(tmpRawPath)
+	if err := convertVMDKToRaw(vmdkPath, tmpRaw); err != nil {
+		os.Remove(rawDiskIMGPath)
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", vmdkPath, err)
 	}
 
 	// Retrieve all partitions and the associated disk handle from the raw disk image.
-	partitionList, disk, err := common.GetDiskPartitions(tmpRawPath)
+	partitionList, disk, err := common.GetDiskPartitions(rawDiskIMGPath)
 	if err != nil {
-		os.Remove(tmpRawPath)
+		os.Remove(rawDiskIMGPath)
 		return inventory.Inventory{}, err
 	}
 
 	// Create a reference counter for the temporary file
-	var refCount int32
+	numOfPartitionsLeft := int32(len(partitionList))
 	var refMu sync.Mutex
 
 	// Create an Embedded filesystem for each valid partition
 	var embeddedFSs []*inventory.EmbeddedFS
 	for i, p := range partitionList {
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
-		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, tmpRawPath, &refMu, &refCount)
+		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, pluginRoot, rawDiskIMGPath, &refMu, &numOfPartitionsLeft)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
 			Path:          fmt.Sprintf("%s:%d", vmdkPath, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,
@@ -530,17 +550,15 @@ func convertMonolithicSparse(f *os.File, out *os.File, hdr sparseExtentHeader) e
 }
 
 // convertVMDKToRaw converts a VMDK file to a raw disk image.
-func convertVMDKToRaw(inPath string, outPath string) error {
+func convertVMDKToRaw(inPath string, out *os.File) error {
+	if out == nil {
+		return errors.New("convertVMDKToRaw(): must supply an output file")
+	}
 	in, err := os.Open(inPath)
 	if err != nil {
 		return err
 	}
 	defer in.Close()
-	out, err := os.Create(outPath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
 
 	hdr, err := readHeaderAt(in, 0)
 	if err != nil {

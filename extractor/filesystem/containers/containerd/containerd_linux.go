@@ -569,7 +569,7 @@ func runcInitPid(scanRoot string, id string) int {
 	// <scanRoot>/<criPluginStatusFilePrefix>/<container_id>/status path.
 	statusPath := filepath.Join(scanRoot, criPluginStatusFilePrefix, id, "status")
 	if _, err := os.Stat(statusPath); err != nil {
-		log.Info("File status does not exists for container %v, error: %v", id, err)
+		log.Infof("File status does not exists for container %v, error: %v", id, err)
 		return -1
 	}
 
@@ -609,7 +609,7 @@ func runhcsInitPid(scanRoot string, namespace string, id string) int {
 	// <scanRoot>/<runhcsStateFilePrefix>/<namespace_name>/<container_id>/shim.pid.
 	shimPIDPath := filepath.Join(scanRoot, runhcsStateFilePrefix, namespace, id, "shim.pid")
 	if _, err := os.Stat(shimPIDPath); err != nil {
-		log.Info("File shim.pid does not exists for container %v, error: %v", id, err)
+		log.Infof("File shim.pid does not exists for container %v, error: %v", id, err)
 		return -1
 	}
 

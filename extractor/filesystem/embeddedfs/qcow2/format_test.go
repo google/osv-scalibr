@@ -142,10 +142,13 @@ func TestAlignUp(t *testing.T) {
 }
 
 func TestConvertQCOW2ToRawMissingArgs(t *testing.T) {
-	if err := convertQCOW2ToRaw("", "out.raw", ""); err == nil {
+	dummyF, _ := os.CreateTemp(t.TempDir(), "dummy")
+	defer dummyF.Close()
+
+	if err := convertQCOW2ToRaw("", dummyF, ""); err == nil {
 		t.Fatalf("expected error for missing input")
 	}
-	if err := convertQCOW2ToRaw("in.qcow2", "", ""); err == nil {
+	if err := convertQCOW2ToRaw("in.qcow2", nil, ""); err == nil {
 		t.Fatalf("expected error for missing output")
 	}
 }
@@ -183,7 +186,13 @@ func TestConvertQCOW2ToRawMinimalImage(t *testing.T) {
 	}
 	f.Close()
 
-	if err := convertQCOW2ToRaw(in, out, ""); err != nil {
+	outF, err := os.Create(out)
+	if err != nil {
+		t.Fatalf("failed to create output file: %v", err)
+	}
+	defer outF.Close()
+
+	if err := convertQCOW2ToRaw(in, outF, ""); err != nil {
 		t.Fatalf("convertQCOW2ToRaw failed: %v", err)
 	}
 

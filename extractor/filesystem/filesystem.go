@@ -245,9 +245,10 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 		additionalInv.Append(mountedInv)
 		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
 
-		// Collect temporary directories and raw files after traversal for removal.
 		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			embeddedFS.TempPaths = c.TempPaths()
+			if err := c.CloseAndCleanup(); err != nil {
+				log.Infof("failed to close embedded filesystem %s: %v", embeddedFS.Path, err)
+			}
 		}
 	}
 

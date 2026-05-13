@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/tempdir"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -134,6 +135,17 @@ func TestExtractValidVMDK(t *testing.T) {
 	inv, err := extractor.Extract(ctx, input)
 	if err != nil {
 		t.Fatalf("Extract(%q) failed: %v", path, err)
+	}
+
+	// Verify the folder structure in the host filesystem
+	rootPath, err := tempdir.GetRootPath()
+	if err != nil {
+		t.Fatalf("GetRootPath failed: %v", err)
+	}
+
+	pluginDir := filepath.Join(rootPath, "extractor", "vmdk", filepath.Base(path))
+	if _, err := os.Stat(pluginDir); err != nil {
+		t.Fatalf("Plugin directory not created at %s: %v", pluginDir, err)
 	}
 
 	if len(inv.EmbeddedFSs) == 0 {
