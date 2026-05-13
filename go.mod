@@ -20,7 +20,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.5
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/compose-spec/compose-go/v2 v2.8.1
-	github.com/containerd/containerd v1.7.23
+	github.com/containerd/containerd v1.7.29
 	github.com/containerd/containerd/api v1.9.0
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/diskfs/go-diskfs v1.7.0
