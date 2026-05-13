@@ -221,6 +221,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | International Bank Account Number           | `sensitiveinformation/iban`            |
 | US Social Security Number                   | `sensitiveinformation/ssn`             |
 
+### Personal Identifiable Information (PII)
+
+| Type                                        | Extractor Plugin                       |
+|---------------------------------------------|----------------------------------------|
+| US Passport Numbers                         | `pii/uspassportnumber`                 |
+
 ### Container inventory
 
 | Type                            | Extractor Plugin                                                                   |

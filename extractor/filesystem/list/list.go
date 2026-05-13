@@ -130,6 +130,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/pii/uspassportnumber"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
@@ -183,6 +184,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
+	"github.com/google/osv-scalibr/veles/secrets/uspassportnumber"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
@@ -459,6 +461,7 @@ var (
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
 		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
+		{uspassportnumber.NewDetector(), "pii/uspassportnumber", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
