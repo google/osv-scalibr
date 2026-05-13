@@ -149,10 +149,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			// Only append non-default scope (compile is the default scope).
 			metadata.DepGroupVals = []string{scope}
 		}
-		details[dep.Name()] = pkgDetails
+		details[dependencyKey(dep)] = pkgDetails
 	}
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
 
 var _ filesystem.Extractor = Extractor{}
+
+// dependencyKey returns a unique identifier combining the package name (group:artifact) and its classifier.
+func dependencyKey(dep maven.Dependency) string {
+	return fmt.Sprintf("%s:%s", dep.Name(), dep.Classifier)
+}
