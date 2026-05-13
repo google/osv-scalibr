@@ -126,6 +126,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/onepasswordconnecttoken"
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/pii/uspassportnumber"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
 	"github.com/google/osv-scalibr/veles/secrets/azuretoken"
@@ -179,6 +180,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
+	"github.com/google/osv-scalibr/veles/secrets/uspassportnumber"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -442,6 +444,7 @@ var (
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
+		{uspassportnumber.NewDetector(), "pii/uspassportnumber", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

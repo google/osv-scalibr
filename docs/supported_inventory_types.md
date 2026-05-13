@@ -209,6 +209,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Discord Bot Token                           | `secrets/discordbottoken`              |
 | HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
 
+### Personal Identifiable Information (PII)
+
+| Type                                        | Extractor Plugin                       |
+|---------------------------------------------|----------------------------------------|
+| US Passport Numbers                         | `pii/uspassportnumber`                 |
+
 ### Container inventory
 
 | Type                            | Extractor Plugin                                                                   |
