@@ -44,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/paketlock"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
@@ -249,6 +250,8 @@ var (
 	DartSource = InitMap{pubspec.Name: {pubspec.New}}
 	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
+	// GleamSource extractors for Gleam.
+	GleamSource = InitMap{gleamtoml.Name: {gleamtoml.New}}
 	// NimSource extractors for Nim.
 	NimSource = InitMap{nimble.Name: {nimble.New}}
 	// LuaSource extractors for Lua.
@@ -495,6 +498,7 @@ var (
 		DartSource,
 		ErlangSource,
 		ElixirSource,
+		GleamSource,
 		HaskellSource,
 		PHPSource,
 		RSource,
@@ -554,6 +558,7 @@ var (
 		"go":         vals(concat(GoSource, GoArtifact)),
 		"dart":       vals(DartSource),
 		"erlang":     vals(ErlangSource),
+		"gleam":      vals(GleamSource),
 		"lua":        vals(LuaSource),
 		"nim":        vals(NimSource),
 		"ocaml":      vals(OcamlSource),
