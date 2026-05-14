@@ -33,7 +33,7 @@ func TestDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		NewDetector(),
-		fmt.Sprintf(`passport:"%s"`, validUSPassportNumber),
+		fmt.Sprintf(`passport:%s`, validUSPassportNumber),
 		USPassportNumber{Value: validUSPassportNumber},
 	)
 }
