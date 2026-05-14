@@ -129,40 +129,40 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "valid Package.resolved file",
+			Name: "valid_Package.resolved_file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "swift-algorithms",
+					Name:     "github.com/apple/swift-algorithms",
 					Version:  "1.0.0",
-					PURLType: purl.TypeCocoapods,
+					PURLType: purl.TypeSwift,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 				{
-					Name:     "swift-async-algorithms",
+					Name:     "github.com/apple/swift-async-algorithms",
 					Version:  "0.1.0",
-					PURLType: purl.TypeCocoapods,
+					PURLType: purl.TypeSwift,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 				{
-					Name:     "swift-atomics",
+					Name:     "github.com/apple/swift-atomics",
 					Version:  "1.1.0",
-					PURLType: purl.TypeCocoapods,
+					PURLType: purl.TypeSwift,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 		},
 		{
-			Name: "Package.resolved file not valid",
+			Name: "Package.resolved_file_not_valid",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid",
 			},
 			WantErr: cmpopts.AnyError,
 		},
 		{
-			Name: "Package.resolved file empty",
+			Name: "Package.resolved_file_empty",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty",
 			},
