@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	keywordRe = regexp.MustCompile(`(?i)\b\w*(?:passport|document|travel)\w*\b`)
+	keywordRe = regexp.MustCompile(`(?i)\b[A-Za-z_-]*(?:passport|document|travel)[A-Za-z_-]*\b`)
 	// The regex matches either:
 	//  * old passport numbers with the 9 digits
 	//  * new passport numbers with the format 1 character + 8 digits

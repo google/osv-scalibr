@@ -163,6 +163,21 @@ func TestDetector(t *testing.T) {
 		`, newValidUSPassportNumber),
 			want: []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
 		},
+		{
+			name:  "context keyword with prefix",
+			input: fmt.Sprintf("us_passport=%s", newValidUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
+		},
+		{
+			name:  "context keyword with suffix",
+			input: fmt.Sprintf("passport_number=%s", newValidUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
+		},
+		{
+			name:  "context keyword with prefix and suffix",
+			input: fmt.Sprintf("us_passport_number=%s", newValidUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
+		},
 	}
 
 	for _, tc := range cases {
