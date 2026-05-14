@@ -35,7 +35,7 @@ import (
 func TestVersion(t *testing.T) {
 	e := baseimage.Enricher{}
 	if e.Version() != baseimage.Version {
-		t.Errorf("Version() = %q, want %q", e.Version(), baseimage.Version)
+		t.Errorf("Version() = %d, want %d", e.Version(), baseimage.Version)
 	}
 }
 

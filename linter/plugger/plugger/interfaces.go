@@ -30,9 +30,7 @@ func FindInterfaces(pkgs []*packages.Package, interfaceNames []string) []*types.
 	var wg sync.WaitGroup
 
 	for _, pkg := range pkgs {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for ident, obj := range pkg.TypesInfo.Defs {
 				if obj == nil {
 					continue
@@ -52,7 +50,7 @@ func FindInterfaces(pkgs []*packages.Package, interfaceNames []string) []*types.
 				result = append(result, named)
 				mu.Unlock()
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	return result
