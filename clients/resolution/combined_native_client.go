@@ -42,7 +42,7 @@ type CombinedNativeClientOptions struct {
 	MavenRegistry     string                             // The default Maven registry to use.
 	PyPIRegistry      string                             // The default PyPI registry to use.
 	MavenClient       *datasource.MavenRegistryAPIClient // The Maven registry client to use, if nil, a new client will be created.
-	DisableGoogleAuth bool                               // If true, do not try to create google.DefaultClient for Artifact Registry.
+	DisableGoogleAuth bool                               // Whether to disable Google Application Default Credentials (ADC).
 }
 
 // NewCombinedNativeClient makes a new CombinedNativeClient.

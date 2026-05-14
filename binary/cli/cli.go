@@ -33,18 +33,20 @@ import (
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
 	binspdx "github.com/google/osv-scalibr/binary/spdx"
+	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/converter"
 	convspdx "github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/detector"
+	"github.com/google/osv-scalibr/detector/govulncheck/binary"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxmlnet"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/spdx/tools-golang/spdx/v2/common"
-	"google.golang.org/protobuf/encoding/prototext"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,
@@ -116,42 +118,43 @@ func (s *StringListFlag) Reset() {
 
 // Flags contains a field for all the cli flags that can be set.
 type Flags struct {
-	PrintVersion          bool
-	Root                  string
-	ResultFile            string
-	Output                Array
-	ExtractorsToRun       []string
-	DetectorsToRun        []string
-	AnnotatorsToRun       []string
-	PluginsToRun          []string
-	PluginCFG             []string
-	ExtractorOverride     Array
-	PathsToExtract        []string
-	IgnoreSubDirs         bool
-	DirsToSkip            []string
-	SkipDirRegex          string
-	SkipDirGlob           string
-	MaxFileSize           int
-	UseGitignore          bool
-	RemoteImage           string
-	ImageLocal            string
-	ImageTarball          string
-	ImagePlatform         string
-	GovulncheckDBPath     string
-	SPDXDocumentName      string
-	SPDXDocumentNamespace string
-	SPDXCreators          string
-	CDXComponentName      string
-	CDXComponentType      string
-	CDXComponentVersion   string
-	CDXAuthors            string
-	Verbose               bool
-	ExplicitPlugins       bool
-	FilterByCapabilities  bool
-	StoreAbsolutePath     bool
-	WindowsAllDrives      bool
-	Offline               bool
-	AllowUnsafePlugins    bool
+	PrintVersion               bool
+	Root                       string
+	ResultFile                 string
+	Output                     Array
+	ExtractorsToRun            []string
+	DetectorsToRun             []string
+	AnnotatorsToRun            []string
+	PluginsToRun               []string
+	ExtractorOverride          Array
+	PathsToExtract             []string
+	IgnoreSubDirs              bool
+	DirsToSkip                 []string
+	SkipDirRegex               string
+	SkipDirGlob                string
+	MaxFileSize                int
+	UseGitignore               bool
+	RemoteImage                string
+	ImageLocal                 string
+	ImageTarball               string
+	ImagePlatform              string
+	GoBinaryVersionFromContent bool
+	GovulncheckDBPath          string
+	SPDXDocumentName           string
+	SPDXDocumentNamespace      string
+	SPDXCreators               string
+	CDXComponentName           string
+	CDXComponentType           string
+	CDXComponentVersion        string
+	CDXAuthors                 string
+	Verbose                    bool
+	ExplicitExtractors         bool
+	FilterByCapabilities       bool
+	StoreAbsolutePath          bool
+	WindowsAllDrives           bool
+	Offline                    bool
+	LocalRegistry              string
+	DisableGoogleAuth          bool
 }
 
 var supportedOutputFormats = []string{
@@ -230,7 +233,7 @@ func ValidateFlags(flags *Flags) error {
 		return fmt.Errorf("--skip-dir-glob: %w", err)
 	}
 	pluginsToRun := slices.Concat(flags.PluginsToRun, flags.ExtractorsToRun, flags.DetectorsToRun, flags.AnnotatorsToRun)
-	if err := validateDependency(pluginsToRun, flags.ExplicitPlugins); err != nil {
+	if err := validateDependency(pluginsToRun, flags.ExplicitExtractors); err != nil {
 		return err
 	}
 	if err := validateComponentType(flags.CDXComponentType); err != nil {
@@ -295,7 +298,7 @@ func validateMultiStringArg(arg []string) error {
 		if len(item) == 0 {
 			continue
 		}
-		for item := range strings.SplitSeq(item, ",") {
+		for _, item := range strings.Split(item, ",") {
 			if len(item) == 0 {
 				return errors.New("list item cannot be left empty")
 			}
@@ -319,7 +322,7 @@ func validateGlob(arg string) error {
 
 func validateDependency(pluginNames []string, requireExtractors bool) error {
 	f := &Flags{PluginsToRun: pluginNames}
-	plugins, _, err := f.pluginsToRun()
+	plugins, err := f.pluginsToRun()
 	if err != nil {
 		return err
 	}
@@ -356,7 +359,7 @@ type extractorOverride struct {
 
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
-	plugins, pluginCFG, err := f.pluginsToRun()
+	plugins, err := f.pluginsToRun()
 	if err != nil {
 		return nil, err
 	}
@@ -364,14 +367,6 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	if f.FilterByCapabilities {
 		plugins = filterByCapabilities(plugins, capab)
 	}
-	if len(f.PluginsToRun)+len(f.ExtractorsToRun)+len(f.DetectorsToRun)+len(f.AnnotatorsToRun) == 0 {
-		names := make([]string, 0, len(plugins))
-		for _, p := range plugins {
-			names = append(names, p.Name())
-		}
-		log.Warnf("No plugins specified, using default list: %v", names)
-	}
-
 	var skipDirRegex *regexp.Regexp
 	if f.SkipDirRegex != "" {
 		skipDirRegex, err = regexp.Compile(f.SkipDirRegex)
@@ -435,20 +430,18 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 	}
 
 	return &scalibr.ScanConfig{
-		ScanRoots:            scanRoots,
-		Plugins:              plugins,
-		Capabilities:         capab,
-		PathsToExtract:       f.PathsToExtract,
-		IgnoreSubDirs:        f.IgnoreSubDirs,
-		DirsToSkip:           f.dirsToSkip(scanRoots),
-		SkipDirRegex:         skipDirRegex,
-		SkipDirGlob:          skipDirGlob,
-		MaxFileSize:          f.MaxFileSize,
-		UseGitignore:         f.UseGitignore,
-		StoreAbsolutePath:    f.StoreAbsolutePath,
-		ExtractorOverride:    extractorOverrideFn,
-		ExplicitPlugins:      f.ExplicitPlugins,
-		RequiredPluginConfig: pluginCFG,
+		ScanRoots:         scanRoots,
+		Plugins:           plugins,
+		Capabilities:      capab,
+		PathsToExtract:    f.PathsToExtract,
+		IgnoreSubDirs:     f.IgnoreSubDirs,
+		DirsToSkip:        f.dirsToSkip(scanRoots),
+		SkipDirRegex:      skipDirRegex,
+		SkipDirGlob:       skipDirGlob,
+		MaxFileSize:       f.MaxFileSize,
+		UseGitignore:      f.UseGitignore,
+		StoreAbsolutePath: f.StoreAbsolutePath,
+		ExtractorOverride: extractorOverrideFn,
 	}, nil
 }
 
@@ -456,7 +449,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 func (f *Flags) GetSPDXConfig() convspdx.Config {
 	var creators []common.Creator
 	if len(f.SPDXCreators) > 0 {
-		for item := range strings.SplitSeq(f.SPDXCreators, ",") {
+		for _, item := range strings.Split(f.SPDXCreators, ",") {
 			c := strings.Split(item, ":")
 			cType := c[0]
 			cName := c[1]
@@ -510,12 +503,12 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 					return err
 				}
 			} else if strings.Contains(oFormat, "spdx23") {
-				doc := converter.ToSPDX23(result.Inventory, f.GetSPDXConfig())
+				doc := converter.ToSPDX23(result, f.GetSPDXConfig())
 				if err := binspdx.Write23(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			} else if strings.Contains(oFormat, "cdx") {
-				doc := converter.ToCDX(result.Inventory, f.GetCDXConfig())
+				doc := converter.ToCDX(result, f.GetCDXConfig())
 				if err := cdx.Write(doc, oPath, oFormat); err != nil {
 					return err
 				}
@@ -526,14 +519,9 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
+func (f *Flags) pluginsToRun() ([]plugin.Plugin, error) {
 	result := make([]plugin.Plugin, 0, len(f.PluginsToRun))
 	pluginNames := multiStringToList(f.PluginsToRun)
-	pluginCFG, err := pluginCFGFromFlags(f.PluginCFG)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	extractorNames := addPluginPrefixToGroups("extractors/", multiStringToList(f.ExtractorsToRun))
 	detectorNames := addPluginPrefixToGroups("detectors/", multiStringToList(f.DetectorsToRun))
 	annotatorNames := addPluginPrefixToGroups("annotators/", multiStringToList(f.AnnotatorsToRun))
@@ -545,15 +533,42 @@ func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
 	}
 
 	for _, name := range allPluginNames {
-		plugins, err := pl.FromNames([]string{name}, pluginCFG)
+		plugins, err := pl.FromNames([]string{name})
 		if err != nil {
-			return nil, nil, err
+			return nil, err
+		}
+
+		// Apply plugin-specific config.
+		for _, p := range plugins {
+			if p.Name() == gobinary.Name {
+				p.(*gobinary.Extractor).VersionFromContent = f.GoBinaryVersionFromContent
+			}
+			if p.Name() == binary.Name {
+				p.(*binary.Detector).OfflineVulnDBPath = f.GovulncheckDBPath
+			}
+			if f.LocalRegistry != "" {
+				switch p.Name() {
+				case pomxmlnet.Name:
+					p.(*pomxmlnet.Extractor).MavenClient.SetLocalRegistry(f.LocalRegistry)
+				case requirements.Name:
+					if client, ok := p.(*requirements.Enricher).Client.(*resolution.PyPIRegistryClient); ok {
+						// The resolution client is the native PyPI registry client.
+						client.SetLocalRegistry(f.LocalRegistry)
+					}
+				}
+			}
+			if f.DisableGoogleAuth {
+				switch p.Name() {
+				case pomxmlnet.Name:
+					p.(*pomxmlnet.Extractor).MavenClient.DisableGoogleAuth()
+				}
+			}
 		}
 
 		result = append(result, plugins...)
 	}
 
-	return result, pluginCFG, nil
+	return result, nil
 }
 
 // addPluginPrefixToGroups adds the specified prefix to the "default" and "all"
@@ -568,30 +583,6 @@ func addPluginPrefixToGroups(prefix string, pluginNames []string) []string {
 		result = append(result, p)
 	}
 	return result
-}
-
-// pluginCFGFromFlags parses individually provided
-// plugin config strings into one proto.
-func pluginCFGFromFlags(flags []string) (*cpb.PluginConfig, error) {
-	var cfgString strings.Builder
-	for _, flag := range flags {
-		pluginCFG := &cpb.PluginConfig{}
-		err := prototext.Unmarshal([]byte(flag), pluginCFG)
-		if err != nil {
-			// Flags can use a shorthand for specifying a single plugin-specific setting.
-			// In this case we have to add the wrapping proto parts manually.
-			flag = "plugin_specific:{" + flag + "}"
-			err := prototext.Unmarshal([]byte(flag), pluginCFG)
-			if err != nil {
-				return nil, err
-			}
-		}
-		cfgString.WriteString(flag + "\n")
-	}
-
-	allCFGs := &cpb.PluginConfig{}
-	err := prototext.Unmarshal([]byte(cfgString.String()), allCFGs)
-	return allCFGs, err
 }
 
 func multiStringToList(arg []string) []string {
@@ -666,19 +657,17 @@ func (f *Flags) capabilities() *plugin.Capabilities {
 	if f.RemoteImage != "" {
 		// We're scanning a Linux container image whose filesystem is mounted to the host's disk.
 		return &plugin.Capabilities{
-			OS:                 plugin.OSLinux,
-			Network:            network,
-			DirectFS:           true,
-			RunningSystem:      false,
-			AllowUnsafePlugins: f.AllowUnsafePlugins,
+			OS:            plugin.OSLinux,
+			Network:       network,
+			DirectFS:      true,
+			RunningSystem: false,
 		}
 	}
 	return &plugin.Capabilities{
-		OS:                 platform.OS(),
-		Network:            network,
-		DirectFS:           true,
-		RunningSystem:      true,
-		AllowUnsafePlugins: f.AllowUnsafePlugins,
+		OS:            platform.OS(),
+		Network:       network,
+		DirectFS:      true,
+		RunningSystem: true,
 	}
 }
 
@@ -689,8 +678,6 @@ func filterByCapabilities(plugins []plugin.Plugin, capab *plugin.Capabilities) [
 	for _, p := range plugins {
 		if err := plugin.ValidateRequirements(p, capab); err == nil {
 			fp = append(fp, p)
-		} else {
-			log.Warnf("Disabling plugin %q: %v", p.Name(), err)
 		}
 	}
 	return fp
