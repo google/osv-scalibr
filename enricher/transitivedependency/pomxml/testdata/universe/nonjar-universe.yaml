@@ -1,0 +1,16 @@
+system: maven
+schema: |
+  org.direct:alice
+    1.0.0
+      org.transitive:chuck@1.1.1
+  org.direct:bob
+    2.0.0
+      org.transitive:eve@3.3.3
+  org.transitive:chuck
+    1.1.1
+  org.transitive:dave
+    2.2.2
+  org.transitive:eve
+    3.3.3
+  org.transitive:frank
+    4.4.4
