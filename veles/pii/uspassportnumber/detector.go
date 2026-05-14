@@ -35,7 +35,7 @@ var (
 func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: maxPassportNumberLen,
-		MaxDistance:   1 << 10, // The context keyword should be within 1Kb of data from the detected value
+		MaxDistance:   veles.KiB, // The context keyword should be within 1Kb of data from the detected value
 		FindA:         pair.FindAllMatches(passportNumberRe),
 		FindB:         pair.FindAllMatches(keywordRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
