@@ -390,6 +390,21 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 				},
 			},
 			{
+				// Transitive dep via alice → kept
+				Name:     "org.transitive:dave",
+				Version:  "2.2.2",
+				PURLType: purl.TypeMaven,
+				ScanRoot: "testdata",
+				Location: extractor.LocationFromPath("testdata/transitive-nonjar.xml"),
+				Plugins:  []string{"transitivedependency/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "dave",
+					GroupID:      "org.transitive",
+					IsTransitive: true,
+					DepGroupVals: []string{},
+				},
+			},
+			{
 				// Transitive dep via bob → kept
 				Name:     "org.transitive:eve",
 				Version:  "3.3.3",
