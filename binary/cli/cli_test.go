@@ -469,7 +469,7 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 
 func TestGetScanConfig_DirsToSkip_IgnoreOutsideRoot(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	outsideDir := "/dir2"
 	if runtime.GOOS == "windows" {
 		outsideDir = "c:\\dir2"
@@ -484,7 +484,7 @@ func TestGetScanConfig_DirsToSkip_IgnoreOutsideRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetScanConfig() failed: %v", err)
 	}
-	
+
 	wantDirsToSkip := []string{filepath.Join(tmpDir, "dir1")}
 	if diff := cmp.Diff(wantDirsToSkip, cfg.DirsToSkip); diff != "" {
 		t.Errorf("DirsToSkip got diff (-want +got):\n%s", diff)
