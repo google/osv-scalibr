@@ -337,6 +337,13 @@ func TestGetScanConfig_ScanRoots_Provided(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetScanConfig() failed: %v", err)
 	}
+	defer func() {
+		for _, r := range cfg.ScanRoots {
+			if r.OSRoot != nil {
+				r.OSRoot.Close()
+			}
+		}
+	}()
 	if len(cfg.ScanRoots) != 1 {
 		t.Fatalf("Expected 1 scan root, got %d", len(cfg.ScanRoots))
 	}
@@ -484,6 +491,13 @@ func TestGetScanConfig_DirsToSkip_IgnoreOutsideRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetScanConfig() failed: %v", err)
 	}
+	defer func() {
+		for _, r := range cfg.ScanRoots {
+			if r.OSRoot != nil {
+				r.OSRoot.Close()
+			}
+		}
+	}()
 
 	wantDirsToSkip := []string{filepath.Join(tmpDir, "dir1")}
 	if diff := cmp.Diff(wantDirsToSkip, cfg.DirsToSkip); diff != "" {
