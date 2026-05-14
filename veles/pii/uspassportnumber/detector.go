@@ -27,8 +27,11 @@ const (
 )
 
 var (
-	keywordRe        = regexp.MustCompile(`(?i)\b\w*(?:passport|document|travel)\w*\b`)
-	passportNumberRe = regexp.MustCompile(`\b[A-Za-z][0-9]{8}\b`)
+	keywordRe = regexp.MustCompile(`(?i)\b\w*(?:passport|document|travel)\w*\b`)
+	// The regex matches either:
+	//  * old passport numbers with the 9 digits
+	//  * new passport numbers with the format 1 character + 8 digits
+	passportNumberRe = regexp.MustCompile(`\b(?:[0-9]{9}|[A-Za-z][0-9]{8})\b`)
 )
 
 // A match is considered successful only if the context keyword is also matched near to the value

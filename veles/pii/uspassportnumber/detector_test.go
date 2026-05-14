@@ -26,15 +26,25 @@ import (
 )
 
 const (
-	validUSPassportNumber = "A12345678"
+	oldValidUSPassportNumber = "123456789"
+	newValidUSPassportNumber = "A12345678"
 )
 
-func TestDetectorAcceptance(t *testing.T) {
+func TestDetectorAcceptance_OldNumber(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		NewDetector(),
-		fmt.Sprintf(`passport:%s`, validUSPassportNumber),
-		USPassportNumber{Value: validUSPassportNumber},
+		fmt.Sprintf(`passport:%s`, oldValidUSPassportNumber),
+		USPassportNumber{Value: oldValidUSPassportNumber},
+	)
+}
+
+func TestDetectorAcceptance_NewNumber(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		NewDetector(),
+		fmt.Sprintf(`passport:%s`, newValidUSPassportNumber),
+		USPassportNumber{Value: newValidUSPassportNumber},
 	)
 }
 
@@ -50,43 +60,79 @@ func TestDetector(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name: "log_json_pretty",
+			name: "json log pretty old",
 			input: fmt.Sprintf(`{
 			"level": "INFO",
 			"user_id": "1234",
 			"passport_number": "%s"
 		}
-		`, validUSPassportNumber),
-			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
+		`, oldValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: oldValidUSPassportNumber}},
 		},
 		{
-			name:  "log_json_minified",
-			input: fmt.Sprintf(`{"level":"INFO","user_id":"1234","passport_number":"%s"}`, validUSPassportNumber),
-			want:  []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
+			name: "json log pretty new",
+			input: fmt.Sprintf(`{
+			"level": "INFO",
+			"user_id": "1234",
+			"passport_number": "%s"
+		}
+		`, newValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
 		},
 		{
-			name: "log_xml_pretty",
+			name:  "json log minified old",
+			input: fmt.Sprintf(`{"level":"INFO","user_id":"1234","passport_number":"%s"}`, oldValidUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: oldValidUSPassportNumber}},
+		},
+		{
+			name:  "json log minified new",
+			input: fmt.Sprintf(`{"level":"INFO","user_id":"1234","passport_number":"%s"}`, newValidUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
+		},
+		{
+			name: "xml log pretty old",
 			input: fmt.Sprintf(`<log>
 			<user_id>1234</user_id>
 			<passport_number>%s</passport_number>
 		</log>
-		`, validUSPassportNumber),
-			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
+		`, oldValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: oldValidUSPassportNumber}},
 		},
 		{
-			name:  "log_xml_minified",
-			input: fmt.Sprintf("<log><user_id>1234</user_id><passport_number>%s</passport_number></log>", validUSPassportNumber),
-			want:  []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
+			name: "xml log pretty new",
+			input: fmt.Sprintf(`<log>
+			<user_id>1234</user_id>
+			<passport_number>%s</passport_number>
+		</log>
+		`, newValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
 		},
 		{
-			name: "log_yaml",
+			name:  "xml log minified old",
+			input: fmt.Sprintf("<log><user_id>1234</user_id><passport_number>%s</passport_number></log>", oldValidUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: oldValidUSPassportNumber}},
+		},
+		{
+			name:  "xml log minified new",
+			input: fmt.Sprintf("<log><user_id>1234</user_id><passport_number>%s</passport_number></log>", newValidUSPassportNumber),
+			want:  []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
+		},
+		{
+			name: "yaml log old",
 			input: fmt.Sprintf(`user_id: "1234"
 		passport_number: %s
-		`, validUSPassportNumber),
-			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
+		`, oldValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: oldValidUSPassportNumber}},
 		},
 		{
-			name: "log_csv",
+			name: "yaml log new",
+			input: fmt.Sprintf(`user_id: "1234"
+		passport_number: %s
+		`, newValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
+		},
+		{
+			name: "csv log old",
 			input: fmt.Sprintf(`user_id,passport_number
 		dummy_data0,dummy_data0
 		dummy_data0,dummy_data0
@@ -98,8 +144,24 @@ func TestDetector(t *testing.T) {
 		dummy_data0,dummy_data0
 		dummy_data0,dummy_data0
 		1234,%s
-		`, validUSPassportNumber),
-			want: []veles.Secret{USPassportNumber{Value: validUSPassportNumber}},
+		`, oldValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: oldValidUSPassportNumber}},
+		},
+		{
+			name: "csv log new",
+			input: fmt.Sprintf(`user_id,passport_number
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		dummy_data0,dummy_data0
+		1234,%s
+		`, newValidUSPassportNumber),
+			want: []veles.Secret{USPassportNumber{Value: newValidUSPassportNumber}},
 		},
 	}
 
@@ -128,20 +190,32 @@ func TestDetector_NoMatch(t *testing.T) {
 		input string
 	}{
 		{
-			name:  "valid_number_no_context_keyword",
-			input: `A12345678`,
+			name:  "old valid number with missing context",
+			input: oldValidUSPassportNumber,
 		},
 		{
-			name:  "malformed_number_missing_digit",
+			name:  "new valid number with missing context",
+			input: newValidUSPassportNumber,
+		},
+		{
+			name:  "malformed old number missing digit",
+			input: `12345678`,
+		},
+		{
+			name:  "malformed new number missing digit",
 			input: `A1234567`,
 		},
 		{
-			name:  "malformed_number_missing_letter",
-			input: `A1234567`,
+			name:  "malformed new number missing character",
+			input: `12345678`,
 		},
 		{
-			name:  "valid_number_incorrect_context",
-			input: fmt.Sprintf("Lorem ipsum dolor sit amet %s, consectetur adipiscing elit", validUSPassportNumber),
+			name:  "valid old number with invalid context",
+			input: fmt.Sprintf("Lorem ipsum dolor sit amet %s, consectetur adipiscing elit", oldValidUSPassportNumber),
+		},
+		{
+			name:  "valid new number with invalid context",
+			input: fmt.Sprintf("Lorem ipsum dolor sit amet %s, consectetur adipiscing elit", newValidUSPassportNumber),
 		},
 	}
 
