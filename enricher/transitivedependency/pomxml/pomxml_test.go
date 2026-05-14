@@ -328,7 +328,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/nonjar-universe.yaml")
+	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 
 	enrichy, err := pomxml.New(&cpb.PluginConfig{})
 
