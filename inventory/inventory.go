@@ -116,5 +116,9 @@ func expandPathToAbsolute(absRoot string, l *location.Location) {
 		return
 	}
 
+	if filepath.IsAbs(l.File.Path) {
+		return
+	}
+
 	l.File.Path = filepath.Join(absRoot, l.File.Path)
 }

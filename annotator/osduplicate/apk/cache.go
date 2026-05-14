@@ -29,7 +29,6 @@ import (
 
 	iofs "io/fs"
 
-	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/apk/apkutil"
 	"github.com/google/osv-scalibr/fs"
 )
@@ -55,8 +54,8 @@ type mainOSPackages struct {
 }
 
 // contains returns true if a package found in main OS repo index
-func (a *mainOSPackages) contains(pkg *extractor.Package) bool {
-	_, exists := a.value[key(pkg.Name, pkg.Version)]
+func (a *mainOSPackages) contains(pkgName, pkgVersion string) bool {
+	_, exists := a.value[key(pkgName, pkgVersion)]
 	return exists
 }
 
@@ -187,6 +186,8 @@ func extractRepositoryIndex(root *fs.ScanRoot, filePath string, cache *mainOSPac
 		}
 
 		scanner := apkutil.NewScanner(tr)
+		scanner.DiscardLongLines()
+
 		for scanner.Scan() {
 			record := scanner.Record()
 			pkgName, ok := record["P"]

@@ -244,6 +244,7 @@ func TestRun_EmbeddedFS(t *testing.T) {
 				Name:     "Software",
 				Location: extractor.LocationFromPath("disk.vmdk:1:file.txt"),
 				Plugins:  []string{"fake-ex-software", "fake-ex-software"}, // Expect duplicate due to observed behavior
+				ScanRoot: ".",
 			},
 		},
 		EmbeddedFSs: []*inventory.EmbeddedFS{
@@ -317,6 +318,77 @@ func (e fakeExtractorDirs) Extract(ctx context.Context, input *filesystem.ScanIn
 		}}}, nil
 	}
 	return inventory.Inventory{}, errors.New("unrecognized path")
+}
+
+func TestRun_EmbeddedFS_RunningSystem(t *testing.T) {
+	fsys := setupMapFS(t, mapFS{
+		"disk.vmdk": []byte("VMDK Content"),
+	})
+
+	// Create temporary directory for embedded filesystem
+	embeddedDir := t.TempDir()
+	err := os.WriteFile(filepath.Join(embeddedDir, "file.txt"), []byte("Content"), fs.ModePerm)
+	if err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", filepath.Join(embeddedDir, "file.txt"), err)
+	}
+	embeddedFS := scalibrfs.DirFS(embeddedDir)
+
+	fakeExFS := &fakeExtractorFS{
+		name: "fake-ex-fs",
+		getEmbeddedFS: func(ctx context.Context) (scalibrfs.FS, error) {
+			return embeddedFS, nil
+		},
+	}
+	fakeExSoftware := &fakeExtractorSoftware{name: "fake-ex-software"}
+
+	// Use fakeextractor.NewWithRequirements to create a mock extractor requiring a running system.
+	fakeExRunningSystem := fe.NewWithRequirements(
+		"fake-ex-runningsystem",
+		1,
+		[]string{"file.txt"},
+		map[string]fe.NamesErr{"file.txt": {Names: []string{"RunningSystemSoftware"}, Err: nil}},
+		&plugin.Capabilities{RunningSystem: true},
+	)
+
+	// We include the running system extractor.
+	extractors := []filesystem.Extractor{fakeExFS, fakeExSoftware, fakeExRunningSystem}
+
+	config := &filesystem.Config{
+		Extractors: extractors,
+		ScanRoots: []*scalibrfs.ScanRoot{{
+			FS:   fsys,
+			Path: ".",
+		}},
+		Stats: &fakeCollector{},
+	}
+
+	// Run the test
+	gotInv, _, err := filesystem.Run(t.Context(), config)
+	if err != nil {
+		t.Fatalf("filesystem.Run(%v): %v", config, err)
+	}
+
+	// We expect to find "Software" from fakeExSoftware, but NOT "RunningSystemSoftware" from fakeExRunningSystem.
+	wantInv := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "Software",
+				Location: extractor.LocationFromPath("disk.vmdk:1:file.txt"),
+				Plugins:  []string{"fake-ex-software", "fake-ex-software"},
+				ScanRoot: ".",
+			},
+		},
+		EmbeddedFSs: []*inventory.EmbeddedFS{
+			{
+				Path:          "disk.vmdk:1",
+				GetEmbeddedFS: fakeExFS.getEmbeddedFS,
+			},
+		},
+	}
+
+	if diff := cmp.Diff(wantInv, gotInv, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeExtractorFS{}, fakeExtractorSoftware{}), cmpopts.EquateErrors(), cmpopts.IgnoreFields(inventory.EmbeddedFS{}, "GetEmbeddedFS")); diff != "" {
+		t.Errorf("filesystem.Run(%v): unexpected findings (-want +got):\n%s", config, diff)
+	}
 }
 
 func TestRunFS(t *testing.T) {

@@ -94,6 +94,7 @@ message PluginSpecificConfig {
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
+    DotnetPaketConfig dotnet_paket = 77;
     OSVLocalConfig osvlocal = 57;
     CodeServerConfig code_server = 58;
     DenoJsonConfig denojson = 62;
@@ -108,6 +109,7 @@ message PluginSpecificConfig {
     HCPIdentityConfig hcp_identity = 73;
     HerokuExpirationConfig heroku_expiration = 74;
     HuggingfaceMetaConfig huggingface_meta = 75;
+    ContainerdRuntimeConfig containerd_runtime = 76;
   }
 }
 
@@ -392,6 +394,13 @@ message DotnetPeConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message DotnetPaketConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
 message GemspecConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
@@ -556,4 +565,9 @@ message QCOW2Config {
   int64 max_file_size_bytes = 1;
   // The password the plugin requires to extract the encrypted .qcow2 file
   string password = 2;
+}
+
+message ContainerdRuntimeConfig {
+  // The local path to the containerd socket.
+  string socket_addr = 1;
 }
