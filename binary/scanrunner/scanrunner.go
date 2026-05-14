@@ -44,12 +44,8 @@ func RunScan(flags *cli.Flags) int {
 		return 1
 	}
 	defer func() {
-		for _, sr := range cfg.ScanRoots {
-			if sr.OSRoot != nil {
-				if err := sr.OSRoot.Close(); err != nil {
-					log.Errorf("Failed to close scan root %s: %v", sr.Path, err)
-				}
-			}
+		if err := scalibrfs.CloseAll(cfg.ScanRoots); err != nil {
+			log.Errorf("Failed to close scan roots: %v", err)
 		}
 	}()
 

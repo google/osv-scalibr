@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/plugin"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -337,13 +338,7 @@ func TestGetScanConfig_ScanRoots_Provided(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetScanConfig() failed: %v", err)
 	}
-	defer func() {
-		for _, r := range cfg.ScanRoots {
-			if r.OSRoot != nil {
-				r.OSRoot.Close()
-			}
-		}
-	}()
+	defer func() { _ = scalibrfs.CloseAll(cfg.ScanRoots) }()
 	if len(cfg.ScanRoots) != 1 {
 		t.Fatalf("Expected 1 scan root, got %d", len(cfg.ScanRoots))
 	}
@@ -491,13 +486,7 @@ func TestGetScanConfig_DirsToSkip_IgnoreOutsideRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetScanConfig() failed: %v", err)
 	}
-	defer func() {
-		for _, r := range cfg.ScanRoots {
-			if r.OSRoot != nil {
-				r.OSRoot.Close()
-			}
-		}
-	}()
+	defer func() { _ = scalibrfs.CloseAll(cfg.ScanRoots) }()
 
 	wantDirsToSkip := []string{filepath.Join(tmpDir, "dir1")}
 	if diff := cmp.Diff(wantDirsToSkip, cfg.DirsToSkip); diff != "" {

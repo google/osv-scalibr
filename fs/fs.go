@@ -17,6 +17,7 @@ package fs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -83,6 +84,19 @@ func OpenRoot(path string) (*ScanRoot, error) {
 		return nil, err
 	}
 	return &ScanRoot{FS: r.FS().(FS), Path: path, OSRoot: r}, nil
+}
+
+// CloseAll closes the OSRoot of all given ScanRoots.
+func CloseAll(scanRoots []*ScanRoot) error {
+	var errs []error
+	for _, sr := range scanRoots {
+		if sr.OSRoot != nil {
+			if err := sr.OSRoot.Close(); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // RealFSScanRoots returns a one-element ScanRoot array representing the given

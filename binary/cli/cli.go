@@ -407,21 +407,13 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			globPattern := parts[1]
 			extractor, ok := pluginMap[pluginName]
 			if !ok {
-				for _, opened := range scanRoots {
-					if opened.OSRoot != nil {
-						opened.OSRoot.Close()
-					}
-				}
+				_ = scalibrfs.CloseAll(scanRoots)
 				return nil, fmt.Errorf("plugin %q specified in --extractor-override not found or not a filesystem extractor", pluginName)
 			}
 			g, err := glob.Compile(globPattern)
 			if err != nil {
 				// This should not happen due to ValidateFlags.
-				for _, opened := range scanRoots {
-					if opened.OSRoot != nil {
-						opened.OSRoot.Close()
-					}
-				}
+				_ = scalibrfs.CloseAll(scanRoots)
 				return nil, fmt.Errorf("invalid glob pattern %q in extractor override: %w", globPattern, err)
 			}
 			overrides = append(overrides, extractorOverride{
@@ -652,11 +644,7 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	for _, r := range scanRootPaths {
 		sr, err := scalibrfs.OpenRoot(r)
 		if err != nil {
-			for _, opened := range scanRoots {
-				if opened.OSRoot != nil {
-					opened.OSRoot.Close()
-				}
-			}
+			_ = scalibrfs.CloseAll(scanRoots)
 			return nil, err
 		}
 		scanRoots = append(scanRoots, sr)
