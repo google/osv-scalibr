@@ -260,6 +260,13 @@ func readStreamMarker(f *os.File) (val uint64, size uint32, typ uint32, data []b
 		return val, size, typ, nil, nil
 	}
 	if size > 0 {
+		// Cap grain payload size to prevent OOM from attacker-controlled uint32.
+		// Grain data is always <= grainBytes (max ~2 MB for spec-compliant images);
+		// 64 MB is a generous safety ceiling.
+		const maxMarkerDataBytes = 64 << 20 // 64 MB
+		if size > maxMarkerDataBytes {
+			return 0, 0, 0, nil, fmt.Errorf("stream marker data size %d exceeds safety limit %d", size, maxMarkerDataBytes)
+		}
 		data = make([]byte, size)
 		if _, err = io.ReadFull(f, data); err != nil {
 			return val, size, 0, nil, err
@@ -356,6 +363,12 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 			}
 		case 3: // FOOTER
 			if val > 0 {
+				// Cap footer metadata sectors: a footer header is exactly 512 bytes
+				// (1 sector). Any legitimate value is 1; cap at 4 to be safe.
+				const maxFooterSectors = 4
+				if val > maxFooterSectors {
+					return fmt.Errorf("footer marker sector count %d exceeds safety limit %d", val, maxFooterSectors)
+				}
 				meta := make([]byte, int64(val*SectorSize))
 				if _, err := io.ReadFull(f, meta); err != nil {
 					return fmt.Errorf("read footer meta: %w", err)
