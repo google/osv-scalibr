@@ -147,14 +147,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 			Name:     name,
 			Version:  version,
 			PURLType: purl.TypeGolang,
-			Location: extractor.PackageLocation{
-				Descriptor: &location.Location{
-					File: &location.File{
-						Path:       input.Path,
-						LineNumber: require.Syntax.Start.Line,
-					},
-				},
-			},
+			Location: extractor.LocationFromPathAndLine(input.Path, require.Syntax.Start.Line),
 		}
 	}
 
@@ -186,14 +179,7 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 				Name:     replace.New.Path,
 				Version:  strings.TrimPrefix(replace.New.Version, "v"),
 				PURLType: purl.TypeGolang,
-				Location: extractor.PackageLocation{
-					Descriptor: &location.Location{
-						File: &location.File{
-							Path:       input.Path,
-							LineNumber: replace.Syntax.Start.Line,
-						},
-					},
-				},
+				Location: extractor.LocationFromPathAndLine(input.Path, replace.Syntax.Start.Line),
 			}
 		}
 	}

@@ -55,6 +55,7 @@ import (
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	velesherokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
+	veleshttp "github.com/google/osv-scalibr/veles/secrets/http"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
@@ -327,8 +328,21 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case veleshttp.BasicAuthCredentials:
+		return httpBasicAuthToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func httpBasicAuthToProto(s veleshttp.BasicAuthCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HttpBasicAuth{
+			HttpBasicAuth: &spb.SecretData_HTTPBasicAuth{
+				Username: s.Username,
+				Password: s.Password,
+			},
+		},
 	}
 }
 
@@ -1487,6 +1501,12 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_SquareOauthApplicationSecret:
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
+		}, nil
+	case *spb.SecretData_HttpBasicAuth:
+		creds := s.GetHttpBasicAuth()
+		return veleshttp.BasicAuthCredentials{
+			Username: creds.GetUsername(),
+			Password: creds.GetPassword(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

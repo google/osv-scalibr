@@ -24,37 +24,18 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Name of the extractor
 const Name = "containers/containerd-runtime"
 
-// Config is the configuration for the Extractor.
-type Config struct{}
-
-// DefaultConfig returns the default configuration for the containerd extractor.
-func DefaultConfig() Config {
-	return Config{}
-}
-
 // Extractor implements the containerd runtime extractor.
 type Extractor struct{}
 
 // New creates a new containerd client and returns a containerd container package extractor.
-// No op for non-Linux.
-func New(cfg Config) standalone.Extractor {
-	return &Extractor{}
-}
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() standalone.Extractor {
-	return New(DefaultConfig())
-}
-
-// Config returns the configuration of the extractor.
-func (e Extractor) Config() Config {
-	return Config{}
-}
+func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }

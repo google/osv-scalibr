@@ -99,6 +99,19 @@ func LocationFromPath(path string) PackageLocation {
 	return PackageLocation{Descriptor: &loc}
 }
 
+// LocationFromPathAndLine returns a PackageLocation struct based on
+// the file path of the descriptor and the line number.
+func LocationFromPathAndLine(path string, line int) PackageLocation {
+	return PackageLocation{
+		Descriptor: &location.Location{
+			File: &location.File{
+				Path:       path,
+				LineNumber: line,
+			},
+		},
+	}
+}
+
 // PURL returns the Package URL of this package.
 func (p *Package) PURL() *purl.PackageURL {
 	return toPURL(p)

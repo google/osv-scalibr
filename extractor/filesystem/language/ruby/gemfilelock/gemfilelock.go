@@ -66,17 +66,25 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return slices.Contains([]string{"Gemfile.lock", "gems.locked"}, filepath.Base(api.Path()))
 }
 
+// specInfo contains the line content and line number for a spec in the lockfile.
+type specInfo struct {
+	lineContent string
+	lineNumber  int
+}
+
 type gemlockSection struct {
 	name     string
 	revision string
-	specs    []string
+	specs    []specInfo
 }
 
 func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, error) {
 	sections := []*gemlockSection{}
 	var currentSection *gemlockSection
 	scanner := bufio.NewScanner(input.Reader)
+	lineNumber := 0
 	for scanner.Scan() {
+		lineNumber++
 		if err := scanner.Err(); err != nil {
 			return nil, fmt.Errorf("error while scanning: %w", err)
 		}
@@ -96,7 +104,10 @@ func parseLockfileSections(input *filesystem.ScanInput) ([]*gemlockSection, erro
 			if currentSection == nil {
 				return nil, errors.New("invalid lockfile: specs entry before a section declaration")
 			}
-			currentSection.specs = append(currentSection.specs, strings.TrimPrefix(line, "    "))
+			currentSection.specs = append(currentSection.specs, specInfo{
+				lineContent: strings.TrimPrefix(line, "    "),
+				lineNumber:  lineNumber,
+			})
 		} else if strings.HasPrefix(line, "  revision: ") {
 			// The commit for the given section. Always stored at an indentation level of 2.
 			if currentSection == nil {
@@ -127,9 +138,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 		for _, s := range section.specs {
-			m := nameVersionRegexp.FindStringSubmatch(s)
+			m := nameVersionRegexp.FindStringSubmatch(s.lineContent)
 			if len(m) < 3 || m[1] == "" || m[2] == "" {
-				log.Errorf("Invalid spec line: %s", s)
+				log.Errorf("Invalid spec line: %s", s.lineContent)
 				continue
 			}
 			name, version := m[1], m[2]
@@ -137,7 +148,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 				Name:     name,
 				Version:  version,
 				PURLType: purl.TypeGem,
-				Location: extractor.LocationFromPath(input.Path),
+				Location: extractor.LocationFromPathAndLine(input.Path, s.lineNumber),
 			}
 			if section.revision != "" {
 				p.SourceCode = &extractor.SourceCodeIdentifier{
