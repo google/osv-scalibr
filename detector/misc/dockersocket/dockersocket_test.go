@@ -635,7 +635,7 @@ func TestDetectorInterface(t *testing.T) {
 
 	reqs := d.Requirements()
 	if reqs.OS != plugin.OSUnix {
-		t.Errorf("Requirements().OS = %q, want %q", reqs.OS, plugin.OSUnix)
+		t.Errorf("Requirements().OS = %v, want %v", reqs.OS, plugin.OSUnix)
 	}
 
 	// Test DetectedFinding

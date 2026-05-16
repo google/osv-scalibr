@@ -33,6 +33,8 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -56,20 +58,6 @@ type CtrdClient interface {
 	Close() error
 }
 
-// Config is the configuration for the Extractor.
-type Config struct {
-	// ContainerdSocketAddr is the local path to the containerd socket.
-	// Used further to crete a client for containerd API.
-	ContainerdSocketAddr string
-}
-
-// DefaultConfig returns the default configuration for the containerd extractor.
-func DefaultConfig() Config {
-	return Config{
-		ContainerdSocketAddr: defaultContainerdSocketAddr,
-	}
-}
-
 // Extractor implements the containerd runtime extractor.
 type Extractor struct {
 	client              CtrdClient
@@ -79,18 +67,19 @@ type Extractor struct {
 }
 
 // New creates a new containerd client and returns a containerd container inventory extractor.
-func New(cfg Config) standalone.Extractor {
+func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
+	socketAddr := defaultContainerdSocketAddr
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.ContainerdRuntimeConfig { return c.GetContainerdRuntime() })
+	if specific.GetSocketAddr() != "" {
+		socketAddr = specific.GetSocketAddr()
+	}
+
 	return &Extractor{
 		client:              nil,
-		socketAddr:          cfg.ContainerdSocketAddr,
+		socketAddr:          socketAddr,
 		checkIfSocketExists: true,
 		initNewCtrdClient:   true,
-	}
-}
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() standalone.Extractor {
-	return New(DefaultConfig())
+	}, nil
 }
 
 // NewWithClient creates a new extractor with the provided containerd client.
@@ -102,13 +91,6 @@ func NewWithClient(cli CtrdClient, socketAddr string) *Extractor {
 		socketAddr:          socketAddr,
 		checkIfSocketExists: false, // Not needed if client already provided.
 		initNewCtrdClient:   false, // Not needed if client already provided.
-	}
-}
-
-// Config returns the configuration of the extractor.
-func (e Extractor) Config() Config {
-	return Config{
-		ContainerdSocketAddr: e.socketAddr,
 	}
 }
 

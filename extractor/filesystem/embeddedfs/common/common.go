@@ -93,12 +93,12 @@ func normalizePath(p string) string {
 	return p
 }
 
-// filterEntriesFat32 removes ".", "..", and "lost+found" from FAT32 entries.
+// filterEntriesFat32 removes ".", "..", "lost+found", and "/"-containing entries from FAT32 entries.
 func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
 	var filtered []os.FileInfo
 	for _, e := range entries {
 		name := e.Name()
-		if name == "." || name == ".." || name == "lost+found" {
+		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") {
 			continue
 		}
 		filtered = append(filtered, e)
@@ -106,12 +106,12 @@ func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
 	return filtered
 }
 
-// filterEntriesExt removes ".", "..", and "lost+found" from ext4 entries.
+// filterEntriesExt removes ".", "..", "lost+found", and "/"-containing entries from ext4 entries.
 func filterEntriesExt(entries []fs.DirEntry) []fs.DirEntry {
 	var filtered []fs.DirEntry
 	for _, e := range entries {
 		name := e.Name()
-		if name == "." || name == ".." || name == "lost+found" {
+		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") {
 			continue
 		}
 		filtered = append(filtered, e)
@@ -119,12 +119,12 @@ func filterEntriesExt(entries []fs.DirEntry) []fs.DirEntry {
 	return filtered
 }
 
-// filterEntriesNtfs removes ".", "..", and "$"-prefixed entries from NTFS entries.
+// filterEntriesNtfs removes ".", "..", "$"-prefixed, and "/"-containing entries from NTFS entries.
 func filterEntriesNtfs(entries []*parser.FileInfo) []*parser.FileInfo {
 	var filtered []*parser.FileInfo
 	for _, e := range entries {
 		name := e.Name
-		if name == "" || name == "." || name == ".." || strings.HasPrefix(name, "$") {
+		if name == "" || name == "." || name == ".." || strings.HasPrefix(name, "$") || strings.Contains(name, "/") {
 			continue
 		}
 		filtered = append(filtered, e)
@@ -308,6 +308,14 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 	return nil
 }
 
+// isInvalidEntry checks for ".", "..", "$"-prefixed, and "/"-containing entries in ExFAT.
+func isInvalidEntry(entry string) bool {
+	if entry == "" || entry == "." || entry == ".." || strings.HasPrefix(entry, "$") || strings.Contains(entry, "/") {
+		return true
+	}
+	return false
+}
+
 // ExtractAllRecursiveExFAT extracts all files from an exFAT filesystem to a temporary directory recursively.
 func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 	er := exfat.NewExfatReader(section)
@@ -329,6 +337,10 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 		node := nodes[relPath]
 		resPath := strings.ReplaceAll(relPath, "\\", string(os.PathSeparator))
 		outPath := filepath.Join(dst, resPath)
+
+		if isInvalidEntry(resPath) {
+			continue
+		}
 
 		sde := node.StreamDirectoryEntry()
 		if node.IsDirectory() {
