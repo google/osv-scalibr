@@ -41,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	pl "github.com/google/osv-scalibr/plugin/list"
+	plbin "github.com/google/osv-scalibr/plugin/list/binary"
 	"github.com/spdx/tools-golang/spdx/v2/common"
 	"google.golang.org/protobuf/encoding/prototext"
 
@@ -527,6 +528,8 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 
 // TODO(b/279413691): Allow commas in argument names.
 func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
+	plbin.EnableAdditionalPlugins()
+
 	result := make([]plugin.Plugin, 0, len(f.PluginsToRun))
 	pluginNames := multiStringToList(f.PluginsToRun)
 	pluginCFG, err := pluginCFGFromFlags(f.PluginCFG)
