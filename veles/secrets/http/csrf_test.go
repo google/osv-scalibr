@@ -68,7 +68,7 @@ func TestCSRFTokenDetector_truePositives(t *testing.T) {
 			name: "nginx_log",
 			file: "logs/nginx/access.log",
 			want: []veles.Secret{
-				http.CSRFToken{Value: "nginx_csrf_token_98765"}
+				http.CSRFToken{Value: "nginx_csrf_token_98765"},
 			},
 		},
 		// Synthetic examples
