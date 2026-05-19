@@ -164,7 +164,7 @@ curl -sS 'https://httpbin.org/get' \
 }
 
 func TestBearerDetector_trueNegatives(t *testing.T) {
-	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBasicAuthDetector()})
+	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBearerDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
