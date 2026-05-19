@@ -26,7 +26,7 @@ var (
 	//
 	// ref: https://docs.angularjs.org/api/ng/service/$http#cross-site-request-forgery-xsrf-protection
 	csrfPattern = regexp.MustCompile(
-		`(?i)(?:csrf|xsrf)[a-z0-9_-]*(?:token)?["']?(?:\s+value\s*=\s*|\s*[:=]\s*)["']?([a-zA-Z0-9+\/=\-_]{16,128})`,
+		`(?i)\b(?:csrf|xsrf|x-xsrf|x-csrf|csrfmiddleware)-?(?:token)?\b["']?(?:\s+value\s*=\s*["']|\s*=\s*["']|\s*:\s*["']?)([a-zA-Z0-9+\/=\-_]{16,128})`,
 	)
 )
 

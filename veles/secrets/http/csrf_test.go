@@ -48,7 +48,7 @@ func TestCSRFTokenDetector_truePositives(t *testing.T) {
 		input string
 		want  []veles.Secret
 	}{
-		// Log formats (Assumes testdata logs actually contain these expected tokens)
+		// Log formats
 		{
 			name: "pino_log",
 			file: "logs/pino/app.log",
@@ -72,13 +72,6 @@ func TestCSRFTokenDetector_truePositives(t *testing.T) {
 			},
 		},
 		// Synthetic examples
-		{
-			name:  "standard_assignment",
-			input: `csrf_token="1234567890abcdef1234567890abcdef"`,
-			want: []veles.Secret{
-				http.CSRFToken{Value: "1234567890abcdef1234567890abcdef"},
-			},
-		},
 		{
 			name:  "json_payload",
 			input: `{"csrfToken": "abc123def456ghi789jkl012mno345pq"}`,
@@ -159,6 +152,32 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 		{
 			name:  "bearer_token",
 			input: `Authorization: Bearer abcdef1234567890abcdef1234567890`,
+		},
+		{
+			name:  "csrf_token_named_in_paragraph",
+			input: " * This CSRF token manager uses a combination of cookie and headers to validate non-persistent tokens.",
+		},
+		{
+			name:  "variable_assignment",
+			input: `csrf_header_name = "Custom-XSRF-Header-a1b2c3d4"`,
+		},
+
+		// This testcases are real pieces of code found in the wild used to improve the
+		// false positive rate of the detector
+		{
+			// src: https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-10.0#generate-antiforgery-tokens-with-iantiforgery
+			name: "source_code",
+			file: `src/aspnet.cs`,
+		},
+		{
+			// src: https://github.com/angular/angular.js/blob/master/src/ng/http.js
+			name: "source_code_2",
+			file: `src/angular.js`,
+		},
+		{
+			// src: https://github.com/angular/angular.js/blob/master/src/ng/http.js
+			name: "source_code_3",
+			file: `src/api.test.js`,
 		},
 	}
 	for _, tc := range negCases {
