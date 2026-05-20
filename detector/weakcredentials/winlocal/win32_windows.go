@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	advapiDLL    = syscall.NewLazyDLL("Advapi32.dll")
+	advapiDLL    = windows.NewLazySystemDLL("advapi32.dll")
 	regSaveKeyEx = advapiDLL.NewProc("RegSaveKeyExW")
 )
 
