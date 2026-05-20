@@ -18,29 +18,59 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
 )
 
-var (
-	// csrfPattern matches CSRF tokens in HTTP dumps, HTML bodies, logs
-	//
-	// ref: https://docs.angularjs.org/api/ng/service/$http#cross-site-request-forgery-xsrf-protection
-	csrfPattern = regexp.MustCompile(
-		`(?i)\b(?:csrf|xsrf|x-xsrf|x-csrf|csrfmiddleware)-?(?:token)?\b["']?(?:\s+value\s*=\s*["']|\s*=\s*["']|\s*:\s*["']?)([a-zA-Z0-9+\/=\-_]{16,128})`,
-	)
-)
+// preFilter is used to quickly check if the byte slice contains potential target keywords.
+var preFilter = regexp.MustCompile(`(?i)(?:x-)?(?:csrf|xsrf)`)
 
-// NewCSRFTokenDetector extract the CSRF token from the provided input
+var csrfPatterns = []*regexp.Regexp{
+	// Quoted Assignments (JSON, Configs, standard variables).
+	regexp.MustCompile(`(?i)(?:x-)?(?:csrf|xsrf)(?:[a-z0-9_.-]*token)?["']?\s*[:=]\s*["']([a-zA-Z0-9+/=_-]{16,128})["']`),
+
+	// Unquoted HTTP Headers (Log dumps).
+	regexp.MustCompile(`(?im)^[ \t]*(?:x-)?(?:csrf|xsrf)(?:[a-z0-9_.-]*token)?:\s+([a-zA-Z0-9+/=_-]{16,128})\b`),
+
+	// HTML Tag: 'name' comes before 'value'.
+	regexp.MustCompile(`(?i)<input[^>]+name=["'][^"'>]*(?:csrf|xsrf)[^"'>]*["'][^>]+value=["']([a-zA-Z0-9+/=_-]{16,128})["']`),
+
+	// HTML Tag: 'value' comes before 'name'.
+	regexp.MustCompile(`(?i)<input[^>]+value=["']([a-zA-Z0-9+/=_-]{16,128})["'][^>]+name=["'][^"'>]*(?:csrf|xsrf)[^"'>]*["']`),
+}
+
+// csrfTokenDetector scans file contents for hardcoded CSRF/XSRF tokens.
+type csrfTokenDetector struct{}
+
+// NewCSRFTokenDetector creates a new instance of the CSRFTokenDetector.
 func NewCSRFTokenDetector() veles.Detector {
-	return simpletoken.Detector{
-		MaxLen: 1000,
-		Re:     csrfPattern,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			matches := csrfPattern.FindSubmatch(b)
-			if len(matches) < 2 {
-				return nil, false
-			}
-			return CSRFToken{string(matches[1])}, true
-		},
+	return &csrfTokenDetector{}
+}
+
+// Detect scans the input byte slice for CSRF tokens using focused regex patterns.
+func (d *csrfTokenDetector) Detect(data []byte) ([]veles.Secret, []int) {
+	// Bypass full regex execution if the keywords aren't present at all.
+	if !preFilter.Match(data) {
+		return nil, nil
 	}
+
+	var secrets []veles.Secret
+	var indices []int
+
+	for _, pattern := range csrfPatterns {
+		for _, match := range pattern.FindAllSubmatchIndex(data, -1) {
+			if len(match) < 4 {
+				continue
+			}
+			secrets = append(secrets, CSRFToken{
+				Value: string(data[match[2]:match[3]]),
+			})
+			indices = append(indices, match[0])
+		}
+	}
+
+	return secrets, indices
+}
+
+// MaxSecretLen defines the maximum expected token size.
+func (d *csrfTokenDetector) MaxSecretLen() uint32 {
+	return 300
 }

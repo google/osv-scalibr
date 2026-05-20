@@ -87,6 +87,13 @@ func TestCSRFTokenDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name:  "html_hidden_input_2",
+			input: `<input type="hidden" value="django1234567890abcdefghijklmnop" name="csrfmiddlewaretoken">`,
+			want: []veles.Secret{
+				http.CSRFToken{Value: "django1234567890abcdefghijklmnop"},
+			},
+		},
+		{
 			name:  "xsrf_variant",
 			input: `XSRF-TOKEN: 9876543210fedcba9876543210fedcba`,
 			want: []veles.Secret{
@@ -161,23 +168,27 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 			name:  "variable_assignment",
 			input: `csrf_header_name = "Custom-XSRF-Header-a1b2c3d4"`,
 		},
-
-		// This testcases are real pieces of code found in the wild used to improve the
+		// These testcases are real pieces of code found in the wild used to improve the
 		// false positive rate of the detector
 		{
 			// src: https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-10.0#generate-antiforgery-tokens-with-iantiforgery
-			name: "source_code",
+			name: "aspnet_example",
 			file: `src/aspnet.cs`,
 		},
 		{
 			// src: https://github.com/angular/angular.js/blob/master/src/ng/http.js
-			name: "source_code_2",
-			file: `src/angular.js`,
+			name: "angular_src_code",
+			file: `src/http.js`,
 		},
 		{
-			// src: https://github.com/angular/angular.js/blob/master/src/ng/http.js
-			name: "source_code_3",
+			// src: https://github.com/decred/politeiagui/blob/master/plugins-structure/packages/core/src/api/api.test.js
+			name: "politeiagui_test",
 			file: `src/api.test.js`,
+		},
+		{
+			// src: https://github.com/freeCodeCamp/freeCodeCamp/blob/main/client/src/utils/ajax.ts
+			name: "freeCodeCamp_utils",
+			file: `src/test.js`,
 		},
 	}
 	for _, tc := range negCases {
