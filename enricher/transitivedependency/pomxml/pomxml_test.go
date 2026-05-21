@@ -15,6 +15,8 @@
 package pomxml_test
 
 import (
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 
@@ -22,6 +24,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/extractor"
@@ -433,5 +436,185 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 	})
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
+	}
+}
+
+func TestEnricher_Enrich_LocalModules(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create root pom.xml
+	err := os.WriteFile(filepath.Join(tempDir, "pom.xml"), []byte(`
+	<project>
+		<groupId>org.example</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+		<packaging>pom</packaging>
+		<modules>
+			<module>module-a</module>
+			<module>module-b</module>
+		</modules>
+	</project>
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create module-a/pom.xml
+	err = os.Mkdir(filepath.Join(tempDir, "module-a"), 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(filepath.Join(tempDir, "module-a", "pom.xml"), []byte(`
+	<project>
+		<parent>
+			<groupId>org.example</groupId>
+			<artifactId>parent</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</parent>
+		<artifactId>module-a</artifactId>
+		<dependencies>
+			<dependency>
+				<groupId>org.example</groupId>
+				<artifactId>module-b</artifactId>
+				<version>1.0-SNAPSHOT</version>
+			</dependency>
+		</dependencies>
+	</project>
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create module-b/pom.xml
+	err = os.Mkdir(filepath.Join(tempDir, "module-b"), 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(filepath.Join(tempDir, "module-b", "pom.xml"), []byte(`
+	<project>
+		<parent>
+			<groupId>org.example</groupId>
+			<artifactId>parent</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</parent>
+		<artifactId>module-b</artifactId>
+		<dependencies>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.13</version>
+			</dependency>
+		</dependencies>
+	</project>
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set up mock server
+	srv := clienttest.NewMockHTTPServer(t)
+
+	// Mock for module-b versions (needed because user kept registry check in GetVersions)
+	srv.SetResponse(t, "org/example/module-b/maven-metadata.xml", []byte(`
+	<metadata>
+		<groupId>org.example</groupId>
+		<artifactId>module-b</artifactId>
+		<versioning>
+			<versions>
+				<version>1.0-SNAPSHOT</version>
+			</versions>
+		</versioning>
+	</metadata>
+	`))
+
+	// Mock for junit versions
+	srv.SetResponse(t, "junit/junit/maven-metadata.xml", []byte(`
+	<metadata>
+		<groupId>junit</groupId>
+		<artifactId>junit</artifactId>
+		<versioning>
+			<versions>
+				<version>4.13</version>
+			</versions>
+		</versioning>
+	</metadata>
+	`))
+
+	// Mock for junit POM
+	srv.SetResponse(t, "junit/junit/4.13/junit-4.13.pom", []byte(`
+	<project>
+		<groupId>junit</groupId>
+		<artifactId>junit</artifactId>
+		<version>4.13</version>
+	</project>
+	`))
+
+	apiClient, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("failed to create enricher: %v", err)
+	}
+
+	enrichy.(*pomxml.Enricher).MavenClient = apiClient
+	// Use MavenRegistryClient for resolution too
+	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient)
+
+	// Prepare inventory
+	inv := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "org.example:module-b",
+				Version:  "1.0-SNAPSHOT",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("module-a/pom.xml"),
+				Plugins:  []string{"java/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "module-b",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+			{
+				Name:     "org.example:parent",
+				Version:  "1.0-SNAPSHOT",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("pom.xml"),
+				Plugins:  []string{"java/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "parent",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+		},
+	}
+
+	input := enricher.ScanInput{
+		ScanRoot: &scalibrfs.ScanRoot{
+			Path: tempDir,
+			FS:   scalibrfs.DirFS(tempDir),
+		},
+	}
+
+	err = enrichy.Enrich(t.Context(), &input, &inv)
+	if err != nil {
+		t.Fatalf("failed to enrich: %v", err)
+	}
+
+	// Verify that junit was resolved as a transitive dependency
+	found := false
+	for _, pkg := range inv.Packages {
+		if pkg.Name == "junit:junit" && pkg.Version == "4.13" {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("Expected to find transitive dependency junit:junit:4.13 in inventory, but it was missing")
 	}
 }
