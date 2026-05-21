@@ -1,0 +1,22 @@
+<project>
+  <!-- This file tests that multiple dependencies with the same GroupId and ArtifactId but different classifiers are not deduplicated and are all extracted as distinct packages. -->
+  <dependencies>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-lib</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-lib</artifactId>
+      <version>1.0.0</version>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-lib</artifactId>
+      <version>1.0.0</version>
+      <classifier>tests</classifier>
+    </dependency>
+  </dependencies>
+</project>

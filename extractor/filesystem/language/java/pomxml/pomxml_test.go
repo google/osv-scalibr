@@ -405,6 +405,52 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "multiple classifiers",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/with-multiple-classifiers.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "com.example:my-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPath("testdata/with-multiple-classifiers.xml"),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "my-lib",
+						GroupID:      "com.example",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "com.example:my-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPath("testdata/with-multiple-classifiers.xml"),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "my-lib",
+						GroupID:      "com.example",
+						Classifier:   "sources",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "com.example:my-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPath("testdata/with-multiple-classifiers.xml"),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "my-lib",
+						GroupID:      "com.example",
+						Classifier:   "tests",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
