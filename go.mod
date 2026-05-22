@@ -11,7 +11,7 @@ require (
 	deps.dev/util/resolve v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/semver v0.0.0-20260422013440-90c27f84dd6f
 	github.com/BurntSushi/toml v1.6.0
-	github.com/CycloneDX/cyclonedx-go v0.10.0
+	github.com/CycloneDX/cyclonedx-go v0.11.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
 	github.com/aead/serpent v0.0.0-20160714141033-fba169763ea6
 	github.com/bazelbuild/buildtools v0.0.0-20260319080235-05d2ebe49b0f
