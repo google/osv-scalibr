@@ -1,0 +1,20 @@
+<project>
+  <!-- This file tests the behavior when multiple dependencies with the same GroupID and ArtifactID
+       but different classifiers exist. SCALIBR currently only cares about de-duping by GroupID and
+       ArtifactID, so the classifiers are ignored.
+       That means the second package will overwrite the first, and the final line number will be
+       pointing to the second dependency. -->
+  <dependencies>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-lib</artifactId>
+      <classifier>sources</classifier>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-lib</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+</project>
