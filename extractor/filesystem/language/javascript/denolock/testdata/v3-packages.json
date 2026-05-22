@@ -1,0 +1,15 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "npm:chalk@5": "npm:chalk@5.4.1"
+    },
+    "npm": {
+      "chalk@5.4.1": {
+        "integrity": "sha512-chalk-integrity",
+        "dependencies": {}
+      }
+    }
+  },
+  "remote": {}
+}
