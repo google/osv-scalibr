@@ -18,8 +18,8 @@ import (
 	"regexp"
 	"testing"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	el "github.com/google/osv-scalibr/extractor/standalone/list"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 var (
@@ -29,7 +29,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			p, err := initer(&cpb.PluginConfig{})
+			p, err := initer(config.DefaultPluginConfig())
 			if err != nil {
 				t.Fatalf("initer(): %v", err)
 			}
@@ -37,5 +37,12 @@ func TestPluginNamesValid(t *testing.T) {
 				t.Errorf("Invalid plugin name %q", p.Name())
 			}
 		}
+	}
+}
+
+func TestExtractorsFromNameNilConfig(t *testing.T) {
+	_, err := el.ExtractorsFromName("default", nil)
+	if err != nil {
+		t.Errorf("ExtractorsFromName(\"default\", nil) failed: %v", err)
 	}
 }

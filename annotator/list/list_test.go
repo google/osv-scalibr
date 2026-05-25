@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	al "github.com/google/osv-scalibr/annotator/list"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 var (
@@ -29,7 +29,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range al.All {
 		for _, initer := range initers {
-			p, err := initer(&cpb.PluginConfig{})
+			p, err := initer(config.DefaultPluginConfig())
 			if err != nil {
 				t.Fatalf("initer(): %v", err)
 			}
@@ -37,5 +37,12 @@ func TestPluginNamesValid(t *testing.T) {
 				t.Errorf("Invalid plugin name %q", p.Name())
 			}
 		}
+	}
+}
+
+func TestAnnotatorsFromNameNilConfig(t *testing.T) {
+	_, err := al.AnnotatorsFromName("default", nil)
+	if err != nil {
+		t.Errorf("AnnotatorsFromName(\"default\", nil) failed: %v", err)
 	}
 }
