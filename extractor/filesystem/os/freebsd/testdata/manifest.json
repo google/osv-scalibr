@@ -1,0 +1,20 @@
+{
+  "name": "curl",
+  "origin": "ftp/curl",
+  "version": "8.4.0",
+  "comment": "Command line tool and library for transferring data with URLs",
+  "maintainer": "sunpoet@FreeBSD.org",
+  "www": "https://curl.se/",
+  "abi": "FreeBSD:14:amd64",
+  "arch": "freebsd:14:x86:64",
+  "prefix": "/usr/local",
+  "flatsize": 1234567,
+  "categories": ["ftp", "www"],
+  "licenses": ["MIT"],
+  "deps": {
+    "ca_root_nss": {
+      "origin": "security/ca_root_nss",
+      "version": "3.93"
+    }
+  }
+}

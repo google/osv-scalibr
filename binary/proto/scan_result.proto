@@ -151,6 +151,7 @@ message Package {
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
     SpackPackageMetadata spack_metadata = 67;
+    FreeBSDPackageMetadata freebsd_metadata = 70;
   }
 
   // Signals to indicate that specific vulnerabilities are not applicable to
@@ -501,6 +502,16 @@ message SpackPackageMetadata {
   string platform_os = 2;
   string platform_architecture = 3;
   string hash = 4;
+}
+
+// The additional data found in FreeBSD pkg packages.
+message FreeBSDPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string origin = 3;
+  string arch = 4;
+  string os_id = 5;
+  string os_version_id = 6;
 }
 
 // The additional data found in MODULE packages.

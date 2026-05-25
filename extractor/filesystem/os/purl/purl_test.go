@@ -22,6 +22,7 @@ import (
 	cosmeta "github.com/google/osv-scalibr/extractor/filesystem/os/cos/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
@@ -154,6 +155,59 @@ func TestMakePackageURLDebian(t *testing.T) {
 			got := ospurl.MakePackageURL(name, version, tt.purlType, tt.metadata)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("ospurl.MakePackageURL(%v, %v, %v, %v): unexpected PURL (-want +got):\n%s", name, version, tt.purlType, tt.metadata, diff)
+			}
+		})
+	}
+}
+
+func TestMakePackageURLFreeBSD(t *testing.T) {
+	pkgName := "curl"
+	pkgVersion := "8.4.0"
+
+	tests := []struct {
+		desc     string
+		metadata *freebsdmeta.Metadata
+		want     *purl.PackageURL
+	}{
+		{
+			desc: "all_fields_present",
+			metadata: &freebsdmeta.Metadata{
+				PackageName:    "curl",
+				PackageVersion: "8.4.0",
+				Origin:         "ftp/curl",
+				Arch:           "freebsd:14:x86:64",
+				OSID:           "freebsd",
+				OSVersionID:    "14.0",
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeFreeBSD,
+				Name:    "curl",
+				Version: "8.4.0",
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Arch:   "freebsd:14:x86:64",
+					purl.Distro: "14.0",
+					purl.Origin: "ftp/curl",
+				}),
+			},
+		},
+		{
+			desc: "minimal_fields",
+			metadata: &freebsdmeta.Metadata{
+				PackageName: "curl",
+			},
+			want: &purl.PackageURL{
+				Type:       purl.TypeFreeBSD,
+				Name:       "curl",
+				Version:    "8.4.0",
+				Qualifiers: purl.QualifiersFromMap(map[string]string{}),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			got := ospurl.MakePackageURL(pkgName, pkgVersion, purl.TypeFreeBSD, tt.metadata)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("ospurl.MakePackageURL(%v): unexpected PURL (-want +got):\n%s", tt.metadata, diff)
 			}
 		})
 	}
