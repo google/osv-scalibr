@@ -19,6 +19,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -196,7 +197,7 @@ func (e Extractor) validateSQLiteSchema(ctx context.Context, db *sql.DB) error {
 	err := db.QueryRowContext(ctx, "SELECT name FROM sqlite_master WHERE type='table' AND name='packages'").Scan(&tableName)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("database does not contain packages table")
+			return errors.New("database does not contain packages table")
 		}
 		return fmt.Errorf("failed to query database schema: %w", err)
 	}

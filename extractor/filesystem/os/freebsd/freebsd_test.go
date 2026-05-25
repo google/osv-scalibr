@@ -129,6 +129,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "valid manifest json",
 			setup: func(t *testing.T) (string, string) {
+				t.Helper()
 				return "testdata", "manifest.json"
 			},
 			wantPackages: []*extractor.Package{
@@ -149,6 +150,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "valid sqlite database",
 			setup: func(t *testing.T) (string, string) {
+				t.Helper()
 				tmpDir := t.TempDir()
 				dbDir := filepath.Join(tmpDir, "var", "db", "pkg")
 				if err := os.MkdirAll(dbDir, 0o755); err != nil {
@@ -190,6 +192,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "invalid sqlite database",
 			setup: func(t *testing.T) (string, string) {
+				t.Helper()
 				tmpDir := t.TempDir()
 				dbDir := filepath.Join(tmpDir, "var", "db", "pkg")
 				if err := os.MkdirAll(dbDir, 0o755); err != nil {
@@ -213,6 +216,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "invalid json returns error",
 			setup: func(t *testing.T) (string, string) {
+				t.Helper()
 				tmpDir := t.TempDir()
 				manifestPath := filepath.Join(tmpDir, "+MANIFEST")
 				if err := os.WriteFile(manifestPath, []byte("not json"), 0o644); err != nil {
@@ -225,6 +229,7 @@ func TestExtract(t *testing.T) {
 		{
 			name: "empty manifest returns no packages",
 			setup: func(t *testing.T) (string, string) {
+				t.Helper()
 				tmpDir := t.TempDir()
 				manifestPath := filepath.Join(tmpDir, "+MANIFEST")
 				if err := os.WriteFile(manifestPath, []byte("{}"), 0o644); err != nil {
