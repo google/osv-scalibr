@@ -1,0 +1,4 @@
+github.com/BurntSushi/toml v1.0.0 h1:dtDWrepsVPfW9H/4y7dDgFc2MBUSeJhlaDtK13CxFlU=
+github.com/BurntSushi/toml v1.0.0/go.mod h1:CxXYINrC8qfRyfj0fadeB1jgVPLdEjo/GtERr9ovY3Y=
+gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuZc=
+gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbiiJBmuZQgRrOZqJE7N9LN2e6n29dpMGmta054=
