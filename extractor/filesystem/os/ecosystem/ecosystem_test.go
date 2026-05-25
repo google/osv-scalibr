@@ -318,76 +318,42 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "openEuler",
 		},
 		{
-			desc: "AlmaLinux_9",
+			desc: "SUSE_with_version",
 			metadata: &rpmmeta.Metadata{
-				OSID:        "almalinux",
-				OSVersionID: "9",
+				OSID:        "sles",
+				OSVersionID: "15.5",
 			},
-			want: "AlmaLinux:9",
+			want: "SUSE:15.5",
 		},
 		{
-			// Real VERSION_ID from almalinux:9.0 docker image is "9.0" not "9".
-			// OSV.dev ALSA advisories use "AlmaLinux:9" (major only).
-			desc: "AlmaLinux_9_point_release",
+			desc: "SUSE_no_version",
 			metadata: &rpmmeta.Metadata{
-				OSID:        "almalinux",
-				OSVersionID: "9.0",
+				OSID: "sles",
 			},
-			want: "AlmaLinux:9",
+			want: "SUSE",
 		},
 		{
-			desc: "AlmaLinux_9_point_release_late",
+			desc: "Azure_Linux_azurelinux_with_version",
 			metadata: &rpmmeta.Metadata{
-				OSID:        "almalinux",
-				OSVersionID: "9.8",
+				OSID:        "azurelinux",
+				OSVersionID: "3.0",
 			},
-			want: "AlmaLinux:9",
+			want: "Azure Linux:3.0",
 		},
 		{
-			desc: "AlmaLinux_8",
+			desc: "Azure_Linux_mariner_with_version",
 			metadata: &rpmmeta.Metadata{
-				OSID:        "almalinux",
-				OSVersionID: "8",
+				OSID:        "mariner",
+				OSVersionID: "2.0",
 			},
-			want: "AlmaLinux:8",
+			want: "Azure Linux:2.0",
 		},
 		{
-			desc: "AlmaLinux_8_point_release",
+			desc: "Azure_Linux_no_version",
 			metadata: &rpmmeta.Metadata{
-				OSID:        "almalinux",
-				OSVersionID: "8.9",
+				OSID: "azurelinux",
 			},
-			want: "AlmaLinux:8",
-		},
-		{
-			desc: "AlmaLinux_no_version",
-			metadata: &rpmmeta.Metadata{
-				OSID: "almalinux",
-			},
-			want: "AlmaLinux",
-		},
-		{
-			desc: "Mageia_9",
-			metadata: &rpmmeta.Metadata{
-				OSID:        "mageia",
-				OSVersionID: "9",
-			},
-			want: "Mageia:9",
-		},
-		{
-			desc: "Mageia_8",
-			metadata: &rpmmeta.Metadata{
-				OSID:        "mageia",
-				OSVersionID: "8",
-			},
-			want: "Mageia:8",
-		},
-		{
-			desc: "Mageia_no_version",
-			metadata: &rpmmeta.Metadata{
-				OSID: "mageia",
-			},
-			want: "Mageia",
+			want: "Azure Linux",
 		},
 		{
 			desc:     "OS ID not present",
@@ -724,6 +690,69 @@ func TestMakePackageURLRPM(t *testing.T) {
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
 					purl.Epoch:     "1",
 					purl.Distro:    "32",
+					purl.SourceRPM: source,
+				}),
+			},
+		},
+		{
+			desc: "SUSE_sles",
+			metadata: &rpmmeta.Metadata{
+				PackageName: pkgname,
+				SourceRPM:   source,
+				Epoch:       epoch,
+				OSID:        "sles",
+				OSVersionID: "15.5",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeRPM,
+				Name:      pkgname,
+				Namespace: "suse",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Epoch:     "1",
+					purl.Distro:    "sles-15.5",
+					purl.SourceRPM: source,
+				}),
+			},
+		},
+		{
+			desc: "Azure_Linux_azurelinux",
+			metadata: &rpmmeta.Metadata{
+				PackageName: pkgname,
+				SourceRPM:   source,
+				Epoch:       epoch,
+				OSID:        "azurelinux",
+				OSVersionID: "3.0",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeRPM,
+				Name:      pkgname,
+				Namespace: "azurelinux",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Epoch:     "1",
+					purl.Distro:    "azurelinux-3.0",
+					purl.SourceRPM: source,
+				}),
+			},
+		},
+		{
+			desc: "Azure_Linux_mariner",
+			metadata: &rpmmeta.Metadata{
+				PackageName: pkgname,
+				SourceRPM:   source,
+				Epoch:       epoch,
+				OSID:        "mariner",
+				OSVersionID: "2.0",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeRPM,
+				Name:      pkgname,
+				Namespace: "azurelinux",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Epoch:     "1",
+					purl.Distro:    "mariner-2.0",
 					purl.SourceRPM: source,
 				}),
 			},
