@@ -41,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/paketdependencies"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/paketlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/projectassetsjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
@@ -305,6 +306,7 @@ var (
 		packageslockjson.Name:  {packageslockjson.New},
 		paketdependencies.Name: {paketdependencies.New},
 		paketlock.Name:         {paketlock.New},
+		projectassetsjson.Name: {projectassetsjson.New},
 	}
 	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
