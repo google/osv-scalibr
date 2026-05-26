@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="https://unpkg.com/lodash-es@4.17.21/lodash.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.esm-browser.js"></script>
+    <script src="https://unpkg.com/@scope/pkg@2.3.4/dist/index.js"></script>
+    <script src="/static/app.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.run/react@18.2.0",
+          "preact/hooks": "https://esm.run/preact@10.19.6/hooks",
+          "local": "/vendor/local.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <script>
+      import("https://unpkg.com/ignored-dynamic@1.0.0/index.js");
+    </script>
+  </body>
+</html>

@@ -85,6 +85,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
+|            | NPM packages from JavaScript CDN URLs in HTML     | `javascript/cdn`                     |
 |            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
 |            | yarn.lock                                         | `javascript/yarnlock`                |
 |            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |

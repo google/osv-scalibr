@@ -54,6 +54,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/cdn"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
@@ -211,6 +212,7 @@ var (
 	JavascriptSource = InitMap{
 		packagejson.Name:     {packagejson.New},
 		packagelockjson.Name: {packagelockjson.New},
+		cdn.Name:             {cdn.New},
 		denojson.Name:        {denojson.New},
 		denotssource.Name:    {denotssource.New},
 		pnpmlock.Name:        {pnpmlock.New},
