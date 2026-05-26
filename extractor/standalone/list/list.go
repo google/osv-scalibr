@@ -21,7 +21,6 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/standalone"
-	"github.com/google/osv-scalibr/extractor/standalone/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/dismpatch"
@@ -57,8 +56,7 @@ var (
 
 	// Containers standalone extractors.
 	Containers = InitMap{
-		containerd.Name: {containerd.New},
-		docker.Name:     {docker.New},
+		docker.Name: {docker.New},
 	}
 
 	// Default standalone extractors.
@@ -105,4 +103,24 @@ func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]standalone.Extrac
 		return result, nil
 	}
 	return nil, fmt.Errorf("unknown extractor %q", name)
+}
+
+// RegisterExtractor dynamically adds an extractor to the SCALIBR registries.
+func RegisterExtractor(name string, initFn InitFn, categories []string) {
+	All = concat(All, InitMap{name: {initFn}})
+
+	// Update the extractorNames map directly for the new extractor and standard groups.
+	extractorNames = concat(extractorNames, InitMap{name: {initFn}})
+	extractorNames["all"] = append(extractorNames["all"], initFn)
+	extractorNames["extractors/all"] = append(extractorNames["extractors/all"], initFn)
+
+	// Dynamically append to requested category lists if they exist.
+	for _, cat := range categories {
+		if list, ok := extractorNames[cat]; ok {
+			extractorNames[cat] = append(list, initFn)
+		}
+		if list, ok := extractorNames["extractors/"+cat]; ok {
+			extractorNames["extractors/"+cat] = append(list, initFn)
+		}
+	}
 }

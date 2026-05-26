@@ -308,6 +308,14 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 	return nil
 }
 
+// isInvalidEntry checks for ".", "..", "$"-prefixed, and "/"-containing entries in ExFAT.
+func isInvalidEntry(entry string) bool {
+	if entry == "" || entry == "." || entry == ".." || strings.HasPrefix(entry, "$") || strings.Contains(entry, "/") {
+		return true
+	}
+	return false
+}
+
 // ExtractAllRecursiveExFAT extracts all files from an exFAT filesystem to a temporary directory recursively.
 func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 	er := exfat.NewExfatReader(section)
@@ -329,6 +337,10 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 		node := nodes[relPath]
 		resPath := strings.ReplaceAll(relPath, "\\", string(os.PathSeparator))
 		outPath := filepath.Join(dst, resPath)
+
+		if isInvalidEntry(resPath) {
+			continue
+		}
 
 		sde := node.StreamDirectoryEntry()
 		if node.IsDirectory() {

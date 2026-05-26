@@ -21,7 +21,6 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
@@ -42,8 +41,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/paketdependencies"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/paketlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/projectassetsjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
@@ -249,6 +250,8 @@ var (
 	DartSource = InitMap{pubspec.Name: {pubspec.New}}
 	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
+	// GleamSource extractors for Gleam.
+	GleamSource = InitMap{gleamtoml.Name: {gleamtoml.New}}
 	// NimSource extractors for Nim.
 	NimSource = InitMap{nimble.Name: {nimble.New}}
 	// LuaSource extractors for Lua.
@@ -303,6 +306,7 @@ var (
 		packageslockjson.Name:  {packageslockjson.New},
 		paketdependencies.Name: {paketdependencies.New},
 		paketlock.Name:         {paketlock.New},
+		projectassetsjson.Name: {projectassetsjson.New},
 	}
 	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{
@@ -318,7 +322,6 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		containerd.Name:         {containerd.New},
 		k8simage.Name:           {k8simage.New},
 		podman.Name:             {podman.New},
 		dockerbaseimage.Name:    {dockerbaseimage.New},
@@ -495,6 +498,7 @@ var (
 		DartSource,
 		ErlangSource,
 		ElixirSource,
+		GleamSource,
 		HaskellSource,
 		PHPSource,
 		RSource,
@@ -554,6 +558,7 @@ var (
 		"go":         vals(concat(GoSource, GoArtifact)),
 		"dart":       vals(DartSource),
 		"erlang":     vals(ErlangSource),
+		"gleam":      vals(GleamSource),
 		"lua":        vals(LuaSource),
 		"nim":        vals(NimSource),
 		"ocaml":      vals(OcamlSource),
@@ -629,4 +634,24 @@ func initMapFromVelesPlugins(plugins []velesPlugin) InitMap {
 		result[p.name] = []InitFn{convert.FromVelesDetector(p.detector, p.name, p.version)}
 	}
 	return result
+}
+
+// RegisterExtractor dynamically adds an extractor to the SCALIBR registries.
+func RegisterExtractor(name string, initFn InitFn, categories []string) {
+	All = concat(All, InitMap{name: {initFn}})
+
+	// Update the extractorNames map directly for the new extractor and standard groups.
+	extractorNames = concat(extractorNames, InitMap{name: {initFn}})
+	extractorNames["all"] = append(extractorNames["all"], initFn)
+	extractorNames["extractors/all"] = append(extractorNames["extractors/all"], initFn)
+
+	// Dynamically append to requested category lists if they exist.
+	for _, cat := range categories {
+		if list, ok := extractorNames[cat]; ok {
+			extractorNames[cat] = append(list, initFn)
+		}
+		if list, ok := extractorNames["extractors/"+cat]; ok {
+			extractorNames["extractors/"+cat] = append(list, initFn)
+		}
+	}
 }
