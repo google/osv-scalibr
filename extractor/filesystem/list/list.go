@@ -134,6 +134,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/clojars"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/databrickspat"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -375,6 +376,7 @@ var (
 		{circleci.NewProjectTokenDetector(), "secrets/circleciproject", 0},
 		{clojars.NewDetector(), "secrets/clojars", 0},
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
+		{databrickspat.NewDetector(), "secrets/databrickspat", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
 		{cratesioapitoken.NewDetector(), "secrets/cratesioapitoken", 0},
