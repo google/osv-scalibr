@@ -26,6 +26,8 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
+// makeVSIX builds an in-memory .vsix (ZIP) archive from the provided entries.
+// Each entry is a (name, content) pair.
 func makeVSIX(t *testing.T, entries map[string]string) []byte {
 	t.Helper()
 	var buf bytes.Buffer
@@ -56,7 +58,7 @@ func pkgLoc(vsixPath, entryPath string) extractor.PackageLocation {
 	}
 }
 
-// FileRequired
+// ─── FileRequired ────────────────────────────────────────────────────────────
 
 func TestFileRequired(t *testing.T) {
 	tests := []struct {
@@ -159,7 +161,7 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
-//Extract
+// ─── Extract ─────────────────────────────────────────────────────────────────
 
 func TestExtract(t *testing.T) {
 	const vsixPath = "registry/prettier-vscode-11.0.0.vsix"
@@ -176,7 +178,9 @@ func TestExtract(t *testing.T) {
 			name:     "single npm dependency in node_modules",
 			vsixPath: vsixPath,
 			vsixData: makeVSIX(t, map[string]string{
+				// Extension manifest — must be skipped.
 				"extension/package.json": `{"name":"prettier-vscode","version":"11.0.0","engines":{"vscode":"^1.0.0"}}`,
+				// Bundled npm dependency — must be extracted.
 				"extension/node_modules/lodash/package.json": `{"name":"lodash","version":"4.17.21"}`,
 			}),
 			wantPackages: []*extractor.Package{
@@ -224,8 +228,10 @@ func TestExtract(t *testing.T) {
 			name:     "extension manifest at root is skipped (no node_modules in path)",
 			vsixPath: vsixPath,
 			vsixData: makeVSIX(t, map[string]string{
+				// Only the extension manifest — no node_modules at all.
 				"extension/package.json": `{"name":"my-ext","version":"2.0.0","engines":{"vscode":"^1.0.0"}}`,
 			}),
+			// Empty: the manifest is filtered out.
 			wantPackages:     []*extractor.Package{},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
@@ -383,6 +389,7 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract() mismatch (-want +got):\n%s", diff)
 			}
 
+			// Verify stats metrics were recorded correctly.
 			wantResultMetric := tt.wantResultMetric
 			if wantResultMetric == "" && !tt.wantErr {
 				wantResultMetric = stats.FileExtractedResultSuccess

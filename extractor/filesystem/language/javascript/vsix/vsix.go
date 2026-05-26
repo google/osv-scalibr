@@ -1,3 +1,4 @@
+
 // Package vsix extracts npm packages embedded inside VS Code extension (.vsix) files.
 //
 // A .vsix file is a ZIP archive. Inside it, the extension's own manifest lives at
@@ -38,18 +39,28 @@ import (
 )
 
 const (
+	// Name is the unique name of this extractor.
 	Name = "javascript/vsix"
 
+	// defaultMaxFileSizeBytes is the default maximum .vsix file size the extractor
+	// will attempt to read into memory. Files larger than this limit are skipped.
 	defaultMaxFileSizeBytes = 500 * units.MiB
 
+	// maxPackageJSONSizeBytes caps the uncompressed size of a single package.json
+	// entry inside the archive. This prevents memory exhaustion from a crafted
+	// archive containing an oversized embedded file.
 	maxPackageJSONSizeBytes int64 = 10 * units.MiB
 )
 
+// Extractor extracts npm packages from VS Code extension (.vsix) archive files.
 type Extractor struct {
+	// Stats is the metric collector. Set by the framework after construction.
 	Stats stats.Collector
+	// maxFileSizeBytes is the maximum .vsix file size this extractor will process.
 	maxFileSizeBytes int64
 }
 
+// New returns a new Extractor initialised from cfg.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	maxFileSizeBytes := int64(defaultMaxFileSizeBytes)
 	if cfg.GetMaxFileSizeBytes() > 0 {
@@ -60,15 +71,24 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	}, nil
 }
 
+// Name returns the unique name of this extractor.
 func (e *Extractor) Name() string { return Name }
 
+// Version returns the version of this extractor.
 func (e *Extractor) Version() int { return 0 }
 
+// Requirements returns the plugin capabilities required by this extractor.
+// The VSIX extractor only needs local file access — no network or elevated
+// privileges are required.
 func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
+// FileRequired returns true for regular files whose path ends with ".vsix"
+// (case-insensitive) and whose size does not exceed the configured limit.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
+	// filepath.Ext correctly extracts the extension regardless of whether the
+	// path uses forward or back slashes.
 	if !strings.EqualFold(filepath.Ext(api.Path()), ".vsix") {
 		return false
 	}
@@ -98,6 +118,8 @@ func (e *Extractor) reportFileRequired(path string, fileSizeBytes int64, result 
 	})
 }
 
+// packageJSON mirrors the subset of package.json fields this extractor reads.
+// Unknown fields are silently ignored by json.Decoder.
 type packageJSON struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
@@ -112,7 +134,11 @@ type packageJSON struct {
 // entire archive scan. An error is returned only when the archive itself cannot
 // be opened or read.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-
+	// archive/zip requires an io.ReaderAt; io.Reader does not satisfy that
+	// interface, so we buffer the entire file into memory first.
+	// The LimitReader enforces maxFileSizeBytes as a safety ceiling even when the
+	// underlying reader would yield more bytes than Stat() reported (e.g. when
+	// scanning a compressed layer).
 	data, err := io.ReadAll(io.LimitReader(input.Reader, e.maxFileSizeBytes+1))
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
@@ -121,6 +147,8 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
+		// Not a valid ZIP — log and return an empty inventory so SCALIBR
+		// continues scanning other files.
 		log.Debugf("vsix: %q is not a valid ZIP archive: %v", input.Path, err)
 		e.reportFileExtracted(input.Path, input.Info, nil)
 		return inventory.Inventory{}, nil
@@ -129,20 +157,28 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var pkgs []*extractor.Package
 
 	for _, f := range zr.File {
+		// Respect context cancellation for large archives.
 		if err := ctx.Err(); err != nil {
 			e.reportFileExtracted(input.Path, input.Info, err)
 			return inventory.Inventory{Packages: pkgs}, fmt.Errorf("vsix: %q: %w", input.Path, err)
 		}
 
+		// ZIP entry paths always use forward slashes regardless of the host OS,
+		// so we use path.Base (not filepath.Base) throughout this loop.
 		if path.Base(f.Name) != "package.json" {
 			continue
 		}
 
+		// Only process package.json files inside node_modules/ directories.
+		// The root extension/package.json is the extension manifest — it uses
+		// engines.vscode, is handled by the vscode/extensions extractor, and
+		// should not be emitted as a plain npm package (false positives).
 		if !isInNodeModules(f.Name) {
 			log.Debugf("vsix: skipping non-dependency manifest %q in %q", f.Name, input.Path)
 			continue
 		}
 
+		// Guard against ZIP-bomb style entries with enormous uncompressed sizes.
 		if f.UncompressedSize64 > uint64(maxPackageJSONSizeBytes) {
 			log.Debugf("vsix: skipping oversized package.json %q in %q (%d bytes)",
 				f.Name, input.Path, f.UncompressedSize64)
@@ -151,6 +187,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 		pkg, err := extractPackageFromEntry(f, input.Path)
 		if err != nil {
+			// I/O failure opening a single entry — log and continue.
 			log.Debugf("vsix: error reading %q inside %q: %v", f.Name, input.Path, err)
 			continue
 		}
@@ -188,6 +225,12 @@ func (e *Extractor) reportFileExtracted(filePath string, info fs.FileInfo, err e
 	})
 }
 
+// extractPackageFromEntry opens and parses a single package.json zip entry.
+//
+//   - Returns (pkg, nil) on success.
+//   - Returns (nil, nil) when the entry should be silently skipped (malformed
+//     JSON, missing name or version).
+//   - Returns (nil, err) on I/O failure opening the entry itself.
 func extractPackageFromEntry(f *zip.File, vsixPath string) (*extractor.Package, error) {
 	rc, err := f.Open()
 	if err != nil {
@@ -195,6 +238,7 @@ func extractPackageFromEntry(f *zip.File, vsixPath string) (*extractor.Package, 
 	}
 	defer rc.Close()
 
+	// Second layer of size enforcement for uncompressed content.
 	limited := io.LimitReader(rc, maxPackageJSONSizeBytes)
 
 	var p packageJSON
@@ -230,4 +274,5 @@ func extractPackageFromEntry(f *zip.File, vsixPath string) (*extractor.Package, 
 	}, nil
 }
 
+// Ensure Extractor satisfies the filesystem.Extractor interface at compile time.
 var _ filesystem.Extractor = (*Extractor)(nil)
