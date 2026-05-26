@@ -1,4 +1,3 @@
-
 // Package vsix extracts npm packages embedded inside VS Code extension (.vsix) files.
 //
 // A .vsix file is a ZIP archive. Inside it, the extension's own manifest lives at
@@ -24,6 +23,7 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -62,7 +62,7 @@ type Extractor struct {
 
 // New returns a new Extractor initialised from cfg.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	maxFileSizeBytes := int64(defaultMaxFileSizeBytes)
+	maxFileSizeBytes := defaultMaxFileSizeBytes
 	if cfg.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
@@ -202,12 +202,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 func isInNodeModules(entryPath string) bool {
 	parts := strings.Split(entryPath, "/")
-	for _, part := range parts[:len(parts)-1] {
-		if part == "node_modules" {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(parts[:len(parts)-1], "node_modules")
 }
 
 func (e *Extractor) reportFileExtracted(filePath string, info fs.FileInfo, err error) {
@@ -245,7 +240,7 @@ func extractPackageFromEntry(f *zip.File, vsixPath string) (*extractor.Package, 
 	if err := json.NewDecoder(limited).Decode(&p); err != nil {
 		// Malformed JSON — log and skip without propagating the error.
 		log.Debugf("vsix: skipping malformed package.json %q in %q: %v", f.Name, vsixPath, err)
-		return nil, nil //nolint:nilerr
+		return nil, nil
 	}
 
 	p.Name = strings.TrimSpace(p.Name)

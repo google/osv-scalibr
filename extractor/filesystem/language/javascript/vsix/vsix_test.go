@@ -1,4 +1,3 @@
-
 package vsix_test
 
 import (
