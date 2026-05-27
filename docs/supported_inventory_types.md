@@ -227,6 +227,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | -------------------------- | ---------------- |
 | SPDX SBOM descriptors      | `sbom/spdx`      |
 | CycloneDX SBOM descriptors | `sbom/cdx`       |
+| Bitnami container SBOMs    | `sbom/spdx`      |
 
 ### Misc
 

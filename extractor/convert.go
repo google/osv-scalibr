@@ -146,6 +146,8 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPub)
 	case purl.TypeDHI:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages)
+	case purl.TypeBitnami:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemBitnami)
 	case purl.TypeGithub:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions)
 	case purl.TypeSwift:
