@@ -87,6 +87,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
+	"github.com/google/osv-scalibr/extractor/filesystem/misc/gitrepo"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/vscodeextensions"
 	wordpressplugins "github.com/google/osv-scalibr/extractor/filesystem/misc/wordpress/plugins"
@@ -463,11 +464,13 @@ var (
 
 	// MiscSource extractors for miscellaneous purposes.
 	MiscSource = InitMap{
-		asdf.Name:          {asdf.New},
-		githubactions.Name: {githubactions.New},
-		mise.Name:          {mise.New},
-		nvm.Name:           {nvm.New},
-		nodeversion.Name:   {nodeversion.New},
+		asdf.Name:                 {asdf.New},
+		githubactions.Name:        {githubactions.New},
+		gitrepo.DirExtractorName:  {gitrepo.NewDir},
+		gitrepo.FileExtractorName: {gitrepo.NewFile},
+		mise.Name:                 {mise.New},
+		nvm.Name:                  {nvm.New},
+		nodeversion.Name:          {nodeversion.New},
 	}
 
 	// EmbeddedFS extractors.
