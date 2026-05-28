@@ -151,6 +151,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			FS:     input.ScanRoot.FS,
 			Root:   input.ScanRoot.Path,
 		})
+		f.Close()
 
 		if err != nil {
 			log.Warnf("failed resolution for %s: %v", path, err)
@@ -362,7 +363,7 @@ func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []s
 		dir := filepath.Dir(path)
 		for _, m := range project.Modules {
 			modulePath := filepath.Join(dir, string(m), "pom.xml")
-			queue = append(queue, modulePath)
+			queue = append(queue, filepath.ToSlash(modulePath))
 		}
 	}
 }
