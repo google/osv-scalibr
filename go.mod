@@ -14,6 +14,7 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.11.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
 	github.com/aead/serpent v0.0.0-20160714141033-fba169763ea6
+	github.com/avast/apkparser v0.0.0-20260423123151-7fcaee440f68
 	github.com/bazelbuild/buildtools v0.0.0-20260319080235-05d2ebe49b0f
 	github.com/canonical/chisel-manifest v1.2.0
 	github.com/charmbracelet/bubbles v0.21.0

@@ -152,6 +152,7 @@ message Package {
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
     SpackPackageMetadata spack_metadata = 67;
+    AndroidApkMetadata android_apk_metadata = 70;
   }
 
   // Signals to indicate that specific vulnerabilities are not applicable to
@@ -570,6 +571,12 @@ message JavaArchiveMetadata {
   string artifact_id = 2;
   string group_id = 3;
   string sha1 = 4;
+}
+
+// The additional data found in Android Apk files.
+message AndroidApkMetadata {
+  string group_id = 1;
+  string artifact_id = 2;
 }
 
 // The additional data found in Java lockfiles.

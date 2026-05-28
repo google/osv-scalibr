@@ -16,6 +16,7 @@
 package common
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -29,8 +30,7 @@ import (
 	"sync"
 	"time"
 
-	"archive/tar"
-
+	"github.com/avast/apkparser"
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/disk"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
@@ -729,6 +729,114 @@ loop:
 
 	if extractErr != nil {
 		os.Remove(tempDir)
+		return "", extractErr
+	}
+
+	return tempDir, nil
+}
+
+// APKToTempDir extracts a zip archive into a temporary directory that can be used to traverse its contents recursively.
+// Note that we can't use "archive/zip" because it's very strict and can fail on certain Apks.
+func APKToTempDir(reader io.Reader) (string, error) {
+	// Create temporary file because the APK parser needs seek support.
+	tmpFile, err := os.CreateTemp("", "scalibr-apk-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary apk file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	// Copy APK contents into temporary file.
+	if _, err := io.Copy(tmpFile, reader); err != nil {
+		return "", fmt.Errorf("failed to copy apk contents: %w", err)
+	}
+
+	// Reset file offset.
+	if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("failed to seek temporary apk file: %w", err)
+	}
+
+	// Open tolerant ZIP reader.
+	zr, err := apkparser.OpenZipReader(tmpFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to open apk zip: %w", err)
+	}
+	defer zr.Close()
+
+	// Create extraction directory.
+	tempDir, err := os.MkdirTemp("", "scalibr-apk-extract-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create extraction directory: %w", err)
+	}
+
+	var extractErr error
+
+	for _, f := range zr.FilesOrdered {
+		cleanName := filepath.Clean(f.Name)
+
+		// Prevent ZipSlip / path traversal.
+		if symlink.TargetOutsideRoot("/", cleanName) {
+			extractErr = fmt.Errorf("zip contains invalid entry: %s", cleanName)
+			break
+		}
+
+		target := filepath.Join(tempDir, cleanName)
+
+		// Directory handling.
+		if f.IsDir {
+			if err := os.MkdirAll(target, 0755); err != nil {
+				extractErr = fmt.Errorf("failed to create directory %s: %w", target, err)
+				break
+			}
+			continue
+		}
+
+		// Create parent directories.
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			extractErr = fmt.Errorf(
+				"failed to create parent directory for %s: %w",
+				target,
+				err,
+			)
+			break
+		}
+
+		// Open ZIP entry.
+		if err := f.Open(); err != nil {
+			extractErr = fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
+			break
+		}
+
+		outFile, err := os.Create(target)
+		if err != nil {
+			f.Close()
+			extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
+			break
+		}
+
+		_, err = io.Copy(outFile, f)
+
+		closeErr1 := outFile.Close()
+		closeErr2 := f.Close()
+
+		if err != nil {
+			extractErr = fmt.Errorf("failed to extract file %s: %w", target, err)
+			break
+		}
+
+		if closeErr1 != nil {
+			extractErr = fmt.Errorf("failed to close file %s: %w", target, closeErr1)
+			break
+		}
+
+		if closeErr2 != nil {
+			extractErr = fmt.Errorf("failed to close zip entry %s: %w", f.Name, closeErr2)
+			break
+		}
+	}
+
+	if extractErr != nil {
+		os.RemoveAll(tempDir)
 		return "", extractErr
 	}
 
