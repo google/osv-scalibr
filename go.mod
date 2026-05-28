@@ -6,7 +6,7 @@ require (
 	bitbucket.org/creachadair/stringset v0.0.14
 	deps.dev/api/v3 v3.0.0-20260422013440-90c27f84dd6f
 	deps.dev/api/v3alpha v0.0.0-20260422013440-90c27f84dd6f
-	deps.dev/util/maven v0.0.0-20260422013440-90c27f84dd6f
+	deps.dev/util/maven v0.0.0-20260528042559-b92437de09fd
 	deps.dev/util/pypi v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/resolve v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/semver v0.0.0-20260422013440-90c27f84dd6f
