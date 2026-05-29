@@ -20,8 +20,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	el "github.com/google/osv-scalibr/extractor/filesystem/list"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 var (
@@ -31,7 +31,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			p, err := initer(&cpb.PluginConfig{})
+			p, err := initer(config.DefaultPluginConfig())
 			if err != nil {
 				t.Fatalf("initer(): %v", err)
 			}
@@ -64,7 +64,7 @@ func TestExtractorsFromName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			got, err := el.ExtractorsFromName(tc.name, &cpb.PluginConfig{})
+			got, err := el.ExtractorsFromName(tc.name, config.DefaultPluginConfig())
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("el.ExtractorsFromName(%v) error got diff (-want +got):\n%s", tc.name, diff)
 			}
@@ -77,5 +77,12 @@ func TestExtractorsFromName(t *testing.T) {
 				t.Errorf("el.ExtractorsFromName(%v): got diff (-want +got):\n%s", tc.name, diff)
 			}
 		})
+	}
+}
+
+func TestExtractorsFromNameNilConfig(t *testing.T) {
+	_, err := el.ExtractorsFromName("default", nil)
+	if err != nil {
+		t.Errorf("ExtractorsFromName(\"default\", nil) failed: %v", err)
 	}
 }

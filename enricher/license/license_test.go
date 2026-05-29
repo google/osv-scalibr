@@ -30,7 +30,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	depsdevpb "deps.dev/api/v3"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 func TestEnrich(t *testing.T) {
@@ -49,7 +49,7 @@ func TestEnrich(t *testing.T) {
 	}
 
 	cli := fakeclient.New(licenseMap)
-	e, err := license.New(&cpb.PluginConfig{})
+	e, err := license.New(&config.PluginConfig{})
 	if err != nil {
 		t.Fatalf("license.New(): %v", err)
 	}
