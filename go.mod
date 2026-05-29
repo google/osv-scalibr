@@ -9,7 +9,7 @@ require (
 	deps.dev/util/maven v0.0.0-20260528042559-b92437de09fd
 	deps.dev/util/pypi v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/resolve v0.0.0-20260422013440-90c27f84dd6f
-	deps.dev/util/semver v0.0.0-20260422013440-90c27f84dd6f
+	deps.dev/util/semver v0.0.0-20260529052642-cf1e78d92744
 	github.com/BurntSushi/toml v1.6.0
 	github.com/CycloneDX/cyclonedx-go v0.11.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
