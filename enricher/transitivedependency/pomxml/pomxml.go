@@ -356,7 +356,7 @@ func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []s
 		g, a, v := string(pk.GroupID), string(pk.ArtifactID), string(pk.Version)
 		if g != "" && a != "" && v != "" {
 			absPath := filepath.Join(scanRoot.Path, path)
-			log.Infof("Discovered local module %s:%s:%s at %s", g, a, v, absPath)
+			log.Infof("Discovered local module %s:%s:%s at %s", g, a, v, path)
 			e.MavenClient.AddLocalProject(g, a, v, absPath)
 		}
 
