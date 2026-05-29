@@ -447,7 +447,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	<project>
 		<groupId>org.example</groupId>
 		<artifactId>parent</artifactId>
-		<version>1.0-SNAPSHOT</version>
+		<version>1.0</version>
 		<packaging>pom</packaging>
 		<modules>
 			<module>module-a</module>
@@ -469,14 +469,14 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		<parent>
 			<groupId>org.example</groupId>
 			<artifactId>parent</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>1.0</version>
 		</parent>
 		<artifactId>module-a</artifactId>
 		<dependencies>
 			<dependency>
 				<groupId>org.example</groupId>
 				<artifactId>module-b</artifactId>
-				<version>1.0-SNAPSHOT</version>
+				<version>1.0</version>
 			</dependency>
 		</dependencies>
 	</project>
@@ -495,14 +495,14 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		<parent>
 			<groupId>org.example</groupId>
 			<artifactId>parent</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>1.0</version>
 		</parent>
 		<artifactId>module-b</artifactId>
 		<dependencies>
 			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
-				<version>4.13</version>
+				<groupId>org.external</groupId>
+				<artifactId>external-a</artifactId>
+				<version>2.0</version>
 			</dependency>
 		</dependencies>
 	</project>
@@ -514,38 +514,38 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	// Set up mock server
 	srv := clienttest.NewMockHTTPServer(t)
 
-	// Mock for module-b versions (needed because user kept registry check in GetVersions)
+	// Mock for module-b versions
 	srv.SetResponse(t, "org/example/module-b/maven-metadata.xml", []byte(`
 	<metadata>
 		<groupId>org.example</groupId>
 		<artifactId>module-b</artifactId>
 		<versioning>
 			<versions>
-				<version>1.0-SNAPSHOT</version>
+				<version>1.0</version>
 			</versions>
 		</versioning>
 	</metadata>
 	`))
 
-	// Mock for junit versions
-	srv.SetResponse(t, "junit/junit/maven-metadata.xml", []byte(`
+	// Mock for external-a versions
+	srv.SetResponse(t, "org/external/external-a/maven-metadata.xml", []byte(`
 	<metadata>
-		<groupId>junit</groupId>
-		<artifactId>junit</artifactId>
+		<groupId>org.external</groupId>
+		<artifactId>external-a</artifactId>
 		<versioning>
 			<versions>
-				<version>4.13</version>
+				<version>2.0</version>
 			</versions>
 		</versioning>
 	</metadata>
 	`))
 
-	// Mock for junit POM
-	srv.SetResponse(t, "junit/junit/4.13/junit-4.13.pom", []byte(`
+	// Mock for external-a POM
+	srv.SetResponse(t, "org/external/external-a/2.0/external-a-2.0.pom", []byte(`
 	<project>
-		<groupId>junit</groupId>
-		<artifactId>junit</artifactId>
-		<version>4.13</version>
+		<groupId>org.external</groupId>
+		<artifactId>external-a</artifactId>
+		<version>2.0</version>
 	</project>
 	`))
 
@@ -568,7 +568,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		Packages: []*extractor.Package{
 			{
 				Name:     "org.example:module-b",
-				Version:  "1.0-SNAPSHOT",
+				Version:  "1.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("module-a/pom.xml"),
 				Plugins:  []string{"java/pomxml"},
@@ -580,7 +580,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 			},
 			{
 				Name:     "org.example:parent",
-				Version:  "1.0-SNAPSHOT",
+				Version:  "1.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("pom.xml"),
 				Plugins:  []string{"java/pomxml"},
@@ -605,16 +605,57 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		t.Fatalf("failed to enrich: %v", err)
 	}
 
-	// Verify that junit was resolved as a transitive dependency
-	found := false
-	for _, pkg := range inv.Packages {
-		if pkg.Name == "junit:junit" && pkg.Version == "4.13" {
-			found = true
-			break
-		}
+	wantInventory := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "org.example:module-b",
+				Version:  "1.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("module-a/pom.xml"),
+				Plugins:  []string{"java/pomxml", "transitivedependency/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "module-b",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+			{
+				Name:     "org.example:parent",
+				Version:  "1.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("pom.xml"),
+				Plugins:  []string{"java/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "parent",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+			{
+				Name:     "org.external:external-a",
+				Version:  "2.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("module-a/pom.xml"),
+				ScanRoot: tempDir,
+				Plugins:  []string{"transitivedependency/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "external-a",
+					GroupID:      "org.external",
+					IsTransitive: true,
+					DepGroupVals: []string{},
+				},
+			},
+		},
 	}
 
-	if !found {
-		t.Errorf("Expected to find transitive dependency junit:junit:4.13 in inventory, but it was missing")
+	sort.Slice(inv.Packages, func(i, j int) bool {
+		return inv.Packages[i].Name < inv.Packages[j].Name
+	})
+	sort.Slice(wantInventory.Packages, func(i, j int) bool {
+		return wantInventory.Packages[i].Name < wantInventory.Packages[j].Name
+	})
+
+	if diff := cmp.Diff(wantInventory, inv); diff != "" {
+		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}
 }
