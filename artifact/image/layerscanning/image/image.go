@@ -88,8 +88,10 @@ type Config struct {
 	// FileRequirer, if set, gates which regular files are materialized into the
 	// image's content store: a regular file is unpacked only if FileRequired
 	// returns true for it (path relative to the image root, no leading slash).
-	// Directories and symlinks are always kept so the virtual filesystem and
-	// symlink resolution stay intact. A nil FileRequirer means "require all"
+	// Directories and symlinks are always kept so the virtual filesystem stays
+	// navigable; the regular file a required symlink resolves to is materialized
+	// too (following symlink chains), so reads through it do not dangle. A nil
+	// FileRequirer means "require all"
 	// (the default, unfiltered behavior). Filtering avoids writing files no
 	// extractor needs, shrinking the on-disk content store and unpack time;
 	// decompression of the layer streams is unaffected, as the tar must be read
@@ -376,47 +378,64 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		log.Warnf("%q failed to be removed through GC cleanup function: %v", file.Name(), err)
 	}, imageContentBlob)
 
-	// Since the layers are in reverse order, the v1LayerIndex starts at the last layer and works
-	// its way to the first layer.
-	v1LayerIndex := len(v1Layers) - 1
+	// requiredTargets accumulates the resolved targets of required symlinks. A
+	// required path may be a symlink whose target regular file is not itself
+	// required; the target must still be materialized so reads through the symlink
+	// resolve. Because layers are processed latest-first, a target can live in a
+	// layer already visited, or behind a chain of symlinks, so the layers are swept
+	// repeatedly until no new targets are discovered (a fixpoint). An all/nil
+	// requirer filters nothing, so the sweep settles after a single pass.
+	requiredTargets := make(map[string]bool)
+	maxPasses := config.MaxSymlinkDepth + 1
+	for range maxPasses {
+		targetsBefore := len(requiredTargets)
+		filteredAny := false
 
-	// Reverse loop through the layers to start from the latest layer first. This allows us to skip
-	// all files already seen.
-	for i := len(chainLayers) - 1; i >= 0; i-- {
-		chainLayer := chainLayers[i]
+		// Since the layers are in reverse order, the v1LayerIndex starts at the last layer and works
+		// its way to the first layer.
+		v1LayerIndex := len(v1Layers) - 1
 
-		// If the layer is empty, then there is nothing to do.
-		if chainLayer.latestLayer.IsEmpty() {
-			continue
-		}
+		// Reverse loop through the layers to start from the latest layer first. This allows us to skip
+		// all files already seen.
+		for i := len(chainLayers) - 1; i >= 0; i-- {
+			chainLayer := chainLayers[i]
 
-		if v1LayerIndex < 0 {
-			return nil, handleImageError(outputImage, fmt.Errorf("mismatch between v1 layers and chain layers, on v1 layer index %d, but only %d v1 layers", v1LayerIndex, len(v1Layers)))
-		}
-
-		chainLayersToFill := chainLayers[i:]
-
-		v1Layer := v1Layers[v1LayerIndex]
-		layerReader, err := v1Layer.Uncompressed()
-		if err != nil {
-			return nil, handleImageError(outputImage, err)
-		}
-		v1LayerIndex--
-
-		err = func() error {
-			// Manually close at the end of the for loop.
-			defer layerReader.Close()
-
-			tarReader := tar.NewReader(layerReader)
-			if err := fillChainLayersWithFilesFromTar(outputImage, tarReader, chainLayersToFill); err != nil {
-				return fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err)
+			// If the layer is empty, then there is nothing to do.
+			if chainLayer.latestLayer.IsEmpty() {
+				continue
 			}
 
-			return nil
-		}()
+			if v1LayerIndex < 0 {
+				return nil, handleImageError(outputImage, fmt.Errorf("mismatch between v1 layers and chain layers, on v1 layer index %d, but only %d v1 layers", v1LayerIndex, len(v1Layers)))
+			}
 
-		if err != nil {
-			return nil, handleImageError(outputImage, err)
+			chainLayersToFill := chainLayers[i:]
+
+			v1Layer := v1Layers[v1LayerIndex]
+			layerReader, err := v1Layer.Uncompressed()
+			if err != nil {
+				return nil, handleImageError(outputImage, err)
+			}
+			v1LayerIndex--
+
+			filtered, err := func() (bool, error) {
+				// Manually close at the end of the for loop.
+				defer layerReader.Close()
+
+				tarReader := tar.NewReader(layerReader)
+				return fillChainLayersWithFilesFromTar(outputImage, tarReader, chainLayersToFill, requiredTargets)
+			}()
+			if err != nil {
+				return nil, handleImageError(outputImage, fmt.Errorf("failed to fill chain layer with v1 layer tar: %w", err))
+			}
+			filteredAny = filteredAny || filtered
+		}
+
+		// Another pass is only useful if files were filtered out (otherwise every
+		// target is already materialized) and a required symlink discovered a new
+		// target to materialize next time around.
+		if !filteredAny || len(requiredTargets) == targetsBefore {
+			break
 		}
 	}
 
@@ -547,12 +566,19 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 // fillChainLayersWithFilåesFromTar fills the chain layers with the files found in the tar. The
 // chainLayersToFill are the chain layers that will be filled with the files via the virtual
 // filesystem.
-func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLayersToFill []*chainLayer) error {
+//
+// requiredTargets carries the resolved targets of required symlinks across passes;
+// regular files matching one are materialized even if no requirer wants them, and
+// required symlinks add their targets to it. The returned bool reports whether any
+// regular file was skipped because no requirer wanted it, which tells the caller
+// whether another pass could still materialize something.
+func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLayersToFill []*chainLayer, requiredTargets map[string]bool) (bool, error) {
 	if len(chainLayersToFill) == 0 {
-		return errors.New("no chain layers provided, this should not happen")
+		return false, errors.New("no chain layers provided, this should not happen")
 	}
 
 	currentChainLayer := chainLayersToFill[0]
+	filteredAny := false
 
 	for {
 		header, err := tarReader.Next()
@@ -560,7 +586,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("could not read tar: %w", err)
+			return filteredAny, fmt.Errorf("could not read tar: %w", err)
 		}
 
 		// Preemptively skip files that are too large.
@@ -618,21 +644,39 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 			virtualPath = "/" + path.Join(dirname, basename)
 		}
 
+		relativePath := strings.TrimPrefix(virtualPath, "/")
+		layer := currentChainLayer.latestLayer.(*Layer)
+
 		var newVirtualFile *virtualFile
 		switch header.Typeflag {
 		case tar.TypeDir:
 			newVirtualFile = img.handleDir(virtualPath, header, isWhiteout)
 		case tar.TypeReg:
-			// Skip materializing regular files no requirer wants; only the content
-			// store shrinks, layer ordering and symlink resolution are unaffected.
 			// Whiteouts are 0-byte regular files encoding deletions, so always keep
 			// them: gating on the de-whiteouted path would break deletion semantics.
-			if r := img.config.FileRequirer; !isWhiteout && r != nil && !r.FileRequired(strings.TrimPrefix(virtualPath, "/"), header.FileInfo()) {
+			// Other regular files are materialized only if a requirer wants them or a
+			// required symlink resolves to them; skipping the rest shrinks the content
+			// store without affecting layer ordering or symlink resolution.
+			if !isWhiteout && !fileRequired(img.config.FileRequirer, relativePath, header.FileInfo(), requiredTargets) {
+				filteredAny = true
+				continue
+			}
+			// Already materialized on an earlier pass: skip re-reading its content so
+			// it is not duplicated in the content store.
+			if existing, _ := layer.fileNodeTree.Get(virtualPath, false); existing != nil {
 				continue
 			}
 			newVirtualFile, err = img.handleFile(virtualPath, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
 			newVirtualFile, err = img.handleSymlink(virtualPath, header, isWhiteout)
+			// If the symlink itself is required, pull its target into the required set
+			// so a later pass materializes the regular file it resolves to. Recorded
+			// every pass (the node may already exist) so symlink chains keep extending.
+			if err == nil && !isWhiteout && fileRequired(img.config.FileRequirer, relativePath, header.FileInfo(), requiredTargets) {
+				if target := strings.TrimPrefix(newVirtualFile.targetPath, "/"); target != "" {
+					requiredTargets[target] = true
+				}
+			}
 		default:
 			log.Warnf("unsupported file type: %v, path: %s", header.Typeflag, header.Name)
 			continue
@@ -645,10 +689,14 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 				log.Warnf("failed to handle tar entry with path %s: %v", virtualPath, err)
 				continue
 			}
-			return fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
+			return filteredAny, fmt.Errorf("failed to handle tar entry with path %s: %w", virtualPath, err)
 		}
 
-		layer := currentChainLayer.latestLayer.(*Layer)
+		// Skip insertion if this layer already holds the node from an earlier pass;
+		// its content and chain-layer propagation were done then.
+		if existing, _ := layer.fileNodeTree.Get(virtualPath, false); existing != nil {
+			continue
+		}
 
 		// If the virtual path has any directories and those directories have not been populated, then
 		// populate them with file nodes.
@@ -664,7 +712,21 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 		// each chainLayer, as they would have been overwritten.
 		fillChainLayersWithVirtualFile(chainLayersToFill, newVirtualFile)
 	}
-	return nil
+	return filteredAny, nil
+}
+
+// fileRequired reports whether the file at relativePath (relative to the image
+// root, no leading slash) must be materialized: because a requirer wants it, or
+// because a required symlink resolves to it (tracked in requiredTargets). A nil
+// requirer requires everything, matching the unfiltered default.
+func fileRequired(requirer require.FileRequirer, relativePath string, fileInfo fs.FileInfo, requiredTargets map[string]bool) bool {
+	if requiredTargets[relativePath] {
+		return true
+	}
+	if requirer == nil {
+		return true
+	}
+	return requirer.FileRequired(relativePath, fileInfo)
 }
 
 // populateEmptyDirectoryNodes populates the chain layers with file nodes for any directory paths

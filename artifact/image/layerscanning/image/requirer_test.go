@@ -124,6 +124,168 @@ func TestFromV1Image_FileRequirerKeepsDirectoryWhiteouts(t *testing.T) {
 	}
 }
 
+// TestFromV1Image_FileRequirerMaterializesSymlinkTarget verifies that when a
+// required path is a symlink, the regular file it points to is also materialized
+// even though the target itself is not in the required set. Otherwise reading the
+// required path through the symlink would dangle.
+func TestFromV1Image_FileRequirerMaterializesSymlinkTarget(t *testing.T) {
+	tests := []struct {
+		name    string
+		linkTo  string // Linkname of etc/os-release.
+		require []string
+	}{
+		{
+			name:    "absolute target",
+			linkTo:  "/usr/lib/os-release",
+			require: []string{"etc/os-release"},
+		},
+		{
+			name:    "relative target",
+			linkTo:  "../usr/lib/os-release",
+			require: []string{"etc/os-release"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			layer := layerFromTarEntries(t, []*tarEntry{
+				{Header: &tar.Header{Typeflag: tar.TypeDir, Name: "etc/", Mode: 0755}},
+				{Header: &tar.Header{Typeflag: tar.TypeDir, Name: "usr/lib/", Mode: 0755}},
+				{
+					Header: &tar.Header{Typeflag: tar.TypeReg, Name: "usr/lib/os-release", Mode: 0644, Size: int64(len("ID=debian\n"))},
+					Data:   bytes.NewBufferString("ID=debian\n"),
+				},
+				{Header: &tar.Header{Typeflag: tar.TypeSymlink, Name: "etc/os-release", Linkname: tc.linkTo, Mode: 0777}},
+			})
+			img1, err := mutate.AppendLayers(empty.Image, layer)
+			if err != nil {
+				t.Fatalf("mutate.AppendLayers: %v", err)
+			}
+
+			cfg := DefaultConfig()
+			cfg.FileRequirer = require.NewFileRequirerPaths(tc.require)
+			img, err := FromV1Image(img1, cfg)
+			if err != nil {
+				t.Fatalf("FromV1Image returned error: %v", err)
+			}
+			defer func() { _ = img.CleanUp() }()
+
+			// Reading the required path through the symlink returns the target content.
+			if got, err := fs.ReadFile(img.FS(), "etc/os-release"); err != nil {
+				t.Errorf("read required-via-symlink etc/os-release: %v", err)
+			} else if string(got) != "ID=debian\n" {
+				t.Errorf("etc/os-release content = %q, want %q", got, "ID=debian\n")
+			}
+		})
+	}
+}
+
+// TestFromV1Image_FileRequirerFollowsSymlinkChain verifies that a chain of
+// symlinks (a -> b -> regular) is followed so the terminal regular file is
+// materialized.
+func TestFromV1Image_FileRequirerFollowsSymlinkChain(t *testing.T) {
+	layer := layerFromTarEntries(t, []*tarEntry{
+		{
+			Header: &tar.Header{Typeflag: tar.TypeReg, Name: "c.txt", Mode: 0644, Size: int64(len("c\n"))},
+			Data:   bytes.NewBufferString("c\n"),
+		},
+		{Header: &tar.Header{Typeflag: tar.TypeSymlink, Name: "b.txt", Linkname: "/c.txt", Mode: 0777}},
+		{Header: &tar.Header{Typeflag: tar.TypeSymlink, Name: "a.txt", Linkname: "/b.txt", Mode: 0777}},
+	})
+	img1, err := mutate.AppendLayers(empty.Image, layer)
+	if err != nil {
+		t.Fatalf("mutate.AppendLayers: %v", err)
+	}
+
+	cfg := DefaultConfig()
+	cfg.FileRequirer = require.NewFileRequirerPaths([]string{"a.txt"})
+	img, err := FromV1Image(img1, cfg)
+	if err != nil {
+		t.Fatalf("FromV1Image returned error: %v", err)
+	}
+	defer func() { _ = img.CleanUp() }()
+
+	if got, err := fs.ReadFile(img.FS(), "a.txt"); err != nil {
+		t.Errorf("read required-via-symlink-chain a.txt: %v", err)
+	} else if string(got) != "c\n" {
+		t.Errorf("a.txt content = %q, want %q", got, "c\n")
+	}
+}
+
+// TestFromV1Image_FileRequirerMaterializesTargetInUpperLayer verifies that the
+// symlink target is materialized even when it lives in a layer processed before
+// the symlink's layer. Layers are processed latest-first, so a target in an
+// upper layer is seen before the lower-layer symlink that requires it; resolving
+// it requires more than one pass.
+func TestFromV1Image_FileRequirerMaterializesTargetInUpperLayer(t *testing.T) {
+	// Lower layer holds the symlink; upper layer holds its target.
+	lower := layerFromTarEntries(t, []*tarEntry{
+		{Header: &tar.Header{Typeflag: tar.TypeDir, Name: "etc/", Mode: 0755}},
+		{Header: &tar.Header{Typeflag: tar.TypeSymlink, Name: "etc/os-release", Linkname: "/usr/lib/os-release", Mode: 0777}},
+	})
+	upper := layerFromTarEntries(t, []*tarEntry{
+		{Header: &tar.Header{Typeflag: tar.TypeDir, Name: "usr/lib/", Mode: 0755}},
+		{
+			Header: &tar.Header{Typeflag: tar.TypeReg, Name: "usr/lib/os-release", Mode: 0644, Size: int64(len("ID=debian\n"))},
+			Data:   bytes.NewBufferString("ID=debian\n"),
+		},
+	})
+	img1, err := mutate.AppendLayers(empty.Image, lower, upper)
+	if err != nil {
+		t.Fatalf("mutate.AppendLayers: %v", err)
+	}
+
+	cfg := DefaultConfig()
+	cfg.FileRequirer = require.NewFileRequirerPaths([]string{"etc/os-release"})
+	img, err := FromV1Image(img1, cfg)
+	if err != nil {
+		t.Fatalf("FromV1Image returned error: %v", err)
+	}
+	defer func() { _ = img.CleanUp() }()
+
+	if got, err := fs.ReadFile(img.FS(), "etc/os-release"); err != nil {
+		t.Errorf("read required-via-symlink etc/os-release: %v", err)
+	} else if string(got) != "ID=debian\n" {
+		t.Errorf("etc/os-release content = %q, want %q", got, "ID=debian\n")
+	}
+}
+
+// TestFromV1Image_FileRequirerDoesNotMaterializeUnrequiredSymlinkTarget verifies
+// that target materialization only follows symlinks that are themselves required.
+// A symlink no extractor wants must not pull its target into the content store.
+func TestFromV1Image_FileRequirerDoesNotMaterializeUnrequiredSymlinkTarget(t *testing.T) {
+	layer := layerFromTarEntries(t, []*tarEntry{
+		{Header: &tar.Header{Typeflag: tar.TypeDir, Name: "usr/lib/", Mode: 0755}},
+		{
+			Header: &tar.Header{Typeflag: tar.TypeReg, Name: "usr/lib/os-release", Mode: 0644, Size: int64(len("ID=debian\n"))},
+			Data:   bytes.NewBufferString("ID=debian\n"),
+		},
+		{Header: &tar.Header{Typeflag: tar.TypeSymlink, Name: "etc/os-release", Linkname: "/usr/lib/os-release", Mode: 0777}},
+		{
+			Header: &tar.Header{Typeflag: tar.TypeReg, Name: "wanted.txt", Mode: 0644, Size: int64(len("w\n"))},
+			Data:   bytes.NewBufferString("w\n"),
+		},
+	})
+	img1, err := mutate.AppendLayers(empty.Image, layer)
+	if err != nil {
+		t.Fatalf("mutate.AppendLayers: %v", err)
+	}
+
+	cfg := DefaultConfig()
+	// Require only an unrelated file; the symlink etc/os-release is not required.
+	cfg.FileRequirer = require.NewFileRequirerPaths([]string{"wanted.txt"})
+	img, err := FromV1Image(img1, cfg)
+	if err != nil {
+		t.Fatalf("FromV1Image returned error: %v", err)
+	}
+	defer func() { _ = img.CleanUp() }()
+
+	// The target of the non-required symlink must not be materialized.
+	if _, err := fs.Stat(img.FS(), "usr/lib/os-release"); err == nil {
+		t.Errorf("usr/lib/os-release was materialized via a non-required symlink, want absent")
+	}
+}
+
 // layerFromTarEntries builds a single image layer from the given tar entries.
 func layerFromTarEntries(t *testing.T, entries []*tarEntry) v1.Layer {
 	t.Helper()
