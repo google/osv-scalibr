@@ -12,6 +12,12 @@ import (
 // Key: cleaned short name (e.g. "basement"), Value: full Maven artifact ID
 // Reference:
 // https://mvnrepository.com/artifact/com.google.android.gms
+//
+// Note: we only need to include special mappings here.
+// e.g., for an android tag "androidx.browser", "androidx" is our GroupID and
+// "browser" is our artifactID, but we don't need to add that mapping here
+// because deriveGroupID and cleanArtifactID will return "androidx" and "browser"
+// by default.
 var artifactIDMapping = map[string]map[string]string{
 	"com.google.android.gms": {
 		"basement":       "play-services-basement",
@@ -44,6 +50,39 @@ var artifactIDMapping = map[string]map[string]string{
 		"firebase_auth":          "firebase-auth",
 		"firebase_database":      "firebase-database",
 		"firebase_dynamic_links": "firebase-dynamic-links",
+	},
+	"androidx": {
+		"arch_core":           "arch-core-runtime",
+		"camera_core":         "camera-core",
+		"camera_camera2":      "camera-camera2",
+		"camera_lifecycle":    "camera-lifecycle",
+		"concurrent":          "concurrent-futures",
+		"core_ktx":            "core-ktx",
+		"lifecycle":           "lifecycle-runtime",
+		"lifecycle_runtime":   "lifecycle-runtime",
+		"lifecycle_viewmodel": "lifecycle-viewmodel",
+		"lifecycle_livedata":  "lifecycle-livedata",
+		"navigation":          "navigation-runtime",
+		"paging":              "paging-runtime",
+		"room":                "room-runtime",
+		"security":            "security-crypto",
+		"startup":             "startup-runtime",
+		"work":                "work-runtime",
+	},
+	"com.android.support": {
+		"appcompat_v7":       "appcompat-v7",
+		"cardview_v7":        "cardview-v7",
+		"recyclerview_v7":    "recyclerview-v7",
+		"support_v4":         "support-v4",
+		"support_core_ui":    "support-core-ui",
+		"support_core_utils": "support-core-utils",
+	},
+	"org.jetbrains.kotlin": {
+		"stdlib":      "kotlin-stdlib",
+		"stdlib_jdk7": "kotlin-stdlib-jdk7",
+		"stdlib_jdk8": "kotlin-stdlib-jdk8",
+		"reflect":     "kotlin-reflect",
+		"coroutines":  "kotlinx-coroutines-core",
 	},
 }
 
