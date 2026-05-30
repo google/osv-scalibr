@@ -316,8 +316,8 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		history = configFile.History
 		labels = configFile.Config.Labels
 		// The config records each layer's diffID (the digest of its uncompressed
-		// content). Reusing them avoids decompressing every layer twice — once to
-		// recompute chain IDs and once per layer struct — on top of the fill pass.
+		// content). Reusing them avoids decompressing every layer twice - once to
+		// recompute chain IDs and once per layer struct - on top of the fill pass.
 		for _, h := range configFile.RootFS.DiffIDs {
 			diffIDs = append(diffIDs, digest.Digest(h.String()))
 		}

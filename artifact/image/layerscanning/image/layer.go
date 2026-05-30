@@ -96,9 +96,11 @@ func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool, diffID diges
 // already known (read from the image config), without decompressing the layers
 // to recompute them.
 func chainIDsFromDiffIDs(diffIDs []digest.Digest) []digest.Digest {
+	// identity.ChainIDs mutates its input slice in place, so compute on a copy to
+	// avoid corrupting the caller's diffIDs (which are reused to populate layers).
 	chainIDs := make([]digest.Digest, len(diffIDs))
-	copy(chainIDs, identity.ChainIDs(diffIDs))
-	return chainIDs
+	copy(chainIDs, diffIDs)
+	return identity.ChainIDs(chainIDs)
 }
 
 // ========================================================
