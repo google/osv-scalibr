@@ -623,10 +623,11 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 		case tar.TypeDir:
 			newVirtualFile = img.handleDir(virtualPath, header, isWhiteout)
 		case tar.TypeReg:
-			// Skip materializing regular files no requirer wants. The tar entry is
-			// still consumed by the next Next() call, so layer ordering, whiteouts,
-			// and symlink resolution are unaffected — only the content store shrinks.
-			if r := img.config.FileRequirer; r != nil && !r.FileRequired(strings.TrimPrefix(virtualPath, "/"), header.FileInfo()) {
+			// Skip materializing regular files no requirer wants; only the content
+			// store shrinks, layer ordering and symlink resolution are unaffected.
+			// Whiteouts are 0-byte regular files encoding deletions, so always keep
+			// them: gating on the de-whiteouted path would break deletion semantics.
+			if r := img.config.FileRequirer; !isWhiteout && r != nil && !r.FileRequired(strings.TrimPrefix(virtualPath, "/"), header.FileInfo()) {
 				continue
 			}
 			newVirtualFile, err = img.handleFile(virtualPath, tarReader, header, isWhiteout)
