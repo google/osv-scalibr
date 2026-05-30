@@ -36,6 +36,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	scalibrimage "github.com/google/osv-scalibr/artifact/image"
+	"github.com/google/osv-scalibr/artifact/image/require"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -83,6 +84,17 @@ var (
 type Config struct {
 	MaxFileBytes    int64
 	MaxSymlinkDepth int
+
+	// FileRequirer, if set, gates which regular files are materialized into the
+	// image's content store: a regular file is unpacked only if FileRequired
+	// returns true for it (path relative to the image root, no leading slash).
+	// Directories and symlinks are always kept so the virtual filesystem and
+	// symlink resolution stay intact. A nil FileRequirer means "require all"
+	// (the default, unfiltered behavior). Filtering avoids writing files no
+	// extractor needs, shrinking the on-disk content store and unpack time;
+	// decompression of the layer streams is unaffected, as the tar must be read
+	// in full regardless.
+	FileRequirer require.FileRequirer
 }
 
 // DefaultConfig returns the default configuration to load an Image.
@@ -90,6 +102,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		MaxFileBytes:    DefaultMaxFileBytes,
 		MaxSymlinkDepth: DefaultMaxSymlinkDepth,
+		FileRequirer:    &require.FileRequirerAll{},
 	}
 }
 
@@ -104,6 +117,9 @@ func validateConfig(config *Config) error {
 	}
 	if config.MaxSymlinkDepth < 0 {
 		return fmt.Errorf("%w: max symlink depth must be non-negative: %d", ErrInvalidConfig, config.MaxSymlinkDepth)
+	}
+	if config.FileRequirer == nil {
+		config.FileRequirer = &require.FileRequirerAll{}
 	}
 	return nil
 }
@@ -607,6 +623,12 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 		case tar.TypeDir:
 			newVirtualFile = img.handleDir(virtualPath, header, isWhiteout)
 		case tar.TypeReg:
+			// Skip materializing regular files no requirer wants. The tar entry is
+			// still consumed by the next Next() call, so layer ordering, whiteouts,
+			// and symlink resolution are unaffected — only the content store shrinks.
+			if r := img.config.FileRequirer; r != nil && !r.FileRequired(strings.TrimPrefix(virtualPath, "/"), header.FileInfo()) {
+				continue
+			}
 			newVirtualFile, err = img.handleFile(virtualPath, tarReader, header, isWhiteout)
 		case tar.TypeSymlink, tar.TypeLink:
 			newVirtualFile, err = img.handleSymlink(virtualPath, header, isWhiteout)
