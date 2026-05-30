@@ -73,21 +73,32 @@ func (layer *Layer) Command() string {
 
 // convertV1Layer converts a v1.Layer to a scalibr Layer. This involves getting the diffID and
 // uncompressed tar from the v1.Layer.
-func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool, maxSymlinkDepth int) *Layer {
-	var diffID string
-	d, err := v1Layer.DiffID()
-	if err != nil {
-		log.Warnf("failed to get diffID from v1 layer: %v", err)
-	} else {
-		diffID = d.String()
+func convertV1Layer(v1Layer v1.Layer, command string, isEmpty bool, diffID digest.Digest, maxSymlinkDepth int) *Layer {
+	// diffID is normally supplied by the caller from the image config. Only when
+	// the config did not provide one do we ask the layer, which decompresses it.
+	if diffID == "" {
+		if d, err := v1Layer.DiffID(); err != nil {
+			log.Warnf("failed to get diffID from v1 layer: %v", err)
+		} else {
+			diffID = digest.Digest(d.String())
+		}
 	}
 
 	return &Layer{
-		diffID:       digest.Digest(diffID),
+		diffID:       diffID,
 		buildCommand: command,
 		isEmpty:      isEmpty,
 		fileNodeTree: NewNode(maxSymlinkDepth),
 	}
+}
+
+// chainIDsFromDiffIDs computes the chain IDs for layers whose diffIDs are
+// already known (read from the image config), without decompressing the layers
+// to recompute them.
+func chainIDsFromDiffIDs(diffIDs []digest.Digest) []digest.Digest {
+	chainIDs := make([]digest.Digest, len(diffIDs))
+	copy(chainIDs, identity.ChainIDs(diffIDs))
+	return chainIDs
 }
 
 // ========================================================

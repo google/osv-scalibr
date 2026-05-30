@@ -1048,6 +1048,7 @@ func TestInitializeChainLayers(t *testing.T) {
 		name            string
 		v1Layers        []v1.Layer
 		history         []v1.History
+		diffIDs         []digest.Digest
 		maxSymlinkDepth int
 		want            []*chainLayer
 		wantErr         bool
@@ -1285,7 +1286,7 @@ func TestInitializeChainLayers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotChainLayers, err := initializeChainLayers(tc.v1Layers, tc.history, tc.maxSymlinkDepth)
+			gotChainLayers, err := initializeChainLayers(tc.v1Layers, tc.history, tc.diffIDs, tc.maxSymlinkDepth)
 			if tc.wantErr {
 				if err != nil {
 					return
