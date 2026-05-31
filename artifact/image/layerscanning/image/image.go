@@ -93,9 +93,12 @@ type Config struct {
 	// too (following symlink chains), so reads through it do not dangle. A nil
 	// FileRequirer means "require all"
 	// (the default, unfiltered behavior). Filtering avoids writing files no
-	// extractor needs, shrinking the on-disk content store and unpack time;
-	// decompression of the layer streams is unaffected, as the tar must be read
-	// in full regardless.
+	// extractor needs, shrinking the on-disk content store. The trade-off is
+	// decompression cost: resolving the targets of required symlinks sweeps the
+	// layers repeatedly until no new targets are found, so a filtering requirer
+	// can re-decompress each layer stream up to MaxSymlinkDepth+1 times. The
+	// default "require all" requirer filters nothing, so it always settles in a
+	// single pass.
 	FileRequirer require.FileRequirer
 }
 
