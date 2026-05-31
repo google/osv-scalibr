@@ -128,14 +128,14 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("%s: %q: manifest parsing failed %w", Name, input.Path, manifestErr)
 	}
 
-	// Parse the normalized xml to our manifest structure
+	// Parse the normalized AndroidManifest.xml to our manifest structure
 	manifest, err := ParseManifest(manifestBuf.Bytes())
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("%s: %q: manifest decoding failed %w", Name, input.Path, err)
 	}
 
 	// Dump the normalized manifest to the disk so other plugins can work on it.
-	// AndroidManifest.xml can contains various secrets.
+	// AndroidManifest.xml contains various secrets.
 	// For reference, "Application MetaData: name="com.google.android.geo.API_KEY" value="AIzaSyAP-gfH3qvi6vgHZbSYwQ_XHqV_mXHhzIk"
 	if err := DumpManifest(manifestBuf.Bytes(), tempDir); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("%s: failed to dump manifest: %w", Name, err)
