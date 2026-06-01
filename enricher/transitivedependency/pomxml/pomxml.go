@@ -343,10 +343,12 @@ func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []s
 
 		f, err := scanRoot.FS.Open(path)
 		if err != nil {
+			log.Errorf("Failed to open pom.xml at %s: %v", path, err)
 			continue
 		}
 		var project maven.Project
 		if err := datasource.NewMavenDecoder(f).Decode(&project); err != nil {
+			log.Errorf("Failed to decode pom.xml at %s: %v", path, err)
 			f.Close()
 			continue
 		}
