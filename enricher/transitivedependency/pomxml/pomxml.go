@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -36,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -123,6 +125,11 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 // Enrich enriches the inventory in pom.xml files with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, pomxml.Name)
+	paths := make([]string, 0, len(pkgGroups))
+	for p := range pkgGroups {
+		paths = append(paths, p)
+	}
+	e.discoverModules(input.ScanRoot, paths)
 	if len(pkgGroups) > 0 {
 		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
 	}
@@ -144,6 +151,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			FS:     input.ScanRoot.FS,
 			Root:   input.ScanRoot.Path,
 		})
+		f.Close()
 
 		if err != nil {
 			log.Warnf("failed resolution for %s: %v", path, err)
@@ -316,4 +324,49 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 	}
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
+}
+
+// discoverModules recursively discovers local modules by following module tags.
+func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string) {
+	visited := make(map[string]bool)
+	var queue []string
+	queue = append(queue, initialPaths...)
+
+	for len(queue) > 0 {
+		path := queue[0]
+		queue = queue[1:]
+
+		if visited[path] {
+			continue
+		}
+		visited[path] = true
+
+		f, err := scanRoot.FS.Open(path)
+		if err != nil {
+			log.Errorf("Failed to open pom.xml at %s: %v", path, err)
+			continue
+		}
+		var project maven.Project
+		if err := datasource.NewMavenDecoder(f).Decode(&project); err != nil {
+			log.Errorf("Failed to decode pom.xml at %s: %v", path, err)
+			f.Close()
+			continue
+		}
+		f.Close()
+
+		pk := mavenutil.ProjectKey(project)
+		g, a, v := string(pk.GroupID), string(pk.ArtifactID), string(pk.Version)
+		if g != "" && a != "" && v != "" {
+			absPath := filepath.Join(scanRoot.Path, path)
+			log.Infof("Discovered local module %s:%s:%s at %s", g, a, v, path)
+			e.MavenClient.AddLocalProject(g, a, v, absPath)
+		}
+
+		// Add modules to queue
+		dir := filepath.Dir(path)
+		for _, m := range project.Modules {
+			modulePath := filepath.Join(dir, string(m), "pom.xml")
+			queue = append(queue, filepath.ToSlash(modulePath))
+		}
+	}
 }
