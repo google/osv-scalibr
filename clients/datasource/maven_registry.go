@@ -51,6 +51,7 @@ type MavenRegistryAPIClient struct {
 	registries      []MavenRegistry                // Additional registries specified to fetch projects
 	registryAuths   map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
 	localRegistry   string                         // The local directory that holds Maven manifests
+	localProjects   map[maven.ProjectKey]string    // Paths to projects available in the local source tree.
 
 	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
 	disableGoogleAuth bool         // If true, do not try to create google.DefaultClient for Artifact Registry.
@@ -122,6 +123,15 @@ func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*Ma
 	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false)
 }
 
+// AddLocalProject adds a project to the local projects map.
+func (m *MavenRegistryAPIClient) AddLocalProject(groupID, artifactID, version, path string) {
+	if m.localProjects == nil {
+		m.localProjects = make(map[maven.ProjectKey]string)
+	}
+	key := maven.ProjectKey{GroupID: maven.String(groupID), ArtifactID: maven.String(artifactID), Version: maven.String(version)}
+	m.localProjects[key] = path
+}
+
 // WithoutRegistries makes MavenRegistryAPIClient including its cache but not registries.
 func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 	return &MavenRegistryAPIClient{
@@ -133,6 +143,7 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 		registryAuths:     m.registryAuths,
 		googleClient:      m.googleClient,
 		disableGoogleAuth: m.disableGoogleAuth,
+		localProjects:     m.localProjects,
 	}
 }
 
@@ -208,6 +219,20 @@ func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 // More about Maven Repository Metadata Model: https://maven.apache.org/ref/3.9.9/maven-repository-metadata/
 // More about Maven Metadata: https://maven.apache.org/repositories/metadata.html
 func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifactID, version string) (maven.Project, error) {
+	key := maven.ProjectKey{GroupID: maven.String(groupID), ArtifactID: maven.String(artifactID), Version: maven.String(version)}
+	if path, ok := m.localProjects[key]; ok {
+		file, err := os.Open(path)
+		if err != nil {
+			return maven.Project{}, fmt.Errorf("failed to open local project %s: %w", path, err)
+		}
+		defer file.Close()
+		var project maven.Project
+		if err := NewMavenDecoder(file).Decode(&project); err != nil {
+			return maven.Project{}, fmt.Errorf("failed to decode local project %s: %w", path, err)
+		}
+		return project, nil
+	}
+
 	var errs []error
 	if !strings.HasSuffix(version, "-SNAPSHOT") {
 		for _, registry := range append(m.registries, m.defaultRegistry) {
