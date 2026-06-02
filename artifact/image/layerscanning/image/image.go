@@ -720,19 +720,26 @@ func (img *Image) handleDir(virtualPath string, header *tar.Header, isWhiteout b
 // the file. The function returns a virtual file, which is meant to represent the file in a virtual
 // filesystem.
 func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *tar.Header, isWhiteout bool) (*virtualFile, error) {
+	// Record the offset of the file in the content blob before adding the new bytes. The offset is
+	// the current size of the content blob.
+	offset := img.size
+
 	// Use LimitReader in case the header.Size is incorrect.
 	numBytes, err := img.contentBlob.ReadFrom(io.LimitReader(tarReader, img.config.MaxFileBytes))
 	if numBytes >= img.config.MaxFileBytes || errors.Is(err, io.EOF) {
+		if err := img.truncateContentBlob(offset); err != nil {
+			return nil, err
+		}
 		return nil, ErrFileReadLimitExceeded
 	}
 
 	if err != nil {
+		if err := img.truncateContentBlob(offset); err != nil {
+			return nil, err
+		}
 		return nil, fmt.Errorf("unable to copy file: %w", err)
 	}
 
-	// Record the offset of the file in the content blob before adding the new bytes. The offset is
-	// the current size of the content blob.
-	offset := img.size
 	// Update the image size with the number of bytes read into the content blob.
 	img.size += numBytes
 	fileInfo := header.FileInfo()
@@ -745,6 +752,16 @@ func (img *Image) handleFile(virtualPath string, tarReader *tar.Reader, header *
 		size:        numBytes,
 		reader:      io.NewSectionReader(img.contentBlob, offset, numBytes),
 	}, nil
+}
+
+func (img *Image) truncateContentBlob(offset int64) error {
+	if err := img.contentBlob.Truncate(offset); err != nil {
+		return fmt.Errorf("unable to truncate content blob: %w", err)
+	}
+	if _, err := img.contentBlob.Seek(offset, io.SeekStart); err != nil {
+		return fmt.Errorf("unable to seek content blob: %w", err)
+	}
+	return nil
 }
 
 // fillChainLayersWithVirtualFile fills the chain layers with a new fileNode.
