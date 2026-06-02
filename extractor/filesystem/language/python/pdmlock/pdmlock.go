@@ -16,9 +16,13 @@
 package pdmlock
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -72,20 +76,30 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from pdm.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var parsedLockFile *pdmLockFile
-
-	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockFile)
+	content, err := io.ReadAll(input.Reader)
 	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not read file: %w", err)
+	}
+
+	var parsedLockFile *pdmLockFile
+	if err := toml.Unmarshal(content, &parsedLockFile); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
+
+	packageNames := make([]string, 0, len(parsedLockFile.Packages))
+	for _, p := range parsedLockFile.Packages {
+		packageNames = append(packageNames, p.Name)
+	}
+	lineNums := findPackageLineNumbers(content, packageNames)
+
 	packages := make([]*extractor.Package, 0, len(parsedLockFile.Packages))
 
-	for _, parsedPKG := range parsedLockFile.Packages {
+	for i, parsedPKG := range parsedLockFile.Packages {
 		pkg := &extractor.Package{
 			Name:     parsedPKG.Name,
 			Version:  parsedPKG.Version,
 			PURLType: purl.TypePyPi,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, lineNums[i]),
 		}
 
 		depGroups := parseGroupsToDepGroups(parsedPKG.Groups)
@@ -104,6 +118,71 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+// extractPackageName parses a TOML key-value line and returns the unquoted
+// package name if the key is "name". Returns false if the line is not a valid name assignment.
+// TODO(b/491518484): Put in common location for all Python extractors to use.
+func extractPackageName(line string) (string, bool) {
+	if !strings.HasPrefix(line, "name") {
+		return "", false
+	}
+	k, _, ok := strings.Cut(line, "=")
+	if !ok || strings.TrimSpace(k) != "name" {
+		return "", false
+	}
+	var pkg pdmLockPackage
+	if err := toml.Unmarshal([]byte(line), &pkg); err != nil {
+		return "", false
+	}
+	return pkg.Name, true
+}
+
+// findPackageLineNumbers returns the line numbers of the specified package names.
+// If package line number is not found, the value will be 0.
+func findPackageLineNumbers(content []byte, packageNames []string) []int {
+	lineNums := make([]int, len(packageNames))
+	if len(packageNames) == 0 {
+		return lineNums
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	currentLine := 0
+	pkgIdx := 0
+	inPackageBlock := false
+
+	for scanner.Scan() {
+		currentLine++
+		line := strings.TrimSpace(scanner.Text())
+
+		if line == "[[package]]" {
+			inPackageBlock = true
+			continue
+		}
+
+		if inPackageBlock && strings.HasPrefix(line, "[") && !strings.HasPrefix(line, "[[package]]") {
+			inPackageBlock = false
+			continue
+		}
+
+		if !inPackageBlock || pkgIdx >= len(packageNames) {
+			continue
+		}
+
+		name, ok := extractPackageName(line)
+		if !ok || name != packageNames[pkgIdx] {
+			continue
+		}
+
+		lineNums[pkgIdx] = currentLine
+		pkgIdx++
+		inPackageBlock = false
+
+		if pkgIdx == len(packageNames) {
+			break
+		}
+	}
+	return lineNums
 }
 
 // parseGroupsToDepGroups converts pdm lockfile groups to the standard DepGroups

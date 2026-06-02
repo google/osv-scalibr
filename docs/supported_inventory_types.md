@@ -70,10 +70,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | portable executables                              | `dotnet/pe`                          |
 |            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
 |            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
+|            | project.assets.json                               | `dotnet/projectassetsjson`           |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
 | Elixir     | mix.lock                                          | `elixir/mixlock`                     |
+| Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
@@ -236,6 +238,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Maven entries in Bazel build files | `os/bazelmaven`     |
 | NetScaler installations            | `netscaler`         |
 | GitHub Actions workflow dependencies| `github/actions`    |
+| Git repositories (and submodules)   | `misc/gitrepo`      |
 
 ### EmbeddedFS
 

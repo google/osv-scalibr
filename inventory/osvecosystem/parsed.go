@@ -140,6 +140,7 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemRubyGems,
 		osvconstants.EcosystemSUSE,
 		osvconstants.EcosystemSwiftURL,
+		osvconstants.EcosystemTuxCare,
 		osvconstants.EcosystemUbuntu,
 		osvconstants.EcosystemVSCode,
 		osvconstants.EcosystemWolfi,

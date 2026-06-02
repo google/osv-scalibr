@@ -93,7 +93,7 @@ func RunScan(flags *cli.Flags) int {
 			return 1
 		}
 	} else {
-		log.Infof("Scan roots: %s", cfg.ScanRoots)
+		log.Infof("Scan roots: %v", cfg.ScanRoots)
 		result = scalibr.New().Scan(context.Background(), cfg)
 	}
 

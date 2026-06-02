@@ -148,6 +148,8 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages)
 	case purl.TypeGithub:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions)
+	case purl.TypeSwift:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemSwiftURL)
 	}
 
 	// No Ecosystem defined for this package.
