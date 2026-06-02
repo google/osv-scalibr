@@ -65,6 +65,9 @@ func TestInventoryToProto(t *testing.T) {
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					cimStructForTest,
 				},
+				SensitiveInformation: []*inventory.SensitiveInformation{
+					SensitiveInformationStruct1,
+				},
 			},
 			want: &pb.Inventory{
 				Packages: []*pb.Package{
@@ -82,6 +85,9 @@ func TestInventoryToProto(t *testing.T) {
 				},
 				ContainerImageMetadata: []*pb.ContainerImageMetadata{
 					cimProtoForTest,
+				},
+				SensitiveInformation: []*pb.SensitiveInformation{
+					SensitiveInformationProto1,
 				},
 			},
 		},
@@ -212,6 +218,9 @@ func TestInventoryToStruct(t *testing.T) {
 				ContainerImageMetadata: []*pb.ContainerImageMetadata{
 					cimProtoForTest,
 				},
+				SensitiveInformation: []*pb.SensitiveInformation{
+					SensitiveInformationProto1,
+				},
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
@@ -230,6 +239,9 @@ func TestInventoryToStruct(t *testing.T) {
 				},
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					cimStructForTest,
+				},
+				SensitiveInformation: []*inventory.SensitiveInformation{
+					SensitiveInformationStruct1,
 				},
 			},
 		},

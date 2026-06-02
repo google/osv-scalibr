@@ -15,6 +15,8 @@
 package pomxml_test
 
 import (
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 
@@ -22,6 +24,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/extractor"
@@ -431,6 +434,227 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 	sort.Slice(inv.Packages, func(i, j int) bool {
 		return inv.Packages[i].Name < inv.Packages[j].Name
 	})
+	if diff := cmp.Diff(wantInventory, inv); diff != "" {
+		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
+	}
+}
+
+func TestEnricher_Enrich_LocalModules(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create root pom.xml
+	err := os.WriteFile(filepath.Join(tempDir, "pom.xml"), []byte(`
+	<project>
+		<groupId>org.example</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.0</version>
+		<packaging>pom</packaging>
+		<modules>
+			<module>module-a</module>
+			<module>module-b</module>
+		</modules>
+	</project>
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create module-a/pom.xml
+	err = os.Mkdir(filepath.Join(tempDir, "module-a"), 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(filepath.Join(tempDir, "module-a", "pom.xml"), []byte(`
+	<project>
+		<parent>
+			<groupId>org.example</groupId>
+			<artifactId>parent</artifactId>
+			<version>1.0</version>
+		</parent>
+		<artifactId>module-a</artifactId>
+		<dependencies>
+			<dependency>
+				<groupId>org.example</groupId>
+				<artifactId>module-b</artifactId>
+				<version>1.0</version>
+			</dependency>
+		</dependencies>
+	</project>
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create module-b/pom.xml
+	err = os.Mkdir(filepath.Join(tempDir, "module-b"), 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(filepath.Join(tempDir, "module-b", "pom.xml"), []byte(`
+	<project>
+		<parent>
+			<groupId>org.example</groupId>
+			<artifactId>parent</artifactId>
+			<version>1.0</version>
+		</parent>
+		<artifactId>module-b</artifactId>
+		<dependencies>
+			<dependency>
+				<groupId>org.external</groupId>
+				<artifactId>external-a</artifactId>
+				<version>2.0</version>
+			</dependency>
+		</dependencies>
+	</project>
+	`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set up mock server
+	srv := clienttest.NewMockHTTPServer(t)
+
+	// Mock for module-b versions
+	srv.SetResponse(t, "org/example/module-b/maven-metadata.xml", []byte(`
+	<metadata>
+		<groupId>org.example</groupId>
+		<artifactId>module-b</artifactId>
+		<versioning>
+			<versions>
+				<version>1.0</version>
+			</versions>
+		</versioning>
+	</metadata>
+	`))
+
+	// Mock for external-a versions
+	srv.SetResponse(t, "org/external/external-a/maven-metadata.xml", []byte(`
+	<metadata>
+		<groupId>org.external</groupId>
+		<artifactId>external-a</artifactId>
+		<versioning>
+			<versions>
+				<version>2.0</version>
+			</versions>
+		</versioning>
+	</metadata>
+	`))
+
+	// Mock for external-a POM
+	srv.SetResponse(t, "org/external/external-a/2.0/external-a-2.0.pom", []byte(`
+	<project>
+		<groupId>org.external</groupId>
+		<artifactId>external-a</artifactId>
+		<version>2.0</version>
+	</project>
+	`))
+
+	apiClient, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("failed to create enricher: %v", err)
+	}
+
+	enrichy.(*pomxml.Enricher).MavenClient = apiClient
+	// Use MavenRegistryClient for resolution too
+	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient)
+
+	// Prepare inventory
+	inv := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "org.example:module-b",
+				Version:  "1.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("module-a/pom.xml"),
+				Plugins:  []string{"java/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "module-b",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+			{
+				Name:     "org.example:parent",
+				Version:  "1.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("pom.xml"),
+				Plugins:  []string{"java/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "parent",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+		},
+	}
+
+	input := enricher.ScanInput{
+		ScanRoot: &scalibrfs.ScanRoot{
+			Path: tempDir,
+			FS:   scalibrfs.DirFS(tempDir),
+		},
+	}
+
+	err = enrichy.Enrich(t.Context(), &input, &inv)
+	if err != nil {
+		t.Fatalf("failed to enrich: %v", err)
+	}
+
+	wantInventory := inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "org.example:module-b",
+				Version:  "1.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("module-a/pom.xml"),
+				Plugins:  []string{"java/pomxml", "transitivedependency/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "module-b",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+			{
+				Name:     "org.example:parent",
+				Version:  "1.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("pom.xml"),
+				Plugins:  []string{"java/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "parent",
+					GroupID:      "org.example",
+					IsTransitive: false,
+				},
+			},
+			{
+				Name:     "org.external:external-a",
+				Version:  "2.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("module-a/pom.xml"),
+				ScanRoot: tempDir,
+				Plugins:  []string{"transitivedependency/pomxml"},
+				Metadata: &javalockfile.Metadata{
+					ArtifactID:   "external-a",
+					GroupID:      "org.external",
+					IsTransitive: true,
+					DepGroupVals: []string{},
+				},
+			},
+		},
+	}
+
+	sort.Slice(inv.Packages, func(i, j int) bool {
+		return inv.Packages[i].Name < inv.Packages[j].Name
+	})
+	sort.Slice(wantInventory.Packages, func(i, j int) bool {
+		return wantInventory.Packages[i].Name < wantInventory.Packages[j].Name
+	})
+
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}
