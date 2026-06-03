@@ -52,17 +52,26 @@ func TestCookieDetector_truePositives(t *testing.T) {
 		{
 			name: "pino_log",
 			file: "logs/pino/app.log",
-			want: []veles.Secret{},
+			want: []veles.Secret{
+				http.Cookie{Name: "pino_session", Value: "xyz987"},
+				http.Cookie{Name: "pino_session", Value: "xyz987"},
+			},
 		},
 		{
 			name: "dotnet_log",
 			file: "logs/dotnet/vulnerable20260424.log",
-			want: []veles.Secret{},
+			want: []veles.Secret{
+				http.Cookie{Name: "session_id", Value: "abc123dotnet"},
+				http.Cookie{Name: "session_id", Value: "abc123dotnet"},
+			},
 		},
 		{
 			name: "nginx_log",
 			file: "logs/nginx/access.log",
-			want: []veles.Secret{},
+			want: []veles.Secret{
+				http.Cookie{Name: `tracking_id`, Value: `evil_corp_999`},
+				http.Cookie{Name: `tracking_id`, Value: `evil_corp_999`},
+			},
 		},
 		// Synthetic examples
 		{

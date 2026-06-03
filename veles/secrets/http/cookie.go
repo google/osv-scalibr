@@ -25,16 +25,16 @@ var (
 	// cookiePattern captures the entire cookie header value
 	cookiePattern = regexp.MustCompile(
 		// Cookie header key
-		`(?i)(?:^|[^\w-])(?:Set-)?Cookie\s*:\s*` +
+		`(?i)(?:^|[^\w-])((?:Set-)?Cookie)(?:")?\s*:\s*(?:")?` +
 			`(` +
 			// Cookie name
 			`[^=\s;:]+` +
 			// Equal sign
 			`=` +
-			// Cookie value
-			`[^;\s]+` +
+			// Cookie value: Stops at unescaped ", ;, or whitespace. Allows \".
+			`(?:[^;\s"\\]|\\.)+` +
 			// Same pattern but preceded by a `; `
-			`(?:\s*;\s*[^=\s;:]+=[^;\s]+)*` +
+			`(?:\s*;\s*[^=\s;:]+=(?:[^;\s"\\]|\\.)+)*` +
 			`)`,
 	)
 )
@@ -52,13 +52,19 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 	var pos []int
 
 	for _, m := range cookiePattern.FindAllSubmatchIndex(data, -1) {
-		// Ensure the match actually contains our capture group (needs at least 4 indices)
-		if len(m) < 4 {
+		// Ensure we have at least 6 indices:
+		// m[0]:m[1] = full match (including preceding whitespace)
+		// m[2]:m[3] = Group 1 ("Set-Cookie")
+		// m[4]:m[5] = Group 2 (Cookie payload string)
+		if len(m) < 6 {
 			continue
 		}
 
-		// Extract the byte slice for the first capture group (the actual cookies string)
-		rawCookies := data[m[2]:m[3]]
+		// m[2] holds the exact starting byte index of "Set-Cookie" / "Cookie"
+		headerPos := m[2]
+
+		// Extract the byte slice for the second capture group (the actual cookies string)
+		rawCookies := data[m[4]:m[5]]
 
 		// Split the captured string by semicolons to evaluate each cookie
 		for p := range bytes.SplitSeq(rawCookies, []byte(";")) {
@@ -73,11 +79,15 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 				continue
 			}
 
+			// TODO: here check key names
+
 			secrets = append(secrets, Cookie{
 				Name:  string(parts[0]),
 				Value: string(parts[1]),
 			})
-			pos = append(pos, m[0])
+
+			// Use the exact position of "Set-Cookie" for all cookies found in this header
+			pos = append(pos, headerPos)
 		}
 	}
 
