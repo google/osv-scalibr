@@ -1,6 +1,8 @@
 package vmdk
 
 import (
+	"bytes"
+	"compress/zlib"
 	"encoding/binary"
 	"os"
 	"runtime"
@@ -125,6 +127,89 @@ func craftStreamOptimizedVMDKFooterBomb(t *testing.T) string {
 	}
 	f.Close()
 	return f.Name()
+}
+
+// craftStreamOptimizedVMDKGrainOverflow builds a stream-optimized VMDK whose
+// GrainSize is an oversized power of two (2^62). It passes the old
+// power-of-two check, but int64(grainSec)*SectorSize overflows int64 and wraps
+// to 0, so the subsequent grain-alignment arithmetic divides by zero.
+func craftStreamOptimizedVMDKGrainOverflow(t *testing.T) string {
+	t.Helper()
+
+	hdr := make([]byte, SectorSize)
+	le := binary.LittleEndian
+	le.PutUint32(hdr[0:], SparseMagic)
+	le.PutUint32(hdr[4:], 1)
+	le.PutUint32(hdr[8:], 0x00030000)     // stream-optimized flags
+	le.PutUint64(hdr[12:], 1)             // Capacity = 1 sector
+	le.PutUint64(hdr[20:], uint64(1)<<62) // GrainSize = 2^62 (power of two, overflows *512)
+	le.PutUint64(hdr[56:], 1)             // GDOffset != GDAtEnd
+	le.PutUint64(hdr[64:], 2)             // OverHead = 2 → stream at byte 1024
+	hdr[73] = '\n'
+	hdr[74] = ' '
+	hdr[75] = '\r'
+	hdr[76] = '\n'
+	le.PutUint16(hdr[77:], 1)
+
+	pad := make([]byte, SectorSize)
+
+	// A valid zlib-compressed grain so parsing reaches the alignment math.
+	var zbuf bytes.Buffer
+	zw := zlib.NewWriter(&zbuf)
+	if _, err := zw.Write([]byte("grain")); err != nil {
+		t.Fatalf("zlib write: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zlib close: %v", err)
+	}
+	comp := zbuf.Bytes()
+
+	marker := make([]byte, 12)
+	le.PutUint64(marker[0:], 0)                 // val = LBA 0
+	le.PutUint32(marker[8:], uint32(len(comp))) // size = compressed length
+
+	// Pad the grain marker out to a sector boundary, then append an EOS marker.
+	consumed := 12 + len(comp)
+	grainPad := (SectorSize - (consumed % SectorSize)) % SectorSize
+	eos := make([]byte, 16) // val=0, size=0, typ=0 (EOS)
+
+	f, err := os.CreateTemp(t.TempDir(), "scalibr-vmdk-grainoverflow-*.vmdk")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	for _, b := range [][]byte{hdr, pad, marker, comp, make([]byte, grainPad), eos} {
+		if _, err := f.Write(b); err != nil {
+			f.Close()
+			t.Fatalf("Write: %v", err)
+		}
+	}
+	f.Close()
+	return f.Name()
+}
+
+func TestConvertVMDKGrainSizeOverflowHandled(t *testing.T) {
+	inputPath := craftStreamOptimizedVMDKGrainOverflow(t)
+
+	outFile, err := os.CreateTemp(t.TempDir(), "scalibr-vmdk-out-*.raw")
+	if err != nil {
+		t.Fatalf("CreateTemp output: %v", err)
+	}
+	outFile.Close()
+
+	t.Logf("GrainSize = 2^62 => int64(grainSec)*SectorSize overflows to 0 without the cap")
+
+	// Without the MaxGrainSec cap, grainBytes wraps to 0 and the grain-alignment
+	// arithmetic panics with an integer divide-by-zero. The cap forces a fallback
+	// to DefaultGrainSec, so the conversion completes without panicking.
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("convertVMDKToRaw panicked on oversized GrainSize: %v", r)
+		}
+	}()
+
+	if err := convertVMDKToRaw(inputPath, outFile.Name()); err != nil {
+		t.Logf("convertVMDKToRaw err (non-fatal, must not panic): %v", err)
+	}
 }
 
 func TestConvertVMDKFooterSectorCountRejected(t *testing.T) {

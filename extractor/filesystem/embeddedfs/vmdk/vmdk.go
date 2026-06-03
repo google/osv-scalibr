@@ -46,6 +46,10 @@ const (
 	GDAtEnd = 0xFFFFFFFFFFFFFFFF
 	// DefaultGrainSec is default sectors if header invalid (64KiB).
 	DefaultGrainSec = 128
+	// MaxGrainSec is the maximum number of sectors per grain accepted by the
+	// stream parser. It matches the validateHeader bound and prevents int64
+	// overflow when multiplied by SectorSize.
+	MaxGrainSec = 128
 )
 
 // sparseExtentHeader defines the VMDK sparse extent header structure.
@@ -291,7 +295,10 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 		}
 	}
 	grainSec := hdr.GrainSize
-	if grainSec == 0 || (grainSec&(grainSec-1)) != 0 {
+	// grainSec must be a non-zero power of two within the spec range. The upper
+	// bound also keeps int64(grainSec)*SectorSize from overflowing (an oversized
+	// power of two would otherwise wrap to 0 or a negative value below).
+	if grainSec == 0 || grainSec > MaxGrainSec || (grainSec&(grainSec-1)) != 0 {
 		grainSec = DefaultGrainSec
 	}
 	grainBytes := int64(grainSec) * SectorSize
@@ -329,12 +336,16 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 				if derr != nil && !errors.Is(derr, io.EOF) {
 					return fmt.Errorf("zlib read at lba %d: %w", lba, derr)
 				}
-				if int64(len(dec)) < grainBytes {
-					tmp := make([]byte, grainBytes)
-					copy(tmp, dec)
-					dec = tmp
-				} else if int64(len(dec)) > grainBytes {
-					tmp := make([]byte, int64(len(dec))+(-int64(len(dec))%grainBytes))
+				// Align the decompressed grain up to a whole multiple of grainBytes
+				// so it writes on a grain boundary. A grain normally decompresses to
+				// exactly grainBytes; pad (never truncate) for shorter or longer
+				// outputs. Rounding up keeps every decompressed byte.
+				aligned := ((int64(len(dec)) + grainBytes - 1) / grainBytes) * grainBytes
+				if aligned < grainBytes {
+					aligned = grainBytes
+				}
+				if int64(len(dec)) != aligned {
+					tmp := make([]byte, aligned)
 					copy(tmp, dec)
 					dec = tmp
 				}
@@ -379,7 +390,7 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 					if err := binary.Read(br, binary.LittleEndian, &foot); err == nil {
 						hdr = foot
 						grainSec = hdr.GrainSize
-						if grainSec == 0 || (grainSec&(grainSec-1)) != 0 {
+						if grainSec == 0 || grainSec > MaxGrainSec || (grainSec&(grainSec-1)) != 0 {
 							grainSec = DefaultGrainSec
 						}
 						grainBytes = int64(grainSec) * SectorSize
