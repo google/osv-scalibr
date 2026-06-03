@@ -46,6 +46,10 @@ const (
 	GDAtEnd = 0xFFFFFFFFFFFFFFFF
 	// DefaultGrainSec is default sectors if header invalid (64KiB).
 	DefaultGrainSec = 128
+	// MaxGrainSec is the maximum number of sectors per grain accepted by the
+	// stream parser. It matches the validateHeader bound and prevents int64
+	// overflow when multiplied by SectorSize.
+	MaxGrainSec = 128
 )
 
 // sparseExtentHeader defines the VMDK sparse extent header structure.
@@ -291,7 +295,10 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 		}
 	}
 	grainSec := hdr.GrainSize
-	if grainSec == 0 || (grainSec&(grainSec-1)) != 0 {
+	// grainSec must be a non-zero power of two within the spec range. The upper
+	// bound also keeps int64(grainSec)*SectorSize from overflowing (an oversized
+	// power of two would otherwise wrap to 0 or a negative value below).
+	if grainSec == 0 || grainSec > MaxGrainSec || (grainSec&(grainSec-1)) != 0 {
 		grainSec = DefaultGrainSec
 	}
 	grainBytes := int64(grainSec) * SectorSize
@@ -379,7 +386,7 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 					if err := binary.Read(br, binary.LittleEndian, &foot); err == nil {
 						hdr = foot
 						grainSec = hdr.GrainSize
-						if grainSec == 0 || (grainSec&(grainSec-1)) != 0 {
+						if grainSec == 0 || grainSec > MaxGrainSec || (grainSec&(grainSec-1)) != 0 {
 							grainSec = DefaultGrainSec
 						}
 						grainBytes = int64(grainSec) * SectorSize
