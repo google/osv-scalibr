@@ -164,6 +164,24 @@ func TestCookieDetector_trueNegatives(t *testing.T) {
 		file  string
 		input string
 	}{
+		// Cookie is present but is not detected.
+		{
+			// There is not enough context to properly detect the cookie, this case will probably never be covered
+			name: "postman",
+			file: "postman/cookie.json",
+		},
+		{
+			// It would be nice to cover this case but at the current stage of the detector it would lead over-complication and
+			// potential false positives
+			name: "cookie_in_open_collection",
+			file: "bruno/cookie/Auth.yml",
+		},
+		// Cookie not present
+		{
+			name: "missing_cookie_in_open_collection",
+			file: "bruno/cookie/UnAuth.yml",
+		},
+		// Synthetic examples
 		{
 			name:  "empty_cookie_header",
 			input: "Cookie: ",
