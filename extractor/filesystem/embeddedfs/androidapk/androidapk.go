@@ -16,15 +16,12 @@
 package androidapk
 
 import (
-	"bytes"
 	"context"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
 
-	"github.com/avast/apkparser"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
@@ -97,47 +94,23 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, errors.New("input.Reader is nil")
 	}
 
-	apkPath, err := input.GetRealPath()
-	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to get real path for %s: %w", input.Path, err)
-	}
-
 	// Extract .apk file to a temporary directory so other plugins get to work on it.
 	// This includes x509 certificates, maven metadata (if present), unpacked resource, and android dex files
-	tempDir, err := common.APKToTempDir(input.Reader)
+	tempDir, err := common.ZIPToTempDir(input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("common.APKToTempDir(%q): %w", input.Path, err)
 	}
 
-	// manifestBuf will hold normalized AndroidManifest.xml with resource references resolved from resources.arcs resource table file.
-	var manifestBuf bytes.Buffer
-	encoder := xml.NewEncoder(&manifestBuf)
-	// Parse the apk
-	zipErr, resourcesErr, manifestErr := apkparser.ParseApk(apkPath, encoder)
-
-	if err := encoder.Flush(); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("%s: manifest encoder flush failed: %w", Name, err)
-	}
-	if zipErr != nil {
-		return inventory.Inventory{}, fmt.Errorf("%s: %q: unpack failed: %w", Name, input.Path, zipErr)
-	}
-	if resourcesErr != nil {
-		return inventory.Inventory{}, fmt.Errorf("%s: %q: resource parsing failed %w", Name, input.Path, resourcesErr)
-	}
-	if manifestErr != nil {
-		return inventory.Inventory{}, fmt.Errorf("%s: %q: manifest parsing failed %w", Name, input.Path, manifestErr)
-	}
-
-	// Parse the normalized AndroidManifest.xml to our manifest structure
-	manifest, err := ParseManifest(manifestBuf.Bytes())
+	// manifest will hold normalized AndroidManifest.xml with resource references resolved from resources.arcs resource table file.
+	manifest, normalizedManifest, err := loadManifest(tempDir)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("%s: %q: manifest decoding failed %w", Name, input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("%s: manifest processing failed: %w", Name, err)
 	}
 
 	// Dump the normalized manifest to the disk so other plugins can work on it.
 	// AndroidManifest.xml contains various secrets.
 	// For reference, "Application MetaData: name="com.google.android.geo.API_KEY" value="AIzaSyAP-gfH3qvi6vgHZbSYwQ_XHqV_mXHhzIk"
-	if err := DumpManifest(manifestBuf.Bytes(), tempDir); err != nil {
+	if err := dumpManifest(normalizedManifest, tempDir); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("%s: failed to dump manifest: %w", Name, err)
 	}
 

@@ -14,7 +14,6 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.11.0
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5
 	github.com/aead/serpent v0.0.0-20160714141033-fba169763ea6
-	github.com/avast/apkparser v0.0.0-20260423123151-7fcaee440f68
 	github.com/bazelbuild/buildtools v0.0.0-20260319080235-05d2ebe49b0f
 	github.com/canonical/chisel-manifest v1.2.0
 	github.com/charmbracelet/bubbles v0.21.0
@@ -54,6 +53,7 @@ require (
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
 	github.com/saferwall/pe v1.6.4
 	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/shogo82148/androidbinary v1.0.5
 	github.com/spdx/tools-golang v0.5.7
 	github.com/thoas/go-funk v0.9.3
 	github.com/tidwall/gjson v1.19.0
