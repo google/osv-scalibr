@@ -6,21 +6,19 @@ import (
 	"testing"
 )
 
-func TestParseManifest_Metadata(t *testing.T) {
-	manifestPath := filepath.Join("testdata", "AndroidManifest.xml")
-
-	data, err := os.ReadFile(manifestPath)
+func TestLoadManifest_Metadata(t *testing.T) {
+	// manifest will hold normalized AndroidManifest.xml.
+	manifest, normalizedManifest, err := loadManifest("testdata")
 	if err != nil {
-		t.Fatalf("failed to read manifest file: %v", err)
-	}
-
-	manifest, err := ParseManifest(data)
-	if err != nil {
-		t.Fatalf("failed to parse manifest: %v", err)
+		t.Fatalf("manifest processing failed: %v", err)
 	}
 
 	if manifest == nil {
 		t.Fatal("manifest is nil")
+	}
+
+	if normalizedManifest == nil {
+		t.Fatal("normalized manifest bytes are nil")
 	}
 
 	// Verify package name exists
@@ -63,12 +61,12 @@ func TestDumpManifest(t *testing.T) {
     <application />
 </manifest>`)
 
-	err := DumpManifest(manifestData, tempDir)
+	err := dumpManifest(manifestData, tempDir)
 	if err != nil {
 		t.Fatalf("DumpManifest() returned error: %v", err)
 	}
 
-	outputPath := filepath.Join(tempDir, "AndroidManifestNormalized.xml")
+	outputPath := filepath.Join(tempDir, "AndroidManifest.normalized.xml")
 
 	// Verify file exists
 	info, err := os.Stat(outputPath)
@@ -94,7 +92,7 @@ func TestDumpManifest(t *testing.T) {
 func TestDumpManifest_EmptyManifest(t *testing.T) {
 	tempDir := t.TempDir()
 
-	err := DumpManifest(nil, tempDir)
+	err := dumpManifest(nil, tempDir)
 	if err == nil {
 		t.Fatal("expected error for empty manifest, got nil")
 	}

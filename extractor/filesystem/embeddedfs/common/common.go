@@ -17,6 +17,7 @@ package common
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -30,7 +31,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/avast/apkparser"
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/disk"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
@@ -735,43 +735,47 @@ loop:
 	return tempDir, nil
 }
 
-// APKToTempDir extracts a zip archive into a temporary directory that can be used to traverse its contents recursively.
-// Note that we can't use "archive/zip" because it's very strict and can fail on certain Apks.
-func APKToTempDir(reader io.Reader) (string, error) {
-	// Create temporary file because the APK parser needs seek support.
-	tmpFile, err := os.CreateTemp("", "scalibr-apk-*")
+// ZIPToTempDir extracts an ZIP into a temporary directory.
+func ZIPToTempDir(reader io.Reader) (string, error) {
+	// Create temporary file because zip.NewReader requires ReaderAt.
+	tmpFile, err := os.CreateTemp("", "scalibr-zip-*")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temporary apk file: %w", err)
+		return "", fmt.Errorf("failed to create temporary zip file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
 	defer tmpFile.Close()
 
 	// Copy APK contents into temporary file.
 	if _, err := io.Copy(tmpFile, reader); err != nil {
-		return "", fmt.Errorf("failed to copy apk contents: %w", err)
+		return "", fmt.Errorf("failed to copy zip contents: %w", err)
+	}
+
+	// Determine file size.
+	info, err := tmpFile.Stat()
+	if err != nil {
+		return "", fmt.Errorf("failed to stat temporary zip file: %w", err)
 	}
 
 	// Reset file offset.
 	if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
-		return "", fmt.Errorf("failed to seek temporary apk file: %w", err)
+		return "", fmt.Errorf("failed to seek temporary zip file: %w", err)
 	}
 
-	// Open tolerant ZIP reader.
-	zr, err := apkparser.OpenZipReader(tmpFile)
+	// Open ZIP reader.
+	zr, err := zip.NewReader(tmpFile, info.Size())
 	if err != nil {
-		return "", fmt.Errorf("failed to open apk zip: %w", err)
+		return "", fmt.Errorf("failed to open zip zip: %w", err)
 	}
-	defer zr.Close()
 
 	// Create extraction directory.
-	tempDir, err := os.MkdirTemp("", "scalibr-apk-extract-*")
+	tempDir, err := os.MkdirTemp("", "scalibr-zip-extract-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create extraction directory: %w", err)
 	}
 
 	var extractErr error
 
-	for _, f := range zr.FilesOrdered {
+	for _, f := range zr.File {
 		cleanName := filepath.Clean(f.Name)
 
 		// Prevent ZipSlip / path traversal.
@@ -782,8 +786,12 @@ func APKToTempDir(reader io.Reader) (string, error) {
 
 		target := filepath.Join(tempDir, cleanName)
 
-		// Directory handling.
-		if f.IsDir {
+		if strings.Contains(target, "..") {
+			extractErr = fmt.Errorf("zip contains invalid entry: %s", target)
+			break
+		}
+
+		if f.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, 0755); err != nil {
 				extractErr = fmt.Errorf("failed to create directory %s: %w", target, err)
 				break
@@ -791,33 +799,28 @@ func APKToTempDir(reader io.Reader) (string, error) {
 			continue
 		}
 
-		// Create parent directories.
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			extractErr = fmt.Errorf(
-				"failed to create parent directory for %s: %w",
-				target,
-				err,
-			)
+			extractErr = fmt.Errorf("failed to create parent directory for %s: %w", target, err)
 			break
 		}
 
-		// Open ZIP entry.
-		if err := f.Open(); err != nil {
+		rc, err := f.Open()
+		if err != nil {
 			extractErr = fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
 			break
 		}
 
 		outFile, err := os.Create(target)
 		if err != nil {
-			f.Close()
+			rc.Close()
 			extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
 			break
 		}
 
-		_, err = io.Copy(outFile, f)
+		_, err = io.Copy(outFile, rc)
 
 		closeErr1 := outFile.Close()
-		closeErr2 := f.Close()
+		closeErr2 := rc.Close()
 
 		if err != nil {
 			extractErr = fmt.Errorf("failed to extract file %s: %w", target, err)
