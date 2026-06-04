@@ -15,26 +15,31 @@
 package http
 
 import (
-	"bytes"
+	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 )
 
 var (
-	// cookiePattern captures the entire cookie header value
+	// cookiePattern captures the entire Cookie or Set-Cookie header value.
+	// Supports strict RFC 6265 AND legacy RFC 2109/2965 escaped quoted strings.
 	cookiePattern = regexp.MustCompile(
-		// Cookie header key
+		// Header key
 		`(?i)(?:^|[^\w-])((?:Set-)?Cookie)(?:")?\s*:\s*(?:")?` +
 			`(` +
-			// Cookie name
-			`[^=\s;:]+` +
+			// Cookie name (Strict RFC token, see: https://www.rfc-editor.org/info/rfc2616/#section-2.2)
+			`[A-Za-z0-9!#$%&'*+\-.^_` + "`" + `|~]+` +
 			// Equal sign
 			`=` +
-			// Cookie value: Stops at unescaped ", ;, or whitespace. Allows \".
-			`(?:[^;\s"\\]|\\.)+` +
+			// Cookie value (Supports Legacy Escaping)
+			// Matches:
+			//   - A quoted string that allows escaped characters like \" or \\
+			//   - A strict unquoted string
+			`(?:"(?:[^"\\]|\\.)*"|[^\s;",\\]*)` +
 			// Same pattern but preceded by a `; `
-			`(?:\s*;\s*[^=\s;:]+=(?:[^;\s"\\]|\\.)+)*` +
+			`(?:\s*;\s*[A-Za-z0-9!#$%&'*+\-.^_` + "`" + `|~]+(?:=(?:"(?:[^"\\]|\\.)*"|[^\s;",\\]*))?)*` +
 			`)`,
 	)
 )
@@ -53,40 +58,41 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 
 	for _, m := range cookiePattern.FindAllSubmatchIndex(data, -1) {
 		// Ensure we have at least 6 indices:
-		// m[0]:m[1] = full match (including preceding whitespace)
-		// m[2]:m[3] = Group 1 ("Set-Cookie")
-		// m[4]:m[5] = Group 2 (Cookie payload string)
 		if len(m) < 6 {
 			continue
 		}
 
-		// m[2] holds the exact starting byte index of "Set-Cookie" / "Cookie"
 		headerPos := m[2]
+		headerType := string(data[m[2]:m[3]]) // "Cookie" or "Set-Cookie"
+		rawCookies := string(data[m[4]:m[5]])
 
-		// Extract the byte slice for the second capture group (the actual cookies string)
-		rawCookies := data[m[4]:m[5]]
+		header := http.Header{}
+		header.Add(headerType, rawCookies)
 
-		// Split the captured string by semicolons to evaluate each cookie
-		for p := range bytes.SplitSeq(rawCookies, []byte(";")) {
-			p = bytes.TrimSpace(p)
-			if len(p) == 0 {
+		// use golang std lib to parse the cookie
+		var parsedCookies []*http.Cookie
+		if strings.EqualFold(headerType, "Cookie") {
+			req := &http.Request{Header: header}
+			parsedCookies = req.Cookies()
+		} else {
+			resp := &http.Response{Header: header}
+			parsedCookies = resp.Cookies()
+		}
+
+		// Map the cookies into secrets
+		for _, cookie := range parsedCookies {
+			if cookie.Value == "" {
 				continue
 			}
 
-			parts := bytes.SplitN(p, []byte("="), 2)
-			if len(parts) != 2 {
-				// Skip valueless cookies or Set-Cookie flags (e.g., Secure, HttpOnly)
-				continue
-			}
-
-			// TODO: here check key names
+			// TODO: filter out using white/black-list
 
 			secrets = append(secrets, Cookie{
-				Name:  string(parts[0]),
-				Value: string(parts[1]),
+				Name:  cookie.Name,
+				Value: cookie.Value,
 			})
 
-			// Use the exact position of "Set-Cookie" for all cookies found in this header
+			// Use the exact position of "(Set-)Cookie" for all cookies found in this header
 			pos = append(pos, headerPos)
 		}
 	}

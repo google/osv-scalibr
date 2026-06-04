@@ -75,28 +75,28 @@ func TestCookieDetector_truePositives(t *testing.T) {
 		},
 		// Synthetic examples
 		{
-			name:  "basic single cookie",
+			name:  "basic_single_cookie",
 			input: "Cookie: session_id=123456",
 			want: []veles.Secret{
 				http.Cookie{Name: "session_id", Value: "123456"},
 			},
 		},
 		{
-			name:  "set-cookie header",
+			name:  "set-cookie_header",
 			input: "Set-Cookie: token=super_secret",
 			want: []veles.Secret{
 				http.Cookie{Name: "token", Value: "super_secret"},
 			},
 		},
 		{
-			name:  "case insensitive headers",
+			name:  "case_insensitive_headers",
 			input: "cOokiE: mixed_case=val123",
 			want: []veles.Secret{
 				http.Cookie{Name: "mixed_case", Value: "val123"},
 			},
 		},
 		{
-			name:  "multiple chained cookies with spacing",
+			name:  "multiple_chained_cookies_with_spacing",
 			input: "Cookie: a=1;   b=2; c=3",
 			want: []veles.Secret{
 				http.Cookie{Name: "a", Value: "1"},
@@ -105,7 +105,7 @@ func TestCookieDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name:  "base64 value with padding equals signs",
+			name:  "base64_value_with_padding_equals_signs",
 			input: "Cookie: auth=ZXhhbXBsZQ==; id=99",
 			want: []veles.Secret{
 				http.Cookie{Name: "auth", Value: "ZXhhbXBsZQ=="},
@@ -113,19 +113,40 @@ func TestCookieDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name:  "embedded in log line with trailing garbage text",
-			input: "INFO [2026-05-21] user logged in Set-Cookie: user=admin; session=xyz123 [thread-4] status=200",
+			name:  "embedded_in_log_line_with_trailing_garbage_text",
+			input: "INFO [2026-05-21] user logged in Cookie: user=admin; session=xyz123 [thread-4] status=200",
 			want: []veles.Secret{
 				http.Cookie{Name: "user", Value: "admin"},
 				http.Cookie{Name: "session", Value: "xyz123"},
 			},
 		},
 		{
-			name:  "ignores valueless flags at the end of set-cookie",
+			name:  "ignores_valueless_flags_at_the_end_of_set-cookie",
 			input: "Set-Cookie: id=123; Secure; HttpOnly",
 			want: []veles.Secret{
 				http.Cookie{Name: "id", Value: "123"},
 			},
+		},
+		// Real examples:
+		{
+			// src: https://github.com/rapid7/metasploit-framework/blob/master/spec/lib/rex/proto/http/response_spec.rb
+			name: "metasploit_src",
+			file: "src/response_spec.rb",
+		},
+		{
+			// src: https://github.com/Tuhinshubhra/CMSeeK/blob/master/cmseekdb/header.py
+			name: "CMSeek",
+			file: "src/header.py",
+		},
+		{
+			// src: https://github.com/openjdk/jdk/blob/master/test/jdk/java/net/CookieHandler/TestHttpCookie.java
+			name: "openjdk",
+			file: "src/TestHttpCookie.java",
+		},
+		{
+			// src: https://github.com/filipedeschamps/tabnews.com.br/blob/main/tests/integration/api/v1/users/%5Busername%5D/delete.test.js
+			name: "tabnews",
+			file: "src/delete.test.js",
 		},
 	}
 
@@ -205,6 +226,11 @@ func TestCookieDetector_trueNegatives(t *testing.T) {
 		{
 			name:  "random_key_value_pair_without_cookie_prefix",
 			input: "session=12345; auth=true",
+		},
+		// Real examples
+		{
+			name: "linux_fscache",
+			file: "src/fscache.h",
 		},
 	}
 
