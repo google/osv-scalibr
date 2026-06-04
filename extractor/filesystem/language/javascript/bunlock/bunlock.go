@@ -27,10 +27,12 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/jsonc"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -126,6 +128,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("could not extract %w", err)
 	}
 
+	finder := linefinder.NewJSONLineFinder(string(b))
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	var errs []error
@@ -139,6 +142,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
+		lineNum := finder.LineOf("packages." + gjson.Escape(key))
 		packages = append(packages, &extractor.Package{
 			Name:     name,
 			Version:  version,
@@ -149,7 +153,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: []string{},
 			},
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, lineNum),
 		})
 	}
 
