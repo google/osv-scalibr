@@ -227,6 +227,23 @@ func TestCookieDetector_trueNegatives(t *testing.T) {
 			name:  "random_key_value_pair_without_cookie_prefix",
 			input: "session=12345; auth=true",
 		},
+		// Potential false positives from source code syntax (TDD cases for filtering)
+		{
+			name:  "js_object_destructuring",
+			input: `const { cookie: session_token=null } = req.headers;`,
+		},
+		{
+			name:  "js_assignment_operator",
+			input: `const metrics = { cookie: index+=1, other_header: 0 };`,
+		},
+		{
+			name:  "python_equality_check",
+			input: `rules = { "cookie": incoming_type=="admin" }`,
+		},
+		{
+			name:  "env_var_interpolation",
+			input: `curl -H "Cookie: session_id=${LATEST_SESSION}" https://api.example.com`,
+		},
 		// Real examples
 		{
 			name: "linux_fscache",
