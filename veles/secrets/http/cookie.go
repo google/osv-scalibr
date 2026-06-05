@@ -30,7 +30,7 @@ var (
 		`(?i)(?:^|[^\w-])((?:Set-)?Cookie)(?:")?\s*:\s*(?:")?` +
 			`(` +
 			// Cookie name (Strict RFC token, see: https://www.rfc-editor.org/info/rfc2616/#section-2.2)
-			`[A-Za-z0-9!#$%&'*+\-.^_` + "`" + `|~]+` +
+			`[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+` +
 			// Equal sign
 			`=` +
 			// Cookie value (Supports Legacy Escaping)
@@ -39,7 +39,7 @@ var (
 			//   - A strict unquoted string
 			`(?:"(?:[^"\\]|\\.)*"|[^\s;",\\]*)` +
 			// Same pattern but preceded by a `; `
-			`(?:\s*;\s*[A-Za-z0-9!#$%&'*+\-.^_` + "`" + `|~]+(?:=(?:"(?:[^"\\]|\\.)*"|[^\s;",\\]*))?)*` +
+			`(?:\s*;\s*[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+(?:=(?:"(?:[^"\\]|\\.)*"|[^\s;",\\]*))?)*` +
 			`)`,
 	)
 )
@@ -72,11 +72,17 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 		// use golang std lib to parse the cookie
 		var parsedCookies []*http.Cookie
 		if strings.EqualFold(headerType, "Cookie") {
-			req := &http.Request{Header: header}
-			parsedCookies = req.Cookies()
+			var err error
+			parsedCookies, err = http.ParseCookie(rawCookies)
+			if err != nil {
+				continue
+			}
 		} else {
-			resp := &http.Response{Header: header}
-			parsedCookies = resp.Cookies()
+			parsedCookie, err := http.ParseSetCookie(rawCookies)
+			if err != nil {
+				continue
+			}
+			parsedCookies = append(parsedCookies, parsedCookie)
 		}
 
 		// Map the cookies into secrets
