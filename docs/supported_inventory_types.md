@@ -32,31 +32,31 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### OS packages
 
-| Inventory Type    | Details                        | Extractor Plugin                             |
-|-------------------| ------------------------------ |----------------------------------------------|
-| Alpine            | APK                            | `os/apk`                                     |
-| Chrome extensions |                                | `chrome/extensions`                          |
-| COS               | cos-package-info.json          | `os/cos`                                     |
-| DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
-| Chisel            |                                | `os/chisel`                                  |
-| Nix               |                                | `os/nix`                                     |
-| OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
-| Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
-| Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
-| Kernel modules    | .ko                            | `os/kernel/module`                           |
-| Kernel archives   | vmlinuz                        | `os/kernel/vmlinuz`                          |
-| Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
-| SNAP              |                                | `os/snap`                                    |
-| Spack             |                                | `os/spack`                                   |
-| Flatpak           |                                | `os/flatpak`                                 |
-| Homebrew          | OS X                           | `os/homebrew`                                |
-| MacPorts          | OS X                           | `os/macports`                                |
-| OS X Applications | OS X                           | `os/macapps`                                 |
-| Chocolatey        | Windows software               | `os/chocolatey`                              |
-| Windows           | Build number                   | `windows/regosversion`                       |
-| Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
-| Windows           | Installed software             | `windows/ospackages`                         |
+| Inventory Type     | Details                        | Extractor Plugin                             |
+|--------------------| ------------------------------ |----------------------------------------------|
+| Alpine             | APK                            | `os/apk`                                     |
+| Browser extensions |                                | `browser/extensions`                         |
+| COS                | cos-package-info.json          | `os/cos`                                     |
+| DPKG               | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
+| Chisel             |                                | `os/chisel`                                  |
+| Nix                |                                | `os/nix`                                     |
+| OPKG               | e.g. OpenWrt                   | `os/dpkg`                                    |
+| RPM                | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
+| Zypper             | e.g. openSUSE                  | `os/rpm`                                     |
+| Pacman             | e.g. Arch Linux                | `os/pacman`                                  |
+| Kernel modules     | .ko                            | `os/kernel/module`                           |
+| Kernel archives    | vmlinuz                        | `os/kernel/vmlinuz`                          |
+| Portage            | e.g. Gentoo Linux              | `os/portage`                                 |
+| SNAP               |                                | `os/snap`                                    |
+| Spack              |                                | `os/spack`                                   |
+| Flatpak            |                                | `os/flatpak`                                 |
+| Homebrew           | OS X                           | `os/homebrew`                                |
+| MacPorts           | OS X                           | `os/macports`                                |
+| OS X Applications  | OS X                           | `os/macapps`                                 |
+| Chocolatey         | Windows software               | `os/chocolatey`                              |
+| Windows            | Build number                   | `windows/regosversion`                       |
+| Windows            | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
+| Windows            | Installed software             | `windows/ospackages`                         |
 
 ### Language packages
 
@@ -230,15 +230,15 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type                               | Extractor Plugin    |
-|------------------------------------| ------------------- |
-| Wordpress plugins                  | `wordpress/plugins` |
-| VSCode extensions                  | `vscode/extensions` |
-| Chrome extensions                  | `chrome/extensions` |
-| Maven entries in Bazel build files | `os/bazelmaven`     |
-| NetScaler installations            | `netscaler`         |
-| GitHub Actions workflow dependencies| `github/actions`    |
-| Git repositories (and submodules)   | `misc/gitrepo`      |
+| Type                                 | Extractor Plugin     |
+|--------------------------------------|----------------------|
+| Wordpress plugins                    | `wordpress/plugins`  |
+| VSCode extensions                    | `vscode/extensions`  |
+| Browser extensions                   | `browser/extensions` |
+| Maven entries in Bazel build files   | `os/bazelmaven`      |
+| NetScaler installations              | `netscaler`          |
+| GitHub Actions workflow dependencies | `github/actions`     |
+| Git repositories (and submodules)    | `misc/gitrepo`       |
 
 ### EmbeddedFS
 

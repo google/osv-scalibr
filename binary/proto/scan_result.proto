@@ -136,7 +136,7 @@ message Package {
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
-    ChromeExtensionsMetadata chrome_extensions_metadata = 47;
+    BrowserExtensionsMetadata browser_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
@@ -648,16 +648,17 @@ message HomebrewPackageMetadata {
   repeated string mirrors = 3;
 }
 
-// The additional data found in Chrome extensions.
-message ChromeExtensionsMetadata {
+// The additional data found in Browser extensions.
+message BrowserExtensionsMetadata {
   string name = 1;
   string description = 2;
   string author_email = 3;
-  repeated string host_permissions = 4;
-  int32 manifest_version = 5;
-  string minimum_chrome_version = 6;
-  repeated string permissions = 7;
-  string update_url = 8;
+  string author = 4;
+  repeated string host_permissions = 5;
+  int32 manifest_version = 6;
+  string minimum_chrome_version = 7;
+  repeated string permissions = 8;
+  string update_url = 9;
 }
 
 // The additional data found in VSCode extensions.
