@@ -1,0 +1,9 @@
+name: myenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy=1.26.0
+  - scipy=1.11.4
+  - matplotlib=3.8.0

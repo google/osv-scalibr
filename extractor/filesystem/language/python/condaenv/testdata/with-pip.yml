@@ -1,0 +1,9 @@
+name: mlenv
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - torch=2.1.0
+  - pip:
+    - boto3==1.28.0
+    - fastapi==0.100.0
