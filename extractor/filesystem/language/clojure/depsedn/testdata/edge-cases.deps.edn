@@ -1,0 +1,21 @@
+{:deps
+ {org.example/complex
+  {:exclusions [bad/thing {:mvn/version "0.0.0"}]
+   :mvn/version "1.2.3"}
+  org.example/duplicate {:mvn/version "1.0.0"}
+  org.example/duplicate {:mvn/version "1.0.0"}}
+ :aliases
+ {:dev
+  {:extra-deps
+   {dev.local/tool
+    {:scope "test;comment-marker"
+     :mvn/version "2.0.0"}
+    org.example/replaced {:mvn/version "3.0.0"}}}
+  :old
+  {:replace-deps {org.replace/core {:mvn/version "4.0.0"}}}
+  :defaults
+  {:default-deps {default.lib/core {:mvn/version "5.0.0"}}
+   :override-deps {override.lib/core {:mvn/version "6.0.0"}}}}
+ :metadata
+ {not.a.dependency/library {:mvn/version "0.0.1"}}
+ :paths ["src;not-comment"]}

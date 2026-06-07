@@ -1,0 +1,4 @@
+{:paths ["src"]
+ :deps {io.github.some/lib {:git/url "https://github.com/example/lib"
+                            :git/sha "abcdef"}}
+ :aliases {:test {:jvm-opts ["-Dexample=true"]}}}
