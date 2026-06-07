@@ -1,0 +1,43 @@
+<script type="importmap">
+{
+  "imports": {
+    "jsdelivr-imports": "https://cdn.jsdelivr.net/npm/jsdelivr-imports@0.0.0",
+    "unpkg-imports": "https://unpkg.com/unpkg-imports@0.0.0",
+    "esm-unpkg-imports": "https://esm.unpkg.com/esm-unpkg-imports@0.0.0",
+    "esm-run-imports": "https://esm.run/esm-run-imports@0.0.0"
+  },
+  "scopes": {
+    "/path": {
+      "jsdelivr-scopes": "https://cdn.jsdelivr.net/npm/jsdelivr-scopes@0.0.0",
+      "unpkg-scopes": "https://unpkg.com/unpkg-scopes@0.0.0"
+    },
+    "/another-path": {
+      "esm-unpkg-scopes": "https://esm.unpkg.com/esm-unpkg-scopes@0.0.0",
+      "esm-run-scopes": "https://esm.run/esm-run-scopes@0.0.0"
+    }
+  }
+}
+</script>
+
+<!-- "imports" only, no "scopes" -->
+<script type="importmap">
+{
+  "imports": {
+    "imports-only": "https://cdn.jsdelivr.net/npm/imports-only@0.0.0"
+  }
+}
+</script>
+
+<!-- "scopes" only, no "imports" -->
+<script type="importmap">
+{
+  "scopes": {
+    "/example": {
+      "scopes-only": "https://cdn.jsdelivr.net/npm/scopes-only@0.0.0"
+    }
+  }
+}
+</script>
+
+<!-- Empty importmap -->
+<script type="importmap"></script>
