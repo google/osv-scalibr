@@ -152,6 +152,7 @@ message Package {
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
     SpackPackageMetadata spack_metadata = 67;
+    JavascriptHtmlcdnMetadata javascript_htmlcdn_metadata = 70;
   }
 
   // Signals to indicate that specific vulnerabilities are not applicable to
@@ -375,6 +376,12 @@ message JavascriptDenoMetadata {
 
   string url = 4;
 }
+
+message JavascriptHtmlcdnMetadata {
+  string raw_version = 1;
+  string full_url = 2;
+}
+
 
 // The additional data found in APK packages.
 message APKPackageMetadata {

@@ -1,0 +1,48 @@
+<!-- MISS: doman mismatch -->
+<script src="https://example.com/npm/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: subdomain mismatch -->
+<script src="https://xyz.jsdelivr.net/npm/cookie-parser@1.4.4/index.js"></script>
+<script src="https://xyz.unpkg.net/cookie-parser@1.4.4/index.js"></script>
+<script src="https://xyz.esm.run/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: missing subdomain -->
+<script src="https://jsdelivr.net/npm/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: schema mismatch -->
+<script src="ftp://cdn.jsdelivr.net/npm/cookie-parser@1.4.4/index.js"></script>
+<script src="ftp://unpkg.net/cookie-parser@1.4.4/index.js"></script>
+<script src="ftp://esm.run/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: No src attribute -->
+<script data-src="https://cdn.jsdelivr.net/npm/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: Wrong src namespace -->
+<script xyz:src="https://cdn.jsdelivr.net/npm/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: Wrong port -->
+<script src="https://cdn.jsdelivr.net:1234/npm/cookie-parser@1.4.4/index.js"></script>
+<script src="https://unpkg.net:1234/cookie-parser@1.4.4/index.js"></script>
+<script src="https://esm.run:1234/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: URL does not use the NPM registry -->
+<script src="https://cdn.jsdelivr.net/gh/cookie-parser@1.4.4/index.js"></script>
+
+<!-- MISS: Relative path -->
+<script src="index.js"></script>
+<script src="/index.js"></script>
+<script src="./index.js"></script>
+<script src="../index.js"></script>
+
+<!-- MISS: No src -->
+<script>alert(1)</script>
+
+<!-- MISS: Trailing slash shows file directory, not JS -->
+<script src="https://cdn.jsdelivr.net/npm/cookie-parser@1.4.4/"></script>
+<script src="https://unpkg.com/cookie-parser@1.4.4/"></script>
+<script src="https://esm.run/cookie-parser@1.4.4/"></script>
+
+
+
+<!-- HIT: Add dummy file to ensure above URLs were properly ignored --dummy file to ensure above URLs were properly ignored -->
+<script src="https://cdn.jsdelivr.net/npm/should-be-the-only-package@0.0.0/index.js"></script>
