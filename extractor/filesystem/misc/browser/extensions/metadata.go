@@ -28,6 +28,7 @@ type Metadata struct {
 	Name                 string
 	Description          string
 	AuthorEmail          string
+	Author               string
 	HostPermissions      []string
 	ManifestVersion      int
 	MinimumChromeVersion string
@@ -36,11 +37,12 @@ type Metadata struct {
 }
 
 // ToProto converts the Metadata struct to a ChromeExtensionsMetadata proto.
-func ToProto(m *Metadata) *pb.ChromeExtensionsMetadata {
-	return &pb.ChromeExtensionsMetadata{
+func ToProto(m *Metadata) *pb.BrowserExtensionsMetadata {
+	return &pb.BrowserExtensionsMetadata{
 		Name:                 m.Name,
 		Description:          m.Description,
 		AuthorEmail:          m.AuthorEmail,
+		Author:               m.Author,
 		HostPermissions:      m.HostPermissions,
 		ManifestVersion:      int32(m.ManifestVersion),
 		MinimumChromeVersion: m.MinimumChromeVersion,
@@ -53,11 +55,12 @@ func ToProto(m *Metadata) *pb.ChromeExtensionsMetadata {
 func (m *Metadata) IsProtoable() {}
 
 // ToStruct converts the ChromeExtensionsMetadata proto to a Metadata struct.
-func ToStruct(m *pb.ChromeExtensionsMetadata) *Metadata {
+func ToStruct(m *pb.BrowserExtensionsMetadata) *Metadata {
 	return &Metadata{
 		Name:                 m.GetName(),
 		Description:          m.GetDescription(),
 		AuthorEmail:          m.GetAuthorEmail(),
+		Author:               m.GetAuthor(),
 		HostPermissions:      m.GetHostPermissions(),
 		ManifestVersion:      int(m.GetManifestVersion()),
 		MinimumChromeVersion: m.GetMinimumChromeVersion(),
