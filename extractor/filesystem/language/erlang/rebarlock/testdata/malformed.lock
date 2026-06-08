@@ -1,0 +1,2 @@
+not a rebar lock file
+{<<"missing_version">>, {pkg, <<"missing_version">>}, 0}.
