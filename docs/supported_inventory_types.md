@@ -210,6 +210,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
 | HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
+| HTTP Bearer                                 | `secrets/httpbearer`                   |
 
 ### Container inventory
 
