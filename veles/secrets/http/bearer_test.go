@@ -180,12 +180,12 @@ func TestBearerDetector_trueNegatives(t *testing.T) {
 			// Authorization, Bearer keyword before it, so the regex detector ignores it
 			// to avoid false positives. To properly cover this case, an openCollection
 			// extractor is probably the best choice.
-			name: "bruno-2",
+			name: "bruno_2",
 			file: "bruno/bearer/BearerProperlyStored.yml",
 		},
 		// Synthetic examples
 		{
-			name:  "not-enough-context",
+			name:  "not_enough_context",
 			input: "I hate to be the bearer of bad news, but ...",
 		},
 		{

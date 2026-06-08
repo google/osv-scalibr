@@ -40,7 +40,7 @@ var (
 // NewBearerDetector extract the Bearer token from the provided input
 func NewBearerDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: 1000,
+		MaxLen: 8 * veles.KiB,
 		Re:     bearerPattern,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
 			matches := bearerPattern.FindSubmatch(b)
