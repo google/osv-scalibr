@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package linefinder provides utility functions for finding package line numbers in JS JSON files.
+// Package linefinder provides utility functions for finding package line numbers in JavaScript manifests and source files.
 package linefinder
 
 import (
-	"sort"
-
 	"github.com/tidwall/gjson"
 )
 
@@ -25,25 +23,15 @@ import (
 type JSONLineFinder struct {
 	// json is the raw JSON string being analyzed.
 	json string
-	// lineOffsets stores the starting byte offset for each line.
-	// E.g., lineOffsets[0] is 0 (start of Line 1), lineOffsets[1] is the byte offset for Line 2.
-	lineOffsets []int
+	// offsetFinder delegates the binary search.
+	offsetFinder *OffsetFinder
 }
 
 // NewJSONLineFinder creates a new JSONLineFinder.
 func NewJSONLineFinder(json string) *JSONLineFinder {
-	var lineOffsets []int
-	// Line 1 starts at index 0.
-	// Parse all the lines into `lineOffsets`.
-	lineOffsets = append(lineOffsets, 0)
-	for i := range len(json) {
-		if json[i] == '\n' {
-			lineOffsets = append(lineOffsets, i+1)
-		}
-	}
 	return &JSONLineFinder{
-		json:        json,
-		lineOffsets: lineOffsets,
+		json:         json,
+		offsetFinder: NewOffsetFinder([]byte(json)),
 	}
 }
 
@@ -58,7 +46,5 @@ func (f *JSONLineFinder) LineOf(path string) int {
 	// Binary search for the line.
 	// `res.Index` is the raw byte offset, NOT the line number, so we need to do
 	// a binary search on the line offsets and return the index of the matching offset.
-	return sort.Search(len(f.lineOffsets), func(i int) bool {
-		return f.lineOffsets[i] > res.Index
-	})
+	return f.offsetFinder.LineOfOffset(res.Index)
 }
