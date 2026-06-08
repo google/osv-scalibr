@@ -132,21 +132,25 @@ func TestCookieDetector_truePositives(t *testing.T) {
 			// src: https://github.com/rapid7/metasploit-framework/blob/master/spec/lib/rex/proto/http/response_spec.rb
 			name: "metasploit_src",
 			file: "src/response_spec.rb",
-		},
-		{
-			// src: https://github.com/Tuhinshubhra/CMSeeK/blob/master/cmseekdb/header.py
-			name: "CMSeek",
-			file: "src/header.py",
-		},
-		{
-			// src: https://github.com/openjdk/jdk/blob/master/test/jdk/java/net/CookieHandler/TestHttpCookie.java
-			name: "openjdk",
-			file: "src/TestHttpCookie.java",
-		},
-		{
-			// src: https://github.com/filipedeschamps/tabnews.com.br/blob/main/tests/integration/api/v1/users/%5Busername%5D/delete.test.js
-			name: "tabnews",
-			file: "src/delete.test.js",
+			want: []veles.Secret{
+				http.Cookie{Name: "phpMyAdmin", Value: "gpjif0gtpqbvfion91ddtrq8p8vgjtue"},
+				http.Cookie{Name: "pma_lang", Value: "en"},
+				http.Cookie{Name: "pma_collation_connection", Value: "utf8_general_ci"},
+				http.Cookie{Name: "pma_mcrypt_iv", Value: "mF1NmTE64IY%3D"},
+				http.Cookie{Name: "phpMyAdmin", Value: "fmilioji5cn4m8bo5vjrrr6q9cada954"},
+				http.Cookie{Name: "pma_lang", Value: "en"},
+				http.Cookie{Name: "pma_collation_connection", Value: "utf8_general_ci"},
+				http.Cookie{Name: "pma_mcrypt_iv", Value: "mF1NmTE64IY%3D"},
+				http.Cookie{Name: "phpMyAdmin", Value: "fmilioji5cn4m8bo5vjrrr6q9cada954"},
+				http.Cookie{Name: "superC00kie!", Value: "stupidcookie"},
+				http.Cookie{Name: "phpMyAdmin", Value: "gpjif0gtpqbvfion91ddtrq8p8vgjtue"},
+				http.Cookie{Name: "pma_lang", Value: "en"},
+				http.Cookie{Name: "pma_collation_connection", Value: "utf8_general_ci"},
+				http.Cookie{Name: "pma_mcrypt_iv", Value: "mF1NmTE64IY%3D"},
+				http.Cookie{Name: "wordpressuser_a97c5267613d6de70e821ff82dd1ab94", Value: "admin"},
+				http.Cookie{Name: "cval", Value: "880350187"},
+				http.Cookie{Name: "k1", Value: "v1"},
+			},
 		},
 	}
 
@@ -246,8 +250,24 @@ func TestCookieDetector_trueNegatives(t *testing.T) {
 		},
 		// Real examples
 		{
+			// src: https://github.com/torvalds/linux/blob/master/include/linux/fscache.h
 			name: "linux_fscache",
 			file: "src/fscache.h",
+		},
+		{
+			// src: https://github.com/Tuhinshubhra/CMSeeK/blob/master/cmseekdb/header.py
+			name: "CMSeek",
+			file: "src/header.py",
+		},
+		{
+			// src: https://github.com/openjdk/jdk/blob/master/test/jdk/java/net/CookieHandler/TestHttpCookie.java
+			name: "openjdk",
+			file: "src/TestHttpCookie.java",
+		},
+		{
+			// src: https://github.com/filipedeschamps/tabnews.com.br/blob/main/tests/integration/api/v1/users/%5Busername%5D/delete.test.js
+			name: "tabnews",
+			file: "src/delete.test.js",
 		},
 	}
 
