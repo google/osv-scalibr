@@ -40,7 +40,11 @@ var (
 // NewBearerDetector extract the Bearer token from the provided input
 func NewBearerDetector() veles.Detector {
 	return simpletoken.Detector{
-		MaxLen: 8 * veles.KiB,
+		// MaxLen is set based on practical limits in common HTTP infrastructure:
+		// - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-limits.html#http-headers-quotas
+		// - https://nodejs.org/api/cli.html#max-http-header-sizesize
+		// - https://httpd.apache.org/docs/current/mod/core.html#limitrequestfieldsize
+		MaxLen: 16 * veles.KiB,
 		Re:     bearerPattern,
 		FromMatch: func(b []byte) (veles.Secret, bool) {
 			matches := bearerPattern.FindSubmatch(b)
