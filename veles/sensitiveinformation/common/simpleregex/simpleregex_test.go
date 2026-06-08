@@ -198,12 +198,12 @@ BAZ
 				}
 			}
 			d := Detector{
-				maxLen:              tc.maxLen,
-				re:                  regexp.MustCompile(tc.regexp),
-				contextWindowBefore: tc.before,
-				contextWindowAfter:  tc.after,
-				keywordsRe:          KeywordsRe(tc.keywords),
-				fromMatch:           tc.fromMatch,
+				MaxLen:              tc.maxLen,
+				Re:                  regexp.MustCompile(tc.regexp),
+				ContextWindowBefore: tc.before,
+				ContextWindowAfter:  tc.after,
+				KeywordsRe:          KeywordsRe(tc.keywords),
+				FromMatch:           tc.fromMatch,
 			}
 			got, gotPos := d.Detect(tc.in)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
@@ -257,12 +257,12 @@ func TestDetect_trueNegatives(t *testing.T) {
 				return fakeSensitiveInformation(b), true
 			}
 			d := Detector{
-				maxLen:              tc.maxLen,
-				re:                  regexp.MustCompile(tc.regexp),
-				contextWindowBefore: tc.before,
-				contextWindowAfter:  tc.after,
-				keywordsRe:          KeywordsRe(tc.keywords),
-				fromMatch:           fromMatch,
+				MaxLen:              tc.maxLen,
+				Re:                  regexp.MustCompile(tc.regexp),
+				ContextWindowBefore: tc.before,
+				ContextWindowAfter:  tc.after,
+				KeywordsRe:          KeywordsRe(tc.keywords),
+				FromMatch:           fromMatch,
 			}
 			got, gotPos := d.Detect(tc.in)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {

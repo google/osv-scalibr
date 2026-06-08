@@ -448,10 +448,14 @@ var (
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
 	})
 
+	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+	})
+
 	// Secrets contains both secret extractors and detectors.
 	Secrets = concat(
 		SecretDetectors,
 		SecretExtractors,
+		SensitiveInformationDetectors,
 	)
 
 	// Misc artifact extractors.
