@@ -27,28 +27,20 @@ import (
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
-const (
-	basicB64Password123  = "YWRtaW46cGFzc3dvcmQxMjM=" // admin:password123
-	basicB64UserSvcToken = "c3ZjOnRva2Vu"             // svc:token
-)
-
-func TestBasicAuthDetectorAcceptance(t *testing.T) {
+func TestBearerDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
-		http.NewBasicAuthDetector(),
-		"Authorization: Basic "+basicB64Password123,
-		http.BasicAuthCredentials{Username: "admin", Password: "password123"},
+		http.NewBearerDetector(),
+		"Authorization: Bearer test",
+		http.BearerToken{Value: "test"},
 	)
 }
 
-func TestBasicAuthDetector_truePositives(t *testing.T) {
-	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBasicAuthDetector()})
+func TestBearerDetector_truePositives(t *testing.T) {
+	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBearerDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	cred123 := http.BasicAuthCredentials{Username: "admin", Password: "password123"}
-	credMock := http.BasicAuthCredentials{Username: "admin", Password: "mock_password"}
-	credSvc := http.BasicAuthCredentials{Username: "svc", Password: "token"}
 
 	cases := []struct {
 		name  string
@@ -60,33 +52,42 @@ func TestBasicAuthDetector_truePositives(t *testing.T) {
 		{
 			name: "pino_log",
 			file: "logs/pino/app.log",
-			want: []veles.Secret{cred123, cred123},
+			want: []veles.Secret{
+				http.BearerToken{Value: "pino_secret_jwt_456"},
+				http.BearerToken{Value: "pino_secret_jwt_456"},
+			},
 		},
 		{
 			name: "dotnet_log",
 			file: "logs/dotnet/vulnerable20260424.log",
-			want: []veles.Secret{cred123, cred123},
+			want: []veles.Secret{
+				http.BearerToken{Value: "dotnet_prod_jwt_token_777"},
+				http.BearerToken{Value: "dotnet_prod_jwt_token_777"},
+			},
 		},
 		{
 			name: "nginx_log",
 			file: "logs/nginx/access.log",
-			want: []veles.Secret{cred123, cred123},
+			want: []veles.Secret{
+				http.BearerToken{Value: "nginx_prod_jwt_token_777"},
+				http.BearerToken{Value: "nginx_prod_jwt_token_777"},
+			},
 		},
 		// Client side collections
 		{
-			name: "bruno-1",
-			file: "bruno/basic/BasicAuthHeader.yml",
-			want: []veles.Secret{credMock},
+			name: "bruno",
+			file: "bruno/bearer/Bearer.yml",
+			want: []veles.Secret{http.BearerToken{Value: "mock-bearer"}},
 		},
 		{
-			name: "burp_basic_auth_project",
-			file: "burp/basic-auth.burp",
-			want: []veles.Secret{credMock},
+			name: "burp_bearer_project",
+			file: "burp/bearer.burp",
+			want: []veles.Secret{http.BearerToken{Value: "mock-bearer"}},
 		},
 		{
 			name: "postman",
-			file: "postman/http-basic.json",
-			want: []veles.Secret{credMock},
+			file: "postman/http-bearer.json",
+			want: []veles.Secret{http.BearerToken{Value: "mock-bearer"}},
 		},
 		// Synthetic examples
 		{
@@ -94,59 +95,48 @@ func TestBasicAuthDetector_truePositives(t *testing.T) {
 			input: `GET / HTTP/1.1
 Host: example.com
 User-Agent: test
-Authorization: Basic ` + basicB64Password123 + `
+Authorization: Bearer example-token
 
 `,
-			want: []veles.Secret{cred123},
+			want: []veles.Secret{http.BearerToken{Value: "example-token"}},
 		},
 		{
 			name: "http_with_body_after_headers",
 			input: `POST /api/login HTTP/1.1
 Host: internal.local
-Authorization: Basic ` + basicB64UserSvcToken + `
+Authorization: Bearer example-token
 Content-Type: application/json
 Content-Length: 12
 
 {"x":1}
 `,
-			want: []veles.Secret{credSvc},
-		},
-		{
-			name: "http_401_www_bearer_plus_basic_request_header",
-			input: `HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer realm="api"
-Authorization: Basic ` + basicB64Password123 + `
-
-Unauthorized
-`,
-			want: []veles.Secret{cred123},
+			want: []veles.Secret{http.BearerToken{Value: "example-token"}},
 		},
 		{
 			name:  "json_headers_object",
-			input: `{"method":"GET","headers":{"Authorization":"Basic ` + basicB64Password123 + `","Accept":"*/*"}}`,
-			want:  []veles.Secret{cred123},
+			input: `{"method":"GET","headers":{"Authorization":"Bearer example-token","Accept":"*/*"}}`,
+			want:  []veles.Secret{http.BearerToken{Value: "example-token"}},
 		},
 		{
 			name:  "json_lowercase_key_nested",
-			input: `{"req":{"id":1,"headers":{"host":"app","authorization":"Basic ` + basicB64Password123 + `","user-agent":"curl"}}}`,
-			want:  []veles.Secret{cred123},
+			input: `{"req":{"id":1,"headers":{"host":"app","authorization":"Bearer example-token","user-agent":"curl"}}}`,
+			want:  []veles.Secret{http.BearerToken{Value: "example-token"}},
 		},
 		{
 			name: "json_pretty_embedded_raw_header",
 			input: `{
   "item": 1,
-  "raw": "Authorization: Basic ` + basicB64UserSvcToken + `",
+  "raw": "Authorization: Bearer example-token",
   "note": "sample"
 }`,
-			want: []veles.Secret{credSvc},
+			want: []veles.Secret{http.BearerToken{Value: "example-token"}},
 		},
 		{
 			name: "curl_with_authorization_header_flag",
 			input: `#!/bin/sh
-# Explicit header: detector sees Authorization + Basic in the same span.
 curl -sS 'https://httpbin.org/get' \
-  -H "Authorization: Basic ` + basicB64Password123,
-			want: []veles.Secret{cred123},
+  -H "Authorization: Bearer example-token"`,
+			want: []veles.Secret{http.BearerToken{Value: "example-token"}},
 		},
 	}
 	for _, tc := range cases {
@@ -173,8 +163,8 @@ curl -sS 'https://httpbin.org/get' \
 	}
 }
 
-func TestBasicAuthDetector_trueNegatives(t *testing.T) {
-	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBasicAuthDetector()})
+func TestBearerDetector_trueNegatives(t *testing.T) {
+	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBearerDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,42 +174,31 @@ func TestBasicAuthDetector_trueNegatives(t *testing.T) {
 		file  string
 		input string
 	}{
-		// Credentials are present, but not in base64 format
-		//
-		// Note: Detecting unencoded credentials is out of scope for the current design,
-		// even though these are valid basic auth credentials rather than base64.
+		// Bearer token is present but is not detected.
 		{
-			name: "bruno-2",
-			file: "bruno/basic/BasicAuthStoredProperly.yml",
-		},
-		{
-			name:  "curl_user_short_flag",
-			input: `curl -sS -u 'admin:password123' 'https://httpbin.org/basic-auth/admin/password123'`,
-		},
-		{
-			name:  "curl_user_long_flag",
-			input: `curl --user "svc:token" 'https://internal.service.example/api/v1/healthz'`,
+			// The token here is stored as a separate key and has no
+			// Authorization, Bearer keyword before it, so the regex detector ignores it
+			// to avoid false positives. To properly cover this case, an openCollection
+			// extractor is probably the best choice.
+			name: "bruno_2",
+			file: "bruno/bearer/BearerProperlyStored.yml",
 		},
 		// Synthetic examples
 		{
-			name: "bearer_in_authorization",
+			name:  "not_enough_context",
+			input: "I hate to be the bearer of bad news, but ...",
+		},
+		{
+			name: "Basic_in_authorization",
 			input: `GET / HTTP/1.1
 Host: x
-Authorization: Bearer abcd-ef-ghij
+Authorization: Basic abcd-ef-ghij
 
 `,
 		},
 		{
-			name:  "bearer_in_json",
-			input: `{"headers":{"Authorization":"Bearer eyJ0eXAiOiJKV1QifQ"}}`,
-		},
-		{
-			name: "invalid_base64_payload",
-			input: `GET / HTTP/1.1
-Host: y
-Authorization: Basic not-valid-base64!!!
-
-`,
+			name:  "basic_in_json",
+			input: `{"headers":{"Authorization":"Basic eyJ0eXAiOiJKV1QifQ="}}`,
 		},
 		{
 			name:  "valid_base64_decodes_without_colon",

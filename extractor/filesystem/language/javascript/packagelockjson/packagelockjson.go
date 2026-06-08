@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"path"
 	"path/filepath"
@@ -29,12 +30,14 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/tidwall/gjson"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -52,6 +55,7 @@ type packageDetails struct {
 	Version   string
 	Commit    string
 	DepGroups []string
+	Line      int
 }
 
 type npmPackageDetailsMap map[string]packageDetails
@@ -87,12 +91,14 @@ func (pdm npmPackageDetailsMap) add(key string, details packageDetails) {
 	pdm[key] = details
 }
 
-func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency) map[string]packageDetails {
+func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency, finder *linefinder.JSONLineFinder, parentPath string) map[string]packageDetails {
 	details := npmPackageDetailsMap{}
 
 	for name, detail := range dependencies {
+		currentPath := parentPath + "." + gjson.Escape(name)
+
 		if detail.Dependencies != nil {
-			nestedDeps := parseNpmLockDependencies(detail.Dependencies)
+			nestedDeps := parseNpmLockDependencies(detail.Dependencies, finder, currentPath+".dependencies")
 			for k, v := range nestedDeps {
 				details.add(k, v)
 			}
@@ -126,11 +132,17 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			}
 		}
 
+		line := 0
+		if finder != nil {
+			line = finder.LineOf(currentPath)
+		}
+
 		details.add(name+"@"+version, packageDetails{
 			Name:      name,
 			Version:   finalVersion,
 			Commit:    commit,
 			DepGroups: detail.DepGroups(),
+			Line:      line,
 		})
 	}
 
@@ -148,7 +160,7 @@ func extractNpmPackageName(name string) string {
 	return pkgName
 }
 
-func parseNpmLockPackages(packages map[string]packagelockjson.Package) map[string]packageDetails {
+func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *linefinder.JSONLineFinder) map[string]packageDetails {
 	details := npmPackageDetailsMap{}
 
 	for namePath, detail := range packages {
@@ -171,23 +183,29 @@ func parseNpmLockPackages(packages map[string]packagelockjson.Package) map[strin
 			finalVersion = commit
 		}
 
+		line := 0
+		if finder != nil {
+			line = finder.LineOf("packages." + gjson.Escape(namePath))
+		}
+
 		details.add(finalName+"@"+finalVersion, packageDetails{
 			Name:      finalName,
 			Version:   detail.Version,
 			Commit:    commit,
 			DepGroups: detail.DepGroups(),
+			Line:      line,
 		})
 	}
 
 	return details
 }
 
-func parseNpmLock(lockfile packagelockjson.LockFile) map[string]packageDetails {
+func parseNpmLock(lockfile packagelockjson.LockFile, finder *linefinder.JSONLineFinder) map[string]packageDetails {
 	if lockfile.Packages != nil {
-		return parseNpmLockPackages(lockfile.Packages)
+		return parseNpmLockPackages(lockfile.Packages, finder)
 	}
 
-	return parseNpmLockDependencies(lockfile.Dependencies)
+	return parseNpmLockDependencies(lockfile.Dependencies, finder, "dependencies")
 }
 
 // Extractor extracts npm packages from package-lock.json files.
@@ -292,11 +310,13 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		}
 	}
 
-	var parsedLockfile *packagelockjson.LockFile
-
-	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
+		return nil, fmt.Errorf("could not read: %w", err)
+	}
+
+	var parsedLockfile *packagelockjson.LockFile
+	if err := json.Unmarshal(b, &parsedLockfile); err != nil {
 		return nil, fmt.Errorf("could not extract: %w", err)
 	}
 
@@ -304,7 +324,9 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		return nil, errors.New("could not extract: decoded null JSON value")
 	}
 
-	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile)))
+	finder := linefinder.NewJSONLineFinder(string(b))
+
+	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile, finder)))
 	result := make([]*extractor.Package, len(packages))
 
 	for i, pkg := range packages {
@@ -322,7 +344,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: pkg.DepGroups,
 			},
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, pkg.Line),
 		}
 	}
 
