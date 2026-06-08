@@ -316,6 +316,14 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "openEuler",
 		},
 		{
+			desc: "Mageia",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "mageia",
+				OSVersionID: "9",
+			},
+			want: "Mageia:9",
+		},
+		{
 			desc:     "OS ID not present",
 			metadata: &rpmmeta.Metadata{},
 			want:     "",
