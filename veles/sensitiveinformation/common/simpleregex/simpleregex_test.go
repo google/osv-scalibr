@@ -43,7 +43,7 @@ func TestDetect_truePositives(t *testing.T) {
 		in        []byte
 		want      []veles.Secret
 		wantPos   []int
-		fromMatch func([]byte) (sensitiveinformation.SensitiveInformation, bool)
+		fromMatch func([]byte, bool) (sensitiveinformation.SensitiveInformation, bool)
 	}{
 		{
 			name:   "match only",
@@ -123,7 +123,7 @@ BAZ
 				fakeSensitiveInformation([]byte("BAR")),
 			},
 			wantPos: []int{4},
-			fromMatch: func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+			fromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 				if string(b) == "FOO" {
 					return sensitiveinformation.SensitiveInformation{}, false
 				}
@@ -149,9 +149,10 @@ BAZ
 			before:   4,
 			keywords: []string{"abc", "def"},
 			want: []veles.Secret{
+				fakeSensitiveInformation([]byte("FOO")),
 				fakeSensitiveInformation([]byte("BAR")),
 			},
-			wantPos: []int{8},
+			wantPos: []int{0, 8},
 		}, {
 			name:     "keywords after",
 			regexp:   "[A-Z]{3}",
@@ -161,8 +162,10 @@ BAZ
 			keywords: []string{"abc", "def"},
 			want: []veles.Secret{
 				fakeSensitiveInformation([]byte("FOO")),
+				fakeSensitiveInformation([]byte("DEF")),
+				fakeSensitiveInformation([]byte("BAR")),
 			},
-			wantPos: []int{0},
+			wantPos: []int{0, 4, 8},
 		}, {
 			name:     "keywords before and after",
 			regexp:   "[A-Z]{3}",
@@ -172,10 +175,13 @@ BAZ
 			after:    4,
 			keywords: []string{"abc", "def"},
 			want: []veles.Secret{
+				fakeSensitiveInformation([]byte("ABC")),
 				fakeSensitiveInformation([]byte("FOO")),
+				fakeSensitiveInformation([]byte("DEF")),
 				fakeSensitiveInformation([]byte("BAR")),
+				fakeSensitiveInformation([]byte("ABC")),
 			},
-			wantPos: []int{4, 12},
+			wantPos: []int{0, 4, 8, 12, 16},
 		}, {
 			name:     "keywords matches regex",
 			regexp:   "[A-Z]{3}",
@@ -184,26 +190,27 @@ BAZ
 			before:   4,
 			keywords: []string{"abc", "def"},
 			want: []veles.Secret{
+				fakeSensitiveInformation([]byte("ABC")),
 				fakeSensitiveInformation([]byte("DEF")),
 				fakeSensitiveInformation([]byte("ABC")),
 			},
-			wantPos: []int{4, 8},
+			wantPos: []int{0, 4, 8},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.fromMatch == nil {
-				tc.fromMatch = func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+				tc.fromMatch = func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 					return fakeSensitiveInformation(b), true
 				}
 			}
 			d := Detector{
-				maxLen:              tc.maxLen,
-				re:                  regexp.MustCompile(tc.regexp),
-				contextWindowBefore: tc.before,
-				contextWindowAfter:  tc.after,
-				keywordsRe:          KeywordsRe(tc.keywords),
-				fromMatch:           tc.fromMatch,
+				MaxLen:              tc.maxLen,
+				Re:                  regexp.MustCompile(tc.regexp),
+				ContextWindowBefore: tc.before,
+				ContextWindowAfter:  tc.after,
+				KeywordsRe:          KeywordsRe(tc.keywords),
+				FromMatch:           tc.fromMatch,
 			}
 			got, gotPos := d.Detect(tc.in)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
@@ -211,6 +218,66 @@ BAZ
 			}
 			if diff := cmp.Diff(tc.wantPos, gotPos, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDetect_passesKeywordContextMatchToFromMatch(t *testing.T) {
+	type callbackCall struct {
+		Match        string
+		ContextMatch bool
+	}
+
+	cases := []struct {
+		name     string
+		keywords []string
+		in       []byte
+		before   uint32
+		after    uint32
+		want     []callbackCall
+	}{
+		{
+			name:     "keyword_match_and_no_keyword_match",
+			keywords: []string{"abc", "def"},
+			in:       []byte("abc FOO x BAR yyy BAZ def"),
+			before:   4,
+			after:    4,
+			want: []callbackCall{
+				{Match: "FOO", ContextMatch: true},
+				{Match: "BAR", ContextMatch: false},
+				{Match: "BAZ", ContextMatch: true},
+			},
+		},
+		{
+			name:     "no_keywords_regexp",
+			keywords: nil,
+			in:       []byte("abc FOO def"),
+			before:   4,
+			after:    4,
+			want: []callbackCall{
+				{Match: "FOO", ContextMatch: false},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got []callbackCall
+			d := Detector{
+				MaxLen:              3,
+				Re:                  regexp.MustCompile("[A-Z]{3}"),
+				ContextWindowBefore: tc.before,
+				ContextWindowAfter:  tc.after,
+				KeywordsRe:          KeywordsRe(tc.keywords),
+				FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+					got = append(got, callbackCall{Match: string(b), ContextMatch: contextMatch})
+					return fakeSensitiveInformation(b), true
+				},
+			}
+			d.Detect(tc.in)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("FromMatch calls diff (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -234,35 +301,19 @@ func TestDetect_trueNegatives(t *testing.T) {
 		regexp: "FOO",
 		maxLen: 3,
 		in:     []byte("BAR"),
-	}, {
-		name:     "no keyword match",
-		regexp:   "FOO",
-		keywords: []string{"abc", "def"},
-		before:   4,
-		after:    4,
-		maxLen:   3,
-		in:       []byte("FOO"),
-	}, {
-		name:     "keyword ahead of context window",
-		regexp:   "FOO",
-		keywords: []string{"abc", "def"},
-		before:   3,
-		after:    3,
-		maxLen:   3,
-		in:       []byte("abc FOO def"),
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fromMatch := func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+			fromMatch := func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 				return fakeSensitiveInformation(b), true
 			}
 			d := Detector{
-				maxLen:              tc.maxLen,
-				re:                  regexp.MustCompile(tc.regexp),
-				contextWindowBefore: tc.before,
-				contextWindowAfter:  tc.after,
-				keywordsRe:          KeywordsRe(tc.keywords),
-				fromMatch:           fromMatch,
+				MaxLen:              tc.maxLen,
+				Re:                  regexp.MustCompile(tc.regexp),
+				ContextWindowBefore: tc.before,
+				ContextWindowAfter:  tc.after,
+				KeywordsRe:          KeywordsRe(tc.keywords),
+				FromMatch:           fromMatch,
 			}
 			got, gotPos := d.Detect(tc.in)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {

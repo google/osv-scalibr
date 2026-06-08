@@ -31,21 +31,21 @@ import (
 // It implements veles.Detector.
 type Detector struct {
 	// The maximum length of the sensitive information.
-	maxLen uint32
+	MaxLen uint32
 	// Matches on the sensitive information.
-	re *regexp.Regexp
+	Re *regexp.Regexp
 
 	// Context window size for keywords search before the match.
-	contextWindowBefore uint32
+	ContextWindowBefore uint32
 	// Context window size for keywords search after the match.
-	contextWindowAfter uint32
+	ContextWindowAfter uint32
 
 	// KeywordsRe is the regexp of the Keywords. All keywords are case insensitive.
-	keywordsRe *regexp.Regexp
+	KeywordsRe *regexp.Regexp
 
 	// Returns a sensitiveinformation.SensitiveInformation from a regexp match
 	// result.
-	fromMatch func([]byte) (sensitiveinformation.SensitiveInformation, bool)
+	FromMatch func([]byte, bool) (sensitiveinformation.SensitiveInformation, bool)
 }
 
 // KeywordsRe returns a regexp of the keywords. All keywords are case insensitive.
@@ -58,25 +58,22 @@ func KeywordsRe(keywords []string) *regexp.Regexp {
 
 // MaxSecretLen returns the maximum length of the search window.
 func (d Detector) MaxSecretLen() uint32 {
-	return d.maxLen + d.contextWindowBefore + d.contextWindowAfter
+	return d.MaxLen + d.ContextWindowBefore + d.ContextWindowAfter
 }
 
 // Detect finds candidate tokens that match Detector.Re and returns them
 // alongside their starting positions.
 func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) {
-	for _, m := range d.re.FindAllIndex(data, -1) {
+	for _, m := range d.Re.FindAllIndex(data, -1) {
 		l, r := m[0], m[1]
-		lowerBound := max(0, l-int(d.contextWindowBefore))
-		upperBound := min(len(data), r+int(d.contextWindowAfter))
-		// If keywordsRe is set, check if the keywords are present in the context window before or after
-		// the match.
-		if d.keywordsRe != nil &&
-			!d.keywordsRe.Match(data[lowerBound:l]) &&
-			!d.keywordsRe.Match(data[r:upperBound]) {
-			continue
-		}
+		lowerBound := max(0, l-int(d.ContextWindowBefore))
+		upperBound := min(len(data), r+int(d.ContextWindowAfter))
+		// If KeywordsRe is set, check if the keywords are present in the context
+		// window before or after the match.
+		contextMatch := d.KeywordsRe != nil &&
+			(d.KeywordsRe.Match(data[lowerBound:l]) || d.KeywordsRe.Match(data[r:upperBound]))
 
-		if match, ok := d.fromMatch(data[l:r]); ok {
+		if match, ok := d.FromMatch(data[l:r], contextMatch); ok {
 			secrets = append(secrets, match)
 			positions = append(positions, l)
 		}
