@@ -452,10 +452,14 @@ var (
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
 	})
 
+	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+	})
+
 	// Secrets contains both secret extractors and detectors.
 	Secrets = concat(
 		SecretDetectors,
 		SecretExtractors,
+		SensitiveInformationDetectors,
 	)
 
 	// Misc artifact extractors.
