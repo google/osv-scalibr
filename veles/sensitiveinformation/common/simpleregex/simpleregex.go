@@ -31,21 +31,21 @@ import (
 // It implements veles.Detector.
 type Detector struct {
 	// The maximum length of the sensitive information.
-	maxLen uint32
+	MaxLen uint32
 	// Matches on the sensitive information.
-	re *regexp.Regexp
+	Re *regexp.Regexp
 
 	// Context window size for keywords search before the match.
-	contextWindowBefore uint32
+	ContextWindowBefore uint32
 	// Context window size for keywords search after the match.
-	contextWindowAfter uint32
+	ContextWindowAfter uint32
 
 	// KeywordsRe is the regexp of the Keywords. All keywords are case insensitive.
-	keywordsRe *regexp.Regexp
+	KeywordsRe *regexp.Regexp
 
 	// Returns a sensitiveinformation.SensitiveInformation from a regexp match
 	// result.
-	fromMatch func([]byte) (sensitiveinformation.SensitiveInformation, bool)
+	FromMatch func([]byte) (sensitiveinformation.SensitiveInformation, bool)
 }
 
 // KeywordsRe returns a regexp of the keywords. All keywords are case insensitive.
