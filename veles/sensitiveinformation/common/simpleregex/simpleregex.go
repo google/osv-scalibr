@@ -58,25 +58,25 @@ func KeywordsRe(keywords []string) *regexp.Regexp {
 
 // MaxSecretLen returns the maximum length of the search window.
 func (d Detector) MaxSecretLen() uint32 {
-	return d.maxLen + d.contextWindowBefore + d.contextWindowAfter
+	return d.MaxLen + d.ContextWindowBefore + d.ContextWindowAfter
 }
 
 // Detect finds candidate tokens that match Detector.Re and returns them
 // alongside their starting positions.
 func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) {
-	for _, m := range d.re.FindAllIndex(data, -1) {
+	for _, m := range d.Re.FindAllIndex(data, -1) {
 		l, r := m[0], m[1]
-		lowerBound := max(0, l-int(d.contextWindowBefore))
-		upperBound := min(len(data), r+int(d.contextWindowAfter))
+		lowerBound := max(0, l-int(d.ContextWindowBefore))
+		upperBound := min(len(data), r+int(d.ContextWindowAfter))
 		// If keywordsRe is set, check if the keywords are present in the context window before or after
 		// the match.
-		if d.keywordsRe != nil &&
-			!d.keywordsRe.Match(data[lowerBound:l]) &&
-			!d.keywordsRe.Match(data[r:upperBound]) {
+		if d.KeywordsRe != nil &&
+			!d.KeywordsRe.Match(data[lowerBound:l]) &&
+			!d.KeywordsRe.Match(data[r:upperBound]) {
 			continue
 		}
 
-		if match, ok := d.fromMatch(data[l:r]); ok {
+		if match, ok := d.FromMatch(data[l:r]); ok {
 			secrets = append(secrets, match)
 			positions = append(positions, l)
 		}
