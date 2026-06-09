@@ -182,6 +182,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -448,10 +449,15 @@ var (
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
 	})
 
+	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
+	})
+
 	// Secrets contains both secret extractors and detectors.
 	Secrets = concat(
 		SecretDetectors,
 		SecretExtractors,
+		SensitiveInformationDetectors,
 	)
 
 	// Misc artifact extractors.
