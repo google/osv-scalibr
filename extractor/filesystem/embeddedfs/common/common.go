@@ -43,8 +43,9 @@ import (
 )
 
 const (
-	defaultPageSize  = 1024 * 1024
-	defaultCacheSize = 100 * 1024 * 1024
+	defaultPageSize    = 1024 * 1024
+	defaultCacheSize   = 100 * 1024 * 1024
+	defaultMaxFileSize = 4000 * 1024 * 1024 // 4GB
 )
 
 // DetectFilesystem identifies the filesystem type by magic bytes.
@@ -736,7 +737,7 @@ loop:
 }
 
 // ZIPToTempDir extracts an ZIP into a temporary directory.
-func ZIPToTempDir(reader io.Reader) (string, error) {
+func ZIPToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
 	// Create temporary file because zip.NewReader requires ReaderAt.
 	tmpFile, err := os.CreateTemp("", "scalibr-zip-*")
 	if err != nil {
@@ -782,6 +783,29 @@ func ZIPToTempDir(reader io.Reader) (string, error) {
 		if symlink.TargetOutsideRoot("/", cleanName) {
 			extractErr = fmt.Errorf("zip contains invalid entry: %s", cleanName)
 			break
+		}
+
+		// Reject entries with an unusually high compression ratio.
+		// Extremely high ratios can indicate a ZIP bomb attempting to
+		// expand a small archive into a very large amount of data.
+		if f.CompressedSize64 > 0 {
+			ratio := f.UncompressedSize64 / f.CompressedSize64
+			// Ignore entries whose compression ratio exceeds the allowed threshold.
+			if ratio > 1000 {
+				continue
+			}
+		}
+
+		// Determine the effective maximum uncompressed size allowed for a single file.
+		// If the caller does not provide a limit, use the default limit.
+		eMaxFileSize := maxFileSize
+		if eMaxFileSize <= 0 {
+			eMaxFileSize = defaultMaxFileSize
+		}
+
+		// Skip entries whose declared uncompressed size exceeds the allowed limit.
+		if f.UncompressedSize64 > uint64(eMaxFileSize) {
+			continue
 		}
 
 		target := filepath.Join(tempDir, cleanName)
