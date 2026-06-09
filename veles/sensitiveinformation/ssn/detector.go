@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package ssn implements SSN detection logic.
 package ssn
 
 import (
@@ -30,7 +31,7 @@ const maxSecretLength = 11
 // SSN's segment cannot be all 0s
 var ssnRe = regexp.MustCompile("(00[1-9]|0[1-9][0-9]|[1-5][0-9]{2}|6[0-5][0-9]|66[0-5]|66[7-9]|[78][0-9]{2})-(0[1-9]|[1-9][0-9])-(000[1-9]|00[1-9][0-9]|0[1-9][0-9]{2}|[1-9][0-9]{3})")
 
-// NewDetector() returns a Detector, that finds US Social Security Numbers (SSNs)
+// NewDetector returns a Detector, that finds US Social Security Numbers (SSNs)
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen: maxSecretLength,
