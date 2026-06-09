@@ -94,10 +94,38 @@ func TestCSRFTokenDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name:  "html_hidden_input_3",
+			input: `<input type="hidden" value="django1234567890abcdefghijklmnop" name="_csrf">`,
+			want: []veles.Secret{
+				http.CSRFToken{Value: "django1234567890abcdefghijklmnop"},
+			},
+		},
+		{
+			name:  "html_hidden_input_4",
+			input: `<input name="csrf_token" value="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">`,
+			want: []veles.Secret{
+				http.CSRFToken{Value: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
+			},
+		},
+		{
+			name:  "html_hidden_input_5",
+			input: `<input name="csrf_token_form" value="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">`,
+			want: []veles.Secret{
+				http.CSRFToken{Value: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
+			},
+		},
+		{
 			name:  "xsrf_variant",
 			input: `XSRF-TOKEN: 9876543210fedcba9876543210fedcba`,
 			want: []veles.Secret{
 				http.CSRFToken{Value: "9876543210fedcba9876543210fedcba"},
+			},
+		},
+		{
+			name:  "csrf_token_assignment",
+			input: `csrf_token = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'`,
+			want: []veles.Secret{
+				http.CSRFToken{Value: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
 			},
 		},
 	}
@@ -136,6 +164,11 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 		file  string
 		input string
 	}{
+		{
+			// CSRF token present but not detected, this will be detected by the cookie detector
+			name:  "synthetic_csrf_cookie",
+			input: `Set-Cookie: csrf_cookie=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6; Path=/`,
+		},
 		{
 			name:  "empty_input",
 			input: ``,
