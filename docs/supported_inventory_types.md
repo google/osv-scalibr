@@ -78,6 +78,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
+|            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
