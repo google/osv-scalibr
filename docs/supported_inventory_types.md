@@ -84,6 +84,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
+|            | libs.versions.toml (Gradle Version Catalog)       | `java/gradleversioncatalog`          |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
 |            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
 |            | yarn.lock                                         | `javascript/yarnlock`                |
