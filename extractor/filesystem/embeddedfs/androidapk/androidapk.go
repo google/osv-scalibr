@@ -96,7 +96,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 	// Extract .apk file to a temporary directory so other plugins get to work on it.
 	// This includes x509 certificates, maven metadata (if present), unpacked resource, and android dex files
-	tempDir, err := common.ZIPToTempDir(input.Reader)
+	tempDir, err := common.ZIPToTempDir(input.Reader, e.maxFileSizeBytes)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("common.APKToTempDir(%q): %w", input.Path, err)
 	}
