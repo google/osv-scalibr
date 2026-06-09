@@ -8,13 +8,13 @@ import (
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/common/simpleregex"
 )
 
-const maxSecretLength = 9
+const maxSecretLength = 11
 
 // SSN has format ddd-dd-dddd
 // SSN CANNOT start with 666
 // SSN's first segment cannot be between 900-999
 // SSN's segment cannot be all 0s
-var ssnRe = regexp.MustCompile("(?!666|000|9\\d{2})\\d{3}-(?!00)\\d{2}-(?!0{4})\\d{4}")
+var ssnRe = regexp.MustCompile("(00[1-9]|0[1-9][0-9]|[1-5][0-9]{2}|6[0-5][0-9]|66[0-5]|66[7-9]|[78][0-9]{2})-(0[1-9]|[1-9][0-9])-(000[1-9]|00[1-9][0-9]|0[1-9][0-9]{2}|[1-9][0-9]{3})")
 
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
