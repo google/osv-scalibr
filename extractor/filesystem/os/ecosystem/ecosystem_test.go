@@ -316,6 +316,29 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "openEuler",
 		},
 		{
+			desc: "AlmaLinux_9",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "9",
+			},
+			want: "AlmaLinux:9",
+		},
+		{
+			desc: "AlmaLinux_8",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "8",
+			},
+			want: "AlmaLinux:8",
+		},
+		{
+			desc: "AlmaLinux_no_version",
+			metadata: &rpmmeta.Metadata{
+				OSID: "almalinux",
+			},
+			want: "AlmaLinux",
+		},
+		{
 			desc:     "OS ID not present",
 			metadata: &rpmmeta.Metadata{},
 			want:     "",

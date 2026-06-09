@@ -53,6 +53,7 @@ import (
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleversioncatalog"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
@@ -203,6 +204,7 @@ var (
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
+		gradleversioncatalog.Name:          {gradleversioncatalog.New},
 		pomxml.Name:                        {pomxml.New},
 	}
 	// JavaArtifact extractors for Java.
@@ -447,6 +449,7 @@ var (
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
+		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
