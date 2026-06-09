@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -29,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -44,10 +44,12 @@ const (
 	// defaultMaxFileSizeBytes is the maximum .asar file size to attempt parsing.
 	defaultMaxFileSizeBytes = 500 * units.MiB
 
-	// asarHeaderOffset is the byte offset at which the JSON header string begins.
-	// Layout: [4B pickle size of header_size][4B header_size value]
-	//         [4B pickle size of header][4B header JSON length] = 16 bytes total.
-	asarHeaderOffset = 16
+	// maxJSONHeaderBytes caps the ASAR header JSON to 100 MiB to protect
+	// against malicious/corrupted archives with an inflated jsonLen field.
+	maxJSONHeaderBytes = 100 * units.MiB
+
+	// maxPackageJSONBytes caps individual package.json reads to 10 MiB.
+	maxPackageJSONBytes = 10 * units.MiB
 )
 
 // asarHeader is the top-level JSON structure of an ASAR archive header.
@@ -139,13 +141,18 @@ func (e Extractor) extractPackages(
 		return nil, nil
 	}
 
+	ra, err := scalibrfs.NewReaderAt(input.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("%s: creating ReaderAt for %q: %w", e.Name(), input.Path, err)
+	}
+
 	var pkgs []*extractor.Package
 	for pkgName, pkgNode := range nmNode.Files {
 		pjNode, ok := pkgNode.Files["package.json"]
 		if !ok {
 			continue
 		}
-		pj, err := readPackageJSON(input.Reader, pjNode, dataOffset)
+		pj, err := readPackageJSON(ra, pjNode, dataOffset)
 		if err != nil {
 			log.Warnf("%s: reading package.json for %q in %q: %v",
 				e.Name(), pkgName, input.Path, err)
@@ -164,9 +171,7 @@ func (e Extractor) extractPackages(
 	return pkgs, nil
 }
 
-// readHeader reads and parses the ASAR Pickle-encoded header.
-// It returns the parsed header and the absolute byte offset at which file
-// data begins (i.e. the end of the header region).
+// asarPrefix is the 16-byte binary header at the start of every ASAR file.
 //
 // ASAR layout (all uint32 little-endian):
 //
@@ -174,22 +179,33 @@ func (e Extractor) extractPackages(
 //	[4B: headerPickleSize] [4B: jsonLen] [jsonLen bytes JSON] [padding]
 //	                                   <- second Pickle
 //	[file data ...]
+type asarPrefix struct {
+	_                uint32 // always 8 (size of first Pickle payload)
+	HeaderPickleSize uint32
+	_                uint32 // mirrors HeaderPickleSize
+	JSONLen          uint32
+}
+
+// readHeader reads and parses the ASAR Pickle-encoded header.
+// It returns the parsed header and the absolute byte offset at which file
+// data begins (i.e. the end of the header region).
 func readHeader(r io.Reader) (asarHeader, int64, error) {
-	var buf [asarHeaderOffset]byte
-	if _, err := io.ReadFull(r, buf[:]); err != nil {
+	var prefix asarPrefix
+	if err := binary.Read(r, binary.LittleEndian, &prefix); err != nil {
 		return asarHeader{}, 0, fmt.Errorf("reading ASAR prefix: %w", err)
 	}
 
-	// bytes 4-7: size of the header Pickle object (payload only, includes
-	// the 4-byte jsonLen field that precedes the JSON bytes).
-	headerPickleSize := int64(binary.LittleEndian.Uint32(buf[4:8]))
-	// bytes 12-15: length of the JSON string.
-	jsonLen := int64(binary.LittleEndian.Uint32(buf[12:16]))
+	headerPickleSize := int64(prefix.HeaderPickleSize)
+	jsonLen := int64(prefix.JSONLen)
 
 	if jsonLen <= 0 || jsonLen > headerPickleSize {
 		return asarHeader{}, 0, fmt.Errorf(
 			"invalid ASAR header sizes: pickle=%d json=%d",
 			headerPickleSize, jsonLen)
+	}
+	if jsonLen > maxJSONHeaderBytes {
+		return asarHeader{}, 0, fmt.Errorf(
+			"ASAR header JSON too large: %d bytes", jsonLen)
 	}
 
 	jsonBuf := make([]byte, jsonLen)
@@ -209,27 +225,22 @@ func readHeader(r io.Reader) (asarHeader, int64, error) {
 }
 
 // readPackageJSON reads and parses a package.json file stored inside the ASAR
-// data region. r must implement io.ReadSeeker.
+// data region. r must implement io.ReaderAt.
 func readPackageJSON(
-	r io.Reader, node asarNode, dataOffset int64,
+	r io.ReaderAt, node asarNode, dataOffset int64,
 ) (packageJSON, error) {
-	rs, ok := r.(io.ReadSeeker)
-	if !ok {
-		return packageJSON{}, errors.New("reader does not implement io.ReadSeeker")
-	}
-
 	var fileOffset int64
 	if _, err := fmt.Sscanf(node.Offset, "%d", &fileOffset); err != nil {
 		return packageJSON{}, fmt.Errorf("parsing file offset %q: %w",
 			node.Offset, err)
 	}
 
-	if _, err := rs.Seek(dataOffset+fileOffset, io.SeekStart); err != nil {
-		return packageJSON{}, fmt.Errorf("seeking to package.json: %w", err)
+	if node.Size <= 0 || node.Size > maxPackageJSONBytes {
+		return packageJSON{}, fmt.Errorf("package.json size out of range: %d", node.Size)
 	}
 
 	buf := make([]byte, node.Size)
-	if _, err := io.ReadFull(rs, buf); err != nil {
+	if _, err := r.ReadAt(buf, dataOffset+fileOffset); err != nil {
 		return packageJSON{}, fmt.Errorf("reading package.json bytes: %w", err)
 	}
 
