@@ -26,7 +26,7 @@ import (
 const maxSecretLength = 11
 
 // SSN has format ddd-dd-dddd
-var ssnRe = regexp.MustCompile(`[0-8]\d{2}-\d{2}-\d{4}`)
+var ssnRe = regexp.MustCompile(`\b[0-8]\d{2}-\d{2}-\d{4}\b`)
 
 // NewDetector returns a Detector, that finds US Social Security Numbers (SSNs)
 func NewDetector() veles.Detector {

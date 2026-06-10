@@ -129,6 +129,10 @@ func TestDetect_trueNegatives(t *testing.T) {
 			name: "area_starts_with_9h",
 			in:   []byte("912-34-5678"),
 		},
+		{
+			name: "within_longer_string",
+			in:   []byte("asdf123-45-6789asdf"),
+		},
 	}
 
 	for _, tc := range cases {
