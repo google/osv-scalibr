@@ -53,7 +53,7 @@ func TestDetect_truePositives(t *testing.T) {
 			name: "starting_with_6",
 			in:   []byte("ssn: 680-12-3456"),
 			want: []veles.Secret{
-				ssnFinding([]byte("680-12-3456")),
+				ssnFinding([]byte("680-62-6456")),
 			},
 		},
 		{
