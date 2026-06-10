@@ -27,10 +27,10 @@ var csrfPatterns = []*regexp.Regexp{
 	// Quoted key value pairs (Logs, JSON, Configs, standard variables).
 	//
 	// Note: the value must be contained inside `'` or `"` to reduce false positive in case of a variable assignment in source code
-	regexp.MustCompile(`(?i)(?:x[-_])?(?:csrf|xsrf)[-_]?(?:middleware)?[-_]?(?:token)?["']?\s*[:=]\s*["']([a-zA-Z0-9+/=_-]{16,128})["']`),
+	regexp.MustCompile(`(?i)(?:x[-_])?(?:csrf|xsrf)(?:[-_]?middleware)?(?:[-_]?token)?["']?\s*[:=]\s*["']([a-zA-Z0-9+/=_-]{16,128})["']`),
 
 	// Unquoted HTTP Headers (HTTP dumps).
-	regexp.MustCompile(`(?im)^(?:x[-_])?(?:csrf|xsrf)[-_]?(?:middleware)?[-_]?(?:token)?:\s+([a-zA-Z0-9+/=_-]{16,128})\b`),
+	regexp.MustCompile(`(?im)^(?:x[-_])?(?:csrf|xsrf)(?:[-_]?middleware)?(?:[-_]?token)?:\s+([a-zA-Z0-9+/=_-]{16,128})\b`),
 
 	// HTML Tag: 'name' comes before 'value'.
 	regexp.MustCompile(`(?i)<input[^>]+name=["'][\w-]*(?:csrf|xsrf)[\w-]*["'][^>]+value=["']([a-zA-Z0-9+/=_-]{16,128})["']`),
