@@ -15,7 +15,7 @@
 package ssn
 
 import (
-	"strings"
+	"bytes"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -81,7 +81,7 @@ func TestDetect_truePositives(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, gotPos := e.Detect(t.Context(), strings.NewReader(string(tc.in)))
+			got, gotPos := e.Detect(t.Context(), bytes.NewBuffer(tc.in))
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
@@ -139,7 +139,7 @@ func TestDetect_trueNegatives(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, gotPos := e.Detect(t.Context(), strings.NewReader(string(tc.in)))
+			got, gotPos := e.Detect(t.Context(), bytes.NewBuffer((tc.in)))
 			if diff := cmp.Diff([]veles.Secret(nil), got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
