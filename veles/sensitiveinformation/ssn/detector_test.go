@@ -37,21 +37,21 @@ func TestDetect_truePositives(t *testing.T) {
 	}{
 		{
 			name: "match_only",
-			in:   []byte("123-45-6789"),
+			in:   []byte("223-45-6789"),
 			want: []veles.Secret{
-				ssnFinding([]byte("123-45-6789")),
+				ssnFinding([]byte("223-45-6789")),
 			},
 		},
 		{
 			name: "match_in_text",
-			in:   []byte("ssn: 123-45-6789."),
+			in:   []byte("ssn: 133-45-6789."),
 			want: []veles.Secret{
-				ssnFinding([]byte("123-45-6789")),
+				ssnFinding([]byte("133-45-6789")),
 			},
 		},
 		{
 			name: "starting_with_6",
-			in:   []byte("ssn: 680-12-3456"),
+			in:   []byte("ssn: 680-62-6456"),
 			want: []veles.Secret{
 				ssnFinding([]byte("680-62-6456")),
 			},
@@ -65,9 +65,9 @@ func TestDetect_truePositives(t *testing.T) {
 		},
 		{
 			name: "multiple matches",
-			in:   []byte("123-45-6789 001-01-0001"),
+			in:   []byte("223-45-6789 001-01-0001"),
 			want: []veles.Secret{
-				ssnFinding([]byte("123-45-6789")),
+				ssnFinding([]byte("223-45-6789")),
 				ssnFinding([]byte("001-01-0001")),
 			},
 		},
@@ -124,14 +124,25 @@ func TestDetect_trueNegatives(t *testing.T) {
 			name: "serial_all_zeroes",
 			in:   []byte("123-45-0000"),
 		},
-
 		{
-			name: "area_starts_with_9h",
+			name: "area_starts_with_9",
 			in:   []byte("912-34-5678"),
 		},
 		{
 			name: "within_longer_string",
 			in:   []byte("asdf123-45-6789asdf"),
+		},
+		{
+			name: "placeholder_pattern_123",
+			in:   []byte("123-45-6789"),
+		},
+		{
+			name: "placeholder_pattern_111",
+			in:   []byte("111-11-1111"),
+		},
+		{
+			name: "placeholder_pattern_woolworth",
+			in:   []byte("078-05-1120"),
 		},
 	}
 

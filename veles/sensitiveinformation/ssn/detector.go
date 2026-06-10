@@ -28,6 +28,22 @@ const maxSecretLength = 11
 // SSN has format ddd-dd-dddd
 var ssnRe = regexp.MustCompile(`\b[0-8]\d{2}-\d{2}-\d{4}\b`)
 
+var commonExamples = map[string]struct{}{
+	"123-45-6789": {},
+
+	"111-11-1111": {},
+	"222-22-2222": {},
+	"333-33-3333": {},
+	"444-44-4444": {},
+	"555-55-5555": {},
+	"777-77-7777": {},
+	"888-88-8888": {},
+	"999-99-9999": {},
+
+	// https://www.ssa.gov/history/ssn/misused.html
+	"078-05-1120": {},
+}
+
 // NewDetector returns a Detector, that finds US Social Security Numbers (SSNs)
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
@@ -58,6 +74,10 @@ func NewDetector() veles.Detector {
 // SSN's segment cannot be all 0s
 func validSSN(s string) bool {
 	if !ssnRe.MatchString(s) {
+		return false
+	}
+
+	if _, ok := commonExamples[s]; ok {
 		return false
 	}
 
