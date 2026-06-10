@@ -145,7 +145,6 @@ func TestDetect_trueNegatives(t *testing.T) {
 }
 
 func TestDetectorMaxSecretLen(t *testing.T) {
-
 	if got, want := NewDetector().MaxSecretLen(), uint32(len("123-45-6789")); got != want {
 		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
 	}
