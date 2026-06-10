@@ -15,6 +15,7 @@
 package ssn
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,6 +25,11 @@ import (
 )
 
 func TestDetect_truePositives(t *testing.T) {
+	e, err := veles.NewDetectionEngine([]veles.Detector{NewDetector()})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cases := []struct {
 		name    string
 		in      []byte
@@ -75,7 +81,7 @@ func TestDetect_truePositives(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, gotPos := NewDetector().Detect(tc.in)
+			got, gotPos := e.Detect(t.Context(), strings.NewReader(string(tc.in)))
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
@@ -87,6 +93,11 @@ func TestDetect_truePositives(t *testing.T) {
 }
 
 func TestDetect_trueNegatives(t *testing.T) {
+	e, err := veles.NewDetectionEngine([]veles.Detector{NewDetector()})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cases := []struct {
 		name string
 		in   []byte
@@ -128,7 +139,7 @@ func TestDetect_trueNegatives(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, gotPos := NewDetector().Detect(tc.in)
+			got, gotPos := e.Detect(t.Context(), strings.NewReader(string(tc.in)))
 			if diff := cmp.Diff([]veles.Secret(nil), got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
@@ -140,6 +151,7 @@ func TestDetect_trueNegatives(t *testing.T) {
 }
 
 func TestDetectorMaxSecretLen(t *testing.T) {
+
 	if got, want := NewDetector().MaxSecretLen(), uint32(len("123-45-6789")); got != want {
 		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
 	}
