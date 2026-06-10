@@ -26,17 +26,19 @@ import (
 const maxSecretLength = 11
 
 // SSN has format ddd-dd-dddd
-// SSN CANNOT start with 666
-// SSN's first segment cannot be between 900-999
-// SSN's segment cannot be all 0s
-var ssnRe = regexp.MustCompile("(00[1-9]|0[1-9][0-9]|[1-5][0-9]{2}|6[0-5][0-9]|66[0-5]|66[7-9]|[78][0-9]{2})-(0[1-9]|[1-9][0-9])-(000[1-9]|00[1-9][0-9]|0[1-9][0-9]{2}|[1-9][0-9]{3})")
+var ssnRe = regexp.MustCompile(`[0-8]\d{2}-\d{2}-\d{4}`)
 
 // NewDetector returns a Detector, that finds US Social Security Numbers (SSNs)
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen: maxSecretLength,
 		Re:     ssnRe,
-		FromMatch: func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+		FromMatch: func(b []byte) (veles.Secret, bool) {
+			ssn := string(b)
+			if !validSSN(ssn) {
+				return nil, false
+			}
+
 			finding := sensitiveinformation.SensitiveInformation{
 				InfoType: sensitiveinformation.InfoType{
 					Name:        "Social Security Number",
@@ -49,4 +51,22 @@ func NewDetector() veles.Detector {
 			return finding, true
 		},
 	}
+}
+
+// SSN CANNOT start with 666
+// SSN's first segment cannot be between 900-999
+// SSN's segment cannot be all 0s
+func validSSN(s string) bool {
+	if !ssnRe.MatchString(s) {
+		return false
+	}
+
+	area := s[0:3]
+	group := s[4:6]
+	serial := s[7:11]
+
+	return area != "000" &&
+		area != "666" &&
+		group != "00" &&
+		serial != "0000"
 }
