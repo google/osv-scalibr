@@ -31,10 +31,9 @@ func TestDetect_truePositives(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		in      []byte
-		want    []veles.Secret
-		wantPos []int
+		name string
+		in   []byte
+		want []veles.Secret
 	}{
 		{
 			name: "match_only",
@@ -42,7 +41,6 @@ func TestDetect_truePositives(t *testing.T) {
 			want: []veles.Secret{
 				ssnFinding([]byte("123-45-6789")),
 			},
-			wantPos: []int{0},
 		},
 		{
 			name: "match_in_text",
@@ -50,7 +48,6 @@ func TestDetect_truePositives(t *testing.T) {
 			want: []veles.Secret{
 				ssnFinding([]byte("123-45-6789")),
 			},
-			wantPos: []int{5},
 		},
 		{
 			name: "starting_with_6",
@@ -58,7 +55,6 @@ func TestDetect_truePositives(t *testing.T) {
 			want: []veles.Secret{
 				ssnFinding([]byte("680-12-3456")),
 			},
-			wantPos: []int{5},
 		},
 		{
 			name: "double_9_in_the_middle",
@@ -66,7 +62,6 @@ func TestDetect_truePositives(t *testing.T) {
 			want: []veles.Secret{
 				ssnFinding([]byte("675-99-1234")),
 			},
-			wantPos: []int{5},
 		},
 		{
 			name: "multiple matches",
@@ -75,18 +70,17 @@ func TestDetect_truePositives(t *testing.T) {
 				ssnFinding([]byte("123-45-6789")),
 				ssnFinding([]byte("001-01-0001")),
 			},
-			wantPos: []int{0, 12},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, gotPos := e.Detect(t.Context(), bytes.NewBuffer(tc.in))
+			got, derr := e.Detect(t.Context(), bytes.NewBuffer(tc.in))
+			if derr != nil {
+				t.Fatal(derr)
+			}
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(tc.wantPos, gotPos, cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() positions diff (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -139,12 +133,12 @@ func TestDetect_trueNegatives(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, gotPos := e.Detect(t.Context(), bytes.NewBuffer((tc.in)))
+			got, derr := e.Detect(t.Context(), bytes.NewBuffer(tc.in))
+			if derr != nil {
+				t.Fatal(derr)
+			}
 			if diff := cmp.Diff([]veles.Secret(nil), got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff([]int(nil), gotPos, cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() positions diff (-want +got):\n%s", diff)
 			}
 		})
 	}
