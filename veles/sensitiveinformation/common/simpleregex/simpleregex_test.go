@@ -43,7 +43,7 @@ func TestDetect_truePositives(t *testing.T) {
 		in        []byte
 		want      []veles.Secret
 		wantPos   []int
-		fromMatch func([]byte) (sensitiveinformation.SensitiveInformation, bool)
+		fromMatch func([]byte) (veles.Secret, bool)
 	}{
 		{
 			name:   "match only",
@@ -123,7 +123,7 @@ BAZ
 				fakeSensitiveInformation([]byte("BAR")),
 			},
 			wantPos: []int{4},
-			fromMatch: func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+			fromMatch: func(b []byte) (veles.Secret, bool) {
 				if string(b) == "FOO" {
 					return sensitiveinformation.SensitiveInformation{}, false
 				}
@@ -193,7 +193,7 @@ BAZ
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.fromMatch == nil {
-				tc.fromMatch = func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+				tc.fromMatch = func(b []byte) (veles.Secret, bool) {
 					return fakeSensitiveInformation(b), true
 				}
 			}
@@ -253,7 +253,7 @@ func TestDetect_trueNegatives(t *testing.T) {
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fromMatch := func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+			fromMatch := func(b []byte) (veles.Secret, bool) {
 				return fakeSensitiveInformation(b), true
 			}
 			d := Detector{

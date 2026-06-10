@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/sensitiveinformation"
 )
 
 // Detector finds instances of sensitive information detector that matches the
@@ -45,7 +44,7 @@ type Detector struct {
 
 	// Returns a sensitiveinformation.SensitiveInformation from a regexp match
 	// result.
-	FromMatch func([]byte) (sensitiveinformation.SensitiveInformation, bool)
+	FromMatch func([]byte) (veles.Secret, bool)
 }
 
 // KeywordsRe returns a regexp of the keywords. All keywords are case insensitive.
