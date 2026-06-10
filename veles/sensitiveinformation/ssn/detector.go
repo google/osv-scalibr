@@ -69,9 +69,6 @@ func NewDetector() veles.Detector {
 	}
 }
 
-// SSN CANNOT start with 666
-// SSN's first segment cannot be between 900-999
-// SSN's segment cannot be all 0s
 func validSSN(s string) bool {
 	if !ssnRe.MatchString(s) {
 		return false
