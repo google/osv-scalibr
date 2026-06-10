@@ -31,7 +31,7 @@ func TestDetect_truePositives(t *testing.T) {
 		wantPos []int
 	}{
 		{
-			name: "match only",
+			name: "match_only",
 			in:   []byte("123-45-6789"),
 			want: []veles.Secret{
 				ssnFinding([]byte("123-45-6789")),
@@ -39,7 +39,7 @@ func TestDetect_truePositives(t *testing.T) {
 			wantPos: []int{0},
 		},
 		{
-			name: "match in text",
+			name: "match_in_text",
 			in:   []byte("ssn: 123-45-6789."),
 			want: []veles.Secret{
 				ssnFinding([]byte("123-45-6789")),
@@ -76,31 +76,31 @@ func TestDetect_trueNegatives(t *testing.T) {
 		in   []byte
 	}{
 		{
-			name: "no match",
+			name: "no_match",
 			in:   []byte("not an ssn"),
 		},
 		{
-			name: "missing dashes",
+			name: "missing_dashes",
 			in:   []byte("123456789"),
 		},
 		{
-			name: "area starts with 666",
+			name: "area_starts_with_666",
 			in:   []byte("666-45-6789"),
 		},
 		{
-			name: "area starts with 000",
+			name: "area_starts_with_000",
 			in:   []byte("000-45-6789"),
 		},
 		{
-			name: "area between 900 and 999",
+			name: "area_between_900_and_999",
 			in:   []byte("900-45-6789"),
 		},
 		{
-			name: "group all zeroes",
+			name: "group_all_zeroes",
 			in:   []byte("123-00-6789"),
 		},
 		{
-			name: "serial all zeroes",
+			name: "serial_all_zeroes",
 			in:   []byte("123-45-0000"),
 		},
 	}
