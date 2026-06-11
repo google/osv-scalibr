@@ -22,7 +22,19 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+const testSsn = "321-12-1234"
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		NewDetector(),
+		testSsn,
+		ssnFinding([]byte("321-12-1234")),
+	)
+}
 
 func TestDetect_truePositives(t *testing.T) {
 	e, err := veles.NewDetectionEngine([]veles.Detector{NewDetector()})
