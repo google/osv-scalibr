@@ -169,24 +169,87 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 		// These testcases are real pieces of code found in the wild used to improve the
 		// false positive rate of the detector
 		{
-			// src: https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-10.0#generate-antiforgery-tokens-with-iantiforgery
 			name: "aspnet_example",
-			file: `src/aspnet.cs`,
+			input: `|| string.Equals(requestPath, "/index.html", StringComparison.OrdinalIgnoreCase))
+	    {
+	        var tokenSet = antiforgery.GetAndStoreTokens(context);
+	        context.Response.Cookies.Append("XSRF-TOKEN", tokenSet.RequestToken!,
+	            new CookieOptions { HttpOnly = false });
+	    }`,
 		},
 		{
-			// src: https://github.com/angular/angular.js/blob/master/src/ng/http.js
 			name: "angular_src_code",
-			file: `src/http.js`,
+			input: `
+   *  - If XSRF prefix is detected, strip it
+   * - **"defaults.xsrfCookieName"** - {string} - Name of cookie containing the XSRF token.
+   * Defaults value is "'XSRF-TOKEN'".
+   * - **"defaults.xsrfHeaderName"** - {string} - Name of HTTP header to populate with the
+   * XSRF token. Defaults value is "'X-XSRF-TOKEN'".
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+   * @name $httpProvider#xsrfTrustedOrigins
+   * Array containing URLs whose origins are trusted to receive the XSRF token. See the
+   * XSRF.
+   *   "https://foo.com/"" will include the XSRF token.
+   *   module('xsrfTrustedOriginsExample', []).
+   *     $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
+   *     // The XSRF token will be sent.
+   *     // The XSRF token will NOT be sent.
+  var xsrfTrustedOrigins = this.xsrfTrustedOrigins = [];
+   * @name $httpProvider#xsrfWhitelistedOrigins
+   * This property is deprecated. Use {@link $httpProvider#xsrfTrustedOrigins xsrfTrustedOrigins}
+  Object.defineProperty(this, 'xsrfWhitelistedOrigins', {
+      return this.xsrfTrustedOrigins;
+      this.xsrfTrustedOrigins = origins;
+    var urlIsAllowedOrigin = urlIsAllowedOriginFactory(xsrfTrustedOrigins);
+     *  - If XSRF prefix is detected, strip it (see Security Considerations section below).
+     * - [XSRF](http://en.wikipedia.org/wiki/Cross-site_request_forgery)
+     * ### Cross Site Request Forgery (XSRF) Protection
+     * [XSRF](http://en.wikipedia.org/wiki/Cross-site_request_forgery) is an attack technique by
+     * website. AngularJS provides a mechanism to counter XSRF. When performing XHR requests, the
+     * $http service reads a token from a cookie (by default, "XSRF-TOKEN") and sets it as an HTTP
+     * header (by default "X-XSRF-TOKEN"). Since only JavaScript that runs on your domain could read
+     * cookie called "XSRF-TOKEN" on the first HTTP GET request. On subsequent XHR requests the
+     * server can verify that the cookie matches the "X-XSRF-TOKEN" HTTP header, and therefore be
+     * access to your users' XSRF tokens and exposing them to Cross Site Request Forgery. If you
+     * want to, you can trust additional origins to also receive the XSRF token, by adding them
+     * to {@link ng.$httpProvider#xsrfTrustedOrigins xsrfTrustedOrigins}. This might be
+     * See {@link ng.$httpProvider#xsrfTrustedOrigins $httpProvider.xsrfTrustedOrigins} for
+     * The name of the cookie and the header can be specified using the "xsrfCookieName" and
+     * "xsrfHeaderName" properties of either "$httpProvider.defaults" at config-time,
+     *    - **xsrfHeaderName** – "{string}"" – Name of HTTP header to populate with the XSRF token.
+     *    - **xsrfCookieName** – "{string}"" – Name of cookie containing the XSRF token.
+      // if we won't have the response in cache, set the xsrf headers and
+        var xsrfValue = urlIsAllowedOrigin(config.url)
+            ? $$cookieReader()[config.xsrfCookieName || defaults.xsrfCookieName]
+        if (xsrfValue) {
+          reqHeaders[(config.xsrfHeaderName || defaults.xsrfHeaderName)] = xsrfValue;
+
+			`,
 		},
 		{
-			// src: https://github.com/decred/politeiagui/blob/master/plugins-structure/packages/core/src/api/api.test.js
 			name: "politeiagui_test",
-			file: `src/api.test.js`,
+			input: `
+			const mockCsrfToken = "fake_csrf";
+    it("should update api state and csrf token", async () => {
+        csrf: mockCsrfToken,
+      expect(state.csrf).toEqual(mockCsrfToken);
+      expect(state.csrf).toEqual("");`,
 		},
 		{
 			// src: https://github.com/freeCodeCamp/freeCodeCamp/blob/main/client/src/utils/ajax.ts
 			name: "freeCodeCamp_utils",
-			file: `src/test.js`,
+			input: `async function get<T>(
+  path: string,
+  signal?: AbortSignal
+): Promise<ResponseWithData<T>> {
+  const response = await fetch(` + "`" + `${base}${path}` + "`" + `, {
+    ...defaultOptions,
+    headers: { 'CSRF-Token': getCSRFToken() },
+    signal
+  });
+  return combineDataWithResponse(response);
+}`,
 		},
 	}
 	for _, tc := range negCases {
