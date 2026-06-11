@@ -16,6 +16,7 @@
 package ssn
 
 import (
+	"bytes"
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
@@ -61,7 +62,7 @@ func NewDetector() veles.Detector {
 					Sensitivity: sensitiveinformation.SensitivityLevelModerate,
 				},
 				Likelihood: sensitiveinformation.LikelihoodLikely,
-				Raw:        b,
+				Raw:        bytes.Clone(b),
 			}
 
 			return finding, true
