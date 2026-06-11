@@ -80,41 +80,6 @@ func TestCSRFTokenDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name:  "html_hidden_input",
-			input: `<input type="hidden" name="csrfmiddlewaretoken" value="django1234567890abcdefghijklmnop">`,
-			want: []veles.Secret{
-				http.CSRFToken{Value: "django1234567890abcdefghijklmnop"},
-			},
-		},
-		{
-			name:  "html_hidden_input_2",
-			input: `<input type="hidden" value="django1234567890abcdefghijklmnop" name="csrfmiddlewaretoken">`,
-			want: []veles.Secret{
-				http.CSRFToken{Value: "django1234567890abcdefghijklmnop"},
-			},
-		},
-		{
-			name:  "html_hidden_input_3",
-			input: `<input type="hidden" value="django1234567890abcdefghijklmnop" name="_csrf">`,
-			want: []veles.Secret{
-				http.CSRFToken{Value: "django1234567890abcdefghijklmnop"},
-			},
-		},
-		{
-			name:  "html_hidden_input_4",
-			input: `<input name="csrf_token" value="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">`,
-			want: []veles.Secret{
-				http.CSRFToken{Value: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
-			},
-		},
-		{
-			name:  "html_hidden_input_5",
-			input: `<input name="csrf_token_form" value="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6">`,
-			want: []veles.Secret{
-				http.CSRFToken{Value: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
-			},
-		},
-		{
 			name:  "xsrf_variant",
 			input: `XSRF-TOKEN: 9876543210fedcba9876543210fedcba`,
 			want: []veles.Secret{
@@ -170,6 +135,11 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 			input: `Set-Cookie: csrf_cookie=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6; Path=/`,
 		},
 		{
+			// CSRF token present but not detected to reduce false positives
+			name:  "html_hidden_input",
+			input: `<input type="hidden" name="csrfmiddlewaretoken" value="django1234567890abcdefghijklmnop">`,
+		},
+		{
 			name:  "empty_input",
 			input: ``,
 		},
@@ -185,10 +155,7 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 			name:  "unrelated_variable_assignment",
 			input: `session_id = "1234567890abcdef1234567890abcdef"`,
 		},
-		{
-			name:  "html_unrelated_input",
-			input: `<input type="hidden" name="user_id" value="1234567890abcdef">`,
-		},
+
 		{
 			name:  "bearer_token",
 			input: `Authorization: Bearer abcdef1234567890abcdef1234567890`,

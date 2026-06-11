@@ -21,7 +21,7 @@ import (
 )
 
 // preFilter is used to quickly check if the byte slice contains potential target keywords.
-var preFilter = regexp.MustCompile(`(?i)(?:x-)?(?:csrf|xsrf)`)
+var preFilter = regexp.MustCompile(`(?i)(?:csrf|xsrf)`)
 
 var csrfPatterns = []*regexp.Regexp{
 	// Quoted key value pairs (Logs, JSON, Configs, standard variables).
@@ -32,11 +32,7 @@ var csrfPatterns = []*regexp.Regexp{
 	// Unquoted HTTP Headers (HTTP dumps).
 	regexp.MustCompile(`(?im)^(?:x[-_])?(?:csrf|xsrf)(?:[-_]?middleware)?(?:[-_]?token)?:\s+([a-zA-Z0-9+/=_-]{16,128})\b`),
 
-	// HTML Tag: 'name' comes before 'value'.
-	regexp.MustCompile(`(?i)<input[^>]+name=["'][\w-]*(?:csrf|xsrf)[\w-]*["'][^>]+value=["']([a-zA-Z0-9+/=_-]{16,128})["']`),
-
-	// HTML Tag: 'value' comes before 'name'.
-	regexp.MustCompile(`(?i)<input[^>]+value=["']([a-zA-Z0-9+/=_-]{16,128})["'][^>]+name=["'][\w-]*(?:csrf|xsrf)[\w-]*["']`),
+	// CSRF tokens included in HTML tags will not be detected to avoid false positives
 }
 
 // csrfTokenDetector scans file contents for hardcoded CSRF/XSRF tokens.
