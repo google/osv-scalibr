@@ -26,7 +26,8 @@ import (
 
 const maxSecretLength = 11
 
-// SSN has format ddd-dd-dddd
+// https://www.protecto.ai/blog/personal-dataset-sample-u-s-social-security-number-ssn-download-pii-data-examples-2/
+// https://www.ssa.gov/history/ssn/geocard.html
 var ssnRe = regexp.MustCompile(`\b[0-8]\d{2}-\d{2}-\d{4}\b`)
 
 var commonExamples = map[string]struct{}{
