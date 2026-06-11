@@ -72,10 +72,6 @@ func NewDetector() veles.Detector {
 }
 
 func validSSN(s string) bool {
-	if !ssnRe.MatchString(s) {
-		return false
-	}
-
 	if _, ok := commonExamples[s]; ok {
 		return false
 	}
