@@ -21,6 +21,7 @@ import (
 	gopurl "github.com/google/osv-scalibr/extractor/filesystem/language/golang/purl"
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
+	composerpurl "github.com/google/osv-scalibr/extractor/filesystem/language/php/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
 	osecosystem "github.com/google/osv-scalibr/extractor/filesystem/os/ecosystem"
 	ospurl "github.com/google/osv-scalibr/extractor/filesystem/os/purl"
@@ -68,6 +69,8 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return mavenpurl.MakePackageURL(p.Version, p.Metadata)
 	case purl.TypeNPM:
 		return npmpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
+	case purl.TypeComposer:
+		return composerpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeGolang:
 		return gopurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:
