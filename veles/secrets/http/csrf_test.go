@@ -31,7 +31,7 @@ func TestCSRFTokenDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		http.NewCSRFTokenDetector(),
-		`csrf_token = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"`,
+		`csrf_token":"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"`,
 		http.CSRFToken{Value: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
 	)
 }
@@ -86,13 +86,6 @@ func TestCSRFTokenDetector_truePositives(t *testing.T) {
 				http.CSRFToken{Value: "9876543210fedcba9876543210fedcba"},
 			},
 		},
-		{
-			name:  "csrf_token_assignment",
-			input: `csrf_token = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'`,
-			want: []veles.Secret{
-				http.CSRFToken{Value: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"},
-			},
-		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -138,6 +131,11 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 			// CSRF token present but not detected to reduce false positives
 			name:  "html_hidden_input",
 			input: `<input type="hidden" name="csrfmiddlewaretoken" value="django1234567890abcdefghijklmnop">`,
+		},
+		{
+			// CSRF token present but not detected to reduce false positives
+			name:  "csrf_token_assignment",
+			input: `csrf_token = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'`,
 		},
 		{
 			name:  "empty_input",
