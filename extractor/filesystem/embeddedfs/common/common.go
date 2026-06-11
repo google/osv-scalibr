@@ -16,6 +16,8 @@
 package common
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -29,8 +31,6 @@ import (
 	"sync"
 	"time"
 
-	"archive/tar"
-
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/disk"
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
@@ -43,8 +43,9 @@ import (
 )
 
 const (
-	defaultPageSize  = 1024 * 1024
-	defaultCacheSize = 100 * 1024 * 1024
+	defaultPageSize    = 1024 * 1024
+	defaultCacheSize   = 100 * 1024 * 1024
+	defaultMaxFileSize = 4000 * 1024 * 1024 // 4GB
 )
 
 // DetectFilesystem identifies the filesystem type by magic bytes.
@@ -729,6 +730,140 @@ loop:
 
 	if extractErr != nil {
 		os.Remove(tempDir)
+		return "", extractErr
+	}
+
+	return tempDir, nil
+}
+
+// ZIPToTempDir extracts an ZIP into a temporary directory.
+func ZIPToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
+	// Create temporary file because zip.NewReader requires ReaderAt.
+	tmpFile, err := os.CreateTemp("", "scalibr-zip-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary zip file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	// Copy APK contents into temporary file.
+	if _, err := io.Copy(tmpFile, reader); err != nil {
+		return "", fmt.Errorf("failed to copy zip contents: %w", err)
+	}
+
+	// Determine file size.
+	info, err := tmpFile.Stat()
+	if err != nil {
+		return "", fmt.Errorf("failed to stat temporary zip file: %w", err)
+	}
+
+	// Reset file offset.
+	if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("failed to seek temporary zip file: %w", err)
+	}
+
+	// Open ZIP reader.
+	zr, err := zip.NewReader(tmpFile, info.Size())
+	if err != nil {
+		return "", fmt.Errorf("failed to open zip zip: %w", err)
+	}
+
+	// Create extraction directory.
+	tempDir, err := os.MkdirTemp("", "scalibr-zip-extract-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create extraction directory: %w", err)
+	}
+
+	var extractErr error
+
+	for _, f := range zr.File {
+		cleanName := filepath.Clean(f.Name)
+
+		// Prevent ZipSlip / path traversal.
+		if symlink.TargetOutsideRoot("/", cleanName) {
+			extractErr = fmt.Errorf("zip contains invalid entry: %s", cleanName)
+			break
+		}
+
+		// Reject entries with an unusually high compression ratio.
+		// Extremely high ratios can indicate a ZIP bomb attempting to
+		// expand a small archive into a very large amount of data.
+		if f.CompressedSize64 > 0 {
+			ratio := f.UncompressedSize64 / f.CompressedSize64
+			// Ignore entries whose compression ratio exceeds the allowed threshold.
+			if ratio > 1000 {
+				continue
+			}
+		}
+
+		// Determine the effective maximum uncompressed size allowed for a single file.
+		// If the caller does not provide a limit, use the default limit.
+		eMaxFileSize := maxFileSize
+		if eMaxFileSize <= 0 {
+			eMaxFileSize = defaultMaxFileSize
+		}
+
+		// Skip entries whose declared uncompressed size exceeds the allowed limit.
+		if f.UncompressedSize64 > uint64(eMaxFileSize) {
+			continue
+		}
+
+		target := filepath.Join(tempDir, cleanName)
+
+		if strings.Contains(target, "..") {
+			extractErr = fmt.Errorf("zip contains invalid entry: %s", target)
+			break
+		}
+
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0755); err != nil {
+				extractErr = fmt.Errorf("failed to create directory %s: %w", target, err)
+				break
+			}
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			extractErr = fmt.Errorf("failed to create parent directory for %s: %w", target, err)
+			break
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			extractErr = fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
+			break
+		}
+
+		outFile, err := os.Create(target)
+		if err != nil {
+			rc.Close()
+			extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
+			break
+		}
+
+		_, err = io.Copy(outFile, rc)
+
+		closeErr1 := outFile.Close()
+		closeErr2 := rc.Close()
+
+		if err != nil {
+			extractErr = fmt.Errorf("failed to extract file %s: %w", target, err)
+			break
+		}
+
+		if closeErr1 != nil {
+			extractErr = fmt.Errorf("failed to close file %s: %w", target, closeErr1)
+			break
+		}
+
+		if closeErr2 != nil {
+			extractErr = fmt.Errorf("failed to close zip entry %s: %w", f.Name, closeErr2)
+			break
+		}
+	}
+
+	if extractErr != nil {
+		os.RemoveAll(tempDir)
 		return "", extractErr
 	}
 
