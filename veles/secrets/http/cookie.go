@@ -108,5 +108,9 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 
 // MaxSecretLen returns the maximum length that a Cookie secret is expected to be
 func (c *cookieDetector) MaxSecretLen() uint32 {
-	return 1000
+	// MaxLen is set based on practical limits in common HTTP infrastructure:
+	// - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-limits.html#http-headers-quotas
+	// - https://nodejs.org/api/cli.html#max-http-header-sizesize
+	// - https://httpd.apache.org/docs/current/mod/core.html#limitrequestfieldsize
+	return 16 * veles.KiB
 }
