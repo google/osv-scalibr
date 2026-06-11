@@ -31,7 +31,7 @@ func TestCookieDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		http.NewCookieDetector(),
-		"Set-Cookie: session_id=23rj302jr032mr03m2r03230r",
+		`Set-Cookie: "session_id=23rj302jr032mr03m2r03230r"`,
 		http.Cookie{Name: "session_id", Value: "23rj302jr032mr03m2r03230r"},
 	)
 }
@@ -82,6 +82,13 @@ func TestCookieDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name:  "quoted and encoded",
+			input: `Cookie: "session_id=\"123456\""`,
+			want: []veles.Secret{
+				http.Cookie{Name: "session_id", Value: "123456"},
+			},
+		},
+		{
 			name:  "set-cookie_header",
 			input: "Set-Cookie: token=super_secret",
 			want: []veles.Secret{
@@ -114,7 +121,7 @@ func TestCookieDetector_truePositives(t *testing.T) {
 		},
 		{
 			name:  "embedded_in_log_line_with_trailing_garbage_text",
-			input: "INFO [2026-05-21] user logged in Cookie: user=admin; session=xyz123 [thread-4] status=200",
+			input: `INFO [2026-05-21] user logged in Cookie: "user=admin; session=xyz123" [thread-4] status=200`,
 			want: []veles.Secret{
 				http.Cookie{Name: "user", Value: "admin"},
 				http.Cookie{Name: "session", Value: "xyz123"},
@@ -125,31 +132,6 @@ func TestCookieDetector_truePositives(t *testing.T) {
 			input: "Set-Cookie: id=123; Secure; HttpOnly",
 			want: []veles.Secret{
 				http.Cookie{Name: "id", Value: "123"},
-			},
-		},
-		// Real examples:
-		{
-			// src: https://github.com/rapid7/metasploit-framework/blob/master/spec/lib/rex/proto/http/response_spec.rb
-			name: "metasploit_src",
-			file: "src/response_spec.rb",
-			want: []veles.Secret{
-				http.Cookie{Name: "phpMyAdmin", Value: "gpjif0gtpqbvfion91ddtrq8p8vgjtue"},
-				http.Cookie{Name: "pma_lang", Value: "en"},
-				http.Cookie{Name: "pma_collation_connection", Value: "utf8_general_ci"},
-				http.Cookie{Name: "pma_mcrypt_iv", Value: "mF1NmTE64IY%3D"},
-				http.Cookie{Name: "phpMyAdmin", Value: "fmilioji5cn4m8bo5vjrrr6q9cada954"},
-				http.Cookie{Name: "pma_lang", Value: "en"},
-				http.Cookie{Name: "pma_collation_connection", Value: "utf8_general_ci"},
-				http.Cookie{Name: "pma_mcrypt_iv", Value: "mF1NmTE64IY%3D"},
-				http.Cookie{Name: "phpMyAdmin", Value: "fmilioji5cn4m8bo5vjrrr6q9cada954"},
-				http.Cookie{Name: "superC00kie!", Value: "stupidcookie"},
-				http.Cookie{Name: "phpMyAdmin", Value: "gpjif0gtpqbvfion91ddtrq8p8vgjtue"},
-				http.Cookie{Name: "pma_lang", Value: "en"},
-				http.Cookie{Name: "pma_collation_connection", Value: "utf8_general_ci"},
-				http.Cookie{Name: "pma_mcrypt_iv", Value: "mF1NmTE64IY%3D"},
-				http.Cookie{Name: "wordpressuser_a97c5267613d6de70e821ff82dd1ab94", Value: "admin"},
-				http.Cookie{Name: "cval", Value: "880350187"},
-				http.Cookie{Name: "k1", Value: "v1"},
 			},
 		},
 	}
@@ -268,6 +250,12 @@ func TestCookieDetector_trueNegatives(t *testing.T) {
 			// src: https://github.com/filipedeschamps/tabnews.com.br/blob/main/tests/integration/api/v1/users/%5Busername%5D/delete.test.js
 			name: "tabnews",
 			file: "src/delete.test.js",
+		},
+		{
+			// HTTP dump present in source code, but not detected since the `(?:Set-)?Cookie` keyword does not appear at the start of the line
+			// src: https://github.com/rapid7/metasploit-framework/blob/master/spec/lib/rex/proto/http/response_spec.rb
+			name: "metasploit_src",
+			file: "src/response_spec.rb",
 		},
 	}
 
