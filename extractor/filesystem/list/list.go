@@ -49,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/helm/chartlock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
@@ -68,6 +69,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/pulumi/pulumiyaml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
@@ -135,6 +137,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/secrets/datadogapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
@@ -155,6 +158,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/http"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
+	"github.com/google/osv-scalibr/veles/secrets/linearapikey"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
@@ -322,6 +326,14 @@ var (
 		packageresolved.Name: {packageresolved.New},
 		podfilelock.Name:     {podfilelock.New},
 	}
+	// PulumiSource extractors for Pulumi.
+	PulumiSource = InitMap{
+		pulumiyaml.Name: {pulumiyaml.New},
+	}
+	// HelmSource extractors for Helm.
+	HelmSource = InitMap{
+		chartlock.Name: {chartlock.New},
+	}
 
 	// Containers extractors.
 	Containers = InitMap{
@@ -376,6 +388,7 @@ var (
 		{circleci.NewPersonalAccessTokenDetector(), "secrets/circlecipat", 0},
 		{circleci.NewProjectTokenDetector(), "secrets/circleciproject", 0},
 		{cursorapikey.NewDetector(), "secrets/cursorapikey", 0},
+		{datadogapikey.NewDetector(), "secrets/datadogapikey", 0},
 		{digitaloceanapikey.NewDetector(), "secrets/digitaloceanapikey", 0},
 		{pypiapitoken.NewDetector(), "secrets/pypiapitoken", 0},
 		{cratesioapitoken.NewDetector(), "secrets/cratesioapitoken", 0},
@@ -450,6 +463,7 @@ var (
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
 		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
+		{linearapikey.NewDetector(), "secrets/linearapikey", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
@@ -513,6 +527,8 @@ var (
 		JuliaSource,
 		DotnetSource,
 		SwiftSource,
+		PulumiSource,
+		HelmSource,
 		NimSource,
 		OcamlSource,
 		LuaSource,
@@ -577,6 +593,8 @@ var (
 		"rust":       vals(concat(RustSource, RustArtifact)),
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
+		"pulumi":     vals(PulumiSource),
+		"helm":       vals(HelmSource),
 		"perl":       vals(CPANSource),
 
 		"sbom":       vals(SBOM),

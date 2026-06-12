@@ -1,0 +1,6 @@
+name: no-version
+runtime: nodejs
+description: Missing version test
+plugins:
+  providers:
+    - name: azure

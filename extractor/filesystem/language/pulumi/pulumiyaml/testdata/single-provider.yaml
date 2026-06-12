@@ -1,0 +1,7 @@
+name: single-provider
+runtime: python
+description: Single provider test
+plugins:
+  providers:
+    - name: gcp
+      version: 7.0.0
