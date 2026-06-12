@@ -214,6 +214,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Sensitive information
 | Type                                        | Extractor Plugin                     |
 | ------------------------------------------- | ------------------------------------ |
+| International Bank Account Number           | `sensitiveinformation/iban`            |
 
 ### Container inventory
 
