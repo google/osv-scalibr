@@ -169,6 +169,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
+	"github.com/google/osv-scalibr/veles/secrets/replicateapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
@@ -436,6 +437,7 @@ var (
 		{gcshmackey.NewDetector(), "secrets/gcshmackey", 0},
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
 		{recaptchakey.NewDetector(), "secrets/recaptchakey", 0},
+		{replicateapitoken.NewDetector(), "secrets/replicateapitoken", 0},
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},

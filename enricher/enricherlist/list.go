@@ -72,6 +72,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/replicateapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
@@ -154,6 +155,7 @@ var (
 		fromVeles(circleci.NewPersonalAccessTokenValidator(), "secrets/circlecipatvalidate", 0),
 		fromVeles(circleci.NewProjectTokenValidator(), "secrets/circleciprojectvalidate", 0),
 		fromVeles(perplexityapikey.NewValidator(), "secrets/perplexityapikeyvalidate", 0),
+		fromVeles(replicateapitoken.NewValidator(), "secrets/replicateapitokenvalidate", 0),
 		fromVeles(postmanapikey.NewAPIValidator(), "secrets/postmanapikeyvalidate", 0),
 		fromVeles(postmanapikey.NewCollectionValidator(), "secrets/postmancollectiontokenvalidate", 0),
 		fromVeles(github.NewAppS2STokenValidator(), "secrets/githubapps2stokenvalidate", 0),
