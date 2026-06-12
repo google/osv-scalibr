@@ -52,6 +52,7 @@ import (
 	velesgithub "github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	velesgrokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	velesgroqapikey "github.com/google/osv-scalibr/veles/secrets/groqapikey"
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	velesherokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
@@ -184,6 +185,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return anthropicModelAPIKeyToProto(t.Key), nil
 	case velesperplexity.PerplexityAPIKey:
 		return perplexityAPIKeyToProto(t), nil
+	case velesgroqapikey.GroqAPIKey:
+		return groqAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIAPIKey:
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
@@ -695,6 +698,16 @@ func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Perplexity{
 			Perplexity: &spb.SecretData_PerplexityAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func groqAPIKeyToProto(s velesgroqapikey.GroqAPIKey) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_GroqApiKey{
+			GroqApiKey: &spb.SecretData_GroqAPIKey{
 				Key: s.Key,
 			},
 		},
@@ -1270,6 +1283,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesanthropicapikey.ModelAPIKey{Key: s.GetAnthropicModelApiKey().GetKey()}, nil
 	case *spb.SecretData_Perplexity:
 		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
+	case *spb.SecretData_GroqApiKey:
+		return groqAPIKeyToStruct(s.GetGroqApiKey()), nil
 	case *spb.SecretData_GrokXaiApiKey:
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_AzureStorageAccountAccessKey_:
@@ -1682,6 +1697,12 @@ func pgpassToStruct(ePB *spb.SecretData_Pgpass) velespgpass.Pgpass {
 
 func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {
 	return velesperplexity.PerplexityAPIKey{
+		Key: kPB.GetKey(),
+	}
+}
+
+func groqAPIKeyToStruct(kPB *spb.SecretData_GroqAPIKey) velesgroqapikey.GroqAPIKey {
+	return velesgroqapikey.GroqAPIKey{
 		Key: kPB.GetKey(),
 	}
 }
