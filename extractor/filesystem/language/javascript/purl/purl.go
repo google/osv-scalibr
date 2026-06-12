@@ -36,11 +36,7 @@ func MakePackageURL(name string, version string, metadata any) *purl.PackageURL 
 	if len(q) > 0 {
 		qualifiers = purl.QualifiersFromMap(q)
 	}
-	namespace := ""
-	if scope, packageName, ok := splitScopedPackageName(name); ok {
-		namespace = scope
-		name = packageName
-	}
+	namespace, name := splitScopedPackageName(name)
 	return &purl.PackageURL{
 		Type:       purl.TypeNPM,
 		Namespace:  namespace,
@@ -50,13 +46,13 @@ func MakePackageURL(name string, version string, metadata any) *purl.PackageURL 
 	}
 }
 
-func splitScopedPackageName(name string) (string, string, bool) {
+func splitScopedPackageName(name string) (string, string) {
 	if !strings.HasPrefix(name, "@") {
-		return "", "", false
+		return "", name
 	}
 	parts := strings.Split(name, "/")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", false
+	if len(parts) != 2 || len(parts[0]) == 1 || parts[1] == "" {
+		return "", name
 	}
-	return parts[0], parts[1], true
+	return parts[0], parts[1]
 }

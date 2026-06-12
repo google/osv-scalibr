@@ -65,6 +65,36 @@ func TestMakePackageURL(t *testing.T) {
 			wantStr: "pkg:npm/%40babel/traverse@7.29.7",
 		},
 		{
+			desc:    "scoped_package_with_multiple_slashes",
+			name:    "@babel/traverse/extra",
+			version: "7.29.7",
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "@babel/traverse/extra",
+				Version: "7.29.7",
+			},
+		},
+		{
+			desc:    "package_name_starting_with_slash",
+			name:    "/traverse",
+			version: "7.29.7",
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "/traverse",
+				Version: "7.29.7",
+			},
+		},
+		{
+			desc:    "scoped_package_with_empty_scope",
+			name:    "@/traverse",
+			version: "7.29.7",
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "@/traverse",
+				Version: "7.29.7",
+			},
+		},
+		{
 			desc:    "source_public_registry_qualifier_set",
 			name:    "Name",
 			version: "version",

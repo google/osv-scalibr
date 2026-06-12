@@ -64,6 +64,16 @@ func TestMakePackageURL(t *testing.T) {
 				Version: "1.2.3",
 			},
 		},
+		{
+			desc:    "no_namespace_mixed_case",
+			name:    "Name",
+			version: "1.2.3",
+			want: &purl.PackageURL{
+				Type:    purl.TypeComposer,
+				Name:    "name",
+				Version: "1.2.3",
+			},
+		},
 	}
 
 	for _, tt := range tests {

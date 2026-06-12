@@ -31,7 +31,7 @@ func MakePackageURL(name string, version string) *purl.PackageURL {
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 		return &purl.PackageURL{
 			Type:    purl.TypeComposer,
-			Name:    name,
+			Name:    strings.ToLower(name),
 			Version: version,
 		}
 	}
