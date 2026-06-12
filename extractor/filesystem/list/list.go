@@ -149,6 +149,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/groqapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
@@ -393,6 +394,7 @@ var (
 		{gitlabpat.NewDetector(), "secrets/gitlabpat", 0},
 		{grokxaiapikey.NewAPIKeyDetector(), "secrets/grokxaiapikey", 0},
 		{grokxaiapikey.NewManagementKeyDetector(), "secrets/grokxaimanagementkey", 0},
+		{groqapikey.NewDetector(), "secrets/groqapikey", 0},
 		{hashicorpvault.NewTokenDetector(), "secrets/hashicorpvaulttoken", 0},
 		{hashicorpvault.NewAppRoleDetector(), "secrets/hashicorpvaultapprole", 0},
 		{hcp.NewPairDetector(), "secrets/hcpclientcredentials", 0},

@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/gitlabpat"
 	"github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/secrets/groqapikey"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
@@ -138,6 +139,7 @@ var (
 		fromVeles(gitlabpat.NewValidator(), "secrets/gitlabpatvalidate", 0),
 		fromVeles(grokxaiapikey.NewAPIValidator(), "secrets/grokxaiapikeyvalidate", 0),
 		fromVeles(grokxaiapikey.NewManagementAPIValidator(), "secrets/grokxaimanagementkeyvalidate", 0),
+		fromVeles(groqapikey.NewValidator(), "secrets/groqapikeyvalidate", 0),
 		fromVelesWithCfg(hashicorp.NewTokenValidatorEnricher, "secrets/hashicorpvaulttokenvalidate"),
 		fromVelesWithCfg(hashicorp.NewAppRoleValidatorEnricher, "secrets/hashicorpvaultapprolevalidate"),
 		fromVeles(hcp.NewClientCredentialsValidator(), "secrets/hcpclientcredentialsvalidate", 0),

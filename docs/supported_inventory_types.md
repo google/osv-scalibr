@@ -156,6 +156,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Gitlab PAT                                  | `secrets/gitlabpat`                    |
 | Grok xAI API key                            | `secrets/grokxaiapikey`                |
 | Grok xAI Management key                     | `secrets/grokxaimanagementkey`         |
+| Groq API key                                | `secrets/groqapikey`                   |
 | Hashicorp Cloud Platform client credentials | `secrets/hcpclientcredentials`         |
 | Hashicorp Cloud Platform access token       | `secrets/hcpaccesstoken`               |
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`          |
