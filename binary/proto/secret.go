@@ -72,6 +72,7 @@ import (
 	pyxkeyv1 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	pyxkeyv2 "github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
+	"github.com/google/osv-scalibr/veles/secrets/replicateapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
@@ -184,6 +185,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return anthropicModelAPIKeyToProto(t.Key), nil
 	case velesperplexity.PerplexityAPIKey:
 		return perplexityAPIKeyToProto(t), nil
+	case replicateapitoken.ReplicateAPIToken:
+		return replicateAPITokenToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIAPIKey:
 		return grokXAIAPIKeyToProto(t), nil
 	case velesgrokxaiapikey.GrokXAIManagementKey:
@@ -695,6 +698,16 @@ func perplexityAPIKeyToProto(s velesperplexity.PerplexityAPIKey) *spb.SecretData
 	return &spb.SecretData{
 		Secret: &spb.SecretData_Perplexity{
 			Perplexity: &spb.SecretData_PerplexityAPIKey{
+				Key: s.Key,
+			},
+		},
+	}
+}
+
+func replicateAPITokenToProto(s replicateapitoken.ReplicateAPIToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_ReplicateApiToken{
+			ReplicateApiToken: &spb.SecretData_ReplicateAPIToken{
 				Key: s.Key,
 			},
 		},
@@ -1270,6 +1283,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velesanthropicapikey.ModelAPIKey{Key: s.GetAnthropicModelApiKey().GetKey()}, nil
 	case *spb.SecretData_Perplexity:
 		return perplexityAPIKeyToStruct(s.GetPerplexity()), nil
+	case *spb.SecretData_ReplicateApiToken:
+		return replicateAPITokenToStruct(s.GetReplicateApiToken()), nil
 	case *spb.SecretData_GrokXaiApiKey:
 		return velesgrokxaiapikey.GrokXAIAPIKey{Key: s.GetGrokXaiApiKey().GetKey()}, nil
 	case *spb.SecretData_AzureStorageAccountAccessKey_:
@@ -1682,6 +1697,12 @@ func pgpassToStruct(ePB *spb.SecretData_Pgpass) velespgpass.Pgpass {
 
 func perplexityAPIKeyToStruct(kPB *spb.SecretData_PerplexityAPIKey) velesperplexity.PerplexityAPIKey {
 	return velesperplexity.PerplexityAPIKey{
+		Key: kPB.GetKey(),
+	}
+}
+
+func replicateAPITokenToStruct(kPB *spb.SecretData_ReplicateAPIToken) replicateapitoken.ReplicateAPIToken {
+	return replicateapitoken.ReplicateAPIToken{
 		Key: kPB.GetKey(),
 	}
 }
