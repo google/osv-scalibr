@@ -1,0 +1,6 @@
+generated: "2020-03-20T09:50:45.516093Z"
+digest: sha256:6b893c7655bcba03125b06fe33b68293db37e93e4a0b41c3959bb8558f506d9d
+dependencies:
+  - name: nginx
+    repository: https://charts.bitnami.com/bitnami
+    version: 15.0.0
