@@ -1,0 +1,2 @@
+steps:
+  - name: "registry.example.com:5000/my-image:latest"

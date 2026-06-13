@@ -1,0 +1,5 @@
+steps:
+  - name: "ubuntu:latest"
+  - name: "gcr.io/$PROJECT_ID/my-image:latest"
+  - name: "${IMAGE_NAME}"
+  - name: "gcr.io/$PROJECT_ID/$IMAGE:$TAG"

@@ -1,0 +1,6 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+  - name: "gcr.io/cloud-builders/go:1.21"
+  - name: "gcr.io/project-id/my-image:v1.0.0"
+  - name: "ubuntu:22.04"
+  - name: "python:3.11-slim"

@@ -1,0 +1,2 @@
+steps:
+  - name: "gcr.io/project-id/my-image@sha256:abc123def456"

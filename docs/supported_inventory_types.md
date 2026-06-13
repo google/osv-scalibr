@@ -223,6 +223,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
 | K8s images                      | `containers/k8simage` (filesystem)                                                 |
 | Podman container images         | `containers/podman` (filesystem)                                                   |
+| Cloud Build step images         | `language/cloudbuild` (filesystem)                                                 |
+| Skaffold build images           | `language/skaffold` (filesystem)                                                   |
+| Kustomize transformed images    | `language/kustomize` (filesystem)                                                  |
+| GitHub Actions container images | `containers/githubactionsimage` (filesystem)                                         |
 
 ### SBOM files
 
@@ -241,6 +245,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Maven entries in Bazel build files | `os/bazelmaven`     |
 | NetScaler installations            | `netscaler`         |
 | GitHub Actions workflow dependencies| `github/actions`    |
+| GitHub Actions container images     | `containers/githubactionsimage` |
+| Cloud Build step images             | `language/cloudbuild` |
+| Skaffold build images               | `language/skaffold`   |
+| Kustomize transformed images        | `language/kustomize`  |
 | Git repositories (and submodules)   | `misc/gitrepo`      |
 
 ### EmbeddedFS
