@@ -1,0 +1,10 @@
+resources:
+  containers:
+    - container: c1
+      image: nginx:1.25
+    - container: c2
+      image: postgres:15
+jobs:
+  - job: Build
+    steps:
+      - script: echo "hello"

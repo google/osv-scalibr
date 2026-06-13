@@ -1,0 +1,11 @@
+kind: pipeline
+type: docker
+name: default
+steps:
+  - name: build
+    image: ubuntu:latest
+  - name: test
+    image: ubuntu:latest
+services:
+  - name: db
+    image: ubuntu:latest

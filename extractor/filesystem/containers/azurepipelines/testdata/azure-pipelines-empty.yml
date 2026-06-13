@@ -1,0 +1,9 @@
+resources:
+  repositories:
+    - repository: my_repo
+      type: git
+      name: my_project/my_repo
+jobs:
+  - job: Build
+    steps:
+      - script: echo "hello"

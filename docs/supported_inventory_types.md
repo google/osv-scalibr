@@ -225,9 +225,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                            | Extractor Plugin                                                                   |
 | ------------------------------- | ---------------------------------------------------------------------------------- |
+| Ansible playbook container images | `containers/ansible` (filesystem)                                                |
+| Azure Pipelines container images | `containers/azurepipelines` (filesystem)                                         |
+| CircleCI container images       | `containers/circleci` (filesystem)                                               |
 | Containerd container images     | `containers/containerd-runtime` (standalone), `containers/containerd` (filesystem) |
+| Dockerfile FROM images          | `containers/dockerfile` (filesystem)                                               |
 | Docker container images         | `containers/docker` (standalone)                                                   |
 | Docker Compose container images | `containers/dockercomposeimage` (filesystem)                                       |
+| Drone CI container images       | `containers/drone` (filesystem)                                                      |
 | K8s images                      | `containers/k8simage` (filesystem)                                                 |
 | Podman container images         | `containers/podman` (filesystem)                                                   |
 
@@ -242,6 +247,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 | Type                               | Extractor Plugin    |
 |------------------------------------| ------------------- |
+| Ansible playbooks                  | `containers/ansible` |
+| Azure Pipelines configurations     | `containers/azurepipelines` |
+| CircleCI configurations            | `containers/circleci` |
+| Dockerfiles                        | `containers/dockerfile` |
+| Drone CI configurations            | `containers/drone` |
 | Wordpress plugins                  | `wordpress/plugins` |
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |

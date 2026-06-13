@@ -1,0 +1,5 @@
+FROM $BASE_IMAGE
+RUN echo "hello"
+
+FROM golang:$GO_VERSION
+RUN echo "world"

@@ -1,0 +1,9 @@
+version: 2.1
+executors:
+  my-executor:
+    docker:
+      - image: "golang:1.21"
+jobs:
+  build:
+    steps:
+      - run: echo "hello"

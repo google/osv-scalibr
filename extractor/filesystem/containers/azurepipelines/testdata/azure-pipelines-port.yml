@@ -1,0 +1,4 @@
+resources:
+  containers:
+    - container: my_image
+      image: registry.example.com:5000/my-image:tag

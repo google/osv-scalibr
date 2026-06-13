@@ -1,0 +1,8 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: "ubuntu:latest"
+      - image: "$CIRCLE_IMAGE"
+      - image: "gcr.io/$PROJECT_ID/my-image:latest"
+      - image: "${IMAGE_NAME}"

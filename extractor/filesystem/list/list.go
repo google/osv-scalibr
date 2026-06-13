@@ -21,8 +21,13 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/ansible"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/azurepipelines"
+	circlecicontainer "github.com/google/osv-scalibr/extractor/filesystem/containers/circleci"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerfile"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/drone"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/archive"
@@ -329,10 +334,15 @@ var (
 
 	// Containers extractors.
 	Containers = InitMap{
-		k8simage.Name:           {k8simage.New},
-		podman.Name:             {podman.New},
+		ansible.Name:            {ansible.New},
+		azurepipelines.Name:     {azurepipelines.New},
+		circlecicontainer.Name:           {circlecicontainer.New},
 		dockerbaseimage.Name:    {dockerbaseimage.New},
 		dockercomposeimage.Name: {dockercomposeimage.New},
+		dockerfile.Name:         {dockerfile.New},
+		drone.Name:              {drone.New},
+		k8simage.Name:           {k8simage.New},
+		podman.Name:             {podman.New},
 	}
 
 	// OS extractors.

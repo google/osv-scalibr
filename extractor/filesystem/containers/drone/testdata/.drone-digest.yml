@@ -1,0 +1,6 @@
+kind: pipeline
+type: docker
+name: default
+steps:
+  - name: build
+    image: gcr.io/project-id/my-image@sha256:abc123def456

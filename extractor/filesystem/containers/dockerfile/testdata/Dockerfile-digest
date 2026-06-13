@@ -1,0 +1,2 @@
+FROM alpine@sha256:abc123def456
+RUN echo "hello"

@@ -1,0 +1,16 @@
+resources:
+  containers:
+    - container: var1
+      image: $(ContainerImage)
+    - container: var2
+      image: ubuntu
+jobs:
+  - job: Build
+    container: $(BuildContainer)
+  - job: Test
+    steps:
+      - script: echo "test"
+        container: $(StepContainer)
+      - script: echo "build"
+        container:
+          image: $(StepImage)

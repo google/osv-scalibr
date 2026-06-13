@@ -1,0 +1,9 @@
+version: 2.1
+executors:
+  my-executor:
+    docker:
+      - image: "ubuntu:latest"
+jobs:
+  build:
+    docker:
+      - image: "ubuntu:latest"
