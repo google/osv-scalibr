@@ -1,0 +1,5 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: "registry.example.com:5000/my-image:latest"

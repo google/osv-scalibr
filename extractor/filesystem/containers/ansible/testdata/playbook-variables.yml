@@ -1,0 +1,10 @@
+- hosts: webservers
+  tasks:
+    - name: Start nginx with variable
+      docker_container:
+        name: my_nginx
+        image: "{{ nginx_image }}"
+    - name: Start redis with variable
+      docker_container:
+        name: my_redis
+        image: "{{ redis_image | default('redis:latest') }}"

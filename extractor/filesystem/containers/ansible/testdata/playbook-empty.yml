@@ -1,0 +1,5 @@
+- hosts: webservers
+  tasks:
+    - name: Just a regular task
+      ansible.builtin.debug:
+        msg: "Hello"

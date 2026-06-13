@@ -1,0 +1,8 @@
+- hosts: webservers
+  roles:
+    - role: my_role
+      tasks:
+        - name: Role task
+          docker_container:
+            name: role_container
+            image: golang:1.21

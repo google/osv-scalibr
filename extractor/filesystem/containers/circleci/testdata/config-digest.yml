@@ -1,0 +1,5 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: "gcr.io/project-id/my-image@sha256:abc123def456"

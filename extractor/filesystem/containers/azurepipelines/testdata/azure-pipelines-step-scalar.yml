@@ -1,0 +1,7 @@
+jobs:
+  - job: Build
+    steps:
+      - script: echo "build"
+        container: node:20
+      - script: echo "test"
+        container: python:3.11

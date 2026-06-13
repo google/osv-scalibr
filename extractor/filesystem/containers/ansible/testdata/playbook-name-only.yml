@@ -1,0 +1,5 @@
+- hosts: webservers
+  tasks:
+    - name: Start container without image
+      docker_container:
+        name: my_container

@@ -1,0 +1,5 @@
+FROM golang:1.21
+RUN echo "hello"
+
+FROM golang:1.21
+RUN echo "world"

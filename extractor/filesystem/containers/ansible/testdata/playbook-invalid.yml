@@ -1,0 +1,5 @@
+- hosts: webservers
+  tasks:
+    - name: broken
+      docker_container:
+        image: [

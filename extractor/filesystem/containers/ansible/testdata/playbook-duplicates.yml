@@ -1,0 +1,10 @@
+- hosts: webservers
+  tasks:
+    - name: Start nginx
+      docker_container:
+        name: my_nginx
+        image: nginx:1.25
+    - name: Start nginx again
+      docker_container:
+        name: my_nginx2
+        image: nginx:1.25

@@ -1,0 +1,14 @@
+version: 2.1
+executors:
+  my-executor:
+    docker:
+      - image: "golang:1.21"
+      - image: "redis:7.0"
+jobs:
+  build:
+    docker:
+      - image: "cimg/node:20.0"
+      - image: "postgres:15"
+  test:
+    docker:
+      - image: "cimg/python:3.11"

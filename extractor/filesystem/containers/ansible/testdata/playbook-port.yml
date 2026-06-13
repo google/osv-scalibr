@@ -1,0 +1,6 @@
+- hosts: webservers
+  tasks:
+    - name: Start private registry image
+      docker_container:
+        name: my_app
+        image: registry.example.com:5000/my-image:tag
