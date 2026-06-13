@@ -336,7 +336,7 @@ var (
 	Containers = InitMap{
 		ansible.Name:            {ansible.New},
 		azurepipelines.Name:     {azurepipelines.New},
-		circlecicontainer.Name:           {circlecicontainer.New},
+		circlecicontainer.Name:  {circlecicontainer.New},
 		dockerbaseimage.Name:    {dockerbaseimage.New},
 		dockercomposeimage.Name: {dockercomposeimage.New},
 		dockerfile.Name:         {dockerfile.New},
