@@ -1,0 +1,4 @@
+steps:
+  - name: "ubuntu:latest"
+  - name: "ubuntu:latest"
+  - name: "ubuntu:latest"

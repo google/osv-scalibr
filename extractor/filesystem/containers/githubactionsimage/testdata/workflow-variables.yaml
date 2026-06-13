@@ -1,0 +1,12 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.IMAGE }}
+    services:
+      db:
+        image: $DB_IMAGE
+    steps:
+      - run: echo hello

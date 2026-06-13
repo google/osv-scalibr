@@ -1,0 +1,5 @@
+build:
+  artifacts:
+    - image: "ubuntu:latest"
+    - image: "ubuntu:latest"
+    - image: "ubuntu:latest"

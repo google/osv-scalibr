@@ -1,0 +1,7 @@
+images:
+  - name: image-a
+    newName: same-image
+    newTag: v1.0.0
+  - name: image-b
+    newName: same-image
+    newTag: v1.0.0

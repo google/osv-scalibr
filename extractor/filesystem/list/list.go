@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
+	"github.com/google/osv-scalibr/extractor/filesystem/containers/githubactionsimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/archive"
@@ -31,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/cloudbuild"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
@@ -64,6 +66,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/manifesttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/projecttoml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/kustomize"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
@@ -84,6 +87,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/skaffold"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
@@ -333,6 +337,10 @@ var (
 		podman.Name:             {podman.New},
 		dockerbaseimage.Name:    {dockerbaseimage.New},
 		dockercomposeimage.Name: {dockercomposeimage.New},
+		cloudbuild.Name:         {cloudbuild.New},
+		skaffold.Name:           {skaffold.New},
+		kustomize.Name:          {kustomize.New},
+		githubactionsimage.Name: {githubactionsimage.New},
 	}
 
 	// OS extractors.

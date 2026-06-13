@@ -1,0 +1,9 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:14.16
+    steps:
+      - run: echo hello
