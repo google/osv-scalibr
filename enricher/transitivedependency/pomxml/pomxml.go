@@ -135,7 +135,9 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	}
 
 	var errs error
-	for path, pkgMap := range pkgGroups {
+	for i, path := range paths {
+		pkgMap := pkgGroups[path]
+		log.Debugf("[%d/%d] Enriching transitive dependencies for: %s", i+1, len(paths), path)
 		f, err := input.ScanRoot.FS.Open(path)
 
 		if err != nil {
@@ -354,6 +356,12 @@ func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []s
 		}
 		f.Close()
 
+		// Empty JDK and ActivationOS indicates merging the default profiles.
+		if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
+			log.Errorf("Failed to merge profiles for pom.xml at %s: %v", path, err)
+			continue
+		}
+
 		pk := mavenutil.ProjectKey(project)
 		g, a, v := string(pk.GroupID), string(pk.ArtifactID), string(pk.Version)
 		if g != "" && a != "" && v != "" {
@@ -367,6 +375,14 @@ func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []s
 		for _, m := range project.Modules {
 			modulePath := filepath.Join(dir, string(m), "pom.xml")
 			queue = append(queue, filepath.ToSlash(modulePath))
+		}
+
+		// Add parent to queue if it exists locally
+		if project.Parent.GroupID != "" && project.Parent.ArtifactID != "" && project.Parent.Version != "" {
+			parentPath := mavenutil.ParentPOMPath(&filesystem.ScanInput{FS: scanRoot.FS}, path, string(project.Parent.RelativePath))
+			if parentPath != "" {
+				queue = append(queue, parentPath)
+			}
 		}
 	}
 }

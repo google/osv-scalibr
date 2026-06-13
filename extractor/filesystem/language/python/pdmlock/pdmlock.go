@@ -81,7 +81,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("could not read file: %w", err)
 	}
 
-	var parsedLockFile *pdmLockFile
+	var parsedLockFile pdmLockFile
 	if err := toml.Unmarshal(content, &parsedLockFile); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
