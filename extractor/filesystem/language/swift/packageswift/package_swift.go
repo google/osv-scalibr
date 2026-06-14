@@ -122,12 +122,9 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		return nil, fmt.Errorf("failed to read Package.swift: %w", err)
 	}
 
-	packages, err := parse(string(content))
-	if err != nil {
-		return nil, err
-	}
+	packages := parse(string(content))
 
-	var result []*extractor.Package = []*extractor.Package{}
+	result := []*extractor.Package{}
 	for _, pkg := range packages {
 		result = append(result, &extractor.Package{
 			Name:     pkg.Name,
@@ -147,7 +144,7 @@ type pkg struct {
 
 // parse extracts package dependencies from a Package.swift file content.
 // It looks for .package(url:...) declarations with version specifiers.
-func parse(content string) ([]pkg, error) {
+func parse(content string) []pkg {
 	// Strip comments to avoid false matches in commented code.
 	content = stripComments(content)
 
@@ -203,7 +200,7 @@ func parse(content string) ([]pkg, error) {
 		}
 	}
 
-	return packages, nil
+	return packages
 }
 
 // stripComments removes Swift-style comments from the content.
