@@ -1,0 +1,4 @@
+name: my_app
+version: 1.0.0
+dependencies:
+  http: ^0.13.5

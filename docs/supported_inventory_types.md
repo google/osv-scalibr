@@ -73,6 +73,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | project.assets.json                               | `dotnet/projectassetsjson`           |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
+|            | pubspec.yaml                                      | `dart/pubspecyaml`                   |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
 | Elixir     | mix.lock                                          | `elixir/mixlock`                     |
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
