@@ -97,6 +97,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
 | ObjectiveC | Podfile.lock                                      | `swift/podfilelock`                  |
 | PHP        | Composer                                          | `php/composerlock`                   |
+|            | composer.json                                     | `php/composerjson`                   |
 | Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
 |            | requirements.txt                                  | `python/requirements`                |
 |            | poetry.lock                                       | `python/poetrylock`                  |

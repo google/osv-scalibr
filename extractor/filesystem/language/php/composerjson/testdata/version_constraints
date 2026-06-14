@@ -1,0 +1,9 @@
+{
+    "name": "vendor/project",
+    "require": {
+        "symfony/console": "^5.0.0",
+        "monolog/monolog": "~2.0.0",
+        "doctrine/orm": ">=2.8.0",
+        "twig/twig": "3.0.0"
+    }
+}

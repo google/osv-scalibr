@@ -1,0 +1,6 @@
+{
+    "name": "vendor/project",
+    "require-dev": {
+        "phpunit/phpunit": "9.0.0"
+    }
+}

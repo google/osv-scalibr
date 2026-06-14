@@ -1,0 +1,9 @@
+{
+    "name": "vendor/project",
+    "require": {
+        "symfony/console": "5.0.0",
+        "php": ">=7.4",
+        "ext-json": "*",
+        "lib-openssl": "*"
+    }
+}
