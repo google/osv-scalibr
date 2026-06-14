@@ -1,0 +1,5 @@
+[project]
+name = "my-project"
+dependencies = [
+    "requests",
+]
