@@ -180,7 +180,7 @@ func TestDetectorMaxSecretLen(t *testing.T) {
 func ssnFinding(raw []byte) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
-			Name:        "Social Security Number",
+			Name:        "SOCIAL_SECURITY_NUMBER",
 			Sensitivity: sensitiveinformation.SensitivityLevelModerate,
 		},
 		Likelihood: sensitiveinformation.LikelihoodLikely,
