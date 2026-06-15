@@ -1,0 +1,15 @@
+name: my-package
+version: 0.1.0.0
+dependencies:
+  - base >= 4.14 && < 5
+library:
+  dependencies:
+    - text >= 2.0
+executables:
+  my-tool:
+    dependencies:
+      aeson: ">= 2.0"
+tests:
+  my-test:
+    dependencies:
+      - hspec >= 2.10

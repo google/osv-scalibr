@@ -48,6 +48,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/packageyaml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
@@ -265,8 +266,9 @@ var (
 	ElixirSource = InitMap{elixir.Name: {elixir.New}}
 	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
-		stacklock.Name: {stacklock.New},
-		cabal.Name:     {cabal.New},
+		stacklock.Name:   {stacklock.New},
+		cabal.Name:       {cabal.New},
+		packageyaml.Name: {packageyaml.New},
 	}
 	// RSource extractors for R source extractors
 	RSource = InitMap{renvlock.Name: {renvlock.New}}
