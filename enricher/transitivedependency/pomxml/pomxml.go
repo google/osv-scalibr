@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -37,7 +36,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -129,7 +127,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	for p := range pkgGroups {
 		paths = append(paths, p)
 	}
-	e.discoverModules(input.ScanRoot, paths)
+	mavenutil.DiscoverModules(input.ScanRoot, paths, e.MavenClient)
 	if len(pkgGroups) > 0 {
 		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
 	}
@@ -326,63 +324,4 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 	}
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
-}
-
-// discoverModules recursively discovers local modules by following module tags.
-func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string) {
-	visited := make(map[string]bool)
-	var queue []string
-	queue = append(queue, initialPaths...)
-
-	for len(queue) > 0 {
-		path := queue[0]
-		queue = queue[1:]
-
-		if visited[path] {
-			continue
-		}
-		visited[path] = true
-
-		f, err := scanRoot.FS.Open(path)
-		if err != nil {
-			log.Errorf("Failed to open pom.xml at %s: %v", path, err)
-			continue
-		}
-		var project maven.Project
-		if err := datasource.NewMavenDecoder(f).Decode(&project); err != nil {
-			log.Errorf("Failed to decode pom.xml at %s: %v", path, err)
-			f.Close()
-			continue
-		}
-		f.Close()
-
-		// Empty JDK and ActivationOS indicates merging the default profiles.
-		if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
-			log.Errorf("Failed to merge profiles for pom.xml at %s: %v", path, err)
-			continue
-		}
-
-		pk := mavenutil.ProjectKey(project)
-		g, a, v := string(pk.GroupID), string(pk.ArtifactID), string(pk.Version)
-		if g != "" && a != "" && v != "" {
-			absPath := filepath.Join(scanRoot.Path, path)
-			log.Debugf("Discovered local module %s:%s:%s at %s", g, a, v, path)
-			e.MavenClient.AddLocalProject(g, a, v, absPath)
-		}
-
-		// Add modules to queue
-		dir := filepath.Dir(path)
-		for _, m := range project.Modules {
-			modulePath := filepath.Join(dir, string(m), "pom.xml")
-			queue = append(queue, filepath.ToSlash(modulePath))
-		}
-
-		// Add parent to queue if it exists locally
-		if project.Parent.GroupID != "" && project.Parent.ArtifactID != "" && project.Parent.Version != "" {
-			parentPath := mavenutil.ParentPOMPath(&filesystem.ScanInput{FS: scanRoot.FS}, path, string(project.Parent.RelativePath))
-			if parentPath != "" {
-				queue = append(queue, parentPath)
-			}
-		}
-	}
 }
