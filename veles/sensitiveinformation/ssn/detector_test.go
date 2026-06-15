@@ -104,7 +104,7 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple matches",
+			name: "multiple_matches",
 			in:   []byte("223-45-6789 001-01-0001"),
 			want: []veles.Secret{
 				ssnFinding([]byte("223-45-6789")),
