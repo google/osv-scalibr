@@ -1,0 +1,3 @@
+[packages]
+requests = "*"
+private = {git = "https://github.com/user/private.git", ref = "main"}

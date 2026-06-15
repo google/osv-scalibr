@@ -1,0 +1,3 @@
+[packages]
+requests = "*"
+my-lib = {path = "../my-lib"}

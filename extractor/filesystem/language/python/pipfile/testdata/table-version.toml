@@ -1,0 +1,3 @@
+[packages]
+requests = {version = ">=2.31.0", extras = ["security"]}
+flask = "==2.3.0"

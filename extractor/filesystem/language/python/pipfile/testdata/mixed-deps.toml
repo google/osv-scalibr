@@ -1,0 +1,7 @@
+[packages]
+requests = "*"
+flask = "==2.3.0"
+
+[dev-packages]
+pytest = "*"
+black = ">=23.0"

@@ -1,0 +1,4 @@
+[packages]
+requests = "*"
+flask = "==2.3.0"
+django = ">=4.2"
