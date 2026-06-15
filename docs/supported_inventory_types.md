@@ -105,7 +105,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
-| R          | renv.lock                                         | `r/renvlock`                         |
+| R          | DESCRIPTION                                       | `r/description`                      |
+|            | renv.lock                                         | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
