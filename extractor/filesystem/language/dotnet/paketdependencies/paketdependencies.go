@@ -256,7 +256,6 @@ func (e Extractor) parseDependenciesFile(reader io.Reader, path string) ([]*extr
 			packages = append(packages, pkg)
 			continue
 		}
-
 	}
 
 	if err := scanner.Err(); err != nil {

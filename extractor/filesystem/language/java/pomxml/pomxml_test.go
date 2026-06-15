@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pomxml_test
+package pomxml
 
 import (
 	"testing"
@@ -21,7 +21,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -70,9 +69,9 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.inputPath, func(t *testing.T) {
-			e, err := pomxml.New(&cpb.PluginConfig{})
+			e, err := New(&cpb.PluginConfig{})
 			if err != nil {
-				t.Fatalf("pomxml.New: %v", err)
+				t.Fatalf("New: %v", err)
 			}
 			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
 			if got != tt.want {
@@ -117,7 +116,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.apache.maven:maven-artifact",
 					Version:  "1.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/one-package.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/one-package.xml", 7),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "maven-artifact",
 						GroupID:      "org.apache.maven",
@@ -136,7 +135,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "io.netty:netty-all",
 					Version:  "4.1.42.Final",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/two-packages.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.xml", 7),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "netty-all",
 						GroupID:      "io.netty",
@@ -147,7 +146,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.slf4j:slf4j-log4j12",
 					Version:  "1.7.25",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/two-packages.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.xml", 12),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "slf4j-log4j12",
 						GroupID:      "org.slf4j",
@@ -166,7 +165,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "junit:junit",
 					Version:  "4.12",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/encoding.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/encoding.xml", 16),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "junit",
 						GroupID:      "junit",
@@ -186,7 +185,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "io.netty:netty-all",
 					Version:  "4.1.9",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-dependency-management.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-dependency-management.xml", 7),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "netty-all",
 						GroupID:      "io.netty",
@@ -197,7 +196,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.slf4j:slf4j-log4j12",
 					Version:  "1.7.25",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-dependency-management.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-dependency-management.xml", 12),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "slf4j-log4j12",
 						GroupID:      "org.slf4j",
@@ -216,7 +215,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.mine:mypackage",
 					Version:  "1.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/interpolation.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/interpolation.xml", 18),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "mypackage",
 						GroupID:      "org.mine",
@@ -227,7 +226,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.mine:my.package",
 					Version:  "2.3.4",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/interpolation.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/interpolation.xml", 24),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "my.package",
 						GroupID:      "org.mine",
@@ -238,7 +237,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.mine:ranged-package",
 					Version:  "9.4.35.v20201120",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/interpolation.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/interpolation.xml", 30),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "ranged-package",
 						GroupID:      "org.mine",
@@ -257,7 +256,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "abc:xyz",
 					Version:  "1.2.3",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-scope.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-scope.xml", 3),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "xyz",
 						GroupID:      "abc",
@@ -268,7 +267,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "junit:junit",
 					Version:  "4.12",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-scope.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-scope.xml", 9),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "junit",
 						GroupID:      "junit",
@@ -287,7 +286,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "abc:xyz",
 					Version:  "1.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-type-classifier.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-type-classifier.xml", 3),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "xyz",
 						GroupID:      "abc",
@@ -308,7 +307,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.alice:alice",
 					Version:  "1.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-parent.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-parent.xml", 18),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "alice",
 						GroupID:      "org.alice",
@@ -319,7 +318,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.bob:bob",
 					Version:  "2.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-parent.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-parent.xml", 23),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "bob",
 						GroupID:      "org.bob",
@@ -330,7 +329,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.chuck:chuck",
 					Version:  "3.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-parent.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-parent.xml", 28),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "chuck",
 						GroupID:      "org.chuck",
@@ -341,7 +340,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.dave:dave",
 					Version:  "4.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-parent.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-parent.xml", 6),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "dave",
 						GroupID:      "org.dave",
@@ -352,7 +351,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name: "org.frank:frank",
 					// Version is not available in the local pom.xml.
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/with-parent.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/with-parent.xml", 32),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "frank",
 						GroupID:      "org.frank",
@@ -371,7 +370,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.direct:alice",
 					Version:  "1.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/transitive.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/transitive.xml", 17),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "alice",
 						GroupID:      "org.direct",
@@ -383,7 +382,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.direct:bob",
 					Version:  "2.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/transitive.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/transitive.xml", 22),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "bob",
 						GroupID:      "org.direct",
@@ -395,10 +394,162 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "org.direct:chris",
 					Version:  "3.0.0",
 					PURLType: purl.TypeMaven,
-					Location: extractor.LocationFromPath("testdata/transitive.xml"),
+					Location: extractor.LocationFromPathAndLine("testdata/transitive.xml", 27),
 					Metadata: &javalockfile.Metadata{
 						ArtifactID:   "chris",
 						GroupID:      "org.direct",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "interpolate and drop",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/interpolate-drop.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "com.example:actual-artifact",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/interpolate-drop.xml", 11),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "actual-artifact",
+						GroupID:      "com.example",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "profiles",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/profiles.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "org.profile:profile-dep",
+					Version:  "1.2.3",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/profiles.xml", 15),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "profile-dep",
+						GroupID:      "org.profile",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "ambiguous interpolation",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/ambiguous-interpolation.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "com.example:common-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/ambiguous-interpolation.xml", 0),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "common-lib",
+						GroupID:      "com.example",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "plugin dependency",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/plugin-dependency.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "com.example:hijack-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/plugin-dependency.xml", 27),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "hijack-lib",
+						GroupID:      "com.example",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "explicit jar type",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/explicit-jar.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "com.example:my-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/explicit-jar.xml", 23),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "my-lib",
+						GroupID:      "com.example",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "org.different:my-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/explicit-jar.xml", 12),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "my-lib",
+						GroupID:      "org.different",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "with multiple classifiers",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/with-multiple-classifiers.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "com.example:my-lib",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/with-multiple-classifiers.xml", 14),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "my-lib",
+						GroupID:      "com.example",
+						IsTransitive: false,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "multi version dependency",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multi-version.xml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "abc:example.com",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Location: extractor.LocationFromPathAndLine("testdata/multi-version.xml", 8),
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "example.com",
+						GroupID:      "abc",
 						IsTransitive: false,
 						DepGroupVals: []string{},
 					},
@@ -409,9 +560,9 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			extr, err := pomxml.New(&cpb.PluginConfig{})
+			extr, err := New(&cpb.PluginConfig{})
 			if err != nil {
-				t.Fatalf("pomxml.New: %v", err)
+				t.Fatalf("New: %v", err)
 			}
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)

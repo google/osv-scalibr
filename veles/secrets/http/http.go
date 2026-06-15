@@ -20,3 +20,13 @@ type BasicAuthCredentials struct {
 	Username string
 	Password string
 }
+
+// BearerToken contain the value of a bearer token found in an Authorization header
+type BearerToken struct {
+	Value string
+}
+
+// CSRFToken contain the value of a CSRF token
+type CSRFToken struct {
+	Value string
+}

@@ -50,6 +50,7 @@ message Inventory {
   repeated GenericFinding generic_findings = 2;
   repeated Secret secrets = 3;
   repeated ContainerImageMetadata container_image_metadata = 5;
+  repeated SensitiveInformation sensitive_information = 7;
 }
 
 message ScanStatus {
@@ -861,6 +862,8 @@ message SecretData {
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
     HTTPBasicAuth http_basic_auth = 89;
+    HTTPBearer http_bearer = 90;
+    HTTPCSRFToken http_csrf_token = 91;
   }
 
   message GCPSAK {
@@ -1303,6 +1306,15 @@ message SecretData {
     string username = 1;
     string password = 2;
   }
+
+  message HTTPBearer {
+    string value = 1;
+  }
+
+  message HTTPCSRFToken {
+    string value = 1;
+  }
+
   message CursorAPIKey {
     string key = 1;
   }
@@ -1437,4 +1449,34 @@ message LayerMetadata {
   // The index of the base image match within the
   // ContainerImageMetadata.base_image_chains field.
   int32 base_image_index = 6;
+}
+
+message InfoType {
+  string name = 1;
+  SensitivityLevel sensitivity = 2;
+}
+
+enum SensitivityLevel {
+  SENSITIVITY_LEVEL_UNSPECIFIED = 0;
+  SENSITIVITY_LEVEL_LOW = 1;
+  SENSITIVITY_LEVEL_UNKNOWN = 2;
+  SENSITIVITY_LEVEL_MODERATE = 3;
+  SENSITIVITY_LEVEL_HIGH = 4;
+}
+
+enum Likelihood {
+  LIKELIHOOD_UNSPECIFIED = 0;
+  LIKELIHOOD_VERY_UNLIKELY = 1;
+  LIKELIHOOD_UNLIKELY = 2;
+  LIKELIHOOD_POSSIBLE = 3;
+  LIKELIHOOD_LIKELY = 4;
+  LIKELIHOOD_VERY_LIKELY = 5;
+}
+
+// Sensitive Information found via the Veles sensitive information detectors.
+message SensitiveInformation {
+  InfoType info_type = 1;
+  Likelihood likelihood = 2;
+  bytes raw = 3;
+  Location location = 4;
 }

@@ -89,6 +89,20 @@ func TestMakeEcosystemAPK(t *testing.T) {
 			},
 			want: "BellSoft Hardened Containers:stream",
 		},
+		{
+			desc: "Wolfi",
+			metadata: &apkmeta.Metadata{
+				OSID: "wolfi",
+			},
+			want: "Wolfi",
+		},
+		{
+			desc: "Chainguard",
+			metadata: &apkmeta.Metadata{
+				OSID: "chainguard",
+			},
+			want: "Chainguard",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -300,6 +314,29 @@ func TestEcosystemRPM(t *testing.T) {
 				OSID: "openEuler",
 			},
 			want: "openEuler",
+		},
+		{
+			desc: "AlmaLinux_9",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "9",
+			},
+			want: "AlmaLinux:9",
+		},
+		{
+			desc: "AlmaLinux_8",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "8",
+			},
+			want: "AlmaLinux:8",
+		},
+		{
+			desc: "AlmaLinux_no_version",
+			metadata: &rpmmeta.Metadata{
+				OSID: "almalinux",
+			},
+			want: "AlmaLinux",
 		},
 		{
 			desc:     "OS ID not present",

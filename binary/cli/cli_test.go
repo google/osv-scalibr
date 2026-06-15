@@ -842,6 +842,17 @@ func TestGetScanConfig_PluginGroups(t *testing.T) {
 			},
 		},
 		{
+			desc: "offline_filters_veles_validators",
+			flags: &cli.Flags{
+				PluginsToRun:         []string{"secrets/urlcredsvalidate"},
+				Offline:              true,
+				FilterByCapabilities: true,
+			},
+			dontWantPlugins: []string{
+				"secrets/urlcredsvalidate",
+			},
+		},
+		{
 			desc: "default_plugins",
 			flags: &cli.Flags{
 				PluginsToRun: []string{"default"},
@@ -943,7 +954,7 @@ func TestWriteScanResults(t *testing.T) {
 				Output: []string{"cdx-json=" + filepath.Join(testDirPath, "result.cyclonedx.json")},
 			},
 			wantFilename:      "result.cyclonedx.json",
-			wantContentPrefix: "{\n  \"$schema\": \"http://cyclonedx.org/schema/bom-1.6.schema.json\"",
+			wantContentPrefix: "{\n  \"$schema\": \"http://cyclonedx.org/schema/bom-1.7.schema.json\"",
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
