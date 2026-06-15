@@ -1,0 +1,5 @@
+# This is a cpanfile
+# Comments should be ignored
+
+requires 'Moose'; # inline comment
+requires 'DBI', '>= 1.643'; # another comment

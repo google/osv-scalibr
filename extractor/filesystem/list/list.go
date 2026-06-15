@@ -67,6 +67,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpanfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -281,7 +282,7 @@ var (
 		cargotoml.Name: {cargotoml.New},
 	}
 	// CPANSource extractors for Perl.
-	CPANSource = InitMap{cpan.Name: {cpan.New}}
+	CPANSource = InitMap{cpan.Name: {cpan.New}, cpanfile.Name: {cpanfile.New}}
 	// RustArtifact extractors for Rust.
 	RustArtifact = InitMap{
 		cargoauditable.Name: {cargoauditable.New},

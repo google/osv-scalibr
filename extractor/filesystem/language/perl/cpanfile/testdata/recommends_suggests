@@ -1,0 +1,3 @@
+requires 'Moose';
+recommends 'Class::Load';
+suggests 'Data::Dumper';

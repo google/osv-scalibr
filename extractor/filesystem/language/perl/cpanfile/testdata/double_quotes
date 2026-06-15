@@ -1,0 +1,2 @@
+requires "Moose", ">= 2.00";
+requires "DBI";
