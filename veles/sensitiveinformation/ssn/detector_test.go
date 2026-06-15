@@ -58,21 +58,49 @@ func TestDetect_truePositives(t *testing.T) {
 			name: "match_in_text",
 			in:   []byte("ssn: 133-45-6789."),
 			want: []veles.Secret{
-				ssnFinding([]byte("133-45-6789")),
+				ssnFindingWithLikelihood([]byte("133-45-6789"), sensitiveinformation.LikelihoodLikely),
 			},
 		},
 		{
 			name: "starting_with_6",
 			in:   []byte("ssn: 680-62-6456"),
 			want: []veles.Secret{
-				ssnFinding([]byte("680-62-6456")),
+				ssnFindingWithLikelihood([]byte("680-62-6456"), sensitiveinformation.LikelihoodLikely),
 			},
 		},
 		{
 			name: "double_9_in_the_middle",
 			in:   []byte("ssn: 675-99-1234."),
 			want: []veles.Secret{
-				ssnFinding([]byte("675-99-1234")),
+				ssnFindingWithLikelihood([]byte("675-99-1234"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "keyword_before",
+			in:   []byte("social security number: 431-12-1234"),
+			want: []veles.Secret{
+				ssnFindingWithLikelihood([]byte("431-12-1234"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "keyword_after",
+			in:   []byte("431-12-1234 social security"),
+			want: []veles.Secret{
+				ssnFindingWithLikelihood([]byte("431-12-1234"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "socialsecuritynumber_keyword",
+			in:   []byte("socialsecuritynumber: 431-12-1234"),
+			want: []veles.Secret{
+				ssnFindingWithLikelihood([]byte("431-12-1234"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "socialsecurity_keyword",
+			in:   []byte("socialsecurity: 431-12-1234"),
+			want: []veles.Secret{
+				ssnFindingWithLikelihood([]byte("431-12-1234"), sensitiveinformation.LikelihoodLikely),
 			},
 		},
 		{
@@ -172,18 +200,22 @@ func TestDetect_trueNegatives(t *testing.T) {
 }
 
 func TestDetectorMaxSecretLen(t *testing.T) {
-	if got, want := NewDetector().MaxSecretLen(), uint32(len("123-45-6789")); got != want {
+	if got, want := NewDetector().MaxSecretLen(), uint32(len("123-45-6789")+(2*contextWindowSize)); got != want {
 		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
 	}
 }
 
 func ssnFinding(raw []byte) sensitiveinformation.SensitiveInformation {
+	return ssnFindingWithLikelihood(raw, sensitiveinformation.LikelihoodUnlikely)
+}
+
+func ssnFindingWithLikelihood(raw []byte, likelihood sensitiveinformation.Likelihood) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
 			Name:        "SOCIAL_SECURITY_NUMBER",
 			Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 		},
-		Likelihood: sensitiveinformation.LikelihoodLikely,
+		Likelihood: likelihood,
 		Raw:        raw,
 	}
 }

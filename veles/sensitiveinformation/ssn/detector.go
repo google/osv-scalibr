@@ -24,11 +24,24 @@ import (
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/common/simpleregex"
 )
 
-const maxSecretLength = 11
+const (
+	maxSecretLength   = 11
+	contextWindowSize = 32
+)
 
 // https://www.protecto.ai/blog/personal-dataset-sample-u-s-social-security-number-ssn-download-pii-data-examples-2/
 // https://www.ssa.gov/history/ssn/geocard.html
 var ssnRe = regexp.MustCompile(`\b[0-8]\d{2}-\d{2}-\d{4}\b`)
+
+var ssnKeywordsRe = simpleregex.KeywordsRe([]string{
+	`\bssn\b`,
+	`social security`,
+	`social security number`,
+	`social security no`,
+	`social security #`,
+	`socialsecuritynumber`,
+	`socialsecurity`,
+})
 
 var commonExamples = map[string]struct{}{
 	"123-45-6789": {},
@@ -49,12 +62,19 @@ var commonExamples = map[string]struct{}{
 // NewDetector returns a Detector, that finds US Social Security Numbers (SSNs)
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
-		MaxLen: maxSecretLength,
-		Re:     ssnRe,
+		MaxLen:              maxSecretLength,
+		Re:                  ssnRe,
+		ContextWindowBefore: contextWindowSize,
+		ContextWindowAfter:  contextWindowSize,
+		KeywordsRe:          ssnKeywordsRe,
 		FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 			ssn := string(b)
 			if !validSSN(ssn) {
 				return sensitiveinformation.SensitiveInformation{}, false
+			}
+			likelihood := sensitiveinformation.LikelihoodUnlikely
+			if contextMatch {
+				likelihood = sensitiveinformation.LikelihoodLikely
 			}
 
 			finding := sensitiveinformation.SensitiveInformation{
@@ -62,7 +82,7 @@ func NewDetector() veles.Detector {
 					Name:        "SOCIAL_SECURITY_NUMBER",
 					Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 				},
-				Likelihood: sensitiveinformation.LikelihoodLikely,
+				Likelihood: likelihood,
 				Raw:        bytes.Clone(b),
 			}
 
