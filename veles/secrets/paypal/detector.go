@@ -18,57 +18,53 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
+)
+
+const (
+	// maxClientIDLen is an upper bound on the length of a PayPal Client ID.
+	// PayPal does not publish a formal length; observed values are ~80 chars.
+	maxClientIDLen = 100
+	// maxClientSecretLen is an upper bound on the length of a PayPal Client
+	// Secret. PayPal does not publish a formal length; observed values are
+	// ~80 chars.
+	maxClientSecretLen = 100
+	// maxDistance is the maximum distance between a Client ID and a Client
+	// Secret for them to be considered a pair. 10 KiB is a good upper bound as
+	// we don't expect files containing credentials to be larger than this.
+	maxDistance = 10 * 1 << 10 // 10 KiB
 )
 
 var (
-	// Ensure constructors satisfy the interface at compile time.
-	_ veles.Detector = NewClientIDDetector()
-	_ veles.Detector = NewClientSecretDetector()
+	// clientIDRe matches PayPal REST API Client IDs.
+	//
+	// PayPal does not publish a formal grammar. Based on credentials issued by
+	// the Developer Dashboard across both Sandbox and Live environments, Client
+	// IDs are URL-safe strings ([A-Za-z0-9_-]) that commonly begin with "A" and
+	// are ~80 characters long. The leading "A" anchor and length floor keep the
+	// pattern conservative to limit false positives.
+	clientIDRe = regexp.MustCompile(`A[A-Za-z0-9_-]{49,99}`)
+
+	// clientSecretRe matches PayPal REST API Client Secrets.
+	//
+	// Client Secrets follow the same URL-safe shape as Client IDs but commonly
+	// begin with "E". The leading "E" anchor disambiguates them from Client IDs
+	// and limits false positives.
+	clientSecretRe = regexp.MustCompile(`E[A-Za-z0-9_-]{49,99}`)
 )
 
-// PayPal Client ID regex.
-//
-// PayPal Client IDs start with "A" followed by alphanumeric characters and
-// hyphens. They are typically 80 characters long but can vary between 50-100.
-//
-// Examples:
-//   - AYSq3RDGsmBLJE-otTkBtM-jBRd1TCQwFf9RGfwddNXWz0uFU9ztymylOhRS
-//   - AbCdEfGhIjKlMnOpQrStUvWxYz0123456789aBcDeFgHiJkLmNoPqRsTuVwXyZ01234567890123456789
-const clientIDMaxLen = 100
-
-var clientIDRe = regexp.MustCompile(`A[A-Za-z0-9_-]{49,99}`)
-
-// PayPal Client Secret regex.
-//
-// PayPal Client Secrets are alphanumeric strings (potentially including
-// hyphens and underscores) that are typically 80 characters long.
-// They start with "E" and are similar in format to the Client ID.
-//
-// To reduce false positives, we look for the "E" prefix which is common
-// in PayPal secrets.
-const clientSecretMaxLen = 100
-
-var clientSecretRe = regexp.MustCompile(`E[A-Za-z0-9_-]{49,99}`)
-
-// NewClientIDDetector returns a detector for PayPal Client IDs.
-func NewClientIDDetector() veles.Detector {
-	return simpletoken.Detector{
-		MaxLen: clientIDMaxLen,
-		Re:     clientIDRe,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return ClientID{Key: string(b)}, true
-		},
-	}
-}
-
-// NewClientSecretDetector returns a detector for PayPal Client Secrets.
-func NewClientSecretDetector() veles.Detector {
-	return simpletoken.Detector{
-		MaxLen: clientSecretMaxLen,
-		Re:     clientSecretRe,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			return ClientSecret{Key: string(b)}, true
+// NewDetector returns a new Veles Detector that finds PayPal REST API
+// credentials. It reports a Credentials secret only when a Client ID and a
+// Client Secret are found within maxDistance of each other, because the
+// Validator requires both values to authenticate.
+func NewDetector() veles.Detector {
+	return &pair.Detector{
+		MaxElementLen: max(maxClientIDLen, maxClientSecretLen),
+		MaxDistance:   maxDistance,
+		FindA:         pair.FindAllMatches(clientIDRe),
+		FindB:         pair.FindAllMatches(clientSecretRe),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return Credentials{ID: string(p.A.Value), Secret: string(p.B.Value)}, true
 		},
 	}
 }

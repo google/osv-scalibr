@@ -17,6 +17,7 @@ package paypal
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -27,47 +28,43 @@ import (
 
 const (
 	httpClientTimeout = 10 * time.Second
-	// PayPal OAuth2 token endpoint for live credentials.
+	// paypalLiveTokenEndpoint is the PayPal OAuth2 token endpoint for Live
+	// credentials.
 	paypalLiveTokenEndpoint = "https://api-m.paypal.com/v1/oauth2/token"
-	// PayPal OAuth2 token endpoint for sandbox credentials.
+	// paypalSandboxTokenEndpoint is the PayPal OAuth2 token endpoint for
+	// Sandbox credentials.
 	paypalSandboxTokenEndpoint = "https://api-m.sandbox.paypal.com/v1/oauth2/token"
 )
 
-// ClientIDSecretPair holds a PayPal Client ID and Client Secret pair for
-// validation. Since PayPal requires both the Client ID and Client Secret
-// to authenticate, the validator needs both values.
-type ClientIDSecretPair struct {
-	ClientID     string
-	ClientSecret string
-}
+// Ensure Validator satisfies the Veles Validator interface at compile time.
+var _ veles.Validator[Credentials] = &Validator{}
 
-// Validator validates PayPal credentials by attempting to obtain an OAuth2
-// access token using the Client ID and Client Secret pair.
+// Validator validates PayPal credentials by attempting the OAuth2
+// client_credentials grant against the PayPal token endpoint.
 //
-// It calls POST https://api-m.paypal.com/v1/oauth2/token with Basic Auth
-// (client_id:client_secret) and grant_type=client_credentials.
-//
-// If the response is 200 OK, the credentials are considered valid.
-// If the response is 401 Unauthorized, the credentials are invalid.
-// Other status codes result in a failed validation (indeterminate).
+// It POSTs to the Live endpoint first and, if the credentials are not valid
+// there, retries against the Sandbox endpoint, since a given credential pair
+// is scoped to exactly one of the two environments. A 200 response means the
+// credentials are valid; a 401 means they are invalid; anything else (5xx,
+// network, timeout) is reported as indeterminate (ValidationFailed).
 type Validator struct {
-	// HTTPC is the HTTP client used for validation requests.
-	// Exported to allow injection of test clients.
+	// HTTPC is the HTTP client used for validation requests. Exported to allow
+	// injection of test clients.
 	HTTPC *http.Client
 }
 
-// NewValidator creates a new PayPal credential validator.
+// NewValidator creates a new PayPal credential Validator.
 func NewValidator() *Validator {
 	return &Validator{
 		HTTPC: &http.Client{Timeout: httpClientTimeout},
 	}
 }
 
-// Validate checks if the given PayPal credential pair is valid by attempting
+// Validate checks whether the given PayPal Credentials are valid by attempting
 // to obtain an OAuth2 access token.
-func (v *Validator) Validate(ctx context.Context, pair ClientIDSecretPair) (veles.ValidationStatus, error) {
-	// Try the live endpoint first.
-	status, err := v.tryEndpoint(ctx, paypalLiveTokenEndpoint, pair)
+func (v *Validator) Validate(ctx context.Context, c Credentials) (veles.ValidationStatus, error) {
+	// Try the Live endpoint first.
+	status, err := v.tryEndpoint(ctx, paypalLiveTokenEndpoint, c)
 	if err != nil {
 		return veles.ValidationFailed, err
 	}
@@ -75,31 +72,25 @@ func (v *Validator) Validate(ctx context.Context, pair ClientIDSecretPair) (vele
 		return veles.ValidationValid, nil
 	}
 
-	// If the live endpoint returns invalid, also try sandbox.
-	status, err = v.tryEndpoint(ctx, paypalSandboxTokenEndpoint, pair)
-	if err != nil {
-		return veles.ValidationFailed, err
-	}
-	return status, nil
+	// Not valid on Live: the pair may be scoped to Sandbox.
+	return v.tryEndpoint(ctx, paypalSandboxTokenEndpoint, c)
 }
 
-func (v *Validator) tryEndpoint(ctx context.Context, endpoint string, pair ClientIDSecretPair) (veles.ValidationStatus, error) {
+func (v *Validator) tryEndpoint(ctx context.Context, endpoint string, c Credentials) (veles.ValidationStatus, error) {
 	body := strings.NewReader("grant_type=client_credentials")
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, body)
 	if err != nil {
-		return veles.ValidationFailed, err
+		return veles.ValidationFailed, fmt.Errorf("building request failed: %w", err)
 	}
 
 	// Set Basic Auth header with Client ID and Client Secret.
-	authStr := base64.StdEncoding.EncodeToString(
-		[]byte(pair.ClientID + ":" + pair.ClientSecret),
-	)
+	authStr := base64.StdEncoding.EncodeToString([]byte(c.ID + ":" + c.Secret))
 	req.Header.Set("Authorization", "Basic "+authStr)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := v.HTTPC.Do(req)
 	if err != nil {
-		return veles.ValidationFailed, err
+		return veles.ValidationFailed, fmt.Errorf("POST failed: %w", err)
 	}
 	defer resp.Body.Close()
 	// Consume the body to allow connection reuse.
@@ -111,6 +102,6 @@ func (v *Validator) tryEndpoint(ctx context.Context, endpoint string, pair Clien
 	case http.StatusUnauthorized:
 		return veles.ValidationInvalid, nil
 	default:
-		return veles.ValidationInvalid, nil
+		return veles.ValidationFailed, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 }

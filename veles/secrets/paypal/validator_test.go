@@ -38,7 +38,6 @@ type mockTransport struct {
 }
 
 func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL for PayPal API hosts.
 	if req.URL.Host == "api-m.paypal.com" || req.URL.Host == "api-m.sandbox.paypal.com" {
 		testURL, _ := url.Parse(m.testServer.URL)
 		req.URL.Scheme = testURL.Scheme
@@ -52,20 +51,17 @@ func mockPayPalTokenServer(t *testing.T, expectedClientID, expectedClientSecret 
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Expect a POST to /v1/oauth2/token.
 		if r.Method != http.MethodPost || r.URL.Path != "/v1/oauth2/token" {
 			t.Errorf("unexpected request: %s %s, expected: POST /v1/oauth2/token", r.Method, r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
 
-		// Check Basic Auth header contains the expected credentials.
 		username, password, ok := r.BasicAuth()
 		if !ok || username != expectedClientID || password != expectedClientSecret {
 			t.Errorf("expected Basic Auth %s:%s, got: %s:%s", expectedClientID, expectedClientSecret, username, password)
 		}
 
-		// Check Content-Type.
 		if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
 			t.Errorf("expected Content-Type application/x-www-form-urlencoded, got: %s", ct)
 		}
@@ -79,58 +75,57 @@ func TestValidator(t *testing.T) {
 		name       string
 		statusCode int
 		want       veles.ValidationStatus
+		wantErr    bool
 	}{
 		{
 			name:       "valid_credentials",
 			statusCode: http.StatusOK,
 			want:       veles.ValidationValid,
+			wantErr:    false,
 		},
 		{
 			name:       "invalid_credentials_unauthorized",
 			statusCode: http.StatusUnauthorized,
 			want:       veles.ValidationInvalid,
+			wantErr:    false,
 		},
 		{
-			name:       "server_error",
+			// 5xx is indeterminate, not a statement about credential validity.
+			name:       "server_error_is_indeterminate",
 			statusCode: http.StatusInternalServerError,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    true,
 		},
 		{
-			name:       "forbidden_error",
+			// Any other unexpected status is also indeterminate.
+			name:       "forbidden_is_indeterminate",
 			statusCode: http.StatusForbidden,
-			want:       veles.ValidationInvalid,
+			want:       veles.ValidationFailed,
+			wantErr:    true,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create mock server.
 			server := mockPayPalTokenServer(t, validatorTestClientID, validatorTestClientSecret, tc.statusCode)
 			defer server.Close()
 
-			// Create client with custom transport.
-			client := &http.Client{
-				Transport: &mockTransport{testServer: server},
-			}
-
-			// Create validator with mock client.
+			client := &http.Client{Transport: &mockTransport{testServer: server}}
 			validator := paypal.NewValidator()
 			validator.HTTPC = client
 
-			// Create test credential pair.
-			pair := paypal.ClientIDSecretPair{
-				ClientID:     validatorTestClientID,
-				ClientSecret: validatorTestClientSecret,
+			creds := paypal.Credentials{
+				ID:     validatorTestClientID,
+				Secret: validatorTestClientSecret,
 			}
 
-			// Test validation.
-			got, err := validator.Validate(t.Context(), pair)
-
-			if err != nil {
-				t.Errorf("Validate(): %v", err)
+			got, err := validator.Validate(t.Context(), creds)
+			if tc.wantErr && err == nil {
+				t.Errorf("Validate() expected an error, got nil")
 			}
-
-			// Check validation status.
+			if !tc.wantErr && err != nil {
+				t.Errorf("Validate() unexpected error: %v", err)
+			}
 			if got != tc.want {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
@@ -140,30 +135,21 @@ func TestValidator(t *testing.T) {
 
 func TestValidator_ContextCancellation(t *testing.T) {
 	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
+	t.Cleanup(func() { server.Close() })
 
-	// Create client with custom transport.
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
+	client := &http.Client{Transport: &mockTransport{testServer: server}}
 	validator := paypal.NewValidator()
 	validator.HTTPC = client
 
-	pair := paypal.ClientIDSecretPair{
-		ClientID:     validatorTestClientID,
-		ClientSecret: validatorTestClientSecret,
+	creds := paypal.Credentials{
+		ID:     validatorTestClientID,
+		Secret: validatorTestClientSecret,
 	}
 
-	// Create context that is immediately cancelled.
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
-	// Test validation with cancelled context.
-	got, err := validator.Validate(ctx, pair)
-
+	got, err := validator.Validate(ctx, creds)
 	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
 		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
 	}

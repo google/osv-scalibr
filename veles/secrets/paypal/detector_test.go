@@ -28,14 +28,15 @@ import (
 )
 
 var (
-	// Example valid PayPal Client ID (starts with "A", exactly 80 alphanumeric chars).
+	// detectorClientID is a synthetic but well-formed PayPal Client ID:
+	// starts with "A", exactly 80 URL-safe characters.
 	detectorClientID = "A" + strings.Repeat("aBcDeFgHiJ", 7) + "aBcDeFgHi"
-	// Example valid PayPal Client Secret (starts with "E", exactly 80 alphanumeric chars).
+	// detectorClientSecret is a synthetic but well-formed PayPal Client Secret:
+	// starts with "E", exactly 80 URL-safe characters.
 	detectorClientSecret = "E" + strings.Repeat("KlMnOpQrSt", 7) + "KlMnOpQrS"
 )
 
 func TestMain(m *testing.M) {
-	// Validate lengths are correct.
 	if len(detectorClientID) != 80 {
 		panic("detectorClientID should be 80 chars")
 	}
@@ -45,245 +46,83 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestClientIDDetectorAcceptance(t *testing.T) {
+func TestDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
-		paypal.NewClientIDDetector(),
-		detectorClientID,
-		paypal.ClientID{Key: detectorClientID},
-		velestest.WithPad('.'),
+		paypal.NewDetector(),
+		fmt.Sprintf("%s\n%s", detectorClientID, detectorClientSecret),
+		paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
 	)
 }
 
-func TestClientSecretDetectorAcceptance(t *testing.T) {
-	velestest.AcceptDetector(
-		t,
-		paypal.NewClientSecretDetector(),
-		detectorClientSecret,
-		paypal.ClientSecret{Key: detectorClientSecret},
-		velestest.WithPad('.'),
-	)
-}
-
-// TestClientIDDetector_truePositives tests Client ID detection.
-func TestClientIDDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine(
-		[]veles.Detector{paypal.NewClientIDDetector()},
-	)
+func TestDetector_Detect(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{paypal.NewDetector()})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cases := []struct {
+	tests := []struct {
 		name  string
 		input string
 		want  []veles.Secret
-	}{{
-		name:  "simple matching string",
-		input: detectorClientID,
-		want: []veles.Secret{
-			paypal.ClientID{Key: detectorClientID},
+	}{
+		{
+			name:  "empty input",
+			input: "",
+			want:  nil,
 		},
-	}, {
-		name:  "match at end of string",
-		input: `PAYPAL_CLIENT_ID=` + detectorClientID,
-		want: []veles.Secret{
-			paypal.ClientID{Key: detectorClientID},
+		{
+			name:  "non-credential input",
+			input: "Some random text without credentials",
+			want:  nil,
 		},
-	}, {
-		name:  "match in quotes",
-		input: `client_id="` + detectorClientID + `"`,
-		want: []veles.Secret{
-			paypal.ClientID{Key: detectorClientID},
+		{
+			name:  "client ID only (no secret) is not reported",
+			input: "paypal_client_id: " + detectorClientID,
+			want:  nil,
 		},
-	}, {
-		name:  "multiple matches",
-		input: detectorClientID + "\n" + detectorClientID,
-		want: []veles.Secret{
-			paypal.ClientID{Key: detectorClientID},
-			paypal.ClientID{Key: detectorClientID},
+		{
+			name:  "client secret only (no ID) is not reported",
+			input: "paypal_client_secret: " + detectorClientSecret,
+			want:  nil,
 		},
-	}, {
-		name: "larger_input_containing_key",
-		input: fmt.Sprintf("config:\n  paypal_client_id: %s\n",
-			detectorClientID),
-		want: []veles.Secret{
-			paypal.ClientID{Key: detectorClientID},
+		{
+			name:  "client ID with wrong prefix is not matched",
+			input: fmt.Sprintf("Z%s\n%s", detectorClientID[1:], detectorClientSecret),
+			want:  nil,
 		},
-	}, {
-		name:  "env_var_format",
-		input: `export PAYPAL_CLIENT_ID="` + detectorClientID + `"`,
-		want: []veles.Secret{
-			paypal.ClientID{Key: detectorClientID},
+		{
+			name:  "client secret with wrong prefix is not matched",
+			input: fmt.Sprintf("%s\nZ%s", detectorClientID, detectorClientSecret[1:]),
+			want:  nil,
 		},
-	}}
+		{
+			name:  "ID and secret in close proximity (happy path)",
+			input: fmt.Sprintf("%s\n%s", detectorClientID, detectorClientSecret),
+			want: []veles.Secret{
+				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
+			},
+		},
+		{
+			name: "ID and secret in JSON config",
+			input: fmt.Sprintf(`{
+  "client_id": "%s",
+  "client_secret": "%s"
+}`, detectorClientID, detectorClientSecret),
+			want: []veles.Secret{
+				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
+			},
+		},
+	}
 
-	for _, tc := range cases {
+	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := engine.Detect(t.Context(),
-				strings.NewReader(tc.input))
+			got, err := engine.Detect(t.Context(), strings.NewReader(tc.input))
 			if err != nil {
-				t.Errorf("Detect() error: %v, want nil", err)
+				t.Errorf("Detect() error: %v", err)
 			}
-			if diff := cmp.Diff(tc.want, got,
-				cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() diff (-want +got):\n%s",
-					diff)
-			}
-		})
-	}
-}
-
-// TestClientIDDetector_trueNegatives tests Client ID false negatives.
-func TestClientIDDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine(
-		[]veles.Detector{paypal.NewClientIDDetector()},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cases := []struct {
-		name  string
-		input string
-		want  []veles.Secret
-	}{{
-		name:  "empty input",
-		input: "",
-	}, {
-		name:  "too short should not match",
-		input: "A" + strings.Repeat("a", 30),
-	}, {
-		name:  "does not start with A",
-		input: "B" + strings.Repeat("a", 79),
-	}, {
-		name:  "contains invalid characters",
-		input: "A" + strings.Repeat("!", 79),
-	}, {
-		name:  "starts with lowercase a",
-		input: "a" + strings.Repeat("B", 79),
-	}}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := engine.Detect(t.Context(),
-				strings.NewReader(tc.input))
-			if err != nil {
-				t.Errorf("Detect() error: %v, want nil", err)
-			}
-			if diff := cmp.Diff(tc.want, got,
-				cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() diff (-want +got):\n%s",
-					diff)
-			}
-		})
-	}
-}
-
-// TestClientSecretDetector_truePositives tests Client Secret detection.
-func TestClientSecretDetector_truePositives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine(
-		[]veles.Detector{paypal.NewClientSecretDetector()},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cases := []struct {
-		name  string
-		input string
-		want  []veles.Secret
-	}{{
-		name:  "simple matching string",
-		input: detectorClientSecret,
-		want: []veles.Secret{
-			paypal.ClientSecret{Key: detectorClientSecret},
-		},
-	}, {
-		name:  "match at end of string",
-		input: `PAYPAL_CLIENT_SECRET=` + detectorClientSecret,
-		want: []veles.Secret{
-			paypal.ClientSecret{Key: detectorClientSecret},
-		},
-	}, {
-		name:  "match in quotes",
-		input: `secret="` + detectorClientSecret + `"`,
-		want: []veles.Secret{
-			paypal.ClientSecret{Key: detectorClientSecret},
-		},
-	}, {
-		name:  "multiple matches",
-		input: detectorClientSecret + " " + detectorClientSecret,
-		want: []veles.Secret{
-			paypal.ClientSecret{Key: detectorClientSecret},
-			paypal.ClientSecret{Key: detectorClientSecret},
-		},
-	}, {
-		name: "larger_input_containing_key",
-		input: fmt.Sprintf("config:\n  paypal_secret: %s\n",
-			detectorClientSecret),
-		want: []veles.Secret{
-			paypal.ClientSecret{Key: detectorClientSecret},
-		},
-	}}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := engine.Detect(t.Context(),
-				strings.NewReader(tc.input))
-			if err != nil {
-				t.Errorf("Detect() error: %v, want nil", err)
-			}
-			if diff := cmp.Diff(tc.want, got,
-				cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() diff (-want +got):\n%s",
-					diff)
-			}
-		})
-	}
-}
-
-// TestClientSecretDetector_trueNegatives tests Client Secret false negatives.
-func TestClientSecretDetector_trueNegatives(t *testing.T) {
-	engine, err := veles.NewDetectionEngine(
-		[]veles.Detector{paypal.NewClientSecretDetector()},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cases := []struct {
-		name  string
-		input string
-		want  []veles.Secret
-	}{{
-		name:  "empty input",
-		input: "",
-	}, {
-		name:  "too short should not match",
-		input: "E" + strings.Repeat("a", 30),
-	}, {
-		name:  "does not start with E",
-		input: "F" + strings.Repeat("a", 79),
-	}, {
-		name:  "contains invalid characters",
-		input: "E" + strings.Repeat("!", 79),
-	}, {
-		name:  "starts with lowercase e",
-		input: "e" + strings.Repeat("B", 79),
-	}}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := engine.Detect(t.Context(),
-				strings.NewReader(tc.input))
-			if err != nil {
-				t.Errorf("Detect() error: %v, want nil", err)
-			}
-			if diff := cmp.Diff(tc.want, got,
-				cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Detect() diff (-want +got):\n%s",
-					diff)
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Detect() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

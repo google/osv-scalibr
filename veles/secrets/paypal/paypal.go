@@ -12,32 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package paypal contains detectors and validators for PayPal API credentials.
+// Package paypal contains a Veles Secret type, a Detector, and a Validator for
+// PayPal REST API credentials.
 //
-// PayPal REST API apps use a Client ID and Client Secret for OAuth 2.0
-// authentication. The Client ID identifies an app, while the Client Secret
-// authenticates the Client ID. Together they are exchanged for an access token
-// to call PayPal APIs.
+// PayPal REST API apps authenticate to the OAuth 2.0 token endpoint with a
+// Client ID and a Client Secret. The Client ID identifies an app; the Client
+// Secret authenticates the Client ID. Validation requires both values, so they
+// are detected together as a single pair rather than as independent secrets.
 //
 // References:
 //   - https://developer.paypal.com/api/rest/
 //   - https://developer.paypal.com/api/rest/authentication/
 package paypal
 
-// ClientID is a Veles Secret that holds a PayPal REST API Client ID.
+// Credentials is a Veles Secret that holds a PayPal REST API Client ID and
+// Client Secret pair.
 //
-// PayPal Client IDs are alphanumeric strings that start with "A" and are
-// approximately 80 characters long. They are used to identify a PayPal app
-// and are required for all REST API calls.
-type ClientID struct {
-	Key string
-}
-
-// ClientSecret is a Veles Secret that holds a PayPal REST API Client Secret.
-//
-// PayPal Client Secrets are alphanumeric strings (including hyphens and
-// underscores) that are approximately 80 characters long. They authenticate
-// a Client ID and must be kept secure.
-type ClientSecret struct {
-	Key string
+// Both values are issued per app from the PayPal Developer Dashboard
+// (Apps & Credentials) and are scoped to either the Sandbox or Live
+// environment. Client IDs are URL-safe strings that commonly begin with "A";
+// Client Secrets are URL-safe strings that commonly begin with "E". Both are
+// typically ~80 characters long.
+type Credentials struct {
+	// ID is the PayPal REST API Client ID.
+	ID string
+	// Secret is the PayPal REST API Client Secret.
+	Secret string
 }
