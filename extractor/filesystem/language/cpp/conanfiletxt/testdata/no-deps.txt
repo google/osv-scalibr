@@ -1,0 +1,6 @@
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[options]
+openssl/*:shared=True

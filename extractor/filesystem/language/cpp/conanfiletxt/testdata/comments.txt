@@ -1,0 +1,8 @@
+[requires]
+# This is a comment
+zlib/1.2.11
+
+; This is also a comment
+poco/1.9.4
+
+boost/1.70.0
