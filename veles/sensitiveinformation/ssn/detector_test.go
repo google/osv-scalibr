@@ -181,7 +181,7 @@ func ssnFinding(raw []byte) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
 			Name:        "SOCIAL_SECURITY_NUMBER",
-			Sensitivity: sensitiveinformation.SensitivityLevelModerate,
+			Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 		},
 		Likelihood: sensitiveinformation.LikelihoodLikely,
 		Raw:        raw,
