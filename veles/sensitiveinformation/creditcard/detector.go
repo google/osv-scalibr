@@ -44,7 +44,7 @@ func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen: maxSecretLength,
 		Re:     creditCardRe,
-		FromMatch: func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+		FromMatch: func(b []byte, keywordMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 			if !validCreditCardNumber(b) {
 				return sensitiveinformation.SensitiveInformation{}, false
 			}
