@@ -16,6 +16,7 @@ package ssn
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -106,6 +107,15 @@ func TestDetect_truePositives(t *testing.T) {
 		{
 			name: "multiple_matches",
 			in:   []byte("223-45-6789 001-01-0001"),
+			want: []veles.Secret{
+				ssnFinding([]byte("223-45-6789")),
+				ssnFinding([]byte("001-01-0001")),
+			},
+		},
+		// Useful to catch the lack of bytes.Clone()
+		{
+			name: "multiple_matches_long_gap",
+			in:   []byte("223-45-6789" + strings.Repeat(" ", 50000) + "001-01-0001"),
 			want: []veles.Secret{
 				ssnFinding([]byte("223-45-6789")),
 				ssnFinding([]byte("001-01-0001")),
