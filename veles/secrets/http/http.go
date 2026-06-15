@@ -25,3 +25,8 @@ type BasicAuthCredentials struct {
 type BearerToken struct {
 	Value string
 }
+
+// CSRFToken contain the value of a CSRF token
+type CSRFToken struct {
+	Value string
+}
