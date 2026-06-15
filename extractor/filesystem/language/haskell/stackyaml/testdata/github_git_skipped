@@ -1,0 +1,10 @@
+resolver: lts-18.0
+extra-deps:
+  - github-0.15
+  - github: commercialhaskell/stack
+    commit: abc123def
+  - git: https://github.com/user/repo
+    commit: def456abc
+  - archive: https://example.com/pkg.tar.gz
+    sha256: abc123
+  - normal-pkg-1.0.0

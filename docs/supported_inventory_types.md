@@ -79,6 +79,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
+|            | stack.yaml                                        | `haskell/stackyaml`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
