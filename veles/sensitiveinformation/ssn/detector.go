@@ -51,7 +51,7 @@ func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen: maxSecretLength,
 		Re:     ssnRe,
-		FromMatch: func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+		FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 			ssn := string(b)
 			if !validSSN(ssn) {
 				return sensitiveinformation.SensitiveInformation{}, false

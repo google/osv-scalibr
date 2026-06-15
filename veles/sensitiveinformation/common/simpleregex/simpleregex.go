@@ -45,7 +45,7 @@ type Detector struct {
 
 	// Returns a sensitiveinformation.SensitiveInformation from a regexp match
 	// result.
-	FromMatch func([]byte) (sensitiveinformation.SensitiveInformation, bool)
+	FromMatch func([]byte, bool) (sensitiveinformation.SensitiveInformation, bool)
 }
 
 // KeywordsRe returns a regexp of the keywords. All keywords are case insensitive.
@@ -68,15 +68,12 @@ func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) 
 		l, r := m[0], m[1]
 		lowerBound := max(0, l-int(d.ContextWindowBefore))
 		upperBound := min(len(data), r+int(d.ContextWindowAfter))
-		// If keywordsRe is set, check if the keywords are present in the context window before or after
-		// the match.
-		if d.KeywordsRe != nil &&
-			!d.KeywordsRe.Match(data[lowerBound:l]) &&
-			!d.KeywordsRe.Match(data[r:upperBound]) {
-			continue
-		}
+		// If KeywordsRe is set, check if the keywords are present in the context
+		// window before or after the match.
+		contextMatch := d.KeywordsRe != nil &&
+			(d.KeywordsRe.Match(data[lowerBound:l]) || d.KeywordsRe.Match(data[r:upperBound]))
 
-		if match, ok := d.FromMatch(data[l:r]); ok {
+		if match, ok := d.FromMatch(data[l:r], contextMatch); ok {
 			secrets = append(secrets, match)
 			positions = append(positions, l)
 		}
