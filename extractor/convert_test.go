@@ -276,6 +276,27 @@ func TestToEcosystem(t *testing.T) {
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions),
 		},
+		{
+			name: "spdx_alpine_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeApk,
+						Namespace:  "alpine",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "v3.18"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemAlpine,
+				Suffix:    "v3.18",
+			},
+		},
 	}
 
 	for _, tt := range tests {
