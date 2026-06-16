@@ -217,6 +217,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Sensitive information
 | Type                                        | Extractor Plugin                     |
 | ------------------------------------------- | ------------------------------------ |
+| US Adoption Taxpayer Identification Number  | `sensitiveinformation/atin`          |
 
 ### Container inventory
 

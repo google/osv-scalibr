@@ -1,0 +1,85 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package atin implements ATIN detection logic.
+package atin
+
+import (
+	"bytes"
+	"regexp"
+	"strings"
+
+	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/common/simpleregex"
+)
+
+const (
+	maxSecretLength   = 11
+	contextWindowSize = 64
+)
+
+var atinRe = regexp.MustCompile(`\b((\d{9})|(\d{3}-\d{2}-\d{4}))\b`)
+
+var atinKeywords = simpleregex.KeywordsRe([]string{
+	`\batin\b`,
+	`adoption taxpayer identification number`,
+	`adoption taxpayer identification`,
+	`adoption tax identification number`,
+	`adoption tax id`,
+	`adoption taxpayer id`,
+	`adoption tin`,
+	`irs atin`,
+	`form w-7a`,
+	`w-7a`,
+})
+
+// NewDetector returns a Detector, that finds US Adoption Taxpayer Identification Number (ATIN)
+func NewDetector() veles.Detector {
+	return simpleregex.Detector{
+		MaxLen:              maxSecretLength,
+		Re:                  atinRe,
+		ContextWindowBefore: contextWindowSize,
+		ContextWindowAfter:  contextWindowSize,
+		KeywordsRe:          atinKeywords,
+		FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+			atin := string(b)
+			if !validAtin(atin) {
+				return sensitiveinformation.SensitiveInformation{}, false
+			}
+
+			likelihood := sensitiveinformation.LikelihoodUnlikely
+			if contextMatch {
+				likelihood = sensitiveinformation.LikelihoodLikely
+			}
+
+			finding := sensitiveinformation.SensitiveInformation{
+				InfoType: sensitiveinformation.InfoType{
+					Name:        "ADOPTION_TAXPAYER_IDENTIFICATION_NUMBER",
+					Sensitivity: sensitiveinformation.SensitivityLevelHigh,
+				},
+				Likelihood: likelihood,
+				Raw:        bytes.Clone(b),
+			}
+
+			return finding, true
+		},
+	}
+}
+
+func validAtin(s string) bool {
+	normalized := strings.ReplaceAll(s, "-", "")
+
+	return normalized[0] == '9' && normalized[3:5] == "93"
+}
