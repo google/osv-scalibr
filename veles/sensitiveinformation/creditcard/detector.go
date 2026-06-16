@@ -25,8 +25,10 @@ import (
 )
 
 const maxSecretLength = 23
+const contextWindowSize = 32
 
 var creditCardRe = regexp.MustCompile(`\b(?:[2-6]\d{12,18}|[2-6]\d{3}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,3})?|[2-6]\d{3}[ -]\d{6}[ -]\d{5})\b`)
+var keyWordsRe = regexp.MustCompile(`(?i)(credit ?card|cvv|cvc|cvv2|cvc2|card ?holder|visa|master ?card)`)
 
 var commonExamples = map[string]struct{}{
 	"4111111111111111": {},
@@ -42,11 +44,19 @@ var commonExamples = map[string]struct{}{
 // NewDetector returns a Detector that finds credit card numbers.
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
-		MaxLen: maxSecretLength,
-		Re:     creditCardRe,
+		MaxLen:              maxSecretLength,
+		Re:                  creditCardRe,
+		KeywordsRe:          keyWordsRe,
+		ContextWindowBefore: contextWindowSize,
+		ContextWindowAfter:  contextWindowSize,
 		FromMatch: func(b []byte, keywordMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 			if !validCreditCardNumber(b) {
 				return sensitiveinformation.SensitiveInformation{}, false
+			}
+
+			likelihood := sensitiveinformation.LikelihoodUnlikely
+			if keywordMatch {
+				likelihood += 1
 			}
 
 			finding := sensitiveinformation.SensitiveInformation{
@@ -54,7 +64,7 @@ func NewDetector() veles.Detector {
 					Name:        "CREDIT_CARD_NUMBER",
 					Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 				},
-				Likelihood: sensitiveinformation.LikelihoodLikely,
+				Likelihood: likelihood,
 				Raw:        bytes.Clone(b),
 			}
 

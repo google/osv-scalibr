@@ -33,7 +33,7 @@ func TestDetectorAcceptance(t *testing.T) {
 		t,
 		NewDetector(),
 		testCreditCard,
-		creditCardFinding([]byte(testCreditCard)),
+		creditCardFindingWithLikelihood([]byte(testCreditCard), sensitiveinformation.LikelihoodUnlikely),
 	)
 }
 
@@ -52,44 +52,72 @@ func TestDetect_truePositives(t *testing.T) {
 			name: "match_only",
 			in:   []byte("5100000000000008"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("5100000000000008")),
+				creditCardFindingWithLikelihood([]byte("5100000000000008"), sensitiveinformation.LikelihoodUnlikely),
 			},
 		},
 		{
 			name: "match_spaced",
 			in:   []byte("2221 0000 0000 0009"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("2221 0000 0000 0009")),
+				creditCardFindingWithLikelihood([]byte("2221 0000 0000 0009"), sensitiveinformation.LikelihoodUnlikely),
 			},
 		},
 		{
 			name: "match_hyphenated",
-			in:   []byte("card: 5100-0000-0000-0008."),
+			in:   []byte("5100-0000-0000-0008."),
 			want: []veles.Secret{
-				creditCardFinding([]byte("5100-0000-0000-0008")),
+				creditCardFindingWithLikelihood([]byte("5100-0000-0000-0008"), sensitiveinformation.LikelihoodUnlikely),
 			},
 		},
 		{
 			name: "match_15_digits",
 			in:   []byte("340000000000009"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("340000000000009")),
+				creditCardFindingWithLikelihood([]byte("340000000000009"), sensitiveinformation.LikelihoodUnlikely),
+			},
+		},
+		{
+			name: "keyword_before_increases_likelihood",
+			in:   []byte("credit card: 5100000000000008"),
+			want: []veles.Secret{
+				creditCardFinding([]byte("5100000000000008")),
+			},
+		},
+		{
+			name: "keyword_after_increases_likelihood",
+			in:   []byte("5100000000000008 card holder"),
+			want: []veles.Secret{
+				creditCardFinding([]byte("5100000000000008")),
+			},
+		},
+		{
+			name: "case_insensitive_keyword_increases_likelihood",
+			in:   []byte("VISA 5100000000000008"),
+			want: []veles.Secret{
+				creditCardFinding([]byte("5100000000000008")),
+			},
+		},
+		{
+			name: "keyword_outside_context_window_keeps_unlikely_likelihood",
+			in:   []byte("credit card" + strings.Repeat(" ", contextWindowSize+1) + "5100000000000008"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("5100000000000008"), sensitiveinformation.LikelihoodUnlikely),
 			},
 		},
 		{
 			name: "multiple_matches",
 			in:   []byte("5100000000000008 2221000000000009"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("5100000000000008")),
-				creditCardFinding([]byte("2221000000000009")),
+				creditCardFindingWithLikelihood([]byte("5100000000000008"), sensitiveinformation.LikelihoodUnlikely),
+				creditCardFindingWithLikelihood([]byte("2221000000000009"), sensitiveinformation.LikelihoodUnlikely),
 			},
 		},
 		{
 			name: "multiple_matches_long_gap",
 			in:   []byte("5100000000000008" + strings.Repeat(" ", 50000) + "2221000000000009"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("5100000000000008")),
-				creditCardFinding([]byte("2221000000000009")),
+				creditCardFindingWithLikelihood([]byte("5100000000000008"), sensitiveinformation.LikelihoodUnlikely),
+				creditCardFindingWithLikelihood([]byte("2221000000000009"), sensitiveinformation.LikelihoodUnlikely),
 			},
 		},
 	}
@@ -169,18 +197,22 @@ func TestDetect_trueNegatives(t *testing.T) {
 }
 
 func TestDetectorMaxSecretLen(t *testing.T) {
-	if got, want := NewDetector().MaxSecretLen(), uint32(len("5100 0000 0000 0000 008")); got != want {
+	if got, want := NewDetector().MaxSecretLen(), uint32(len("5100 0000 0000 0000 008")+(2*contextWindowSize)); got != want {
 		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
 	}
 }
 
 func creditCardFinding(raw []byte) sensitiveinformation.SensitiveInformation {
+	return creditCardFindingWithLikelihood(raw, sensitiveinformation.LikelihoodLikely)
+}
+
+func creditCardFindingWithLikelihood(raw []byte, likelihood sensitiveinformation.Likelihood) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
 			Name:        "CREDIT_CARD_NUMBER",
 			Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 		},
-		Likelihood: sensitiveinformation.LikelihoodLikely,
+		Likelihood: likelihood,
 		Raw:        raw,
 	}
 }
