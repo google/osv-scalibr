@@ -80,6 +80,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | go.mod (OSV)                                      | `go/gomod`                           |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
+|            | .cabal                                            | `haskell/cabalfile`                  |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |

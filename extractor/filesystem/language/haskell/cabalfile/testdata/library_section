@@ -1,0 +1,6 @@
+name: mypackage
+version: 1.0.0
+
+library
+  build-depends: text >= 1.2, bytestring >= 0.10
+  hs-source-dirs: src
