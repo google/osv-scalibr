@@ -22,14 +22,15 @@
 package scan_result_go_proto
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	osvschema "github.com/ossf/osv-schema/bindings/go/osvschema"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -889,6 +890,8 @@ type Package struct {
 	// Software licenses information
 	Licenses                      []string                               `protobuf:"bytes,52,rep,name=licenses,proto3" json:"licenses,omitempty"`
 	ContainerImageMetadataIndexes *Package_ContainerImageMetadataIndexes `protobuf:"bytes,57,opt,name=container_image_metadata_indexes,json=containerImageMetadataIndexes,proto3,oneof" json:"container_image_metadata_indexes,omitempty"`
+	// The ID of the parent package, if this package is a transitive dependency.
+	ParentIds []string `protobuf:"bytes,70,rep,name=parent_ids,json=parentIds,proto3" json:"parent_ids,omitempty"`
 }
 
 func (x *Package) Reset() {
@@ -1317,6 +1320,13 @@ func (x *Package) GetLicenses() []string {
 func (x *Package) GetContainerImageMetadataIndexes() *Package_ContainerImageMetadataIndexes {
 	if x != nil {
 		return x.ContainerImageMetadataIndexes
+	}
+	return nil
+}
+
+func (x *Package) GetParentIds() []string {
+	if x != nil {
+		return x.ParentIds
 	}
 	return nil
 }
