@@ -118,6 +118,13 @@ func LocationFromPathAndLine(path string, line int) PackageLocation {
 	}
 }
 
+// RequireID generates an ID for the package if it is empty and returns the ID.
+func (p *Package) RequireID(idGenerator IDGenerator) (string, error) {
+	id, err := p.GetIDOrGenerate(idGenerator)
+	p.ID = id
+	return p.ID, err
+}
+
 // GetIDOrGenerate returns the ID of the package or a generated ID if it is empty.
 func (p *Package) GetIDOrGenerate(idGenerator IDGenerator) (string, error) {
 	if p.ID != "" {
