@@ -569,8 +569,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "rclone",
 			Version: "1.67.0",
 		},
-		Location: pkgLocProtoFromPath("/file1"),
-		Plugins:  []string{"os/homebrew"},
+		Ecosystem: "GIT",
+		Location:  pkgLocProtoFromPath("/file1"),
+		Plugins:   []string{"os/homebrew"},
 	}
 	purlWingetPackage := &extractor.Package{
 		Name:     "Git.Git",
