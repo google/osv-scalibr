@@ -450,6 +450,7 @@ var (
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
 		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
+		{http.NewCookieDetector(), "secrets/httpcookie", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

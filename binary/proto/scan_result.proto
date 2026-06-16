@@ -864,6 +864,7 @@ message SecretData {
     HTTPBasicAuth http_basic_auth = 89;
     HTTPBearer http_bearer = 90;
     HTTPCSRFToken http_csrf_token = 91;
+    HTTPCookie http_cookie = 92;
   }
 
   message GCPSAK {
@@ -1313,6 +1314,11 @@ message SecretData {
 
   message HTTPCSRFToken {
     string value = 1;
+  }
+
+  message HTTPCookie { 
+    string name = 1;
+    string value = 2;
   }
 
   message CursorAPIKey {
