@@ -17,6 +17,7 @@ package extractor
 
 import (
 	"github.com/google/osv-scalibr/binary/proto/metadata"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -110,6 +111,17 @@ func LocationFromPathAndLine(path string, line int) PackageLocation {
 			},
 		},
 	}
+}
+
+// OSVPackageName returns the package name that should be used for exact OSV matching.
+// Some ecosystems preserve multiple package name forms in metadata; when that happens,
+// the canonical advisory identity should be preferred over the human-readable Name field.
+func (p *Package) OSVPackageName() string {
+	if m, ok := p.Metadata.(*dpkgmeta.Metadata); ok && m.SourceName != "" {
+		return m.SourceName
+	}
+
+	return p.Name
 }
 
 // PURL returns the Package URL of this package.
