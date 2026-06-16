@@ -297,6 +297,24 @@ func TestToEcosystem(t *testing.T) {
 				Suffix:    "v3.18",
 			},
 		},
+		{
+			name: "brew_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "pkg-name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeBrew,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT")),
+		},
+		{
+			name: "git_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "pkg-name",
+				Version:  "1.2.3",
+				PURLType: "git",
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT")),
+		},
 	}
 
 	for _, tt := range tests {

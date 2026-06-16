@@ -132,6 +132,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "openssl",
 					PURLType: purl.TypeGeneric,
+					Version:  "1.1.1l",
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
@@ -146,6 +147,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "nginx",
 					PURLType: purl.TypeGeneric,
+					Version:  "1.21.1",
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						PURL: getPURL("nginx", "1.21.1"),
@@ -155,6 +157,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "openssl",
 					PURLType: purl.TypeGeneric,
+					Version:  "1.1.1l",
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
@@ -176,6 +179,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "openssl",
 					PURLType: purl.TypeGeneric,
+					Version:  "1.1.1l",
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
@@ -197,6 +201,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "openssl",
 					PURLType: purl.TypeGeneric,
+					Version:  "1.1.1l",
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
@@ -218,6 +223,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "openssl",
 					PURLType: purl.TypeGeneric,
+					Version:  "1.1.1l",
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
 					},
@@ -232,6 +238,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "pkg-python",
 					PURLType: purl.TypeDocker,
+					Version:  "3.14.3-debian13",
 					Metadata: &spdxmeta.Metadata{
 						PURL: &purl.PackageURL{
 							Type:      purl.TypeDocker,
@@ -256,6 +263,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "python",
 					PURLType: purl.TypeDocker,
+					Version:  "3.14.3-debian13-dev",
 					Metadata: &spdxmeta.Metadata{
 						PURL: &purl.PackageURL{
 							Type:      purl.TypeDocker,
@@ -280,6 +288,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "python",
 					PURLType: purl.TypeDHI,
+					Version:  "3.14.3",
 					Metadata: &spdxmeta.Metadata{
 						PURL: &purl.PackageURL{
 							Type:       purl.TypeDHI,
