@@ -56,6 +56,13 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name: "match_12_digits_low_confidence",
+			in:   []byte("700000000005"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("700000000005"), sensitiveinformation.LikelihoodUnlikely),
+			},
+		},
+		{
 			name: "match_spaced",
 			in:   []byte("2221 0000 0000 0009"),
 			want: []veles.Secret{
@@ -77,24 +84,38 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name: "keyword_before_increases_likelihood",
-			in:   []byte("credit card: 5100000000000008"),
+			name: "keyword_before_mid_confidence",
+			in:   []byte("credit card: 700000000005"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("5100000000000008")),
+				creditCardFinding([]byte("700000000005")),
 			},
 		},
 		{
-			name: "keyword_after_increases_likelihood",
+			name: "keyword_after_high_confidence",
 			in:   []byte("5100000000000008 card holder"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("5100000000000008")),
+				creditCardFindingWithLikelihood([]byte("5100000000000008"), sensitiveinformation.LikelihoodVeryLikely),
 			},
 		},
 		{
-			name: "case_insensitive_keyword_increases_likelihood",
+			name: "case_insensitive_keyword_high_confidence",
 			in:   []byte("VISA 5100000000000008"),
 			want: []veles.Secret{
-				creditCardFinding([]byte("5100000000000008")),
+				creditCardFindingWithLikelihood([]byte("5100000000000008"), sensitiveinformation.LikelihoodVeryLikely),
+			},
+		},
+		{
+			name: "common_issuer_without_keyword_stays_low_confidence",
+			in:   []byte("4000000000000002"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("4000000000000002"), sensitiveinformation.LikelihoodUnlikely),
+			},
+		},
+		{
+			name: "common_issuer_with_keyword_high_confidence",
+			in:   []byte("credit card: 4000000000000002"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("4000000000000002"), sensitiveinformation.LikelihoodVeryLikely),
 			},
 		},
 		{
@@ -151,7 +172,7 @@ func TestDetect_trueNegatives(t *testing.T) {
 		},
 		{
 			name: "too_short",
-			in:   []byte("510000000000"),
+			in:   []byte("70000000000"),
 		},
 		{
 			name: "too_long",
@@ -199,6 +220,163 @@ func TestDetect_trueNegatives(t *testing.T) {
 func TestDetectorMaxSecretLen(t *testing.T) {
 	if got, want := NewDetector().MaxSecretLen(), uint32(len("5100 0000 0000 0000 008")+(2*contextWindowSize)); got != want {
 		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
+	}
+}
+
+func TestHasCommonIssuerAndLength(t *testing.T) {
+	cases := []struct {
+		name   string
+		digits string
+		want   bool
+	}{
+		{
+			name:   "visa_13_digits",
+			digits: "4000000000000",
+			want:   true,
+		},
+		{
+			name:   "visa_16_digits",
+			digits: "4000000000000002",
+			want:   true,
+		},
+		{
+			name:   "visa_19_digits",
+			digits: "4000000000000000002",
+			want:   true,
+		},
+		{
+			name:   "visa_wrong_length",
+			digits: "400000000000",
+			want:   false,
+		},
+		{
+			name:   "mastercard_51_to_55_range",
+			digits: "5100000000000008",
+			want:   true,
+		},
+		{
+			name:   "mastercard_2221_to_2720_range_lower_bound",
+			digits: "2221000000000009",
+			want:   true,
+		},
+		{
+			name:   "mastercard_2221_to_2720_range_upper_bound",
+			digits: "2720000000000008",
+			want:   true,
+		},
+		{
+			name:   "mastercard_wrong_length",
+			digits: "510000000000000",
+			want:   false,
+		},
+		{
+			name:   "amex_34_prefix",
+			digits: "340000000000009",
+			want:   true,
+		},
+		{
+			name:   "amex_37_prefix",
+			digits: "370000000000002",
+			want:   true,
+		},
+		{
+			name:   "amex_wrong_length",
+			digits: "3400000000000000",
+			want:   false,
+		},
+		{
+			name:   "discover_6011_prefix",
+			digits: "6011000000000004",
+			want:   true,
+		},
+		{
+			name:   "discover_644_to_649_range",
+			digits: "6440000000000006",
+			want:   true,
+		},
+		{
+			name:   "discover_65_prefix",
+			digits: "6500000000000002",
+			want:   true,
+		},
+		{
+			name:   "discover_622126_to_622925_range_lower_bound",
+			digits: "6221260000000000",
+			want:   true,
+		},
+		{
+			name:   "discover_622126_to_622925_range_upper_bound",
+			digits: "6229250000000007",
+			want:   true,
+		},
+		{
+			name:   "discover_19_digits",
+			digits: "6011000000000000004",
+			want:   true,
+		},
+		{
+			name:   "discover_wrong_length",
+			digits: "601100000000000",
+			want:   false,
+		},
+		{
+			name:   "jcb_3528_to_3589_range_lower_bound",
+			digits: "3528000000000007",
+			want:   true,
+		},
+		{
+			name:   "jcb_3528_to_3589_range_upper_bound",
+			digits: "3589000000000003",
+			want:   true,
+		},
+		{
+			name:   "jcb_19_digits",
+			digits: "3528000000000000007",
+			want:   true,
+		},
+		{
+			name:   "jcb_wrong_length",
+			digits: "352800000000000",
+			want:   false,
+		},
+		{
+			name:   "diners_club_300_to_305_range",
+			digits: "30000000000004",
+			want:   true,
+		},
+		{
+			name:   "diners_club_36_prefix",
+			digits: "36000000000008",
+			want:   true,
+		},
+		{
+			name:   "diners_club_38_to_39_range",
+			digits: "38000000000006",
+			want:   true,
+		},
+		{
+			name:   "diners_club_wrong_length",
+			digits: "300000000000000",
+			want:   false,
+		},
+		{
+			name:   "unknown_issuer",
+			digits: "7000000000000005",
+			want:   false,
+		},
+		{
+			name:   "too_short_for_prefix",
+			digits: "6",
+			want:   false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := hasCommonIssuerAndLength(tc.digits); got != tc.want {
+				t.Errorf("hasCommonIssuerAndLength(%q) = %t, want %t", tc.digits, got, tc.want)
+			}
+		})
 	}
 }
 

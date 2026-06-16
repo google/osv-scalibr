@@ -18,6 +18,7 @@ package creditcard
 import (
 	"bytes"
 	"regexp"
+	"strconv"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation"
@@ -27,8 +28,8 @@ import (
 const maxSecretLength = 23
 const contextWindowSize = 32
 
-var creditCardRe = regexp.MustCompile(`\b(?:[2-6]\d{12,18}|[2-6]\d{3}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,3})?|[2-6]\d{3}[ -]\d{6}[ -]\d{5})\b`)
-var keyWordsRe = regexp.MustCompile(`(?i)(credit ?card|cvv|cvc|cvv2|cvc2|card ?holder|visa|master ?card)`)
+var creditCardRe = regexp.MustCompile(`\b(?:\d{12,19}|\d{4}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,3})?|\d{4}[ -]\d{6}[ -]\d{5})\b`)
+var keywordsRe = regexp.MustCompile(`(?i)(credit[ -]?card|cvv|cvc|cvv2|cvc2|card[ -]?holder|visa|master[ -]?card)`)
 
 var commonExamples = map[string]struct{}{
 	"4111111111111111": {},
@@ -46,7 +47,7 @@ func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen:              maxSecretLength,
 		Re:                  creditCardRe,
-		KeywordsRe:          keyWordsRe,
+		KeywordsRe:          keywordsRe,
 		ContextWindowBefore: contextWindowSize,
 		ContextWindowAfter:  contextWindowSize,
 		FromMatch: func(b []byte, keywordMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
@@ -56,7 +57,10 @@ func NewDetector() veles.Detector {
 
 			likelihood := sensitiveinformation.LikelihoodUnlikely
 			if keywordMatch {
-				likelihood += 1
+				likelihood = sensitiveinformation.LikelihoodLikely
+				if hasCommonIssuerAndLength(normalizedDigits(b)) {
+					likelihood = sensitiveinformation.LikelihoodVeryLikely
+				}
 			}
 
 			finding := sensitiveinformation.SensitiveInformation{
@@ -74,25 +78,19 @@ func NewDetector() veles.Detector {
 }
 
 func validCreditCardNumber(b []byte) bool {
-	digits := make([]byte, 0, len(b))
-	for _, c := range b {
-		switch {
-		case c >= '0' && c <= '9':
-			digits = append(digits, c)
-		case c == ' ' || c == '-':
-		default:
-			return false
-		}
+	digits := normalizedDigits(b)
+	if len(digits) < 12 || len(digits) > 19 {
+		return false
 	}
 
-	if _, ok := commonExamples[string(digits)]; ok {
+	if _, ok := commonExamples[digits]; ok {
 		return false
 	}
 
 	// Filter out credit cards with all the same digits
 	allSame := true
-	for _, d := range digits[1:] {
-		if d != digits[0] {
+	for i := 1; i < len(digits); i++ {
+		if digits[i] != digits[0] {
 			allSame = false
 			break
 		}
@@ -117,4 +115,38 @@ func validCreditCardNumber(b []byte) bool {
 	}
 
 	return sum%10 == 0
+}
+
+func normalizedDigits(b []byte) string {
+	digits := make([]byte, 0, len(b))
+	for _, c := range b {
+		switch {
+		case c >= '0' && c <= '9':
+			digits = append(digits, c)
+		case c == ' ' || c == '-':
+		default:
+			return ""
+		}
+	}
+	return string(digits)
+}
+
+func hasCommonIssuerAndLength(digits string) bool {
+	length := len(digits)
+	return (prefixInRange(digits, 4, 4) && (length == 13 || length == 16 || length == 19)) ||
+		(prefixInRange(digits, 51, 55) && length == 16) ||
+		(prefixInRange(digits, 2221, 2720) && length == 16) ||
+		((prefixInRange(digits, 34, 34) || prefixInRange(digits, 37, 37)) && length == 15) ||
+		((prefixInRange(digits, 6011, 6011) || prefixInRange(digits, 644, 649) || prefixInRange(digits, 65, 65) || prefixInRange(digits, 622126, 622925)) && (length == 16 || length == 19)) ||
+		(prefixInRange(digits, 3528, 3589) && length >= 16 && length <= 19) ||
+		((prefixInRange(digits, 300, 305) || prefixInRange(digits, 36, 36) || prefixInRange(digits, 38, 39)) && length == 14)
+}
+
+func prefixInRange(digits string, lower int, upper int) bool {
+	prefixLen := len(strconv.Itoa(lower))
+	if len(digits) < prefixLen {
+		return false
+	}
+	prefix, err := strconv.Atoi(digits[:prefixLen])
+	return err == nil && prefix >= lower && prefix <= upper
 }
