@@ -184,6 +184,10 @@ func TestDetect_trueNegatives(t *testing.T) {
 			in:   []byte("123 45-6789"),
 		},
 		{
+			name: "too_long",
+			in:   []byte("2234567890"),
+		},
+		{
 			name: "area_starts_with_666",
 			in:   []byte("666-45-6789"),
 		},
