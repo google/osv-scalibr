@@ -56,10 +56,38 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name: "match_unformatted",
+			in:   []byte("223456789"),
+			want: []veles.Secret{
+				ssnFinding([]byte("223456789")),
+			},
+		},
+		{
+			name: "match_spaced",
+			in:   []byte("223 45 6789"),
+			want: []veles.Secret{
+				ssnFinding([]byte("223 45 6789")),
+			},
+		},
+		{
 			name: "match_in_text",
 			in:   []byte("ssn: 133-45-6789."),
 			want: []veles.Secret{
 				ssnFindingWithLikelihood([]byte("133-45-6789"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "unformatted_with_keyword",
+			in:   []byte("ssn: 133456789"),
+			want: []veles.Secret{
+				ssnFindingWithLikelihood([]byte("133456789"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "spaced_with_keyword",
+			in:   []byte("ssn: 133 45 6789"),
+			want: []veles.Secret{
+				ssnFindingWithLikelihood([]byte("133 45 6789"), sensitiveinformation.LikelihoodLikely),
 			},
 		},
 		{
@@ -106,10 +134,11 @@ func TestDetect_truePositives(t *testing.T) {
 		},
 		{
 			name: "multiple_matches",
-			in:   []byte("223-45-6789 001-01-0001"),
+			in:   []byte("223-45-6789 001010001 331 12 4321"),
 			want: []veles.Secret{
 				ssnFinding([]byte("223-45-6789")),
-				ssnFinding([]byte("001-01-0001")),
+				ssnFinding([]byte("001010001")),
+				ssnFinding([]byte("331 12 4321")),
 			},
 		},
 		// Useful to catch the lack of bytes.Clone()
@@ -152,27 +181,67 @@ func TestDetect_trueNegatives(t *testing.T) {
 		},
 		{
 			name: "missing_dashes",
-			in:   []byte("123456789"),
+			in:   []byte("123 45-6789"),
 		},
 		{
 			name: "area_starts_with_666",
 			in:   []byte("666-45-6789"),
 		},
 		{
+			name: "unformatted_area_starts_with_666",
+			in:   []byte("666456789"),
+		},
+		{
+			name: "spaced_area_starts_with_666",
+			in:   []byte("666 45 6789"),
+		},
+		{
 			name: "area_starts_with_000",
 			in:   []byte("000-45-6789"),
+		},
+		{
+			name: "unformatted_area_starts_with_000",
+			in:   []byte("000456789"),
+		},
+		{
+			name: "spaced_area_starts_with_000",
+			in:   []byte("000 45 6789"),
 		},
 		{
 			name: "area_between_900_and_999",
 			in:   []byte("900-45-6789"),
 		},
 		{
+			name: "unformatted_area_between_900_and_999",
+			in:   []byte("900456789"),
+		},
+		{
+			name: "spaced_area_between_900_and_999",
+			in:   []byte("900 45 6789"),
+		},
+		{
 			name: "group_all_zeroes",
 			in:   []byte("123-00-6789"),
 		},
 		{
+			name: "unformatted_group_all_zeroes",
+			in:   []byte("123006789"),
+		},
+		{
+			name: "spaced_group_all_zeroes",
+			in:   []byte("123 00 6789"),
+		},
+		{
 			name: "serial_all_zeroes",
 			in:   []byte("123-45-0000"),
+		},
+		{
+			name: "unformatted_serial_all_zeroes",
+			in:   []byte("123450000"),
+		},
+		{
+			name: "spaced_serial_all_zeroes",
+			in:   []byte("123 45 0000"),
 		},
 		{
 			name: "area_starts_with_9",
@@ -187,12 +256,36 @@ func TestDetect_trueNegatives(t *testing.T) {
 			in:   []byte("123-45-6789"),
 		},
 		{
+			name: "unformatted_placeholder_pattern_123",
+			in:   []byte("123456789"),
+		},
+		{
+			name: "spaced_placeholder_pattern_123",
+			in:   []byte("123 45 6789"),
+		},
+		{
 			name: "placeholder_pattern_111",
 			in:   []byte("111-11-1111"),
 		},
 		{
+			name: "unformatted_placeholder_pattern_111",
+			in:   []byte("111111111"),
+		},
+		{
+			name: "spaced_placeholder_pattern_111",
+			in:   []byte("111 11 1111"),
+		},
+		{
 			name: "placeholder_pattern_woolworth",
 			in:   []byte("078-05-1120"),
+		},
+		{
+			name: "unformatted_placeholder_pattern_woolworth",
+			in:   []byte("078051120"),
+		},
+		{
+			name: "spaced_placeholder_pattern_woolworth",
+			in:   []byte("078 05 1120"),
 		},
 	}
 

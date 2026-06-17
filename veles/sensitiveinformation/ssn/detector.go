@@ -18,6 +18,7 @@ package ssn
 import (
 	"bytes"
 	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation"
@@ -31,7 +32,7 @@ const (
 
 // https://www.protecto.ai/blog/personal-dataset-sample-u-s-social-security-number-ssn-download-pii-data-examples-2/
 // https://www.ssa.gov/history/ssn/geocard.html
-var ssnRe = regexp.MustCompile(`\b[0-8]\d{2}-\d{2}-\d{4}\b`)
+var ssnRe = regexp.MustCompile(`\b(\d{9}|\d{3}-\d{2}-\d{4}|\d{3} \d{2} \d{4})\b`)
 
 var ssnKeywordsRe = simpleregex.KeywordsRe([]string{
 	`\bssn\b`,
@@ -44,19 +45,19 @@ var ssnKeywordsRe = simpleregex.KeywordsRe([]string{
 })
 
 var commonExamples = map[string]struct{}{
-	"123-45-6789": {},
+	"123456789": {},
 
-	"111-11-1111": {},
-	"222-22-2222": {},
-	"333-33-3333": {},
-	"444-44-4444": {},
-	"555-55-5555": {},
-	"777-77-7777": {},
-	"888-88-8888": {},
-	"999-99-9999": {},
+	"111111111": {},
+	"222222222": {},
+	"333333333": {},
+	"444444444": {},
+	"555555555": {},
+	"777777777": {},
+	"888888888": {},
+	"999999999": {},
 
 	// https://www.ssa.gov/history/ssn/misused.html
-	"078-05-1120": {},
+	"078051120": {},
 }
 
 // NewDetector returns a Detector, that finds US Social Security Numbers (SSNs)
@@ -92,15 +93,18 @@ func NewDetector() veles.Detector {
 }
 
 func validSSN(s string) bool {
-	if _, ok := commonExamples[s]; ok {
+	normalized := strings.NewReplacer("-", "", " ", "").Replace(s)
+
+	if _, ok := commonExamples[normalized]; ok {
 		return false
 	}
 
-	area := s[0:3]
-	group := s[4:6]
-	serial := s[7:11]
+	area := normalized[0:3]
+	group := normalized[3:5]
+	serial := normalized[5:9]
 
-	return area != "000" &&
+	return area[0] != '9' &&
+		area != "000" &&
 		area != "666" &&
 		group != "00" &&
 		serial != "0000"
