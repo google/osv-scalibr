@@ -183,6 +183,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/itin"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -453,6 +454,7 @@ var (
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+		{itin.NewDetector(), "secrets/itin", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
