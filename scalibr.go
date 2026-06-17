@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"runtime"
@@ -45,13 +46,12 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/packageindex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	pl "github.com/google/osv-scalibr/plugin/list"
 	"github.com/google/osv-scalibr/result"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/version"
 	"go.uber.org/multierr"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 var (
@@ -119,7 +119,7 @@ type ScanConfig struct {
 	// isn't configured instead of enabling required plugins automatically.
 	ExplicitPlugins bool
 	// Optional: Configuration to apply to auto-enabled required plugins.
-	RequiredPluginConfig *cpb.PluginConfig
+	RequiredPluginConfig *config.PluginConfig
 }
 
 // EnableRequiredPlugins adds those plugins to the config that are required by enabled
@@ -196,30 +196,46 @@ type ScanResult = result.ScanResult
 // LINT.ThenChange(/binary/proto/scan_result.proto)
 
 // Scan executes the extraction/detection/annotation/etc. plugins using the provided scan config.
-func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
-	if config.Stats == nil {
-		config.Stats = stats.NoopCollector{}
+func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
+	if cfg.Stats == nil {
+		cfg.Stats = stats.NoopCollector{}
 	}
 	defer func() {
-		config.Stats.AfterScan(time.Since(sr.StartTime), sr.Status)
+		cfg.Stats.AfterScan(time.Since(sr.StartTime), sr.Status)
 	}()
+
+	var internallyCreatedCloser io.Closer
+	if cfg.RequiredPluginConfig == nil {
+		cfg.RequiredPluginConfig = config.DefaultPluginConfig()
+		if closer, ok := cfg.RequiredPluginConfig.ClientFactories.(io.Closer); ok {
+			internallyCreatedCloser = closer
+		}
+	}
+	if internallyCreatedCloser != nil {
+		defer func() {
+			if err := internallyCreatedCloser.Close(); err != nil {
+				log.Warnf("failed to close client factories: %v", err)
+			}
+		}()
+	}
+
 	sro := &newScanResultOptions{
 		StartTime: time.Now(),
 	}
-	if err := config.EnableRequiredPlugins(); err != nil {
+	if err := cfg.EnableRequiredPlugins(); err != nil {
 		sro.Err = err
-	} else if err := config.ValidatePluginRequirements(); err != nil {
+	} else if err := cfg.ValidatePluginRequirements(); err != nil {
 		sro.Err = err
-	} else if len(config.ScanRoots) == 0 {
+	} else if len(cfg.ScanRoots) == 0 {
 		sro.Err = errNoScanRoot
-	} else if len(config.PathsToExtract) > 0 && len(config.ScanRoots) > 1 {
+	} else if len(cfg.PathsToExtract) > 0 && len(cfg.ScanRoots) > 1 {
 		sro.Err = errFilesWithSeveralRoots
 	}
 	if sro.Err != nil {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
-	extractors := pl.FilesystemExtractors(config.Plugins)
+	extractors := pl.FilesystemExtractors(cfg.Plugins)
 	extractors, err := cf.SetupVelesExtractors(extractors)
 	if err != nil {
 		sro.Err = multierr.Append(sro.Err, err)
@@ -227,21 +243,21 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		return newScanResult(sro)
 	}
 	extractorConfig := &filesystem.Config{
-		Stats:                 config.Stats,
-		ReadSymlinks:          config.ReadSymlinks,
+		Stats:                 cfg.Stats,
+		ReadSymlinks:          cfg.ReadSymlinks,
 		Extractors:            extractors,
-		PathsToExtract:        config.PathsToExtract,
-		IgnoreSubDirs:         config.IgnoreSubDirs,
-		DirsToSkip:            config.DirsToSkip,
-		SkipDirRegex:          config.SkipDirRegex,
-		MaxFileSize:           config.MaxFileSize,
-		SkipDirGlob:           config.SkipDirGlob,
-		UseGitignore:          config.UseGitignore,
-		ScanRoots:             config.ScanRoots,
-		MaxInodes:             config.MaxInodes,
-		PrintDurationAnalysis: config.PrintDurationAnalysis,
-		ErrorOnFSErrors:       config.ErrorOnFSErrors,
-		ExtractorOverride:     config.ExtractorOverride,
+		PathsToExtract:        cfg.PathsToExtract,
+		IgnoreSubDirs:         cfg.IgnoreSubDirs,
+		DirsToSkip:            cfg.DirsToSkip,
+		SkipDirRegex:          cfg.SkipDirRegex,
+		MaxFileSize:           cfg.MaxFileSize,
+		SkipDirGlob:           cfg.SkipDirGlob,
+		UseGitignore:          cfg.UseGitignore,
+		ScanRoots:             cfg.ScanRoots,
+		MaxInodes:             cfg.MaxInodes,
+		PrintDurationAnalysis: cfg.PrintDurationAnalysis,
+		ErrorOnFSErrors:       cfg.ErrorOnFSErrors,
+		ExtractorOverride:     cfg.ExtractorOverride,
 	}
 	inv, extractorStatus, err := filesystem.Run(ctx, extractorConfig)
 	if err != nil {
@@ -265,9 +281,9 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		}
 	}()
 	sro.PluginStatus = append(sro.PluginStatus, extractorStatus...)
-	sysroot := config.ScanRoots[0]
+	sysroot := cfg.ScanRoots[0]
 	standaloneCfg := &standalone.Config{
-		Extractors: pl.StandaloneExtractors(config.Plugins),
+		Extractors: pl.StandaloneExtractors(cfg.Plugins),
 		ScanRoot:   &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path},
 	}
 	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
@@ -288,7 +304,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	findings, detectorStatus, err := detectorrunner.Run(
-		ctx, config.Stats, pl.Detectors(config.Plugins), &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
+		ctx, cfg.Stats, pl.Detectors(cfg.Plugins), &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path}, px,
 	)
 	sro.Inventory.PackageVulns = findings.PackageVulns
 	sro.Inventory.GenericFindings = findings.GenericFindings
@@ -298,7 +314,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 	}
 
 	annotatorCfg := &annotator.Config{
-		Annotators: pl.Annotators(config.Plugins),
+		Annotators: pl.Annotators(cfg.Plugins),
 		ScanRoot:   sysroot,
 	}
 	annotatorStatus, err := annotator.Run(ctx, annotatorCfg, &sro.Inventory)
@@ -307,14 +323,14 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = multierr.Append(sro.Err, err)
 	}
 
-	enrichers := pl.Enrichers(config.Plugins)
+	enrichers := pl.Enrichers(cfg.Plugins)
 	enrichers, err = ce.SetupVelesEnrichers(enrichers)
 	if err != nil {
 		sro.Err = multierr.Append(sro.Err, err)
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
-	if err := validateEnricherRequirements(enrichers, config.Capabilities); err != nil {
+	if err := validateEnricherRequirements(enrichers, cfg.Capabilities); err != nil {
 		sro.Err = multierr.Append(sro.Err, err)
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
@@ -332,7 +348,7 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.Err = multierr.Append(sro.Err, err)
 	}
 
-	if config.StoreAbsolutePath {
+	if cfg.StoreAbsolutePath {
 		err := sro.Inventory.ExpandPathsToAbsolute()
 		if err != nil {
 			sro.Err = multierr.Append(sro.Err, err)
@@ -347,69 +363,69 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 // provided scan config. It populates the LayerDetails field of the packages with the origin layer
 // details. Functions to create an Image from a tarball, remote name, or v1.Image are available in
 // the artifact/image/layerscanning/image package.
-func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *ScanConfig) (sr *ScanResult, err error) {
-	if len(config.ScanRoots) > 0 {
-		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(config.ScanRoots))
+func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanConfig) (sr *ScanResult, err error) {
+	if len(cfg.ScanRoots) > 0 {
+		log.Warnf("expected no scan roots, but got %d scan roots, overwriting with container image scan root", len(cfg.ScanRoots))
 	}
 
 	imagefs := img.FS()
 	// Overwrite the scan roots with the chain layer filesystem.
-	config.ScanRoots = []*scalibrfs.ScanRoot{
+	cfg.ScanRoots = []*scalibrfs.ScanRoot{
 		{
 			FS: imagefs,
 		},
 	}
 
-	storeAbsPath := config.StoreAbsolutePath
+	storeAbsPath := cfg.StoreAbsolutePath
 	// We want to store absolute paths in the inventory,
 	// but paths should be relative to root of the imagefs
 	// (always '/' as we only support linux containers)
-	config.StoreAbsolutePath = false
+	cfg.StoreAbsolutePath = false
 
 	// Suppress running enrichers until after layer details are populated.
 	var enrichers []enricher.Enricher
 	var nonEnricherPlugins []plugin.Plugin
 
-	for _, p := range config.Plugins {
+	for _, p := range cfg.Plugins {
 		if e, ok := p.(enricher.Enricher); ok {
 			enrichers = append(enrichers, e)
 		} else {
 			nonEnricherPlugins = append(nonEnricherPlugins, p)
 		}
 	}
-	config.Plugins = nonEnricherPlugins
+	cfg.Plugins = nonEnricherPlugins
 
 	chainLayers, err := img.ChainLayers()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chain layers: %w", err)
 	}
 
-	scanResult := s.Scan(ctx, config)
-	extractors := pl.FilesystemExtractors(config.Plugins)
+	scanResult := s.Scan(ctx, cfg)
+	extractors := pl.FilesystemExtractors(cfg.Plugins)
 	extractors, err = cf.SetupVelesExtractors(extractors)
 	if err != nil {
 		return scanResult, err
 	}
 	extractorConfig := &filesystem.Config{
-		Stats:                 config.Stats,
-		ReadSymlinks:          config.ReadSymlinks,
+		Stats:                 cfg.Stats,
+		ReadSymlinks:          cfg.ReadSymlinks,
 		Extractors:            extractors,
-		PathsToExtract:        config.PathsToExtract,
-		IgnoreSubDirs:         config.IgnoreSubDirs,
-		DirsToSkip:            config.DirsToSkip,
-		SkipDirRegex:          config.SkipDirRegex,
-		MaxFileSize:           config.MaxFileSize,
-		SkipDirGlob:           config.SkipDirGlob,
-		UseGitignore:          config.UseGitignore,
-		ScanRoots:             config.ScanRoots,
-		MaxInodes:             config.MaxInodes,
-		PrintDurationAnalysis: config.PrintDurationAnalysis,
-		ErrorOnFSErrors:       config.ErrorOnFSErrors,
-		ExtractorOverride:     config.ExtractorOverride,
+		PathsToExtract:        cfg.PathsToExtract,
+		IgnoreSubDirs:         cfg.IgnoreSubDirs,
+		DirsToSkip:            cfg.DirsToSkip,
+		SkipDirRegex:          cfg.SkipDirRegex,
+		MaxFileSize:           cfg.MaxFileSize,
+		SkipDirGlob:           cfg.SkipDirGlob,
+		UseGitignore:          cfg.UseGitignore,
+		ScanRoots:             cfg.ScanRoots,
+		MaxInodes:             cfg.MaxInodes,
+		PrintDurationAnalysis: cfg.PrintDurationAnalysis,
+		ErrorOnFSErrors:       cfg.ErrorOnFSErrors,
+		ExtractorOverride:     cfg.ExtractorOverride,
 	}
 
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
-	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
+	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(cfg.Plugins), extractorConfig)
 
 	// TODO: b/500769263 - Harmonize with trace.PopulateLayerDetails() by using same cim in both.
 	if cims := scanResult.Inventory.ContainerImageMetadata; len(cims) > 0 {
@@ -423,7 +439,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 		scanResult.Status.FailureReason = err.Error()
 		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
 	}
-	if err := validateEnricherRequirements(enrichers, config.Capabilities); err != nil {
+	if err := validateEnricherRequirements(enrichers, cfg.Capabilities); err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
 		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
