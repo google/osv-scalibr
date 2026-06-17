@@ -1,0 +1,23 @@
+opam-version: "2.0"
+name: "myproject"
+version: "1.0.0"
+maintainer: "maintainer@example.com"
+authors: ["Author One"]
+license: "MIT"
+homepage: "https://example.com"
+bug-reports: "https://example.com/issues"
+dev-repo: "git+https://github.com/example/myproject.git"
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]
+depends: [
+  "dune" {>= "3.0"}
+  "ocaml" {>= "4.14.0"}
+  "astring"
+  "cmdliner" {>= "1.2.0"}
+  "alcotest" {with-test}
+]
+depopts: [
+  "lwt"
+  "async"
+]
