@@ -29,6 +29,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/google/osv-scalibr/enricher/vulnmatch/internal/osv"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/vulns"
 	"github.com/google/osv-scalibr/extractor"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -245,7 +246,7 @@ func newZippedDB(ctx context.Context, dbBasePath, name, url, userAgent string, o
 	// map the packages to their names ahead of loading,
 	// to make things simpler and reduce double working
 	for _, inv := range invs {
-		names = append(names, inv.Name)
+		names = append(names, osv.ParsePackage(inv).Name)
 	}
 
 	if err := db.load(ctx, names); err != nil {
