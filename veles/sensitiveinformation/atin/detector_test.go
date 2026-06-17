@@ -70,10 +70,38 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name: "unformatted_with_keyword",
+			in:   []byte("atin: 932931234"),
+			want: []veles.Secret{
+				atinFindingWithLikelihood([]byte("932931234"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
 			name: "keyword_after",
 			in:   []byte("932-93-1234 adoption taxpayer identification number"),
 			want: []veles.Secret{
 				atinFindingWithLikelihood([]byte("932-93-1234"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "unformatted_keyword_after",
+			in:   []byte("932931234 adoption taxpayer identification number"),
+			want: []veles.Secret{
+				atinFindingWithLikelihood([]byte("932931234"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "starts_with_9",
+			in:   []byte("atin: 999-93-9999"),
+			want: []veles.Secret{
+				atinFindingWithLikelihood([]byte("999-93-9999"), sensitiveinformation.LikelihoodLikely),
+			},
+		},
+		{
+			name: "zeros_allowed_outside_required_prefix",
+			in:   []byte("atin: 900-93-0000"),
+			want: []veles.Secret{
+				atinFindingWithLikelihood([]byte("900-93-0000"), sensitiveinformation.LikelihoodLikely),
 			},
 		},
 		{
@@ -85,10 +113,11 @@ func TestDetect_truePositives(t *testing.T) {
 		},
 		{
 			name: "multiple_matches",
-			in:   []byte("912-93-6789 923936789"),
+			in:   []byte("912-93-6789 923936789 999-93-9999"),
 			want: []veles.Secret{
 				atinFinding([]byte("912-93-6789")),
 				atinFinding([]byte("923936789")),
+				atinFinding([]byte("999-93-9999")),
 			},
 		},
 		{
@@ -205,20 +234,48 @@ func TestDetect_trueNegatives(t *testing.T) {
 			in:   []byte("812-93-6789"),
 		},
 		{
+			name: "unformatted_does_not_start_with_9",
+			in:   []byte("812936789"),
+		},
+		{
 			name: "fourth_and_fifth_digits_not_93",
 			in:   []byte("912-94-6789"),
+		},
+		{
+			name: "unformatted_fourth_and_fifth_digits_not_93",
+			in:   []byte("912946789"),
 		},
 		{
 			name: "missing_digit",
 			in:   []byte("912-93-678"),
 		},
 		{
+			name: "unformatted_missing_digit",
+			in:   []byte("91293678"),
+		},
+		{
 			name: "extra_digit",
 			in:   []byte("912-93-67890"),
 		},
 		{
+			name: "unformatted_extra_digit",
+			in:   []byte("9129367890"),
+		},
+		{
+			name: "mixed_separators",
+			in:   []byte("912 93-6789"),
+		},
+		{
+			name: "spaced",
+			in:   []byte("912 93 6789"),
+		},
+		{
 			name: "within_longer_string",
 			in:   []byte("asdf912-93-6789asdf"),
+		},
+		{
+			name: "unformatted_within_longer_string",
+			in:   []byte("asdf912936789asdf"),
 		},
 		{
 			name: "ssn_shaped_number",
