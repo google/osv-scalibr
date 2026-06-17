@@ -16,8 +16,10 @@
 package internal
 
 import (
+	"fmt"
 	"slices"
 
+	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -56,13 +58,69 @@ func Add(enrichedPkgs []*extractor.Package, inv *inventory.Inventory, pluginName
 	for _, pkg := range enrichedPkgs {
 		indexPkg, ok := existingPackages[pkg.Name]
 		if ok {
-			// This dependency is in manifest, update the version and plugins.
+			// This dependency is in manifest, update the version, plugins and parent IDs.
 			i := indexPkg.Index
 			inv.Packages[i].Version = pkg.Version
 			inv.Packages[i].Plugins = append(inv.Packages[i].Plugins, pluginName)
+
+			if len(pkg.ParentIDs) > 0 && inv.Packages[i].ParentIDs == nil {
+				inv.Packages[i].ParentIDs = make(map[string]bool)
+			}
+
+			for parentID := range pkg.ParentIDs {
+				inv.Packages[i].ParentIDs[parentID] = true
+			}
 		} else {
 			// This dependency is not found in manifest, so it's a transitive dependency.
 			inv.Packages = append(inv.Packages, pkg)
 		}
 	}
+}
+
+// GetNameToIDMapping returns a mapping of package name to package ID for a given list of packages
+// and a dependency graph. Known packages without IDs will have IDs added using the ID generator.
+func GetNameToIDMapping(g *resolve.Graph, packages []*extractor.Package, idGenerator extractor.IDGenerator) (map[string]string, error) {
+	nameToID := make(map[string]string)
+	for _, pkg := range packages {
+		id, err := pkg.RequireID(idGenerator)
+		if err != nil {
+			return nil, err
+		}
+		nameToID[pkg.Name] = id
+	}
+
+	for i := 1; i < len(g.Nodes); i++ {
+		node := g.Nodes[i]
+		if _, ok := nameToID[node.Version.Name]; !ok {
+			id, err := idGenerator.GenerateID(node.Version.Name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate random UUID: %w", err)
+			}
+			nameToID[node.Version.Name] = id
+		}
+	}
+	return nameToID, nil
+}
+
+// GetParentIDs returns the set of parent IDs for a node in a dependency graph.
+func GetParentIDs(g *resolve.Graph, nameToID map[string]string, nodeID resolve.NodeID) (map[string]bool, error) {
+	parents := make(map[string]bool)
+	for _, edge := range g.Edges {
+		if edge.To == nodeID {
+			if int(edge.From) >= len(g.Nodes) {
+				return nil, fmt.Errorf("parent id %v is out of range for nodes (length %v)", edge.From, len(g.Nodes))
+			}
+			if edge.From == 0 {
+				parents["root"] = true
+				continue
+			}
+			parentPkgName := g.Nodes[edge.From].Version.Name
+			parentPkgID, ok := nameToID[parentPkgName]
+			if !ok {
+				return nil, fmt.Errorf("parent package %q not found in known packages", parentPkgName)
+			}
+			parents[parentPkgID] = true
+		}
+	}
+	return parents, nil
 }

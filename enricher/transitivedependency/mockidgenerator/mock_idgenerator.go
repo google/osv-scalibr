@@ -12,21 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package http contains http log/dump secrets detector
-package http
+// Package mockidgenerator provides a mock implementation of the IDGenerator interface.
+package mockidgenerator
 
-// BasicAuthCredentials contain username and password retrieved from a Basic Authorization payload
-type BasicAuthCredentials struct {
-	Username string
-	Password string
-}
+// MockIDGenerator generates dummy IDs for packages.
+type MockIDGenerator struct{}
 
-// BearerToken contain the value of a bearer token found in an Authorization header
-type BearerToken struct {
-	Value string
-}
-
-// CSRFToken contain the value of a CSRF token
-type CSRFToken struct {
-	Value string
+// GenerateID generates a dummy ID for the given package.
+func (g *MockIDGenerator) GenerateID(pkgName string) (string, error) {
+	return "dummy-id-" + pkgName, nil
 }

@@ -16,9 +16,13 @@
 package pylock
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -90,17 +94,25 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from pylock.toml files passed through the scan input.
 func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var parsedLockfile *pylockLockfile
-
-	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	content, err := io.ReadAll(input.Reader)
 	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not read file: %w", err)
+	}
+
+	var parsedLockfile pylockLockfile
+	if err := toml.Unmarshal(content, &parsedLockfile); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
+	packageNames := make([]string, 0, len(parsedLockfile.Packages))
+	for _, p := range parsedLockfile.Packages {
+		packageNames = append(packageNames, p.Name)
+	}
+	lineNums := findPackageLineNumbers(content, packageNames)
+
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
-	for _, lockPackage := range parsedLockfile.Packages {
+	for i, lockPackage := range parsedLockfile.Packages {
 		// this is likely the root package, which is sometimes included in the lockfile
 		if lockPackage.Version == "" && lockPackage.Directory.Path == "." {
 			continue
@@ -110,7 +122,7 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 			Name:     lockPackage.Name,
 			Version:  lockPackage.Version,
 			PURLType: purl.TypePyPi,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, lineNums[i]),
 		}
 		if lockPackage.VCS.Commit != "" {
 			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{
@@ -121,6 +133,87 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+// extractPackageName parses a TOML key-value line and returns the unquoted
+// package name if the key is "name". Returns false if the line is not a valid name assignment.
+// TODO(b/491518484): Put in common location for all Python extractors to use.
+func extractPackageName(line string) (string, bool) {
+	if !strings.HasPrefix(line, "name") {
+		return "", false
+	}
+	k, _, ok := strings.Cut(line, "=")
+	if !ok || strings.TrimSpace(k) != "name" {
+		return "", false
+	}
+	var pkg pylockPackage
+	if err := toml.Unmarshal([]byte(line), &pkg); err != nil {
+		return "", false
+	}
+	return pkg.Name, true
+}
+
+// findPackageLineNumbers returns the line numbers of the specified package names.
+// If package line number is not found, the value will be 0.
+func findPackageLineNumbers(content []byte, packageNames []string) []int {
+	lineNums := make([]int, len(packageNames))
+	if len(packageNames) == 0 {
+		return lineNums
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	pkgIdx := 0
+	inPackageBlock := false
+	inPackageList := false
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Check where we are in the file based on line content.
+		switch {
+		case line == "[[packages]]":
+			inPackageBlock = true
+			inPackageList = false
+			continue
+		case strings.HasPrefix(line, "packages = ["):
+			inPackageList = true
+			inPackageBlock = false
+			continue
+		case inPackageBlock && strings.HasPrefix(line, "[") && !strings.HasPrefix(line, "[[packages]]"):
+			inPackageBlock = false
+			continue
+		case inPackageList && line == "]":
+			inPackageList = false
+			continue
+		}
+
+		// Only process lines in a package block or package list.
+		if !inPackageBlock && !inPackageList || pkgIdx >= len(packageNames) {
+			continue
+		}
+
+		// Extract package.
+		name, ok := extractPackageName(line)
+		if !ok || name != packageNames[pkgIdx] {
+			continue
+		}
+
+		lineNums[pkgIdx] = lineNum
+		pkgIdx++
+
+		// Stop checking lines in this specific [[packages]] block, and move on to the next.
+		if inPackageBlock {
+			inPackageBlock = false
+		}
+
+		// If all package names found, exit early.
+		if pkgIdx == len(packageNames) {
+			break
+		}
+	}
+	return lineNums
 }
 
 var _ filesystem.Extractor = Extractor{}

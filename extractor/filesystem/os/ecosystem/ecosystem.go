@@ -26,8 +26,11 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/log"
+	purlecosystem "github.com/google/osv-scalibr/purl/ecosystem"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -106,6 +109,13 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *modulemeta.Metadata:
 		namespace = m.ToNamespace()
 		osVersionID = m.OSVersionID
+
+	case *spdxmeta.Metadata:
+		// TODO(#2213): This is temporary while we work on a more unified solution.
+		return purlecosystem.FromPURL(m.PURL)
+	case *cdxmeta.Metadata:
+		// TODO(#2213): This is temporary while we work on a more unified solution.
+		return purlecosystem.FromPURL(m.PURL)
 
 	default:
 		return osvecosystem.Parsed{}
