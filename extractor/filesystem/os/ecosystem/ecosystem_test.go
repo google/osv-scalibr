@@ -1106,6 +1106,58 @@ func TestMakeEcosystemSBOM(t *testing.T) {
 			want: "Wolfi",
 		},
 		{
+			desc: "SPDX Debian with version",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "debian",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "11"}),
+				},
+			},
+			want: "Debian:11",
+		},
+		{
+			desc: "SPDX Ubuntu with codename",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "ubuntu",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "jammy"}),
+				},
+			},
+			want: "Ubuntu:22.04:LTS",
+		},
+		{
+			desc: "SPDX Debian with sid",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "debian",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "sid"}),
+				},
+			},
+			want: "Debian:sid",
+		},
+		{
+			desc: "SPDX Debian with experimental",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "debian",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "experimental"}),
+				},
+			},
+			want: "Debian:experimental",
+		},
+		{
 			desc: "SPDX Non-apk purl with distro (should ignore)",
 			metadata: &spdxmeta.Metadata{
 				PURL: &purl.PackageURL{
