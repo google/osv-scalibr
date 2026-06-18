@@ -106,6 +106,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
 | R          | renv.lock                                         | `r/renvlock`                         |
+|            | packrat.lock                                      | `r/packratlock`                      |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
