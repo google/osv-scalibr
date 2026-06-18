@@ -223,7 +223,7 @@ BAZ
 		t.Run(tc.name, func(t *testing.T) {
 			fromMatch := tc.fromMatch
 			if fromMatch == nil {
-				fromMatch = func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+				fromMatch = func(b []byte, _ bool) (sensitiveinformation.SensitiveInformation, bool) {
 					return fakeSensitiveInformation(b), true
 				}
 			}
