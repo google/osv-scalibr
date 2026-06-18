@@ -73,7 +73,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	base := path.Base(p)
 
 	// Skip files inside node_modules or .git directories.
-	for _, segment := range strings.Split(path.Dir(p), "/") {
+	for segment := range strings.SplitSeq(path.Dir(p), "/") {
 		if segment == "node_modules" || segment == ".git" {
 			return false
 		}
@@ -158,8 +158,8 @@ func parsePackageLine(line, filePath string, lineNum int) (*extractor.Package, e
 func parseCondaFilename(filename string) (name, version string, err error) {
 	stem := filename
 	for _, ext := range knownExtensions {
-		if strings.HasSuffix(stem, ext) {
-			stem = strings.TrimSuffix(stem, ext)
+		if cutStem, ok := strings.CutSuffix(stem, ext); ok {
+			stem = cutStem
 			break
 		}
 	}
