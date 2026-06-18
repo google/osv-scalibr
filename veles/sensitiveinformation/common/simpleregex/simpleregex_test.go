@@ -43,6 +43,7 @@ func TestDetect_truePositives(t *testing.T) {
 		in        []byte
 		want      []veles.Secret
 		wantPos   []int
+		wantFlags []bool
 		fromMatch func([]byte, bool) (sensitiveinformation.SensitiveInformation, bool)
 	}{
 		{
@@ -153,6 +154,10 @@ BAZ
 				fakeSensitiveInformation([]byte("BAR")),
 			},
 			wantPos: []int{0, 8},
+			wantFlags: []bool{
+				false,
+				true,
+			},
 		}, {
 			name:     "keywords after",
 			regexp:   "[A-Z]{3}",
@@ -166,6 +171,11 @@ BAZ
 				fakeSensitiveInformation([]byte("BAR")),
 			},
 			wantPos: []int{0, 4, 8},
+			wantFlags: []bool{
+				true,
+				false,
+				false,
+			},
 		}, {
 			name:     "keywords before and after",
 			regexp:   "[A-Z]{3}",
@@ -182,6 +192,13 @@ BAZ
 				fakeSensitiveInformation([]byte("ABC")),
 			},
 			wantPos: []int{0, 4, 8, 12, 16},
+			wantFlags: []bool{
+				false,
+				true,
+				false,
+				true,
+				false,
+			},
 		}, {
 			name:     "keywords matches regex",
 			regexp:   "[A-Z]{3}",
@@ -195,22 +212,32 @@ BAZ
 				fakeSensitiveInformation([]byte("ABC")),
 			},
 			wantPos: []int{0, 4, 8},
+			wantFlags: []bool{
+				false,
+				true,
+				true,
+			},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.fromMatch == nil {
-				tc.fromMatch = func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+			fromMatch := tc.fromMatch
+			if fromMatch == nil {
+				fromMatch = func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
 					return fakeSensitiveInformation(b), true
 				}
 			}
+			var gotFlags []bool
 			d := Detector{
 				MaxLen:              tc.maxLen,
 				Re:                  regexp.MustCompile(tc.regexp),
 				ContextWindowBefore: tc.before,
 				ContextWindowAfter:  tc.after,
 				KeywordsRe:          KeywordsRe(tc.keywords),
-				FromMatch:           tc.fromMatch,
+				FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+					gotFlags = append(gotFlags, contextMatch)
+					return fromMatch(b, contextMatch)
+				},
 			}
 			got, gotPos := d.Detect(tc.in)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
@@ -218,6 +245,13 @@ BAZ
 			}
 			if diff := cmp.Diff(tc.wantPos, gotPos, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
+			}
+			wantFlags := tc.wantFlags
+			if wantFlags == nil {
+				wantFlags = make([]bool, len(gotFlags))
+			}
+			if diff := cmp.Diff(wantFlags, gotFlags, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("FromMatch() keywordMatch diff (-want +got):\n%s", diff)
 			}
 		})
 	}
