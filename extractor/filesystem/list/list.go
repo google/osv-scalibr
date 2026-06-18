@@ -53,6 +53,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleversioncatalog"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/ivyxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
@@ -204,6 +205,7 @@ var (
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
 		gradleversioncatalog.Name:          {gradleversioncatalog.New},
+		ivyxml.Name:                        {ivyxml.New},
 		pomxml.Name:                        {pomxml.New},
 	}
 	// JavaArtifact extractors for Java.
