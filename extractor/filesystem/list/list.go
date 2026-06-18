@@ -77,6 +77,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pep723"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
@@ -236,6 +237,7 @@ var (
 		pylock.Name:       {pylock.New},
 		condameta.Name:    {condameta.New},
 		uvlock.Name:       {uvlock.New},
+		pep723.Name:       {pep723.New},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{

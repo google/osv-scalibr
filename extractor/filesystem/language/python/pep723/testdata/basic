@@ -1,0 +1,12 @@
+# /// script
+# dependencies = [
+#   "requests<3",
+#   "rich",
+# ]
+# requires-python = ">=3.11"
+# ///
+
+import requests
+import rich
+
+print("hello")
