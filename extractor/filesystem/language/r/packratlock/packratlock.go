@@ -18,6 +18,7 @@ package packratlock
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -101,12 +102,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		// Parse key: value
-		colonIdx := strings.Index(trimmed, ":")
-		if colonIdx < 0 {
+		key, value, ok := strings.Cut(trimmed, ":")
+		if !ok {
 			continue
 		}
-		key := strings.TrimSpace(trimmed[:colonIdx])
-		value := strings.TrimSpace(trimmed[colonIdx+1:])
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
 
 		if inHeader && key == "PackratFormat" {
 			validFormat = true
@@ -127,7 +128,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	if !validFormat {
-		return inventory.Inventory{}, fmt.Errorf("could not extract: not a valid packrat.lock file")
+		return inventory.Inventory{}, errors.New("could not extract: not a valid packrat.lock file")
 	}
 
 	// Handle last package if file doesn't end with blank line
