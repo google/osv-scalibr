@@ -46,6 +46,7 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 // Array is a type to be passed to flag.Var that supports arrays passed as repeated flags,
@@ -320,7 +321,7 @@ func validateGlob(arg string) error {
 
 func validateDependency(pluginNames []string, requireExtractors bool) error {
 	f := &Flags{PluginsToRun: pluginNames}
-	plugins, _, err := f.pluginsToRun()
+	plugins, _, err := f.resolvePluginsAndConfig()
 	if err != nil {
 		return err
 	}
@@ -357,7 +358,7 @@ type extractorOverride struct {
 
 // GetScanConfig constructs a SCALIBR scan config from the provided CLI flags.
 func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
-	plugins, pluginCFG, err := f.pluginsToRun()
+	plugins, pluginCFG, err := f.resolvePluginsAndConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -527,14 +528,18 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 }
 
 // TODO(b/279413691): Allow commas in argument names.
-func (f *Flags) pluginsToRun() ([]plugin.Plugin, *cpb.PluginConfig, error) {
+func (f *Flags) resolvePluginsAndConfig() ([]plugin.Plugin, *config.PluginConfig, error) {
 	plbin.EnableAdditionalPlugins()
 
 	result := make([]plugin.Plugin, 0, len(f.PluginsToRun))
 	pluginNames := multiStringToList(f.PluginsToRun)
-	pluginCFG, err := pluginCFGFromFlags(f.PluginCFG)
+	protoCFG, err := pluginProtoCFGFromFlags(f.PluginCFG)
 	if err != nil {
 		return nil, nil, err
+	}
+	pluginCFG := &config.PluginConfig{
+		ProtoConfig:     protoCFG,
+		ClientFactories: config.NewDefaultClientFactories(protoCFG.GetUserAgent()),
 	}
 
 	extractorNames := addPluginPrefixToGroups("extractors/", multiStringToList(f.ExtractorsToRun))
@@ -573,9 +578,9 @@ func addPluginPrefixToGroups(prefix string, pluginNames []string) []string {
 	return result
 }
 
-// pluginCFGFromFlags parses individually provided
+// pluginProtoCFGFromFlags parses individually provided
 // plugin config strings into one proto.
-func pluginCFGFromFlags(flags []string) (*cpb.PluginConfig, error) {
+func pluginProtoCFGFromFlags(flags []string) (*cpb.PluginConfig, error) {
 	var cfgString strings.Builder
 	for _, flag := range flags {
 		pluginCFG := &cpb.PluginConfig{}
