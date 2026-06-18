@@ -297,6 +297,48 @@ func TestToEcosystem(t *testing.T) {
 				Suffix:    "v3.18",
 			},
 		},
+		{
+			name: "spdx_debian_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeDebian,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeDebian,
+						Namespace:  "debian",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "11"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemDebian,
+				Suffix:    "11",
+			},
+		},
+		{
+			name: "spdx_ubuntu_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeDebian,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeDebian,
+						Namespace:  "ubuntu",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "jammy"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemUbuntu,
+				Suffix:    "22.04:LTS",
+			},
+		},
 	}
 
 	for _, tt := range tests {

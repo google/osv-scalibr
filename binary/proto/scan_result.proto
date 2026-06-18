@@ -170,6 +170,9 @@ message Package {
   }
 
   optional ContainerImageMetadataIndexes container_image_metadata_indexes = 57;
+
+  // The ID of the parent package, if this package is a transitive dependency.
+  repeated string parent_ids = 70;
 }
 
 // Paths or source of files related to an extracted package.
