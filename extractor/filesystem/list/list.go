@@ -36,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnettoolsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/nugetcpm"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packagesconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/packageslockjson"
@@ -310,6 +311,7 @@ var (
 		paketdependencies.Name: {paketdependencies.New},
 		paketlock.Name:         {paketlock.New},
 		projectassetsjson.Name: {projectassetsjson.New},
+		dotnettoolsjson.Name:   {dotnettoolsjson.New},
 	}
 	// DotnetArtifact extractors for Dotnet (.NET).
 	DotnetArtifact = InitMap{

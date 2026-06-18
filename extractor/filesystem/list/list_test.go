@@ -55,6 +55,11 @@ func TestExtractorsFromName(t *testing.T) {
 			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
+			desc:     "Find_all_dotnet_extractors",
+			name:     "dotnet",
+			wantExts: []string{"dotnet/csproj", "dotnet/depsjson", "dotnet/dotnettoolsjson", "dotnet/nugetcpm", "dotnet/packagesconfig", "dotnet/packageslockjson", "dotnet/paketdependencies", "dotnet/paketlock", "dotnet/pe", "dotnet/projectassetsjson"},
+		},
+		{
 			desc:     "Nonexistent_plugin",
 			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,
