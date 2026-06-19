@@ -226,7 +226,7 @@ func TestDetectorMaxSecretLen(t *testing.T) {
 func ibanFinding(raw []byte) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
-			Name:        "International Bank Account Number",
+			Name:        "INTERNATIONAL_BANK_ACCOUNT_NUMBER",
 			Sensitivity: sensitiveinformation.SensitivityLevelLow,
 		},
 		Likelihood: sensitiveinformation.LikelihoodVeryLikely,
