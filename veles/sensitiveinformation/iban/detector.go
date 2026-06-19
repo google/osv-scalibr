@@ -117,7 +117,7 @@ func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen: maxSecretLength,
 		Re:     ibanRe,
-		FromMatch: func(b []byte) (sensitiveinformation.SensitiveInformation, bool) {
+		FromMatch: func(b []byte, _ bool) (sensitiveinformation.SensitiveInformation, bool) {
 			if !validIBAN(string(b)) {
 				return sensitiveinformation.SensitiveInformation{}, false
 			}
