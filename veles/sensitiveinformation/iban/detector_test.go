@@ -16,6 +16,7 @@ package iban
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -90,6 +91,28 @@ func TestDetect_truePositives(t *testing.T) {
 				ibanFinding([]byte("PL10 1090 1753 0000 0001 5913 2875")),
 			},
 		},
+		{
+			name: "multiple_matches_long_gap",
+			in:   []byte("GB44BARC20030571118742" + strings.Repeat(" ", 50000) + "FR76 3000 6000 0112 3456 7890 189"),
+			want: []veles.Secret{
+				ibanFinding([]byte("GB44BARC20030571118742")),
+				ibanFinding([]byte("FR76 3000 6000 0112 3456 7890 189")),
+			},
+		},
+		{
+			name: "minimum_length_country",
+			in:   []byte("NO66 8601 1117 948"),
+			want: []veles.Secret{
+				ibanFinding([]byte("NO66 8601 1117 948")),
+			},
+		},
+		{
+			name: "maximum_length_country",
+			in:   []byte("RU13 0445 2599 9000 0000 0000 0000 0000 0"),
+			want: []veles.Secret{
+				ibanFinding([]byte("RU13 0445 2599 9000 0000 0000 0000 0000 0")),
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -128,12 +151,48 @@ func TestDetect_trueNegatives(t *testing.T) {
 			in:   []byte("GB44BARC200305711187421"),
 		},
 		{
+			name: "compact_too_short",
+			in:   []byte("NO938601111794"),
+		},
+		{
+			name: "compact_too_long",
+			in:   []byte("RU13044525999000000000000000000000"),
+		},
+		{
 			name: "unknown_country",
 			in:   []byte("ZZ64BARC20030571118742"),
 		},
 		{
+			name: "missing_country_code",
+			in:   []byte("44124045331111000054282421"),
+		},
+		{
+			name: "missing_check_digits",
+			in:   []byte("PLAA124045331111000054282421"),
+		},
+		{
+			name: "hyphenated",
+			in:   []byte("GB44-BARC-2003-0571-1187-42"),
+		},
+		{
+			name: "mixed_separator_groups",
+			in:   []byte("GB44 BARC2003 0571 1187 42"),
+		},
+		{
+			name: "short_middle_group",
+			in:   []byte("PL21 1240 453 1111 0000 5428 2421"),
+		},
+		{
+			name: "long_final_group",
+			in:   []byte("PL21 1240 4533 1111 0000 5428 24210"),
+		},
+		{
 			name: "within_longer_string",
 			in:   []byte("asdfGB44BARC20030571118742asdf"),
+		},
+		{
+			name: "spaced_within_longer_string",
+			in:   []byte("asdf PL21 1240 4533 1111 0000 5428 2421asdf"),
 		},
 		{
 			name: "common_example_gb",
