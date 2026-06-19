@@ -215,6 +215,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP Bearer                                 | `secrets/httpbearer`                   |
 | HTTP CSRF Token                             | `secrets/csrftoken`                    |
 
+### Sensitive information
+| Type                                        | Extractor Plugin                     |
+| ------------------------------------------- | ------------------------------------ |
+| US Social Security Number                   | `sensitiveinformation/ssn`             |
+
 ### Container inventory
 
 | Type                            | Extractor Plugin                                                                   |
