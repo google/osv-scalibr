@@ -1,0 +1,3 @@
+# This is a comment
+# Another comment
+github "Alamofire/Alamofire" ~> 5.4 # inline comment
