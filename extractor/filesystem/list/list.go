@@ -66,6 +66,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/projecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimblelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
@@ -258,7 +259,7 @@ var (
 	// GleamSource extractors for Gleam.
 	GleamSource = InitMap{gleamtoml.Name: {gleamtoml.New}}
 	// NimSource extractors for Nim.
-	NimSource = InitMap{nimble.Name: {nimble.New}}
+	NimSource = InitMap{nimble.Name: {nimble.New}, nimblelock.Name: {nimblelock.New}}
 	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
 	// OcamlSource extractors for OCaml.
