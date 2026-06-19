@@ -60,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/vsix"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/manifesttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/projecttoml"
@@ -224,6 +225,7 @@ var (
 	JavascriptArtifact = InitMap{
 		packagejson.Name: {packagejson.New},
 		denojson.Name:    {denojson.New},
+		vsix.Name:        {vsix.New},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
