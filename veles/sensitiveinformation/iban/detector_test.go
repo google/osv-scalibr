@@ -113,6 +113,57 @@ func TestDetect_truePositives(t *testing.T) {
 				ibanFinding([]byte("RU13 0445 2599 9000 0000 0000 0000 0000 0")),
 			},
 		},
+		// Countries that do not use the standard blocks-of-four print format.
+		// https://en.wikipedia.org/wiki/International_Bank_Account_Number#Practical_example
+		{
+			name: "egypt_compact",
+			in:   []byte("EG380019000500000000263180002"),
+			want: []veles.Secret{
+				ibanFinding([]byte("EG380019000500000000263180002")),
+			},
+		},
+		{
+			name: "burundi_compact",
+			in:   []byte("BI4210000100010000332045181"),
+			want: []veles.Secret{
+				ibanFinding([]byte("BI4210000100010000332045181")),
+			},
+		},
+		{
+			name: "burundi_spaced", // 4 5 5 11 2
+			in:   []byte("BI42 10000 10001 00003320451 81"),
+			want: []veles.Secret{
+				ibanFinding([]byte("BI42 10000 10001 00003320451 81")),
+			},
+		},
+		{
+			name: "libya_compact",
+			in:   []byte("LY83002048000020100120361"),
+			want: []veles.Secret{
+				ibanFinding([]byte("LY83002048000020100120361")),
+			},
+		},
+		{
+			name: "libya_spaced", // 4 3 3 15
+			in:   []byte("LY83 002 048 000020100120361"),
+			want: []veles.Secret{
+				ibanFinding([]byte("LY83 002 048 000020100120361")),
+			},
+		},
+		{
+			name: "el_salvador_compact",
+			in:   []byte("SV62CENR00000000000000700025"),
+			want: []veles.Secret{
+				ibanFinding([]byte("SV62CENR00000000000000700025")),
+			},
+		},
+		{
+			name: "el_salvador_spaced", // 2 2 4 20
+			in:   []byte("SV 62 CENR 00000000000000700025"),
+			want: []veles.Secret{
+				ibanFinding([]byte("SV 62 CENR 00000000000000700025")),
+			},
+		},
 	}
 
 	for _, tc := range cases {
