@@ -141,11 +141,11 @@ func NewDetector() veles.Detector {
 
 func validIBAN(s string) bool {
 	iban := strings.ToUpper(strings.ReplaceAll(s, " ", ""))
-	if _, ok := commonExamples[iban]; ok {
+	if want, ok := countryLengths[iban[:2]]; !ok || len(iban) != want {
 		return false
 	}
 
-	if want, ok := countryLengths[iban[:2]]; !ok || len(iban) != want {
+	if _, ok := commonExamples[iban]; ok {
 		return false
 	}
 
