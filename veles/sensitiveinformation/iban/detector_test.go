@@ -227,7 +227,7 @@ func ibanFinding(raw []byte) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
 			Name:        "INTERNATIONAL_BANK_ACCOUNT_NUMBER",
-			Sensitivity: sensitiveinformation.SensitivityLevelLow,
+			Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 		},
 		Likelihood: sensitiveinformation.LikelihoodVeryLikely,
 		Raw:        raw,

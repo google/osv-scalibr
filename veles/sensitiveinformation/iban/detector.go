@@ -125,7 +125,7 @@ func NewDetector() veles.Detector {
 			finding := sensitiveinformation.SensitiveInformation{
 				InfoType: sensitiveinformation.InfoType{
 					Name:        "INTERNATIONAL_BANK_ACCOUNT_NUMBER",
-					Sensitivity: sensitiveinformation.SensitivityLevelLow,
+					Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 				},
 				Likelihood: sensitiveinformation.LikelihoodVeryLikely,
 				Raw:        bytes.Clone(b),
