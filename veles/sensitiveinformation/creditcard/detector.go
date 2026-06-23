@@ -29,7 +29,19 @@ const maxSecretLength = 23
 const contextWindowSize = 32
 
 var creditCardRe = regexp.MustCompile(`\b(?:\d{12,19}|\d{4}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,3})?|\d{4}[ -]\d{6}[ -]\d{5})\b`)
-var keywordsRe = regexp.MustCompile(`(?i)(credit[ -]?card|cvv|cvc|cvv2|cvc2|card[ -]?holder|visa|master[ -]?card)`)
+
+var keywordsRe = simpleregex.KeywordsRe([]string{
+	`\bcreditcard\b`,
+	`\bcredit\b`,
+	`\bcard\b`,
+	`\bcvc\b`,
+	`\bcvv\b`,
+	`\bcvv2\b`,
+	`\bvisa\b`,
+	`\bmaster\b`,
+	`\bmastercard\b`,
+	`\bcardholder\b`,
+})
 
 var commonExamples = map[string]struct{}{
 	"4111111111111111": {},
