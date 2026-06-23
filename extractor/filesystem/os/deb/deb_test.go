@@ -154,14 +154,14 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
-			name:      "packages with no version set are skipped",
-			path:      "testdata/noversion.deb",
+			name:         "packages with no version set are skipped",
+			path:         "testdata/noversion.deb",
 			wantPackages: nil,
 			wantErr:      cmpopts.AnyError,
 		},
 		{
-			name:      "packages with no name set are skipped",
-			path:      "testdata/noname.deb",
+			name:         "packages with no name set are skipped",
+			path:         "testdata/noname.deb",
 			wantPackages: nil,
 			wantErr:      cmpopts.AnyError,
 		},

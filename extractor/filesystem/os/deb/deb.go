@@ -121,7 +121,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts a package from a deb file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	pkg, err := e.extractFromInput(ctx, input)
+	pkg, err := e.extractFromInput(input)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("%s failed: %w", Name, err)
 	}
@@ -139,7 +139,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: []*extractor.Package{pkg}}, err
 }
 
-func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) (*extractor.Package, error) {
+func (e Extractor) extractFromInput(input *filesystem.ScanInput) (*extractor.Package, error) {
 	// Extract the deb to a temporary directory
 	tempDir, err := common.ARToTempDir(input.Reader, e.maxFileSizeBytes)
 	if err != nil {
@@ -227,7 +227,7 @@ func getPackageFromControlFile(tempDir string, input *filesystem.ScanInput) (*ex
 	h, err := rd.ReadMIMEHeader()
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
-			return nil, fmt.Errorf("Failed to read MIME header from control file: %v", err)
+			return nil, fmt.Errorf("Failed to read MIME header from control file: %w", err)
 		}
 	}
 
