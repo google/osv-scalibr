@@ -32,7 +32,7 @@ const (
 	basicB64UserSvcToken = "c3ZjOnRva2Vu"             // svc:token
 )
 
-func TestDetectorAcceptance(t *testing.T) {
+func TestBasicAuthDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		http.NewBasicAuthDetector(),
@@ -41,7 +41,7 @@ func TestDetectorAcceptance(t *testing.T) {
 	)
 }
 
-func TestDetector_truePositives(t *testing.T) {
+func TestBasicAuthDetector_truePositives(t *testing.T) {
 	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBasicAuthDetector()})
 	if err != nil {
 		t.Fatal(err)
@@ -173,7 +173,7 @@ curl -sS 'https://httpbin.org/get' \
 	}
 }
 
-func TestDetector_trueNegatives(t *testing.T) {
+func TestBasicAuthDetector_trueNegatives(t *testing.T) {
 	e, err := veles.NewDetectionEngine([]veles.Detector{http.NewBasicAuthDetector()})
 	if err != nil {
 		t.Fatal(err)

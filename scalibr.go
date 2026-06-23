@@ -177,6 +177,16 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 	return errors.Join(errs...)
 }
 
+func validateEnricherRequirements(enrichers []enricher.Enricher, capabs *plugin.Capabilities) error {
+	errs := []error{}
+	for _, e := range enrichers {
+		if err := plugin.ValidateRequirements(e, capabs); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // LINT.IfChange
 
 // ScanResult stores the results of a scan incl. scan status and inventory found.
@@ -304,6 +314,11 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
+	if err := validateEnricherRequirements(enrichers, config.Capabilities); err != nil {
+		sro.Err = multierr.Append(sro.Err, err)
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
 		ScanRoot: &scalibrfs.ScanRoot{
@@ -404,6 +419,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	// Run enrichers with the updated inventory.
 	enrichers, err = ce.SetupVelesEnrichers(enrichers)
 	if err != nil {
+		scanResult.Status.Status = plugin.ScanStatusFailed
+		scanResult.Status.FailureReason = err.Error()
+		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+	}
+	if err := validateEnricherRequirements(enrichers, config.Capabilities); err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
 		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.

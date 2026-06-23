@@ -52,6 +52,7 @@ import (
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleverificationmetadataxml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradleversioncatalog"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
@@ -59,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/vsix"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/yarnlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/manifesttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/julia/projecttoml"
@@ -183,6 +185,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/creditcard"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -203,6 +206,7 @@ var (
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
 		gradleverificationmetadataxml.Name: {gradleverificationmetadataxml.New},
+		gradleversioncatalog.Name:          {gradleversioncatalog.New},
 		pomxml.Name:                        {pomxml.New},
 	}
 	// JavaArtifact extractors for Java.
@@ -223,6 +227,7 @@ var (
 	JavascriptArtifact = InitMap{
 		packagejson.Name: {packagejson.New},
 		denojson.Name:    {denojson.New},
+		vsix.Name:        {vsix.New},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
@@ -447,6 +452,12 @@ var (
 		{salesforceoauth2refresh.NewDetector(), "secrets/salesforceoauth2refresh", 0},
 		{discordbottoken.NewDetector(), "secrets/discordbottoken", 0},
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
+		{http.NewBearerDetector(), "secrets/httpbearer", 0},
+		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
+	})
+
+	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
@@ -457,6 +468,7 @@ var (
 	Secrets = concat(
 		SecretDetectors,
 		SecretExtractors,
+		SensitiveInformationDetectors,
 		SensitiveInformationDetectors,
 	)
 

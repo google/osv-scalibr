@@ -32,15 +32,20 @@ import (
 type Detector struct {
 	// The maximum length of the sensitive information.
 	MaxLen uint32
+	MaxLen uint32
 	// Matches on the sensitive information.
+	Re *regexp.Regexp
 	Re *regexp.Regexp
 
 	// Context window size for keywords search before the match.
 	ContextWindowBefore uint32
+	ContextWindowBefore uint32
 	// Context window size for keywords search after the match.
+	ContextWindowAfter uint32
 	ContextWindowAfter uint32
 
 	// KeywordsRe is the regexp of the Keywords. All keywords are case insensitive.
+	KeywordsRe *regexp.Regexp
 	KeywordsRe *regexp.Regexp
 
 	// Returns a sensitiveinformation.SensitiveInformation from a regexp match
@@ -59,11 +64,13 @@ func KeywordsRe(keywords []string) *regexp.Regexp {
 // MaxSecretLen returns the maximum length of the search window.
 func (d Detector) MaxSecretLen() uint32 {
 	return d.MaxLen + d.ContextWindowBefore + d.ContextWindowAfter
+	return d.MaxLen + d.ContextWindowBefore + d.ContextWindowAfter
 }
 
 // Detect finds candidate tokens that match Detector.Re and returns them
 // alongside their starting positions.
 func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) {
+	for _, m := range d.Re.FindAllIndex(data, -1) {
 	for _, m := range d.Re.FindAllIndex(data, -1) {
 		l, r := m[0], m[1]
 		lowerBound := max(0, l-int(d.ContextWindowBefore))
@@ -72,7 +79,14 @@ func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) 
 		// window before or after the match.
 		contextMatch := d.KeywordsRe != nil &&
 			(d.KeywordsRe.Match(data[lowerBound:l]) || d.KeywordsRe.Match(data[r:upperBound]))
+		lowerBound := max(0, l-int(d.ContextWindowBefore))
+		upperBound := min(len(data), r+int(d.ContextWindowAfter))
+		// If KeywordsRe is set, check if the keywords are present in the context
+		// window before or after the match.
+		contextMatch := d.KeywordsRe != nil &&
+			(d.KeywordsRe.Match(data[lowerBound:l]) || d.KeywordsRe.Match(data[r:upperBound]))
 
+		if match, ok := d.FromMatch(data[l:r], contextMatch); ok {
 		if match, ok := d.FromMatch(data[l:r], contextMatch); ok {
 			secrets = append(secrets, match)
 			positions = append(positions, l)
