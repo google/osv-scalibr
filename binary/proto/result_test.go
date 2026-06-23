@@ -92,6 +92,7 @@ func PurlDPKGAnnotationPackage() *extractor.Package {
 			Justification:   vex.ComponentNotPresent,
 			MatchesAllVulns: true,
 		}},
+		ParentIDs: map[string]bool{},
 	}
 }
 
@@ -1660,6 +1661,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			tc.res.Inventory.Secrets = nil
 
 			opts = []cmp.Option{
+				cmpopts.IgnoreFields(extractor.Package{}, "ID"),
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
 				cmpopts.EquateEmpty(),
 				// Ignore legacy location fields.

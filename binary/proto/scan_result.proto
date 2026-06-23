@@ -170,6 +170,9 @@ message Package {
   }
 
   optional ContainerImageMetadataIndexes container_image_metadata_indexes = 57;
+
+  // The ID of the parent package, if this package is a transitive dependency.
+  repeated string parent_ids = 70;
 }
 
 // Paths or source of files related to an extracted package.
@@ -863,6 +866,7 @@ message SecretData {
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
     HTTPBasicAuth http_basic_auth = 89;
     HTTPBearer http_bearer = 90;
+    HTTPCSRFToken http_csrf_token = 91;
   }
 
   message GCPSAK {
@@ -1307,6 +1311,10 @@ message SecretData {
   }
 
   message HTTPBearer {
+    string value = 1;
+  }
+
+  message HTTPCSRFToken {
     string value = 1;
   }
 

@@ -842,6 +842,17 @@ func TestGetScanConfig_PluginGroups(t *testing.T) {
 			},
 		},
 		{
+			desc: "offline_filters_veles_validators",
+			flags: &cli.Flags{
+				PluginsToRun:         []string{"secrets/urlcredsvalidate"},
+				Offline:              true,
+				FilterByCapabilities: true,
+			},
+			dontWantPlugins: []string{
+				"secrets/urlcredsvalidate",
+			},
+		},
+		{
 			desc: "default_plugins",
 			flags: &cli.Flags{
 				PluginsToRun: []string{"default"},

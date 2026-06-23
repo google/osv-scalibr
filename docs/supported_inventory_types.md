@@ -92,6 +92,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
+|            | VS Code extension                                 | `javascript/vsix`                    |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -212,6 +213,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Discord Bot Token                           | `secrets/discordbottoken`              |
 | HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
 | HTTP Bearer                                 | `secrets/httpbearer`                   |
+| HTTP CSRF Token                             | `secrets/csrftoken`                    |
+
+### Sensitive information
+| Type                                        | Extractor Plugin                     |
+| ------------------------------------------- | ------------------------------------ |
+| US Social Security Number                   | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 

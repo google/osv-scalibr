@@ -16,6 +16,8 @@
 package extractor
 
 import (
+	"fmt"
+
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
@@ -49,6 +51,10 @@ type Package struct {
 	// In cases when the exact name type used is important (e.g. when matching
 	// against vuln feeds) you should use the specific name field from the Metadata.
 	Name string
+	// Unique identifier of the package.
+	ID string
+	// Parent package IDs for transitive dependencies.
+	ParentIDs map[string]bool
 	// The version of this package.
 	Version string
 	// Source code level package identifiers.
@@ -110,6 +116,25 @@ func LocationFromPathAndLine(path string, line int) PackageLocation {
 			},
 		},
 	}
+}
+
+// RequireID generates an ID for the package if it is empty and returns the ID.
+func (p *Package) RequireID(idGenerator IDGenerator) (string, error) {
+	id, err := p.GetIDOrGenerate(idGenerator)
+	p.ID = id
+	return p.ID, err
+}
+
+// GetIDOrGenerate returns the ID of the package or a generated ID if it is empty.
+func (p *Package) GetIDOrGenerate(idGenerator IDGenerator) (string, error) {
+	if p.ID != "" {
+		return p.ID, nil
+	}
+	id, err := idGenerator.GenerateID(p.Name)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate UUID for %q package %q version %q: %w", p.Ecosystem().String(), p.Name, p.Version, err)
+	}
+	return id, nil
 }
 
 // PURL returns the Package URL of this package.

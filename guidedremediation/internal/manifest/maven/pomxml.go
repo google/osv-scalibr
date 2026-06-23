@@ -208,6 +208,7 @@ func (r readWriter) SupportedStrategies() []strategy.Strategy {
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
 	ctx := context.Background()
 	path = filepath.ToSlash(path)
+	mavenutil.DiscoverModules(&scalibrfs.ScanRoot{FS: fsys, Path: ""}, []string{path}, r.MavenRegistryAPIClient)
 	f, err := fsys.Open(path)
 	if err != nil {
 		return nil, err
