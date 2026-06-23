@@ -45,7 +45,7 @@ type Detector struct {
 
 	// Returns a sensitiveinformation.SensitiveInformation from a regexp match
 	// result.
-	FromMatch func([]byte, bool) (sensitiveinformation.SensitiveInformation, bool)
+	FromMatch func(blob []byte, keywordMatch bool) (sensitiveinformation.SensitiveInformation, bool)
 }
 
 // KeywordsRe returns a regexp of the keywords. All keywords are case insensitive.
