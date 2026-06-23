@@ -166,6 +166,13 @@ func validIBAN(s string) bool {
 	}
 
 	// https://en.wikipedia.org/wiki/International_Bank_Account_Number#Validating_the_IBAN
+	//
+	// Opposed to the example described in the Wiki, the algorithm takes 1-digit chunks instead
+	// of nine. In the case of letter parts of the IBAN, 2-digits chunks are taken, as letters
+	// map to two decimal digits (A=10..Z=35).
+	//
+	// The length of chunks is arbitrary thanks to the properties of modal arithmetics:
+	// (a⋅10+b) mod 97=((a mod 97)⋅10+b) mod 97
 	rearranged := iban[4:] + iban[:4]
 	mod := 0
 	for _, r := range rearranged {
