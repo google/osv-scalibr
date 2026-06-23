@@ -457,11 +457,8 @@ var (
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
-		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
-	})
-
-	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{creditcard.NewDetector(), "sensitiveinformation/creditcard", 0},
+		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
