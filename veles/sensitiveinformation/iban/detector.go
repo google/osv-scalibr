@@ -37,9 +37,9 @@ var ibanRe = regexp.MustCompile(strings.Join([]string{
 	// Compact (no spaces, also covers Egypt) or the standard blocks of four.
 	`[A-Z]{2}\d{2}(?:[A-Z0-9]{11,30}|(?: [A-Z0-9]{4}){2,7}(?: [A-Z0-9]{1,3})?)`,
 	// Burundi: 4 5 5 11 2
-	`|BI\d{2}(?: [A-Z0-9]{5}){2} [A-Z0-9]{11} [A-Z0-9]{2}`,
+	`|BI\d{2} [A-Z0-9]{5} [A-Z0-9]{5} [A-Z0-9]{11} [A-Z0-9]{2}`,
 	// Libya: 4 3 3 15
-	`|LY\d{2}(?: [A-Z0-9]{3}){2} [A-Z0-9]{15}`,
+	`|LY\d{2} [A-Z0-9]{3} [A-Z0-9]{3} [A-Z0-9]{15}`,
 	// El Salvador: 2 2 4 20 (note the space between country code and check digits)
 	`|SV \d{2} [A-Z0-9]{4} [A-Z0-9]{20}`,
 	`)\b`,
