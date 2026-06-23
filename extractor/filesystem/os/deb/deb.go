@@ -227,7 +227,7 @@ func getPackageFromControlFile(tempDir string, input *filesystem.ScanInput) (*ex
 	h, err := rd.ReadMIMEHeader()
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
-			return nil, fmt.Errorf("Failed to read MIME header from control file: %w", err)
+			return nil, fmt.Errorf("failed to read MIME header from control file: %w", err)
 		}
 	}
 
