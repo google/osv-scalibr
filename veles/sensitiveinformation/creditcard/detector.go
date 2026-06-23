@@ -112,6 +112,7 @@ func validCreditCardNumber(b []byte) bool {
 	}
 
 	// Luhn check
+	// https://en.wikipedia.org/wiki/Luhn_algorithm#Pseudocode_implementation
 	sum := 0
 	double := false
 	for i := len(digits) - 1; i >= 0; i-- {
@@ -143,6 +144,7 @@ func normalizedDigits(b []byte) string {
 	return string(digits)
 }
 
+// http://en.wikipedia.org/wiki/Payment_card_number#Issuer_identification_number_(IIN)
 func hasCommonIssuerAndLength(digits string) bool {
 	length := len(digits)
 	return (prefixInRange(digits, 4, 4) && (length == 13 || length == 16 || length == 19)) ||
