@@ -466,7 +466,6 @@ var (
 		SecretDetectors,
 		SecretExtractors,
 		SensitiveInformationDetectors,
-		SensitiveInformationDetectors,
 	)
 
 	// Misc artifact extractors.
