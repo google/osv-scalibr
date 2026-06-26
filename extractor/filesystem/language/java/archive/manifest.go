@@ -47,20 +47,9 @@ func (mf manifest) valid() bool {
 }
 
 func parseManifest(f *zip.File) (manifest, error) {
-	file, err := f.Open()
+	h, err := parseManifestHeader(f)
 	if err != nil {
-		return manifest{}, fmt.Errorf("failed to open file %q: %w", f.Name, err)
-	}
-	defer file.Close()
-
-	log.Debugf("Parsing manifest file %s\n", f.Name)
-
-	rd := textproto.NewReader(bufio.NewReader(NewOmitEmptyLinesReader(file)))
-	h, err := rd.ReadMIMEHeader()
-	// MIME header require \n\n in the end, while MANIFEST.mf might not have this. Headers before are
-	// parsed correctly anyway, so skip the error and continue.
-	if err != nil && !errors.Is(err, io.EOF) {
-		return manifest{}, fmt.Errorf("failed to read MIME header: %w", err)
+		return manifest{}, err
 	}
 
 	artifactID := getArtifactID(h)
@@ -75,6 +64,34 @@ func parseManifest(f *zip.File) (manifest, error) {
 		ArtifactID: artifactID,
 		Version:    getVersion(h),
 	}, nil
+}
+
+func parseJenkinsPluginManifest(f *zip.File) (string, string, error) {
+	h, err := parseManifestHeader(f)
+	if err != nil {
+		return "", "", err
+	}
+	return h.Get("Short-Name"), h.Get("Plugin-Version"), nil
+}
+
+func parseManifestHeader(f *zip.File) (textproto.MIMEHeader, error) {
+	file, err := f.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %q: %w", f.Name, err)
+	}
+	defer file.Close()
+
+	log.Debugf("Parsing manifest file %s\n", f.Name)
+
+	rd := textproto.NewReader(bufio.NewReader(NewOmitEmptyLinesReader(file)))
+	h, err := rd.ReadMIMEHeader()
+	// MIME header require \n\n in the end, while MANIFEST.mf might not have this. Headers before are
+	// parsed correctly anyway, so skip the error and continue.
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("failed to read MIME header: %w", err)
+	}
+
+	return h, nil
 }
 
 var (
