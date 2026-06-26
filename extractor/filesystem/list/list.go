@@ -108,6 +108,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/pacman"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/portage"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/rpmfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/snap"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/spack"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget"
@@ -355,6 +356,7 @@ var (
 		winget.Name:     {winget.New},
 		chocolatey.Name: {chocolatey.New},
 		chisel.Name:     {chisel.New},
+		rpmfile.Name:    {rpmfile.New},
 	}
 
 	// SecretExtractors for Extractor interface.

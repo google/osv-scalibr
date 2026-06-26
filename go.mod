@@ -16,6 +16,7 @@ require (
 	github.com/aead/serpent v0.0.0-20160714141033-fba169763ea6
 	github.com/bazelbuild/buildtools v0.0.0-20260319080235-05d2ebe49b0f
 	github.com/canonical/chisel-manifest v1.2.0
+	github.com/cavaliergopher/rpm v1.3.0
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
