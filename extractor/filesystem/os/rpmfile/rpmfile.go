@@ -91,7 +91,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return true
 }
 
-// Extract extracts packages from rpm binary files passed through the scan input.
+// Extract extracts packages from rpm package files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	rpmPkg, err := rpm.Read(input.Reader)
 	if err != nil {
