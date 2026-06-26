@@ -73,7 +73,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
-// FileRequired returns true if the specified file matches rpm status file pattern.
+// FileRequired returns true if the specified file is an rpm package file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 
