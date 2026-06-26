@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -97,14 +96,27 @@ func urlToPath(rawURL string) string {
 		log.Warnf("Error parsing URL %s: %s", rawURL, err)
 		return ""
 	}
-	return path.Join(parsedURL.Hostname(), parsedURL.Path)
+	host := parsedURL.Hostname()
+	if host == "" {
+		log.Warnf("Error parsing URL %s: missing hostname", rawURL)
+		return ""
+	}
+	urlPath := strings.Trim(parsedURL.Path, "/")
+	if urlPath == "" {
+		return host
+	}
+	return host + "/" + urlPath
 }
 
 func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool) ([]byte, error) {
 	file := ""
 	urlPath := urlToPath(url)
 	if urlPath != "" && p.localRegistry != "" {
-		file = filepath.Join(p.localRegistry, urlPath)
+		var err error
+		file, err = localRegistryPath("PyPI", p.localRegistry, []string{urlPath})
+		if err != nil {
+			return nil, err
+		}
 		if content, err := os.ReadFile(file); err == nil {
 			// We can still fetch the file from upstream if error is not nil.
 			return content, nil
