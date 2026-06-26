@@ -342,8 +342,16 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			// TODO: b/406760694 - Remove this once the bug is fixed.
 
 		case tar.TypeLink, tar.TypeSymlink:
-			parent := filepath.Dir(fullPath)
-			if err := os.MkdirAll(parent, fs.ModePerm); err != nil {
+			// Create the parent directory of the link through the os.Root API so the
+			// location stays confined to the extraction root. The previous raw
+			// os.MkdirAll allowed a link entry whose name contained "../" to create
+			// directories outside the root (b/412444199).
+			parent := path.Dir(cleanPath)
+			if err := root.MkdirAll(parent, fs.ModePerm); err != nil {
+				if strings.Contains(err.Error(), "path escapes from parent") {
+					log.Warnf("path escapes from parent, potential path traversal attack detected: %q: %v", fullPath, err)
+					continue
+				}
 				log.Errorf("failed to create directory %q: %v", parent, err)
 				if symlinkErrStrategy == SymlinkErrReturn {
 					return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
@@ -369,8 +377,15 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			}
 
 			if symlinkResolution == SymlinkRetain {
-				// TODO: b/412444199 - Use the os.Root API to create symlinks when root.Symlink is available.
-				if err := os.Symlink(targetPath, fullPath); err != nil {
+				// Create the symlink through the os.Root API (resolves b/412444199) so the
+				// link location is confined to the root. Previously os.Symlink was called
+				// with the unconfined fullPath, letting a "../" entry name place the
+				// symlink outside the extraction root.
+				if err := root.Symlink(targetPath, cleanPath); err != nil {
+					if strings.Contains(err.Error(), "path escapes from parent") {
+						log.Warnf("path escapes from parent, potential path traversal attack detected: %q: %v", fullPath, err)
+						continue
+					}
 					log.Errorf("failed to symlink %q to %q: %v", fullPath, targetPath, err)
 					if symlinkErrStrategy == SymlinkErrReturn {
 						return nil, fmt.Errorf("failed to symlink %q to %q: %w", fullPath, targetPath, err)
