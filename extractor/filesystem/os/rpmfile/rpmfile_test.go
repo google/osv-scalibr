@@ -17,7 +17,6 @@ package rpmfile_test
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -98,11 +97,8 @@ func TestFileRequired(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("unsupported on windows")
-	}
-
-	f, err := os.Open("testdata/aws-tools-26.0.0-4.fc44.x86_64.rpm")
+	testRPMPath := filepath.FromSlash("testdata/aws-tools-26.0.0-4.fc44.x86_64.rpm")
+	f, err := os.Open(testRPMPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +115,7 @@ func TestExtract(t *testing.T) {
 	}
 
 	got, err := e.Extract(t.Context(), &filesystem.ScanInput{
-		Path:   "testdata/aws-tools-26.0.0-4.fc44.x86_64.rpm",
+		Path:   testRPMPath,
 		Reader: f,
 		Info:   info,
 	})
@@ -135,7 +131,7 @@ func TestExtract(t *testing.T) {
 		Name:     "aws-tools",
 		Version:  "26.0.0-4.fc44",
 		PURLType: purl.TypeRPM,
-		Location: extractor.LocationFromPath("testdata/aws-tools-26.0.0-4.fc44.x86_64.rpm"),
+		Location: extractor.LocationFromPath(testRPMPath),
 		Metadata: &rpmmeta.Metadata{
 			PackageName:  "aws-tools",
 			SourceRPM:    "aws-26.0.0-4.fc44.src.rpm",
