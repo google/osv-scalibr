@@ -1,0 +1,16 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:chalk@^5.3.0": "5.4.1"
+  },
+  "npm": {
+    "chalk@5.4.1": {
+      "integrity": "sha512-zgVZuo2WcZgfUEmsn6eO3kINexW8RAE4maiQ8QNs8CtpPCSyMiYsuRsNQp4hjM-N9BBLlc6jJKqsj/JErkbCQ=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:chalk@^5.3.0"
+    ]
+  }
+}

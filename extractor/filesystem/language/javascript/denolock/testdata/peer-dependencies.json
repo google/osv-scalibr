@@ -1,0 +1,21 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:@babel/core@^7.0.0": "7.26.0",
+    "npm:debug@^4.3.4": "4.3.4"
+  },
+  "npm": {
+    "@babel/core@7.26.0_@babel/preset-env@7.26.0": {
+      "integrity": "sha512-babel-core-integrity"
+    },
+    "debug@4.3.4_supports-color@8.1.1": {
+      "integrity": "sha512-debug-integrity"
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:@babel/core@^7.0.0",
+      "npm:debug@^4.3.4"
+    ]
+  }
+}

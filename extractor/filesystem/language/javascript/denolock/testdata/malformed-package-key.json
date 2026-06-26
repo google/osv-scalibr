@@ -1,0 +1,16 @@
+{
+  "version": "5",
+  "npm": {
+    "chalk@5.4.1": {
+      "integrity": "sha512-zgVZuo2WcZgfUEmsn6eO3kINexW8RAE4maiQ8QNs8CtpPCSyMiYsuRsNQp4hjM-N9BBLlc6jJKqsj/JErkbCQ=="
+    },
+    "no-version": {
+      "integrity": "sha512-deadbeef"
+    }
+  },
+  "jsr": {
+    "@scope-without-slash@1.0.0": {
+      "integrity": "sha512-cafebabe"
+    }
+  }
+}
