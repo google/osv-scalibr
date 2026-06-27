@@ -753,11 +753,15 @@ func TestExtractJenkinsPluginArchive(t *testing.T) {
 	pluginWithDepHPI := filepath.FromSlash("testdata/plugin-with-dep.hpi")
 	duplicatePomHPI := filepath.FromSlash("testdata/duplicate-pom.hpi")
 	nestedJarHPI := filepath.FromSlash("testdata/nested-jenkins-manifest.hpi")
+	nestedHPIInJAR := filepath.FromSlash("testdata/nested-jenkins-plugin.jar")
 
 	depJar := mustZipBytes(t, map[string][]byte{
 		"META-INF/maven/com.example/dep/pom.properties": []byte("groupId=com.example\nartifactId=dep\nversion=1.0.0\n"),
 	})
 	nestedJenkinsJar := mustZipBytes(t, map[string][]byte{
+		"META-INF/MANIFEST.MF": jenkinsManifest("nested-plugin", "1.0"),
+	})
+	nestedJenkinsHPI := mustZipBytes(t, map[string][]byte{
 		"META-INF/MANIFEST.MF": jenkinsManifest("nested-plugin", "1.0"),
 	})
 
@@ -778,6 +782,26 @@ func TestExtractJenkinsPluginArchive(t *testing.T) {
 			},
 		},
 		{
+			name: "hpi without manifest group id falls back to Jenkins plugin group id",
+			path: filepath.FromSlash("testdata/loadninja-no-group-id.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/loadninja-no-group-id.hpi"), "loadninja", "2.2"),
+			},
+		},
+		{
+			name: "hpi with manifest group id uses manifest group id",
+			path: filepath.FromSlash("testdata/loadninja-group-id.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifestWithGroupID("loadninja", "2.2", "io.jenkins.plugins"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackageWithGroupID(filepath.FromSlash("testdata/loadninja-group-id.hpi"), "io.jenkins.plugins", "loadninja", "2.2"),
+			},
+		},
+		{
 			name: "valid jpi emits Jenkins plugin Maven package",
 			path: loadninjaJPI,
 			entries: map[string][]byte{
@@ -785,6 +809,26 @@ func TestExtractJenkinsPluginArchive(t *testing.T) {
 			},
 			want: []*extractor.Package{
 				jenkinsPackage(loadninjaJPI, "loadninja-jpi", "2.3"),
+			},
+		},
+		{
+			name: "plugin version whitespace is trimmed and snapshot suffix is preserved",
+			path: filepath.FromSlash("testdata/loadninja-snapshot.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", " 2.2-SNAPSHOT\t"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/loadninja-snapshot.hpi"), "loadninja", "2.2-SNAPSHOT"),
+			},
+		},
+		{
+			name: "Jenkins plugin version suffix is preserved",
+			path: filepath.FromSlash("testdata/loadninja-jenkins-version.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2.1.jenkins3"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/loadninja-jenkins-version.hpi"), "loadninja", "2.2.1.jenkins3"),
 			},
 		},
 		{
@@ -816,6 +860,14 @@ func TestExtractJenkinsPluginArchive(t *testing.T) {
 			path: nestedJarHPI,
 			entries: map[string][]byte{
 				"WEB-INF/lib/nested-plugin.jar": nestedJenkinsJar,
+			},
+			want: []*extractor.Package{},
+		},
+		{
+			name: "nested hpi with Jenkins manifest fields is not treated as top-level Jenkins plugin",
+			path: nestedHPIInJAR,
+			entries: map[string][]byte{
+				"WEB-INF/plugins/nested-plugin.hpi": nestedJenkinsHPI,
 			},
 			want: []*extractor.Package{},
 		},
@@ -1028,9 +1080,16 @@ func mustZipBytes(t *testing.T, entries map[string][]byte) []byte {
 }
 
 func jenkinsManifest(shortName, version string) []byte {
+	return jenkinsManifestWithGroupID(shortName, version, "")
+}
+
+func jenkinsManifestWithGroupID(shortName, version, groupID string) []byte {
 	lines := []string{
 		"Manifest-Version: 1.0",
 		"Created-By: Maven Archiver 3.5.2",
+	}
+	if groupID != "" {
+		lines = append(lines, "Group-Id: "+groupID)
 	}
 	if shortName != "" {
 		lines = append(lines, "Short-Name: "+shortName)
@@ -1042,13 +1101,17 @@ func jenkinsManifest(shortName, version string) []byte {
 }
 
 func jenkinsPackage(path, shortName, version string) *extractor.Package {
+	return jenkinsPackageWithGroupID(path, "org.jenkins-ci.plugins", shortName, version)
+}
+
+func jenkinsPackageWithGroupID(path, groupID, shortName, version string) *extractor.Package {
 	return &extractor.Package{
-		Name:     "org.jenkins-ci.plugins:" + shortName,
+		Name:     groupID + ":" + shortName,
 		Version:  version,
 		PURLType: purl.TypeMaven,
 		Metadata: &archivemeta.Metadata{
 			ArtifactID: shortName,
-			GroupID:    "org.jenkins-ci.plugins",
+			GroupID:    groupID,
 		},
 		Location: extractor.PackageLocation{
 			Descriptor: &location.Location{File: &location.File{

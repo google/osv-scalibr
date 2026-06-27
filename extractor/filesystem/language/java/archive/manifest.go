@@ -41,6 +41,12 @@ type manifest struct {
 	Version    string
 }
 
+type jenkinsPluginManifest struct {
+	GroupID   string
+	ShortName string
+	Version   string
+}
+
 // valid returns true if mf is a valid manifest property.
 func (mf manifest) valid() bool {
 	return mf.GroupID != "" && mf.ArtifactID != "" && mf.Version != ""
@@ -66,12 +72,16 @@ func parseManifest(f *zip.File) (manifest, error) {
 	}, nil
 }
 
-func parseJenkinsPluginManifest(f *zip.File) (string, string, error) {
+func parseJenkinsPluginManifest(f *zip.File) (jenkinsPluginManifest, error) {
 	h, err := parseManifestHeader(f)
 	if err != nil {
-		return "", "", err
+		return jenkinsPluginManifest{}, err
 	}
-	return h.Get("Short-Name"), h.Get("Plugin-Version"), nil
+	return jenkinsPluginManifest{
+		GroupID:   getJenkinsPluginGroupID(h),
+		ShortName: strings.TrimSpace(h.Get("Short-Name")),
+		Version:   strings.TrimSpace(h.Get("Plugin-Version")),
+	}, nil
 }
 
 func parseManifestHeader(f *zip.File) (textproto.MIMEHeader, error) {
@@ -92,6 +102,14 @@ func parseManifestHeader(f *zip.File) (textproto.MIMEHeader, error) {
 	}
 
 	return h, nil
+}
+
+func getJenkinsPluginGroupID(h textproto.MIMEHeader) string {
+	groupID := strings.TrimSpace(h.Get("Group-Id"))
+	if validGroupID(groupID) {
+		return strings.ToLower(groupID)
+	}
+	return ""
 }
 
 var (

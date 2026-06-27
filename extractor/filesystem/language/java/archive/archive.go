@@ -292,22 +292,29 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				errs = append(errs, err)
 				continue
 			}
+			// Identify the scanned Jenkins plugin archive itself. Nested archives are still
+			// processed by java/archive, but are not treated as top-level Jenkins plugins.
 			if depth == 1 && isJenkinsPluginArchive(input.Path) {
-				shortName, version, err := parseJenkinsPluginManifest(file)
+				jp, err := parseJenkinsPluginManifest(file)
 				if err != nil {
 					log.Errorf("%s failed to extract Jenkins plugin manifest fields at %q: %v", e.Name(), path, err)
 					errs = append(errs, err)
 					continue
 				}
-				if shortName != "" && version != "" {
+				if jp.GroupID == "" {
+					// Jenkins plugin manifests can include Group-Id. When it is absent,
+					// issue #1908 specifies Maven PURLs under org.jenkins-ci.plugins.
+					jp.GroupID = jenkinsPluginGroupID
+				}
+				if jp.ShortName != "" && jp.Version != "" {
 					descriptorLoc := location.FromPath(input.Path)
 					packageJenkinsPlugin = append(packageJenkinsPlugin, &extractor.Package{
-						Name:     fmt.Sprintf("%s:%s", jenkinsPluginGroupID, shortName),
-						Version:  version,
+						Name:     fmt.Sprintf("%s:%s", jp.GroupID, jp.ShortName),
+						Version:  jp.Version,
 						PURLType: purl.TypeMaven,
 						Metadata: &archivemeta.Metadata{
-							ArtifactID: shortName,
-							GroupID:    jenkinsPluginGroupID,
+							ArtifactID: jp.ShortName,
+							GroupID:    jp.GroupID,
 							SHA1:       sha1,
 						},
 						Location: extractor.PackageLocation{
