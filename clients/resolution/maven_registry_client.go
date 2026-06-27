@@ -49,6 +49,11 @@ func NewMavenRegistryClientWithAPI(api *datasource.MavenRegistryAPIClient) *Mave
 	return &MavenRegistryClient{api: api}
 }
 
+// SetUserAgent sets the User-Agent header for the client requests.
+func (c *MavenRegistryClient) SetUserAgent(userAgent string) {
+	c.api.SetUserAgent(userAgent)
+}
+
 // Version returns metadata of a version specified by the VersionKey.
 func (c *MavenRegistryClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
 	g, a, found := strings.Cut(vk.Name, ":")

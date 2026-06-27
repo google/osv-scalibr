@@ -103,6 +103,9 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 		URL:             upstreamRegistry,
 		ReleasesEnabled: true,
 	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
+	if cfg.UserAgent != "" {
+		mavenClient.SetUserAgent(cfg.UserAgent)
+	}
 
 	var depClient resolve.Client
 	var err error
