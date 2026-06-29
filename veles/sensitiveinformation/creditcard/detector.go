@@ -281,10 +281,27 @@ func hasCommonIssuerAndLength(digits string) bool {
 }
 
 func prefixInRange(digits string, lower int, upper int) bool {
-	prefixLen := len(strconv.Itoa(lower))
+	prefixLen := countDigits(lower)
 	if len(digits) < prefixLen {
 		return false
 	}
 	prefix, err := strconv.Atoi(digits[:prefixLen])
 	return err == nil && prefix >= lower && prefix <= upper
+}
+
+func countDigits(n int) int {
+	if n == 0 {
+		return 1
+	}
+	if n < 0 {
+		n = -n
+	}
+
+	d := 0
+	for n > 0 {
+		n /= 10
+		d++
+	}
+
+	return d
 }
