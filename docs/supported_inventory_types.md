@@ -219,6 +219,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Type                                        | Extractor Plugin                     |
 | ------------------------------------------- | ------------------------------------ |
 | Credit card number                          | `sensitiveinformation/creditcard`    |
+| International Bank Account Number           | `sensitiveinformation/iban`            |
 | US Social Security Number                   | `sensitiveinformation/ssn`             |
 
 ### Container inventory
