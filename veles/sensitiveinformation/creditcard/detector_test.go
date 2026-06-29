@@ -16,6 +16,7 @@ package creditcard
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -355,9 +356,54 @@ func TestHasCommonIssuerAndLength(t *testing.T) {
 			want:   true,
 		},
 		{
+			name:   "diners_club_19_digits",
+			digits: "3000000000000000004",
+			want:   true,
+		},
+		{
 			name:   "diners_club_wrong_length",
-			digits: "300000000000000",
+			digits: "3000000000000",
 			want:   false,
+		},
+		{
+			name:   "unionpay_62_prefix",
+			digits: "6200000000000005",
+			want:   true,
+		},
+		{
+			name:   "t_union_31_prefix_19_digits",
+			digits: "3100000000000000008",
+			want:   true,
+		},
+		{
+			name:   "maestro_12_digits",
+			digits: "501800000003",
+			want:   true,
+		},
+		{
+			name:   "mir_2200_to_2204_range",
+			digits: "2200000000000004",
+			want:   true,
+		},
+		{
+			name:   "rupay_81_prefix",
+			digits: "8100000000000007",
+			want:   true,
+		},
+		{
+			name:   "verve_18_digits",
+			digits: "506099000000000004",
+			want:   true,
+		},
+		{
+			name:   "uatp_1_prefix_15_digits",
+			digits: "100000000000008",
+			want:   true,
+		},
+		{
+			name:   "gpn_60_to_63_range",
+			digits: "6300000000000001",
+			want:   true,
 		},
 		{
 			name:   "unknown_issuer",
@@ -377,6 +423,22 @@ func TestHasCommonIssuerAndLength(t *testing.T) {
 				t.Errorf("hasCommonIssuerAndLength(%q) = %t, want %t", tc.digits, got, tc.want)
 			}
 		})
+	}
+}
+
+// TestIssuerRangesWellFormed guards the invariant that prefixInRange relies on:
+// lowIIN and highIIN must have the same number of digits, and lowIIN <= highIIN.
+func TestIssuerRangesWellFormed(t *testing.T) {
+	for _, r := range issuerRanges {
+		if r.lowIIN > r.highIIN {
+			t.Errorf("%s: lowIIN %d > highIIN %d", r.name, r.lowIIN, r.highIIN)
+		}
+		if lo, hi := len(strconv.Itoa(r.lowIIN)), len(strconv.Itoa(r.highIIN)); lo != hi {
+			t.Errorf("%s: lowIIN %d (%d digits) and highIIN %d (%d digits) must have the same number of digits", r.name, r.lowIIN, lo, r.highIIN, hi)
+		}
+		if len(r.lengths) == 0 {
+			t.Errorf("%s: lengths must not be empty", r.name)
+		}
 	}
 }
 

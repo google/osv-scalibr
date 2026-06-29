@@ -18,12 +18,31 @@ package creditcard
 import (
 	"bytes"
 	"regexp"
+	"slices"
 	"strconv"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/common/simpleregex"
 )
+
+// issuerRange describes a single issuer identification number (IIN) prefix
+// range for a payment card network together with the card number lengths that
+// network currently issues.
+//
+// A network can span multiple entries when it owns several disjoint prefix
+// ranges (e.g. Mastercard owns both 51–55 and 2221–2720). The [lowIIN, highIIN]
+// bounds are inclusive and must have the same number of digits, which also
+// defines how many leading digits of a card number are compared.
+type issuerRange struct {
+	name    string
+	lowIIN  int
+	highIIN int
+	// lengths lists every valid card number length for this range. Lengths are
+	// frequently non-contiguous (e.g. Visa is 13, 16, 19), so they are listed
+	// explicitly; lengthRange is a convenience for contiguous spans.
+	lengths []int
+}
 
 const maxSecretLength = 23
 const contextWindowSize = 32
@@ -52,6 +71,70 @@ var commonExamples = map[string]struct{}{
 	"30569309025904":   {},
 	"3530111333300000": {},
 	"3566002020360505": {},
+}
+
+// issuerRanges holds every payment card network currently marked as active in
+// the IIN table at
+// http://en.wikipedia.org/wiki/Payment_card_number#Issuer_identification_number_(IIN)
+//
+// Networks that no longer issue cards (Bankcard, Diners Club enRoute, Laser,
+// NPS Pridnestrovie, Solo, Switch, Visa Electron) are intentionally omitted.
+var issuerRanges = []issuerRange{
+	{name: "American Express", lowIIN: 34, highIIN: 34, lengths: []int{15}},
+	{name: "American Express", lowIIN: 37, highIIN: 37, lengths: []int{15}},
+	{name: "China T-Union", lowIIN: 31, highIIN: 31, lengths: []int{19}},
+	{name: "China UnionPay", lowIIN: 62, highIIN: 62, lengths: lengthRange(16, 19)},
+	{name: "Diners Club International", lowIIN: 30, highIIN: 30, lengths: lengthRange(14, 19)},
+	{name: "Diners Club International", lowIIN: 36, highIIN: 36, lengths: lengthRange(14, 19)},
+	{name: "Diners Club International", lowIIN: 38, highIIN: 39, lengths: lengthRange(14, 19)},
+	{name: "Diners Club US & Canada", lowIIN: 55, highIIN: 55, lengths: []int{16}},
+	{name: "Discover", lowIIN: 6011, highIIN: 6011, lengths: lengthRange(16, 19)},
+	{name: "Discover", lowIIN: 644, highIIN: 649, lengths: lengthRange(16, 19)},
+	{name: "Discover", lowIIN: 65, highIIN: 65, lengths: lengthRange(16, 19)},
+	{name: "Discover", lowIIN: 622126, highIIN: 622925, lengths: lengthRange(16, 19)}, // China UnionPay co-branded
+	{name: "UkrCart", lowIIN: 60400100, highIIN: 60420099, lengths: lengthRange(16, 19)},
+	{name: "RuPay", lowIIN: 60, highIIN: 60, lengths: []int{16}},
+	{name: "RuPay", lowIIN: 65, highIIN: 65, lengths: []int{16}},
+	{name: "RuPay", lowIIN: 81, highIIN: 82, lengths: []int{16}},
+	{name: "RuPay", lowIIN: 508, highIIN: 508, lengths: []int{16}},
+	{name: "RuPay", lowIIN: 353, highIIN: 353, lengths: []int{16}}, // RuPay-JCB co-branded
+	{name: "RuPay", lowIIN: 356, highIIN: 356, lengths: []int{16}}, // RuPay-JCB co-branded
+	{name: "InterPayment", lowIIN: 636, highIIN: 636, lengths: lengthRange(16, 19)},
+	{name: "InstaPayment", lowIIN: 637, highIIN: 639, lengths: []int{16}},
+	{name: "JCB", lowIIN: 3528, highIIN: 3589, lengths: lengthRange(16, 19)},
+	{name: "LankaPay", lowIIN: 357111, highIIN: 357111, lengths: []int{16}}, // JCB co-branded
+	{name: "Maestro UK", lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
+	{name: "Maestro UK", lowIIN: 676770, highIIN: 676770, lengths: lengthRange(12, 19)},
+	{name: "Maestro UK", lowIIN: 676774, highIIN: 676774, lengths: lengthRange(12, 19)},
+	{name: "Maestro", lowIIN: 5018, highIIN: 5018, lengths: lengthRange(12, 19)},
+	{name: "Maestro", lowIIN: 5020, highIIN: 5020, lengths: lengthRange(12, 19)},
+	{name: "Maestro", lowIIN: 5038, highIIN: 5038, lengths: lengthRange(12, 19)},
+	{name: "Maestro", lowIIN: 5893, highIIN: 5893, lengths: lengthRange(12, 19)},
+	{name: "Maestro", lowIIN: 6304, highIIN: 6304, lengths: lengthRange(12, 19)},
+	{name: "Maestro", lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
+	{name: "Maestro", lowIIN: 6761, highIIN: 6763, lengths: lengthRange(12, 19)},
+	{name: "Dankort", lowIIN: 5019, highIIN: 5019, lengths: []int{16}},
+	{name: "Dankort", lowIIN: 4571, highIIN: 4571, lengths: []int{16}}, // Visa co-branded
+	{name: "Mir", lowIIN: 2200, highIIN: 2204, lengths: lengthRange(16, 19)},
+	{name: "BORICA", lowIIN: 2205, highIIN: 2205, lengths: []int{16}},
+	{name: "Mastercard", lowIIN: 51, highIIN: 55, lengths: []int{16}},
+	{name: "Mastercard", lowIIN: 2221, highIIN: 2720, lengths: []int{16}},
+	{name: "Troy", lowIIN: 65, highIIN: 65, lengths: []int{16}}, // Discover co-branded
+	{name: "Troy", lowIIN: 9792, highIIN: 9792, lengths: []int{16}},
+	{name: "Visa", lowIIN: 4, highIIN: 4, lengths: []int{13, 16, 19}},
+	{name: "UATP", lowIIN: 1, highIIN: 1, lengths: []int{15}},
+	{name: "Verve", lowIIN: 506099, highIIN: 506198, lengths: []int{16, 18, 19}},
+	{name: "Verve", lowIIN: 650002, highIIN: 650027, lengths: []int{16, 18, 19}},
+	{name: "Verve", lowIIN: 507865, highIIN: 507964, lengths: []int{16, 18, 19}},
+	{name: "Uzcard", lowIIN: 8600, highIIN: 8600, lengths: []int{16}},
+	{name: "Uzcard", lowIIN: 5614, highIIN: 5614, lengths: []int{16}},
+	{name: "HUMO", lowIIN: 9860, highIIN: 9860, lengths: []int{16}},
+	{name: "GPN", lowIIN: 1946, highIIN: 1946, lengths: []int{16, 18, 19}}, // BNI cards
+	{name: "GPN", lowIIN: 50, highIIN: 50, lengths: []int{16, 18, 19}},
+	{name: "GPN", lowIIN: 56, highIIN: 56, lengths: []int{16, 18, 19}},
+	{name: "GPN", lowIIN: 58, highIIN: 58, lengths: []int{16, 18, 19}},
+	{name: "GPN", lowIIN: 60, highIIN: 63, lengths: []int{16, 18, 19}},
+	{name: "Napas", lowIIN: 9704, highIIN: 9704, lengths: []int{16, 19}},
 }
 
 // NewDetector returns a Detector that finds credit card numbers.
@@ -144,16 +227,32 @@ func normalizedDigits(b []byte) string {
 	return string(digits)
 }
 
-// http://en.wikipedia.org/wiki/Payment_card_number#Issuer_identification_number_(IIN)
+// lengthRange returns the inclusive integer range [lo, hi] as a slice, for
+// declaring contiguous card number lengths such as "16–19".
+//
+// hi is currently always 19, but is kept as a parameter so the call sites read
+// as the "lo–hi" ranges they mirror from the source table.
+//
+//nolint:unparam // hi is intentionally explicit for readability at call sites.
+func lengthRange(lo, hi int) []int {
+	out := make([]int, 0, hi-lo+1)
+	for n := lo; n <= hi; n++ {
+		out = append(out, n)
+	}
+	return out
+}
+
+// hasCommonIssuerAndLength reports whether digits matches the IIN prefix and a
+// valid length of any currently active payment card network. It is used to
+// raise detection confidence when an issuer can be positively identified.
 func hasCommonIssuerAndLength(digits string) bool {
 	length := len(digits)
-	return (prefixInRange(digits, 4, 4) && (length == 13 || length == 16 || length == 19)) ||
-		(prefixInRange(digits, 51, 55) && length == 16) ||
-		(prefixInRange(digits, 2221, 2720) && length == 16) ||
-		((prefixInRange(digits, 34, 34) || prefixInRange(digits, 37, 37)) && length == 15) ||
-		((prefixInRange(digits, 6011, 6011) || prefixInRange(digits, 644, 649) || prefixInRange(digits, 65, 65) || prefixInRange(digits, 622126, 622925)) && (length == 16 || length == 19)) ||
-		(prefixInRange(digits, 3528, 3589) && length >= 16 && length <= 19) ||
-		((prefixInRange(digits, 300, 305) || prefixInRange(digits, 36, 36) || prefixInRange(digits, 38, 39)) && length == 14)
+	for _, r := range issuerRanges {
+		if prefixInRange(digits, r.lowIIN, r.highIIN) && slices.Contains(r.lengths, length) {
+			return true
+		}
+	}
+	return false
 }
 
 func prefixInRange(digits string, lower int, upper int) bool {
