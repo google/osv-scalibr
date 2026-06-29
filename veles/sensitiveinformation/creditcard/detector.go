@@ -35,7 +35,6 @@ import (
 // bounds are inclusive and must have the same number of digits, which also
 // defines how many leading digits of a card number are compared.
 type issuerRange struct {
-	name    string
 	lowIIN  int
 	highIIN int
 	// lengths lists every valid card number length for this range. Lengths are
@@ -80,61 +79,87 @@ var commonExamples = map[string]struct{}{
 // Networks that no longer issue cards (Bankcard, Diners Club enRoute, Laser,
 // NPS Pridnestrovie, Solo, Switch, Visa Electron) are intentionally omitted.
 var issuerRanges = []issuerRange{
-	{name: "American Express", lowIIN: 34, highIIN: 34, lengths: []int{15}},
-	{name: "American Express", lowIIN: 37, highIIN: 37, lengths: []int{15}},
-	{name: "China T-Union", lowIIN: 31, highIIN: 31, lengths: []int{19}},
-	{name: "China UnionPay", lowIIN: 62, highIIN: 62, lengths: lengthRange(16, 19)},
-	{name: "Diners Club International", lowIIN: 30, highIIN: 30, lengths: lengthRange(14, 19)},
-	{name: "Diners Club International", lowIIN: 36, highIIN: 36, lengths: lengthRange(14, 19)},
-	{name: "Diners Club International", lowIIN: 38, highIIN: 39, lengths: lengthRange(14, 19)},
-	{name: "Diners Club US & Canada", lowIIN: 55, highIIN: 55, lengths: []int{16}},
-	{name: "Discover", lowIIN: 6011, highIIN: 6011, lengths: lengthRange(16, 19)},
-	{name: "Discover", lowIIN: 644, highIIN: 649, lengths: lengthRange(16, 19)},
-	{name: "Discover", lowIIN: 65, highIIN: 65, lengths: lengthRange(16, 19)},
-	{name: "Discover", lowIIN: 622126, highIIN: 622925, lengths: lengthRange(16, 19)}, // China UnionPay co-branded
-	{name: "UkrCart", lowIIN: 60400100, highIIN: 60420099, lengths: lengthRange(16, 19)},
-	{name: "RuPay", lowIIN: 60, highIIN: 60, lengths: []int{16}},
-	{name: "RuPay", lowIIN: 65, highIIN: 65, lengths: []int{16}},
-	{name: "RuPay", lowIIN: 81, highIIN: 82, lengths: []int{16}},
-	{name: "RuPay", lowIIN: 508, highIIN: 508, lengths: []int{16}},
-	{name: "RuPay", lowIIN: 353, highIIN: 353, lengths: []int{16}}, // RuPay-JCB co-branded
-	{name: "RuPay", lowIIN: 356, highIIN: 356, lengths: []int{16}}, // RuPay-JCB co-branded
-	{name: "InterPayment", lowIIN: 636, highIIN: 636, lengths: lengthRange(16, 19)},
-	{name: "InstaPayment", lowIIN: 637, highIIN: 639, lengths: []int{16}},
-	{name: "JCB", lowIIN: 3528, highIIN: 3589, lengths: lengthRange(16, 19)},
-	{name: "LankaPay", lowIIN: 357111, highIIN: 357111, lengths: []int{16}}, // JCB co-branded
-	{name: "Maestro UK", lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
-	{name: "Maestro UK", lowIIN: 676770, highIIN: 676770, lengths: lengthRange(12, 19)},
-	{name: "Maestro UK", lowIIN: 676774, highIIN: 676774, lengths: lengthRange(12, 19)},
-	{name: "Maestro", lowIIN: 5018, highIIN: 5018, lengths: lengthRange(12, 19)},
-	{name: "Maestro", lowIIN: 5020, highIIN: 5020, lengths: lengthRange(12, 19)},
-	{name: "Maestro", lowIIN: 5038, highIIN: 5038, lengths: lengthRange(12, 19)},
-	{name: "Maestro", lowIIN: 5893, highIIN: 5893, lengths: lengthRange(12, 19)},
-	{name: "Maestro", lowIIN: 6304, highIIN: 6304, lengths: lengthRange(12, 19)},
-	{name: "Maestro", lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
-	{name: "Maestro", lowIIN: 6761, highIIN: 6763, lengths: lengthRange(12, 19)},
-	{name: "Dankort", lowIIN: 5019, highIIN: 5019, lengths: []int{16}},
-	{name: "Dankort", lowIIN: 4571, highIIN: 4571, lengths: []int{16}}, // Visa co-branded
-	{name: "Mir", lowIIN: 2200, highIIN: 2204, lengths: lengthRange(16, 19)},
-	{name: "BORICA", lowIIN: 2205, highIIN: 2205, lengths: []int{16}},
-	{name: "Mastercard", lowIIN: 51, highIIN: 55, lengths: []int{16}},
-	{name: "Mastercard", lowIIN: 2221, highIIN: 2720, lengths: []int{16}},
-	{name: "Troy", lowIIN: 65, highIIN: 65, lengths: []int{16}}, // Discover co-branded
-	{name: "Troy", lowIIN: 9792, highIIN: 9792, lengths: []int{16}},
-	{name: "Visa", lowIIN: 4, highIIN: 4, lengths: []int{13, 16, 19}},
-	{name: "UATP", lowIIN: 1, highIIN: 1, lengths: []int{15}},
-	{name: "Verve", lowIIN: 506099, highIIN: 506198, lengths: []int{16, 18, 19}},
-	{name: "Verve", lowIIN: 650002, highIIN: 650027, lengths: []int{16, 18, 19}},
-	{name: "Verve", lowIIN: 507865, highIIN: 507964, lengths: []int{16, 18, 19}},
-	{name: "Uzcard", lowIIN: 8600, highIIN: 8600, lengths: []int{16}},
-	{name: "Uzcard", lowIIN: 5614, highIIN: 5614, lengths: []int{16}},
-	{name: "HUMO", lowIIN: 9860, highIIN: 9860, lengths: []int{16}},
-	{name: "GPN", lowIIN: 1946, highIIN: 1946, lengths: []int{16, 18, 19}}, // BNI cards
-	{name: "GPN", lowIIN: 50, highIIN: 50, lengths: []int{16, 18, 19}},
-	{name: "GPN", lowIIN: 56, highIIN: 56, lengths: []int{16, 18, 19}},
-	{name: "GPN", lowIIN: 58, highIIN: 58, lengths: []int{16, 18, 19}},
-	{name: "GPN", lowIIN: 60, highIIN: 63, lengths: []int{16, 18, 19}},
-	{name: "Napas", lowIIN: 9704, highIIN: 9704, lengths: []int{16, 19}},
+	// American Express
+	{lowIIN: 34, highIIN: 34, lengths: []int{15}},
+	{lowIIN: 37, highIIN: 37, lengths: []int{15}},
+	// China T-Union
+	{lowIIN: 31, highIIN: 31, lengths: []int{19}},
+	// China UnionPay
+	{lowIIN: 62, highIIN: 62, lengths: lengthRange(16, 19)},
+	// Diners Club International
+	{lowIIN: 30, highIIN: 30, lengths: lengthRange(14, 19)},
+	{lowIIN: 36, highIIN: 36, lengths: lengthRange(14, 19)},
+	{lowIIN: 38, highIIN: 39, lengths: lengthRange(14, 19)},
+	// Diners Club US & Canada
+	{lowIIN: 55, highIIN: 55, lengths: []int{16}},
+	// Discover
+	{lowIIN: 6011, highIIN: 6011, lengths: lengthRange(16, 19)},
+	{lowIIN: 644, highIIN: 649, lengths: lengthRange(16, 19)},
+	{lowIIN: 65, highIIN: 65, lengths: lengthRange(16, 19)},
+	{lowIIN: 622126, highIIN: 622925, lengths: lengthRange(16, 19)}, // China UnionPay co-branded
+	// UkrCart
+	{lowIIN: 60400100, highIIN: 60420099, lengths: lengthRange(16, 19)},
+	// RuPay
+	{lowIIN: 60, highIIN: 60, lengths: []int{16}},
+	{lowIIN: 65, highIIN: 65, lengths: []int{16}},
+	{lowIIN: 81, highIIN: 82, lengths: []int{16}},
+	{lowIIN: 508, highIIN: 508, lengths: []int{16}},
+	{lowIIN: 353, highIIN: 353, lengths: []int{16}}, // RuPay-JCB co-branded
+	{lowIIN: 356, highIIN: 356, lengths: []int{16}}, // RuPay-JCB co-branded
+	// InterPayment
+	{lowIIN: 636, highIIN: 636, lengths: lengthRange(16, 19)},
+	// InstaPayment
+	{lowIIN: 637, highIIN: 639, lengths: []int{16}},
+	// JCB
+	{lowIIN: 3528, highIIN: 3589, lengths: lengthRange(16, 19)},
+	// LankaPay (JCB co-branded)
+	{lowIIN: 357111, highIIN: 357111, lengths: []int{16}},
+	// Maestro UK
+	{lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
+	{lowIIN: 676770, highIIN: 676770, lengths: lengthRange(12, 19)},
+	{lowIIN: 676774, highIIN: 676774, lengths: lengthRange(12, 19)},
+	// Maestro
+	{lowIIN: 5018, highIIN: 5018, lengths: lengthRange(12, 19)},
+	{lowIIN: 5020, highIIN: 5020, lengths: lengthRange(12, 19)},
+	{lowIIN: 5038, highIIN: 5038, lengths: lengthRange(12, 19)},
+	{lowIIN: 5893, highIIN: 5893, lengths: lengthRange(12, 19)},
+	{lowIIN: 6304, highIIN: 6304, lengths: lengthRange(12, 19)},
+	{lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
+	{lowIIN: 6761, highIIN: 6763, lengths: lengthRange(12, 19)},
+	// Dankort
+	{lowIIN: 5019, highIIN: 5019, lengths: []int{16}},
+	{lowIIN: 4571, highIIN: 4571, lengths: []int{16}}, // Visa co-branded
+	// Mir
+	{lowIIN: 2200, highIIN: 2204, lengths: lengthRange(16, 19)},
+	// BORICA
+	{lowIIN: 2205, highIIN: 2205, lengths: []int{16}},
+	// Mastercard
+	{lowIIN: 51, highIIN: 55, lengths: []int{16}},
+	{lowIIN: 2221, highIIN: 2720, lengths: []int{16}},
+	// Troy
+	{lowIIN: 65, highIIN: 65, lengths: []int{16}}, // Discover co-branded
+	{lowIIN: 9792, highIIN: 9792, lengths: []int{16}},
+	// Visa
+	{lowIIN: 4, highIIN: 4, lengths: []int{13, 16, 19}},
+	// UATP
+	{lowIIN: 1, highIIN: 1, lengths: []int{15}},
+	// Verve
+	{lowIIN: 506099, highIIN: 506198, lengths: []int{16, 18, 19}},
+	{lowIIN: 650002, highIIN: 650027, lengths: []int{16, 18, 19}},
+	{lowIIN: 507865, highIIN: 507964, lengths: []int{16, 18, 19}},
+	// Uzcard
+	{lowIIN: 8600, highIIN: 8600, lengths: []int{16}},
+	{lowIIN: 5614, highIIN: 5614, lengths: []int{16}},
+	// HUMO
+	{lowIIN: 9860, highIIN: 9860, lengths: []int{16}},
+	// GPN
+	{lowIIN: 1946, highIIN: 1946, lengths: []int{16, 18, 19}}, // BNI cards
+	{lowIIN: 50, highIIN: 50, lengths: []int{16, 18, 19}},
+	{lowIIN: 56, highIIN: 56, lengths: []int{16, 18, 19}},
+	{lowIIN: 58, highIIN: 58, lengths: []int{16, 18, 19}},
+	{lowIIN: 60, highIIN: 63, lengths: []int{16, 18, 19}},
+	// Napas
+	{lowIIN: 9704, highIIN: 9704, lengths: []int{16, 19}},
 }
 
 // NewDetector returns a Detector that finds credit card numbers.

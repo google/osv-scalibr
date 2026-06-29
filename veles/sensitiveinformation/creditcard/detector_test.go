@@ -429,15 +429,15 @@ func TestHasCommonIssuerAndLength(t *testing.T) {
 // TestIssuerRangesWellFormed guards the invariant that prefixInRange relies on:
 // lowIIN and highIIN must have the same number of digits, and lowIIN <= highIIN.
 func TestIssuerRangesWellFormed(t *testing.T) {
-	for _, r := range issuerRanges {
+	for i, r := range issuerRanges {
 		if r.lowIIN > r.highIIN {
-			t.Errorf("%s: lowIIN %d > highIIN %d", r.name, r.lowIIN, r.highIIN)
+			t.Errorf("issuerRanges[%d]: lowIIN %d > highIIN %d", i, r.lowIIN, r.highIIN)
 		}
 		if lo, hi := len(strconv.Itoa(r.lowIIN)), len(strconv.Itoa(r.highIIN)); lo != hi {
-			t.Errorf("%s: lowIIN %d (%d digits) and highIIN %d (%d digits) must have the same number of digits", r.name, r.lowIIN, lo, r.highIIN, hi)
+			t.Errorf("issuerRanges[%d]: lowIIN %d (%d digits) and highIIN %d (%d digits) must have the same number of digits", i, r.lowIIN, lo, r.highIIN, hi)
 		}
 		if len(r.lengths) == 0 {
-			t.Errorf("%s: lengths must not be empty", r.name)
+			t.Errorf("issuerRanges[%d]: lengths must not be empty", i)
 		}
 	}
 }
