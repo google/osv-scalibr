@@ -31,12 +31,12 @@ type pattern struct {
 var cookiePatterns = []pattern{
 	{
 		// Quoted key value pairs (Logs, JSON).
-		re:             regexp.MustCompile(`(?i)(?:^|[^\w-])((?:Set-)?Cookie)(?:")?\s*:\s*"((?:[^"\\]|\\.)*)"`),
+		re:             regexp.MustCompile(`(?i)((?:Set-)?Cookie)(?:")?\s*:\s*"((?:[^"\\]|\\.)*)"`),
 		postProcessing: safeUnquote,
 	},
 	{
 		// Unquoted HTTP Headers (HTTP dumps).
-		re:             regexp.MustCompile(`(?im)^(?:[^\w-])?((?:Set-)?Cookie)[ \t]*:[ \t]+([^\r\n]+)`),
+		re:             regexp.MustCompile(`(?im)^((?:Set-)?Cookie)[ \t]*:[ \t]+([^\r\n]+)`),
 		postProcessing: func(s string) string { return s },
 	},
 }
