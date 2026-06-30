@@ -16,7 +16,6 @@ package creditcard
 
 import (
 	"bytes"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -431,10 +430,10 @@ func TestHasCommonIssuerAndLength(t *testing.T) {
 func TestIssuerRangesWellFormed(t *testing.T) {
 	for i, r := range issuerRanges {
 		if r.lowIIN > r.highIIN {
-			t.Errorf("issuerRanges[%d]: lowIIN %d > highIIN %d", i, r.lowIIN, r.highIIN)
+			t.Errorf("issuerRanges[%d]: lowIIN %s > highIIN %s", i, r.lowIIN, r.highIIN)
 		}
-		if lo, hi := len(strconv.Itoa(r.lowIIN)), len(strconv.Itoa(r.highIIN)); lo != hi {
-			t.Errorf("issuerRanges[%d]: lowIIN %d (%d digits) and highIIN %d (%d digits) must have the same number of digits", i, r.lowIIN, lo, r.highIIN, hi)
+		if lo, hi := len(r.lowIIN), len(r.highIIN); lo != hi {
+			t.Errorf("issuerRanges[%d]: lowIIN %s (%d digits) and highIIN %s (%d digits) must have the same number of digits", i, r.lowIIN, lo, r.highIIN, hi)
 		}
 		if len(r.lengths) == 0 {
 			t.Errorf("issuerRanges[%d]: lengths must not be empty", i)

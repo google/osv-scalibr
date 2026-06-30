@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"regexp"
 	"slices"
-	"strconv"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation"
@@ -35,8 +34,8 @@ import (
 // bounds are inclusive and must have the same number of digits, which also
 // defines how many leading digits of a card number are compared.
 type issuerRange struct {
-	lowIIN  int
-	highIIN int
+	lowIIN  string
+	highIIN string
 	// lengths lists every valid card number length for this range. Lengths are
 	// frequently non-contiguous (e.g. Visa is 13, 16, 19), so they are listed
 	// explicitly; lengthRange is a convenience for contiguous spans.
@@ -80,86 +79,86 @@ var commonExamples = map[string]struct{}{
 // NPS Pridnestrovie, Solo, Switch, Visa Electron) are intentionally omitted.
 var issuerRanges = []issuerRange{
 	// American Express
-	{lowIIN: 34, highIIN: 34, lengths: []int{15}},
-	{lowIIN: 37, highIIN: 37, lengths: []int{15}},
+	{lowIIN: "34", highIIN: "34", lengths: []int{15}},
+	{lowIIN: "37", highIIN: "37", lengths: []int{15}},
 	// China T-Union
-	{lowIIN: 31, highIIN: 31, lengths: []int{19}},
+	{lowIIN: "31", highIIN: "31", lengths: []int{19}},
 	// China UnionPay
-	{lowIIN: 62, highIIN: 62, lengths: lengthRange(16, 19)},
+	{lowIIN: "62", highIIN: "62", lengths: lengthRange(16, 19)},
 	// Diners Club International
-	{lowIIN: 30, highIIN: 30, lengths: lengthRange(14, 19)},
-	{lowIIN: 36, highIIN: 36, lengths: lengthRange(14, 19)},
-	{lowIIN: 38, highIIN: 39, lengths: lengthRange(14, 19)},
+	{lowIIN: "30", highIIN: "30", lengths: lengthRange(14, 19)},
+	{lowIIN: "36", highIIN: "36", lengths: lengthRange(14, 19)},
+	{lowIIN: "38", highIIN: "39", lengths: lengthRange(14, 19)},
 	// Diners Club US & Canada
-	{lowIIN: 55, highIIN: 55, lengths: []int{16}},
+	{lowIIN: "55", highIIN: "55", lengths: []int{16}},
 	// Discover
-	{lowIIN: 6011, highIIN: 6011, lengths: lengthRange(16, 19)},
-	{lowIIN: 644, highIIN: 649, lengths: lengthRange(16, 19)},
-	{lowIIN: 65, highIIN: 65, lengths: lengthRange(16, 19)},
-	{lowIIN: 622126, highIIN: 622925, lengths: lengthRange(16, 19)}, // China UnionPay co-branded
+	{lowIIN: "6011", highIIN: "6011", lengths: lengthRange(16, 19)},
+	{lowIIN: "644", highIIN: "649", lengths: lengthRange(16, 19)},
+	{lowIIN: "65", highIIN: "65", lengths: lengthRange(16, 19)},
+	{lowIIN: "622126", highIIN: "622925", lengths: lengthRange(16, 19)}, // China UnionPay co-branded
 	// UkrCart
-	{lowIIN: 60400100, highIIN: 60420099, lengths: lengthRange(16, 19)},
+	{lowIIN: "60400100", highIIN: "60420099", lengths: lengthRange(16, 19)},
 	// RuPay
-	{lowIIN: 60, highIIN: 60, lengths: []int{16}},
-	{lowIIN: 65, highIIN: 65, lengths: []int{16}},
-	{lowIIN: 81, highIIN: 82, lengths: []int{16}},
-	{lowIIN: 508, highIIN: 508, lengths: []int{16}},
-	{lowIIN: 353, highIIN: 353, lengths: []int{16}}, // RuPay-JCB co-branded
-	{lowIIN: 356, highIIN: 356, lengths: []int{16}}, // RuPay-JCB co-branded
+	{lowIIN: "60", highIIN: "60", lengths: []int{16}},
+	{lowIIN: "65", highIIN: "65", lengths: []int{16}},
+	{lowIIN: "81", highIIN: "82", lengths: []int{16}},
+	{lowIIN: "508", highIIN: "508", lengths: []int{16}},
+	{lowIIN: "353", highIIN: "353", lengths: []int{16}}, // RuPay-JCB co-branded
+	{lowIIN: "356", highIIN: "356", lengths: []int{16}}, // RuPay-JCB co-branded
 	// InterPayment
-	{lowIIN: 636, highIIN: 636, lengths: lengthRange(16, 19)},
+	{lowIIN: "636", highIIN: "636", lengths: lengthRange(16, 19)},
 	// InstaPayment
-	{lowIIN: 637, highIIN: 639, lengths: []int{16}},
+	{lowIIN: "637", highIIN: "639", lengths: []int{16}},
 	// JCB
-	{lowIIN: 3528, highIIN: 3589, lengths: lengthRange(16, 19)},
+	{lowIIN: "3528", highIIN: "3589", lengths: lengthRange(16, 19)},
 	// LankaPay (JCB co-branded)
-	{lowIIN: 357111, highIIN: 357111, lengths: []int{16}},
+	{lowIIN: "357111", highIIN: "357111", lengths: []int{16}},
 	// Maestro UK
-	{lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
-	{lowIIN: 676770, highIIN: 676770, lengths: lengthRange(12, 19)},
-	{lowIIN: 676774, highIIN: 676774, lengths: lengthRange(12, 19)},
+	{lowIIN: "6759", highIIN: "6759", lengths: lengthRange(12, 19)},
+	{lowIIN: "676770", highIIN: "676770", lengths: lengthRange(12, 19)},
+	{lowIIN: "676774", highIIN: "676774", lengths: lengthRange(12, 19)},
 	// Maestro
-	{lowIIN: 5018, highIIN: 5018, lengths: lengthRange(12, 19)},
-	{lowIIN: 5020, highIIN: 5020, lengths: lengthRange(12, 19)},
-	{lowIIN: 5038, highIIN: 5038, lengths: lengthRange(12, 19)},
-	{lowIIN: 5893, highIIN: 5893, lengths: lengthRange(12, 19)},
-	{lowIIN: 6304, highIIN: 6304, lengths: lengthRange(12, 19)},
-	{lowIIN: 6759, highIIN: 6759, lengths: lengthRange(12, 19)},
-	{lowIIN: 6761, highIIN: 6763, lengths: lengthRange(12, 19)},
+	{lowIIN: "5018", highIIN: "5018", lengths: lengthRange(12, 19)},
+	{lowIIN: "5020", highIIN: "5020", lengths: lengthRange(12, 19)},
+	{lowIIN: "5038", highIIN: "5038", lengths: lengthRange(12, 19)},
+	{lowIIN: "5893", highIIN: "5893", lengths: lengthRange(12, 19)},
+	{lowIIN: "6304", highIIN: "6304", lengths: lengthRange(12, 19)},
+	{lowIIN: "6759", highIIN: "6759", lengths: lengthRange(12, 19)},
+	{lowIIN: "6761", highIIN: "6763", lengths: lengthRange(12, 19)},
 	// Dankort
-	{lowIIN: 5019, highIIN: 5019, lengths: []int{16}},
-	{lowIIN: 4571, highIIN: 4571, lengths: []int{16}}, // Visa co-branded
+	{lowIIN: "5019", highIIN: "5019", lengths: []int{16}},
+	{lowIIN: "4571", highIIN: "4571", lengths: []int{16}}, // Visa co-branded
 	// Mir
-	{lowIIN: 2200, highIIN: 2204, lengths: lengthRange(16, 19)},
+	{lowIIN: "2200", highIIN: "2204", lengths: lengthRange(16, 19)},
 	// BORICA
-	{lowIIN: 2205, highIIN: 2205, lengths: []int{16}},
+	{lowIIN: "2205", highIIN: "2205", lengths: []int{16}},
 	// Mastercard
-	{lowIIN: 51, highIIN: 55, lengths: []int{16}},
-	{lowIIN: 2221, highIIN: 2720, lengths: []int{16}},
+	{lowIIN: "51", highIIN: "55", lengths: []int{16}},
+	{lowIIN: "2221", highIIN: "2720", lengths: []int{16}},
 	// Troy
-	{lowIIN: 65, highIIN: 65, lengths: []int{16}}, // Discover co-branded
-	{lowIIN: 9792, highIIN: 9792, lengths: []int{16}},
+	{lowIIN: "65", highIIN: "65", lengths: []int{16}}, // Discover co-branded
+	{lowIIN: "9792", highIIN: "9792", lengths: []int{16}},
 	// Visa
-	{lowIIN: 4, highIIN: 4, lengths: []int{13, 16, 19}},
+	{lowIIN: "4", highIIN: "4", lengths: []int{13, 16, 19}},
 	// UATP
-	{lowIIN: 1, highIIN: 1, lengths: []int{15}},
+	{lowIIN: "1", highIIN: "1", lengths: []int{15}},
 	// Verve
-	{lowIIN: 506099, highIIN: 506198, lengths: []int{16, 18, 19}},
-	{lowIIN: 650002, highIIN: 650027, lengths: []int{16, 18, 19}},
-	{lowIIN: 507865, highIIN: 507964, lengths: []int{16, 18, 19}},
+	{lowIIN: "506099", highIIN: "506198", lengths: []int{16, 18, 19}},
+	{lowIIN: "650002", highIIN: "650027", lengths: []int{16, 18, 19}},
+	{lowIIN: "507865", highIIN: "507964", lengths: []int{16, 18, 19}},
 	// Uzcard
-	{lowIIN: 8600, highIIN: 8600, lengths: []int{16}},
-	{lowIIN: 5614, highIIN: 5614, lengths: []int{16}},
+	{lowIIN: "8600", highIIN: "8600", lengths: []int{16}},
+	{lowIIN: "5614", highIIN: "5614", lengths: []int{16}},
 	// HUMO
-	{lowIIN: 9860, highIIN: 9860, lengths: []int{16}},
+	{lowIIN: "9860", highIIN: "9860", lengths: []int{16}},
 	// GPN
-	{lowIIN: 1946, highIIN: 1946, lengths: []int{16, 18, 19}}, // BNI cards
-	{lowIIN: 50, highIIN: 50, lengths: []int{16, 18, 19}},
-	{lowIIN: 56, highIIN: 56, lengths: []int{16, 18, 19}},
-	{lowIIN: 58, highIIN: 58, lengths: []int{16, 18, 19}},
-	{lowIIN: 60, highIIN: 63, lengths: []int{16, 18, 19}},
+	{lowIIN: "1946", highIIN: "1946", lengths: []int{16, 18, 19}}, // BNI cards
+	{lowIIN: "50", highIIN: "50", lengths: []int{16, 18, 19}},
+	{lowIIN: "56", highIIN: "56", lengths: []int{16, 18, 19}},
+	{lowIIN: "58", highIIN: "58", lengths: []int{16, 18, 19}},
+	{lowIIN: "60", highIIN: "63", lengths: []int{16, 18, 19}},
 	// Napas
-	{lowIIN: 9704, highIIN: 9704, lengths: []int{16, 19}},
+	{lowIIN: "9704", highIIN: "9704", lengths: []int{16, 19}},
 }
 
 // NewDetector returns a Detector that finds credit card numbers.
@@ -280,28 +279,12 @@ func hasCommonIssuerAndLength(digits string) bool {
 	return false
 }
 
-func prefixInRange(digits string, lower int, upper int) bool {
-	prefixLen := countDigits(lower)
+func prefixInRange(digits string, lower string, upper string) bool {
+	prefixLen := len(lower)
 	if len(digits) < prefixLen {
 		return false
 	}
-	prefix, err := strconv.Atoi(digits[:prefixLen])
-	return err == nil && prefix >= lower && prefix <= upper
-}
+	prefix := digits[:prefixLen]
 
-func countDigits(n int) int {
-	if n == 0 {
-		return 1
-	}
-	if n < 0 {
-		n = -n
-	}
-
-	d := 0
-	for n > 0 {
-		n /= 10
-		d++
-	}
-
-	return d
+	return prefix >= lower && prefix <= upper
 }
