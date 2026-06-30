@@ -1,0 +1,2 @@
+# example.com/no/pkg v0.0.1
+## explicit
