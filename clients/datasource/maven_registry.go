@@ -52,6 +52,7 @@ type MavenRegistryAPIClient struct {
 	registryAuths   map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
 	localRegistry   string                         // The local directory that holds Maven manifests
 	localProjects   map[maven.ProjectKey]string    // Paths to projects available in the local source tree.
+	userAgent       string                         // User-Agent string to set on HTTP requests.
 
 	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
 	disableGoogleAuth bool         // If true, do not try to create google.DefaultClient for Artifact Registry.
@@ -144,7 +145,30 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 		googleClient:      m.googleClient,
 		disableGoogleAuth: m.disableGoogleAuth,
 		localProjects:     m.localProjects,
+		userAgent:         m.userAgent,
 	}
+}
+
+// SetUserAgent sets the User-Agent header for the client requests.
+func (m *MavenRegistryAPIClient) SetUserAgent(userAgent string) {
+	m.userAgent = userAgent
+}
+
+type userAgentTransport struct {
+	userAgent string
+	base      http.RoundTripper
+}
+
+func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.userAgent != "" && req.Header.Get("User-Agent") == "" {
+		req = req.Clone(req.Context())
+		req.Header.Set("User-Agent", t.userAgent)
+	}
+	base := t.base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return base.RoundTrip(req)
 }
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
@@ -354,6 +378,15 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		if m.googleClient != nil {
 			httpClient = m.googleClient
 		}
+	}
+
+	if m.userAgent != "" {
+		c := *httpClient
+		c.Transport = &userAgentTransport{
+			userAgent: m.userAgent,
+			base:      httpClient.Transport,
+		}
+		httpClient = &c
 	}
 
 	u := requestURL.JoinPath(paths...).String()

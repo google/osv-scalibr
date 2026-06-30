@@ -43,6 +43,7 @@ type CombinedNativeClientOptions struct {
 	PyPIRegistry      string                             // The default PyPI registry to use.
 	MavenClient       *datasource.MavenRegistryAPIClient // The Maven registry client to use, if nil, a new client will be created.
 	DisableGoogleAuth bool                               // If true, do not try to create google.DefaultClient for Artifact Registry.
+	UserAgent         string                             // User-Agent string to set on client requests.
 }
 
 // NewCombinedNativeClient makes a new CombinedNativeClient.
@@ -50,6 +51,9 @@ func NewCombinedNativeClient(opts CombinedNativeClientOptions) (*CombinedNativeC
 	client := &CombinedNativeClient{opts: opts}
 	if opts.MavenClient != nil {
 		client.mavenRegistryClient = NewMavenRegistryClientWithAPI(opts.MavenClient)
+		if opts.UserAgent != "" {
+			client.mavenRegistryClient.SetUserAgent(opts.UserAgent)
+		}
 	}
 	return client, nil
 }
@@ -119,6 +123,9 @@ func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.
 			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, c.opts.LocalRegistry, c.opts.DisableGoogleAuth)
 			if err != nil {
 				return nil, err
+			}
+			if c.opts.UserAgent != "" {
+				c.mavenRegistryClient.SetUserAgent(c.opts.UserAgent)
 			}
 		}
 		return c.mavenRegistryClient, nil
