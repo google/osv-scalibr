@@ -867,6 +867,7 @@ message SecretData {
     HTTPBasicAuth http_basic_auth = 89;
     HTTPBearer http_bearer = 90;
     HTTPCSRFToken http_csrf_token = 91;
+    PayPalCredentials paypal_credentials = 92;
   }
 
   message GCPSAK {
@@ -1112,6 +1113,15 @@ message SecretData {
     string id = 1;
     // GCP OAuth2 client secret, typically 24+ character alphanumeric string
     // prefixed with `GOCSPX-`
+    string secret = 2;
+  }
+
+  message PayPalCredentials {
+    // PayPal REST API Client ID. URL-safe string, commonly prefixed with "A",
+    // typically ~80 characters.
+    string id = 1;
+    // PayPal REST API Client Secret. URL-safe string, commonly prefixed with
+    // "E", typically ~80 characters.
     string secret = 2;
   }
 

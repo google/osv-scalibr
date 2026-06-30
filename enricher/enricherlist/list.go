@@ -68,6 +68,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
 	"github.com/google/osv-scalibr/veles/secrets/packagist"
+	"github.com/google/osv-scalibr/veles/secrets/paypal"
 	"github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	"github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -169,6 +170,7 @@ var (
 		fromVeles(squareapikey.NewPersonalAccessTokenValidator(), "secrets/squarepersonalaccesstokenvalidate", 0),
 		fromVeles(squareapikey.NewOAuthApplicationSecretValidator(), "secrets/squareoauthapplicationsecretvalidate", 0),
 		fromVeles(gcpoauth2access.NewValidator(), "secrets/gcpoauth2accesstokenvalidate", 0),
+		fromVeles(paypal.NewValidator(), "secrets/paypalvalidate", 0),
 		fromVeles(paystacksecretkey.NewValidator(), "secrets/paystacksecretkeyvalidate", 0),
 		fromVeles(herokuplatformkey.NewValidator(), "secrets/herokuplatformkeykeyvalidate", 0),
 		fromVeles(gcshmackey.NewValidator(), "secrets/gcshmackeyvalidate", 0),

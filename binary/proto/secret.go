@@ -64,6 +64,7 @@ import (
 	velesopenai "github.com/google/osv-scalibr/veles/secrets/openai"
 	velesopenrouter "github.com/google/osv-scalibr/veles/secrets/openrouter"
 	velespackagist "github.com/google/osv-scalibr/veles/secrets/packagist"
+	"github.com/google/osv-scalibr/veles/secrets/paypal"
 	velespaystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	velesperplexity "github.com/google/osv-scalibr/veles/secrets/perplexityapikey"
 	velespostmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
@@ -252,6 +253,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return stripeWebhookSecretToProto(t), nil
 	case gcpoauth2client.Credentials:
 		return gcpOAuth2ClientCredentialsToProto(t), nil
+	case paypal.Credentials:
+		return payPalCredentialsToProto(t), nil
 	case gcpoauth2access.Token:
 		return gcpOAuth2AccessTokenToProto(t), nil
 	case gcshmackey.HMACKey:
@@ -1013,6 +1016,17 @@ func gcpOAuth2ClientCredentialsToProto(s gcpoauth2client.Credentials) *spb.Secre
 	}
 }
 
+func payPalCredentialsToProto(s paypal.Credentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_PaypalCredentials{
+			PaypalCredentials: &spb.SecretData_PayPalCredentials{
+				Id:     s.ID,
+				Secret: s.Secret,
+			},
+		},
+	}
+}
+
 func gcpOAuth2AccessTokenToProto(s gcpoauth2access.Token) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_GcpOauth2AccessToken{
@@ -1371,6 +1385,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		}, nil
 	case *spb.SecretData_GcpOauth2ClientCredentials:
 		return gcpOAuth2ClientCredentialsToStruct(s.GetGcpOauth2ClientCredentials()), nil
+	case *spb.SecretData_PaypalCredentials:
+		return payPalCredentialsToStruct(s.GetPaypalCredentials()), nil
 	case *spb.SecretData_GcpOauth2AccessToken:
 		return gcpOAuth2AccessTokenToStruct(s.GetGcpOauth2AccessToken()), nil
 	case *spb.SecretData_OnepasswordSecretKey:
@@ -1640,6 +1656,13 @@ func huggingfaceAPIKeyToStruct(kPB *spb.SecretData_HuggingfaceAPIKey) huggingfac
 
 func gcpOAuth2ClientCredentialsToStruct(kPB *spb.SecretData_GCPOAuth2ClientCredentials) gcpoauth2client.Credentials {
 	return gcpoauth2client.Credentials{
+		ID:     kPB.GetId(),
+		Secret: kPB.GetSecret(),
+	}
+}
+
+func payPalCredentialsToStruct(kPB *spb.SecretData_PayPalCredentials) paypal.Credentials {
+	return paypal.Credentials{
 		ID:     kPB.GetId(),
 		Secret: kPB.GetSecret(),
 	}
