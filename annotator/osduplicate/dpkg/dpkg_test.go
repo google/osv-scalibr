@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
+	osv "github.com/google/osv-scalibr/extractor/filesystem/osv"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -161,6 +162,43 @@ Package: dpkg-pkg-name
 						Justification:   vex.ComponentNotPresent,
 						MatchesAllVulns: true,
 					}},
+				},
+			},
+		},
+		{
+			desc: "manifest_path_claimed_by_dpkg_does_not_suppress_manifest_packages",
+			txt: `
+-- var/lib/dpkg/info/dpkg-pkg-name.list --
+/app/package-lock.json
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
+Package: dpkg-pkg-name
+`,
+			packages: []*extractor.Package{
+				{
+					Name:     "left-pad",
+					Version:  "1.3.0",
+					Metadata: &osv.DepGroupMetadata{},
+					Location: extractor.LocationFromPath("app/package-lock.json"),
+				},
+				{
+					Name:     "lodash",
+					Version:  "4.17.20",
+					Metadata: &osv.DepGroupMetadata{},
+					Location: extractor.LocationFromPath("app/package-lock.json"),
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "left-pad",
+					Version:  "1.3.0",
+					Metadata: &osv.DepGroupMetadata{},
+					Location: extractor.LocationFromPath("app/package-lock.json"),
+				},
+				{
+					Name:     "lodash",
+					Version:  "4.17.20",
+					Metadata: &osv.DepGroupMetadata{},
+					Location: extractor.LocationFromPath("app/package-lock.json"),
 				},
 			},
 		},
