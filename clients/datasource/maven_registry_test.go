@@ -106,6 +106,12 @@ func TestGetProjectSnapshot(t *testing.T) {
 }
 
 func TestMultipleRegistry(t *testing.T) {
+	// AddRegistry rejects loopback URLs by default, so pretend the mock
+	// server's 127.0.0.1 address resolves to a public address for the
+	// duration of this test.
+	t.Cleanup(datasource.SetLookupHostForTest(func(string) ([]string, error) {
+		return []string{"203.0.113.1"}, nil
+	}))
 	dft := clienttest.NewMockHTTPServer(t)
 	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), dft.URL)
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
@@ -196,6 +202,12 @@ func TestMultipleRegistry(t *testing.T) {
 }
 
 func TestUpdateDefaultRegistry(t *testing.T) {
+	// AddRegistry rejects loopback URLs by default, so pretend the mock
+	// server's 127.0.0.1 address resolves to a public address for the
+	// duration of this test.
+	t.Cleanup(datasource.SetLookupHostForTest(func(string) ([]string, error) {
+		return []string{"203.0.113.1"}, nil
+	}))
 	dft := clienttest.NewMockHTTPServer(t)
 	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), dft.URL)
 	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
