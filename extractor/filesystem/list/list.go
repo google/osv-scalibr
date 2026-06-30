@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/clojure/depsedn"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
@@ -202,6 +203,8 @@ var (
 
 	// CppSource extractors for C++.
 	CppSource = InitMap{conanlock.Name: {conanlock.New}}
+	// ClojureSource extractors for Clojure.
+	ClojureSource = InitMap{depsedn.Name: {depsedn.New}}
 	// JavaSource extractors for Java.
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
@@ -507,6 +510,7 @@ var (
 	// SourceCode extractors find packages in source code contexts (e.g. lockfiles).
 	SourceCode = concat(
 		CppSource,
+		ClojureSource,
 		JavaSource,
 		JavascriptSource,
 		PythonSource,
@@ -568,6 +572,7 @@ var (
 	extractorNames = concat(All, InitMap{
 		// Languages.
 		"cpp":        vals(CppSource),
+		"clojure":    vals(ClojureSource),
 		"java":       vals(concat(JavaSource, JavaArtifact)),
 		"javascript": vals(concat(JavascriptSource, JavascriptArtifact)),
 		"python":     vals(concat(PythonSource, PythonArtifact)),
