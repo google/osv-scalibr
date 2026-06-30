@@ -16,9 +16,11 @@
 package mavenutil
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -322,13 +324,17 @@ func DiscoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string, client
 			log.Errorf("Failed to open pom.xml at %s: %v", path, err)
 			continue
 		}
-		var project maven.Project
-		if err := datasource.NewMavenDecoder(f).Decode(&project); err != nil {
-			log.Errorf("Failed to decode pom.xml at %s: %v", path, err)
-			f.Close()
+		content, err := io.ReadAll(f)
+		f.Close()
+		if err != nil {
+			log.Errorf("Failed to read pom.xml at %s: %v", path, err)
 			continue
 		}
-		f.Close()
+		var project maven.Project
+		if err := datasource.NewMavenDecoder(bytes.NewReader(content)).Decode(&project); err != nil {
+			log.Errorf("Failed to decode pom.xml at %s: %v", path, err)
+			continue
+		}
 
 		// Empty JDK and ActivationOS indicates merging the default profiles.
 		if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
@@ -339,10 +345,9 @@ func DiscoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string, client
 		pk := ProjectKey(project)
 		g, a, v := string(pk.GroupID), string(pk.ArtifactID), string(pk.Version)
 		if g != "" && a != "" && v != "" {
-			absPath := filepath.Join(scanRoot.Path, path)
 			log.Debugf("Discovered local module %s:%s:%s at %s", g, a, v, path)
 			if client != nil {
-				client.AddLocalProject(g, a, v, absPath)
+				client.AddLocalProject(g, a, v, content)
 			}
 		}
 
