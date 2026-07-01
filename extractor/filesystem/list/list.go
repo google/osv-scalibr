@@ -57,6 +57,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/electronasar"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -225,8 +226,9 @@ var (
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name: {packagejson.New},
-		denojson.Name:    {denojson.New},
+		packagejson.Name:  {packagejson.New},
+		denojson.Name:     {denojson.New},
+		electronasar.Name: {electronasar.New},
 		vsix.Name:        {vsix.New},
 	}
 	// PythonSource extractors for Python.
