@@ -1,0 +1,6 @@
+source "https://rubygems.org"
+
+gem "sprockets-rails", ">= 2.0.0", require: false
+gem "propshaft", ">= 0.1.7", "!= 1.0.1"
+gem "releaser", path: "vendor/releaser"
+gem "rack", github: "rack/rack"

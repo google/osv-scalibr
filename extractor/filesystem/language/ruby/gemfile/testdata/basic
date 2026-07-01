@@ -1,0 +1,11 @@
+source "https://rubygems.org"
+
+gem "rails", "~> 7.0"
+gem "pg", "~> 1.1"
+gem "puma"
+gem "nokogiri", "~> 1.16" # native extension
+gem "debug-tools", git: "https://example.com/repo#branch" # hash in quoted option
+
+group :development do
+  gem "byebug"
+end
