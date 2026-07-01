@@ -45,6 +45,11 @@ func TestEnrich(t *testing.T) {
 		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
 		pyPkg      = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
 		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
+		gitPkg     = &extractor.Package{
+			Name:       "https://github.com/foo/bar",
+			Version:    "v1.0.0",
+			SourceCode: &extractor.SourceCodeIdentifier{Repo: "https://github.com/foo/bar", Commit: "abcdef123"},
+		}
 
 		goPkgWithSignals = &extractor.Package{
 			Name:     "github.com/gin-gonic/gin",
@@ -374,12 +379,25 @@ func TestEnrich(t *testing.T) {
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
 		}
+
+		gitVuln = osvpb.Vulnerability{
+			Id: "GHSA-git-vuln",
+			Affected: []*osvpb.Affected{
+				{
+					Package: &osvpb.Package{Ecosystem: "GIT", Name: "https://github.com/foo/bar"},
+					Ranges: []*osvpb.Range{
+						{Type: osvpb.Range_GIT, Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: "v1.1.0"}}},
+					},
+				},
+			},
+		}
 	)
 
 	client := fakeclient.New(map[string][]*osvpb.Vulnerability{
 		fmt.Sprintf("%s:%s:", goPkg.Name, goPkg.Version): {&goVuln1, &goVuln2, &goVuln3},
 		fmt.Sprintf("%s:%s:", jsPkg.Name, jsPkg.Version): {&jsVuln1, &jsVuln2},
 		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {&pyPkgSameVulnAsFzf},
+		"::abcdef123": {&gitVuln},
 	})
 
 	tests := []struct {
@@ -483,6 +501,13 @@ func TestEnrich(t *testing.T) {
 				{Vulnerability: &goVuln2, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
 				{Vulnerability: &goVuln3, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
 			}},
+		{
+			name:     "git_commit_prioritized",
+			packages: []*extractor.Package{gitPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &gitVuln, Package: gitPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

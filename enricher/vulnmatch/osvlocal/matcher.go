@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/google/osv-scalibr/enricher/vulnmatch/internal/osv"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -64,16 +65,17 @@ func (matcher *localMatcher) MatchVulnerabilities(ctx context.Context, pkg *extr
 		return nil, ctx.Err()
 	}
 
-	eco := pkg.Ecosystem().Ecosystem
+	np := osv.ParsePackage(pkg)
+	eco := np.Ecosystem.Ecosystem
 
-	if pkg.Ecosystem().IsEmpty() {
+	if np.Ecosystem.IsEmpty() {
 		if pkg.SourceCode != nil && pkg.SourceCode.Commit == "" {
 			// This should never happen, as those results will be filtered out before matching
 			return nil, errors.New("ecosystem is empty and there is no commit hash")
 		}
 
 		// matching ecosystem-less versions can only be attempted if we have a version
-		if pkg.Version == "" {
+		if np.Version == "" {
 			// Is a commit based query, skip local scanning
 			return nil, nil
 		}
