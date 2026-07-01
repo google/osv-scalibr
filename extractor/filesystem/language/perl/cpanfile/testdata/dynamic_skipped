@@ -1,0 +1,8 @@
+requires 'Moose';
+
+my $version = '1.0';
+requires 'Foo', $version;
+
+if ($perl_version >= 5.010) {
+    requires 'Bar';
+}

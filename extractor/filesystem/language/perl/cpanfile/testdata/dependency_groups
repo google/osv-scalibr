@@ -1,0 +1,4 @@
+requires 'Moose';
+test_requires 'Test::More';
+configure_requires 'Module::Build';
+build_requires 'ExtUtils::MakeMaker';
