@@ -1,0 +1,10 @@
+name: mypackage
+version: 1.0.0
+
+executable myexe
+  build-depends: optparse-applicative >= 0.16
+  main-is: Main.hs
+
+test-suite tests
+  build-depends: tasty, tasty-hunit
+  main-is: Test.hs
