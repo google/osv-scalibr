@@ -1,0 +1,8 @@
+PackratFormat: 1.4
+PackratVersion: 0.5.0
+RVersion: 3.5.2
+Repos: CRAN=https://cran.rstudio.com/
+
+Package: testpkg
+Version: 1.0.0
+Hash: abc123

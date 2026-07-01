@@ -1,0 +1,19 @@
+PackratFormat: 1.4
+PackratVersion: 0.5.0
+RVersion: 3.5.2
+Repos: CRAN=https://cran.rstudio.com/
+
+Package: markdown
+Source: CRAN
+Version: 1.0
+Hash: 8d686cbee88c93b735281a22b2ca59dd
+
+Package: dplyr
+Source: github
+Version: 0.4.3.9001
+Hash: 4cccd1168d2bfb961cc8398dacee6eb7
+Requires: BH, DBI, R6, Rcpp, assertthat, lazyeval, magrittr, tibble
+GithubRepo: dplyr
+GithubUsername: hadley
+GithubRef: master
+GithubSha1: b21fc8fa513d8488373f06e0097d18353b7e5e58
