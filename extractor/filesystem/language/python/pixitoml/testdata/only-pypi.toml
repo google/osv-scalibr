@@ -1,0 +1,8 @@
+[project]
+name = "my_project"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[pypi-dependencies]
+requests = ">=2.26.0"
+flask = "*"

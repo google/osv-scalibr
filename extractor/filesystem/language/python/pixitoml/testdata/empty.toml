@@ -1,0 +1,4 @@
+[project]
+name = "my_project"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
