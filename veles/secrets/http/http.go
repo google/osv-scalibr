@@ -30,3 +30,9 @@ type BearerToken struct {
 type CSRFToken struct {
 	Value string
 }
+
+// Cookie contains an HTTP Cookie secret value and its associated name.
+type Cookie struct {
+	Name  string
+	Value string
+}
