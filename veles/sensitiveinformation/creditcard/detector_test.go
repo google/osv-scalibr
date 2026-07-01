@@ -119,6 +119,34 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name: "credit_card_keyword_high_confidence",
+			in:   []byte("credit_card: 4000000000000002"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("4000000000000002"), sensitiveinformation.LikelihoodVeryLikely),
+			},
+		},
+		{
+			name: "credit_card_hyphenated_keyword_high_confidence",
+			in:   []byte("credit-card: 4000000000000002"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("4000000000000002"), sensitiveinformation.LikelihoodVeryLikely),
+			},
+		},
+		{
+			name: "card_holder_keyword_high_confidence",
+			in:   []byte("card_holder: 4000000000000002"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("4000000000000002"), sensitiveinformation.LikelihoodVeryLikely),
+			},
+		},
+		{
+			name: "card_holder_hyphenated_keyword_high_confidence",
+			in:   []byte("card-holder: 4000000000000002"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("4000000000000002"), sensitiveinformation.LikelihoodVeryLikely),
+			},
+		},
+		{
 			name: "keyword_outside_context_window_keeps_unlikely_likelihood",
 			in:   []byte("credit card" + strings.Repeat(" ", contextWindowSize+1) + "5100000000000008"),
 			want: []veles.Secret{

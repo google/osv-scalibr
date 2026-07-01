@@ -48,7 +48,7 @@ const contextWindowSize = 32
 var creditCardRe = regexp.MustCompile(`\b(?:\d{12,19}|\d{4}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,3})?|\d{4}[ -]\d{6}[ -]\d{5})\b`)
 
 var keywordsRe = simpleregex.KeywordsRe([]string{
-	`\bcreditcard\b`,
+	`\bcredit[-_]?card\b`,
 	`\bcredit\b`,
 	`\bcard\b`,
 	`\bcvc\b`,
@@ -57,7 +57,7 @@ var keywordsRe = simpleregex.KeywordsRe([]string{
 	`\bvisa\b`,
 	`\bmaster\b`,
 	`\bmastercard\b`,
-	`\bcardholder\b`,
+	`\bcard[-_]?holder\b`,
 })
 
 var commonExamples = map[string]struct{}{
