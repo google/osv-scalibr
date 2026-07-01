@@ -218,6 +218,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Sensitive information
 | Type                                        | Extractor Plugin                     |
 | ------------------------------------------- | ------------------------------------ |
+| Credit Card Number                          | `sensitiveinformation/creditcard`    |
 | International Bank Account Number           | `sensitiveinformation/iban`            |
 | US Social Security Number                   | `sensitiveinformation/ssn`             |
 
