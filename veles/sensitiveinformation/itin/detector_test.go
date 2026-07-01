@@ -214,12 +214,28 @@ func TestDetect_keywordMatches(t *testing.T) {
 			in:   []byte("itin: 900-70-1234"),
 		},
 		{
+			name: "itin_number_hyphenated",
+			in:   []byte("itin-number: 900-70-1234"),
+		},
+		{
+			name: "itin_number_underscored",
+			in:   []byte("itin_number: 900-70-1234"),
+		},
+		{
 			name: "individual_taxpayer_identification_number",
 			in:   []byte("individual taxpayer identification number: 900-70-1234"),
 		},
 		{
+			name: "individual_taxpayer_hyphenated",
+			in:   []byte("individual-taxpayer: 900-70-1234"),
+		},
+		{
 			name: "individual_taxpayer_identification",
 			in:   []byte("individual taxpayer identification: 900-70-1234"),
+		},
+		{
+			name: "taxpayer_identification_underscored",
+			in:   []byte("taxpayer_identification: 900-70-1234"),
 		},
 		{
 			name: "individual_tax_identification_number",
@@ -238,12 +254,24 @@ func TestDetect_keywordMatches(t *testing.T) {
 			in:   []byte("individual tin: 900-70-1234"),
 		},
 		{
+			name: "individual_tin_hyphenated",
+			in:   []byte("individual-tin: 900-70-1234"),
+		},
+		{
+			name: "tin_number_underscored",
+			in:   []byte("tin_number: 900-70-1234"),
+		},
+		{
 			name: "irs_itin",
 			in:   []byte("irs itin: 900-70-1234"),
 		},
 		{
 			name: "form_w_7",
 			in:   []byte("form w-7: 900-70-1234"),
+		},
+		{
+			name: "form_w_7_underscored",
+			in:   []byte("form_w-7: 900-70-1234"),
 		},
 		{
 			name: "w_7",
