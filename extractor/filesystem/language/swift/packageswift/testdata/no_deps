@@ -1,0 +1,4 @@
+let package = Package(
+    name: "NoDeps",
+    dependencies: []
+)

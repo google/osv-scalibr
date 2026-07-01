@@ -1,0 +1,6 @@
+let package = Package(
+    name: "LocalApp",
+    dependencies: [
+        .package(path: "../LocalLib"),
+    ]
+)
