@@ -1,0 +1,2 @@
+FROM registry.example.com:5000/my-image:tag
+RUN echo "hello"

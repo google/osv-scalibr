@@ -1,0 +1,7 @@
+# Build stage
+FROM golang:1.21
+RUN echo "hello"
+
+# Run stage
+FROM alpine:latest
+RUN echo "world"

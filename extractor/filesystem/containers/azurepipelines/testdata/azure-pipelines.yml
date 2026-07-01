@@ -1,0 +1,17 @@
+resources:
+  containers:
+    - container: my_container
+      image: node:14
+    - container: another
+      image: redis:7.0
+jobs:
+  - job: Build
+    container: ubuntu:22.04
+  - job: Test
+    steps:
+      - script: echo "test"
+        container: python:3.11
+      - script: echo "build"
+        container:
+          image: golang:1.21
+          endpoint: myRegistry

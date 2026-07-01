@@ -1,0 +1,5 @@
+jobs:
+  - job: Build
+    container: ubuntu:22.04
+  - job: Test
+    container: alpine:3.18

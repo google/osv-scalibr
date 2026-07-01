@@ -1,0 +1,6 @@
+- hosts: webservers
+  tasks:
+    - name: Start postgres
+      community.docker.docker_container:
+        name: my_db
+        image: postgres:15

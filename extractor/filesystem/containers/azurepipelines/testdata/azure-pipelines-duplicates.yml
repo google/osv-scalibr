@@ -1,0 +1,11 @@
+resources:
+  containers:
+    - container: c1
+      image: ubuntu:22.04
+jobs:
+  - job: Build
+    container: ubuntu:22.04
+  - job: Test
+    steps:
+      - script: echo "test"
+        container: ubuntu:22.04

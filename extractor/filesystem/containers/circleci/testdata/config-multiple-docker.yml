@@ -1,0 +1,7 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: "cimg/node:20.0"
+      - image: "postgres:15"
+      - image: "redis:7"

@@ -1,0 +1,4 @@
+resources:
+  containers:
+    - container: my_image
+      image: gcr.io/project-id/my-image@sha256:abc123def456
