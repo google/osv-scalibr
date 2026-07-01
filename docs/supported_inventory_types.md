@@ -142,6 +142,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | CircleCI Project Token                      | `secrets/circleciproject`              |
 | Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
+| Cohere API key                              | `secrets/cohereapikey`                 |
 | Cursor API key                              | `secrets/cursorapikey`                 |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
 | Docker hub PAT                              | `secrets/dockerhubpat`                 |

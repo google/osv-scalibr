@@ -44,6 +44,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/bitwardenoauth2access"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
+	"github.com/google/osv-scalibr/veles/secrets/cohereapikey"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
 	"github.com/google/osv-scalibr/veles/secrets/denopat"
@@ -183,6 +184,7 @@ var (
 		fromVeles(salesforceoauth2client.NewValidator(), "secrets/salesforceoauth2clientvalidate", 0),
 		fromVeles(salesforceoauth2refresh.NewValidator(), "secrets/salesforceoauth2refreshvalidate", 0),
 		fromVeles(salesforceoauth2jwt.NewValidator(), "secrets/salesforceoauth2jwtvalidate", 0),
+		fromVeles(cohereapikey.NewValidator(), "secrets/cohereapikeyvalidate", 0),
 		fromVeles(cursorapikey.NewValidator(), "secrets/cursorapikeyvalidate", 0),
 	})
 
