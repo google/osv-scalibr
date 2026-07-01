@@ -3,3 +3,4 @@
 .idea/
 .env
 .gemini
+.DS_Store
