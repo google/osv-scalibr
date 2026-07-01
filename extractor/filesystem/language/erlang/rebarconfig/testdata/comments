@@ -1,0 +1,4 @@
+% This is a comment
+{deps, [
+    {cowboy, "2.9.0"} % inline comment
+]}.

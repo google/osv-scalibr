@@ -55,6 +55,11 @@ func TestExtractorsFromName(t *testing.T) {
 			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
+			desc:     "Find_all_Erlang_extractors",
+			name:     "erlang",
+			wantExts: []string{"erlang/mixlock", "erlang/rebarconfig"},
+		},
+		{
 			desc:     "Nonexistent_plugin",
 			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,
