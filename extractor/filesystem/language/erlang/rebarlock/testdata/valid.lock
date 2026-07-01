@@ -1,0 +1,13 @@
+{"1.2.0",
+ [{<<"certifi">>, {pkg, <<"certifi">>, <<"2.14.0">>}, 0},
+  {<<"cowlib">>, {pkg, <<"cowlib">>, <<"2.13.0">>, <<"outer-hash">>, <<"inner-hash">>}, 1},
+  {<<"jsx_alias">>, {pkg, <<"jsx">>, <<"3.1.0">>}, 0},
+  {<<"jsx_alias">>, {pkg, <<"jsx">>, <<"3.1.0">>}, 0},
+  {<<"clue">>, {git,"https://github.com/fogfish/clue", {ref,"bd40e3c2a778d4cf85a5cd29b72847b5df9557d1"}}, 0},
+  {<<"tagged">>, {git,"https://example.com/tagged", {tag,"v1.0.0"}}, 0}]}.
+[
+ {pkg_hash,[
+  {<<"certifi">>, <<"DDDD">>},
+  {<<"jsx">>, <<"EEEE">>}
+ ]}
+].
