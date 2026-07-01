@@ -1,0 +1,23 @@
+{
+  "packages": {
+    "nimcrypto": {
+      "version": "0.5.4",
+      "vcsRevision": "a0f92a85b3026e",
+      "url": "https://github.com/cheatfate/nimcrypto",
+      "downloadMethod": "git",
+      "dependencies": [],
+      "files": []
+    },
+    "unicodedb": {
+      "version": "0.12.0",
+      "vcsRevision": "a0b2c3d4",
+      "url": "https://github.com/nitely/nim-unicodedb",
+      "downloadMethod": "git",
+      "dependencies": [
+        "other-pkg"
+      ],
+      "files": []
+    }
+  },
+  "version": 1
+}
