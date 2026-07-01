@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+# /// script
+# dependencies = [
+#   "matplotlib",
+# ]
+# requires-python = ">=3.12"
+# ///
+
+import matplotlib.pyplot as plt
+
+plt.plot([1, 2, 3], [1, 4, 9])
+plt.savefig("plot.png")

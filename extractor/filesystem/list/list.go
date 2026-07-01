@@ -71,6 +71,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pep723"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pylock"
@@ -240,6 +241,7 @@ var (
 		pylock.Name:       {pylock.New},
 		condameta.Name:    {condameta.New},
 		uvlock.Name:       {uvlock.New},
+		pep723.Name:       {pep723.New},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
