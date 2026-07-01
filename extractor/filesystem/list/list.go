@@ -67,6 +67,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/lua/luarocks"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opamfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
@@ -264,7 +265,10 @@ var (
 	// LuaSource extractors for Lua.
 	LuaSource = InitMap{luarocks.Name: {luarocks.New}}
 	// OcamlSource extractors for OCaml.
-	OcamlSource = InitMap{opam.Name: {opam.New}}
+	OcamlSource = InitMap{
+		opam.Name:     {opam.New},
+		opamfile.Name: {opamfile.New},
+	}
 	// ElixirSource extractors for Elixir.
 	ElixirSource = InitMap{elixir.Name: {elixir.New}}
 	// HaskellSource extractors for Haskell.
