@@ -1,0 +1,5 @@
+# platform: linux-64
+@EXPLICIT
+https://conda.anaconda.org/conda-forge/linux-64/python-3.9.7-h12debd9_1.tar.bz2#1234abcd
+https://conda.anaconda.org/conda-forge/linux-64/numpy-1.21.0-py39hdbf815f_0.tar.bz2#5678efgh
+https://conda.anaconda.org/conda-forge/linux-64/libgcc-ng-11.2.0-h12345_0.tar.bz2#9abcdef0
