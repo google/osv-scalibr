@@ -18,7 +18,6 @@ package itin
 import (
 	"bytes"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/google/osv-scalibr/veles"
@@ -87,12 +86,10 @@ func validItin(s string) bool {
 		return false
 	}
 
-	secondSection, err := strconv.Atoi(normalized[3:5])
-	if err != nil {
-		return false
-	}
-	return secondSection != 89 &&
-		secondSection != 93 &&
-		((secondSection >= 50 && secondSection <= 65) ||
-			(secondSection >= 70 && secondSection <= 99))
+	secondSection := normalized[3:5]
+
+	return secondSection != "89" &&
+		secondSection != "93" &&
+		((secondSection >= "50" && secondSection <= "65") ||
+			(secondSection >= "70" && secondSection <= "99"))
 }
