@@ -100,6 +100,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | PHP        | Composer                                          | `php/composerlock`                   |
 | Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
 |            | requirements.txt                                  | `python/requirements`                |
+|            | pyproject.toml                                    | `python/pyprojecttoml`               |
 |            | poetry.lock                                       | `python/poetrylock`                  |
 |            | Pipfile.lock                                      | `python/pipfilelock`                 |
 |            | pdm.lock                                          | `python/pdmlock`                     |

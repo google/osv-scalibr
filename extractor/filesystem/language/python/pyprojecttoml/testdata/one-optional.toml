@@ -1,0 +1,7 @@
+[project]
+name = "my-project"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]

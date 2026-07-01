@@ -1,0 +1,6 @@
+[project]
+name = "my-project"
+dependencies = [
+    "requests>=2.28.0 ; python_version >= \"3.8\"",
+    'platform-specific-package>=1.0 ; sys_platform == "win32"',
+]
