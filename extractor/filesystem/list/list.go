@@ -84,6 +84,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/carthagecartfileresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
@@ -323,8 +324,9 @@ var (
 	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
-		packageresolved.Name: {packageresolved.New},
-		podfilelock.Name:     {podfilelock.New},
+		packageresolved.Name:          {packageresolved.New},
+		podfilelock.Name:              {podfilelock.New},
+		carthagecartfileresolved.Name: {carthagecartfileresolved.New},
 	}
 
 	// Containers extractors.

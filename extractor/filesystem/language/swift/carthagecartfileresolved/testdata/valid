@@ -1,0 +1,3 @@
+github "Alamofire/Alamofire" "5.4.3"
+git "https://github.com/SwiftyJSON/SwiftyJSON.git" "5.0.1"
+binary "https://example.com/framework.json" "1.0.0"
