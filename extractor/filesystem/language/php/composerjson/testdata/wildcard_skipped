@@ -1,0 +1,9 @@
+{
+    "name": "vendor/project",
+    "require": {
+        "symfony/console": "5.0.0",
+        "monolog/monolog": "*",
+        "doctrine/orm": "dev-master",
+        "twig/twig": "dev-feature/foo"
+    }
+}
