@@ -1,0 +1,8 @@
+images:
+  - name: old-image
+    newName: new-image
+    newTag: v1.0.0
+  - name: name-only-image
+  - name: digest-image
+    newName: new-digest-image
+    digest: sha256:abc123

@@ -1,0 +1,12 @@
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+      redis:
+        image: redis:7.0
+    steps:
+      - run: echo hello

@@ -1,0 +1,3 @@
+images:
+  - name: old-image
+    newName: registry.example.com:5000/my-image:latest

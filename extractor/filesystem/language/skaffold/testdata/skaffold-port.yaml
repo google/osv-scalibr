@@ -1,0 +1,3 @@
+build:
+  artifacts:
+    - image: "registry.example.com:5000/my-image:latest"

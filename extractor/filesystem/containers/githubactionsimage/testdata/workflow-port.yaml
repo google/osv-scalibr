@@ -1,0 +1,9 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.example.com:5000/my-image:latest
+    steps:
+      - run: echo hello
