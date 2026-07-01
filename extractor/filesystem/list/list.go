@@ -156,6 +156,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/http"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
+	"github.com/google/osv-scalibr/veles/secrets/kubernetesserviceaccount"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
@@ -441,6 +442,7 @@ var (
 		{vapid.NewDetector(), "secrets/vapidkey", 0},
 		{recaptchakey.NewDetector(), "secrets/recaptchakey", 0},
 		{jwt.NewDetector(), "secrets/jwttoken", 0},
+		{kubernetesserviceaccount.NewDetector(), "secrets/kubernetesserviceaccount", 0},
 		{pyxkeyv1.NewDetector(), "secrets/pyxkeyv1", 0},
 		{pyxkeyv2.NewDetector(), "secrets/pyxkeyv2", 0},
 		{urlcreds.NewDetector(), "secrets/urlcreds", 0},
