@@ -1,0 +1,3 @@
+<ivy-module version="2.0">
+  <info organisation="com.example" module="myproject" revision="1.0.0" />
+</ivy-module>

@@ -1,0 +1,5 @@
+<ivy-module version="2.0">
+  <dependencies>
+    <dependency org="org.example" name="bad" rev="1.0.0"
+  </dependencies>
+</ivy-module>
