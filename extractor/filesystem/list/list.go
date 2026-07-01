@@ -71,6 +71,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pylock"
@@ -234,6 +235,7 @@ var (
 		// requirements extraction for environments with and without network access.
 		requirements.Name: {requirements.New},
 		setup.Name:        {setup.New},
+		pipfile.Name:      {pipfile.New},
 		pipfilelock.Name:  {pipfilelock.New},
 		pdmlock.Name:      {pdmlock.New},
 		poetrylock.Name:   {poetrylock.New},
