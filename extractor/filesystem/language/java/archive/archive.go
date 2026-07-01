@@ -63,6 +63,8 @@ var (
 	archiveExtensions = []string{".jar", ".war", ".ear", ".jmod", ".par", ".sar", ".jpi", ".hpi", ".lpkg", ".nar"}
 )
 
+const jenkinsPluginGroupID = "org.jenkins-ci.plugins"
+
 // Extractor extracts Java packages from archive files.
 type Extractor struct {
 	maxZipDepth         int
@@ -243,6 +245,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 	pkgs := []*extractor.Package{}
 	packagePom := []*extractor.Package{}
 	packageManifest := []*extractor.Package{}
+	packageJenkinsPlugin := []*extractor.Package{}
 
 	for _, file := range zipReader.File {
 		// Return if canceled or exceeding deadline.
@@ -288,6 +291,38 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				log.Errorf("%s failed to extract from manifest.mf at %q: %v", e.Name(), path, err)
 				errs = append(errs, err)
 				continue
+			}
+			// Identify the scanned Jenkins plugin archive itself. Nested archives are still
+			// processed by java/archive, but are not treated as top-level Jenkins plugins.
+			if depth == 1 && isJenkinsPluginArchive(input.Path) {
+				jp, err := parseJenkinsPluginManifest(file)
+				if err != nil {
+					log.Errorf("%s failed to extract Jenkins plugin manifest fields at %q: %v", e.Name(), path, err)
+					errs = append(errs, err)
+					continue
+				}
+				if jp.GroupID == "" {
+					// Jenkins plugin manifests can include Group-Id. When it is absent,
+					// issue #1908 specifies Maven PURLs under org.jenkins-ci.plugins.
+					jp.GroupID = jenkinsPluginGroupID
+				}
+				if jp.ShortName != "" && jp.Version != "" {
+					descriptorLoc := location.FromPath(input.Path)
+					packageJenkinsPlugin = append(packageJenkinsPlugin, &extractor.Package{
+						Name:     fmt.Sprintf("%s:%s", jp.GroupID, jp.ShortName),
+						Version:  jp.Version,
+						PURLType: purl.TypeMaven,
+						Metadata: &archivemeta.Metadata{
+							ArtifactID: jp.ShortName,
+							GroupID:    jp.GroupID,
+							SHA1:       sha1,
+						},
+						Location: extractor.PackageLocation{
+							Descriptor: &descriptorLoc,
+							Related:    []location.Location{location.FromPath(path)},
+						},
+					})
+				}
 			}
 			if mf.valid() {
 				descriptorLoc := location.FromPath(input.Path)
@@ -387,6 +422,12 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		pkgs = append(pkgs, packageManifest...)
 	}
 
+	for _, p := range packageJenkinsPlugin {
+		if !hasPackage(pkgs, p) {
+			pkgs = append(pkgs, p)
+		}
+	}
+
 	// If nothing worked, return the hash.
 	if len(pkgs) == 0 && sha1 != "" {
 		pkgs = append(pkgs, &extractor.Package{
@@ -430,6 +471,20 @@ func IsArchive(path string) bool {
 	ext := filepath.Ext(path)
 	for _, archiveExt := range archiveExtensions {
 		if strings.EqualFold(ext, archiveExt) {
+			return true
+		}
+	}
+	return false
+}
+
+func isJenkinsPluginArchive(path string) bool {
+	ext := filepath.Ext(path)
+	return strings.EqualFold(ext, ".hpi") || strings.EqualFold(ext, ".jpi")
+}
+
+func hasPackage(pkgs []*extractor.Package, pkg *extractor.Package) bool {
+	for _, p := range pkgs {
+		if p.Name == pkg.Name && p.Version == pkg.Version && p.PURLType == pkg.PURLType {
 			return true
 		}
 	}
