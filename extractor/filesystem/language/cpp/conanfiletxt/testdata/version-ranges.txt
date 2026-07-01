@@ -1,0 +1,3 @@
+[requires]
+poco/[>1.0 <1.9]
+zlib/1.2.11

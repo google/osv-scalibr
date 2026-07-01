@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanfiletxt"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
@@ -201,7 +202,10 @@ var (
 	// Language extractors.
 
 	// CppSource extractors for C++.
-	CppSource = InitMap{conanlock.Name: {conanlock.New}}
+	CppSource = InitMap{
+		conanlock.Name:    {conanlock.New},
+		conanfiletxt.Name: {conanfiletxt.New},
+	}
 	// JavaSource extractors for Java.
 	JavaSource = InitMap{
 		gradlelockfile.Name:                {gradlelockfile.New},
