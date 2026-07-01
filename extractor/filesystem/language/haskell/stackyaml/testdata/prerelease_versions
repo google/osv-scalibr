@@ -1,0 +1,4 @@
+resolver: lts-18.0
+extra-deps:
+  - my-prerelease-1.0.0-beta
+  - my-prerelease-1.0.0-alpha
