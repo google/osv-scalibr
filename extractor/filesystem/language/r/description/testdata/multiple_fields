@@ -1,0 +1,8 @@
+Package: mypackage
+Version: 1.0.0
+Title: My Package
+Depends: R (>= 3.5.0)
+Imports: ggplot2
+Suggests: testthat
+Enhances: data.table
+LinkingTo: Rcpp
