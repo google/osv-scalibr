@@ -36,6 +36,7 @@ import (
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/diskfs/go-diskfs/partition/part"
 	"github.com/dsoprea/go-exfat"
+	"github.com/erikgeiser/ar"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
@@ -43,8 +44,9 @@ import (
 )
 
 const (
-	defaultPageSize  = 1024 * 1024
-	defaultCacheSize = 100 * 1024 * 1024
+	defaultPageSize    = 1024 * 1024
+	defaultCacheSize   = 100 * 1024 * 1024
+	defaultMaxFileSize = 4000 * 1024 * 1024 // 4GB
 )
 
 // DetectFilesystem identifies the filesystem type by magic bytes.
@@ -725,6 +727,70 @@ loop:
 		default:
 			// Skip other types (symlinks, etc.) for now
 		}
+	}
+
+	if extractErr != nil {
+		os.Remove(tempDir)
+		return "", extractErr
+	}
+
+	return tempDir, nil
+}
+
+// ARToTempDir extracts a ar file into a temporary directory
+// that can be used to traverse its contents recursively.
+func ARToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
+	// Create a temporary directory for extracted files
+	tempDir, err := os.MkdirTemp("", "scalibr-ar-archive-")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+
+	// Extract the ar archive
+	var extractErr error
+	arReader, extractErr := ar.NewReader(reader)
+	if extractErr != nil {
+		return "", fmt.Errorf("invalid ar archive: %w", err)
+	}
+
+	for {
+		hdr, err := arReader.Next()
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				extractErr = fmt.Errorf("failed to read ar entry header: %w", err)
+			}
+			break
+		}
+
+		if symlink.TargetOutsideRoot("/", hdr.Name) {
+			extractErr = errors.New("ar contains invalid entries")
+			break
+		}
+
+		// Determine the effective maximum uncompressed size allowed for a single file.
+		// If the caller does not provide a limit, use the default limit.
+		eMaxFileSize := maxFileSize
+		if eMaxFileSize <= 0 {
+			eMaxFileSize = defaultMaxFileSize
+		}
+
+		// Skip entries whose declared compressed size exceeds the allowed limit.
+		if hdr.Size > eMaxFileSize {
+			continue
+		}
+
+		target := filepath.Join(tempDir, hdr.Name)
+		outFile, err := os.Create(target)
+		if err != nil {
+			extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
+			break
+		}
+		if _, err := io.Copy(outFile, arReader); err != nil {
+			outFile.Close()
+			extractErr = fmt.Errorf("failed to copy file %s: %w", target, err)
+			break
+		}
+		outFile.Close()
 	}
 
 	if extractErr != nil {
