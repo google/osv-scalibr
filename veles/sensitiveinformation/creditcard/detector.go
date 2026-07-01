@@ -159,6 +159,19 @@ var issuerRanges = []issuerRange{
 	{lowIIN: "60", highIIN: "63", lengths: []int{16, 18, 19}},
 	// Napas
 	{lowIIN: "9704", highIIN: "9704", lengths: []int{16, 19}},
+	// Canadian Imperial Bank of Commerce
+	{lowIIN: "4506", highIIN: "4506", lengths: []int{16}},
+	// Royal Bank of Canada
+	{lowIIN: "4519", highIIN: "4519", lengths: []int{16}},
+	// TD Canada Trust
+	{lowIIN: "4724", highIIN: "4724", lengths: []int{16}},
+	// Scotiabank
+	{lowIIN: "4536", highIIN: "4536", lengths: []int{16}},
+	// BMO
+	{lowIIN: "500", highIIN: "500", lengths: []int{16}},
+	{lowIIN: "5510", highIIN: "5510", lengths: []int{16}},
+	// Conexus Credit Union
+	{lowIIN: "629449", highIIN: "629449", lengths: []int{16}},
 }
 
 // NewDetector returns a Detector that finds credit card numbers.
