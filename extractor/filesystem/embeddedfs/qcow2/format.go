@@ -174,6 +174,13 @@ func parseHeader(reader io.Reader) (*header, []headerExtension, error) {
 		if err := binary.Read(reader, binary.BigEndian, &ext.Length); err != nil {
 			return nil, nil, fmt.Errorf("failed to read extension length: %w", err)
 		}
+		// Cap extension data length: prevents make([]byte, ext.Length) OOM for
+		// attacker-controlled Length values up to 4 GB (uint32 max).
+		// Real QCOW2 extensions (feature name strings, bitmaps) are always tiny.
+		const maxExtensionLength = 64 << 10 // 64 KB
+		if ext.Length > maxExtensionLength {
+			return nil, nil, fmt.Errorf("header extension length %d exceeds safety limit %d", ext.Length, maxExtensionLength)
+		}
 		ext.Data = make([]byte, ext.Length)
 		if _, err := io.ReadFull(reader, ext.Data); err != nil {
 			return nil, nil, fmt.Errorf("failed to read extension data: %w", err)
