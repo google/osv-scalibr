@@ -698,6 +698,153 @@ func TestToSPDX23(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "package_with_transitive_dependencies",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						ID:       "top-level",
+						Name:     "top-level",
+						Version:  "1.2.3",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
+					},
+					{
+						ID:       "transitive",
+						Name:     "transitive",
+						Version:  "4.5.6",
+						PURLType: purl.TypePyPi,
+						Plugins:  []string{wheelegg.Name},
+						ParentIDs: map[string]bool{
+							"top-level": true,
+						},
+					},
+				},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/f5717a28-9a26-4f97-a479-81998ebea89c",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						{
+							Creator:     "SCALIBR",
+							CreatorType: "Tool",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					&v2_3.Package{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					&v2_3.Package{
+						PackageName:           "top-level",
+						PackageSPDXIdentifier: "SPDXRef-Package-top-level-067d89bc-7f01-41f5-b398-1659a44ff17a",
+						PackageVersion:        "1.2.3",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation: spdx.NoAssertion,
+						PackageLicenseConcluded: spdx.NoAssertion,
+						PackageLicenseDeclared:  spdx.NoAssertion,
+						PackageSourceInfo:       "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							&v2_3.PackageExternalReference{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/top-level@1.2.3",
+							},
+						}},
+					&v2_3.Package{
+						PackageName:           "transitive",
+						PackageSPDXIdentifier: "SPDXRef-Package-transitive-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						PackageVersion:        "4.5.6",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation: spdx.NoAssertion,
+						PackageLicenseConcluded: spdx.NoAssertion,
+						PackageLicenseDeclared:  spdx.NoAssertion,
+						PackageSourceInfo:       "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							&v2_3.PackageExternalReference{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/transitive@4.5.6",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-DOCUMENT",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						Relationship: "DESCRIBES",
+					},
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-top-level-067d89bc-7f01-41f5-b398-1659a44ff17a",
+						},
+						Relationship: "CONTAINS",
+					},
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-top-level-067d89bc-7f01-41f5-b398-1659a44ff17a",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-transitive-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						},
+						Relationship: "CONTAINS",
+					},
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-transitive-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+					&v2_3.Relationship{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-top-level-067d89bc-7f01-41f5-b398-1659a44ff17a",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-transitive-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {

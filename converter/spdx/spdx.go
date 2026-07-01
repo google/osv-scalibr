@@ -47,6 +47,8 @@ type Config struct {
 	Creators          []common.Creator
 }
 
+const mainPackageName = "main"
+
 // ToSPDX23 converts the SCALIBR scan results into an SPDX v2.3 document.
 func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	packages := make([]*v2_3.Package, 0, len(i.Packages)+1)
@@ -54,7 +56,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	// Add a main package that contains all other top-level packages.
 	mainPackageID := SPDXRefPrefix + "Package-main-" + uuid.New().String()
 	packages = append(packages, &v2_3.Package{
-		PackageName:           "main",
+		PackageName:           mainPackageName,
 		PackageSPDXIdentifier: common.ElementID(mainPackageID),
 		PackageVersion:        "0",
 		PackageSupplier: &common.Supplier{
@@ -73,6 +75,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	})
 
 	allOtherLicenses := stringset.Set{}
+	elementIDs := map[string]string{mainPackageName: mainPackageID}
 
 	for _, pkg := range i.Packages {
 		p := pkg.PURL()
@@ -87,6 +90,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			continue
 		}
 		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
+		elementIDs[pkg.ID] = pID
 		pSourceInfo := ""
 		if len(pkg.Plugins) > 0 {
 			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])
@@ -142,6 +146,16 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			RefB:         toDocElementID(NoAssertion),
 			Relationship: "CONTAINS",
 		})
+	}
+
+	for _, pkg := range i.Packages {
+		for parentID := range pkg.ParentIDs {
+			relationships = append(relationships, &v2_3.Relationship{
+				RefA:         toDocElementID(elementIDs[parentID]),
+				RefB:         toDocElementID(elementIDs[pkg.ID]),
+				Relationship: "DEPENDS_ON",
+			})
+		}
 	}
 	name := c.DocumentName
 	if name == "" {
