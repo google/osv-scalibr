@@ -1342,6 +1342,10 @@ message SecretData {
     string id = 1;   // OAuth Application ID (prefix: sq0idp-)
     string key = 2;  // OAuth Application Secret (prefix: sq0csp-)
   }
+
+  message USPassportNumber {
+    string value = 1;
+  }
 }
 
 message SecretStatus {
