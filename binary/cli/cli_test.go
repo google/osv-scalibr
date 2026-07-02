@@ -27,6 +27,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	"github.com/google/osv-scalibr/binary/cli"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/plugin"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -275,19 +276,6 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 			},
 		},
 		{
-			desc: "Scan root are provided and used",
-			flags: map[string]*cli.Flags{
-				"darwin":  {Root: "/root"},
-				"linux":   {Root: "/root"},
-				"windows": {Root: "C:\\myroot"},
-			},
-			wantScanRoots: map[string][]string{
-				"darwin":  {"/root"},
-				"linux":   {"/root"},
-				"windows": {"C:\\myroot"},
-			},
-		},
-		{
 			desc: "Scan root is null if image tarball is provided",
 			flags: map[string]*cli.Flags{
 				"darwin":  {ImageTarball: "image.tar"},
@@ -337,6 +325,25 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 				t.Errorf("%v.GetScanConfig() ScanRoots got diff (-want +got):\n%s", flags, diff)
 			}
 		})
+	}
+}
+
+func TestGetScanConfig_ScanRoots_Provided(t *testing.T) {
+	tmpDir := t.TempDir()
+	flags := &cli.Flags{
+		Root:       tmpDir,
+		ResultFile: "result.textproto",
+	}
+	cfg, err := flags.GetScanConfig()
+	if err != nil {
+		t.Fatalf("GetScanConfig() failed: %v", err)
+	}
+	defer func() { _ = scalibrfs.CloseAll(cfg.ScanRoots) }()
+	if len(cfg.ScanRoots) != 1 {
+		t.Fatalf("Expected 1 scan root, got %d", len(cfg.ScanRoots))
+	}
+	if cfg.ScanRoots[0].Path != tmpDir {
+		t.Errorf("Expected scan root path %q, got %q", tmpDir, cfg.ScanRoots[0].Path)
 	}
 }
 
@@ -439,28 +446,6 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				"windows": {"C:\\Windows", "C:\\boot", "C:\\mnt"},
 			},
 		},
-		{
-			desc: "Ignore paths outside root",
-			flags: map[string]*cli.Flags{
-				"darwin": {
-					Root:       "/root",
-					DirsToSkip: []string{"/root/dir1,/dir2"},
-				},
-				"linux": {
-					Root:       "/root",
-					DirsToSkip: []string{"/root/dir1,/dir2"},
-				},
-				"windows": {
-					Root:       "C:\\root",
-					DirsToSkip: []string{"C:\\root\\dir1,c:\\dir2"},
-				},
-			},
-			wantDirsToSkip: map[string][]string{
-				"darwin":  {"/root/dir1"},
-				"linux":   {"/root/dir1"},
-				"windows": {"C:\\root\\dir1"},
-			},
-		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			wantDirsToSkip, ok := tc.wantDirsToSkip[runtime.GOOS]
@@ -481,6 +466,31 @@ func TestGetScanConfig_DirsToSkip(t *testing.T) {
 				t.Errorf("%v.GetScanConfig() dirsToSkip got diff (-want +got):\n%s", flags, diff)
 			}
 		})
+	}
+}
+
+func TestGetScanConfig_DirsToSkip_IgnoreOutsideRoot(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	outsideDir := "/dir2"
+	if runtime.GOOS == "windows" {
+		outsideDir = "c:\\dir2"
+	}
+
+	flags := &cli.Flags{
+		Root:       tmpDir,
+		ResultFile: "result.textproto",
+		DirsToSkip: []string{filepath.Join(tmpDir, "dir1") + "," + outsideDir},
+	}
+	cfg, err := flags.GetScanConfig()
+	if err != nil {
+		t.Fatalf("GetScanConfig() failed: %v", err)
+	}
+	defer func() { _ = scalibrfs.CloseAll(cfg.ScanRoots) }()
+
+	wantDirsToSkip := []string{filepath.Join(tmpDir, "dir1")}
+	if diff := cmp.Diff(wantDirsToSkip, cfg.DirsToSkip); diff != "" {
+		t.Errorf("DirsToSkip got diff (-want +got):\n%s", diff)
 	}
 }
 

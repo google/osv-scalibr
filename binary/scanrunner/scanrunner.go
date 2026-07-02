@@ -21,6 +21,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	scalibrlayerimage "github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/binary/cli"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/version"
@@ -43,6 +44,11 @@ func RunScan(flags *cli.Flags) int {
 		log.Errorf("%v.GetScanConfig(): %v", flags, err)
 		return 1
 	}
+	defer func() {
+		if err := scalibrfs.CloseAll(cfg.ScanRoots); err != nil {
+			log.Errorf("Failed to close scan roots: %v", err)
+		}
+	}()
 
 	log.Infof("Running scan with %d plugins", len(cfg.Plugins))
 	if len(cfg.PathsToExtract) > 0 {
