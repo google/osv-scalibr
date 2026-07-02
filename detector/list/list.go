@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/detector/govulncheck/binary"
 	"github.com/google/osv-scalibr/detector/misc/cronjobprivesc"
 	"github.com/google/osv-scalibr/detector/misc/dockersocket"
+	"github.com/google/osv-scalibr/detector/misc/ldsopreload"
 	"github.com/google/osv-scalibr/detector/misc/pammisconfig"
 	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
@@ -90,6 +91,7 @@ var Weakcredentials = InitMap{
 var Misc = InitMap{
 	cronjobprivesc.Name: {cronjobprivesc.New},
 	dockersocket.Name:   {dockersocket.New},
+	ldsopreload.Name:    {ldsopreload.New},
 	pammisconfig.Name:   {pammisconfig.New},
 }
 
