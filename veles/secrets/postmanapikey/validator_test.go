@@ -15,7 +15,6 @@
 package postmanapikey_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -26,12 +25,41 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestAPIKey        = "PMAK-68b96bd4ae8d2b0001db8a86-192b1cb49020c70a4d0c814ab71de822d7"
 	validatorTestCollectionKey = "PMAT-01K4A58P2HS2Q43TXHSXFRDBZX"
 )
+
+func TestAcceptAPIValidator(t *testing.T) {
+	brokenValidator := postmanapikey.NewAPIValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		postmanapikey.NewAPIValidator(),
+		velestest.WithTrueNegatives(postmanapikey.PostmanAPIKey{
+			Key: "PMAK-osvscalibr-invalid-000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptCollectionValidator(t *testing.T) {
+	brokenValidator := postmanapikey.NewCollectionValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		postmanapikey.NewCollectionValidator(),
+		velestest.WithTrueNegatives(postmanapikey.PostmanCollectionToken{
+			Key: "PMAT-osvscalibr-invalid-000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server for the configured hosts.
 type mockTransport struct {
@@ -178,33 +206,6 @@ func TestValidatorAPI(t *testing.T) {
 	}
 }
 
-func TestValidatorAPI_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	validator := postmanapikey.NewAPIValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/me"
-
-	key := postmanapikey.PostmanAPIKey{Key: validatorTestAPIKey}
-
-	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
 func TestValidatorAPI_InvalidRequest(t *testing.T) {
 	// For API validator, an "invalid" key is communicated via 401 status.
 	server := mockAPIServer(t, "", http.StatusUnauthorized, map[string]any{
@@ -344,34 +345,6 @@ func TestValidatorCollection(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidatorCollection_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(nil)
-	t.Cleanup(func() {
-		server.Close()
-	})
-
-	validator := postmanapikey.NewCollectionValidator()
-	validator.HTTPC = server.Client()
-	validator.EndpointFunc = func(k postmanapikey.PostmanCollectionToken) (string, error) {
-		return server.URL + "/collections/aaaaaaaa-aaaaaaaa-aaaa-aaaa-aaaaaaaaaaaa?access_key=" + k.Key, nil
-	}
-	key := postmanapikey.PostmanCollectionToken{Key: validatorTestCollectionKey}
-
-	// Create context that is immediately cancelled
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if diff := cmp.Diff(cmpopts.AnyError, err, cmpopts.EquateErrors()); diff != "" {
-		t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

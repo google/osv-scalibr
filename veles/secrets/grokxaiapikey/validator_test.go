@@ -15,7 +15,6 @@
 package grokxaiapikey_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -26,9 +25,34 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "grokx-test12345678901234567890123456789012345678901234567890"
+
+func TestAcceptAPIValidator(t *testing.T) {
+	brokenValidator := grokxaiapikey.NewAPIValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		grokxaiapikey.NewAPIValidator(),
+		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptManagementAPIValidator(t *testing.T) {
+	brokenValidator := grokxaiapikey.NewManagementAPIValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		grokxaiapikey.NewManagementAPIValidator(),
+		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockAPIServer creates a mock x.ai /v1/api-key endpoint for testing API validator.
 func mockAPIServer(t *testing.T, expectedKey string, statusCode int, body any) *httptest.Server {
@@ -163,34 +187,6 @@ func TestValidatorAPI(t *testing.T) {
 	}
 }
 
-func TestValidatorAPI_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"api_key_blocked": false, "api_key_disabled": false}`))
-	}))
-	defer server.Close()
-
-	validator := grokxaiapikey.NewAPIValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/v1/api-key"
-
-	key := grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}
-
-	// Create a cancelled context.
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context.
-	got, err := validator.Validate(ctx, key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
 func TestValidatorAPI_InvalidRequest(t *testing.T) {
 	// For API validator, an "invalid" key is communicated via the JSON flags.
 	// Create mock server that returns a 200 with api_key_blocked true for empty/invalid keys.
@@ -317,34 +313,6 @@ func TestValidatorManagement(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidatorManagement_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte(`{"code":7,"message":"team mismatch"}`))
-	}))
-	defer server.Close()
-
-	validator := grokxaiapikey.NewManagementAPIValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/auth/teams/ffffffff-ffff-ffff-ffff-ffffffffffff/api-keys"
-
-	key := grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

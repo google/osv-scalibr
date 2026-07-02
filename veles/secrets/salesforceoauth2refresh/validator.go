@@ -25,13 +25,13 @@ import (
 //
 // It performs a POST request to the Salesforce App token endpoint.
 // If the request returns HTTP 200, the credentials are valid.
-// If 401 Unauthorized, they are invalid.
+// If 401 Unauthorized or 400 Bad Request (invalid grant), they are invalid.
 func NewValidator() *sv.Validator[Credentials] {
 	return &sv.Validator[Credentials]{
 		Endpoint: "https://login.salesforce.com/services/oauth2/token",
 		Body: func(creds Credentials) (string, error) {
-			// Salesforce requires refresh token in body
-			return "refresh_token=" + creds.Refresh, nil
+			// Salesforce requires both grant_type and refresh_token in the body
+			return "grant_type=refresh_token&refresh_token=" + creds.Refresh, nil
 		},
 		HTTPMethod: http.MethodPost,
 		HTTPHeaders: func(creds Credentials) map[string]string {
@@ -39,9 +39,10 @@ func NewValidator() *sv.Validator[Credentials] {
 			encoded := base64.StdEncoding.EncodeToString([]byte(raw))
 			return map[string]string{
 				"Authorization": "Basic " + encoded,
+				"Content-Type":  "application/x-www-form-urlencoded",
 			}
 		},
 		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusBadRequest},
 	}
 }

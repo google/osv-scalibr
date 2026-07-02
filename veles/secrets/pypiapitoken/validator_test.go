@@ -25,9 +25,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = `pypi-AgEIc433aS5vcmcffDgyZDA0MzFkLWMzZjEtNDlhNy1iOWQwLfflMjE5NmNkMjhjNQACKlszLCI22UBiYzQ2Yi05YjNhhTQ5NmItYWIxMHYhMGI3MmEyOWI5MzYiXQAABiCJBI80LFFz0JvS6UIj2LzgV9N-BQnBAD2123Dyu9xs33`
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := pypiapitoken.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		pypiapitoken.NewValidator(),
+		velestest.WithTrueNegatives(pypiapitoken.PyPIAPIToken{
+			Token: "pypi-osvscalibr-invalid0000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockPyPIServer creates a mock PyPI API server for testing
 func mockPyPIServer(t *testing.T, expectedKey string, serverResponseCode int) *httptest.Server {
@@ -114,32 +129,6 @@ func TestValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	validator := pypiapitoken.NewValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/legacy/"
-
-	key := pypiapitoken.PyPIAPIToken{Token: validatorTestKey}
-
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 
