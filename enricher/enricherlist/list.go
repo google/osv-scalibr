@@ -65,6 +65,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
+	"github.com/google/osv-scalibr/veles/secrets/nugetorgapikey"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
 	"github.com/google/osv-scalibr/veles/secrets/packagist"
@@ -127,6 +128,7 @@ var (
 		fromVeles(sendgrid.NewValidator(), "secrets/sendgridvalidate", 0),
 		fromVeles(cratesioapitoken.NewValidator(), "secrets/cratesioapitokenvalidate", 0),
 		fromVeles(npmjsaccesstoken.NewValidator(), "secrets/npmjsaccesstokenvalidate", 0),
+		fromVeles(nugetorgapikey.NewValidator(), "secrets/nugetorgapikeyvalidate", 0),
 		fromVeles(slacktoken.NewAppLevelTokenValidator(), "secrets/slackappleveltokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigRefreshTokenValidator(), "secrets/slackconfigrefreshtokenvalidate", 0),
 		fromVeles(slacktoken.NewAppConfigAccessTokenValidator(), "secrets/slackconfigaccesstokenvalidate", 0),
