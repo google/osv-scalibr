@@ -84,6 +84,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargolock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/scala/sbt"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
@@ -321,6 +322,8 @@ var (
 	}
 	// PHPSource extractors for PHP Source extractors.
 	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
+	// ScalaSource extractors for Scala.
+	ScalaSource = InitMap{sbt.Name: {sbt.New}}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
 		packageresolved.Name: {packageresolved.New},
@@ -520,6 +523,7 @@ var (
 		RSource,
 		RubySource,
 		RustSource,
+		ScalaSource,
 		JuliaSource,
 		DotnetSource,
 		SwiftSource,
@@ -582,6 +586,7 @@ var (
 		"haskell":    vals(HaskellSource),
 		"r":          vals(RSource),
 		"ruby":       vals(RubySource),
+		"scala":      vals(ScalaSource),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
