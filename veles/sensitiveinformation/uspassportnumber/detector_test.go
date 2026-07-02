@@ -103,6 +103,96 @@ func TestDetector(t *testing.T) {
 		`,
 			want: []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
 		},
+		{
+			name:  "keyword_after",
+			input: `A12345678 passport number`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "us_passport",
+			input: `us passport: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "usa_passport",
+			input: `usa passport: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "united_states_passport",
+			input: `united states passport: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "american_passport",
+			input: `american passport: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "passport_number_spaced",
+			input: `passport number: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "passport_no",
+			input: `passport no: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "passport_num",
+			input: `passport num: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "passport_hash",
+			input: `passport #: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "us_passport_number",
+			input: `us passport number: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "us_passport_no",
+			input: `us passport no: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "us_passport_hash",
+			input: `us passport #: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "us_travel_document",
+			input: `us travel document: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "united_states_travel_document",
+			input: `united states travel document: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "travel_document_number",
+			input: `travel document number: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "passport_book_number",
+			input: `passport book number: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "passport_card_number",
+			input: `passport card number: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
+		{
+			name:  "case_insensitive",
+			input: `US PASSPORT: A12345678`,
+			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodVeryLikely)},
+		},
 	}
 
 	for _, tc := range cases {
@@ -133,6 +223,22 @@ func TestDetector_LowLikelihood(t *testing.T) {
 			name:  "valid_number_no_context_keyword",
 			input: `A12345678`,
 			want:  []veles.Secret{buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodUnlikely)},
+		},
+		{
+			name:  "multiple_matches",
+			input: `A12345678 123456789 Z98765432`,
+			want: []veles.Secret{
+				buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodUnlikely),
+				buildExpectedResult([]byte("Z98765432"), sensitiveinformation.LikelihoodUnlikely),
+			},
+		},
+		{
+			name:  "multiple_matches_long_gap",
+			input: "A12345678" + strings.Repeat(" ", 50000) + "Z98765432",
+			want: []veles.Secret{
+				buildExpectedResult([]byte("A12345678"), sensitiveinformation.LikelihoodUnlikely),
+				buildExpectedResult([]byte("Z98765432"), sensitiveinformation.LikelihoodUnlikely),
+			},
 		},
 	}
 
@@ -174,6 +280,38 @@ func TestDetector_NoMatch(t *testing.T) {
 		{
 			name:  "invalid_number_space_separator",
 			input: `A 12345678`,
+		},
+		{
+			name:  "numeric_first_character",
+			input: `123456789`,
+		},
+		{
+			name:  "text_without_number",
+			input: `not a passport number`,
+		},
+		{
+			name:  "invalid_number_too_long",
+			input: `A123456789`,
+		},
+		{
+			name:  "invalid_second_character_alpha",
+			input: `AB2345678`,
+		},
+		{
+			name:  "invalid_number_dash_middle",
+			input: `A1234-678`,
+		},
+		{
+			name:  "invalid_number_space_middle",
+			input: `A1234 678`,
+		},
+		{
+			name:  "number_within_longer_string",
+			input: `asdfA12345678asdf`,
+		},
+		{
+			name:  "number_within_underscores",
+			input: `asdf_A12345678_asdf`,
 		},
 	}
 
@@ -225,6 +363,13 @@ func TestDetector_OutsideSearchWindow(t *testing.T) {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestDetector_MaxSecretLen(t *testing.T) {
+	want := uint32(max(maxKeywordLen, maxPassportNumberLen) + (2 * contextWindowSize))
+	if got := NewDetector().MaxSecretLen(); got != want {
+		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
 	}
 }
 
