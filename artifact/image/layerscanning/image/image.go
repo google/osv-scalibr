@@ -303,16 +303,24 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 
 	var labels map[string]string
 	var history []v1.History
+	var diffIDs []digest.Digest
 
 	configFile, err := v1Image.ConfigFile()
 	// If the config file is not found, then:
 	//  - layers will not have history information.
 	//  - labels will not be populated.
+	//  - diffIDs will not be populated, so they are recomputed from the layers.
 	if err != nil {
 		log.Warnf("failed to load config file: %v", err)
 	} else {
 		history = configFile.History
 		labels = configFile.Config.Labels
+		// The config records each layer's diffID (the digest of its uncompressed
+		// content). Reusing them avoids decompressing every layer twice - once to
+		// recompute chain IDs and once per layer struct - on top of the fill pass.
+		for _, h := range configFile.RootFS.DiffIDs {
+			diffIDs = append(diffIDs, digest.Digest(h.String()))
+		}
 	}
 
 	v1Layers, err := v1Image.Layers()
@@ -320,7 +328,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 		return nil, fmt.Errorf("failed to load layers: %w", err)
 	}
 
-	chainLayers, err := initializeChainLayers(v1Layers, history, config.MaxSymlinkDepth)
+	chainLayers, err := initializeChainLayers(v1Layers, history, diffIDs, config.MaxSymlinkDepth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize chain layers: %w", err)
 	}
@@ -441,11 +449,25 @@ func validateHistory(v1Layers []v1.Layer, history []v1.History) error {
 
 // initializeChainLayers initializes the chain layers based on the config file history, the
 // v1.Layers found in the image from the tarball, and the max symlink depth.
-func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlinkDepth int) ([]*chainLayer, error) {
+func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, diffIDs []digest.Digest, maxSymlinkDepth int) ([]*chainLayer, error) {
 	var chainLayers []*chainLayer
 
-	chainIDs, err := chainIDsForV1Layers(v1Layers)
-	if err != nil {
+	// diffIDs read from the image config are authoritative and free; recomputing
+	// them from the layers decompresses every layer. Only fall back to that when
+	// the config did not supply a diffID per layer.
+	useConfigDiffIDs := len(diffIDs) == len(v1Layers)
+	diffIDFor := func(i int) digest.Digest {
+		if useConfigDiffIDs && i < len(diffIDs) {
+			return diffIDs[i]
+		}
+		return ""
+	}
+
+	var chainIDs []digest.Digest
+	var err error
+	if useConfigDiffIDs {
+		chainIDs = chainIDsFromDiffIDs(diffIDs)
+	} else if chainIDs, err = chainIDsForV1Layers(v1Layers); err != nil {
 		log.Warnf("Failed to get chainIDs for v1 layers: %v", err)
 	}
 	// Defensively extend the length of the chainIDs slice to the length of the v1Layers slice.
@@ -465,7 +487,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 				fileNodeTree: NewNode(maxSymlinkDepth),
 				index:        i,
 				chainID:      chainIDs[i],
-				latestLayer:  convertV1Layer(v1Layer, "", false, maxSymlinkDepth),
+				latestLayer:  convertV1Layer(v1Layer, "", false, diffIDFor(i), maxSymlinkDepth),
 			})
 		}
 		return chainLayers, nil
@@ -504,7 +526,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 			fileNodeTree: NewNode(maxSymlinkDepth),
 			index:        historyIndex,
 			chainID:      chainIDs[v1LayerIndex],
-			latestLayer:  convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false, maxSymlinkDepth),
+			latestLayer:  convertV1Layer(nextNonEmptyLayer, entry.CreatedBy, false, diffIDFor(v1LayerIndex), maxSymlinkDepth),
 		}
 		chainLayers = append(chainLayers, chainLayer)
 
@@ -519,7 +541,7 @@ func initializeChainLayers(v1Layers []v1.Layer, history []v1.History, maxSymlink
 			fileNodeTree: NewNode(maxSymlinkDepth),
 			index:        historyIndex,
 			chainID:      chainIDs[v1LayerIndex],
-			latestLayer:  convertV1Layer(v1Layers[v1LayerIndex], "", false, maxSymlinkDepth),
+			latestLayer:  convertV1Layer(v1Layers[v1LayerIndex], "", false, diffIDFor(v1LayerIndex), maxSymlinkDepth),
 		})
 		v1LayerIndex++
 		historyIndex++
