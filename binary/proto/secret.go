@@ -84,7 +84,6 @@ import (
 	velestelegrambotapitoken "github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
-	"github.com/google/osv-scalibr/veles/secrets/uspassportnumber"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -1179,16 +1178,6 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 				Id:     s.ID,
 				Secret: s.Secret,
 				Url:    s.URL,
-			},
-		},
-	}
-}
-
-func usPassportNumberToProto(p uspassportnumber.USPassportNumber) *spb.SecretData {
-	return &spb.SecretData{
-		Secret: &spb.SecretData_UsPassportNumber{
-			UsPassportNumber: &spb.SecretData_USPassportNumber{
-				Value: p.Value,
 			},
 		},
 	}
