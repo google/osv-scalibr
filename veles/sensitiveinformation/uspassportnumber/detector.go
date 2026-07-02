@@ -31,7 +31,6 @@ const (
 )
 
 var (
-	// keywordRe  = regexp.MustCompile(`(?i)\b\w*(?:passport|document|travel)\w*\b`)
 	keywordsRe = simpleregex.KeywordsRe([]string{
 		`\b\w*passport\w*\b`,
 		`\b\w*travel\w*\b`,
