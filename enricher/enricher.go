@@ -45,6 +45,7 @@ var (
 		// Reachability enrichers need to run after vulnmatch enrichers (in certain configurations).
 		"reachability/go/source",
 		"reachability/rust",
+		"reachability/javascript",
 		// Base image attribution enricher need to run after base image enricher.
 		"baseimage",
 		"ffa/baseimageattr",
