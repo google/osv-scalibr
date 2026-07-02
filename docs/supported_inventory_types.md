@@ -227,6 +227,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |---------------------------------------------|----------------------------------------|
 | US Passport Numbers                         | `pii/uspassportnumber`                 |
 
+### Personal Identifiable Information (PII)
+
+| Type                                        | Extractor Plugin                       |
+|---------------------------------------------|----------------------------------------|
+| US Passport Numbers                         | `pii/uspassportnumber`                 |
+
 ### Container inventory
 
 | Type                            | Extractor Plugin                                                                   |
