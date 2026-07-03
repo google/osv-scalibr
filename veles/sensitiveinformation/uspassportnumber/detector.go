@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package `uspassportnumber` implements logic for detecting US passport numbers
+// Package uspassportnumber implements logic for detecting US passport numbers
 package uspassportnumber
 
 import (
@@ -39,6 +39,7 @@ var (
 	passportNumberRe = regexp.MustCompile(`\b[A-Za-z][0-9]{8}\b`)
 )
 
+// NewDetector returns a Detector, that finds US Passport Numbers
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen:              max(maxKeywordLen, maxPassportNumberLen),
