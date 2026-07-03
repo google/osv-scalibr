@@ -34,14 +34,15 @@ var atinRe = regexp.MustCompile(`\b(\d{9}|\d{3}-\d{2}-\d{4}|\d{3} \d{2} \d{4})\b
 
 var atinKeywords = simpleregex.KeywordsRe([]string{
 	`\batin\b`,
-	`adoption taxpayer identification number`,
-	`adoption taxpayer identification`,
-	`adoption tax identification number`,
-	`adoption tax id`,
-	`adoption taxpayer id`,
-	`adoption tin`,
-	`irs atin`,
-	`form w-7a`,
+	`\batin(?:\s|[-_])*(?:number|num|no\b|#)`,
+	`adoption(?:\s|[-_])*taxpayer(?:\s|[-_])*identification(?:\s|[-_])*number`,
+	`adoption(?:\s|[-_])*taxpayer(?:\s|[-_])*identification`,
+	`adoption(?:\s|[-_])*tax(?:\s|[-_])*identification(?:\s|[-_])*number`,
+	`adoption(?:\s|[-_])*tax(?:\s|[-_])*id`,
+	`adoption(?:\s|[-_])*taxpayer(?:\s|[-_])*id`,
+	`adoption(?:\s|[-_])*tin`,
+	`irs(?:\s|[-_])*atin`,
+	`form(?:\s|[-_])*w-7a`,
 	`w-7a`,
 })
 

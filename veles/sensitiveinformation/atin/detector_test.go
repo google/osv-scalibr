@@ -158,8 +158,32 @@ func TestDetect_keywordMatches(t *testing.T) {
 			in:   []byte("atin: 912-93-6789"),
 		},
 		{
+			name: "atin_number",
+			in:   []byte("atin number: 912-93-6789"),
+		},
+		{
+			name: "atin_num_with_underscore",
+			in:   []byte("atin_num: 912-93-6789"),
+		},
+		{
+			name: "atin_no_with_dash",
+			in:   []byte("atin-no: 912-93-6789"),
+		},
+		{
+			name: "atin_hash",
+			in:   []byte("atin #: 912-93-6789"),
+		},
+		{
 			name: "adoption_taxpayer_identification_number",
 			in:   []byte("adoption taxpayer identification number: 912-93-6789"),
+		},
+		{
+			name: "adoption_taxpayer_identification_number_with_dashes",
+			in:   []byte("adoption-taxpayer-identification-number: 912-93-6789"),
+		},
+		{
+			name: "adoption_taxpayer_identification_number_with_underscores",
+			in:   []byte("adoption_taxpayer_identification_number: 912-93-6789"),
 		},
 		{
 			name: "adoption_taxpayer_identification",
@@ -174,20 +198,40 @@ func TestDetect_keywordMatches(t *testing.T) {
 			in:   []byte("adoption tax id: 912-93-6789"),
 		},
 		{
+			name: "adoption_tax_id_with_underscore",
+			in:   []byte("adoption_tax_id: 912-93-6789"),
+		},
+		{
 			name: "adoption_taxpayer_id",
 			in:   []byte("adoption taxpayer id: 912-93-6789"),
+		},
+		{
+			name: "adoption_taxpayer_id_with_dash",
+			in:   []byte("adoption-taxpayer-id: 912-93-6789"),
 		},
 		{
 			name: "adoption_tin",
 			in:   []byte("adoption tin: 912-93-6789"),
 		},
 		{
+			name: "adoption_tin_with_underscore",
+			in:   []byte("adoption_tin: 912-93-6789"),
+		},
+		{
 			name: "irs_atin",
 			in:   []byte("irs atin: 912-93-6789"),
 		},
 		{
+			name: "irs_atin_with_dash",
+			in:   []byte("irs-atin: 912-93-6789"),
+		},
+		{
 			name: "form_w_7a",
 			in:   []byte("form w-7a: 912-93-6789"),
+		},
+		{
+			name: "form_w_7a_with_underscore",
+			in:   []byte("form_w-7a: 912-93-6789"),
 		},
 		{
 			name: "w_7a",
