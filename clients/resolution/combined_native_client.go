@@ -37,12 +37,11 @@ type CombinedNativeClient struct {
 
 // CombinedNativeClientOptions contains the options each client in the CombinedNativeClient.
 type CombinedNativeClientOptions struct {
-	ProjectDir        string                             // The project directory to use, currently only used for NPM to find .npmrc files.
-	LocalRegistry     string                             // The local directory to store the downloaded manifests during resolution.
-	MavenRegistry     string                             // The default Maven registry to use.
-	PyPIRegistry      string                             // The default PyPI registry to use.
-	MavenClient       *datasource.MavenRegistryAPIClient // The Maven registry client to use, if nil, a new client will be created.
-	DisableGoogleAuth bool                               // If true, do not try to create google.DefaultClient for Artifact Registry.
+	ProjectDir    string                             // The project directory to use, currently only used for NPM to find .npmrc files.
+	LocalRegistry string                             // The local directory to store the downloaded manifests during resolution.
+	MavenRegistry string                             // The default Maven registry to use.
+	PyPIRegistry  string                             // The default PyPI registry to use.
+	MavenClient   *datasource.MavenRegistryAPIClient // The Maven registry client to use, if nil, a new client will be created.
 }
 
 // NewCombinedNativeClient makes a new CombinedNativeClient.
@@ -116,7 +115,7 @@ func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, c.opts.LocalRegistry, c.opts.DisableGoogleAuth)
+			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, c.opts.LocalRegistry, false)
 			if err != nil {
 				return nil, err
 			}
