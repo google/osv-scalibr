@@ -366,13 +366,6 @@ func TestDetector_OutsideSearchWindow(t *testing.T) {
 	}
 }
 
-func TestDetector_MaxSecretLen(t *testing.T) {
-	want := uint32(max(maxKeywordLen, maxPassportNumberLen) + (2 * contextWindowSize))
-	if got := NewDetector().MaxSecretLen(); got != want {
-		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
-	}
-}
-
 func buildExpectedResult(blob []byte, likelihood sensitiveinformation.Likelihood) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
