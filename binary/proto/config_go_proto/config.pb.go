@@ -3650,8 +3650,14 @@ type JavascriptPackageJsonConfig struct {
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
 	// Specifies whether to extract dependencies.
 	IncludeDependencies bool `protobuf:"varint,2,opt,name=include_dependencies,json=includeDependencies,proto3" json:"include_dependencies,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Specifies whether to extract devDependencies.
+	IncludeDevDependencies bool `protobuf:"varint,3,opt,name=include_dev_dependencies,json=includeDevDependencies,proto3" json:"include_dev_dependencies,omitempty"`
+	// Specifies whether to extract optionalDependencies.
+	IncludeOptionalDependencies bool `protobuf:"varint,4,opt,name=include_optional_dependencies,json=includeOptionalDependencies,proto3" json:"include_optional_dependencies,omitempty"`
+	// Specifies whether to extract peerDependencies.
+	IncludePeerDependencies bool `protobuf:"varint,5,opt,name=include_peer_dependencies,json=includePeerDependencies,proto3" json:"include_peer_dependencies,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *JavascriptPackageJsonConfig) Reset() {
@@ -3694,6 +3700,27 @@ func (x *JavascriptPackageJsonConfig) GetMaxFileSizeBytes() int64 {
 func (x *JavascriptPackageJsonConfig) GetIncludeDependencies() bool {
 	if x != nil {
 		return x.IncludeDependencies
+	}
+	return false
+}
+
+func (x *JavascriptPackageJsonConfig) GetIncludeDevDependencies() bool {
+	if x != nil {
+		return x.IncludeDevDependencies
+	}
+	return false
+}
+
+func (x *JavascriptPackageJsonConfig) GetIncludeOptionalDependencies() bool {
+	if x != nil {
+		return x.IncludeOptionalDependencies
+	}
+	return false
+}
+
+func (x *JavascriptPackageJsonConfig) GetIncludePeerDependencies() bool {
+	if x != nil {
+		return x.IncludePeerDependencies
 	}
 	return false
 }
@@ -4548,10 +4575,13 @@ const file_proto_config_proto_rawDesc = "" +
 	"\thash_jars\x18\x06 \x01(\bH\x01R\bhashJars\x88\x01\x01B\x18\n" +
 	"\x16_extract_from_filenameB\f\n" +
 	"\n" +
-	"_hash_jars\"\x7f\n" +
+	"_hash_jars\"\xb9\x02\n" +
 	"\x1bJavascriptPackageJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x121\n" +
-	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependencies\"P\n" +
+	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependencies\x128\n" +
+	"\x18include_dev_dependencies\x18\x03 \x01(\bR\x16includeDevDependencies\x12B\n" +
+	"\x1dinclude_optional_dependencies\x18\x04 \x01(\bR\x1bincludeOptionalDependencies\x12:\n" +
+	"\x19include_peer_dependencies\x18\x05 \x01(\bR\x17includePeerDependencies\"P\n" +
 	"\x1fJavascriptPackageLockJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"I\n" +
 	"\x18PythonRequirementsConfig\x12-\n" +

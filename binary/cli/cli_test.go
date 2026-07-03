@@ -629,6 +629,22 @@ func TestGetScanConfig_PluginConfig(t *testing.T) {
 			},
 			wantVersionFromContent: true,
 		},
+		{
+			desc: "javascript_package_json_dependency_config",
+			cfgFlags: []string{
+				"javascript_package_json:{include_dependencies:true include_dev_dependencies:true include_optional_dependencies:true include_peer_dependencies:true}",
+			},
+			wantCFG: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
+						IncludeDependencies:         true,
+						IncludeDevDependencies:      true,
+						IncludeOptionalDependencies: true,
+						IncludePeerDependencies:     true,
+					}}},
+				},
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			flags := &cli.Flags{
