@@ -92,6 +92,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
+|            | VS Code extension                                 | `javascript/vsix`                    |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -215,9 +216,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP CSRF Token                             | `secrets/csrftoken`                    |
 
 ### Sensitive information
-| Type                                        | Extractor Plugin                     |
-| ------------------------------------------- | ------------------------------------ |
-| US Adoption Taxpayer Identification Number  | `sensitiveinformation/atin`          |
+| Type                                        | Extractor Plugin                       |
+| ------------------------------------------- | -------------------------------------- |
+| International Bank Account Number           | `sensitiveinformation/iban`            |
+| US Adoption Taxpayer Identification Number  | `sensitiveinformation/atin`            |
+| US Social Security Number                   | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 

@@ -46,6 +46,8 @@ const (
 // Enricher performs dependency resolution for requirements.txt.
 type Enricher struct {
 	resolve.Client
+
+	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -94,7 +96,8 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	}
 
 	return &Enricher{
-		Client: depClient,
+		Client:      depClient,
+		IDGenerator: &extractor.RandomIDGenerator{},
 	}, nil
 }
 
@@ -191,17 +194,30 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		return nil, errors.New(g.Error)
 	}
 
+	nameToID, err := internal.GetNameToIDMapping(g, list, e.IDGenerator)
+	if err != nil {
+		return nil, err
+	}
+
 	pkgs := make([]*extractor.Package, len(g.Nodes)-1)
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
+
+		parents, err := internal.GetParentIDs(g, nameToID, resolve.NodeID(i))
+		if err != nil {
+			return nil, err
+		}
+
 		pkgs[i-1] = &extractor.Package{
-			Name:     node.Version.Name,
-			Version:  node.Version.Version,
-			PURLType: purl.TypePyPi,
-			ScanRoot: scanRoot,
-			Location: extractor.LocationFromPath(path),
-			Plugins:  []string{Name},
+			ID:        nameToID[node.Version.Name],
+			Name:      node.Version.Name,
+			ParentIDs: parents,
+			Version:   node.Version.Version,
+			PURLType:  purl.TypePyPi,
+			ScanRoot:  scanRoot,
+			Location:  extractor.LocationFromPath(path),
+			Plugins:   []string{Name},
 		}
 	}
 	return pkgs, nil

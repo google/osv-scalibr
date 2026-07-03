@@ -589,7 +589,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 
 		// Check if the file is a whiteout.
 		isWhiteout := whiteout.IsWhiteout(basename)
-		// TODO: b/379094217 - Handle Opaque Whiteouts
+		// TODO(b/379094217): Handle Opaque Whiteouts
 		if isWhiteout {
 			basename = whiteout.ToPath(basename)
 		}
@@ -790,7 +790,7 @@ func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *vi
 }
 
 // inWhiteoutDir returns whether the file is in a whiteout directory.
-// TODO: b/379094217 - Verify that this works for opaque whiteouts.
+// TODO(b/379094217): Verify that this works for opaque whiteouts.
 func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 	for filePath != "" {
 		dirname := path.Dir(filePath)
