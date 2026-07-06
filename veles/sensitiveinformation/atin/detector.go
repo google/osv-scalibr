@@ -18,7 +18,6 @@ package atin
 import (
 	"bytes"
 	"regexp"
-	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation"
@@ -30,7 +29,9 @@ const (
 	contextWindowSize = 64
 )
 
-var atinRe = regexp.MustCompile(`\b(\d{9}|\d{3}-\d{2}-\d{4}|\d{3} \d{2} \d{4})\b`)
+// https://www.irs.gov/individuals/adoption-taxpayer-identification-number
+// https://www.irs.gov/irm/part3/irm_03-013-040 (See 3.13.40.2.1 (05-04-2023) Characteristics of the ATIN)
+var atinRe = regexp.MustCompile(`\b(9\d{2}93\d{4}|9\d{2}-93-\d{4}|9\d{2} 93 \d{4})\b`)
 
 var atinKeywords = simpleregex.KeywordsRe([]string{
 	`\batin\b`,
@@ -55,11 +56,6 @@ func NewDetector() veles.Detector {
 		ContextWindowAfter:  contextWindowSize,
 		KeywordsRe:          atinKeywords,
 		FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
-			atin := string(b)
-			if !validAtin(atin) {
-				return sensitiveinformation.SensitiveInformation{}, false
-			}
-
 			likelihood := sensitiveinformation.LikelihoodUnlikely
 			if contextMatch {
 				likelihood = sensitiveinformation.LikelihoodLikely
@@ -77,12 +73,4 @@ func NewDetector() veles.Detector {
 			return finding, true
 		},
 	}
-}
-
-// https://www.irs.gov/individuals/adoption-taxpayer-identification-number
-// https://www.irs.gov/irm/part3/irm_03-013-040 (See 3.13.40.2.1 (05-04-2023) Characteristics of the ATIN)
-func validAtin(s string) bool {
-	normalized := strings.ReplaceAll(s, "-", "")
-
-	return normalized[0] == '9' && normalized[3:5] == "93"
 }

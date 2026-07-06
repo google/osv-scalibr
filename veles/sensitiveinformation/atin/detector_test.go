@@ -310,10 +310,6 @@ func TestDetect_trueNegatives(t *testing.T) {
 			in:   []byte("912 93-6789"),
 		},
 		{
-			name: "spaced",
-			in:   []byte("912 93 6789"),
-		},
-		{
 			name: "within_longer_string",
 			in:   []byte("asdf912-93-6789asdf"),
 		},
