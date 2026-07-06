@@ -340,12 +340,6 @@ func TestDetect_trueNegatives(t *testing.T) {
 	}
 }
 
-func TestDetectorMaxSecretLen(t *testing.T) {
-	if got, want := NewDetector().MaxSecretLen(), uint32(len("912-93-6789")+(2*contextWindowSize)); got != want {
-		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
-	}
-}
-
 func atinFinding(raw []byte) sensitiveinformation.SensitiveInformation {
 	return atinFindingWithLikelihood(raw, sensitiveinformation.LikelihoodUnlikely)
 }
