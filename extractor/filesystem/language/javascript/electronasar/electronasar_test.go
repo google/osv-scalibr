@@ -106,6 +106,32 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: nil,
 		},
+		{
+			Name: "scoped_packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/scoped_packages.asar",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "lodash",
+					Version:  "4.17.21",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped_packages.asar"),
+				},
+				{
+					Name:     "@types/node",
+					Version:  "18.15.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped_packages.asar"),
+				},
+				{
+					Name:     "@babel/core",
+					Version:  "7.21.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/scoped_packages.asar"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

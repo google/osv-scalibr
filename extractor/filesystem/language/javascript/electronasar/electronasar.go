@@ -148,27 +148,64 @@ func (e Extractor) extractPackages(
 
 	var pkgs []*extractor.Package
 	for pkgName, pkgNode := range nmNode.Files {
-		pjNode, ok := pkgNode.Files["package.json"]
-		if !ok {
-			continue
-		}
-		pj, err := readPackageJSON(ra, pjNode, dataOffset)
-		if err != nil {
-			log.Warnf("%s: reading package.json for %q in %q: %v",
-				e.Name(), pkgName, input.Path, err)
-			continue
-		}
-		if pj.Name == "" || pj.Version == "" {
-			continue
-		}
-		pkgs = append(pkgs, &extractor.Package{
-			Name:     pj.Name,
-			Version:  pj.Version,
-			PURLType: purl.TypeNPM,
-			Location: extractor.LocationFromPath(input.Path),
-		})
+		pkgs = append(pkgs,
+			e.extractFromNodeModulesEntry(ra, pkgName, pkgNode, dataOffset, input.Path)...)
 	}
 	return pkgs, nil
+}
+
+// extractFromNodeModulesEntry handles a single entry inside a node_modules
+// directory. It accounts for two layouts:
+//
+//  1. Regular packages: node_modules/<name>/package.json
+//  2. Scoped packages:  node_modules/@scope/<name>/package.json
+//
+// For scoped packages the top-level entry (e.g. "@types") is itself a
+// directory whose children are the real package directories. We detect this
+// by checking whether the entry name starts with "@" and, if so, recurse one
+// level deeper.
+func (e Extractor) extractFromNodeModulesEntry(
+	ra io.ReaderAt, entryName string, node asarNode, dataOffset int64, asarPath string,
+) []*extractor.Package {
+	// Scoped package namespace directory (e.g. "@types", "@babel").
+	if strings.HasPrefix(entryName, "@") {
+		var pkgs []*extractor.Package
+		for scopedName, scopedNode := range node.Files {
+			fullName := entryName + "/" + scopedName
+			pkgs = append(pkgs,
+				e.extractPackageJSONNode(ra, fullName, scopedNode, dataOffset, asarPath)...)
+		}
+		return pkgs
+	}
+
+	return e.extractPackageJSONNode(ra, entryName, node, dataOffset, asarPath)
+}
+
+// extractPackageJSONNode reads the package.json directly inside the given
+// asarNode (expected to be a package directory) and returns a Package if the
+// file is valid and contains both name and version.
+func (e Extractor) extractPackageJSONNode(
+	ra io.ReaderAt, pkgName string, pkgNode asarNode, dataOffset int64, asarPath string,
+) []*extractor.Package {
+	pjNode, ok := pkgNode.Files["package.json"]
+	if !ok {
+		return nil
+	}
+	pj, err := readPackageJSON(ra, pjNode, dataOffset)
+	if err != nil {
+		log.Warnf("%s: reading package.json for %q in %q: %v",
+			e.Name(), pkgName, asarPath, err)
+		return nil
+	}
+	if pj.Name == "" || pj.Version == "" {
+		return nil
+	}
+	return []*extractor.Package{{
+		Name:     pj.Name,
+		Version:  pj.Version,
+		PURLType: purl.TypeNPM,
+		Location: extractor.LocationFromPath(asarPath),
+	}}
 }
 
 // asarPrefix is the 16-byte binary header at the start of every ASAR file.

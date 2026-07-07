@@ -229,7 +229,7 @@ var (
 		packagejson.Name:  {packagejson.New},
 		denojson.Name:     {denojson.New},
 		electronasar.Name: {electronasar.New},
-		vsix.Name:        {vsix.New},
+		vsix.Name:         {vsix.New},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
