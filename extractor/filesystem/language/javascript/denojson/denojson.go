@@ -26,9 +26,11 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denohelper"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/tidwall/gjson"
 )
 
 const (
@@ -96,19 +98,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			fmt.Errorf("error during parsing the deno.json: %w", err)
 	}
 
-	for _, p := range pkgs {
-		p.Location = extractor.LocationFromPath(path)
-	}
-
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
 func parseDenoJSONFile(path string, r io.Reader) ([]*extractor.Package, error) {
-	dec := json.NewDecoder(r)
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read deno.json file: %w", err)
+	}
 
 	var p denoJSON
-	if err := dec.Decode(&p); err != nil {
-		log.Debugf("deno.json file %s json decode failed: %v", path, err)
+	if err := json.Unmarshal(content, &p); err != nil {
+		log.Debugf("deno.json file %s json unmarshal failed: %v", path, err)
 		return nil, fmt.Errorf("failed to parseDenoJSONFile deno.json file: %w", err)
 	}
 
@@ -120,9 +121,12 @@ func parseDenoJSONFile(path string, r io.Reader) ([]*extractor.Package, error) {
 	var pkgs []*extractor.Package
 
 	if len(p.Imports) > 0 {
-		for _, importSpec := range p.Imports {
+		finder := linefinder.NewJSONLineFinder(string(content))
+		for alias, importSpec := range p.Imports {
 			pkg := denohelper.ParseImportSpecifier(importSpec)
 			if pkg != nil {
+				lineNum := finder.LineOf("imports." + gjson.Escape(alias))
+				pkg.Location = extractor.LocationFromPathAndLine(path, lineNum)
 				pkgs = append(pkgs, pkg)
 			}
 		}

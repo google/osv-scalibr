@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -37,7 +36,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -54,6 +52,7 @@ const (
 type Enricher struct {
 	DepClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
+	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -119,6 +118,7 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	return &Enricher{
 		DepClient:   depClient,
 		MavenClient: mavenClient,
+		IDGenerator: &extractor.RandomIDGenerator{},
 	}, nil
 }
 
@@ -129,13 +129,15 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	for p := range pkgGroups {
 		paths = append(paths, p)
 	}
-	e.discoverModules(input.ScanRoot, paths)
+	mavenutil.DiscoverModules(input.ScanRoot, paths, e.MavenClient)
 	if len(pkgGroups) > 0 {
 		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
 	}
 
 	var errs error
-	for path, pkgMap := range pkgGroups {
+	for i, path := range paths {
+		pkgMap := pkgGroups[path]
+		log.Debugf("[%d/%d] Enriching transitive dependencies for: %s", i+1, len(paths), path)
 		f, err := input.ScanRoot.FS.Open(path)
 
 		if err != nil {
@@ -144,7 +146,19 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			continue
 		}
 
-		enrichedInv, err := e.extract(ctx, &filesystem.ScanInput{
+		packagesWithIndex := make([]internal.PackageWithIndex, 0, len(pkgMap))
+		for _, indexPkg := range pkgMap {
+			packagesWithIndex = append(packagesWithIndex, indexPkg)
+		}
+		slices.SortFunc(packagesWithIndex, func(a, b internal.PackageWithIndex) int {
+			return a.Index - b.Index
+		})
+		packages := make([]*extractor.Package, 0, len(packagesWithIndex))
+		for _, indexPkg := range packagesWithIndex {
+			packages = append(packages, indexPkg.Pkg)
+		}
+
+		enrichedInv, err := e.extract(ctx, packages, &filesystem.ScanInput{
 			Path:   path,
 			Reader: f,
 			Info:   nil,
@@ -165,7 +179,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	return errs
 }
 
-func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e Enricher) extract(ctx context.Context, packages []*extractor.Package, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
@@ -285,6 +299,11 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
 	}
 
+	nameToID, err := internal.GetNameToIDMapping(g, packages, e.IDGenerator)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+
 	details := map[string]*extractor.Package{}
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
@@ -305,10 +324,18 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 			}
 			break
 		}
+
+		parents, err := internal.GetParentIDs(g, nameToID, resolve.NodeID(i))
+		if err != nil {
+			return inventory.Inventory{}, err
+		}
+
 		pkg := extractor.Package{
-			Name:     node.Version.Name,
-			Version:  node.Version.Version,
-			PURLType: purl.TypeMaven,
+			Name:      node.Version.Name,
+			ID:        nameToID[node.Version.Name],
+			ParentIDs: parents,
+			Version:   node.Version.Version,
+			PURLType:  purl.TypeMaven,
 			Metadata: &javalockfile.Metadata{
 				ArtifactID:   artifactID,
 				GroupID:      groupID,
@@ -324,49 +351,4 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 	}
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
-}
-
-// discoverModules recursively discovers local modules by following module tags.
-func (e Enricher) discoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string) {
-	visited := make(map[string]bool)
-	var queue []string
-	queue = append(queue, initialPaths...)
-
-	for len(queue) > 0 {
-		path := queue[0]
-		queue = queue[1:]
-
-		if visited[path] {
-			continue
-		}
-		visited[path] = true
-
-		f, err := scanRoot.FS.Open(path)
-		if err != nil {
-			log.Errorf("Failed to open pom.xml at %s: %v", path, err)
-			continue
-		}
-		var project maven.Project
-		if err := datasource.NewMavenDecoder(f).Decode(&project); err != nil {
-			log.Errorf("Failed to decode pom.xml at %s: %v", path, err)
-			f.Close()
-			continue
-		}
-		f.Close()
-
-		pk := mavenutil.ProjectKey(project)
-		g, a, v := string(pk.GroupID), string(pk.ArtifactID), string(pk.Version)
-		if g != "" && a != "" && v != "" {
-			absPath := filepath.Join(scanRoot.Path, path)
-			log.Debugf("Discovered local module %s:%s:%s at %s", g, a, v, path)
-			e.MavenClient.AddLocalProject(g, a, v, absPath)
-		}
-
-		// Add modules to queue
-		dir := filepath.Dir(path)
-		for _, m := range project.Modules {
-			modulePath := filepath.Join(dir, string(m), "pom.xml")
-			queue = append(queue, filepath.ToSlash(modulePath))
-		}
-	}
 }

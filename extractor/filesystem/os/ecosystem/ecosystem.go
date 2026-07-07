@@ -26,8 +26,11 @@ import (
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	snapmeta "github.com/google/osv-scalibr/extractor/filesystem/os/snap/metadata"
+	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
+	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/log"
+	purlecosystem "github.com/google/osv-scalibr/purl/ecosystem"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -85,6 +88,13 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		}
 		if m.OSID == "azurelinux" || m.OSID == "mariner" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAzureLinux, Suffix: m.OSVersionID}
+		if m.OSID == "almalinux" {
+			// OSV.dev keys ALSA advisories by major version only (e.g. "AlmaLinux:9").
+			// VERSION_ID in /etc/os-release is a full point release (e.g. "9.0" or "9.8"),
+			// so trim to the major version only. A bare major such as "9" is returned
+			// unchanged by strings.Cut (found=false, before=full string).
+			majorVersion, _, _ := strings.Cut(m.OSVersionID, ".")
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlmaLinux, Suffix: majorVersion}
 		}
 
 	case *snapmeta.Metadata:
@@ -109,6 +119,13 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *modulemeta.Metadata:
 		namespace = m.ToNamespace()
 		osVersionID = m.OSVersionID
+
+	case *spdxmeta.Metadata:
+		// TODO(#2213): This is temporary while we work on a more unified solution.
+		return purlecosystem.FromPURL(m.PURL)
+	case *cdxmeta.Metadata:
+		// TODO(#2213): This is temporary while we work on a more unified solution.
+		return purlecosystem.FromPURL(m.PURL)
 
 	default:
 		return osvecosystem.Parsed{}

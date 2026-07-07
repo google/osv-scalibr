@@ -41,7 +41,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chisel            |                                | `os/chisel`                                  |
 | Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
+| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
 | Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
 | Kernel modules    | .ko                            | `os/kernel/module`                           |
@@ -84,6 +84,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
+|            | libs.versions.toml (Gradle Version Catalog)       | `java/gradleversioncatalog`          |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
 |            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
 |            | yarn.lock                                         | `javascript/yarnlock`                |
@@ -91,6 +92,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
+|            | VS Code extension                                 | `javascript/vsix`                    |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -210,6 +212,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
 | HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
+| HTTP Bearer                                 | `secrets/httpbearer`                   |
+| HTTP CSRF Token                             | `secrets/csrftoken`                    |
+
+### Sensitive information
+| Type                                        | Extractor Plugin                     |
+| ------------------------------------------- | ------------------------------------ |
+| International Bank Account Number           | `sensitiveinformation/iban`            |
+| US Social Security Number                   | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 

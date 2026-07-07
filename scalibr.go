@@ -155,7 +155,7 @@ func (cfg *ScanConfig) EnableRequiredPlugins() error {
 		}
 
 		requiredPlugin, err := pl.FromName(p, cfg.RequiredPluginConfig)
-		// TODO: b/416106602 - Implement transitive enablement for required enrichers.
+		// TODO(b/416106602): Implement transitive enablement for required enrichers.
 		if err != nil {
 			return fmt.Errorf("required plugin %q not present in any list.go: %w", p, err)
 		}
@@ -177,10 +177,20 @@ func (cfg *ScanConfig) ValidatePluginRequirements() error {
 	return errors.Join(errs...)
 }
 
+func validateEnricherRequirements(enrichers []enricher.Enricher, capabs *plugin.Capabilities) error {
+	errs := []error{}
+	for _, e := range enrichers {
+		if err := plugin.ValidateRequirements(e, capabs); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // LINT.IfChange
 
 // ScanResult stores the results of a scan incl. scan status and inventory found.
-// TODO: b/425645186 - Remove this alias once all callers are migrated to the result package.
+// TODO(b/425645186): Remove this alias once all callers are migrated to the result package.
 type ScanResult = result.ScanResult
 
 // LINT.ThenChange(/binary/proto/scan_result.proto)
@@ -304,6 +314,11 @@ func (Scanner) Scan(ctx context.Context, config *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
+	if err := validateEnricherRequirements(enrichers, config.Capabilities); err != nil {
+		sro.Err = multierr.Append(sro.Err, err)
+		sro.EndTime = time.Now()
+		return newScanResult(sro)
+	}
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
 		ScanRoot: &scalibrfs.ScanRoot{
@@ -396,7 +411,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	// Populate the LayerDetails field of the inventory by tracing the layer origins.
 	trace.PopulateLayerDetails(ctx, &scanResult.Inventory, chainLayers, pl.FilesystemExtractors(config.Plugins), extractorConfig)
 
-	// TODO: b/500769263 - Harmonize with trace.PopulateLayerDetails() by using same cim in both.
+	// TODO(b/500769263): Harmonize with trace.PopulateLayerDetails() by using same cim in both.
 	if cims := scanResult.Inventory.ContainerImageMetadata; len(cims) > 0 {
 		cims[len(cims)-1].Labels = img.Labels()
 	}
@@ -404,6 +419,11 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, config *Sca
 	// Run enrichers with the updated inventory.
 	enrichers, err = ce.SetupVelesEnrichers(enrichers)
 	if err != nil {
+		scanResult.Status.Status = plugin.ScanStatusFailed
+		scanResult.Status.FailureReason = err.Error()
+		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+	}
+	if err := validateEnricherRequirements(enrichers, config.Capabilities); err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
 		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.

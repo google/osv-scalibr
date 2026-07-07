@@ -107,7 +107,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.7.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/invalid-path.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/invalid-path.yaml", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -126,7 +126,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.7.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/invalid-paths.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/invalid-paths.yaml", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -145,7 +145,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.7.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/invalid-paths.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/invalid-paths.yaml", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -168,6 +168,13 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{},
 		},
 		{
+			Name: "missing packages key",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/missing-packages.yaml",
+			},
+			WantPackages: []*extractor.Package{},
+		},
+		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.yaml",
@@ -177,7 +184,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.7.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/one-package.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/one-package.yaml", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -195,7 +202,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.7.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/one-package-v6-lockfile.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/one-package-v6-lockfile.yaml", 10),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -213,7 +220,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.7.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/one-package-dev.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/one-package-dev.yaml", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -231,7 +238,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/types",
 					Version:    "5.13.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/scoped-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-packages.yaml", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -249,7 +256,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/types",
 					Version:    "5.57.1",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/scoped-packages-v6-lockfile.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-packages-v6-lockfile.yaml", 10),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -267,7 +274,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies.yaml", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -277,7 +284,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.7.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies.yaml", 21),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -295,7 +302,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "js-tokens",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-v6.yaml", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -305,7 +312,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "loose-envify",
 					Version:    "1.4.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-v6.yaml", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -315,7 +322,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "react-dom",
 					Version:    "18.2.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-v6.yaml", 25),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -325,7 +332,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "react",
 					Version:    "18.2.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-v6.yaml", 35),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -335,7 +342,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "scheduler",
 					Version:    "0.23.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-v6.yaml", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -353,7 +360,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/eslint-plugin",
 					Version:    "5.13.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -363,7 +370,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/parser",
 					Version:    "5.13.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 44),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -373,7 +380,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/type-utils",
 					Version:    "5.13.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 64),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -383,7 +390,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/types",
 					Version:    "5.13.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 83),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -393,7 +400,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/typescript-estree",
 					Version:    "5.13.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 88),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -403,7 +410,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/utils",
 					Version:    "5.13.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 109),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -413,7 +420,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "eslint-utils",
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 127),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -423,7 +430,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "eslint",
 					Version:    "8.10.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 137),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -433,7 +440,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "tsutils",
 					Version:    "3.21.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced.yaml", 181),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -451,7 +458,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "js-tokens",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-v6.yaml", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -461,7 +468,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "loose-envify",
 					Version:    "1.4.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-v6.yaml", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -471,7 +478,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "react-dom",
 					Version:    "18.3.0-canary-ab31a9ed2-20230824",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-v6.yaml", 25),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -481,7 +488,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "react",
 					Version:    "18.3.0-canary-ab31a9ed2-20230824",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-v6.yaml", 35),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -491,7 +498,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "scheduler",
 					Version:    "0.24.0-canary-ab31a9ed2-20230824",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-v6.yaml", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -509,7 +516,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "js-tokens",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-rc-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-rc-v6.yaml", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -519,7 +526,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "loose-envify",
 					Version:    "1.4.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-rc-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-rc-v6.yaml", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -529,7 +536,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "react-dom",
 					Version:    "18.0.0-rc.3",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-rc-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-rc-v6.yaml", 25),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -539,7 +546,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "react",
 					Version:    "18.2.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-rc-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-rc-v6.yaml", 35),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -549,7 +556,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "scheduler",
 					Version:    "0.21.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/peer-dependencies-advanced-rc-v6.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/peer-dependencies-advanced-rc-v6.yaml", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -567,7 +574,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "aws-sdk",
 					Version:    "2.1087.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -577,7 +584,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "base64-js",
 					Version:    "1.5.1",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 26),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -587,7 +594,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "buffer",
 					Version:    "4.9.2",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 30),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -597,7 +604,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "events",
 					Version:    "1.1.1",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 38),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -607,7 +614,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "ieee754",
 					Version:    "1.1.13",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 43),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -617,7 +624,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "isarray",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 47),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -627,7 +634,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "jmespath",
 					Version:    "0.16.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 51),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -637,7 +644,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "punycode",
 					Version:    "1.3.2",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 56),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -647,7 +654,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "querystring",
 					Version:    "0.2.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 60),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -657,7 +664,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "sax",
 					Version:    "1.2.1",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 66),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -667,7 +674,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "url",
 					Version:    "0.10.3",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 70),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -677,7 +684,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "uuid",
 					Version:    "3.3.2",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 77),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -687,7 +694,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "xml2js",
 					Version:    "0.4.19",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 83),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -697,7 +704,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "xmlbuilder",
 					Version:    "9.0.7",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-packages.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-packages.yaml", 90),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -715,7 +722,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "uuid",
 					Version:    "3.3.2",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-versions.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-versions.yaml", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -725,7 +732,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "uuid",
 					Version:    "8.3.2",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-versions.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-versions.yaml", 19),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -735,7 +742,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "xmlbuilder",
 					Version:    "9.0.7",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/multiple-versions.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/multiple-versions.yaml", 24),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -753,7 +760,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@my-org/my-package",
 					Version:    "3.2.3",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/tarball.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/tarball.yaml", 10),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
@@ -771,7 +778,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "foo",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/exotic.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/exotic.yaml", 10),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -781,7 +788,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@foo/bar",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/exotic.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/exotic.yaml", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -791,7 +798,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "foo",
 					Version:    "1.1.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/exotic.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/exotic.yaml", 12),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -801,7 +808,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@foo/bar",
 					Version:    "1.1.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/exotic.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/exotic.yaml", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -811,7 +818,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "foo",
 					Version:    "1.2.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/exotic.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/exotic.yaml", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -821,7 +828,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "foo",
 					Version:    "1.3.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/exotic.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/exotic.yaml", 16),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -831,7 +838,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "foo",
 					Version:    "1.4.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/exotic.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/exotic.yaml", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -849,7 +856,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "my-bitbucket-package",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/commits.yaml"),
+					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6104ae42cd32c3d724036d3964678f197b2c9cdb",
 					},
@@ -861,7 +868,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "@my-scope/my-package",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/commits.yaml"),
+					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 20),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "267087851ad5fac92a184749c27cd539e2fc862e",
 					},
@@ -873,7 +880,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "@my-scope/my-other-package",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/commits.yaml"),
+					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fbfc962ab51eb1d754749b68c064460221fbd689",
 					},
@@ -885,7 +892,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "faker-parser",
 					Version:  "0.0.1",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/commits.yaml"),
+					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d2dc42a9351d4d89ec48c525e34f612b6d77993f",
 					},
@@ -897,7 +904,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "mocks",
 					Version:  "20.0.1",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/commits.yaml"),
+					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "590f321b4eb3f692bb211bd74e22947639a6f79d",
 					},
@@ -917,7 +924,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "my-file-package",
 					Version:    "0.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/files.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/files.yaml", 10),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -927,7 +934,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "a-local-package",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/files.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/files.yaml", 16),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -937,7 +944,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "a-nested-local-package",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/files.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/files.yaml", 22),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -947,7 +954,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "one-up",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/files.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/files.yaml", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -957,7 +964,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "one-up-with-peer",
 					Version:    "1.0.0",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPath("testdata/files.yaml"),
+					Location:   extractor.LocationFromPathAndLine("testdata/files.yaml", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},

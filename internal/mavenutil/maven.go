@@ -16,9 +16,11 @@
 package mavenutil
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -27,6 +29,8 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/log"
 )
 
 // Origin of the dependencies.
@@ -298,4 +302,68 @@ func IsPrerelease(ver *semver.Version, vk resolve.VersionKey) bool {
 		return false
 	}
 	return ver.IsPrerelease()
+}
+
+// DiscoverModules recursively discovers local modules by following module tags and adds them to client.
+func DiscoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string, client *datasource.MavenRegistryAPIClient) {
+	visited := make(map[string]bool)
+	var queue []string
+	queue = append(queue, initialPaths...)
+
+	for len(queue) > 0 {
+		path := queue[0]
+		queue = queue[1:]
+
+		if visited[path] {
+			continue
+		}
+		visited[path] = true
+
+		f, err := scanRoot.FS.Open(path)
+		if err != nil {
+			log.Errorf("Failed to open pom.xml at %s: %v", path, err)
+			continue
+		}
+		content, err := io.ReadAll(f)
+		f.Close()
+		if err != nil {
+			log.Errorf("Failed to read pom.xml at %s: %v", path, err)
+			continue
+		}
+		var project maven.Project
+		if err := datasource.NewMavenDecoder(bytes.NewReader(content)).Decode(&project); err != nil {
+			log.Errorf("Failed to decode pom.xml at %s: %v", path, err)
+			continue
+		}
+
+		// Empty JDK and ActivationOS indicates merging the default profiles.
+		if err := project.MergeProfiles("", maven.ActivationOS{}); err != nil {
+			log.Errorf("Failed to merge profiles for pom.xml at %s: %v", path, err)
+			continue
+		}
+
+		pk := ProjectKey(project)
+		g, a, v := string(pk.GroupID), string(pk.ArtifactID), string(pk.Version)
+		if g != "" && a != "" && v != "" {
+			log.Debugf("Discovered local module %s:%s:%s at %s", g, a, v, path)
+			if client != nil {
+				client.AddLocalProject(g, a, v, content)
+			}
+		}
+
+		// Add modules to queue
+		dir := filepath.Dir(path)
+		for _, m := range project.Modules {
+			modulePath := filepath.Join(dir, string(m), "pom.xml")
+			queue = append(queue, filepath.ToSlash(modulePath))
+		}
+
+		// Add parent to queue if it exists locally
+		if project.Parent.GroupID != "" && project.Parent.ArtifactID != "" && project.Parent.Version != "" {
+			parentPath := ParentPOMPath(&filesystem.ScanInput{FS: scanRoot.FS}, path, string(project.Parent.RelativePath))
+			if parentPath != "" {
+				queue = append(queue, parentPath)
+			}
+		}
+	}
 }

@@ -138,6 +138,7 @@ func extractFromGitDir(input *filesystem.ScanInput) (inventory.Inventory, error)
 
 		pkg := &extractor.Package{
 			Name:     repoName,
+			Version:  commitSHA,
 			PURLType: purl.TypeGeneric,
 			Location: extractor.LocationFromPath(input.Path),
 			SourceCode: &extractor.SourceCodeIdentifier{
@@ -202,6 +203,7 @@ func extractSubmodules(repo *git.Repository, absRepoRoot, relativePath string, v
 
 		subPkg := &extractor.Package{
 			Name:     inferRepoName(normalizedSubURL, cfg.Path),
+			Version:  subSHA,
 			PURLType: purl.TypeGeneric,
 			Location: extractor.LocationFromPath(filepath.ToSlash(filepath.Join(relativePath, cfg.Path))),
 			SourceCode: &extractor.SourceCodeIdentifier{
