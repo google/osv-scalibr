@@ -74,6 +74,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pylock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
@@ -248,14 +249,15 @@ var (
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name: {protoCfg(requirements.New)},
-		setup.Name:        {protoCfg(setup.New)},
-		pipfilelock.Name:  {protoCfg(pipfilelock.New)},
-		pdmlock.Name:      {protoCfg(pdmlock.New)},
-		poetrylock.Name:   {protoCfg(poetrylock.New)},
-		pylock.Name:       {protoCfg(pylock.New)},
-		condameta.Name:    {protoCfg(condameta.New)},
-		uvlock.Name:       {protoCfg(uvlock.New)},
+		requirements.Name:  {requirements.New},
+		setup.Name:         {setup.New},
+		pipfilelock.Name:   {pipfilelock.New},
+		pdmlock.Name:       {pdmlock.New},
+		poetrylock.Name:    {poetrylock.New},
+		pylock.Name:        {pylock.New},
+		condameta.Name:     {condameta.New},
+		uvlock.Name:        {uvlock.New},
+		pyprojecttoml.Name: {pyprojecttoml.New},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
