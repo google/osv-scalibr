@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package requirements implements an enricher to perform dependency resolution for Python requirements.txt and pyproject.toml. 
+// Package requirements implements an enricher to perform dependency resolution for Python requirements.txt and pyproject.toml.
 package requirements
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -111,9 +112,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		if _, ok := pkgGroups[path]; !ok {
 			pkgGroups[path] = pkgMap
 		} else {
-			for name, pkg := range pkgMap {
-				pkgGroups[path][name] = pkg
-			}
+			maps.Copy(pkgGroups[path], pkgMap)
 		}
 	}
 
