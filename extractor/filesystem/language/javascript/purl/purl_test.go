@@ -30,6 +30,7 @@ func TestMakePackageURL(t *testing.T) {
 		version  string
 		metadata any
 		want     *purl.PackageURL
+		wantStr  string
 	}{
 		{
 			desc:    "lowercase_name",
@@ -49,6 +50,48 @@ func TestMakePackageURL(t *testing.T) {
 				Type:    purl.TypeNPM,
 				Name:    "Name",
 				Version: "version",
+			},
+		},
+		{
+			desc:    "scoped_package",
+			name:    "@babel/traverse",
+			version: "7.29.7",
+			want: &purl.PackageURL{
+				Type:      purl.TypeNPM,
+				Namespace: "@babel",
+				Name:      "traverse",
+				Version:   "7.29.7",
+			},
+			wantStr: "pkg:npm/%40babel/traverse@7.29.7",
+		},
+		{
+			desc:    "scoped_package_with_multiple_slashes",
+			name:    "@babel/traverse/extra",
+			version: "7.29.7",
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "@babel/traverse/extra",
+				Version: "7.29.7",
+			},
+		},
+		{
+			desc:    "package_name_starting_with_slash",
+			name:    "/traverse",
+			version: "7.29.7",
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "/traverse",
+				Version: "7.29.7",
+			},
+		},
+		{
+			desc:    "scoped_package_with_empty_scope",
+			name:    "@/traverse",
+			version: "7.29.7",
+			want: &purl.PackageURL{
+				Type:    purl.TypeNPM,
+				Name:    "@/traverse",
+				Version: "7.29.7",
 			},
 		},
 		{
@@ -119,6 +162,9 @@ func TestMakePackageURL(t *testing.T) {
 			got := npmpurl.MakePackageURL(tt.name, tt.version, tt.metadata)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("npmpurl.MakePackageURL(%v, %v): unexpected PURL (-want +got):\n%s", tt.name, tt.version, diff)
+			}
+			if tt.wantStr != "" && got.String() != tt.wantStr {
+				t.Errorf("npmpurl.MakePackageURL(%v, %v).String() = %q, want %q", tt.name, tt.version, got.String(), tt.wantStr)
 			}
 		})
 	}
