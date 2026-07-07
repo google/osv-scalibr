@@ -88,6 +88,7 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		}
 		if m.OSID == "azurelinux" || m.OSID == "mariner" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAzureLinux, Suffix: m.OSVersionID}
+		}
 		if m.OSID == "almalinux" {
 			// OSV.dev keys ALSA advisories by major version only (e.g. "AlmaLinux:9").
 			// VERSION_ID in /etc/os-release is a full point release (e.g. "9.0" or "9.8"),
