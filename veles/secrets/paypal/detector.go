@@ -30,9 +30,9 @@ const (
 	// ~80 chars.
 	maxClientSecretLen = 100
 	// maxDistance is the maximum distance between a Client ID and a Client
-	// Secret for them to be considered a pair. 10 KiB is a good upper bound as
-	// we don't expect files containing credentials to be larger than this.
-	maxDistance = 10 * 1 << 10 // 10 KiB
+	// Secret for them to be considered a pair. A Client ID and Secret almost always
+	// leak adjacently, so a tight bound avoids pairing unrelated matches.
+	maxDistance = 200
 )
 
 var (
@@ -43,14 +43,14 @@ var (
 	// IDs are URL-safe strings ([A-Za-z0-9_-]) that commonly begin with "A" and
 	// are ~80 characters long. The leading "A" anchor and length floor keep the
 	// pattern conservative to limit false positives.
-	clientIDRe = regexp.MustCompile(`A[A-Za-z0-9_-]{49,99}`)
+	clientIDRe = regexp.MustCompile(`\bA[A-Za-z0-9_-]{49,99}`)
 
 	// clientSecretRe matches PayPal REST API Client Secrets.
 	//
 	// Client Secrets follow the same URL-safe shape as Client IDs but commonly
 	// begin with "E". The leading "E" anchor disambiguates them from Client IDs
 	// and limits false positives.
-	clientSecretRe = regexp.MustCompile(`E[A-Za-z0-9_-]{49,99}`)
+	clientSecretRe = regexp.MustCompile(`\bE[A-Za-z0-9_-]{49,99}`)
 )
 
 // NewDetector returns a new Veles Detector that finds PayPal REST API
