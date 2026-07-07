@@ -296,10 +296,12 @@ func addDependencyPackages(pkgs map[string]dependencyDetails, path string, finde
 
 		current := dependencyDetails{pkg: pkg, depGroups: depGroups}
 		existing, ok := pkgs[key]
+		// If such dependecy was not added before just add it
 		if !ok {
 			pkgs[key] = current
 			continue
 		}
+		// Otherwise, merge dependency details to mimic tha package-lock.json logic
 		pkgs[key] = mergeDependencyDetails(existing, current)
 	}
 }
@@ -310,17 +312,24 @@ func addDependencyPackages(pkgs map[string]dependencyDetails, path string, finde
 // means production and takes precedence over dev/optional/peer groups; otherwise
 // non-production groups are combined and sorted.
 func mergeDependencyDetails(existing, current dependencyDetails) dependencyDetails {
-	if len(existing.depGroups) == 0 {
+	// Prod dependencies take precedence over other dependecy groups
+	if existing.isProdDependency() {
 		return existing
 	}
-	if len(current.depGroups) == 0 {
+	if current.isProdDependency() {
 		return current
 	}
 
-	merged := append(slices.Clone(existing.depGroups), current.depGroups...)
+	// Otherwise depGroups are a sum of existing and current
+	merged := append(existing.depGroups, current.depGroups...)
 	slices.Sort(merged)
 	existing.depGroups = slices.Compact(merged)
 	return existing
+}
+
+// Prod dependencies have empty dep groups
+func (d dependencyDetails) isProdDependency() bool {
+	return len(d.depGroups) == 0
 }
 
 func (p packageJSON) hasNameAndVersionValues() bool {
