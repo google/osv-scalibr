@@ -100,6 +100,15 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		if m.OSID == "azurelinux" || m.OSID == "mariner" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAzureLinux, Suffix: m.OSVersionID}
 		}
+		if m.OSID == "opensuse-leap" {
+			// OSV.dev openSUSE advisories use the suffix "Leap X.Y"
+			// (e.g. "openSUSE:Leap 15.5"), confirmed via OSV.dev API.
+			// Using VERSION_ID alone ("15.5") would not match any advisory.
+			if m.OSVersionID == "" {
+				return osvecosystem.FromEcosystem(osvconstants.EcosystemOpenSUSE)
+			}
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemOpenSUSE, Suffix: "Leap " + m.OSVersionID}
+		}
 
 	case *snapmeta.Metadata:
 		if m.OSID == "ubuntu" {
