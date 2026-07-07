@@ -244,7 +244,7 @@ func TestExtractor_Extract(t *testing.T) {
 					),
 					Metadata: &requirements.Metadata{
 						VersionComparator: ">=",
-						Requirement: "requests>=2.20.0; python_version >= \"3.8\"",
+						Requirement:       "requests>=2.20.0; python_version >= \"3.8\"",
 					},
 				},
 				{
@@ -256,7 +256,7 @@ func TestExtractor_Extract(t *testing.T) {
 					),
 					Metadata: &requirements.Metadata{
 						VersionComparator: "==",
-						Requirement: "importlib-metadata==6.0.0; python_version < \"3.10\"",
+						Requirement:       "importlib-metadata==6.0.0; python_version < \"3.10\"",
 					},
 				},
 			},

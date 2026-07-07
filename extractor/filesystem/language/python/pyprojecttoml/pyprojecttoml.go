@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // Package pyprojecttoml extracts dependencies from pyproject.toml files.
-
 package pyprojecttoml
 
 import (
@@ -42,9 +41,9 @@ const (
 // regexes (regices?) for PEP 508
 var (
 	reUnsupportedConstraints = regexp.MustCompile(`\*|<[^=]|,|!=`)
-	reWhitespace           = regexp.MustCompile(`[ \t\r]`)
-	reValidPkg             = regexp.MustCompile(`^\w(\w|-)+$`)
-	reExtras               = regexp.MustCompile(`\[[^\[\]]*\]`)
+	reWhitespace             = regexp.MustCompile(`[ \t\r]`)
+	reValidPkg               = regexp.MustCompile(`^\w(\w|-)+$`)
+	reExtras                 = regexp.MustCompile(`\[[^\[\]]*\]`)
 )
 
 // pyprojectFile represents the structure of a pyproject.toml file
@@ -74,7 +73,7 @@ func (e Extractor) Name() string { return Name }
 // Version of the extractor.
 func (e Extractor) Version() int { return 0 }
 
-//Requirements of the extractor. 
+// Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
@@ -95,8 +94,8 @@ func (e Extractor) Extract(
 
 	var f pyprojectFile
 	if err := toml.Unmarshal(content, &f); err != nil {
-		// malformed TOML = return empty inventory. 
-		return inventory.Inventory{}, nil
+		// malformed TOML = return empty inventory.
+		return inventory.Inventory{}, nil //nolint:nilerr
 	}
 
 	// No [project] table or no dependencies declared.

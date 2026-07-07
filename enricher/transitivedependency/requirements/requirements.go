@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -127,9 +128,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		if _, ok := pkgGroups[path]; !ok {
 			pkgGroups[path] = pkgMap
 		} else {
-			for name, pkg := range pkgMap {
-				pkgGroups[path][name] = pkg
-			}
+			maps.Copy(pkgGroups[path], pkgMap)
 		}
 	}
 
