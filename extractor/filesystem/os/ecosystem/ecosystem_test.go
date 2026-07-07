@@ -354,6 +354,8 @@ func TestEcosystemRPM(t *testing.T) {
 				OSID: "azurelinux",
 			},
 			want: "Azure Linux",
+		},
+		{
 			desc: "AlmaLinux_9",
 			metadata: &rpmmeta.Metadata{
 				OSID:        "almalinux",
