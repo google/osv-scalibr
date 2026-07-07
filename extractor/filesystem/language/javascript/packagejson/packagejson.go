@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
-	"slices"
 
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
@@ -321,9 +320,8 @@ func mergeDependencyDetails(existing, current dependencyDetails) dependencyDetai
 	}
 
 	// Otherwise depGroups are a sum of existing and current
-	merged := append(existing.depGroups, current.depGroups...)
-	slices.Sort(merged)
-	existing.depGroups = slices.Compact(merged)
+	existing.depGroups = append(existing.depGroups, current.depGroups...)
+
 	return existing
 }
 
