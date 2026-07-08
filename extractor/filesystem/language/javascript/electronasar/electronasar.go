@@ -184,28 +184,43 @@ func (e Extractor) extractFromNodeModulesEntry(
 // extractPackageJSONNode reads the package.json directly inside the given
 // asarNode (expected to be a package directory) and returns a Package if the
 // file is valid and contains both name and version.
+//
+// It also recurses into any nested node_modules directory present inside the
+// package directory. npm hoists shared dependencies to the top-level
+// node_modules, but when a package requires a version that conflicts with the
+// top-level version npm installs that specific version inside the package's
+// own node_modules (e.g. node_modules/@types/node/node_modules/undici-types).
 func (e Extractor) extractPackageJSONNode(
-	ra io.ReaderAt, pkgName string, pkgNode asarNode, dataOffset int64, asarPath string,
+	ra io.ReaderAt, pkgName string, pkgNode asarNode,
+	dataOffset int64, asarPath string,
 ) []*extractor.Package {
+	var pkgs []*extractor.Package
+
 	pjNode, ok := pkgNode.Files["package.json"]
-	if !ok {
-		return nil
+	if ok {
+		pj, err := readPackageJSON(ra, pjNode, dataOffset)
+		if err != nil {
+			log.Warnf("%s: reading package.json for %q in %q: %v",
+				e.Name(), pkgName, asarPath, err)
+		} else if pj.Name != "" && pj.Version != "" {
+			pkgs = append(pkgs, &extractor.Package{
+				Name:     pj.Name,
+				Version:  pj.Version,
+				PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPath(asarPath),
+			})
+		}
 	}
-	pj, err := readPackageJSON(ra, pjNode, dataOffset)
-	if err != nil {
-		log.Warnf("%s: reading package.json for %q in %q: %v",
-			e.Name(), pkgName, asarPath, err)
-		return nil
+
+	// Recurse into any nested node_modules (conflict-resolution hoisting).
+	if nmNode, hasNM := pkgNode.Files["node_modules"]; hasNM {
+		for nestedName, nestedNode := range nmNode.Files {
+			pkgs = append(pkgs, e.extractFromNodeModulesEntry(
+				ra, nestedName, nestedNode, dataOffset, asarPath)...)
+		}
 	}
-	if pj.Name == "" || pj.Version == "" {
-		return nil
-	}
-	return []*extractor.Package{{
-		Name:     pj.Name,
-		Version:  pj.Version,
-		PURLType: purl.TypeNPM,
-		Location: extractor.LocationFromPath(asarPath),
-	}}
+
+	return pkgs
 }
 
 // asarPrefix is the 16-byte binary header at the start of every ASAR file.

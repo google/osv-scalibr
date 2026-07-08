@@ -132,6 +132,39 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		},
+		{
+			// npm installs a conflicting dependency version inside the
+			// dependent package's own node_modules directory. Both the
+			// top-level version (undici-types@8.7.0) and the nested
+			// conflict-resolution version (undici-types@8.3.0 inside
+			// @types/node) must be reported.
+			Name: "nested_node_modules",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/nested_node_modules.asar",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "@types/node",
+					Version:  "26.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested_node_modules.asar"),
+				},
+				{
+					// Nested conflict-resolution copy inside @types/node.
+					Name:     "undici-types",
+					Version:  "8.3.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested_node_modules.asar"),
+				},
+				{
+					// Top-level hoisted copy.
+					Name:     "undici-types",
+					Version:  "8.7.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/nested_node_modules.asar"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
