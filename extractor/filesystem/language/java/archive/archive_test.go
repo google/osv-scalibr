@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -455,6 +456,110 @@ func TestExtract(t *testing.T) {
 						Related: []location.Location{
 							location.FromPath(filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties")),
 						},
+					},
+				},
+				{
+					Name: "com.google.code.findbugs:jsr305",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.xml",
+								LineNumber: 30,
+							},
+						},
+					},
+					PURLType: "maven",
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "jsr305",
+						GroupID:      "com.google.code.findbugs",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "com.google.errorprone:error_prone_annotations",
+					PURLType: "maven",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.xml",
+								LineNumber: 38,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "error_prone_annotations",
+						GroupID:      "com.google.errorprone",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "com.google.guava:failureaccess",
+					Version:  "1.0.1",
+					PURLType: "maven",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.xml",
+								LineNumber: 20,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "failureaccess",
+						GroupID:      "com.google.guava",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "com.google.guava:listenablefuture",
+					Version:  "9999.0-empty-to-avoid-conflict-with-guava",
+					PURLType: "maven",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.xml",
+								LineNumber: 25,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "listenablefuture",
+						GroupID:      "com.google.guava",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "com.google.j2objc:j2objc-annotations",
+					PURLType: "maven",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.xml",
+								LineNumber: 42,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "j2objc-annotations",
+						GroupID:      "com.google.j2objc",
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "org.checkerframework:checker-qual",
+					PURLType: "maven",
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{
+							File: &location.File{
+								Path:       "testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.xml",
+								LineNumber: 34,
+							},
+						},
+					},
+					Metadata: &javalockfile.Metadata{
+						ArtifactID:   "checker-qual",
+						GroupID:      "org.checkerframework",
+						DepGroupVals: []string{},
 					},
 				},
 			},

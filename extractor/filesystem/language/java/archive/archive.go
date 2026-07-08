@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
@@ -65,6 +66,7 @@ var (
 
 // Extractor extracts Java packages from archive files.
 type Extractor struct {
+	pomExtractor        filesystem.Extractor
 	maxZipDepth         int
 	maxFileSizeBytes    int64
 	maxOpenedBytes      int64
@@ -76,6 +78,11 @@ type Extractor struct {
 
 // New returns a Java archive extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	pomExtractor, err := pomxml.New(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pom.xml extractor: %w", err)
+	}
+
 	maxZipDepth := defaultMaxZipDepth
 	maxFileSizeBytes := noLimitMaxFileSizeBytes
 	if cfg.GetMaxFileSizeBytes() > 0 {
@@ -109,6 +116,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	}
 
 	return &Extractor{
+		pomExtractor:        pomExtractor,
 		maxZipDepth:         maxZipDepth,
 		maxFileSizeBytes:    maxFileSizeBytes,
 		maxOpenedBytes:      maxOpenedBytes,
@@ -125,7 +133,11 @@ func (e Extractor) Name() string { return Name }
 func (e Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e Extractor) Requirements() *plugin.Capabilities {
+	// The extractor has no special requirements, so we just forward the ones of the embedded one.
+	// Should the situation change, ensure the two are merged correctly!
+	return e.pomExtractor.Requirements()
+}
 
 // FileRequired returns true if the specified file matches java archive file patterns.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
@@ -282,6 +294,17 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 				})
 			}
 
+		case filepath.Base(file.Name) == "pom.xml":
+			// TODO: Add embedded pom.xml, if it was found.
+			// TODO: The dependency might not be in the JAR itself, so we should only represent the arc.
+			pom, err := e.extractEmbeddedPom(ctx, input, file)
+			if err != nil {
+				log.Errorf("%s failed to extract from pom.xml at %q: %v", e.Name(), path, err)
+				errs = append(errs, err)
+				continue
+			}
+			packagePom = append(packagePom, pom.Packages...)
+
 		case isManifest(file.Name):
 			mf, err := parseManifest(file)
 			if err != nil {
@@ -423,6 +446,24 @@ func hashJar(r io.Reader) (string, error) {
 
 	// Base64
 	return base64.StdEncoding.EncodeToString(h), nil
+}
+
+func (e *Extractor) extractEmbeddedPom(ctx context.Context, input *filesystem.ScanInput, file *zip.File) (inventory.Inventory, error) {
+	path := filepath.Join(input.Path, file.Name)
+
+	reader, err := file.Open()
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to open %q: %w", path, err)
+	}
+	defer reader.Close()
+
+	return e.pomExtractor.Extract(ctx, &filesystem.ScanInput{
+		FS:     input.FS,
+		Path:   path,
+		Root:   input.Root,
+		Info:   file.FileInfo(),
+		Reader: reader,
+	})
 }
 
 // IsArchive returns true if the file path ends with one of the supported archive extensions.
