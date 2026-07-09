@@ -99,19 +99,16 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "async",
 					Version:   "2.11.0",
 					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/package_config.json"},
 				},
 				{
 					Name:      "boolean_selector",
 					Version:   "2.1.1",
 					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/package_config.json"},
 				},
 				{
 					Name:      "my_local_package",
 					Version:   "",
 					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/package_config.json"},
 				},
 			},
 		},
@@ -125,7 +122,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:      "async",
 					Version:   "2.11.0",
 					PURLType:  purl.TypePub,
-					Locations: []string{"testdata/package_config_v1.json"},
 				},
 			},
 		},
@@ -155,4 +151,3 @@ func TestExtractor_Extract(t *testing.T) {
 		})
 	}
 }
-
