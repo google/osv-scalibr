@@ -30,11 +30,14 @@
 package cargotoml
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -145,19 +148,40 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedTomlFile cargoTomlFile
 
-	_, err := toml.NewDecoder(input.Reader).Decode(&parsedTomlFile)
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
+	_, err = toml.NewDecoder(bytes.NewReader(b)).Decode(&parsedTomlFile)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	lineNumbers := findLineNumbers(b, parsedTomlFile.Package.Name, parsedTomlFile.Dependencies)
+
 	packages := make([]*extractor.Package, 0, len(parsedTomlFile.Dependencies)+1)
 
-	packages = append(packages, &extractor.Package{
-		Name:     parsedTomlFile.Package.Name,
-		Version:  parsedTomlFile.Package.Version,
-		PURLType: purl.TypeCargo,
-		Location: extractor.LocationFromPath(input.Path),
-	})
+	if parsedTomlFile.Package.Name != "" {
+		loc := extractor.LocationFromPath(input.Path)
+		if line, ok := lineNumbers[""]; ok && line > 0 {
+			loc = extractor.LocationFromPathAndLine(input.Path, line)
+		}
+		packages = append(packages, &extractor.Package{
+			Name:     parsedTomlFile.Package.Name,
+			Version:  parsedTomlFile.Package.Version,
+			PURLType: purl.TypeCargo,
+			Location: loc,
+		})
+	} else {
+		// Keep the existing behavior of returning empty package if parsedTomlFile.Package.Name is empty
+		packages = append(packages, &extractor.Package{
+			Name:     "",
+			Version:  "",
+			PURLType: purl.TypeCargo,
+			Location: extractor.LocationFromPath(input.Path),
+		})
+	}
 
 	for name, dependency := range parsedTomlFile.Dependencies {
 		if err := ctx.Err(); err != nil {
@@ -177,16 +201,72 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
+		loc := extractor.LocationFromPath(input.Path)
+		if line, ok := lineNumbers[name]; ok && line > 0 {
+			loc = extractor.LocationFromPathAndLine(input.Path, line)
+		}
+
 		packages = append(packages, &extractor.Package{
 			Name:       name,
 			Version:    dependency.Version,
 			PURLType:   purl.TypeCargo,
-			Location:   extractor.LocationFromPath(input.Path),
+			Location:   loc,
 			SourceCode: srcCode,
 		})
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+func findLineNumbers(content []byte, name string, deps map[string]cargoTomlDependency) map[string]int {
+	lines := make(map[string]int)
+	rawLines := bytes.Split(content, []byte("\n"))
+
+	inDeps := false
+	inPkg := false
+
+	for i, rawLine := range rawLines {
+		lineNum := i + 1
+		line := strings.TrimSpace(string(rawLine))
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			lineContent := line[1 : len(line)-1]
+			inDeps = strings.Contains(lineContent, "dependencies")
+			inPkg = strings.Contains(lineContent, "package")
+			if inDeps {
+				parts := strings.SplitN(lineContent, "dependencies.", 2)
+				if len(parts) == 2 {
+					depName := strings.TrimSpace(parts[1])
+					depName = strings.Trim(depName, `"'`)
+					if _, ok := deps[depName]; ok && lines[depName] == 0 {
+						lines[depName] = lineNum
+					}
+				}
+			}
+		} else if inPkg && line != "" && !strings.HasPrefix(line, "#") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				key = strings.Trim(key, `"'`)
+				if key == "name" {
+					val := strings.TrimSpace(parts[1])
+					val = strings.Trim(val, `"'`)
+					if val == name {
+						lines[""] = lineNum
+					}
+				}
+			}
+		} else if inDeps && line != "" && !strings.HasPrefix(line, "#") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				key = strings.Trim(key, `"'`)
+				if _, ok := deps[key]; ok && lines[key] == 0 {
+					lines[key] = lineNum
+				}
+			}
+		}
+	}
+	return lines
 }
 
 var _ filesystem.Extractor = Extractor{}
