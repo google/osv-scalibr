@@ -44,7 +44,7 @@ var (
 	// are ~80 characters long. To limit false positives, the value must begin with
 	// "A" at a word boundary and be preceded by a PayPal/client-id context keyword.
 	// The credential is capture group 1.
-	clientIDRe = regexp.MustCompile(`(?i:paypal|client[ _-]?id)["':=\s]{1,25}\b(A[A-Za-z0-9_-]{49,99})`)
+	clientIDRe = regexp.MustCompile(`(?i:paypal(?:[ _-]?client)?[ _-]?id|client[ _-]?id|paypal)["':=\s]{1,25}\b(A[A-Za-z0-9_-]{49,99})`)
 
 	// clientSecretRe matches PayPal REST API Client Secrets.
 	//
@@ -52,7 +52,7 @@ var (
 	// begin with "E". As with the Client ID, a PayPal/client-secret context keyword
 	// and a word-boundary "E" prefix limit false positives. The credential is
 	// capture group 1.
-	clientSecretRe = regexp.MustCompile(`(?i:paypal|client[ _-]?secret)["':=\s]{1,25}\b(E[A-Za-z0-9_-]{49,99})`)
+	clientSecretRe = regexp.MustCompile(`(?i:paypal(?:[ _-]?client)?[ _-]?secret(?:[ _-]?key)?|client[ _-]?secret|paypal)["':=\s]{1,25}\b(E[A-Za-z0-9_-]{49,99})`)
 )
 
 // findPairElement adapts a context-anchored regex (capture group 1 is the

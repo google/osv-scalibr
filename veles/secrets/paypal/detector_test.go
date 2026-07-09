@@ -82,6 +82,51 @@ func TestDetector_Detect(t *testing.T) {
 			want:  nil,
 		},
 		{
+			name:  "PAYPAL_ID and PAYPAL_SECRET env-var keys",
+			input: fmt.Sprintf("PAYPAL_ID=%s\nPAYPAL_SECRET=%s", detectorClientID, detectorClientSecret),
+			want: []veles.Secret{
+				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
+			},
+		},
+		{
+			name:  "PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET env-var keys",
+			input: fmt.Sprintf("PAYPAL_CLIENT_ID=%s\nPAYPAL_CLIENT_SECRET=%s", detectorClientID, detectorClientSecret),
+			want: []veles.Secret{
+				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
+			},
+		},
+		{
+			name:  "PAYPAL_SECRETKEY paired with PAYPAL_ID",
+			input: fmt.Sprintf("PAYPAL_ID=%s\nPAYPAL_SECRETKEY=%s", detectorClientID, detectorClientSecret),
+			want: []veles.Secret{
+				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
+			},
+		},
+		{
+			name:  "JSON paypal_client_id and paypal_client_secret",
+			input: fmt.Sprintf(`{"paypal_client_id": "%s", "paypal_client_secret": "%s"}`, detectorClientID, detectorClientSecret),
+			want: []veles.Secret{
+				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
+			},
+		},
+		{
+			name:  "mixed-case PayPal keys are matched",
+			input: fmt.Sprintf("PayPal_Client_Id=%s\nPayPal_Client_Secret=%s", detectorClientID, detectorClientSecret),
+			want: []veles.Secret{
+				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
+			},
+		},
+		{
+			name:  "unrelated keyword on the secret is not reported",
+			input: fmt.Sprintf("PAYPAL_ID=%s\nrandom_token=%s", detectorClientID, detectorClientSecret),
+			want:  nil,
+		},
+		{
+			name:  "bare SECRETKEY without a paypal keyword is not reported",
+			input: fmt.Sprintf("PAYPAL_ID=%s\nSECRETKEY=%s", detectorClientID, detectorClientSecret),
+			want:  nil,
+		},
+		{
 			name:  "client ID only (no secret) is not reported",
 			input: "paypal_client_id: " + detectorClientID,
 			want:  nil,
