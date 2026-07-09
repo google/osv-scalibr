@@ -100,9 +100,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		pkgDetails := &extractor.Package{
-			Name:      pkg.Name,
-			Version:   version,
-			PURLType:  purl.TypePub,
+			Name:     pkg.Name,
+			Version:  version,
+			PURLType: purl.TypePub,
 		}
 
 		packages = append(packages, pkgDetails)

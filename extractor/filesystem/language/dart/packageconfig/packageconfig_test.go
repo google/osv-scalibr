@@ -96,19 +96,19 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "async",
-					Version:   "2.11.0",
-					PURLType:  purl.TypePub,
+					Name:     "async",
+					Version:  "2.11.0",
+					PURLType: purl.TypePub,
 				},
 				{
-					Name:      "boolean_selector",
-					Version:   "2.1.1",
-					PURLType:  purl.TypePub,
+					Name:     "boolean_selector",
+					Version:  "2.1.1",
+					PURLType: purl.TypePub,
 				},
 				{
-					Name:      "my_local_package",
-					Version:   "",
-					PURLType:  purl.TypePub,
+					Name:     "my_local_package",
+					Version:  "",
+					PURLType: purl.TypePub,
 				},
 			},
 		},
@@ -119,9 +119,9 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "async",
-					Version:   "2.11.0",
-					PURLType:  purl.TypePub,
+					Name:     "async",
+					Version:  "2.11.0",
+					PURLType: purl.TypePub,
 				},
 			},
 		},
