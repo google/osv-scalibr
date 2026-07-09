@@ -1,0 +1,24 @@
+{
+  "_readme": [
+    "This file locks the dependencies of your project to a known state",
+    "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+    "This file is @generated automatically"
+  ],
+  "content-hash": "439b16dd5df2e0730bd1cc4352654d09",
+  "packages": [
+    {
+      "name": "sentry/sdk",
+      "version": "2.0.4",
+      "dist": {
+        "reference": "4c115873c86ad5bd0ac6d962db70ca53bf8fb874"
+      }
+    },
+    {
+      "name": "sentry/sdk",
+      "version": "2.0.5",
+      "dist": {
+        "reference": "4c115873c86ad5bd0ac6d962db70ca53bf8fb874"
+      }
+    }
+  ]
+}
