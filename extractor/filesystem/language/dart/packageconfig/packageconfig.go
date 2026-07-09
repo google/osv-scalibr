@@ -103,7 +103,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Name:      pkg.Name,
 			Version:   version,
 			PURLType:  purl.TypePub,
-			Locations: []string{input.Path},
 		}
 
 		packages = append(packages, pkgDetails)
@@ -113,4 +112,3 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 var _ filesystem.Extractor = Extractor{}
-
