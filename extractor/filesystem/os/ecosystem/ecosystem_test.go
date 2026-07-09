@@ -326,10 +326,36 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "AlmaLinux:9",
 		},
 		{
+			// Real VERSION_ID from almalinux:9.0 docker image is "9.0" not "9".
+			// OSV.dev ALSA advisories use "AlmaLinux:9" (major only).
+			desc: "AlmaLinux_9_point_release",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "9.0",
+			},
+			want: "AlmaLinux:9",
+		},
+		{
+			desc: "AlmaLinux_9_point_release_late",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "9.8",
+			},
+			want: "AlmaLinux:9",
+		},
+		{
 			desc: "AlmaLinux_8",
 			metadata: &rpmmeta.Metadata{
 				OSID:        "almalinux",
 				OSVersionID: "8",
+			},
+			want: "AlmaLinux:8",
+		},
+		{
+			desc: "AlmaLinux_8_point_release",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "8.9",
 			},
 			want: "AlmaLinux:8",
 		},
