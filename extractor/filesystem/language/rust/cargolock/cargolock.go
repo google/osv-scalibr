@@ -16,9 +16,12 @@
 package cargolock
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -71,24 +74,91 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *cargoLockFile
 
-	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
+	_, err = toml.NewDecoder(bytes.NewReader(b)).Decode(&parsedLockfile)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	lineNumbers := findCargoLockLines(b)
+
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	for _, lockPackage := range parsedLockfile.Packages {
+		loc := extractor.LocationFromPath(input.Path)
+		key := lockPackage.Name + ":" + lockPackage.Version
+		if line, ok := lineNumbers[key]; ok && line > 0 {
+			loc = extractor.LocationFromPathAndLine(input.Path, line)
+		}
 		packages = append(packages, &extractor.Package{
 			Name:     lockPackage.Name,
 			Version:  lockPackage.Version,
 			PURLType: purl.TypeCargo,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: loc,
 		})
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+func findCargoLockLines(content []byte) map[string]int {
+	lines := make(map[string]int)
+	rawLines := bytes.Split(content, []byte("\n"))
+
+	type pkgInfo struct {
+		name    string
+		version string
+		line    int
+	}
+
+	var currentPkg *pkgInfo
+
+	for i, rawLine := range rawLines {
+		lineNum := i + 1
+		line := strings.TrimSpace(string(rawLine))
+
+		if line == "[[package]]" {
+			if currentPkg != nil && currentPkg.name != "" {
+				key := currentPkg.name + ":" + currentPkg.version
+				if lines[key] == 0 {
+					lines[key] = currentPkg.line
+				}
+			}
+			currentPkg = &pkgInfo{line: lineNum}
+		} else if strings.HasPrefix(line, "[") {
+			if currentPkg != nil && currentPkg.name != "" {
+				key := currentPkg.name + ":" + currentPkg.version
+				if lines[key] == 0 {
+					lines[key] = currentPkg.line
+				}
+			}
+			currentPkg = nil
+		} else if currentPkg != nil {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				k := strings.TrimSpace(parts[0])
+				v := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
+				if k == "name" {
+					currentPkg.name = v
+					currentPkg.line = lineNum
+				} else if k == "version" {
+					currentPkg.version = v
+				}
+			}
+		}
+	}
+	if currentPkg != nil && currentPkg.name != "" {
+		key := currentPkg.name + ":" + currentPkg.version
+		if lines[key] == 0 {
+			lines[key] = currentPkg.line
+		}
+	}
+
+	return lines
 }
 
 var _ filesystem.Extractor = Extractor{}
