@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = "==2.31.0"
+urllib3 = {version = "==2.0.7", extras = ["socks"]}
+django = "~=4.2.0"
+flask = "*"
+anyio = "4.0.0"
+
+[dev-packages]
+pytest = "==7.4.3"
+requests = "==2.31.0"
+black = {version = "*"}
