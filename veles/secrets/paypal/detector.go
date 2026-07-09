@@ -41,17 +41,37 @@ var (
 	// PayPal does not publish a formal grammar. Based on credentials issued by
 	// the Developer Dashboard across both Sandbox and Live environments, Client
 	// IDs are URL-safe strings ([A-Za-z0-9_-]) that commonly begin with "A" and
-	// are ~80 characters long. The leading "A" anchor and length floor keep the
-	// pattern conservative to limit false positives.
-	clientIDRe = regexp.MustCompile(`\bA[A-Za-z0-9_-]{49,99}`)
+	// are ~80 characters long. To limit false positives, the value must begin with
+	// "A" at a word boundary and be preceded by a PayPal/client-id context keyword.
+	// The credential is capture group 1.
+	clientIDRe = regexp.MustCompile(`(?i:paypal|client[ _-]?id)["':=\s]{1,25}\b(A[A-Za-z0-9_-]{49,99})`)
 
 	// clientSecretRe matches PayPal REST API Client Secrets.
 	//
 	// Client Secrets follow the same URL-safe shape as Client IDs but commonly
-	// begin with "E". The leading "E" anchor disambiguates them from Client IDs
-	// and limits false positives.
-	clientSecretRe = regexp.MustCompile(`\bE[A-Za-z0-9_-]{49,99}`)
+	// begin with "E". As with the Client ID, a PayPal/client-secret context keyword
+	// and a word-boundary "E" prefix limit false positives. The credential is
+	// capture group 1.
+	clientSecretRe = regexp.MustCompile(`(?i:paypal|client[ _-]?secret)["':=\s]{1,25}\b(E[A-Za-z0-9_-]{49,99})`)
 )
+
+// findPairElement adapts a context-anchored regex (capture group 1 is the
+// credential) for pair.Detector. It reports the position at the start of the
+// matched payload and the credential as the value, so the position points at the
+// payload while the reported secret value stays clean.
+func findPairElement(re *regexp.Regexp) func(data []byte) []*pair.Match {
+	return func(data []byte) []*pair.Match {
+		var out []*pair.Match
+		for _, m := range re.FindAllSubmatchIndex(data, -1) {
+			// m[0:2] full match (keyword+credential); m[2:4] capture group 1 (credential).
+			if len(m) < 4 || m[2] < 0 {
+				continue
+			}
+			out = append(out, &pair.Match{Start: m[0], Value: data[m[2]:m[3]]})
+		}
+		return out
+	}
+}
 
 // NewDetector returns a new Veles Detector that finds PayPal REST API
 // credentials. It reports a Credentials secret only when a Client ID and a
@@ -61,8 +81,8 @@ func NewDetector() veles.Detector {
 	return &pair.Detector{
 		MaxElementLen: max(maxClientIDLen, maxClientSecretLen),
 		MaxDistance:   maxDistance,
-		FindA:         pair.FindAllMatches(clientIDRe),
-		FindB:         pair.FindAllMatches(clientSecretRe),
+		FindA:         findPairElement(clientIDRe),
+		FindB:         findPairElement(clientSecretRe),
 		FromPair: func(p pair.Pair) (veles.Secret, bool) {
 			return Credentials{ID: string(p.A.Value), Secret: string(p.B.Value)}, true
 		},

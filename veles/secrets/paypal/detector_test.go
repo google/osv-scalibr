@@ -50,7 +50,7 @@ func TestDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		paypal.NewDetector(),
-		fmt.Sprintf("%s\n%s", detectorClientID, detectorClientSecret),
+		fmt.Sprintf("client_id=%s\nclient_secret=%s", detectorClientID, detectorClientSecret),
 		paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
 	)
 }
@@ -77,6 +77,11 @@ func TestDetector_Detect(t *testing.T) {
 			want:  nil,
 		},
 		{
+			name:  "bare ID and secret without a context keyword are not reported",
+			input: fmt.Sprintf("%s\n%s", detectorClientID, detectorClientSecret),
+			want:  nil,
+		},
+		{
 			name:  "client ID only (no secret) is not reported",
 			input: "paypal_client_id: " + detectorClientID,
 			want:  nil,
@@ -88,17 +93,17 @@ func TestDetector_Detect(t *testing.T) {
 		},
 		{
 			name:  "client ID with wrong prefix is not matched",
-			input: fmt.Sprintf("Z%s\n%s", detectorClientID[1:], detectorClientSecret),
+			input: fmt.Sprintf("client_id=Z%s\nclient_secret=%s", detectorClientID[1:], detectorClientSecret),
 			want:  nil,
 		},
 		{
 			name:  "client secret with wrong prefix is not matched",
-			input: fmt.Sprintf("%s\nZ%s", detectorClientID, detectorClientSecret[1:]),
+			input: fmt.Sprintf("client_id=%s\nclient_secret=Z%s", detectorClientID, detectorClientSecret[1:]),
 			want:  nil,
 		},
 		{
 			name:  "ID and secret in close proximity (happy path)",
-			input: fmt.Sprintf("%s\n%s", detectorClientID, detectorClientSecret),
+			input: fmt.Sprintf("client_id=%s\nclient_secret=%s", detectorClientID, detectorClientSecret),
 			want: []veles.Secret{
 				paypal.Credentials{ID: detectorClientID, Secret: detectorClientSecret},
 			},
