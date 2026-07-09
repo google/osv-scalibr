@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/packageconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
@@ -235,7 +236,7 @@ var (
 		gobinary.Name: {gobinary.New},
 	}
 	// DartSource extractors for Dart.
-	DartSource = InitMap{pubspec.Name: {pubspec.New}}
+	DartSource = InitMap{packageconfig.Name: {packageconfig.New}, pubspec.Name: {pubspec.New}}
 	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {mixlock.New}}
 	// NimSource extractors for Nim.

@@ -1,0 +1,12 @@
+{
+  "configVersion": 1,
+  "packages": [
+    {
+      "name": "async",
+      "rootUri": "file:///Users/runner/.pub-cache/hosted/pub.dev/async-2.11.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.18"
+    }
+  ]
+}
+
