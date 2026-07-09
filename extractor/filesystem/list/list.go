@@ -75,6 +75,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/ipythoninstall"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pylock"
@@ -257,6 +258,7 @@ var (
 		// requirements extraction for environments with and without network access.
 		requirements.Name:   {protoCfg(requirements.New)},
 		setup.Name:          {protoCfg(setup.New)},
+		pipfile.Name:        {protoCfg(pipfile.New)},
 		pipfilelock.Name:    {protoCfg(pipfilelock.New)},
 		pdmlock.Name:        {protoCfg(pdmlock.New)},
 		poetrylock.Name:     {protoCfg(poetrylock.New)},
