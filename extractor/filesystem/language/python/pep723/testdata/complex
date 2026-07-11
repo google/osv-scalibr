@@ -1,0 +1,12 @@
+# /// script
+# dependencies = [
+#   "fastapi[standard]>=0.115",
+#   "urllib3>=2; python_version >= '3.11'",
+#   "example @ https://example.com/example-1.0.0.tar.gz",
+# ]
+# requires-python = ">=3.12"
+# [tool.example]
+# names = ["not-a-package"]
+# ///
+
+print("hello")
