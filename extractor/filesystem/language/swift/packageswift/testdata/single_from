@@ -1,0 +1,8 @@
+import PackageDescription
+
+let package = Package(
+    name: "MyApp",
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "2.0.0"),
+    ]
+)

@@ -1,0 +1,10 @@
+import PackageDescription
+
+let package = Package(
+    name: "MyApp",
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "2.0.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", .upToNextMajor(from: "2.0.0")),
+        .package(url: "https://github.com/vapor/vapor.git", exact: "4.0.0"),
+    ]
+)
