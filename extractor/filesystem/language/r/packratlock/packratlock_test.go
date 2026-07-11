@@ -1,0 +1,176 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package packratlock_test
+
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/r/packratlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/extracttest"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+)
+
+func TestExtractor_FileRequired(t *testing.T) {
+	tests := []struct {
+		inputPath string
+		want      bool
+	}{
+		{
+			inputPath: "packrat.lock",
+			want:      true,
+		},
+		{
+			inputPath: "path/to/packrat.lock",
+			want:      true,
+		},
+		{
+			inputPath: "packrat.lock.bak",
+			want:      false,
+		},
+		{
+			inputPath: "renv.lock",
+			want:      false,
+		},
+		{
+			inputPath: "",
+			want:      false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.inputPath, func(t *testing.T) {
+			e, err := packratlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("packratlock.New: %v", err)
+			}
+			got := e.FileRequired(simplefileapi.New(tt.inputPath, nil))
+			if got != tt.want {
+				t.Errorf("FileRequired(%s) got = %v, want %v", tt.inputPath, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtractor_Extract(t *testing.T) {
+	tests := []extracttest.TestTableEntry{
+		{
+			Name: "invalid format",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/not-json.txt",
+			},
+			WantPackages: nil,
+			WantErr:      extracttest.ContainsErrStr{Str: "could not extract"},
+		},
+		{
+			Name: "no packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty.lock",
+			},
+			WantPackages: []*extractor.Package{},
+		},
+		{
+			Name: "one package",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/one-package.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "morning",
+					Version:  "0.1.0",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/one-package.lock"),
+				},
+			},
+		},
+		{
+			Name: "two packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/two-packages.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "BH",
+					Version:  "1.75.0-0",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
+				},
+				{
+					Name:     "DBI",
+					Version:  "0.4-1",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
+				},
+			},
+		},
+		{
+			Name: "with mixed sources",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/with-mixed-sources.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "markdown",
+					Version:  "1.0",
+					PURLType: purl.TypeCran,
+					Location: extractor.LocationFromPath("testdata/with-mixed-sources.lock"),
+				},
+			},
+		},
+		{
+			Name: "with bioconductor",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/with-bioconductor.lock",
+			},
+			WantPackages: []*extractor.Package{},
+		},
+		{
+			Name: "without source",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/without-source.lock",
+			},
+			WantPackages: []*extractor.Package{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			extr, err := packratlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("packratlock.New: %v", err)
+			}
+
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(t.Context(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+				return
+			}
+
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+			}
+		})
+	}
+}
