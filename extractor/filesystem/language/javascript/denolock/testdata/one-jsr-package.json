@@ -1,0 +1,16 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@std/internal@^1.0.5": "1.0.6"
+  },
+  "jsr": {
+    "@std/internal@1.0.6": {
+      "integrity": "8b8a6c3e0a5d1e3d4ba2d2f4f0a6c3e0a5d1e3d4ba2d2f4f0a6c3e0a5d1e3d4b"
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/internal@^1.0.5"
+    ]
+  }
+}
