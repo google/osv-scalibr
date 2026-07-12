@@ -70,6 +70,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/constraints"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
@@ -233,6 +234,7 @@ var (
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
 		requirements.Name: {requirements.New},
+		constraints.Name:  {constraints.New},
 		setup.Name:        {setup.New},
 		pipfilelock.Name:  {pipfilelock.New},
 		pdmlock.Name:      {pdmlock.New},
