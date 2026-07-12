@@ -112,7 +112,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
 |            | Cargo.toml                                        | `rust/cargotoml`                     |
 |            | Rust binaries                                     | `rust/cargoauditable`                |
-| Swift      | Podfile.lock                                      | `swift/podfilelock`                  |
+| Swift      | Cartfile                                          | `swift/cartfile`                     |
+|            | Podfile.lock                                      | `swift/podfilelock`                  |
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
