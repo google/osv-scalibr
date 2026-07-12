@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
+	osv "github.com/google/osv-scalibr/extractor/filesystem/osv"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 )
@@ -44,19 +45,26 @@ pkgLoop:
 				continue pkgLoop
 			}
 		}
-		loc := pkg.Location.Descriptor.File.Path
-
-		// If ScanConfig.StoreAbsolutePath is on, this will be an absolute path.
-		// Convert to relative in these cases.
-		// Root starts and ends in a slash while relative paths don't, so this will only
-		// take effect for absolute paths.
-		loc = strings.TrimPrefix(loc, rootPrefix)
-
-		if prev, ok := locationToPKGs[loc]; ok {
-			locationToPKGs[loc] = append(prev, pkg)
-		} else {
-			locationToPKGs[loc] = []*extractor.Package{pkg}
+		for _, loc := range duplicateLocations(pkg, rootPrefix) {
+			if prev, ok := locationToPKGs[loc]; ok {
+				locationToPKGs[loc] = append(prev, pkg)
+			} else {
+				locationToPKGs[loc] = []*extractor.Package{pkg}
+			}
 		}
 	}
 	return locationToPKGs
+}
+
+func duplicateLocations(pkg *extractor.Package, rootPrefix string) []string {
+	if _, ok := pkg.Metadata.(osv.DepGroups); ok && len(pkg.Location.Related) == 0 {
+		// Packages extracted from lockfiles/manifests frequently only point at the
+		// dependency descriptor path. That is not strong enough evidence to claim the
+		// package is already provided by an OS package.
+		return nil
+	}
+
+	loc := pkg.Location.Descriptor.File.Path
+	loc = strings.TrimPrefix(loc, rootPrefix)
+	return []string{loc}
 }

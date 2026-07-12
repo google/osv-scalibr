@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/annotator/osduplicate"
 	"github.com/google/osv-scalibr/extractor"
+	osv "github.com/google/osv-scalibr/extractor/filesystem/osv"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
@@ -86,6 +87,19 @@ func TestBuildLocationToPKGsMap(t *testing.T) {
 					},
 				}},
 			},
+		},
+		{
+			desc: "skip_descriptor_only_depgroup_packages",
+			inventory: &inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "package",
+						Metadata: &osv.DepGroupMetadata{},
+						Location: extractor.LocationFromPath("package-lock.json"),
+					},
+				},
+			},
+			want: map[string][]*extractor.Package{},
 		},
 		{
 			desc: "ignore_os_packages",
