@@ -1,0 +1,13 @@
+{
+  "packages": {
+    "nimcrypto": {
+      "version": "0.5.4",
+      "vcsRevision": "a0f92a85b3026e",
+      "url": "https://github.com/cheatfate/nimcrypto",
+      "downloadMethod": "git",
+      "dependencies": [],
+      "files": []
+    }
+  },
+  "version": 1
+}
