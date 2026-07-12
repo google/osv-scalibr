@@ -1,0 +1,9 @@
+Package: mypackage
+Version: 1.0.0
+Title: My Package
+Depends:
+    ggplot2,
+    dplyr,
+    tidyr
+Imports:
+    stringr
