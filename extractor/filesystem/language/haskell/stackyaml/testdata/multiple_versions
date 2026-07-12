@@ -1,0 +1,5 @@
+resolver: lts-18.0
+extra-deps:
+  - lens-4.19.2
+  - aeson-1.5.6.0
+  - text-1.2.5.0
