@@ -1,0 +1,6 @@
+<ivy-module version="2.0">
+  <dependencies>
+    <dependency org="org.example" name="lib" rev="1.0.0" conf="compile,runtime" />
+    <dependency org="org.example" name="testlib" rev="2.0.0" conf="test->default" />
+  </dependencies>
+</ivy-module>

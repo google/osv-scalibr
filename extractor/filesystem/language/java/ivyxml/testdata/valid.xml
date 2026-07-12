@@ -1,0 +1,9 @@
+<ivy-module version="2.0">
+  <dependencies>
+    <dependency org="org.apache.commons" name="commons-lang3" rev="3.12.0" />
+    <dependency org="org.junit" name="junit" rev="4.13.2" conf="test->default" />
+    <dependency org="com.google.guava" name="guava" rev="31.1-jre">
+      <exclude module="some-excluded" />
+    </dependency>
+  </dependencies>
+</ivy-module>
