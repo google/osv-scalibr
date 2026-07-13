@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -275,5 +276,89 @@ func TestMavenLocalRegistry(t *testing.T) {
 	}
 	if !bytes.Equal(content, resp) {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), string(resp))
+	}
+}
+
+func TestMavenLocalRegistryRejectsTraversal(t *testing.T) {
+	tempDir := t.TempDir()
+	srv := clienttest.NewMockHTTPServer(t)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false)
+
+	for _, tc := range []struct {
+		name       string
+		groupID    string
+		artifactID string
+		version    string
+	}{
+		{
+			name:       "groupID",
+			groupID:    "../escape/outside/pwned",
+			artifactID: "x.y.z",
+			version:    "1.0.0",
+		},
+		{
+			name:       "artifactID",
+			groupID:    "org.example",
+			artifactID: "../../../../escape/outside/pwned",
+			version:    "1.0.0",
+		},
+		{
+			name:       "version",
+			groupID:    "org.example",
+			artifactID: "x.y.z",
+			version:    "../../../../escape/outside/pwned",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := client.GetProject(t.Context(), tc.groupID, tc.artifactID, tc.version)
+			if err == nil {
+				t.Fatal("GetProject() succeeded with traversal input, want error")
+			}
+			if !strings.Contains(err.Error(), "invalid Maven local registry cache path") {
+				t.Fatalf("GetProject() error = %v, want invalid local cache path error", err)
+			}
+		})
+	}
+
+	escaped := filepath.Join(tempDir, "escape", "outside", "pwned-1.0.0.pom")
+	if _, err := os.Stat(escaped); err == nil {
+		t.Fatalf("escaped cache file exists: %s", escaped)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("failed to stat escaped cache file %s: %v", escaped, err)
+	}
+}
+
+func TestMavenLocalRegistryRejectsTraversalSnapshotValue(t *testing.T) {
+	tempDir := t.TempDir()
+	srv := clienttest.NewMockHTTPServer(t)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, tempDir, false)
+	srv.SetResponse(t, "org/example/x.y.z/1.0.0-SNAPSHOT/maven-metadata.xml", []byte(`
+	<metadata>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <versioning>
+	    <snapshotVersions>
+	      <snapshotVersion>
+	        <extension>pom</extension>
+	        <value>../../../../escape/outside/pwned</value>
+	      </snapshotVersion>
+	    </snapshotVersions>
+	  </versioning>
+	</metadata>
+	`))
+
+	_, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0-SNAPSHOT")
+	if err == nil {
+		t.Fatal("GetProject() succeeded with traversal snapshot value, want error")
+	}
+	if !strings.Contains(err.Error(), "invalid Maven local registry cache path") {
+		t.Fatalf("GetProject() error = %v, want invalid local cache path error", err)
+	}
+
+	escaped := filepath.Join(tempDir, "escape", "outside", "pwned")
+	if _, err := os.Stat(escaped); err == nil {
+		t.Fatalf("escaped cache file exists: %s", escaped)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("failed to stat escaped cache file %s: %v", escaped, err)
 	}
 }
