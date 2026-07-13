@@ -101,6 +101,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
 |            | requirements.txt                                  | `python/requirements`                |
 |            | poetry.lock                                       | `python/poetrylock`                  |
+|            | Pipfile                                           | `python/pipfile`                     |
 |            | Pipfile.lock                                      | `python/pipfilelock`                 |
 |            | pdm.lock                                          | `python/pdmlock`                     |
 |            | Conda packages                                    | `python/condameta`                   |
