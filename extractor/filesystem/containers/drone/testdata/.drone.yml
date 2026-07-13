@@ -1,0 +1,13 @@
+kind: pipeline
+type: docker
+name: default
+steps:
+  - name: build
+    image: golang:1.21
+  - name: test
+    image: node:20
+services:
+  - name: redis
+    image: redis:7.0
+  - name: postgres
+    image: postgres:15

@@ -1,0 +1,11 @@
+- hosts: webservers
+  handlers:
+    - name: Restart nginx
+      docker_container:
+        name: my_nginx
+        image: nginx:1.25
+  tasks:
+    - name: Start redis
+      docker_container:
+        name: my_redis
+        image: redis:7.0

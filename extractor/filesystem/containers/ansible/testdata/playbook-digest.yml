@@ -1,0 +1,6 @@
+- hosts: webservers
+  tasks:
+    - name: Start nginx with digest
+      docker_container:
+        name: my_nginx
+        image: nginx@sha256:abc123

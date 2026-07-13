@@ -1,0 +1,11 @@
+- hosts: webservers
+  pre_tasks:
+    - name: Pre task
+      docker_container:
+        name: pre_container
+        image: alpine:3.18
+  post_tasks:
+    - name: Post task
+      docker_container:
+        name: post_container
+        image: ubuntu:22.04
