@@ -55,6 +55,11 @@ func TestExtractorsFromName(t *testing.T) {
 			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
+			desc:     "Find_all_ruby_extractors",
+			name:     "ruby",
+			wantExts: []string{"ruby/gemspec", "ruby/gemfilelock", "ruby/gemfile"},
+		},
+		{
 			desc:     "Nonexistent_plugin",
 			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,

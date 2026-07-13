@@ -79,6 +79,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfile"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
@@ -278,6 +279,7 @@ var (
 	RubySource = InitMap{
 		gemspec.Name:     {gemspec.New},
 		gemfilelock.Name: {gemfilelock.New},
+		gemfile.Name:     {gemfile.New},
 	}
 	// RustSource extractors for Rust.
 	RustSource = InitMap{
