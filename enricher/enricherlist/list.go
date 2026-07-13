@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
+	"github.com/google/osv-scalibr/enricher/reachability/javascript"
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/secrets/hashicorp"
@@ -202,6 +203,7 @@ var (
 		java.Name:       {java.New},
 		govcsource.Name: {govcsource.New},
 		rust.Name:       {rust.New},
+		javascript.Name: {javascript.New},
 	}
 
 	// TransitiveDependency enrichers.
