@@ -367,6 +367,29 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "AlmaLinux",
 		},
 		{
+			desc: "Mageia_9",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "mageia",
+				OSVersionID: "9",
+			},
+			want: "Mageia:9",
+		},
+		{
+			desc: "Mageia_8",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "mageia",
+				OSVersionID: "8",
+			},
+			want: "Mageia:8",
+		},
+		{
+			desc: "Mageia_no_version",
+			metadata: &rpmmeta.Metadata{
+				OSID: "mageia",
+			},
+			want: "Mageia",
+		},
+		{
 			desc:     "OS ID not present",
 			metadata: &rpmmeta.Metadata{},
 			want:     "",
