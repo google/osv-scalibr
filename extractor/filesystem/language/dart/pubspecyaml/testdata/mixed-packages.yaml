@@ -1,0 +1,17 @@
+name: my_app
+version: 1.0.0
+dependencies:
+  http: ^0.13.5
+  path_provider: "2.0.15"
+  dio:
+    version: "5.0.0"
+    hosted:
+      name: dio
+      url: "https://pub.dev"
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.3.0
+  mockito: ">=5.0.0 <6.0.0"
+dependency_overrides:
+  analyzer: "5.0.0"

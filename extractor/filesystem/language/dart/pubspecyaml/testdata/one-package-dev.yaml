@@ -1,0 +1,4 @@
+name: my_app
+version: 1.0.0
+dev_dependencies:
+  build_runner: ^2.3.0
