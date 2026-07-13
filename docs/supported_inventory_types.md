@@ -104,6 +104,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Pipfile.lock                                      | `python/pipfilelock`                 |
 |            | pdm.lock                                          | `python/pdmlock`                     |
 |            | Conda packages                                    | `python/condameta`                   |
+|            | pixi.toml                                         | `python/pixitoml`                    |
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
 | R          | renv.lock                                         | `r/renvlock`                         |

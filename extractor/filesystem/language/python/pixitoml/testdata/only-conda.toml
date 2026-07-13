@@ -1,0 +1,8 @@
+[project]
+name = "my_project"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = ">=3.9"
+numpy = ">=1.24"
