@@ -1,0 +1,7 @@
+build:
+  artifacts:
+    - image: "gcr.io/cloud-builders/docker"
+    - image: "gcr.io/cloud-builders/go:1.21"
+    - image: "gcr.io/project-id/my-image:v1.0.0"
+    - image: "ubuntu:22.04"
+    - image: "python:3.11-slim"
