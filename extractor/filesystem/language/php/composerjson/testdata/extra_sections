@@ -1,0 +1,21 @@
+{
+    "name": "vendor/project",
+    "require": {
+        "symfony/console": "5.0.0"
+    },
+    "require-dev": {},
+    "scripts": {
+        "test": "phpunit"
+    },
+    "autoload": {
+        "psr-4": {
+            "Vendor\\Project\\": "src/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/vendor/project"
+        }
+    ]
+}

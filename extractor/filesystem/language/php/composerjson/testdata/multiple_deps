@@ -1,0 +1,7 @@
+{
+    "name": "vendor/project",
+    "require": {
+        "symfony/console": "5.0.0",
+        "monolog/monolog": "2.0.0"
+    }
+}

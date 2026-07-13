@@ -68,6 +68,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/nim/nimble"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -320,7 +321,10 @@ var (
 		dotnetpe.Name: {dotnetpe.New},
 	}
 	// PHPSource extractors for PHP Source extractors.
-	PHPSource = InitMap{composerlock.Name: {composerlock.New}}
+	PHPSource = InitMap{
+		composerjson.Name: {composerjson.New},
+		composerlock.Name: {composerlock.New},
+	}
 	// SwiftSource extractors for Swift.
 	SwiftSource = InitMap{
 		packageresolved.Name: {packageresolved.New},
