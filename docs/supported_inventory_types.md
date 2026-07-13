@@ -71,6 +71,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
 |            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
 |            | project.assets.json                               | `dotnet/projectassetsjson`           |
+|            | .config/dotnet-tools.json                         | `dotnet/dotnettoolsjson`             |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
