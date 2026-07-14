@@ -1,0 +1,17 @@
+# carton snapshot format: version 1.0
+DISTRIBUTIONS
+  Common-Sense-3.75
+    pathname: M/ML/MLEHMANN/common-sense-3.75.tar.gz
+    provides:
+      common::sense 3.75
+    requirements:
+      ExtUtils::MakeMaker 0
+  TOML-Parser-0.91
+    pathname: K/KA/KARUPA/TOML-Parser-0.91.tar.gz
+    provides:
+      TOML::Parser 0.91
+      TOML::Parser::Tokenizer undef
+      TOML::Parser::Tokenizer::Strict undef
+    requirements:
+      Encode 0
+      perl 5.010000
