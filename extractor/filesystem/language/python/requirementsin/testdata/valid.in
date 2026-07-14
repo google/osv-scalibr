@@ -1,0 +1,5 @@
+requests
+flask>=2.0.0
+numpy==1.24.0
+a==1.0.0
+zope.interface==6.0
