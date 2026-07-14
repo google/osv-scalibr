@@ -1,0 +1,5 @@
+opam-version: "1.2"
+name: "legacy"
+version: "0.1"
+maintainer: "old@example.com"
+depends: "ocamlfind"

@@ -55,6 +55,11 @@ func TestExtractorsFromName(t *testing.T) {
 			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
 		},
 		{
+			desc:     "Find_all_ocaml_extractors",
+			name:     "ocaml",
+			wantExts: []string{"ocaml/opam", "ocaml/opamfile"},
+		},
+		{
 			desc:     "Nonexistent_plugin",
 			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,
