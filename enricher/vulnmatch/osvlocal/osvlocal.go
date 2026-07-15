@@ -17,7 +17,9 @@ package osvlocal
 
 import (
 	"context"
+	"fmt"
 	"maps"
+	"net/http"
 	"slices"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -26,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	scalibrversion "github.com/google/osv-scalibr/version"
 )
 
@@ -41,23 +44,32 @@ var _ enricher.Enricher = &Enricher{}
 type Enricher struct {
 	zippedDBRemoteHost string
 
-	userAgent string
-	localPath string
-	download  bool
+	userAgent  string
+	localPath  string
+	download   bool
+	httpClient *http.Client
 }
 
 // New makes a new osvlocal.Enricher with the given config.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
+
 	userAgent := "osv-scalibr/" + scalibrversion.ScannerVersion
 	remoteHost := "https://osv-vulnerabilities.storage.googleapis.com"
 	localPath := ""
 	download := true
 
-	if cfg.UserAgent != "" {
-		userAgent = cfg.UserAgent
+	if cfg.ProtoConfig != nil && cfg.ProtoConfig.UserAgent != "" {
+		userAgent = cfg.ProtoConfig.UserAgent
 	}
 
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OSVLocalConfig { return c.GetOsvlocal() })
+	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.OSVLocalConfig { return c.GetOsvlocal() })
 	if specific != nil {
 		remoteHost = specific.RemoteHost
 		localPath = specific.LocalPath
@@ -66,15 +78,21 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 
 	return &Enricher{
 		zippedDBRemoteHost: remoteHost,
-
-		userAgent: userAgent,
-		localPath: localPath,
-		download:  download,
+		userAgent:          userAgent,
+		localPath:          localPath,
+		download:           download,
+		httpClient:         httpClient,
 	}, nil
 }
 
 func newForTesting(zippedDBRemoteHost string) enricher.Enricher {
-	return &Enricher{zippedDBRemoteHost, "", "", true}
+	return &Enricher{
+		zippedDBRemoteHost: zippedDBRemoteHost,
+		userAgent:          "",
+		localPath:          "",
+		download:           true,
+		httpClient:         http.DefaultClient,
+	}
 }
 
 // Name of the Enricher.
@@ -110,11 +128,15 @@ func (Enricher) RequiredPlugins() []string {
 
 // Enrich checks for vulnerabilities in the inventory packages using zip files exported by osv.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+	if e.httpClient == nil {
+		return fmt.Errorf("client not configured for %s", Name)
+	}
 	dbs, err := newlocalMatcher(
 		e.localPath,
 		e.userAgent,
 		e.download,
 		e.zippedDBRemoteHost,
+		e.httpClient,
 	)
 
 	if err != nil {
