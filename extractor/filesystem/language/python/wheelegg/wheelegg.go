@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/textproto"
 	"path/filepath"
 	"strings"
 
@@ -210,37 +209,67 @@ func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*ex
 	return p, nil
 }
 
+// extractSingleFile parses the metadata from a single file.
 func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Package, error) {
-	p, err := parse(r)
-	if err != nil {
-		return nil, fmt.Errorf("wheelegg.parse: %w", err)
+	scanner := bufio.NewScanner(r)
+
+	var name, version, author, authorEmail string
+	var nameLine int
+	seen := make(map[string]bool)
+
+	// Parse the file line-by-line, since common MIME parsers don't support line number tracking.
+	for lineNumber := 1; scanner.Scan(); lineNumber++ {
+		line := scanner.Text()
+		if len(strings.TrimSpace(line)) == 0 {
+			break // no content
+		}
+		if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
+			continue // line starts with space, it's a continuation line
+		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			// Stop parsing if line is malformed.
+			// We don't return an error so we can still extract packages from malformed files,
+			// like passlib 1.7.4.
+			break
+		}
+
+		key := strings.ToLower(strings.TrimSpace(parts[0]))
+		val := strings.TrimSpace(parts[1])
+
+		if seen[key] {
+			continue // ignore duplicate keys
+		}
+		seen[key] = true
+
+		switch key {
+		case "name":
+			name = val
+			nameLine = lineNumber
+		case "version":
+			version = val
+		case "author":
+			author = val
+		case "author-email":
+			authorEmail = val
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("wheelegg.parse: failed to scan metadata: %w", err)
 	}
 
-	p.Location = extractor.LocationFromPath(path)
-	return p, nil
-}
-
-func parse(r io.Reader) (*extractor.Package, error) {
-	rd := textproto.NewReader(bufio.NewReader(r))
-	h, err := rd.ReadMIMEHeader()
-	name := h.Get("Name")
-	version := h.Get("version")
 	if name == "" || version == "" {
-		// In case we got name and version but also an error, we ignore the error. This can happen in
-		// malformed files like passlib 1.7.4.
-		if err != nil {
-			return nil, fmt.Errorf("ReadMIMEHeader(): %w %s %s", err, h.Get("Name"), h.Get("version"))
-		}
-		return nil, fmt.Errorf("Name or version is empty (name: %q, version: %q)", name, version)
+		return nil, fmt.Errorf("Name or Version is empty (name: %q, version: %q)", name, version)
 	}
 
 	return &extractor.Package{
 		Name:     name,
 		Version:  version,
 		PURLType: purl.TypePyPi,
+		Location: extractor.LocationFromPathAndLine(path, nameLine),
 		Metadata: &PythonPackageMetadata{
-			Author:      h.Get("Author"),
-			AuthorEmail: h.Get("Author-email"),
+			Author:      author,
+			AuthorEmail: authorEmail,
 		},
 	}, nil
 }

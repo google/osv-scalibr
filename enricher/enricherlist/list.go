@@ -86,10 +86,20 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 // InitFn is the enricher initializer function.
-type InitFn func(cfg *cpb.PluginConfig) (enricher.Enricher, error)
+type InitFn func(cfg *config.PluginConfig) (enricher.Enricher, error)
+
+func protoCfg(f func(cfg *cpb.PluginConfig) (enricher.Enricher, error)) InitFn {
+	return func(cfg *config.PluginConfig) (enricher.Enricher, error) {
+		if cfg == nil || cfg.ProtoConfig == nil {
+			return f(&cpb.PluginConfig{})
+		}
+		return f(cfg.ProtoConfig)
+	}
+}
 
 // InitMap is a map of names to enricher initializer functions.
 type InitMap map[string][]InitFn
@@ -114,7 +124,7 @@ var (
 
 	// VEX related enrichers.
 	VEX = InitMap{
-		filter.Name: {filter.New},
+		filter.Name: {protoCfg(filter.New)},
 	}
 
 	// SecretsValidate lists secret validators.
@@ -202,8 +212,8 @@ var (
 	// Reachability enrichers.
 	Reachability = InitMap{
 		java.Name:       {java.New},
-		govcsource.Name: {govcsource.New},
-		rust.Name:       {rust.New},
+		govcsource.Name: {protoCfg(govcsource.New)},
+		rust.Name:       {protoCfg(rust.New)},
 	}
 
 	// TransitiveDependency enrichers.
@@ -220,7 +230,7 @@ var (
 	// FFA enrichers.
 	FFA = InitMap{
 		baseimage.Name:     {baseimage.New},
-		baseimageattr.Name: {baseimageattr.New},
+		baseimageattr.Name: {protoCfg(baseimageattr.New)},
 	}
 
 	// Default enrichers.
@@ -273,7 +283,7 @@ func vals(initMap InitMap) []InitFn {
 }
 
 // EnricherFromName returns a single enricher based on its exact name.
-func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func EnricherFromName(name string, cfg *config.PluginConfig) (enricher.Enricher, error) {
 	initers, ok := enricherNames[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown enricher %q", name)
@@ -292,7 +302,7 @@ func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, er
 }
 
 // EnrichersFromName returns a list of enrichers from a name.
-func EnrichersFromName(name string, cfg *cpb.PluginConfig) ([]enricher.Enricher, error) {
+func EnrichersFromName(name string, cfg *config.PluginConfig) ([]enricher.Enricher, error) {
 	if initers, ok := enricherNames[name]; ok {
 		var result []enricher.Enricher
 		for _, initer := range initers {
@@ -314,14 +324,14 @@ type velesPlugin struct {
 
 func fromVeles[S veles.Secret](validator veles.Validator[S], name string, version int) velesPlugin {
 	return velesPlugin{
-		initFunc: convert.FromVelesValidator(validator, name, version),
+		initFunc: protoCfg(convert.FromVelesValidator(validator, name, version)),
 		name:     name,
 	}
 }
 
-func fromVelesWithCfg(initFunc InitFn, name string) velesPlugin {
+func fromVelesWithCfg(initFunc func(cfg *cpb.PluginConfig) (enricher.Enricher, error), name string) velesPlugin {
 	return velesPlugin{
-		initFunc: initFunc,
+		initFunc: protoCfg(initFunc),
 		name:     name,
 	}
 }
