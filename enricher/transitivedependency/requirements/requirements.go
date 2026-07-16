@@ -16,6 +16,7 @@
 package requirements
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -120,8 +121,15 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
 
+	paths := make([]string, 0, len(pkgGroups))
+	for p := range pkgGroups {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
+
 	var errs error
-	for path, pkgMap := range pkgGroups {
+	for _, path := range paths {
+		pkgMap := pkgGroups[path]
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)
@@ -149,6 +157,14 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
 			continue
 		}
+
+		// Sort the resolved packages to ensure deterministic order when they are added to the inventory.
+		slices.SortFunc(pkgs, func(a, b *extractor.Package) int {
+			return cmp.Or(
+				cmp.Compare(a.Name, b.Name),
+				cmp.Compare(a.Version, b.Version),
+			)
+		})
 
 		internal.Add(pkgs, inv, Name, pkgMap)
 	}
