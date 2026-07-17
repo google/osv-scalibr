@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"deps.dev/util/maven"
@@ -33,8 +34,8 @@ type MavenRegistryClient struct {
 }
 
 // NewMavenRegistryClient makes a new MavenRegistryClient.
-func NewMavenRegistryClient(ctx context.Context, remote, local string, disableGoogleAuth bool) (*MavenRegistryClient, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(ctx, datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local, disableGoogleAuth)
+func NewMavenRegistryClient(ctx context.Context, remote, local string, disableGoogleAuth bool, httpClient *http.Client, googleClient *http.Client) (*MavenRegistryClient, error) {
+	client, err := datasource.NewMavenRegistryAPIClient(ctx, datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local, disableGoogleAuth, httpClient, googleClient)
 	if err != nil {
 		return nil, err
 	}
