@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/enricher/vulnmatch/internal/osv"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -242,23 +243,33 @@ func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []str
 }
 
 func pkgToQuery(pkg *extractor.Package) *osvapipb.Query {
-	if pkg.Name != "" && !pkg.Ecosystem().IsEmpty() && pkg.Version != "" {
-		// TODO(#1222): Ecosystems could return ecosystems
+	np := osv.ParsePackage(pkg)
+
+	// If the ecosystem is GIT, we prioritize commit queries.
+	if np.Ecosystem.String() == "GIT" && np.Commit != "" {
 		return &osvapipb.Query{
-			Package: &osvpb.Package{
-				Name:      pkg.Name,
-				Ecosystem: pkg.Ecosystem().String(),
-			},
-			Param: &osvapipb.Query_Version{
-				Version: pkg.Version,
+			Param: &osvapipb.Query_Commit{
+				Commit: np.Commit,
 			},
 		}
 	}
 
-	if pkg.SourceCode != nil && pkg.SourceCode.Commit != "" {
+	if np.Name != "" && !np.Ecosystem.IsEmpty() && np.Version != "" {
+		return &osvapipb.Query{
+			Package: &osvpb.Package{
+				Name:      np.Name,
+				Ecosystem: np.Ecosystem.String(),
+			},
+			Param: &osvapipb.Query_Version{
+				Version: np.Version,
+			},
+		}
+	}
+
+	if np.Commit != "" {
 		return &osvapipb.Query{
 			Param: &osvapipb.Query_Commit{
-				Commit: pkg.SourceCode.Commit,
+				Commit: np.Commit,
 			},
 		}
 	}
