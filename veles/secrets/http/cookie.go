@@ -57,7 +57,7 @@ func NewCookieDetector() veles.Detector {
 // Detect extracts Cookie secrets in the provided input
 func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 	var secrets []veles.Secret
-	var pos []int
+	var positions []int
 
 	for _, pattern := range cookiePatterns {
 		for _, m := range pattern.re.FindAllSubmatchIndex(data, -1) {
@@ -101,22 +101,24 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 			}
 
 			// Map the parsed cookies into secrets
+			values := make(map[string]string, len(parsedCookies))
 			for _, cookie := range parsedCookies {
 				if cookie.Value == "" {
 					continue
 				}
-
-				secrets = append(secrets, Cookie{
-					Name:  cookie.Name,
-					Value: cookie.Value,
-				})
-
-				pos = append(pos, min(headerPos, contextPos))
+				values[cookie.Name] = cookie.Value
 			}
+
+			if len(values) == 0 {
+				continue
+			}
+
+			secrets = append(secrets, Cookie{Values: values})
+			positions = append(positions, min(headerPos, contextPos))
 		}
 	}
 
-	return secrets, pos
+	return secrets, positions
 }
 
 // MaxSecretLen returns the maximum length that a Cookie secret is expected to be

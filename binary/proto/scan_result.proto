@@ -1319,9 +1319,8 @@ message SecretData {
     string value = 1;
   }
 
-  message HTTPCookie { 
-    string name = 1;
-    string value = 2;
+  message HTTPCookie {
+    map<string, string> values = 1;
   }
 
   message CursorAPIKey {

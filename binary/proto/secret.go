@@ -376,8 +376,7 @@ func httpCookieToProto(s veleshttp.Cookie) *spb.SecretData {
 	return &spb.SecretData{
 		Secret: &spb.SecretData_HttpCookie{
 			HttpCookie: &spb.SecretData_HTTPCookie{
-				Value: s.Value,
-				Name:  s.Name,
+				Values: s.Values,
 			},
 		},
 	}
@@ -1554,10 +1553,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 			Value: s.GetHttpCsrfToken().GetValue(),
 		}, nil
 	case *spb.SecretData_HttpCookie:
-		cookie := s.GetHttpCookie()
 		return veleshttp.Cookie{
-			Value: cookie.GetValue(),
-			Name:  cookie.GetName(),
+			Values: s.GetHttpCookie().GetValues(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
