@@ -28,18 +28,24 @@ type pattern struct {
 	postProcessing func(string) string
 }
 
-var cookiePatterns = []pattern{
-	{
-		// Quoted key value pairs (Logs, JSON).
-		re:             regexp.MustCompile(`(?i)((?:Set-)?Cookie)(?:")?\s*:\s*"((?:[^"\\]|\\.)*)"`),
-		postProcessing: safeUnquote,
-	},
-	{
-		// Unquoted HTTP Headers (HTTP dumps).
-		re:             regexp.MustCompile(`(?im)^((?:Set-)?Cookie)[ \t]*:[ \t]+([^\r\n]+)`),
-		postProcessing: func(s string) string { return s },
-	},
-}
+var (
+	cookiePatterns = []pattern{
+		{
+			// Quoted key value pairs (Logs, JSON).
+			re:             regexp.MustCompile(`(?i)((?:Set-)?Cookie)"?\s*:\s*"((?:[^"\\]|\\.)*)"`),
+			postProcessing: safeUnquote,
+		},
+		{
+			// Unquoted HTTP Headers (HTTP dumps).
+			re:             regexp.MustCompile(`(?im)^((?:Set-)?Cookie): ([^\r\n]+)`),
+			postProcessing: func(s string) string { return s },
+		},
+	}
+
+	contextKeyword = regexp.MustCompile(`(?i)content-type|content-length|host:|user-agent|HTTP/\d(?:\.\d)?`)
+)
+
+const maxDistance = 1024
 
 type cookieDetector struct{}
 
@@ -60,7 +66,22 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 				continue
 			}
 
+			l, r := m[0], m[1]
+			lowerBound := max(0, l-maxDistance)
+			upperBound := min(len(data), r+maxDistance)
 			headerPos := m[2]
+
+			contextPos := -1
+			if matchLocs := contextKeyword.FindAllIndex(data[lowerBound:l], -1); matchLocs != nil {
+				contextPos = lowerBound + matchLocs[len(matchLocs)-1][0]
+			} else if contextKeyword.Match(data[r:upperBound]) {
+				contextPos = headerPos
+			}
+
+			if contextPos == -1 {
+				continue
+			}
+
 			headerType := string(data[m[2]:m[3]]) // "Cookie" or "Set-Cookie"
 			rawCookies := pattern.postProcessing(string(data[m[4]:m[5]]))
 
@@ -90,8 +111,7 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 					Value: cookie.Value,
 				})
 
-				// Use the exact position of "(Set-)Cookie" for all cookies found in this header
-				pos = append(pos, headerPos)
+				pos = append(pos, min(headerPos, contextPos))
 			}
 		}
 	}
@@ -105,7 +125,7 @@ func (c *cookieDetector) MaxSecretLen() uint32 {
 	// - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-limits.html#http-headers-quotas
 	// - https://nodejs.org/api/cli.html#max-http-header-sizesize
 	// - https://httpd.apache.org/docs/current/mod/core.html#limitrequestfieldsize
-	return 16 * veles.KiB
+	return 16*veles.KiB + uint32(maxDistance)*2
 }
 
 // safeUnquote tries to unquote a string and returns it as is in case strconv.Unquote fails

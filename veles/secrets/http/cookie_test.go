@@ -31,7 +31,7 @@ func TestCookieDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		http.NewCookieDetector(),
-		`Set-Cookie: "session_id=23rj302jr032mr03m2r03230r"`,
+		`HTTP/1.1 200 896 Cookie: "session_id=23rj302jr032mr03m2r03230r"`,
 		http.Cookie{Name: "session_id", Value: "23rj302jr032mr03m2r03230r"},
 	)
 }
@@ -76,35 +76,35 @@ func TestCookieDetector_truePositives(t *testing.T) {
 		// Synthetic examples
 		{
 			name:  "basic_single_cookie",
-			input: "Cookie: session_id=123456",
+			input: "Content-Type: text/html\nCookie: session_id=123456",
 			want: []veles.Secret{
 				http.Cookie{Name: "session_id", Value: "123456"},
 			},
 		},
 		{
 			name:  "quoted and encoded",
-			input: `Cookie: "session_id=\"123456\""`,
+			input: "Content-Type: text/html\n" + `Cookie: "session_id=\"123456\""`,
 			want: []veles.Secret{
 				http.Cookie{Name: "session_id", Value: "123456"},
 			},
 		},
 		{
 			name:  "set-cookie_header",
-			input: "Set-Cookie: token=super_secret",
+			input: "Content-Type: application/json\nSet-Cookie: token=super_secret",
 			want: []veles.Secret{
 				http.Cookie{Name: "token", Value: "super_secret"},
 			},
 		},
 		{
 			name:  "case_insensitive_headers",
-			input: "cOokiE: mixed_case=val123",
+			input: "content-type: application/json\ncOokiE: mixed_case=val123",
 			want: []veles.Secret{
 				http.Cookie{Name: "mixed_case", Value: "val123"},
 			},
 		},
 		{
 			name:  "multiple_chained_cookies_with_spacing",
-			input: "Cookie: a=1;   b=2; c=3",
+			input: "Content-Type: text/html\nCookie: a=1;   b=2; c=3",
 			want: []veles.Secret{
 				http.Cookie{Name: "a", Value: "1"},
 				http.Cookie{Name: "b", Value: "2"},
@@ -113,7 +113,7 @@ func TestCookieDetector_truePositives(t *testing.T) {
 		},
 		{
 			name:  "base64_value_with_padding_equals_signs",
-			input: "Cookie: auth=ZXhhbXBsZQ==; id=99",
+			input: "Content-Type: text/html\nCookie: auth=ZXhhbXBsZQ==; id=99",
 			want: []veles.Secret{
 				http.Cookie{Name: "auth", Value: "ZXhhbXBsZQ=="},
 				http.Cookie{Name: "id", Value: "99"},
@@ -121,7 +121,7 @@ func TestCookieDetector_truePositives(t *testing.T) {
 		},
 		{
 			name:  "embedded_in_log_line_with_trailing_garbage_text",
-			input: `INFO [2026-05-21] user logged in Cookie: "user=admin; session=xyz123" [thread-4] status=200`,
+			input: `INFO [2026-05-21] content-type: application/json user logged in Cookie: "user=admin; session=xyz123" [thread-4] status=200`,
 			want: []veles.Secret{
 				http.Cookie{Name: "user", Value: "admin"},
 				http.Cookie{Name: "session", Value: "xyz123"},
@@ -129,7 +129,7 @@ func TestCookieDetector_truePositives(t *testing.T) {
 		},
 		{
 			name:  "ignores_valueless_flags_at_the_end_of_set-cookie",
-			input: "Set-Cookie: id=123; Secure; HttpOnly",
+			input: "Content-Type: application/json\nSet-Cookie: id=123; Secure; HttpOnly",
 			want: []veles.Secret{
 				http.Cookie{Name: "id", Value: "123"},
 			},
