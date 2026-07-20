@@ -18,10 +18,10 @@ import (
 	"net/netip"
 	"testing"
 
-	"github.com/moby/moby/api/types/container"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metadata "github.com/google/osv-scalibr/extractor/standalone/containers/docker"
+	"github.com/moby/moby/api/types/container"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"

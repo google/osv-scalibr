@@ -19,11 +19,11 @@ import (
 	"context"
 	"fmt"
 
-	dockerclient "github.com/moby/moby/client"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	dockerclient "github.com/moby/moby/client"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -61,7 +61,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	if e.client == nil {
 		var err error
-		e.client, err = dockerclient.NewClientWithOpts(dockerclient.WithAPIVersionNegotiation())
+		e.client, err = dockerclient.New(dockerclient.WithAPIVersionNegotiation())
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("cannot connect with docker %w", err)
 		}

@@ -19,9 +19,9 @@ import (
 	"context"
 	"slices"
 
+	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/moby/moby/api/types/container"
 	dockerclient "github.com/moby/moby/client"
-	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 )
 
 type fakeClient struct {
