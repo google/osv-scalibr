@@ -45,7 +45,7 @@ var (
 	contextKeyword = regexp.MustCompile(`(?i)content-type|content-length|host:|user-agent|HTTP/\d(?:\.\d)?`)
 )
 
-const maxDistance = 1024
+const contextKeywordMaxDistance = 1024
 
 type cookieDetector struct{}
 
@@ -67,8 +67,8 @@ func (c *cookieDetector) Detect(data []byte) ([]veles.Secret, []int) {
 			}
 
 			l, r := m[0], m[1]
-			lowerBound := max(0, l-maxDistance)
-			upperBound := min(len(data), r+maxDistance)
+			lowerBound := max(0, l-contextKeywordMaxDistance)
+			upperBound := min(len(data), r+contextKeywordMaxDistance)
 			headerPos := m[2]
 
 			contextPos := -1
@@ -125,7 +125,7 @@ func (c *cookieDetector) MaxSecretLen() uint32 {
 	// - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-limits.html#http-headers-quotas
 	// - https://nodejs.org/api/cli.html#max-http-header-sizesize
 	// - https://httpd.apache.org/docs/current/mod/core.html#limitrequestfieldsize
-	return 16*veles.KiB + uint32(maxDistance)*2
+	return 16*veles.KiB + uint32(contextKeywordMaxDistance)*2
 }
 
 // safeUnquote tries to unquote a string and returns it as is in case strconv.Unquote fails
