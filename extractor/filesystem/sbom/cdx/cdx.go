@@ -165,6 +165,9 @@ func convertComponentToInventory(cdxPkg cyclonedx.Component) *extractor.Package 
 			if pkg.Version == "" {
 				pkg.Version = packageURL.Version
 			}
+			if packageURL.Type == purl.TypeGem {
+				pkg.Version = stripGemPlatform(pkg.Version)
+			}
 		}
 	}
 	if cdxPkg.Evidence != nil && cdxPkg.Evidence.Occurrences != nil {
@@ -181,6 +184,11 @@ func convertComponentToInventory(cdxPkg cyclonedx.Component) *extractor.Package 
 	}
 
 	return pkg
+}
+
+func stripGemPlatform(version string) string {
+	before, _, _ := strings.Cut(version, "-")
+	return before
 }
 
 func hasFileExtension(path string, extension string) bool {
