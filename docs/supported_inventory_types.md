@@ -41,7 +41,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chisel            |                                | `os/chisel`                                  |
 | Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux | `os/rpm`                                     |
+| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
 | Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
 | Kernel modules    | .ko                            | `os/kernel/module`                           |
@@ -92,6 +92,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
+|            | VS Code extension                                 | `javascript/vsix`                    |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -214,6 +215,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP Bearer                                 | `secrets/httpbearer`                   |
 | HTTP CSRF Token                             | `secrets/csrftoken`                    |
 | HTTP Cookie                                 | `secrets/httpcookie`                   |
+
+### Sensitive information
+| Type                                        | Extractor Plugin                     |
+| ------------------------------------------- | ------------------------------------ |
+| International Bank Account Number           | `sensitiveinformation/iban`            |
+| US Social Security Number                   | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 

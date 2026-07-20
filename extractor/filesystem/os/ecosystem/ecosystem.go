@@ -84,7 +84,15 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemOpenEuler, Suffix: m.OpenEulerEcosystemSuffix()}
 		}
 		if m.OSID == "almalinux" {
-			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlmaLinux, Suffix: m.OSVersionID}
+			// OSV.dev keys ALSA advisories by major version only (e.g. "AlmaLinux:9").
+			// VERSION_ID in /etc/os-release is a full point release (e.g. "9.0" or "9.8"),
+			// so trim to the major version only. A bare major such as "9" is returned
+			// unchanged by strings.Cut (found=false, before=full string).
+			majorVersion, _, _ := strings.Cut(m.OSVersionID, ".")
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlmaLinux, Suffix: majorVersion}
+		}
+		if m.OSID == "mageia" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemMageia, Suffix: m.OSVersionID}
 		}
 
 	case *snapmeta.Metadata:

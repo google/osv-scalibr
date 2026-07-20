@@ -22,16 +22,17 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/clients/resolution"
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/mockidgenerator"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -62,6 +63,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 			{
 				Name:     "org.direct:alice",
+				ID:       "id-for-alice",
 				Version:  "1.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive.xml"),
@@ -75,6 +77,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 			{
 				Name:     "org.direct:bob",
+				ID:       "id-for-bob",
 				Version:  "2.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive.xml"),
@@ -88,6 +91,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 			{
 				Name:     "org.direct:chris",
+				ID:       "id-for-chris",
 				Version:  "3.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive.xml"),
@@ -143,7 +147,7 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 
-	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	enrichy, err := pomxml.New(configtest.NewFakePluginConfig())
 
 	if err != nil {
 		t.Fatalf("failed to create enricher: %v", err)
@@ -151,6 +155,7 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
+	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -177,6 +182,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 			{
 				Name:     "org.direct:alice",
+				ID:       "id-for-alice",
 				Version:  "1.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive.xml"),
@@ -187,9 +193,11 @@ func TestEnricher_Enrich(t *testing.T) {
 					IsTransitive: false,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:     "org.direct:bob",
+				ID:       "id-for-bob",
 				Version:  "2.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive.xml"),
@@ -200,9 +208,11 @@ func TestEnricher_Enrich(t *testing.T) {
 					IsTransitive: false,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:     "org.direct:chris",
+				ID:       "id-for-chris",
 				Version:  "3.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive.xml"),
@@ -213,9 +223,11 @@ func TestEnricher_Enrich(t *testing.T) {
 					IsTransitive: false,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:     "org.transitive:chuck",
+				ID:       "dummy-id-org.transitive:chuck",
 				Version:  "1.1.1",
 				PURLType: purl.TypeMaven,
 				ScanRoot: "testdata",
@@ -227,9 +239,11 @@ func TestEnricher_Enrich(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"id-for-alice": true},
 			},
 			{
 				Name:     "org.transitive:dave",
+				ID:       "dummy-id-org.transitive:dave",
 				Version:  "2.2.2",
 				PURLType: purl.TypeMaven,
 				ScanRoot: "testdata",
@@ -241,9 +255,11 @@ func TestEnricher_Enrich(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"id-for-alice": true},
 			},
 			{
 				Name:     "org.transitive:eve",
+				ID:       "dummy-id-org.transitive:eve",
 				Version:  "3.3.3",
 				PURLType: purl.TypeMaven,
 				ScanRoot: "testdata",
@@ -255,9 +271,11 @@ func TestEnricher_Enrich(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"id-for-bob": true},
 			},
 			{
 				Name:     "org.transitive:frank",
+				ID:       "dummy-id-org.transitive:frank",
 				Version:  "4.4.4",
 				PURLType: purl.TypeMaven,
 				ScanRoot: "testdata",
@@ -269,6 +287,7 @@ func TestEnricher_Enrich(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"id-for-chris": true},
 			},
 		},
 	}
@@ -300,6 +319,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 		Packages: []*extractor.Package{
 			{
 				Name:     "org.direct:alice",
+				ID:       "id-for-alice",
 				Version:  "1.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive-nonjar.xml"),
@@ -310,9 +330,11 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 					IsTransitive: false,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:     "org.direct:bob",
+				ID:       "id-for-bob",
 				Version:  "2.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive-nonjar.xml"),
@@ -323,6 +345,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 					IsTransitive: false,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 		},
 	}
@@ -334,7 +357,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 
-	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	enrichy, err := pomxml.New(configtest.NewFakePluginConfig())
 
 	if err != nil {
 		t.Fatalf("failed to create enricher: %v", err)
@@ -342,6 +365,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
+	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -353,6 +377,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 			{
 				// Direct dep, no type specified (defaults to jar) → kept
 				Name:     "org.direct:alice",
+				ID:       "id-for-alice",
 				Version:  "1.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive-nonjar.xml"),
@@ -363,10 +388,12 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 					IsTransitive: false,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				// Direct dep, explicit <type>jar</type> → kept
 				Name:     "org.direct:bob",
+				ID:       "id-for-bob",
 				Version:  "2.0.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("testdata/transitive-nonjar.xml"),
@@ -377,10 +404,12 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 					IsTransitive: false,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				// Transitive dep via alice → kept
 				Name:     "org.transitive:chuck",
+				ID:       "dummy-id-org.transitive:chuck",
 				Version:  "1.1.1",
 				PURLType: purl.TypeMaven,
 				ScanRoot: "testdata",
@@ -392,10 +421,12 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"id-for-alice": true},
 			},
 			{
 				// Transitive dep via alice → kept
 				Name:     "org.transitive:dave",
+				ID:       "dummy-id-org.transitive:dave",
 				Version:  "2.2.2",
 				PURLType: purl.TypeMaven,
 				ScanRoot: "testdata",
@@ -407,10 +438,12 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"id-for-alice": true},
 			},
 			{
 				// Transitive dep via bob → kept
 				Name:     "org.transitive:eve",
+				ID:       "dummy-id-org.transitive:eve",
 				Version:  "3.3.3",
 				PURLType: purl.TypeMaven,
 				ScanRoot: "testdata",
@@ -422,6 +455,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"id-for-bob": true},
 			},
 			// NOTE: The following are NOT expected in the output because they are filtered:
 			// - org.nonjar:raml-spec (type=zip) — filtered from dependencies
@@ -740,11 +774,12 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	enrichy, err := pomxml.New(configtest.NewFakePluginConfig())
 	if err != nil {
 		t.Fatalf("failed to create enricher: %v", err)
 	}
 
+	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
 	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient)
 
@@ -836,6 +871,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		Packages: []*extractor.Package{
 			{
 				Name:     "org.example:module-b",
+				ID:       "dummy-id-org.example:module-b",
 				Version:  "1.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("module-a/pom.xml"),
@@ -845,6 +881,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 					GroupID:      "org.example",
 					IsTransitive: false,
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:     "org.example:module-d",
@@ -860,6 +897,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 			},
 			{
 				Name:     "org.example:module-f",
+				ID:       "dummy-id-org.example:module-f",
 				Version:  "1.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("parent-e/module-e/pom.xml"),
@@ -869,9 +907,11 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 					GroupID:      "org.example",
 					IsTransitive: false,
 				},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:     "org.example:parent",
+				ID:       "dummy-id-org.example:parent",
 				Version:  "1.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("pom.xml"),
@@ -884,6 +924,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 			},
 			{
 				Name:     "org.external:external-a",
+				ID:       "dummy-id-org.external:external-a",
 				Version:  "2.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("module-a/pom.xml"),
@@ -895,9 +936,11 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"dummy-id-org.example:module-b": true},
 			},
 			{
 				Name:     "org.external:external-b",
+				ID:       "dummy-id-org.external:external-b",
 				Version:  "3.0",
 				PURLType: purl.TypeMaven,
 				Location: extractor.LocationFromPath("parent-e/module-e/pom.xml"),
@@ -909,6 +952,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 					IsTransitive: true,
 					DepGroupVals: []string{},
 				},
+				ParentIDs: map[string]bool{"dummy-id-org.example:module-f": true},
 			},
 		},
 	}
@@ -919,7 +963,6 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	sort.Slice(wantInventory.Packages, func(i, j int) bool {
 		return wantInventory.Packages[i].Name < wantInventory.Packages[j].Name
 	})
-
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}

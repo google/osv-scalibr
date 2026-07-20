@@ -58,8 +58,8 @@ var (
 	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
 	reExtras                        = regexp.MustCompile(`\[[^\[\]]*\]`)
-	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:--hash|--global-option|--config-settings|-C).*`)
-	reHashOption                    = regexp.MustCompile(`--hash=(.+?)(?:$|\s)`)
+	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:\s+|^)(?:--hash|--global-option|--config-settings|-C).*`)
+	reHashOption                    = regexp.MustCompile(`(?:\s+|^)--hash=(\S+)`)
 )
 
 // Extractor extracts python packages from requirements.txt files.

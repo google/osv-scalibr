@@ -15,6 +15,7 @@
 package resolution_test
 
 import (
+	"net/http"
 	"os"
 	"testing"
 
@@ -151,7 +152,10 @@ func TestVersions(t *testing.T) {
 		System: resolve.PyPI,
 		Name:   "beautifulsoup4",
 	}
-	client := resolution.NewPyPIRegistryClient(srv.URL, "")
+	client, err := resolution.NewPyPIRegistryClient(srv.URL, "", &http.Client{})
+	if err != nil {
+		t.Fatalf("failed to create pypi client: %v", err)
+	}
 	got, err := client.Versions(t.Context(), pk)
 	if err != nil {
 		t.Fatalf("failed to get versions %v: %v", pk, err)
@@ -348,7 +352,10 @@ func TestRequirements(t *testing.T) {
 		Version:     "4.12.3",
 		VersionType: resolve.Concrete,
 	}
-	client := resolution.NewPyPIRegistryClient(srv.URL, "")
+	client, err := resolution.NewPyPIRegistryClient(srv.URL, "", &http.Client{})
+	if err != nil {
+		t.Fatalf("failed to create pypi client: %v", err)
+	}
 	got, err := client.Requirements(t.Context(), vk)
 	if err != nil {
 		t.Fatalf("failed to get requirements %v: %v", vk, err)

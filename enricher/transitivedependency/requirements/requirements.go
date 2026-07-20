@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -46,6 +47,8 @@ const (
 // Enricher performs dependency resolution for requirements.txt.
 type Enricher struct {
 	resolve.Client
+
+	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -71,10 +74,20 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 // New creates a new Enricher.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+
 	upstreamRegistry := ""
 	depsDevRequirements := false
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsTransitiveConfig {
+	var protoCfg *cpb.PluginConfig
+	localRegistry := ""
+	if cfg.ProtoConfig != nil {
+		protoCfg = cfg.ProtoConfig
+		localRegistry = cfg.ProtoConfig.LocalRegistry
+	}
+	specific := plugin.FindConfig(protoCfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsTransitiveConfig {
 		return c.GetPythonRequirementsTransitive()
 	})
 	if specific != nil {
@@ -85,16 +98,21 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	var depClient resolve.Client
 	var err error
 	if depsDevRequirements {
-		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
 		if err != nil {
-			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+			return nil, err
 		}
+		depClient = resolution.NewDepsDevClientWithConn(conn)
 	} else {
-		depClient = resolution.NewPyPIRegistryClient(upstreamRegistry, cfg.LocalRegistry)
+		depClient, err = resolution.NewPyPIRegistryClient(upstreamRegistry, localRegistry, cfg.ClientFactories.HTTPClient())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Enricher{
-		Client: depClient,
+		Client:      depClient,
+		IDGenerator: &extractor.RandomIDGenerator{},
 	}, nil
 }
 
@@ -191,17 +209,30 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		return nil, errors.New(g.Error)
 	}
 
+	nameToID, err := internal.GetNameToIDMapping(g, list, e.IDGenerator)
+	if err != nil {
+		return nil, err
+	}
+
 	pkgs := make([]*extractor.Package, len(g.Nodes)-1)
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
+
+		parents, err := internal.GetParentIDs(g, nameToID, resolve.NodeID(i))
+		if err != nil {
+			return nil, err
+		}
+
 		pkgs[i-1] = &extractor.Package{
-			Name:     node.Version.Name,
-			Version:  node.Version.Version,
-			PURLType: purl.TypePyPi,
-			ScanRoot: scanRoot,
-			Location: extractor.LocationFromPath(path),
-			Plugins:  []string{Name},
+			ID:        nameToID[node.Version.Name],
+			Name:      node.Version.Name,
+			ParentIDs: parents,
+			Version:   node.Version.Version,
+			PURLType:  purl.TypePyPi,
+			ScanRoot:  scanRoot,
+			Location:  extractor.LocationFromPath(path),
+			Plugins:   []string{Name},
 		}
 	}
 	return pkgs, nil

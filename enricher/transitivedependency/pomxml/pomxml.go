@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -40,6 +41,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -52,6 +54,7 @@ const (
 type Enricher struct {
 	DepClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
+	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -88,28 +91,57 @@ type Config struct {
 }
 
 // New makes a new pom.xml transitive enricher with the given config.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+
 	upstreamRegistry := ""
 	depsdevRequirements := false
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
+	localRegistry := ""
+	disableGoogleAuth := false
+	if cfg.ProtoConfig != nil {
+		localRegistry = cfg.ProtoConfig.LocalRegistry
+		disableGoogleAuth = cfg.ProtoConfig.DisableGoogleAuth
+	}
+	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
 	if specific != nil {
 		upstreamRegistry = specific.UpstreamRegistry
 		depsdevRequirements = specific.DepsDevRequirements
 	}
 
-	// No need to check errors since we are using the default Maven Central URL.
-	mavenClient, _ := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{
-		URL:             upstreamRegistry,
-		ReleasesEnabled: true,
-	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
+	httpClient := cfg.ClientFactories.HTTPClient()
+	var googleClient *http.Client
+	var err error
+	if !disableGoogleAuth {
+		googleClient, err = cfg.ClientFactories.GoogleHTTPClient(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+		if err != nil {
+			log.Warnf("Google default client unavailable, Artifact Registry will not be readable: %v", err)
+		}
+	}
+
+	mavenClient, err := datasource.NewMavenRegistryAPIClient(
+		context.Background(),
+		datasource.MavenRegistry{
+			URL:             upstreamRegistry,
+			ReleasesEnabled: true,
+		},
+		localRegistry,
+		disableGoogleAuth,
+		httpClient,
+		googleClient,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	var depClient resolve.Client
-	var err error
 	if depsdevRequirements {
-		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
 		if err != nil {
-			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+			return nil, err
 		}
+		depClient = resolution.NewDepsDevClientWithConn(conn)
 	} else {
 		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
 	}
@@ -117,6 +149,7 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	return &Enricher{
 		DepClient:   depClient,
 		MavenClient: mavenClient,
+		IDGenerator: &extractor.RandomIDGenerator{},
 	}, nil
 }
 
@@ -144,7 +177,19 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			continue
 		}
 
-		enrichedInv, err := e.extract(ctx, &filesystem.ScanInput{
+		packagesWithIndex := make([]internal.PackageWithIndex, 0, len(pkgMap))
+		for _, indexPkg := range pkgMap {
+			packagesWithIndex = append(packagesWithIndex, indexPkg)
+		}
+		slices.SortFunc(packagesWithIndex, func(a, b internal.PackageWithIndex) int {
+			return a.Index - b.Index
+		})
+		packages := make([]*extractor.Package, 0, len(packagesWithIndex))
+		for _, indexPkg := range packagesWithIndex {
+			packages = append(packages, indexPkg.Pkg)
+		}
+
+		enrichedInv, err := e.extract(ctx, packages, &filesystem.ScanInput{
 			Path:   path,
 			Reader: f,
 			Info:   nil,
@@ -165,7 +210,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	return errs
 }
 
-func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e Enricher) extract(ctx context.Context, packages []*extractor.Package, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
@@ -285,6 +330,11 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
 	}
 
+	nameToID, err := internal.GetNameToIDMapping(g, packages, e.IDGenerator)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+
 	details := map[string]*extractor.Package{}
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
@@ -305,10 +355,18 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 			}
 			break
 		}
+
+		parents, err := internal.GetParentIDs(g, nameToID, resolve.NodeID(i))
+		if err != nil {
+			return inventory.Inventory{}, err
+		}
+
 		pkg := extractor.Package{
-			Name:     node.Version.Name,
-			Version:  node.Version.Version,
-			PURLType: purl.TypeMaven,
+			Name:      node.Version.Name,
+			ID:        nameToID[node.Version.Name],
+			ParentIDs: parents,
+			Version:   node.Version.Version,
+			PURLType:  purl.TypeMaven,
 			Metadata: &javalockfile.Metadata{
 				ArtifactID:   artifactID,
 				GroupID:      groupID,

@@ -326,10 +326,36 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "AlmaLinux:9",
 		},
 		{
+			// Real VERSION_ID from almalinux:9.0 docker image is "9.0" not "9".
+			// OSV.dev ALSA advisories use "AlmaLinux:9" (major only).
+			desc: "AlmaLinux_9_point_release",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "9.0",
+			},
+			want: "AlmaLinux:9",
+		},
+		{
+			desc: "AlmaLinux_9_point_release_late",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "9.8",
+			},
+			want: "AlmaLinux:9",
+		},
+		{
 			desc: "AlmaLinux_8",
 			metadata: &rpmmeta.Metadata{
 				OSID:        "almalinux",
 				OSVersionID: "8",
+			},
+			want: "AlmaLinux:8",
+		},
+		{
+			desc: "AlmaLinux_8_point_release",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "almalinux",
+				OSVersionID: "8.9",
 			},
 			want: "AlmaLinux:8",
 		},
@@ -339,6 +365,29 @@ func TestEcosystemRPM(t *testing.T) {
 				OSID: "almalinux",
 			},
 			want: "AlmaLinux",
+		},
+		{
+			desc: "Mageia_9",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "mageia",
+				OSVersionID: "9",
+			},
+			want: "Mageia:9",
+		},
+		{
+			desc: "Mageia_8",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "mageia",
+				OSVersionID: "8",
+			},
+			want: "Mageia:8",
+		},
+		{
+			desc: "Mageia_no_version",
+			metadata: &rpmmeta.Metadata{
+				OSID: "mageia",
+			},
+			want: "Mageia",
 		},
 		{
 			desc:     "OS ID not present",
@@ -1104,6 +1153,58 @@ func TestMakeEcosystemSBOM(t *testing.T) {
 				},
 			},
 			want: "Wolfi",
+		},
+		{
+			desc: "SPDX Debian with version",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "debian",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "11"}),
+				},
+			},
+			want: "Debian:11",
+		},
+		{
+			desc: "SPDX Ubuntu with codename",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "ubuntu",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "jammy"}),
+				},
+			},
+			want: "Ubuntu:22.04:LTS",
+		},
+		{
+			desc: "SPDX Debian with sid",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "debian",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "sid"}),
+				},
+			},
+			want: "Debian:sid",
+		},
+		{
+			desc: "SPDX Debian with experimental",
+			metadata: &spdxmeta.Metadata{
+				PURL: &purl.PackageURL{
+					Type:       purl.TypeDebian,
+					Namespace:  "debian",
+					Name:       "nginx",
+					Version:    "1.18.0",
+					Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "experimental"}),
+				},
+			},
+			want: "Debian:experimental",
 		},
 		{
 			desc: "SPDX Non-apk purl with distro (should ignore)",
