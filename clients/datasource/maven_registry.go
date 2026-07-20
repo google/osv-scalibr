@@ -84,7 +84,7 @@ func NewMavenRegistryAPIClient(
 	ctx context.Context,
 	registry MavenRegistry,
 	localRegistry string,
-	disableGoogleClient bool,
+	disableGoogleAuth bool,
 	httpClient *http.Client,
 	googleClient *http.Client,
 ) (*MavenRegistryAPIClient, error) {
@@ -120,7 +120,7 @@ func NewMavenRegistryAPIClient(
 		mu:                &sync.Mutex{},
 		responses:         NewRequestCache[string, response](),
 		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
-		disableGoogleAuth: disableGoogleClient,
+		disableGoogleAuth: disableGoogleAuth,
 		httpClient:        httpClient,
 		googleClient:      googleClient,
 	}
@@ -362,7 +362,7 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	if isArtifactRegistry {
 		requestURL.Scheme = "https"
 		// For Artifact Registry, use google.DefaultClient for ADC if available.
-		if m.googleClient != nil {
+		if m.googleClient != nil && !m.disableGoogleAuth {
 			httpClient = m.googleClient
 		}
 	}

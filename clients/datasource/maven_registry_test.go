@@ -16,10 +16,12 @@ package datasource_test
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -276,5 +278,92 @@ func TestMavenLocalRegistry(t *testing.T) {
 	}
 	if !bytes.Equal(content, resp) {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), string(resp))
+	}
+}
+
+type trackingTransport struct {
+	mu     sync.Mutex
+	called bool
+}
+
+func (t *trackingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.mu.Lock()
+	t.called = true
+	t.mu.Unlock()
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader([]byte("<project><groupId>g</groupId><artifactId>a</artifactId><version>v</version></project>"))),
+	}, nil
+}
+
+func (t *trackingTransport) wasCalled() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.called
+}
+
+// TestDisableGoogleAuthRespected tests that setting disableGoogleAuth = true in
+// NewMavenRegistryAPIClient prevents the Google client from being used for
+// Artifact Registry requests, falling back to the standard HTTP client.
+func TestDisableGoogleAuthRespected(t *testing.T) {
+	standardTransport := &trackingTransport{}
+	googleTransport := &trackingTransport{}
+
+	standardClient := &http.Client{Transport: standardTransport}
+	googleClient := &http.Client{Transport: googleTransport}
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
+		"",   // localRegistry
+		true, // disableGoogleAuth
+		standardClient,
+		googleClient,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	_, _ = client.GetProject(t.Context(), "g", "a", "v")
+
+	if googleTransport.wasCalled() {
+		t.Errorf("Google client was called when disableGoogleAuth is true")
+	}
+	if !standardTransport.wasCalled() {
+		t.Errorf("Standard client was not called")
+	}
+}
+
+// TestDisableGoogleAuthMethodRespected tests that dynamically calling
+// DisableGoogleAuth() post-construction prevents the Google client from being
+// used for Artifact Registry requests.
+func TestDisableGoogleAuthMethodRespected(t *testing.T) {
+	standardTransport := &trackingTransport{}
+	googleTransport := &trackingTransport{}
+
+	standardClient := &http.Client{Transport: standardTransport}
+	googleClient := &http.Client{Transport: googleTransport}
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
+		"",    // localRegistry
+		false, // disableGoogleAuth
+		standardClient,
+		googleClient,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	client.DisableGoogleAuth()
+
+	_, _ = client.GetProject(t.Context(), "g", "a", "v")
+
+	if googleTransport.wasCalled() {
+		t.Errorf("Google client was called after DisableGoogleAuth()")
+	}
+	if !standardTransport.wasCalled() {
+		t.Errorf("Standard client was not called")
 	}
 }

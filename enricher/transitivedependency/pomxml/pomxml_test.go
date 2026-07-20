@@ -963,7 +963,6 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	sort.Slice(wantInventory.Packages, func(i, j int) bool {
 		return wantInventory.Packages[i].Name < wantInventory.Packages[j].Name
 	})
-
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}
