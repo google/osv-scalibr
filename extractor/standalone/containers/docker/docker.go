@@ -61,7 +61,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	if e.client == nil {
 		var err error
-		e.client, err = dockerclient.New(dockerclient.WithAPIVersionNegotiation())
+		e.client, err = dockerclient.New()
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("cannot connect with docker %w", err)
 		}
