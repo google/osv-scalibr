@@ -167,7 +167,7 @@ func TestRunScan(t *testing.T) {
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
 			wantPackagesCount: 0,
 			wantFindingCount:  1,
-			// TODO: b/343368902: Fix once we have a detector for Windows.
+			// TODO(b/343368902): Fix once we have a detector for Windows.
 			excludeOS: []string{"windows"},
 		},
 		{
@@ -213,7 +213,7 @@ func TestRunScan(t *testing.T) {
 			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
 			wantPackagesCount: 0,
 			wantFindingCount:  0,
-			// TODO: b/343368902: Fix once we have a detector for Windows.
+			// TODO(b/343368902): Fix once we have a detector for Windows.
 			excludeOS: []string{"windows"},
 		},
 	}

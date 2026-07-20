@@ -1,0 +1,5 @@
+Metadata-Version: 2.1
+Name: backports.ssl_match_hostname
+version: 3.5.0.1
+Author: Python Packaging Authority
+Author-email: distutils-sig@python.org
