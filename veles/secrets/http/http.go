@@ -31,8 +31,7 @@ type CSRFToken struct {
 	Value string
 }
 
-// Cookie contains an HTTP Cookie secret value and its associated name.
+// Cookie contains HTTP Cookie key-value pairs.
 type Cookie struct {
-	Name  string
-	Value string
+	Values map[string]string
 }

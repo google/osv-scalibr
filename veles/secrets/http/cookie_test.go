@@ -32,7 +32,7 @@ func TestCookieDetectorAcceptance(t *testing.T) {
 		t,
 		http.NewCookieDetector(),
 		`HTTP/1.1 200 896 Cookie: "session_id=23rj302jr032mr03m2r03230r"`,
-		http.Cookie{Name: "session_id", Value: "23rj302jr032mr03m2r03230r"},
+		http.Cookie{Values: map[string]string{"session_id": "23rj302jr032mr03m2r03230r"}},
 	)
 }
 
@@ -53,24 +53,24 @@ func TestCookieDetector_truePositives(t *testing.T) {
 			name: "pino_log",
 			file: "logs/pino/app.log",
 			want: []veles.Secret{
-				http.Cookie{Name: "pino_session", Value: "xyz987"},
-				http.Cookie{Name: "pino_session", Value: "xyz987"},
+				http.Cookie{Values: map[string]string{"pino_session": "xyz987"}},
+				http.Cookie{Values: map[string]string{"pino_session": "xyz987"}},
 			},
 		},
 		{
 			name: "dotnet_log",
 			file: "logs/dotnet/vulnerable20260424.log",
 			want: []veles.Secret{
-				http.Cookie{Name: "session_id", Value: "abc123dotnet"},
-				http.Cookie{Name: "session_id", Value: "abc123dotnet"},
+				http.Cookie{Values: map[string]string{"session_id": "abc123dotnet"}},
+				http.Cookie{Values: map[string]string{"session_id": "abc123dotnet"}},
 			},
 		},
 		{
 			name: "nginx_log",
 			file: "logs/nginx/access.log",
 			want: []veles.Secret{
-				http.Cookie{Name: `tracking_id`, Value: `evil_corp_999`},
-				http.Cookie{Name: `tracking_id`, Value: `evil_corp_999`},
+				http.Cookie{Values: map[string]string{"tracking_id": "evil_corp_999"}},
+				http.Cookie{Values: map[string]string{"tracking_id": "evil_corp_999"}},
 			},
 		},
 		// Synthetic examples
@@ -78,60 +78,56 @@ func TestCookieDetector_truePositives(t *testing.T) {
 			name:  "basic_single_cookie",
 			input: "Content-Type: text/html\nCookie: session_id=123456",
 			want: []veles.Secret{
-				http.Cookie{Name: "session_id", Value: "123456"},
+				http.Cookie{Values: map[string]string{"session_id": "123456"}},
 			},
 		},
 		{
 			name:  "quoted and encoded",
 			input: "Content-Type: text/html\n" + `Cookie: "session_id=\"123456\""`,
 			want: []veles.Secret{
-				http.Cookie{Name: "session_id", Value: "123456"},
+				http.Cookie{Values: map[string]string{"session_id": "123456"}},
 			},
 		},
 		{
 			name:  "set-cookie_header",
 			input: "Content-Type: application/json\nSet-Cookie: token=super_secret",
 			want: []veles.Secret{
-				http.Cookie{Name: "token", Value: "super_secret"},
+				http.Cookie{Values: map[string]string{"token": "super_secret"}},
 			},
 		},
 		{
 			name:  "case_insensitive_headers",
 			input: "content-type: application/json\ncOokiE: mixed_case=val123",
 			want: []veles.Secret{
-				http.Cookie{Name: "mixed_case", Value: "val123"},
+				http.Cookie{Values: map[string]string{"mixed_case": "val123"}},
 			},
 		},
 		{
 			name:  "multiple_chained_cookies_with_spacing",
 			input: "Content-Type: text/html\nCookie: a=1;   b=2; c=3",
 			want: []veles.Secret{
-				http.Cookie{Name: "a", Value: "1"},
-				http.Cookie{Name: "b", Value: "2"},
-				http.Cookie{Name: "c", Value: "3"},
+				http.Cookie{Values: map[string]string{"a": "1", "b": "2", "c": "3"}},
 			},
 		},
 		{
 			name:  "base64_value_with_padding_equals_signs",
 			input: "Content-Type: text/html\nCookie: auth=ZXhhbXBsZQ==; id=99",
 			want: []veles.Secret{
-				http.Cookie{Name: "auth", Value: "ZXhhbXBsZQ=="},
-				http.Cookie{Name: "id", Value: "99"},
+				http.Cookie{Values: map[string]string{"auth": "ZXhhbXBsZQ==", "id": "99"}},
 			},
 		},
 		{
 			name:  "embedded_in_log_line_with_trailing_garbage_text",
 			input: `INFO [2026-05-21] content-type: application/json user logged in Cookie: "user=admin; session=xyz123" [thread-4] status=200`,
 			want: []veles.Secret{
-				http.Cookie{Name: "user", Value: "admin"},
-				http.Cookie{Name: "session", Value: "xyz123"},
+				http.Cookie{Values: map[string]string{"user": "admin", "session": "xyz123"}},
 			},
 		},
 		{
 			name:  "ignores_valueless_flags_at_the_end_of_set-cookie",
 			input: "Content-Type: application/json\nSet-Cookie: id=123; Secure; HttpOnly",
 			want: []veles.Secret{
-				http.Cookie{Name: "id", Value: "123"},
+				http.Cookie{Values: map[string]string{"id": "123"}},
 			},
 		},
 	}
