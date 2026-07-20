@@ -17,9 +17,9 @@ package docker
 import (
 	"net/netip"
 
-	"github.com/moby/moby/api/types/container"
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/moby/moby/api/types/container"
 )
 
 func init() {

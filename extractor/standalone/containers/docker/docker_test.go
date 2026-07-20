@@ -18,13 +18,13 @@ import (
 	"net/netip"
 	"testing"
 
-	"github.com/moby/moby/api/types/container"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	plugin "github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker/fakeclient"
+	"github.com/moby/moby/api/types/container"
 )
 
 func TestExtract(t *testing.T) {
