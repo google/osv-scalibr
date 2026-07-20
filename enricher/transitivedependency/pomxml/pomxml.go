@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -110,9 +111,13 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	}
 
 	httpClient := cfg.ClientFactories.HTTPClient()
-	googleClient, err := cfg.ClientFactories.GoogleHTTPClient(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
-	if err != nil {
-		log.Warnf("Google default client unavailable, Artifact Registry will not be readable: %v", err)
+	var googleClient *http.Client
+	var err error
+	if !disableGoogleAuth {
+		googleClient, err = cfg.ClientFactories.GoogleHTTPClient(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+		if err != nil {
+			log.Warnf("Google default client unavailable, Artifact Registry will not be readable: %v", err)
+		}
 	}
 
 	mavenClient, err := datasource.NewMavenRegistryAPIClient(
