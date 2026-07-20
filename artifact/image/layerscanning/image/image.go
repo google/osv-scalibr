@@ -195,7 +195,7 @@ func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Opt
 
 // CreateTarBallFromImage creates a tarball from a local docker image. This is the API version of 'docker save image' command
 func createTarBallFromImage(imageName string) (string, error) {
-	dockerClient, err := client.New(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return "", fmt.Errorf("unable to create docker client to untar image  %s: %w", imageName, err)
 	}
@@ -230,7 +230,7 @@ func createTarBallFromImage(imageName string) (string, error) {
 
 // Check if the imageName is of the form imageName:imageTag
 func validateImageNameAndTag(imageName string) error {
-	dockerClient, err := client.New(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return err
 	}
