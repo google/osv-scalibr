@@ -31,7 +31,7 @@ import (
 
 	"archive/tar"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"

@@ -15,7 +15,9 @@
 package docker
 
 import (
-	"github.com/docker/docker/api/types/container"
+	"net/netip"
+
+	"github.com/moby/moby/api/types/container"
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -29,7 +31,7 @@ type Metadata struct {
 	ImageName   string
 	ImageDigest string
 	ID          string
-	Ports       []container.Port
+	Ports       []container.PortSummary
 }
 
 // ToProto converts the Metadata struct to a DockerContainersMetadata proto.
@@ -37,7 +39,7 @@ func ToProto(m *Metadata) *pb.DockerContainersMetadata {
 	var ports []*pb.DockerPort
 	for _, p := range m.Ports {
 		ports = append(ports, &pb.DockerPort{
-			Ip:          p.IP,
+			Ip:          p.IP.String(),
 			PrivatePort: uint32(p.PrivatePort),
 			PublicPort:  uint32(p.PublicPort),
 			Type:        p.Type,
@@ -56,10 +58,11 @@ func (m *Metadata) IsProtoable() {}
 
 // ToStruct converts the DockerContainersMetadata proto to a Metadata struct.
 func ToStruct(m *pb.DockerContainersMetadata) *Metadata {
-	var ports []container.Port
+	var ports []container.PortSummary
 	for _, p := range m.GetPorts() {
-		ports = append(ports, container.Port{
-			IP:          p.GetIp(),
+		ip, _ := netip.ParseAddr(p.GetIp())
+		ports = append(ports, container.PortSummary{
+			IP:          ip,
 			PrivatePort: uint16(p.GetPrivatePort()),
 			PublicPort:  uint16(p.GetPublicPort()),
 			Type:        p.GetType(),
