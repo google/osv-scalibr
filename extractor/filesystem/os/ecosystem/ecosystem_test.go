@@ -428,6 +428,40 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Azure Linux",
 		},
 		{
+			// OSV.dev openSUSE advisories use suffix "Leap X.Y" (e.g. "openSUSE:Leap 15.5").
+			// Confirmed via OSV.dev API: SUSE-SU-2022:1657-1 lists openSUSE:Leap 15.3 and 15.4.
+			desc: "openSUSE_Leap_15.5",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "opensuse-leap",
+				OSVersionID: "15.5",
+			},
+			want: "openSUSE:Leap 15.5",
+		},
+		{
+			desc: "openSUSE_Leap_15.3",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "opensuse-leap",
+				OSVersionID: "15.3",
+			},
+			want: "openSUSE:Leap 15.3",
+		},
+		{
+			desc: "openSUSE_Leap_15.4",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "opensuse-leap",
+				OSVersionID: "15.4",
+			},
+			want: "openSUSE:Leap 15.4",
+		},
+		{
+			// When VERSION_ID is missing, return the base ecosystem without suffix.
+			desc: "openSUSE_Leap_no_version",
+			metadata: &rpmmeta.Metadata{
+				OSID: "opensuse-leap",
+			},
+			want: "openSUSE",
+		},
+		{
 			desc:     "OS ID not present",
 			metadata: &rpmmeta.Metadata{},
 			want:     "",
