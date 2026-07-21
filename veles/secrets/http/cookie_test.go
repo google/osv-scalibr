@@ -239,8 +239,8 @@ func TestCookieDetector_trueNegatives(t *testing.T) {
 			// Quoted list literal, no key=value pair, header not at line start
 			name: "quoted_list_literal_without_value_assignment",
 			input: `
-			Content-Type: application/json
 			fingerprints = [
+				'Content-Type: application/json'
 				'Set-Cookie: PHPSESSID:-php',
 				'Set-Cookie: laravel_session:-laravel',
 				'Set-Cookie: wp-settings-:-wordpress',
