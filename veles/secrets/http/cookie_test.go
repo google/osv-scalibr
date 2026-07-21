@@ -209,6 +209,10 @@ func TestCookieDetector_trueNegatives(t *testing.T) {
 			name:  "random_key_value_pair_without_cookie_prefix",
 			input: "Content-Type: text/html\nsession=12345; auth=true",
 		},
+		{
+			name:  "missing_context_keyword",
+			input: "Cookie: session_id=123456",
+		},
 		// Potential false positives from source code syntax
 		{
 			name: "js_object_destructuring",
