@@ -94,6 +94,12 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		if m.OSID == "mageia" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemMageia, Suffix: m.OSVersionID}
 		}
+		if m.OSID == "sles" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemSUSE, Suffix: m.OSVersionID}
+		}
+		if m.OSID == "azurelinux" || m.OSID == "mariner" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAzureLinux, Suffix: m.OSVersionID}
+		}
 
 	case *snapmeta.Metadata:
 		if m.OSID == "ubuntu" {

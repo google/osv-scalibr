@@ -390,6 +390,44 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Mageia",
 		},
 		{
+			desc: "SUSE_with_version",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "sles",
+				OSVersionID: "15.5",
+			},
+			want: "SUSE:15.5",
+		},
+		{
+			desc: "SUSE_no_version",
+			metadata: &rpmmeta.Metadata{
+				OSID: "sles",
+			},
+			want: "SUSE",
+		},
+		{
+			desc: "Azure_Linux_azurelinux_with_version",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "azurelinux",
+				OSVersionID: "3.0",
+			},
+			want: "Azure Linux:3.0",
+		},
+		{
+			desc: "Azure_Linux_mariner_with_version",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "mariner",
+				OSVersionID: "2.0",
+			},
+			want: "Azure Linux:2.0",
+		},
+		{
+			desc: "Azure_Linux_no_version",
+			metadata: &rpmmeta.Metadata{
+				OSID: "azurelinux",
+			},
+			want: "Azure Linux",
+		},
+		{
 			desc:     "OS ID not present",
 			metadata: &rpmmeta.Metadata{},
 			want:     "",
@@ -724,6 +762,69 @@ func TestMakePackageURLRPM(t *testing.T) {
 				Qualifiers: purl.QualifiersFromMap(map[string]string{
 					purl.Epoch:     "1",
 					purl.Distro:    "32",
+					purl.SourceRPM: source,
+				}),
+			},
+		},
+		{
+			desc: "SUSE_sles",
+			metadata: &rpmmeta.Metadata{
+				PackageName: pkgname,
+				SourceRPM:   source,
+				Epoch:       epoch,
+				OSID:        "sles",
+				OSVersionID: "15.5",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeRPM,
+				Name:      pkgname,
+				Namespace: "suse",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Epoch:     "1",
+					purl.Distro:    "sles-15.5",
+					purl.SourceRPM: source,
+				}),
+			},
+		},
+		{
+			desc: "Azure_Linux_azurelinux",
+			metadata: &rpmmeta.Metadata{
+				PackageName: pkgname,
+				SourceRPM:   source,
+				Epoch:       epoch,
+				OSID:        "azurelinux",
+				OSVersionID: "3.0",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeRPM,
+				Name:      pkgname,
+				Namespace: "azurelinux",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Epoch:     "1",
+					purl.Distro:    "azurelinux-3.0",
+					purl.SourceRPM: source,
+				}),
+			},
+		},
+		{
+			desc: "Azure_Linux_mariner",
+			metadata: &rpmmeta.Metadata{
+				PackageName: pkgname,
+				SourceRPM:   source,
+				Epoch:       epoch,
+				OSID:        "mariner",
+				OSVersionID: "2.0",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeRPM,
+				Name:      pkgname,
+				Namespace: "azurelinux",
+				Version:   version,
+				Qualifiers: purl.QualifiersFromMap(map[string]string{
+					purl.Epoch:     "1",
+					purl.Distro:    "mariner-2.0",
 					purl.SourceRPM: source,
 				}),
 			},
