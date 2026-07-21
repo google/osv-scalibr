@@ -153,6 +153,16 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions)
 	case purl.TypeSwift:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemSwiftURL)
+	case purl.TypeBrew:
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
+	case "git":
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
+	}
+
+	// No Ecosystem defined for this package, but if it has a source code commit,
+	// return GIT as the ecosystem.
+	if p.SourceCode != nil && (p.SourceCode.Commit != "" || p.SourceCode.Repo != "") {
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
 	}
 
 	// No Ecosystem defined for this package.

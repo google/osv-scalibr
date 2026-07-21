@@ -16,6 +16,7 @@
 package packagedeprecation
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"maps"
@@ -103,6 +104,13 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 	}
 
 	query := slices.Collect(maps.Keys(verToPkg))
+	slices.SortFunc(query, func(a, b VersionKey) int {
+		return cmp.Or(
+			cmp.Compare(a.System, b.System),
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
 
 	resp, err := e.client.GetVersionBatch(ctx, Request{VersionKeys: query})
 	if err != nil {

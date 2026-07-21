@@ -16,6 +16,7 @@
 package pomxml
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -160,6 +161,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	for p := range pkgGroups {
 		paths = append(paths, p)
 	}
+	slices.Sort(paths)
 	mavenutil.DiscoverModules(input.ScanRoot, paths, e.MavenClient)
 	if len(pkgGroups) > 0 {
 		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
@@ -207,6 +209,12 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		internal.Add(enrichedInv.Packages, inv, Name, pkgMap)
 	}
 
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
 	return errs
 }
 
