@@ -698,6 +698,432 @@ func TestToSPDX23(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "Package_with_custom_package_id",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					ID:       "pkg-custom-id-123",
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/067d89bc-7f01-41f5-b398-1659a44ff17a",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					{
+						PackageName:           "software",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-pkg-custom-id-123",
+						PackageVersion:        "1.2.3",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/software@1.2.3",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-DOCUMENT",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-pkg-custom-id-123",
+						},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-pkg-custom-id-123",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+				},
+			},
+		},
+		{
+			desc: "Packages_with_dependency_graph",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						ID:        "pkg-parent",
+						Name:      "parent-pkg",
+						Version:   "1.0.0",
+						PURLType:  purl.TypePyPi,
+						Plugins:   []string{wheelegg.Name},
+						ParentIDs: map[string]bool{"root": true},
+					},
+					{
+						ID:        "pkg-child",
+						Name:      "child-pkg",
+						Version:   "2.0.0",
+						PURLType:  purl.TypePyPi,
+						Plugins:   []string{wheelegg.Name},
+						ParentIDs: map[string]bool{"pkg-parent": true},
+					},
+				},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/f5717a28-9a26-4f97-a479-81998ebea89c",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					{
+						PackageName:           "parent-pkg",
+						PackageSPDXIdentifier: "SPDXRef-Package-parent-pkg-pkg-parent",
+						PackageVersion:        "1.0.0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/parent-pkg@1.0.0",
+							},
+						},
+					},
+					{
+						PackageName:           "child-pkg",
+						PackageSPDXIdentifier: "SPDXRef-Package-child-pkg-pkg-child",
+						PackageVersion:        "2.0.0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/child-pkg@2.0.0",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-DOCUMENT",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg-pkg-parent",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg-pkg-parent",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg-pkg-parent",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-child-pkg-pkg-child",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-child-pkg-pkg-child",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+				},
+			},
+		},
+		{
+			desc: "Packages_with_multi_parent_dependency_graph",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						ID:        "pkg-parent1",
+						Name:      "parent-pkg1",
+						Version:   "1.0.0",
+						PURLType:  purl.TypePyPi,
+						Plugins:   []string{wheelegg.Name},
+						ParentIDs: map[string]bool{"root": true},
+					},
+					{
+						ID:        "pkg-parent2",
+						Name:      "parent-pkg2",
+						Version:   "1.0.0",
+						PURLType:  purl.TypePyPi,
+						Plugins:   []string{wheelegg.Name},
+						ParentIDs: map[string]bool{"root": true},
+					},
+					{
+						ID:        "pkg-shared-child",
+						Name:      "shared-child",
+						Version:   "2.0.0",
+						PURLType:  purl.TypePyPi,
+						Plugins:   []string{wheelegg.Name},
+						ParentIDs: map[string]bool{"pkg-parent1": true, "pkg-parent2": true},
+					},
+				},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/e4d7defa-922d-4ae7-b866-67f7e936cd4f",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					{
+						PackageName:           "parent-pkg1",
+						PackageSPDXIdentifier: "SPDXRef-Package-parent-pkg1-pkg-parent1",
+						PackageVersion:        "1.0.0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/parent-pkg1@1.0.0",
+							},
+						},
+					},
+					{
+						PackageName:           "parent-pkg2",
+						PackageSPDXIdentifier: "SPDXRef-Package-parent-pkg2-pkg-parent2",
+						PackageVersion:        "1.0.0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/parent-pkg2@1.0.0",
+							},
+						},
+					},
+					{
+						PackageName:           "shared-child",
+						PackageSPDXIdentifier: "SPDXRef-Package-shared-child-pkg-shared-child",
+						PackageVersion:        "2.0.0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/shared-child@2.0.0",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-DOCUMENT",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg1-pkg-parent1",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg1-pkg-parent1",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg2-pkg-parent2",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg2-pkg-parent2",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg1-pkg-parent1",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-shared-child-pkg-shared-child",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg2-pkg-parent2",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-shared-child-pkg-shared-child",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-shared-child-pkg-shared-child",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
