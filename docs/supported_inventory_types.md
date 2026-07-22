@@ -41,7 +41,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chisel            |                                | `os/chisel`                                  |
 | Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux | `os/rpm`                                     |
+| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
 | Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
 | Kernel modules    | .ko                            | `os/kernel/module`                           |

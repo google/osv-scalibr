@@ -17,6 +17,7 @@ package resolution
 import (
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"google.golang.org/grpc"
 )
 
 // DepsDevClient is a ResolutionClient wrapping the official resolve.APIClient
@@ -34,4 +35,10 @@ func NewDepsDevClient(addr string, userAgent string) (*DepsDevClient, error) {
 	}
 
 	return &DepsDevClient{APIClient: *resolve.NewAPIClient(c), c: c}, nil
+}
+
+// NewDepsDevClientWithConn creates a new DepsDevClient with a pre-established connection.
+func NewDepsDevClientWithConn(conn grpc.ClientConnInterface) *DepsDevClient {
+	c := datasource.NewCachedInsightsClientWithConn(conn)
+	return &DepsDevClient{APIClient: *resolve.NewAPIClient(c), c: c}
 }

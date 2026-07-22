@@ -16,10 +16,12 @@
 package pomxml
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -40,6 +42,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -89,28 +92,57 @@ type Config struct {
 }
 
 // New makes a new pom.xml transitive enricher with the given config.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+
 	upstreamRegistry := ""
 	depsdevRequirements := false
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
+	localRegistry := ""
+	disableGoogleAuth := false
+	if cfg.ProtoConfig != nil {
+		localRegistry = cfg.ProtoConfig.LocalRegistry
+		disableGoogleAuth = cfg.ProtoConfig.DisableGoogleAuth
+	}
+	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
 	if specific != nil {
 		upstreamRegistry = specific.UpstreamRegistry
 		depsdevRequirements = specific.DepsDevRequirements
 	}
 
-	// No need to check errors since we are using the default Maven Central URL.
-	mavenClient, _ := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{
-		URL:             upstreamRegistry,
-		ReleasesEnabled: true,
-	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
+	httpClient := cfg.ClientFactories.HTTPClient()
+	var googleClient *http.Client
+	var err error
+	if !disableGoogleAuth {
+		googleClient, err = cfg.ClientFactories.GoogleHTTPClient(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+		if err != nil {
+			log.Warnf("Google default client unavailable, Artifact Registry will not be readable: %v", err)
+		}
+	}
+
+	mavenClient, err := datasource.NewMavenRegistryAPIClient(
+		context.Background(),
+		datasource.MavenRegistry{
+			URL:             upstreamRegistry,
+			ReleasesEnabled: true,
+		},
+		localRegistry,
+		disableGoogleAuth,
+		httpClient,
+		googleClient,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	var depClient resolve.Client
-	var err error
 	if depsdevRequirements {
-		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
 		if err != nil {
-			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+			return nil, err
 		}
+		depClient = resolution.NewDepsDevClientWithConn(conn)
 	} else {
 		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
 	}
@@ -129,6 +161,7 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 	for p := range pkgGroups {
 		paths = append(paths, p)
 	}
+	slices.Sort(paths)
 	mavenutil.DiscoverModules(input.ScanRoot, paths, e.MavenClient)
 	if len(pkgGroups) > 0 {
 		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
@@ -176,6 +209,12 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		internal.Add(enrichedInv.Packages, inv, Name, pkgMap)
 	}
 
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
 	return errs
 }
 

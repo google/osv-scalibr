@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package requirements implements an enricher to perform dependency resolution for Python requirements.txt and pyproject.toml.
+// Package requirements implements an enricher to perform dependency resolution for Python requirements.txt.
 package requirements
 
 import (
@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -33,7 +32,6 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/internal"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -73,7 +71,7 @@ func (Enricher) Requirements() *plugin.Capabilities {
 
 // RequiredPlugins returns the names of the plugins required by the enricher.
 func (Enricher) RequiredPlugins() []string {
-	return []string{requirements.Name, pyprojecttoml.Name}
+	return []string{requirements.Name}
 }
 
 // New creates a new Enricher.
@@ -119,18 +117,9 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	}, nil
 }
 
-// Enrich enriches the inventory in requirements.txt and pyproject.toml with transitive dependencies.
+// Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	// Group packages from both requirements.txt and pyproject.toml extractors,
-	// since both use requirements.Metadata and support the same resolution path.
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
-	for path, pkgMap := range internal.GroupPackagesFromPlugin(inv.Packages, pyprojecttoml.Name) {
-		if _, ok := pkgGroups[path]; !ok {
-			pkgGroups[path] = pkgMap
-		} else {
-			maps.Copy(pkgGroups[path], pkgMap)
-		}
-	}
 	paths := make([]string, 0, len(pkgGroups))
 	for p := range pkgGroups {
 		paths = append(paths, p)
