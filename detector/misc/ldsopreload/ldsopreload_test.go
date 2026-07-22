@@ -283,7 +283,6 @@ func TestScanFS_file_not_owned_by_root_returns_finding(t *testing.T) {
 	issues := extractIssues(finding)
 	wantIssues := []string{
 		"/etc/ld.so.preload is not owned by root (uid: 1000)",
-		"/etc/ld.so.preload is not group-owned by root (gid: 1000)",
 	}
 	if diff := cmp.Diff(wantIssues, issues); diff != "" {
 		t.Errorf("issues mismatch (-want +got):\n%s", diff)
@@ -305,7 +304,31 @@ func TestScanFS_parent_dir_not_owned_by_root_returns_finding(t *testing.T) {
 	issues := extractIssues(finding)
 	wantIssues := []string{
 		"parent directory /etc is not owned by root (uid: 1000)",
-		"parent directory /etc is not group-owned by root (gid: 1000)",
+	}
+	if diff := cmp.Diff(wantIssues, issues); diff != "" {
+		t.Errorf("issues mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestScanFS_group_writable_file_nonroot_group_returns_finding(t *testing.T) {
+	entries := baseEntries()
+	entries["etc/ld.so.preload"] = newFileInfo(
+		"ld.so.preload", 0664, 0, 1000, false)
+	fsys := testFS{entries: entries}
+
+	d := &Detector{}
+	finding, err := d.ScanFS(
+		context.Background(), fsys, &packageindex.PackageIndex{})
+	if err != nil {
+		t.Fatalf("ScanFS() returned error: %v", err)
+	}
+
+	issues := extractIssues(finding)
+	wantIssues := []string{
+		"/etc/ld.so.preload is group-writable (permissions: 664)" +
+			" - members of the owning group can inject a malicious" +
+			" shared library for preload hijacking",
+		"/etc/ld.so.preload is not group-owned by root (gid: 1000)",
 	}
 	if diff := cmp.Diff(wantIssues, issues); diff != "" {
 		t.Errorf("issues mismatch (-want +got):\n%s", diff)

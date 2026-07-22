@@ -189,9 +189,9 @@ func checkFilePermissions(fsys fs.FS, path string) ([]string, bool, error) {
 	return issues, true, nil
 }
 
-// parentDirs lists the ancestor directories of /etc/ld.so.preload
+// parentDirs lists the parent directories of /etc/ld.so.preload
 // that we check (in virtual-FS relative path form).
-var parentDirs = []string{".", "etc"}
+var parentDirs = []string{"etc"}
 
 // checkParentDirPermissions checks whether any parent directory in the
 // path to /etc/ld.so.preload is writable by non-root users.

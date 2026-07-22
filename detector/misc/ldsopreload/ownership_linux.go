@@ -36,7 +36,7 @@ func ownershipIssues(subject string, info fs.FileInfo) ([]string, error) {
 		issues = append(issues, fmt.Sprintf(
 			"%s is not owned by root (uid: %d)", subject, stat.Uid))
 	}
-	if stat.Gid != 0 {
+	if stat.Gid != 0 && info.Mode().Perm()&oGroupWrite != 0 {
 		issues = append(issues, fmt.Sprintf(
 			"%s is not group-owned by root (gid: %d)", subject, stat.Gid))
 	}
