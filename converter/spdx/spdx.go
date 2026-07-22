@@ -18,9 +18,11 @@ package spdx
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/uuid"
@@ -73,6 +75,8 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	})
 
 	allOtherLicenses := stringset.Set{}
+	scalibrToSPDXID := make(map[string]string)
+	pkgToSPDXID := make(map[*extractor.Package]string)
 
 	for _, pkg := range i.Packages {
 		p := pkg.PURL()
@@ -86,7 +90,15 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			log.Warnf("Package %v PURL name or version empty, skipping", pkg)
 			continue
 		}
-		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
+		id, err := pkg.GetIDOrGenerate(&extractor.RandomIDGenerator{})
+		if err != nil {
+			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
+			continue
+		}
+		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + replaceSPDXIDInvalidChars(id)
+		scalibrToSPDXID[id] = pID
+		pkgToSPDXID[pkg] = pID
+
 		pSourceInfo := ""
 		if len(pkg.Plugins) > 0 {
 			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])
@@ -131,12 +143,49 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 				},
 			},
 		})
+	}
+
+	for _, pkg := range i.Packages {
+		pID, ok := pkgToSPDXID[pkg]
+		if !ok {
+			continue
+		}
 		// TODO(b/313658493): Add a DESCRIBES relationship or a DocumentDescribes field.
-		relationships = append(relationships, &v2_3.Relationship{
-			RefA:         toDocElementID(mainPackageID),
-			RefB:         toDocElementID(pID),
-			Relationship: "CONTAINS",
-		})
+		if len(pkg.ParentIDs) == 0 {
+			relationships = append(relationships, &v2_3.Relationship{
+				RefA:         toDocElementID(mainPackageID),
+				RefB:         toDocElementID(pID),
+				Relationship: "CONTAINS",
+			})
+		} else {
+			parentIDs := make([]string, 0, len(pkg.ParentIDs))
+			for parentID := range pkg.ParentIDs {
+				parentIDs = append(parentIDs, parentID)
+			}
+			slices.Sort(parentIDs)
+			for _, parentID := range parentIDs {
+				if parentID == "root" {
+					relationships = append(relationships, &v2_3.Relationship{
+						RefA:         toDocElementID(mainPackageID),
+						RefB:         toDocElementID(pID),
+						Relationship: "DEPENDS_ON",
+					})
+				} else if parentSPDXID, ok := scalibrToSPDXID[parentID]; ok {
+					relationships = append(relationships, &v2_3.Relationship{
+						RefA:         toDocElementID(parentSPDXID),
+						RefB:         toDocElementID(pID),
+						Relationship: "DEPENDS_ON",
+					})
+				} else {
+					log.Warnf("Parent package ID %q for package %v not found in inventory, fallback to main package", parentID, pkg)
+					relationships = append(relationships, &v2_3.Relationship{
+						RefA:         toDocElementID(mainPackageID),
+						RefB:         toDocElementID(pID),
+						Relationship: "DEPENDS_ON",
+					})
+				}
+			}
+		}
 		relationships = append(relationships, &v2_3.Relationship{
 			RefA:         toDocElementID(pID),
 			RefB:         toDocElementID(NoAssertion),
