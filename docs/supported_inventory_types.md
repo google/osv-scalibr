@@ -80,6 +80,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | go.mod (OSV)                                      | `go/gomod`                           |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
+| Helm       | Chart.lock (Helm v3 lockfile)                    | `helm/chartlock`                     |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
@@ -98,6 +99,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
 | ObjectiveC | Podfile.lock                                      | `swift/podfilelock`                  |
 | PHP        | Composer                                          | `php/composerlock`                   |
+| Pulumi     | Pulumi.yaml (Pulumi plugin dependencies)         | `pulumi/pulumiyaml`                  |
 | Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
 |            | requirements.txt                                  | `python/requirements`                |
 |            | poetry.lock                                       | `python/poetrylock`                  |
@@ -143,6 +145,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
 | Crates.io API Token                         | `secrets/cratesioapitoken`             |
 | Cursor API key                              | `secrets/cursorapikey`                 |
+| Datadog API key                             | `secrets/datadogapikey`                |
 | DigitalOcean API key                        | `secrets/digitaloceanapikey`           |
 | Docker hub PAT                              | `secrets/dockerhubpat`                 |
 | Elastic Cloud API key                       | `secrets/elasticcloudapikey`           |
@@ -162,6 +165,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Hashicorp Vault token                       | `secrets/hashicorpvaulttoken`          |
 | Hashicorp Vault AppRole token               | `secrets/hashicorpvaultapprole`        |
 | Hugging Face API key                        | `secrets/huggingfaceapikey`            |
+| Linear API key                              | `secrets/linearapikey`                 |
 | MariaDB Credentials                         | `secrets/mariadb`                      |
 | Mysql Mylogin                               | `secrets/mysqlmylogin`                 |
 | npmjs Registry Access Tokens                | `secrets/npmjsaccesstoken`             |
