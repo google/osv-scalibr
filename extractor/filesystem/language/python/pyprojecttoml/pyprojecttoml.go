@@ -63,6 +63,7 @@ type Extractor struct{}
 var _ filesystem.Extractor = Extractor{}
 
 // New returns a new instance of the extractor.
+//nolint:plugger
 func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
 	return &Extractor{}, nil
 }
