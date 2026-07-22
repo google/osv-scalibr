@@ -131,10 +131,15 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			maps.Copy(pkgGroups[path], pkgMap)
 		}
 	}
+	paths := make([]string, 0, len(pkgGroups))
+	for p := range pkgGroups {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
 
 	var errs error
-
-	for path, pkgMap := range pkgGroups {
+	for _, path := range paths {
+		pkgMap := pkgGroups[path]
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)
