@@ -96,13 +96,16 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 	// Extract .apk file to a temporary directory so other plugins get to work on it.
 	// This includes x509 certificates, maven metadata (if present), unpacked resource, and android dex files
-	tempDir, err := common.ZIPToTempDir(input.Reader, e.maxFileSizeBytes)
+	tempRoot, err := common.ZIPToTempDir(input.Reader, e.maxFileSizeBytes)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("common.APKToTempDir(%q): %w", input.Path, err)
 	}
+	defer tempRoot.Close()
+
+	tempDir := tempRoot.Name()
 
 	// manifest will hold normalized AndroidManifest.xml with resource references resolved from resources.arcs resource table file.
-	manifest, normalizedManifest, err := loadManifest(tempDir)
+	manifest, normalizedManifest, err := loadManifest(tempRoot)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("%s: manifest processing failed: %w", Name, err)
 	}
@@ -110,7 +113,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// Dump the normalized manifest to the disk so other plugins can work on it.
 	// AndroidManifest.xml contains various secrets.
 	// For reference, "Application MetaData: name="com.google.android.geo.API_KEY" value="AIzaSyAP-gfH3qvi6vgHZbSYwQ_XHqV_mXHhzIk"
-	if err := dumpManifest(normalizedManifest, tempDir); err != nil {
+	if err := dumpManifest(normalizedManifest, tempRoot); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("%s: failed to dump manifest: %w", Name, err)
 	}
 

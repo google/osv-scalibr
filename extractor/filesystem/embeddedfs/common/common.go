@@ -45,7 +45,7 @@ import (
 const (
 	defaultPageSize    = 1024 * 1024
 	defaultCacheSize   = 100 * 1024 * 1024
-	defaultMaxFileSize = 4000 * 1024 * 1024 // 4GB
+	defaultMaxFileSize = 4096 * 1024 * 1024 // 4GiB
 )
 
 // DetectFilesystem identifies the filesystem type by magic bytes.
@@ -736,42 +736,49 @@ loop:
 	return tempDir, nil
 }
 
-// ZIPToTempDir extracts an ZIP into a temporary directory.
-func ZIPToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
+// ZIPToTempDir extracts a ZIP into a temporary directory and returns a Root
+// confined to the extracted filesystem.
+func ZIPToTempDir(reader io.Reader, maxFileSize int64) (*os.Root, error) {
 	// Create temporary file because zip.NewReader requires ReaderAt.
 	tmpFile, err := os.CreateTemp("", "scalibr-zip-*")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temporary zip file: %w", err)
+		return nil, fmt.Errorf("failed to create temporary zip file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
 	defer tmpFile.Close()
 
-	// Copy APK contents into temporary file.
+	// Copy ZIP contents into temporary file.
 	if _, err := io.Copy(tmpFile, reader); err != nil {
-		return "", fmt.Errorf("failed to copy zip contents: %w", err)
+		return nil, fmt.Errorf("failed to copy zip contents: %w", err)
 	}
 
 	// Determine file size.
 	info, err := tmpFile.Stat()
 	if err != nil {
-		return "", fmt.Errorf("failed to stat temporary zip file: %w", err)
+		return nil, fmt.Errorf("failed to stat temporary zip file: %w", err)
 	}
 
 	// Reset file offset.
 	if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
-		return "", fmt.Errorf("failed to seek temporary zip file: %w", err)
+		return nil, fmt.Errorf("failed to seek temporary zip file: %w", err)
 	}
 
 	// Open ZIP reader.
 	zr, err := zip.NewReader(tmpFile, info.Size())
 	if err != nil {
-		return "", fmt.Errorf("failed to open zip zip: %w", err)
+		return nil, fmt.Errorf("failed to open zip: %w", err)
 	}
 
 	// Create extraction directory.
 	tempDir, err := os.MkdirTemp("", "scalibr-zip-extract-*")
 	if err != nil {
-		return "", fmt.Errorf("failed to create extraction directory: %w", err)
+		return nil, fmt.Errorf("failed to create extraction directory: %w", err)
+	}
+
+	root, err := os.OpenRoot(tempDir)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return nil, fmt.Errorf("failed to open extraction root: %w", err)
 	}
 
 	var extractErr error
@@ -808,24 +815,25 @@ func ZIPToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
 			continue
 		}
 
-		target := filepath.Join(tempDir, cleanName)
-
-		if strings.Contains(target, "..") {
-			extractErr = fmt.Errorf("zip contains invalid entry: %s", target)
+		if strings.Contains(cleanName, "..") {
+			extractErr = fmt.Errorf("zip contains invalid entry: %s", cleanName)
 			break
 		}
 
 		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, 0755); err != nil {
-				extractErr = fmt.Errorf("failed to create directory %s: %w", target, err)
+			if err := root.MkdirAll(cleanName, 0755); err != nil {
+				extractErr = fmt.Errorf("failed to create directory %s: %w", cleanName, err)
 				break
 			}
 			continue
 		}
 
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			extractErr = fmt.Errorf("failed to create parent directory for %s: %w", target, err)
-			break
+		parent := filepath.Dir(cleanName)
+		if parent != "." {
+			if err := root.MkdirAll(parent, 0755); err != nil {
+				extractErr = fmt.Errorf("failed to create parent directory for %s: %w", cleanName, err)
+				break
+			}
 		}
 
 		rc, err := f.Open()
@@ -834,10 +842,10 @@ func ZIPToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
 			break
 		}
 
-		outFile, err := os.Create(target)
+		outFile, err := root.Create(cleanName)
 		if err != nil {
 			rc.Close()
-			extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
+			extractErr = fmt.Errorf("failed to create file %s: %w", cleanName, err)
 			break
 		}
 
@@ -847,12 +855,12 @@ func ZIPToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
 		closeErr2 := rc.Close()
 
 		if err != nil {
-			extractErr = fmt.Errorf("failed to extract file %s: %w", target, err)
+			extractErr = fmt.Errorf("failed to extract file %s: %w", cleanName, err)
 			break
 		}
 
 		if closeErr1 != nil {
-			extractErr = fmt.Errorf("failed to close file %s: %w", target, closeErr1)
+			extractErr = fmt.Errorf("failed to close file %s: %w", cleanName, closeErr1)
 			break
 		}
 
@@ -863,9 +871,10 @@ func ZIPToTempDir(reader io.Reader, maxFileSize int64) (string, error) {
 	}
 
 	if extractErr != nil {
+		root.Close()
 		os.RemoveAll(tempDir)
-		return "", extractErr
+		return nil, extractErr
 	}
 
-	return tempDir, nil
+	return root, nil
 }

@@ -2,13 +2,18 @@ package androidapk
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 )
 
 func TestLoadManifest_Metadata(t *testing.T) {
+	root, err := os.OpenRoot("testdata")
+	if err != nil {
+		t.Fatalf("OpenRoot(testdata): %v", err)
+	}
+	defer root.Close()
+
 	// manifest will hold normalized AndroidManifest.xml.
-	manifest, normalizedManifest, err := loadManifest("testdata")
+	manifest, normalizedManifest, err := loadManifest(root)
 	if err != nil {
 		t.Fatalf("manifest processing failed: %v", err)
 	}
@@ -56,20 +61,23 @@ func TestLoadManifest_Metadata(t *testing.T) {
 func TestDumpManifest(t *testing.T) {
 	tempDir := t.TempDir()
 
+	root, err := os.OpenRoot(tempDir)
+	if err != nil {
+		t.Fatalf("OpenRoot(%q): %v", tempDir, err)
+	}
+	defer root.Close()
+
 	manifestData := []byte(`<?xml version="1.0" encoding="utf-8"?>
 <manifest package="com.example.app">
     <application />
 </manifest>`)
 
-	err := dumpManifest(manifestData, tempDir)
-	if err != nil {
+	if err := dumpManifest(manifestData, root); err != nil {
 		t.Fatalf("DumpManifest() returned error: %v", err)
 	}
 
-	outputPath := filepath.Join(tempDir, "AndroidManifest.normalized.xml")
-
 	// Verify file exists
-	info, err := os.Stat(outputPath)
+	info, err := root.Stat("AndroidManifest.normalized.xml")
 	if err != nil {
 		t.Fatalf("expected manifest file to exist: %v", err)
 	}
@@ -79,7 +87,7 @@ func TestDumpManifest(t *testing.T) {
 	}
 
 	// Verify contents
-	got, err := os.ReadFile(outputPath)
+	got, err := root.ReadFile("AndroidManifest.normalized.xml")
 	if err != nil {
 		t.Fatalf("failed to read dumped manifest: %v", err)
 	}
@@ -92,8 +100,13 @@ func TestDumpManifest(t *testing.T) {
 func TestDumpManifest_EmptyManifest(t *testing.T) {
 	tempDir := t.TempDir()
 
-	err := dumpManifest(nil, tempDir)
-	if err == nil {
+	root, err := os.OpenRoot(tempDir)
+	if err != nil {
+		t.Fatalf("OpenRoot(%q): %v", tempDir, err)
+	}
+	defer root.Close()
+
+	if err := dumpManifest(nil, root); err == nil {
 		t.Fatal("expected error for empty manifest, got nil")
 	}
 }

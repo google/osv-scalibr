@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/shogo82148/androidbinary"
 )
@@ -65,10 +64,8 @@ type metaData struct {
 // resolves resource references using resources.arsc (if present),
 // decodes it into our manifest structure,
 // and returns both the parsed manifest and normalized XML bytes.
-func loadManifest(tempDir string) (*manifest, []byte, error) {
-	manifestPath := filepath.Join(tempDir, "AndroidManifest.xml")
-
-	xmlData, err := os.ReadFile(manifestPath)
+func loadManifest(root *os.Root) (*manifest, []byte, error) {
+	xmlData, err := root.ReadFile("AndroidManifest.xml")
 	if err != nil {
 		return nil, nil, fmt.Errorf("read AndroidManifest.xml: %w", err)
 	}
@@ -80,10 +77,8 @@ func loadManifest(tempDir string) (*manifest, []byte, error) {
 
 	var resTable *androidbinary.TableFile
 
-	resourcePath := filepath.Join(tempDir, "resources.arsc")
-
-	if _, err := os.Stat(resourcePath); err == nil {
-		resData, err := os.ReadFile(resourcePath)
+	if _, err := root.Stat("resources.arsc"); err == nil {
+		resData, err := root.ReadFile("resources.arsc")
 		if err != nil {
 			return nil, nil, fmt.Errorf("read resources.arsc: %w", err)
 		}
@@ -108,13 +103,18 @@ func loadManifest(tempDir string) (*manifest, []byte, error) {
 }
 
 // dumpManifest writes the normalized Android manifest to disk.
-func dumpManifest(manifest []byte, tempDir string) error {
+func dumpManifest(manifest []byte, root *os.Root) error {
 	if len(manifest) == 0 {
 		return errors.New("manifest is empty")
 	}
 
-	outputPath := filepath.Join(tempDir, "AndroidManifest.normalized.xml")
-	if err := os.WriteFile(outputPath, manifest, 0644); err != nil {
+	f, err := root.Create("AndroidManifest.normalized.xml")
+	if err != nil {
+		return fmt.Errorf("failed to create normalized manifest: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := f.Write(manifest); err != nil {
 		return fmt.Errorf("failed to write normalized manifest: %w", err)
 	}
 

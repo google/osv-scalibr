@@ -505,11 +505,11 @@ var (
 
 	// EmbeddedFS extractors.
 	EmbeddedFS = InitMap{
-		archive.Name: {protoCfg(archive.New)},
-		vdi.Name:     {protoCfg(vdi.New)},
-		vmdk.Name:    {protoCfg(vmdk.New)},
-		ova.Name:     {protoCfg(ova.New)},
-		qcow2.Name:   {protoCfg(qcow2.New)},
+		archive.Name:    {protoCfg(archive.New)},
+		vdi.Name:        {protoCfg(vdi.New)},
+		vmdk.Name:       {protoCfg(vmdk.New)},
+		ova.Name:        {protoCfg(ova.New)},
+		qcow2.Name:      {protoCfg(qcow2.New)},
 		androidapk.Name: {protoCfg(androidapk.New)},
 	}
 

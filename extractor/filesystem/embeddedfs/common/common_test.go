@@ -81,14 +81,18 @@ func TestZIPToTempDir(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			zipData := createTestZip(t, tt.files)
 
-			dir, err := ZIPToTempDir(zipData, tt.maxFileSize)
+			tempRoot, err := ZIPToTempDir(zipData, tt.maxFileSize)
 			if err != nil {
 				t.Fatalf("ZIPToTempDir() error = %v", err)
 			}
-			defer os.RemoveAll(dir)
+			defer func() {
+				tempDir := tempRoot.Name()
+				tempRoot.Close()
+				os.RemoveAll(tempDir)
+			}()
 
 			if tt.expectedFile != "" {
-				data, err := os.ReadFile(filepath.Join(dir, tt.expectedFile))
+				data, err := tempRoot.ReadFile(tt.expectedFile)
 				if err != nil {
 					t.Fatalf("failed to read extracted file: %v", err)
 				}
@@ -103,7 +107,7 @@ func TestZIPToTempDir(t *testing.T) {
 			}
 
 			if tt.skippedFile != "" {
-				_, err := os.Stat(filepath.Join(dir, tt.skippedFile))
+				_, err := tempRoot.Stat(tt.skippedFile)
 				if !errors.Is(err, os.ErrNotExist) {
 					t.Fatalf(
 						"expected %q to be skipped, got err=%v",
