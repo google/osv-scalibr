@@ -22,6 +22,70 @@ import (
 	"github.com/google/osv-scalibr/clients/clienttest"
 )
 
+func TestAddRegistryRejectsHTTPWhenCredentialsConfigured(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	client, _ := NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	client.registryAuths = map[string]*HTTPAuthentication{
+		"private-repo": {
+			SupportedMethods: []HTTPAuthMethod{AuthBasic},
+			Username:         "user",
+			Password:         "pass",
+		},
+	}
+
+	err := client.AddRegistry(t.Context(), MavenRegistry{
+		URL:             "http://attacker.com/maven2/",
+		ID:              "private-repo",
+		ReleasesEnabled: true,
+	})
+	if err == nil {
+		t.Error("AddRegistry() should reject http:// URL when credentials are configured, got nil error")
+	}
+}
+
+func TestUpdateDefaultRegistryRejectsHTTPWhenCredentialsConfigured(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	// Default registry gets ID "default" when none is specified.
+	client, _ := NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	client.registryAuths = map[string]*HTTPAuthentication{
+		"default": {
+			SupportedMethods: []HTTPAuthMethod{AuthBasic},
+			Username:         "user",
+			Password:         "pass",
+		},
+	}
+
+	err := client.AddRegistry(t.Context(), MavenRegistry{
+		URL:             "http://attacker.com/maven2/",
+		ID:              "default",
+		ReleasesEnabled: true,
+	})
+	if err == nil {
+		t.Error("AddRegistry() should reject http:// URL when updating default registry with credentials, got nil error")
+	}
+}
+
+func TestAddRegistryAllowsHTTPSWhenCredentialsConfigured(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	client, _ := NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	client.registryAuths = map[string]*HTTPAuthentication{
+		"private-repo": {
+			SupportedMethods: []HTTPAuthMethod{AuthBasic},
+			Username:         "user",
+			Password:         "pass",
+		},
+	}
+
+	err := client.AddRegistry(t.Context(), MavenRegistry{
+		URL:             "https://private.maven.org/maven2/",
+		ID:              "private-repo",
+		ReleasesEnabled: true,
+	})
+	if err != nil {
+		t.Errorf("AddRegistry() should allow https:// URL when credentials are configured, got error: %v", err)
+	}
+}
+
 func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 	// Create mock server to test auth is maintained
 	srv := clienttest.NewMockHTTPServer(t)
