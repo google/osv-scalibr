@@ -217,9 +217,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP Cookie                                 | `secrets/httpcookie`                   |
 
 ### Sensitive information
-| Type                                        | Extractor Plugin                     |
-| ------------------------------------------- | ------------------------------------ |
+| Type                                        | Extractor Plugin                       |
+| ------------------------------------------- | -------------------------------------- |
 | International Bank Account Number           | `sensitiveinformation/iban`            |
+| US Adoption Taxpayer Identification Number  | `sensitiveinformation/atin`            |
 | US Social Security Number                   | `sensitiveinformation/ssn`             |
 
 ### Container inventory
