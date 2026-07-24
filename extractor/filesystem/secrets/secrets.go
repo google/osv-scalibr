@@ -60,6 +60,8 @@ var (
 		".der":       true,
 		".cer":       true,
 		".pypirc":    true,
+		// Allow looking for secrets and credentials inside .dex files
+		".dex": true,
 	}
 )
 

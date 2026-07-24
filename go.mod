@@ -53,6 +53,7 @@ require (
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
 	github.com/saferwall/pe v1.6.4
 	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/shogo82148/androidbinary v1.0.5
 	github.com/spdx/tools-golang v0.5.7
 	github.com/thoas/go-funk v0.9.3
 	github.com/tidwall/gjson v1.19.0

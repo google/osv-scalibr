@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/podman"
+	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/androidapk"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/ova"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/qcow2"
@@ -504,11 +505,12 @@ var (
 
 	// EmbeddedFS extractors.
 	EmbeddedFS = InitMap{
-		archive.Name: {protoCfg(archive.New)},
-		vdi.Name:     {protoCfg(vdi.New)},
-		vmdk.Name:    {protoCfg(vmdk.New)},
-		ova.Name:     {protoCfg(ova.New)},
-		qcow2.Name:   {protoCfg(qcow2.New)},
+		archive.Name:    {protoCfg(archive.New)},
+		vdi.Name:        {protoCfg(vdi.New)},
+		vmdk.Name:       {protoCfg(vmdk.New)},
+		ova.Name:        {protoCfg(ova.New)},
+		qcow2.Name:      {protoCfg(qcow2.New)},
+		androidapk.Name: {protoCfg(androidapk.New)},
 	}
 
 	// FFA extractor.
