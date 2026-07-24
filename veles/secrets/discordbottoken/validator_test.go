@@ -22,9 +22,24 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/discordbottoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestToken = "MTIzNDU2Nzg5MDEyMzQ1Njc4.YAaBbC.dEFGhijklMNOPqrSTUVwxyzAB12"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := discordbottoken.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		discordbottoken.NewValidator(),
+		velestest.WithTrueNegatives(discordbottoken.DiscordBotToken{
+			Token: "1234567890123456789.OSVSCALIBR.invalid0000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {

@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -59,6 +60,23 @@ Twanj5YBWrq2yV2fqWgvyz3LIqlhmDNW89ThWmk7XYtD0em9dnEXlpH0JTxdQpCF
 tGOp/d/V3F66yalNSTXNbkA=
 -----END PRIVATE KEY-----`
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := salesforceoauth2jwt.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		salesforceoauth2jwt.NewValidator(),
+		velestest.WithTrueNegatives(salesforceoauth2jwt.Credentials{
+			ID:         testClientID,
+			Username:   "invalid@example.com",
+			PrivateKey: testPrivateKeyPEM,
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[salesforceoauth2jwt.Credentials](),
+	)
+}
 
 // mockTransport redirects login.salesforce.com to mock server
 type mockTransport struct {
