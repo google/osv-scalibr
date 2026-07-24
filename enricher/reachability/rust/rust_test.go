@@ -17,7 +17,6 @@ package rust_test
 import (
 	"errors"
 	"os"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -37,10 +36,6 @@ var extractedSymbolsFile = "testdata/mock_data/mock_extractedsymbols.json"
 var testProjPath = "testdata/real-rust-project"
 
 func Test_Enrich(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name          string
 		vulnFile      string
