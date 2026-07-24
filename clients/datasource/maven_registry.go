@@ -43,7 +43,10 @@ const mavenCentral = "https://repo.maven.apache.org/maven2"
 // artifactRegistryScheme defines the scheme for Google Artifact Registry.
 const artifactRegistryScheme = "artifactregistry"
 
-var errAPIFailed = errors.New("API query failed")
+var (
+	errAPIFailed       = errors.New("API query failed")
+	errBlockedInsecure = errors.New("maven registry blocked: external HTTP repos are off by default, use AllowInsecureHTTPHost to allow")
+)
 
 // MavenRegistryAPIClient defines a client to fetch metadata from a Maven registry.
 type MavenRegistryAPIClient struct {
@@ -56,6 +59,12 @@ type MavenRegistryAPIClient struct {
 	httpClient        *http.Client // Custom HTTP client for regular queries.
 	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
 	disableGoogleAuth bool         // If true, do not try to create google.DefaultClient for Artifact Registry.
+
+	// Hostnames the caller has opted in to fetch over HTTP. Anything else
+	// is blocked before the request fires, same as what mvn does by default
+	// with the maven-default-http-blocker mirror (apache/maven#7964,
+	// MNG-7118). Loopback and file:// are always allowed.
+	allowInsecureHTTPHosts map[string]bool
 
 	// Cache fields
 	mu             *sync.Mutex
@@ -222,6 +231,39 @@ func (m *MavenRegistryAPIClient) DisableGoogleAuth() {
 	m.disableGoogleAuth = true
 }
 
+// AllowInsecureHTTPHost lets the client fetch from the given HTTP host.
+// External HTTP repos are blocked by default to match mvn's behavior.
+// Loopback (localhost, 127.0.0.1, ::1) is always allowed; no need to add it.
+func (m *MavenRegistryAPIClient) AllowInsecureHTTPHost(host string) {
+	if m.allowInsecureHTTPHosts == nil {
+		m.allowInsecureHTTPHosts = make(map[string]bool)
+	}
+	m.allowInsecureHTTPHosts[host] = true
+}
+
+// isBlockedInsecureHTTP reports whether u is an external HTTP host that the
+// caller has not allowlisted. Loopback hosts are always allowed.
+func (m *MavenRegistryAPIClient) isBlockedInsecureHTTP(u *url.URL) bool {
+	if u.Scheme != "http" {
+		return false
+	}
+	host := u.Hostname()
+	if isLoopbackHost(host) {
+		return false
+	}
+	return !m.allowInsecureHTTPHosts[host]
+}
+
+// isLoopbackHost reports whether host is the local machine. mvn excludes
+// these from its external:http:* mirror block.
+func isLoopbackHost(host string) bool {
+	switch host {
+	case "localhost", "127.0.0.1", "::1", "[::1]":
+		return true
+	}
+	return false
+}
+
 // GetRegistries returns the registries added to this client.
 func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 	return m.registries
@@ -365,6 +407,10 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		if m.googleClient != nil && !m.disableGoogleAuth {
 			httpClient = m.googleClient
 		}
+	}
+
+	if m.isBlockedInsecureHTTP(&requestURL) {
+		return fmt.Errorf("%w: %s", errBlockedInsecure, registry.URL)
 	}
 
 	u := requestURL.JoinPath(paths...).String()
