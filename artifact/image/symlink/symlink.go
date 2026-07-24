@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/log"
-	"github.com/google/uuid"
 )
 
 // RemoveObsoleteSymlinks removes symlinks that point to a destination file or directory path that
@@ -198,15 +197,21 @@ func removeLayerPathPrefix(path, layerPath string) string {
 // For example, if a symlink with path `a/symlink.txt“ points to “../../file.text“, then
 // this function would return true because the target file is outside of the root directory.
 func TargetOutsideRoot(path, target string) bool {
-	// Create a marker directory as root to check if the target path is outside of the root directory.
-	markerDir := uuid.New().String()
 	if filepath.IsAbs(target) {
 		// Absolute paths may still point outside of the root directory.
 		// e.g. "/../file.txt"
-		markerTarget := filepath.Join(markerDir, target)
-		return !strings.Contains(markerTarget, markerDir)
+		return !filepath.IsLocal(removeRoot(target))
 	}
+	combinedPath := filepath.Dir(path) + string(filepath.Separator) + target
+	if filepath.IsAbs(combinedPath) {
+		combinedPath = removeRoot(combinedPath)
+	}
+	return !filepath.IsLocal(combinedPath)
+}
 
-	markerTargetAbs := filepath.Join(markerDir, filepath.Dir(path), target)
-	return !strings.Contains(markerTargetAbs, markerDir)
+// Removes the root prefix of the given path. Used in combination with IsLocal
+// to tell if an absolute path points outside its own root.
+func removeRoot(path string) string {
+	path = strings.TrimPrefix(path, filepath.VolumeName(path)) // For Windows
+	return strings.TrimPrefix(path, string(filepath.Separator))
 }
