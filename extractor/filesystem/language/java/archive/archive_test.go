@@ -16,12 +16,14 @@ package archive_test
 
 import (
 	"archive/zip"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -659,6 +661,313 @@ func TestExtract(t *testing.T) {
 	}
 }
 
+func TestExtractJenkinsPluginArchiveFixtures(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		want    []*extractor.Package
+		wantErr error
+	}{
+		{
+			name: "valid hpi fixture emits Jenkins plugin Maven package",
+			path: filepath.FromSlash("testdata/jenkins-loadninja.hpi"),
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/jenkins-loadninja.hpi"), "loadninja", "2.2"),
+			},
+		},
+		{
+			name: "valid jpi fixture emits Jenkins plugin Maven package",
+			path: filepath.FromSlash("testdata/jenkins-loadninja.jpi"),
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/jenkins-loadninja.jpi"), "loadninja", "2.2"),
+			},
+		},
+		{
+			name: "missing Short-Name fixture emits no Jenkins plugin package",
+			path: filepath.FromSlash("testdata/jenkins-missing-short-name.hpi"),
+			want: []*extractor.Package{},
+		},
+		{
+			name: "missing Plugin-Version fixture emits no Jenkins plugin package",
+			path: filepath.FromSlash("testdata/jenkins-missing-plugin-version.jpi"),
+			want: []*extractor.Package{},
+		},
+		{
+			name:    "invalid jpi archive is reported safely",
+			path:    filepath.FromSlash("testdata/invalid-plugin.jpi"),
+			wantErr: errAny,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := os.Open(tt.path)
+			if err != nil {
+				t.Fatalf("os.Open(%s) unexpected error: %v", tt.path, err)
+			}
+			defer f.Close()
+
+			info, err := f.Stat()
+			if err != nil {
+				t.Fatalf("f.Stat() for %q unexpected error: %v", tt.path, err)
+			}
+
+			hashJars := false
+			extractFromFilename := false
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_JavaArchive{
+						JavaArchive: &cpb.JavaArchiveConfig{
+							ExtractFromFilename: &extractFromFilename,
+							HashJars:            &hashJars,
+						},
+					}},
+				},
+			}
+			e, err := archive.New(cfg)
+			if err != nil {
+				t.Fatalf("archive.New: %v", err)
+			}
+
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: f}
+			got, err := e.Extract(t.Context(), input)
+			if err != nil && errors.Is(tt.wantErr, errAny) {
+				err = errAny
+			}
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("Extract(%s) got error: %v, want error: %v", tt.path, err, tt.wantErr)
+			}
+
+			sort := func(a, b *extractor.Package) bool { return a.Name < b.Name }
+			if diff := cmp.Diff(inventory.Inventory{Packages: tt.want}, got, cmpopts.SortSlices(sort)); diff != "" {
+				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+		})
+	}
+}
+
+func TestExtractJenkinsPluginArchive(t *testing.T) {
+	loadninjaHPI := filepath.FromSlash("testdata/loadninja.hpi")
+	loadninjaJPI := filepath.FromSlash("testdata/loadninja.jpi")
+	loadninjaJAR := filepath.FromSlash("testdata/loadninja.jar")
+	pluginWithDepHPI := filepath.FromSlash("testdata/plugin-with-dep.hpi")
+	duplicatePomHPI := filepath.FromSlash("testdata/duplicate-pom.hpi")
+	nestedJarHPI := filepath.FromSlash("testdata/nested-jenkins-manifest.hpi")
+	nestedHPIInJAR := filepath.FromSlash("testdata/nested-jenkins-plugin.jar")
+
+	depJar := mustZipBytes(t, map[string][]byte{
+		"META-INF/maven/com.example/dep/pom.properties": []byte("groupId=com.example\nartifactId=dep\nversion=1.0.0\n"),
+	})
+	nestedJenkinsJar := mustZipBytes(t, map[string][]byte{
+		"META-INF/MANIFEST.MF": jenkinsManifest("nested-plugin", "1.0"),
+	})
+	nestedJenkinsHPI := mustZipBytes(t, map[string][]byte{
+		"META-INF/MANIFEST.MF": jenkinsManifest("nested-plugin", "1.0"),
+	})
+
+	tests := []struct {
+		name    string
+		path    string
+		entries map[string][]byte
+		want    []*extractor.Package
+	}{
+		{
+			name: "valid hpi emits Jenkins plugin Maven package",
+			path: loadninjaHPI,
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(loadninjaHPI, "loadninja", "2.2"),
+			},
+		},
+		{
+			name: "hpi without manifest group id falls back to Jenkins plugin group id",
+			path: filepath.FromSlash("testdata/loadninja-no-group-id.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/loadninja-no-group-id.hpi"), "loadninja", "2.2"),
+			},
+		},
+		{
+			name: "hpi with manifest group id uses manifest group id",
+			path: filepath.FromSlash("testdata/loadninja-group-id.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifestWithGroupID("loadninja", "2.2", "io.jenkins.plugins"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackageWithGroupID(filepath.FromSlash("testdata/loadninja-group-id.hpi"), "io.jenkins.plugins", "loadninja", "2.2"),
+			},
+		},
+		{
+			name: "valid jpi emits Jenkins plugin Maven package",
+			path: loadninjaJPI,
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja-jpi", "2.3"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(loadninjaJPI, "loadninja-jpi", "2.3"),
+			},
+		},
+		{
+			name: "plugin version whitespace is trimmed and snapshot suffix is preserved",
+			path: filepath.FromSlash("testdata/loadninja-snapshot.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", " 2.2-SNAPSHOT\t"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/loadninja-snapshot.hpi"), "loadninja", "2.2-SNAPSHOT"),
+			},
+		},
+		{
+			name: "Jenkins plugin version suffix is preserved",
+			path: filepath.FromSlash("testdata/loadninja-jenkins-version.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2.1.jenkins3"),
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(filepath.FromSlash("testdata/loadninja-jenkins-version.hpi"), "loadninja", "2.2.1.jenkins3"),
+			},
+		},
+		{
+			name: "missing short name emits no Jenkins plugin package",
+			path: filepath.FromSlash("testdata/missing-short-name.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("", "2.2"),
+			},
+			want: []*extractor.Package{},
+		},
+		{
+			name: "missing plugin version emits no Jenkins plugin package",
+			path: filepath.FromSlash("testdata/missing-plugin-version.hpi"),
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", ""),
+			},
+			want: []*extractor.Package{},
+		},
+		{
+			name: "jar with Jenkins manifest fields is not treated as Jenkins plugin",
+			path: loadninjaJAR,
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2"),
+			},
+			want: []*extractor.Package{},
+		},
+		{
+			name: "nested jar with Jenkins manifest fields is not treated as Jenkins plugin",
+			path: nestedJarHPI,
+			entries: map[string][]byte{
+				"WEB-INF/lib/nested-plugin.jar": nestedJenkinsJar,
+			},
+			want: []*extractor.Package{},
+		},
+		{
+			name: "nested hpi with Jenkins manifest fields is not treated as top-level Jenkins plugin",
+			path: nestedHPIInJAR,
+			entries: map[string][]byte{
+				"WEB-INF/plugins/nested-plugin.hpi": nestedJenkinsHPI,
+			},
+			want: []*extractor.Package{},
+		},
+		{
+			name: "hpi still extracts internal dependency jars",
+			path: pluginWithDepHPI,
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2"),
+				"WEB-INF/lib/dep.jar":  depJar,
+			},
+			want: []*extractor.Package{
+				jenkinsPackage(pluginWithDepHPI, "loadninja", "2.2"),
+				{
+					Name:     "com.example:dep",
+					Version:  "1.0.0",
+					PURLType: purl.TypeMaven,
+					Metadata: &archivemeta.Metadata{
+						ArtifactID: "dep",
+						GroupID:    "com.example",
+					},
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: pluginWithDepHPI,
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.Join(pluginWithDepHPI, "WEB-INF", "lib", "dep.jar")),
+							location.FromPath(filepath.Join(pluginWithDepHPI, "WEB-INF", "lib", "dep.jar", "META-INF", "maven", "com.example", "dep", "pom.properties")),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate Jenkins package from pom properties is emitted once",
+			path: duplicatePomHPI,
+			entries: map[string][]byte{
+				"META-INF/MANIFEST.MF": jenkinsManifest("loadninja", "2.2"),
+				"META-INF/maven/org.jenkins-ci.plugins/loadninja/pom.properties": []byte("groupId=org.jenkins-ci.plugins\nartifactId=loadninja\nversion=2.2\n"),
+			},
+			want: []*extractor.Package{
+				{
+					Name:     "org.jenkins-ci.plugins:loadninja",
+					Version:  "2.2",
+					PURLType: purl.TypeMaven,
+					Metadata: &archivemeta.Metadata{
+						ArtifactID: "loadninja",
+						GroupID:    "org.jenkins-ci.plugins",
+					},
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{
+							Path: duplicatePomHPI,
+						}},
+						Related: []location.Location{
+							location.FromPath(filepath.Join(duplicatePomHPI, "META-INF", "maven", "org.jenkins-ci.plugins", "loadninja", "pom.properties")),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := mustZipFile(t, tt.entries)
+			defer f.Close()
+
+			info, err := f.Stat()
+			if err != nil {
+				t.Fatalf("f.Stat() for %q unexpected error: %v", tt.path, err)
+			}
+
+			hashJars := false
+			cfg := &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_JavaArchive{
+						JavaArchive: &cpb.JavaArchiveConfig{
+							HashJars: &hashJars,
+						},
+					}},
+				},
+			}
+			e, err := archive.New(cfg)
+			if err != nil {
+				t.Fatalf("archive.New: %v", err)
+			}
+
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: f}
+			got, err := e.Extract(t.Context(), input)
+			if err != nil {
+				t.Fatalf("Extract(%s) unexpected error: %v", tt.path, err)
+			}
+
+			sort := func(a, b *extractor.Package) bool { return a.Name < b.Name }
+			if diff := cmp.Diff(inventory.Inventory{Packages: tt.want}, got, cmpopts.SortSlices(sort)); diff != "" {
+				t.Fatalf("Extract(%s) (-want +got):\n%s", tt.path, diff)
+			}
+		})
+	}
+}
+
 type noReaderAt struct {
 	r io.Reader
 }
@@ -719,4 +1028,98 @@ func mustJar(t *testing.T, path string) *os.File {
 	}
 
 	return jarFile
+}
+
+func mustZipFile(t *testing.T, entries map[string][]byte) *os.File {
+	t.Helper()
+
+	zipFile, err := os.CreateTemp(t.TempDir(), "temp-*.zip")
+	if err != nil {
+		t.Fatalf("os.CreateTemp(\"temp-*.zip\") unexpected error: %v", err)
+	}
+
+	zipWriter := zip.NewWriter(zipFile)
+	for name, content := range entries {
+		fileWriter, err := zipWriter.Create(name)
+		if err != nil {
+			t.Fatalf("zipWriter.Create(%s) unexpected error: %v", name, err)
+		}
+		if _, err := fileWriter.Write(content); err != nil {
+			t.Fatalf("fileWriter.Write(%s) unexpected error: %v", name, err)
+		}
+	}
+	if err := zipWriter.Close(); err != nil {
+		t.Fatalf("zipWriter.Close() unexpected error: %v", err)
+	}
+	if _, err := zipFile.Seek(0, 0); err != nil {
+		t.Fatalf("zipFile.Seek(0, 0) unexpected error: %v", err)
+	}
+
+	return zipFile
+}
+
+func mustZipBytes(t *testing.T, entries map[string][]byte) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	zipWriter := zip.NewWriter(&buf)
+	for name, content := range entries {
+		fileWriter, err := zipWriter.Create(name)
+		if err != nil {
+			t.Fatalf("zipWriter.Create(%s) unexpected error: %v", name, err)
+		}
+		if _, err := fileWriter.Write(content); err != nil {
+			t.Fatalf("fileWriter.Write(%s) unexpected error: %v", name, err)
+		}
+	}
+	if err := zipWriter.Close(); err != nil {
+		t.Fatalf("zipWriter.Close() unexpected error: %v", err)
+	}
+
+	return buf.Bytes()
+}
+
+func jenkinsManifest(shortName, version string) []byte {
+	return jenkinsManifestWithGroupID(shortName, version, "")
+}
+
+func jenkinsManifestWithGroupID(shortName, version, groupID string) []byte {
+	lines := []string{
+		"Manifest-Version: 1.0",
+		"Created-By: Maven Archiver 3.5.2",
+	}
+	if groupID != "" {
+		lines = append(lines, "Group-Id: "+groupID)
+	}
+	if shortName != "" {
+		lines = append(lines, "Short-Name: "+shortName)
+	}
+	if version != "" {
+		lines = append(lines, "Plugin-Version: "+version)
+	}
+	return []byte(strings.Join(lines, "\n") + "\n")
+}
+
+func jenkinsPackage(path, shortName, version string) *extractor.Package {
+	return jenkinsPackageWithGroupID(path, "org.jenkins-ci.plugins", shortName, version)
+}
+
+func jenkinsPackageWithGroupID(path, groupID, shortName, version string) *extractor.Package {
+	return &extractor.Package{
+		Name:     groupID + ":" + shortName,
+		Version:  version,
+		PURLType: purl.TypeMaven,
+		Metadata: &archivemeta.Metadata{
+			ArtifactID: shortName,
+			GroupID:    groupID,
+		},
+		Location: extractor.PackageLocation{
+			Descriptor: &location.Location{File: &location.File{
+				Path: path,
+			}},
+			Related: []location.Location{
+				location.FromPath(filepath.Join(path, "META-INF", "MANIFEST.MF")),
+			},
+		},
+	}
 }
