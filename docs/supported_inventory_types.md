@@ -96,6 +96,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
+| OCaml      | Installed opam packages (.opam-switch/install)    | `ocaml/opam`                         |
 | ObjectiveC | Podfile.lock                                      | `swift/podfilelock`                  |
 | PHP        | Composer                                          | `php/composerlock`                   |
 | Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
