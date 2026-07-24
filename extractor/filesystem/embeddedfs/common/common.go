@@ -693,7 +693,7 @@ loop:
 			break
 		}
 
-		if symlink.TargetOutsideRoot("/", hdr.Name) {
+		if symlink.TargetOutsideRoot(".", hdr.Name) {
 			extractErr = errors.New("tar contains invalid entries")
 			break
 		}

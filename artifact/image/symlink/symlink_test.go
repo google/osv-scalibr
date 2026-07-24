@@ -16,6 +16,7 @@ package symlink_test
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/osv-scalibr/artifact/image/symlink"
@@ -53,15 +54,10 @@ func TestTargetOutsideRoot(t *testing.T) {
 		target: "../../t.txt",
 		want:   true,
 	}, {
-		name: "absolute_target_outside_root",
-		path: "a/f.txt",
-		target: func() string {
-			if runtime.GOOS == "windows" {
-				return "\\\\..\\t.txt"
-			}
-			return "/../t.txt"
-		}(),
-		want: true,
+		name:   "absolute_target_outside_root",
+		path:   "a/f.txt",
+		target: "/../t.txt",
+		want:   true,
 	}, {
 		name:   "absolute target inside root",
 		path:   "a/b/f.txt",
@@ -71,6 +67,19 @@ func TestTargetOutsideRoot(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// Use Windows-specific paths on Windows (e.g. /a/b/c -> C:\a\b\c)
+			if runtime.GOOS == "windows" {
+				tc.path = strings.ReplaceAll(tc.path, "/", "\\")
+				if strings.HasPrefix(tc.path, "\\") {
+					tc.path = "C:" + tc.path
+				}
+
+				tc.target = strings.ReplaceAll(tc.target, "/", "\\")
+				if strings.HasPrefix(tc.target, "\\") {
+					tc.target = "C:" + tc.target
+				}
+			}
+
 			got := symlink.TargetOutsideRoot(tc.path, tc.target)
 			if got != tc.want {
 				t.Errorf("targetOutsideRoot(%v, %v) = %v, want %v", tc.path, tc.target, got, tc.want)
