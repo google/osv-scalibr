@@ -16,6 +16,7 @@
 package spdx
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"io"
@@ -63,11 +64,23 @@ type extractFunc = func(io.Reader) (*spdx.Document, error)
 // Format support based on https://spdx.dev/resources/use/#documents
 var extensionHandlers = map[string]extractFunc{
 	".json": json.Read,
-	".spdx": tagvalue.Read,
+	".spdx": readSpdxTagValueOrJSON,
 	".yml":  yaml.Read,
 	".rdf":  rdf.Read,
 	".xml":  rdf.Read,
 	// No support for .xsl files because those are too ambiguous and could be many other things.
+}
+
+func readSpdxTagValueOrJSON(r io.Reader) (*spdx.Document, error) {
+	br := bufio.NewReader(r)
+	b, err := br.Peek(1)
+	if err != nil {
+		return nil, err
+	}
+	if b[0] == '{' {
+		return json.Read(br)
+	}
+	return tagvalue.Read(br)
 }
 
 // FileRequired returns true if the specified file is a supported spdx file.

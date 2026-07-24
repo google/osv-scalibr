@@ -35,6 +35,8 @@ const (
 	TypeApk = "apk"
 	// TypeBitbucket is a pkg:bitbucket purl.
 	TypeBitbucket = "bitbucket"
+	// TypeBitnami is a pkg:bitnami purl.
+	TypeBitnami = "bitnami"
 	// TypeBrew is a pkg:brew purl.
 	TypeBrew = "brew"
 	// TypeCocoapods is a pkg:cocoapods purl.
@@ -200,6 +202,7 @@ func validType(t string) bool {
 		TypeAlpm:       true,
 		TypeApk:        true,
 		TypeBitbucket:  true,
+		TypeBitnami:    true,
 		TypeBrew:       true,
 		TypeCargo:      true,
 		TypeCocoapods:  true,
