@@ -35,7 +35,6 @@ linters:
     - paralleltest     # Parallel tests mixes up log lines of multiple tests in the internal test runner
     - prealloc         # We don't want to preallocate all the time
     - protogetter      # TODO(#274): work on enabling this
-    - recvcheck        # TODO(#274): work on enabling this
     - tagliatelle      #
     - testpackage      #
     - tparallel        # Parallel tests mixes up log lines of multiple tests in the internal test runner
