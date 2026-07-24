@@ -186,6 +186,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/uspassportnumber"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/plugin/config"
@@ -475,6 +476,7 @@ var (
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
 		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
+		{uspassportnumber.NewDetector(), "sensitiveinformation/uspassportnumber", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
