@@ -167,7 +167,34 @@ func TestExtract(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 3),
+				},
+			},
+		},
+		{
+			Name: "empty .csproj file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty",
+			},
+			WantErr: cmpopts.AnyError,
+		},
+		{
+			Name: "duplicate packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/duplicate",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 3),
+				},
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 4),
 				},
 			},
 		},
