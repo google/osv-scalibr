@@ -49,7 +49,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
-  reserved 48 to 56, 59 to 61, 66 to 67;
+  reserved 48 to 56, 59 to 61, 66 to 67, 79 to 80;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;

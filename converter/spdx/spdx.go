@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/uuid"
@@ -86,7 +87,12 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			log.Warnf("Package %v PURL name or version empty, skipping", pkg)
 			continue
 		}
-		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(pName) + "-" + uuid.New().String()
+		id, err := pkg.GetIDOrGenerate(&extractor.RandomIDGenerator{})
+		if err != nil {
+			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
+			continue
+		}
+		pID := fmt.Sprintf("%sPackage-%s-%s", SPDXRefPrefix, replaceSPDXIDInvalidChars(pName), replaceSPDXIDInvalidChars(id))
 		pSourceInfo := ""
 		if len(pkg.Plugins) > 0 {
 			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])

@@ -16,6 +16,7 @@
 package requirements
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -119,9 +120,15 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
+	paths := make([]string, 0, len(pkgGroups))
+	for p := range pkgGroups {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
 
 	var errs error
-	for path, pkgMap := range pkgGroups {
+	for _, path := range paths {
+		pkgMap := pkgGroups[path]
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)
@@ -152,6 +159,13 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 
 		internal.Add(pkgs, inv, Name, pkgMap)
 	}
+
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
 	return errs
 }
 

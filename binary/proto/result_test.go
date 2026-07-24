@@ -563,8 +563,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Plugins:  []string{homebrew.Name},
 	}
 	purlHomebrewPackageProto := &spb.Package{
-		Name:    "rclone",
-		Version: "1.67.0",
+		Name:      "rclone",
+		Version:   "1.67.0",
+		Ecosystem: "GIT",
 		Purl: &spb.Purl{
 			Purl:    "pkg:brew/rclone@1.67.0",
 			Type:    purl.TypeBrew,
