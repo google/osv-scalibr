@@ -490,6 +490,12 @@ message JavascriptPackageJsonConfig {
   int64 max_file_size_bytes = 1;
   // Specifies whether to extract dependencies.
   bool include_dependencies = 2;
+  // Specifies whether to extract devDependencies.
+  bool include_dev_dependencies = 3;
+  // Specifies whether to extract optionalDependencies.
+  bool include_optional_dependencies = 4;
+  // Specifies whether to extract peerDependencies.
+  bool include_peer_dependencies = 5;
 }
 
 message JavascriptPackageLockJsonConfig {

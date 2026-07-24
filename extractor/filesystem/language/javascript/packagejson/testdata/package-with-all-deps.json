@@ -1,0 +1,21 @@
+{
+  "name": "package-with-all-deps",
+  "version": "1.2.3",
+  "dependencies": {
+    "prod-shared": "^1.0.0",
+    "prod-only": "2.0.0"
+  },
+  "devDependencies": {
+    "dev-only": "~3.1.0",
+    "shared-non-prod": "^4.0.0",
+    "prod-shared": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "optional-only": "5.x",
+    "shared-non-prod": "^4.0.0"
+  },
+  "peerDependencies": {
+    "peer-only": ">=6.0.0 <7.0.0",
+    "shared-non-prod": "^4.0.0"
+  }
+}
