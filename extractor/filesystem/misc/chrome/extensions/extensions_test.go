@@ -91,6 +91,13 @@ func TestExtractor_Extract(t *testing.T) {
 			WantErr: extracttest.ContainsErrStr{Str: "bad format"},
 		},
 		{
+			Name: "path traversal in default locale",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalidlocale/1.0/manifest.json",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "path traversal detected"},
+		},
+		{
 			Name: "no locale specified",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/caaadbdomjkkjkaonfhkkikfgjllcleb/1.2.85/manifest.json",
