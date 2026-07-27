@@ -287,6 +287,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/malformed.toml",
 			},
+			WantErr:      extracttest.ContainsErrStr{Str: "failed to parse pyproject.toml"},
 			WantPackages: nil,
 		},
 	}
