@@ -62,7 +62,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results, input.ScanRoot)
 
 	mainPackages, err := extractMainPackages(ctx, input.ScanRoot)
-	if err != nil && !errors.Is(err, ErrMissingCache) && !errors.Is(err, ErrMissingOSInfo) {
+	if err != nil && !errors.Is(err, ErrMissingCache) && !errors.Is(err, ErrMissingOSInfo) && !errors.Is(err, ErrPackageManagerNotSupported) {
 		return fmt.Errorf("error extracting main packages metadata %w", err)
 	}
 

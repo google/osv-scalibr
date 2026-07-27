@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denohelper"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -120,9 +121,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{},
 			fmt.Errorf("error during parsing the typescript file: %w", err)
 	}
-	for _, p := range pkgs {
-		p.Location = extractor.LocationFromPath(inputPath)
-	}
 
 	return inventory.Inventory{Packages: pkgs}, nil
 }
@@ -155,14 +153,15 @@ func parseTypeScriptFile(ctx context.Context, inputPath string, reader io.Reader
 		log.Debugf("TypeScript file %s read failed: %v", inputPath, err)
 		return nil, fmt.Errorf("failed to read TypeScript file: %w", err)
 	}
-	pkgsStr, err := findImportPaths(ctx, content)
+	importPaths, err := findImportPaths(ctx, content)
 	if err != nil {
 		return nil, err
 	}
 	var pkgs []*extractor.Package
-	for _, specifier := range pkgsStr {
-		pkg := denohelper.ParseImportSpecifier(specifier)
+	for _, ip := range importPaths {
+		pkg := denohelper.ParseImportSpecifier(ip.specifier)
 		if pkg != nil {
+			pkg.Location = extractor.LocationFromPathAndLine(inputPath, ip.line)
 			pkgs = append(pkgs, pkg)
 		}
 	}
@@ -171,24 +170,41 @@ func parseTypeScriptFile(ctx context.Context, inputPath string, reader io.Reader
 	return pkgs, nil
 }
 
+// importPath represents a matched import and its line number.
+type importPath struct {
+	// specifier is the raw import specifier (e.g. "npm:cowsay@1.6.0").
+	specifier string
+	// line is the line number where this import was found.
+	line int
+}
+
 // findImportPaths uses regexps to find import paths in TypeScript source code.
-//
-// returns a slice of import paths found in the source code.
-func findImportPaths(ctx context.Context, source []byte) ([]string, error) {
-	var packages []string
+func findImportPaths(ctx context.Context, source []byte) ([]importPath, error) {
+	var results []importPath
+	finder := linefinder.NewOffsetFinder(source)
 
 	for _, re := range []*regexp.Regexp{importRe, dynamicImportRe} {
-		matches := re.FindAllSubmatch(source, -1)
+		// Use FindAllSubmatchIndex to get [start, end, sub_start, sub_end]
+		//
+		// Example index mapping for: `import { cowsay } from "npm:cowsay@1.6.0";`
+		// - match[0] = 0, match[1] = 42 (entire statement bounds)
+		// - match[2] = 25, match[3] = 41 (specifier "npm:cowsay@1.6.0" bounds)
+		matches := re.FindAllSubmatchIndex(source, -1)
 		for _, match := range matches {
 			if err := ctx.Err(); err != nil {
-				return packages, err
+				return results, err
 			}
-			if len(match) < 2 {
+			if len(match) < 4 {
 				continue
 			}
-			packages = append(packages, string(match[1]))
+			// match[2] and match[3] are the start and end byte offsets of the first capturing group (the import specifier).
+			specifier := string(source[match[2]:match[3]])
+			results = append(results, importPath{
+				specifier: specifier,
+				// match[0] is the start byte offset of the entire match (the "import" statement).
+				line: finder.LineOfOffset(match[0]),
+			})
 		}
 	}
-
-	return packages, nil
+	return results, nil
 }

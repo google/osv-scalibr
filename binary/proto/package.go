@@ -16,6 +16,7 @@ package proto
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/converter"
@@ -25,7 +26,6 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/purl/purlproto"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -65,13 +65,20 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		}
 	}
 
-	id, err := uuid.NewRandom()
+	id, err := pkg.GetIDOrGenerate(&extractor.RandomIDGenerator{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate UUID for %q package %q version %q: %w", pkg.Ecosystem().String(), pkg.Name, pkg.Version, err)
+		return nil, err
 	}
 
+	var parentIDs []string
+	for parent := range pkg.ParentIDs {
+		parentIDs = append(parentIDs, parent)
+	}
+	sort.Strings(parentIDs)
+
 	packageProto := &spb.Package{
-		Id:         id.String(),
+		Id:         id,
+		ParentIds:  parentIDs,
 		Name:       pkg.Name,
 		Version:    pkg.Version,
 		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
@@ -194,8 +201,16 @@ func PackageToStruct(pkgProto *spb.Package) (*extractor.Package, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	parentIDs := make(map[string]bool)
+	for _, id := range pkgProto.GetParentIds() {
+		parentIDs[id] = true
+	}
+
 	pkg := &extractor.Package{
 		Name:                  pkgProto.GetName(),
+		ID:                    pkgProto.GetId(),
+		ParentIDs:             parentIDs,
 		Version:               pkgProto.GetVersion(),
 		SourceCode:            sourceCodeIdentifierToStruct(pkgProto.GetSourceCode()),
 		Location:              packageLocationToStruct(pkgProto.GetLocation()),

@@ -238,7 +238,7 @@ func fillLayerMetadataFromChainLayers(cim *extractor.ContainerImageMetadata, cha
 	// Create list of layer details struct to be referenced by inventory.
 	for i, chainLayer := range chainLayers {
 		// Get the string representation of the diffID, and remove the algorithm prefix if it exists.
-		// TODO: b/406537132 - Determine if diffIDs should be validated via the Validate function in
+		// TODO(b/406537132): Determine if diffIDs should be validated via the Validate function in
 		// golang/opencontainers/digest/algorithm.go. Just getting the string representation of the
 		// diffID acts as failing open, but perhaps we should consider validating the diffID and logging
 		// a warning if it isn't.
