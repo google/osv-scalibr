@@ -17,6 +17,7 @@ package pyprojecttoml
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 	"regexp"
@@ -97,7 +98,7 @@ func (e Extractor) Extract(
 	var f pyprojectFile
 	if err := toml.Unmarshal(content, &f); err != nil {
 		// malformed TOML = return empty inventory.
-		return inventory.Inventory{}, nil //nolint:nilerr
+		return inventory.Inventory{}, fmt.Errorf("failed to parse pyproject.toml: %w", err)
 	}
 
 	// No [project] table or no dependencies declared.
@@ -161,7 +162,7 @@ func parseDep(dep, path string) *extractor.Package {
 }
 
 // ignorePythonSpecifier strips environment markers from a PEP 508 string.
-// TODO(b/491518484): Put in common location for all Python extractors to use (applies to all the below functions).
+// TODO: Put in common location for all Python extractors to use (applies to all the below functions).
 func ignorePythonSpecifier(s string) string {
 	return strings.SplitN(s, ";", 2)[0]
 }
