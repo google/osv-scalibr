@@ -49,7 +49,7 @@ var (
 	}
 )
 
-// TODO: b/377551664 - Add tests for the Stat method for the virtualFile type.
+// TODO(b/377551664): Add tests for the Stat method for the virtualFile type.
 func TestStat(t *testing.T) {
 	baseTime := time.Now()
 	regularVirtualFile := &virtualFile{

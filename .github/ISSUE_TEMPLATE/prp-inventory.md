@@ -1,9 +1,14 @@
 ---
-name: Patch reward program - software inventory extraction
+name: Patch reward program - CURRENTLY INACTIVE
 about: Submit a software inventory extractor suggestion for the PRP
 title: 'PRP: Extractor for {software type}'
 labels: ['PRP', 'PRP:Request']
 assignees: ''
+
+---
+
+The OSV-SCALIBR Patch Rewards Program is currently paused,
+see https://github.com/google/osv-scalibr/issues/1949 for more details.
 
 ---
 

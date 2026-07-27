@@ -142,10 +142,11 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 					log.Warnf("Multiple PURLs found for same package: %q and %q", m.PURL, extRef.Locator)
 				}
 				packageURL, err := purl.FromString(extRef.Locator)
-				pkg.Name = packageURL.Name
 				if err != nil {
 					log.Warnf("Invalid PURL %q for package: %q", extRef.Locator, spdxPkg.PackageName)
 				} else {
+					pkg.Name = packageURL.Name
+					pkg.Version = packageURL.Version
 					m.PURL = &packageURL
 					pkg.PURLType = packageURL.Type
 				}

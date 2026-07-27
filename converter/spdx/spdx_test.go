@@ -698,6 +698,96 @@ func TestToSPDX23(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "Package_with_custom_package_id",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					ID:       "pkg-custom-id-123",
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/067d89bc-7f01-41f5-b398-1659a44ff17a",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					{
+						PackageName:           "software",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-pkg-custom-id-123",
+						PackageVersion:        "1.2.3",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/software@1.2.3",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-DOCUMENT",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-pkg-custom-id-123",
+						},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-pkg-custom-id-123",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {

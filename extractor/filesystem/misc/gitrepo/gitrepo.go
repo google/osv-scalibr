@@ -138,6 +138,7 @@ func extractFromGitDir(input *filesystem.ScanInput) (inventory.Inventory, error)
 
 		pkg := &extractor.Package{
 			Name:     repoName,
+			Version:  commitSHA,
 			PURLType: purl.TypeGeneric,
 			Location: extractor.LocationFromPath(input.Path),
 			SourceCode: &extractor.SourceCodeIdentifier{
@@ -186,14 +187,7 @@ func extractSubmodules(repo *git.Repository, absRepoRoot, relativePath string, v
 			continue
 		}
 
-		subSHA := ""
-		status, err := sub.Status()
-		if err == nil {
-			subSHA = status.Expected.String()
-			if subSHA == "0000000000000000000000000000000000000000" {
-				subSHA = ""
-			}
-		}
+		subSHA := extractSubmoduleCommitSHA(sub)
 
 		normalizedSubURL := normalizeURL(cfg.URL)
 		if normalizedSubURL == "" {
@@ -202,6 +196,7 @@ func extractSubmodules(repo *git.Repository, absRepoRoot, relativePath string, v
 
 		subPkg := &extractor.Package{
 			Name:     inferRepoName(normalizedSubURL, cfg.Path),
+			Version:  subSHA,
 			PURLType: purl.TypeGeneric,
 			Location: extractor.LocationFromPath(filepath.ToSlash(filepath.Join(relativePath, cfg.Path))),
 			SourceCode: &extractor.SourceCodeIdentifier{
@@ -226,6 +221,33 @@ func extractSubmodules(repo *git.Repository, absRepoRoot, relativePath string, v
 	}
 
 	return packages
+}
+
+// extractSubmoduleCommitSHA extracts the commit SHA of the submodule.
+// If the submodule is not initialized or not checked out locally, it returns the commit SHA from
+// `git submodule status`.
+// If the submodule is initialized and checked out locally, it returns the commit SHA from HEAD
+// (`git ls-tree HEAD`). This captures local updates to the submodule version that have not yet
+// been committed to the parent repository.
+func extractSubmoduleCommitSHA(sub *git.Submodule) string {
+	fallbackSHA := ""
+	status, err := sub.Status()
+	if err == nil {
+		fallbackSHA = status.Expected.String()
+	}
+	if fallbackSHA == "0000000000000000000000000000000000000000" {
+		fallbackSHA = ""
+	}
+
+	subRepo, err := sub.Repository()
+	if err != nil {
+		return fallbackSHA
+	}
+	ref, err := subRepo.Head()
+	if err != nil {
+		return fallbackSHA
+	}
+	return ref.Hash().String()
 }
 
 // ============================================================================

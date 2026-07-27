@@ -29,6 +29,7 @@ import (
 	"path"
 	"strings"
 
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/vulns"
 	"github.com/google/osv-scalibr/extractor"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -47,19 +48,20 @@ type zipDB struct {
 	// the vulnerabilities that are loaded into this database
 	Vulnerabilities []*osvpb.Vulnerability
 	// User agent to query with
-	UserAgent string
+	UserAgent  string
+	httpClient *http.Client
 }
 
 var errOfflineDatabaseNotFound = errors.New("no offline version of the OSV database is available")
 
-func fetchRemoteArchiveCRC32CHash(ctx context.Context, url string) (uint32, error) {
+func fetchRemoteArchiveCRC32CHash(ctx context.Context, url string, httpClient *http.Client) (uint32, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
 
 	if err != nil {
 		return 0, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -102,7 +104,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 	}
 
 	if err == nil {
-		remoteHash, err := fetchRemoteArchiveCRC32CHash(ctx, db.ArchiveURL)
+		remoteHash, err := fetchRemoteArchiveCRC32CHash(ctx, db.ArchiveURL, db.httpClient)
 
 		if err != nil {
 			return nil, err
@@ -123,7 +125,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		req.Header.Set("User-Agent", db.UserAgent)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := db.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve OSV database archive: %w", err)
 	}
@@ -232,20 +234,21 @@ func (db *zipDB) load(ctx context.Context, names []string) error {
 	return nil
 }
 
-func newZippedDB(ctx context.Context, dbBasePath, name, url, userAgent string, offline bool, invs []*extractor.Package) (*zipDB, error) {
+func newZippedDB(ctx context.Context, dbBasePath, name, url, userAgent string, offline bool, invs []*extractor.Package, httpClient *http.Client) (*zipDB, error) {
 	db := &zipDB{
 		Name:       name,
 		ArchiveURL: url,
 		Offline:    offline,
 		StoredAt:   path.Join(dbBasePath, name, "all.zip"),
 		UserAgent:  userAgent,
+		httpClient: httpClient,
 	}
 	names := make([]string, 0, len(invs))
 
 	// map the packages to their names ahead of loading,
 	// to make things simpler and reduce double working
 	for _, inv := range invs {
-		names = append(names, inv.Name)
+		names = append(names, osvutil.ParsePackage(inv).Name)
 	}
 
 	if err := db.load(ctx, names); err != nil {
