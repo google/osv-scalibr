@@ -21,7 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"net/netip"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
@@ -64,6 +65,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/moby/moby/api/types/container"
 	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -871,7 +873,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			ImageName:   "redis",
 			ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 			ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
-			Ports:       []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+			Ports:       []container.PortSummary{{IP: netip.MustParseAddr("127.0.0.1"), PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 		},
 		Plugins: []string{docker.Name},
 	}
@@ -1632,6 +1634,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			opts := append([]cmp.Option{
 				protocmp.Transform(),
 				cmpopts.EquateEmpty(),
+				cmpopts.EquateComparable(netip.Addr{}),
 				// Ignore legacy location fields.
 				// TODO(b/400910349): Remove once these fields are no longer set.
 				protocmp.IgnoreFields(&spb.Secret{}, "locations"),
@@ -1665,6 +1668,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 				cmpopts.IgnoreFields(extractor.Package{}, "ID"),
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
 				cmpopts.EquateEmpty(),
+				cmpopts.EquateComparable(netip.Addr{}),
 				// Ignore legacy location fields.
 				// TODO(b/400910349): Remove once these fields are no longer set.
 				protocmp.IgnoreFields(&spb.Secret{}, "locations"),
