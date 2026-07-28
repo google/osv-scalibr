@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pyprojecttoml extracts dependencies from pyproject.toml files.
+// Package pyprojecttoml extracts dependencies from pyproject.toml files 
+// conforming to PEP 621. Specifically, it parses the standardized 
+// [project.dependencies] and [project.optional-dependencies] tables.
 package pyprojecttoml
 
 import (
