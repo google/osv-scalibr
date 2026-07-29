@@ -148,7 +148,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	var packages cosPackageInfo
 	if err := dec.Decode(&packages); err != nil {
 		err := fmt.Errorf("failed to json decode: %w", err)
-		log.Debugf(err.Error())
+		log.Debugf("%v", err)
 		// TODO(b/281023532): We should not mark the overall SCALIBR scan as failed if we can't parse a file.
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -170,7 +170,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 				OSVersionID:   m["VERSION_ID"],
 				EbuildVersion: pkg.EbuildVersion,
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
 

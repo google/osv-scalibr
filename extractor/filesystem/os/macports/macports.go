@@ -86,10 +86,10 @@ func (e Extractor) extractFromPath(path string) []*extractor.Package {
 
 	if len(m) >= 4 {
 		pkg := &extractor.Package{
-			Name:      m[1],
-			Version:   m[2],
-			PURLType:  purl.TypeMacports,
-			Locations: []string{path},
+			Name:     m[1],
+			Version:  m[2],
+			PURLType: purl.TypeMacports,
+			Location: extractor.LocationFromPath(path),
 			Metadata: &macportsmeta.Metadata{
 				PackageName:     m[1],
 				PackageVersion:  m[2],

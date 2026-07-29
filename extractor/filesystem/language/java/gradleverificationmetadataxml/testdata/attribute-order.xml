@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<verification-metadata xmlns="https://schema.gradle.org/dependency-verification">
+  <components>
+    <!-- Ensure varying attribute order in the component tag doesn't break parsing. -->
+    <!-- Line 5: name attribute appears before group attribute -->
+    <component name="pdfbox" group="org.apache.pdfbox" version="2.0.17">
+      <artifact name="pdfbox-2.0.17.jar">
+        <sha512 value="7e11e54a21c395d461e59552e88b0de0ebaf1bf9d9bcacadf17b240d9bbc29bf6beb8e36896c186fe405d287f5d517b02c89381aa0fcc5e0aa5814e44f0ab331"/>
+      </artifact>
+    </component>
+  </components>
+</verification-metadata>

@@ -75,10 +75,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// Julia Project.toml files contain only the package information
 	packages := []*extractor.Package{
 		{
-			Name:      parsedTomlFile.Name,
-			Version:   parsedTomlFile.Version,
-			PURLType:  purl.TypeJulia,
-			Locations: []string{input.Path},
+			Name:     parsedTomlFile.Name,
+			Version:  parsedTomlFile.Version,
+			PURLType: purl.TypeJulia,
+			Location: extractor.LocationFromPath(input.Path),
 		},
 	}
 

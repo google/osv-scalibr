@@ -161,7 +161,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 				ProjectURL: module.Metadata.ProjectURL,
 				Tags:       module.Metadata.Tags,
 			},
-			Locations: []string{input.Path},
+			Location: extractor.LocationFromPath(input.Path),
 		}
 		packages = append(packages, p)
 	}

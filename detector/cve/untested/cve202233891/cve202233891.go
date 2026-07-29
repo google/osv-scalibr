@@ -28,7 +28,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/osv-scalibr/detector"
@@ -176,7 +175,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 
 	dbSpecific := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, strings.Join(pkg.Locations, ", "))}},
+			"extra": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s %s %s", pkg.Name, pkg.Version, pkg.Location.PathOrEmpty())}},
 		},
 	}
 	return d.findingForPackage(dbSpecific, pkg), nil

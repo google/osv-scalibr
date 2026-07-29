@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "my-package"
+version = "1.0.0"
+dependencies = [
+    "requests==2.32.0",
+    "flask>=3.0.0",
+    "numpy",
+]

@@ -114,22 +114,36 @@ func compareRubyGemsComponents(a, b []string) int {
 	return 0
 }
 
-type rubyGemsVersion struct {
-	Original string
-	Segments []string
+// RubyGemsVersion is the representation of a version of a package that is held
+// in the RubyGems ecosystem.
+type RubyGemsVersion struct {
+	original string
+	segments []string
 }
 
-func parseRubyGemsVersion(str string) rubyGemsVersion {
-	return rubyGemsVersion{
+var _ Version = RubyGemsVersion{}
+
+// ParseRubyGemsVersion parses the given string as a RubyGems version.
+func ParseRubyGemsVersion(str string) RubyGemsVersion {
+	return RubyGemsVersion{
 		str,
 		canonicalSegments(strings.Split(canonicalizeRubyGemVersion(str), ".")),
 	}
 }
 
-func (v rubyGemsVersion) compare(w rubyGemsVersion) int {
-	return compareRubyGemsComponents(v.Segments, w.Segments)
+func (v RubyGemsVersion) compare(w RubyGemsVersion) int {
+	return compareRubyGemsComponents(v.segments, w.segments)
 }
 
-func (v rubyGemsVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseRubyGemsVersion(str)), nil
+// Compare compares the given version to the receiver.
+func (v RubyGemsVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(RubyGemsVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v RubyGemsVersion) CompareStr(str string) (int, error) {
+	return v.compare(ParseRubyGemsVersion(str)), nil
 }

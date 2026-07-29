@@ -16,9 +16,12 @@
 package pomxml
 
 import (
+	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -37,7 +40,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml"
 	"github.com/google/osv-scalibr/internal/mavenutil"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -50,6 +55,7 @@ const (
 type Enricher struct {
 	DepClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
+	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -67,6 +73,9 @@ func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network:  plugin.NetworkOnline,
 		DirectFS: true,
+		// This enricher follows registries defined in pom.xml, which can be risky if
+		// they point to malicious registries.
+		AllowUnsafePlugins: true,
 	}
 }
 
@@ -83,28 +92,57 @@ type Config struct {
 }
 
 // New makes a new pom.xml transitive enricher with the given config.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+
 	upstreamRegistry := ""
 	depsdevRequirements := false
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
+	localRegistry := ""
+	disableGoogleAuth := false
+	if cfg.ProtoConfig != nil {
+		localRegistry = cfg.ProtoConfig.LocalRegistry
+		disableGoogleAuth = cfg.ProtoConfig.DisableGoogleAuth
+	}
+	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.POMXMLNetConfig { return c.GetPomXmlNet() })
 	if specific != nil {
 		upstreamRegistry = specific.UpstreamRegistry
 		depsdevRequirements = specific.DepsDevRequirements
 	}
 
-	// No need to check errors since we are using the default Maven Central URL.
-	mavenClient, _ := datasource.NewMavenRegistryAPIClient(context.Background(), datasource.MavenRegistry{
-		URL:             upstreamRegistry,
-		ReleasesEnabled: true,
-	}, cfg.LocalRegistry, cfg.DisableGoogleAuth)
+	httpClient := cfg.ClientFactories.HTTPClient()
+	var googleClient *http.Client
+	var err error
+	if !disableGoogleAuth {
+		googleClient, err = cfg.ClientFactories.GoogleHTTPClient(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+		if err != nil {
+			log.Warnf("Google default client unavailable, Artifact Registry will not be readable: %v", err)
+		}
+	}
+
+	mavenClient, err := datasource.NewMavenRegistryAPIClient(
+		context.Background(),
+		datasource.MavenRegistry{
+			URL:             upstreamRegistry,
+			ReleasesEnabled: true,
+		},
+		localRegistry,
+		disableGoogleAuth,
+		httpClient,
+		googleClient,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	var depClient resolve.Client
-	var err error
 	if depsdevRequirements {
-		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
 		if err != nil {
-			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+			return nil, err
 		}
+		depClient = resolution.NewDepsDevClientWithConn(conn)
 	} else {
 		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
 	}
@@ -112,39 +150,75 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	return &Enricher{
 		DepClient:   depClient,
 		MavenClient: mavenClient,
+		IDGenerator: &extractor.RandomIDGenerator{},
 	}, nil
 }
 
 // Enrich enriches the inventory in pom.xml files with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, pomxml.Name)
+	paths := make([]string, 0, len(pkgGroups))
+	for p := range pkgGroups {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
+	mavenutil.DiscoverModules(input.ScanRoot, paths, e.MavenClient)
+	if len(pkgGroups) > 0 {
+		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
+	}
 
-	for path, pkgMap := range pkgGroups {
+	var errs error
+	for i, path := range paths {
+		pkgMap := pkgGroups[path]
+		log.Debugf("[%d/%d] Enriching transitive dependencies for: %s", i+1, len(paths), path)
 		f, err := input.ScanRoot.FS.Open(path)
 
 		if err != nil {
-			return err
+			log.Warnf("failed to open %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed to open %s: %w", path, err))
+			continue
 		}
 
-		enrichedInv, err := e.extract(ctx, &filesystem.ScanInput{
+		packagesWithIndex := make([]internal.PackageWithIndex, 0, len(pkgMap))
+		for _, indexPkg := range pkgMap {
+			packagesWithIndex = append(packagesWithIndex, indexPkg)
+		}
+		slices.SortFunc(packagesWithIndex, func(a, b internal.PackageWithIndex) int {
+			return a.Index - b.Index
+		})
+		packages := make([]*extractor.Package, 0, len(packagesWithIndex))
+		for _, indexPkg := range packagesWithIndex {
+			packages = append(packages, indexPkg.Pkg)
+		}
+
+		enrichedInv, err := e.extract(ctx, packages, &filesystem.ScanInput{
 			Path:   path,
 			Reader: f,
 			Info:   nil,
 			FS:     input.ScanRoot.FS,
 			Root:   input.ScanRoot.Path,
 		})
+		f.Close()
 
 		if err != nil {
-			return err
+			log.Warnf("failed resolution for %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
+			continue
 		}
 
 		internal.Add(enrichedInv.Packages, inv, Name, pkgMap)
 	}
 
-	return nil
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
+	return errs
 }
 
-func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e Enricher) extract(ctx context.Context, packages []*extractor.Package, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var project maven.Project
 	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
@@ -215,9 +289,15 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 			VersionType: resolve.Concrete,
 			Version:     string(project.Version),
 		}}
-	reqs := make([]resolve.RequirementVersion, len(project.Dependencies)+len(project.DependencyManagement.Dependencies))
-	for i, d := range project.Dependencies {
-		reqs[i] = resolve.RequirementVersion{
+	reqs := make([]resolve.RequirementVersion, 0, len(project.Dependencies)+len(project.DependencyManagement.Dependencies))
+	for _, d := range project.Dependencies {
+		// Skip dependencies with non-jar types (e.g. zip, pom, aar).
+		// These are typically non-standard artifacts (like MuleSoft RAML specs)
+		// that don't have resolvable POM files in standard Maven registries.
+		if d.Type != "" && d.Type != "jar" {
+			continue
+		}
+		reqs = append(reqs, resolve.RequirementVersion{
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.Maven,
@@ -227,10 +307,15 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 				Version:     string(d.Version),
 			},
 			Type: resolve.MavenDepType(d, ""),
-		}
+		})
 	}
-	for i, d := range project.DependencyManagement.Dependencies {
-		reqs[len(project.Dependencies)+i] = resolve.RequirementVersion{
+	for _, d := range project.DependencyManagement.Dependencies {
+		// Skip dependency management entries with non-jar types,
+		// except for "pom" type with "import" scope (BOM imports).
+		if d.Type != "" && d.Type != "jar" && !(d.Type == "pom" && d.Scope == "import") {
+			continue
+		}
+		reqs = append(reqs, resolve.RequirementVersion{
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
 					System: resolve.Maven,
@@ -240,7 +325,7 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 				Version:     string(d.Version),
 			},
 			Type: resolve.MavenDepType(d, mavenutil.OriginManagement),
-		}
+		})
 	}
 	overrideClient.AddVersion(root, reqs)
 
@@ -251,6 +336,11 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 	if len(g.Nodes) <= 1 && g.Error != "" {
 		// Multi-registry error may be appended to the resolved graph so only return error when the graph is empty.
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
+	}
+
+	nameToID, err := internal.GetNameToIDMapping(g, packages, e.IDGenerator)
+	if err != nil {
+		return inventory.Inventory{}, err
 	}
 
 	details := map[string]*extractor.Package{}
@@ -273,19 +363,28 @@ func (e Enricher) extract(ctx context.Context, input *filesystem.ScanInput) (inv
 			}
 			break
 		}
+
+		parents, err := internal.GetParentIDs(g, nameToID, resolve.NodeID(i))
+		if err != nil {
+			return inventory.Inventory{}, err
+		}
+
 		pkg := extractor.Package{
-			Name:     node.Version.Name,
-			Version:  node.Version.Version,
-			PURLType: purl.TypeMaven,
+			Name:      node.Version.Name,
+			ID:        nameToID[node.Version.Name],
+			ParentIDs: parents,
+			Version:   node.Version.Version,
+			PURLType:  purl.TypeMaven,
 			Metadata: &javalockfile.Metadata{
 				ArtifactID:   artifactID,
 				GroupID:      groupID,
 				DepGroupVals: depGroups,
 				IsTransitive: !isDirect,
 			},
+			ScanRoot: input.Root,
 			// TODO(#408): Add merged paths in here as well
-			Locations: []string{input.Path},
-			Plugins:   []string{Name},
+			Location: extractor.LocationFromPath(input.Path),
+			Plugins:  []string{Name},
 		}
 		details[pkg.Name] = &pkg
 	}

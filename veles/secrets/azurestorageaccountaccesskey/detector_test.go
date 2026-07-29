@@ -23,12 +23,22 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/azurestorageaccountaccesskey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 // Azure Storage account access key is composed by 86 base64 characters followed by '=='
 // Reference:
 // https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
 const testKey = `YutGV0Vlauqsobd6tPWz2AKwHhBXMEWsAH+rSbz0UZUfaMVj1CFrcNQK47ygmrC4vHmc7eOp1LdM+AStk5mMYA==`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		azurestorageaccountaccesskey.NewDetector(),
+		"AzureStoragekey : "+testKey,
+		azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a valid key/s.
@@ -72,16 +82,6 @@ func TestDetector_truePositives(t *testing.T) {
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
 		},
 	}, {
-		name: "larger_input_containing_key",
-		input: fmt.Sprintf(`
-CONFIG_FILE=config.txt
-storage_access_KEY="%s"
-CLOUD_PROJECT=my-project
-		`, testKey),
-		want: []veles.Secret{
-			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
-		},
-	}, {
 		name:  "potential match longer than max key length",
 		input: "azure_account_key:" + testKey + `test`,
 		want: []veles.Secret{
@@ -96,19 +96,6 @@ CLOUD_PROJECT=my-project
 			--auth-mode key`, testKey),
 		want: []veles.Secret{
 			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: testKey},
-		},
-	}, {
-		// the equal sign in the result is present according to Ms Documentation
-		// See comment at row 51
-		name: "match_with_connection_string",
-		input: fmt.Sprintf(`
-			DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;
-AccountKey=%s;
-BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;
-QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;
-TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;`, testKey),
-		want: []veles.Secret{
-			azurestorageaccountaccesskey.AzureStorageAccountAccessKey{Key: "=" + testKey},
 		},
 	}, {
 		// the equal sign is present as per Microsoft documentation

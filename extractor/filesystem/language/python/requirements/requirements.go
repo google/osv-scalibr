@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -52,13 +53,14 @@ var (
 	// * Less than (<)
 	// * Not equal to (!=)
 	// * Multiple constraints (,)
-	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,|!=`)
-	reWhitespace                    = regexp.MustCompile(`[ \t\r]`)
-	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
+	reUnsupportedConstraints = regexp.MustCompile(`\*|<[^=]|,|!=`)
+	// Regex to match valid package name (?i for case-insensitivity)
+	// https://packaging.python.org/en/latest/specifications/name-normalization/
+	reValidPkg                      = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
 	reExtras                        = regexp.MustCompile(`\[[^\[\]]*\]`)
-	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:--hash|--global-option|--config-settings|-C).*`)
-	reHashOption                    = regexp.MustCompile(`--hash=(.+?)(?:$|\s)`)
+	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:\s+|^)(?:--hash|--global-option|--config-settings|-C).*`)
+	reHashOption                    = regexp.MustCompile(`(?:\s+|^)--hash=(\S+)`)
 )
 
 // Extractor extracts python packages from requirements.txt files.
@@ -125,7 +127,12 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 	})
 }
 
-type pathQueue []string
+type fileReference struct {
+	path string            // path to the included file
+	loc  location.Location // location of the fileReference in the source file
+}
+
+type pathQueue []fileReference
 
 // Extract extracts packages from requirements files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
@@ -157,21 +164,24 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 	var pkgs []*extractor.Package
 
 	for len(extraPaths) > 0 {
-		path := extraPaths[0]
+		inc := extraPaths[0]
 		extraPaths = extraPaths[1:]
-		if _, exists := found[path]; exists {
+		if _, exists := found[inc.path]; exists {
 			continue
 		}
-		newPKG, newPaths, err := openAndExtractFromFile(path, fs)
+		newPKG, newPaths, err := openAndExtractFromFile(inc.path, fs)
 		if err != nil {
-			log.Warnf("openAndExtractFromFile(%s): %v", path, err)
+			log.Warnf("openAndExtractFromFile(%q): %v", inc.path, err)
 			continue
 		}
-		found[path] = true
+		found[inc.path] = true
 		extraPaths = append(extraPaths, newPaths...)
 		for _, p := range newPKG {
 			// Note the path through which we refer to this requirements.txt file.
-			p.Locations = append([]string{initPath}, p.Locations...)
+			originalDesc := *p.Location.Descriptor
+			p.Location.Related = append([]location.Location{originalDesc}, p.Location.Related...)
+			descLoc := inc.loc
+			p.Location.Descriptor = &descLoc
 		}
 		pkgs = append(pkgs, newPKG...)
 	}
@@ -192,13 +202,17 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 	var pkgs []*extractor.Package
 	var extraPaths pathQueue
 	s := bufio.NewScanner(reader)
+	lineNum := 0
 	for s.Scan() {
-		l := readLine(s, &strings.Builder{})
+		lineNum++
+		startLine := lineNum
+		var l string
+		l, lineNum = readLine(s, lineNum, &strings.Builder{})
 		// Per-requirement options may be present. We extract the --hash options, and discard the others.
 		l, hashOptions := splitPerRequirementOptions(l)
 		requirement := strings.TrimSpace(l)
 
-		l = removeWhiteSpaces(l)
+		l = strings.TrimSpace(l)
 		l = ignorePythonSpecifier(l)
 		l = removeExtras(l)
 
@@ -208,8 +222,17 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 
 		// Extract paths to referenced requirements.txt files for further processing.
 		if after, ok := strings.CutPrefix(l, "-r"); ok {
+			after = strings.TrimSpace(after)
 			// Path is relative to the current requirement file's dir.
-			extraPaths = append(extraPaths, filepath.Join(filepath.Dir(path), after))
+			extraPaths = append(extraPaths, fileReference{
+				path: filepath.Join(filepath.Dir(path), after),
+				loc: location.Location{
+					File: &location.File{
+						Path:       filepath.ToSlash(path),
+						LineNumber: startLine,
+					},
+				},
+			})
 		}
 
 		if strings.HasPrefix(l, "-") {
@@ -233,10 +256,10 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypePyPi,
-			Locations: []string{filepath.ToSlash(path)},
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPathAndLine(filepath.ToSlash(path), startLine),
 			Metadata: &Metadata{
 				HashCheckingModeValues: hashOptions,
 				VersionComparator:      comp,
@@ -250,7 +273,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 
 // readLine reads a line from the scanner, removes comments and joins it with
 // the next line if it ends with a backslash.
-func readLine(scanner *bufio.Scanner, builder *strings.Builder) string {
+func readLine(scanner *bufio.Scanner, currentLine int, builder *strings.Builder) (string, int) {
 	l := scanner.Text()
 	l = removeComments(l)
 
@@ -258,18 +281,21 @@ func readLine(scanner *bufio.Scanner, builder *strings.Builder) string {
 		// Ignore env variables
 		// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L503
 		// TODO(b/286213823): Implement metric
-		return ""
+		return "", currentLine
 	}
 
 	if strings.HasSuffix(l, `\`) {
 		builder.WriteString(l[:len(l)-1])
-		scanner.Scan()
-		return readLine(scanner, builder)
+		if scanner.Scan() {
+			currentLine++
+			return readLine(scanner, currentLine, builder)
+		}
+		return builder.String(), currentLine
 	}
 
 	builder.WriteString(l)
 
-	return builder.String()
+	return builder.String(), currentLine
 }
 
 func (e Extractor) exportStats(input *filesystem.ScanInput, err error) {
@@ -288,7 +314,7 @@ func nameFromRequirement(s string) string {
 	for _, sep := range []string{"===", "==", ">=", "<=", "~=", "!=", "<"} {
 		s, _, _ = strings.Cut(s, sep)
 	}
-	return s
+	return strings.TrimSpace(s)
 }
 
 func getLowestVersion(s string) (name, version, comparator string) {
@@ -311,22 +337,18 @@ func getLowestVersion(s string) (name, version, comparator string) {
 
 	if len(t) == 0 {
 		// Length of t being 0 indicates that there is no separator.
-		return s, "", ""
+		return strings.TrimSpace(s), "", ""
 	}
 	if len(t) != 2 {
 		return "", "", ""
 	}
 
 	// For all other separators the lowest version is the one we found.
-	return t[0], t[1], comp
+	return strings.TrimSpace(t[0]), strings.TrimSpace(t[1]), comp
 }
 
 func removeComments(s string) string {
 	return reComment.ReplaceAllString(s, "")
-}
-
-func removeWhiteSpaces(s string) string {
-	return reWhitespace.ReplaceAllString(s, "")
 }
 
 func ignorePythonSpecifier(s string) string {

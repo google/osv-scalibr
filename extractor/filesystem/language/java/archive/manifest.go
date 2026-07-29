@@ -55,7 +55,7 @@ func parseManifest(f *zip.File) (manifest, error) {
 
 	log.Debugf("Parsing manifest file %s\n", f.Name)
 
-	rd := textproto.NewReader((bufio.NewReader(NewOmitEmptyLinesReader(file))))
+	rd := textproto.NewReader(bufio.NewReader(NewOmitEmptyLinesReader(file)))
 	h, err := rd.ReadMIMEHeader()
 	// MIME header require \n\n in the end, while MANIFEST.mf might not have this. Headers before are
 	// parsed correctly anyway, so skip the error and continue.

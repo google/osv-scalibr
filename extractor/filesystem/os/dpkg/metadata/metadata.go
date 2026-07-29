@@ -16,10 +16,13 @@
 package metadata
 
 import (
-	"github.com/google/osv-scalibr/log"
-
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a dpkg package.
 type Metadata struct {
@@ -41,7 +44,6 @@ func (m *Metadata) ToNamespace() string {
 	if m.OSID != "" {
 		return m.OSID
 	}
-	log.Errorf("os-release[ID] not set, fallback to 'linux'")
 	// TODO(b/298152210): Implement metric
 	return "linux"
 }
@@ -54,45 +56,33 @@ func (m *Metadata) ToDistro() string {
 	}
 	// fallback: e.g. 22.04
 	if m.OSVersionID != "" {
-		log.Warnf("VERSION_CODENAME not set in os-release, fallback to VERSION_ID")
 		return m.OSVersionID
 	}
-	log.Errorf("VERSION_CODENAME and VERSION_ID not set in os-release")
 	return ""
 }
 
-// SetProto sets the DPKGPackageMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_DpkgMetadata{
-		DpkgMetadata: &pb.DPKGPackageMetadata{
-			PackageName:       m.PackageName,
-			Status:            m.Status,
-			SourceName:        m.SourceName,
-			SourceVersion:     m.SourceVersion,
-			PackageSource:     m.PackageSource,
-			PackageVersion:    m.PackageVersion,
-			OsId:              m.OSID,
-			OsVersionCodename: m.OSVersionCodename,
-			OsVersionId:       m.OSVersionID,
-			Maintainer:        m.Maintainer,
-			Architecture:      m.Architecture,
-		},
+// ToProto converts the Metadata struct to a DPKGPackageMetadata proto.
+func ToProto(m *Metadata) *pb.DPKGPackageMetadata {
+	return &pb.DPKGPackageMetadata{
+		PackageName:       m.PackageName,
+		Status:            m.Status,
+		SourceName:        m.SourceName,
+		SourceVersion:     m.SourceVersion,
+		PackageSource:     m.PackageSource,
+		PackageVersion:    m.PackageVersion,
+		OsId:              m.OSID,
+		OsVersionCodename: m.OSVersionCodename,
+		OsVersionId:       m.OSVersionID,
+		Maintainer:        m.Maintainer,
+		Architecture:      m.Architecture,
 	}
 }
 
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
 // ToStruct converts the DPKGPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.DPKGPackageMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		PackageName:       m.GetPackageName(),
 		Status:            m.GetStatus(),

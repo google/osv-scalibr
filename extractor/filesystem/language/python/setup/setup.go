@@ -128,8 +128,10 @@ var packageVersionRe = regexp.MustCompile(`['"]\W?(\w+)\W?(==|>=|<=)\W?([\w.]*)`
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	s := bufio.NewScanner(input.Reader)
 	packages := []*extractor.Package{}
+	lineNumber := 0
 
 	for s.Scan() {
+		lineNumber++
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
 			return packages, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
@@ -158,11 +160,11 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			pkgVersion := strings.TrimSpace(match[3])
 
 			p := &extractor.Package{
-				Name:      pkgName,
-				Version:   pkgVersion,
-				PURLType:  purl.TypePyPi,
-				Locations: []string{input.Path},
-				Metadata:  &Metadata{VersionComparator: comp},
+				Name:     pkgName,
+				Version:  pkgVersion,
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPathAndLine(input.Path, lineNumber),
+				Metadata: &Metadata{VersionComparator: comp},
 			}
 
 			packages = append(packages, p)

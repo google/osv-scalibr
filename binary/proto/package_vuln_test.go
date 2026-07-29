@@ -32,8 +32,10 @@ import (
 )
 
 var (
+	purlDPKG = PurlDPKGAnnotationPackage()
+
 	idToPkg = map[string]*extractor.Package{
-		"1": purlDPKGAnnotationPackage,
+		"1": purlDPKG,
 	}
 	pkgToID = func() map[*extractor.Package]string {
 		m := make(map[*extractor.Package]string)
@@ -45,7 +47,7 @@ var (
 
 	pkgVulnStruct1 = &inventory.PackageVuln{
 		Vulnerability: &osvpb.Vulnerability{},
-		Package:       purlDPKGAnnotationPackage,
+		Package:       purlDPKG,
 		Plugins:       []string{"cve/cve-1234-finder", "cve/cve-1234-enricher"},
 		ExploitabilitySignals: []*vex.FindingExploitabilitySignal{{
 			Plugin:        "some-plugin",

@@ -1,0 +1,33 @@
+<project>
+  <!-- This file tests that build plugin dependencies (which SCALIBR does not extract) do not hijack the line numbers
+       of identical project-level dependencies.
+       The project-level dependency on 'com.example:hijack-lib' (line 27) must be correctly matched,
+       ignoring the identical plugin-level dependency (line 17) that appears earlier in the file. -->
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>test-app</artifactId>
+  <version>1.0.0</version>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
+        <dependencies>
+          <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>hijack-lib</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>hijack-lib</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+</project>

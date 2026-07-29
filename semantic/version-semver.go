@@ -96,22 +96,37 @@ func compareSemverBuildComponents(a, b []string) int {
 	return 0
 }
 
-type semverVersion struct {
+// SemverVersion is the representation of a Semver 2.0.0 version.
+//
+// See https://semver.org/spec/v2.0.0.html
+type SemverVersion struct {
 	semverLikeVersion
 }
 
-func parseSemverVersion(str string) semverVersion {
-	return semverVersion{parseSemverLikeVersion(str, 3)}
+var _ Version = SemverVersion{}
+
+// ParseSemverVersion parses the given string as a Semver version.
+func ParseSemverVersion(str string) SemverVersion {
+	return SemverVersion{parseSemverLikeVersion(str, 3)}
 }
 
-func (v semverVersion) compare(w semverVersion) int {
-	if diff := v.Components.Cmp(w.Components); diff != 0 {
+func (v SemverVersion) compare(w SemverVersion) int {
+	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
 
-	return compareBuildComponents(v.Build, w.Build)
+	return compareBuildComponents(v.build, w.build)
 }
 
-func (v semverVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseSemverVersion(str)), nil
+// Compare compares the given version to the receiver.
+func (v SemverVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(SemverVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v SemverVersion) CompareStr(str string) (int, error) {
+	return v.compare(ParseSemverVersion(str)), nil
 }

@@ -40,7 +40,7 @@ func extractFromSum(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package,
 	scanner := bufio.NewScanner(f)
 	packages := map[pkgKey]*extractor.Package{}
 
-	for lineNumber := 0; scanner.Scan(); lineNumber++ {
+	for lineNumber := 1; scanner.Scan(); lineNumber++ {
 		line := scanner.Text()
 
 		if line == "" {
@@ -62,10 +62,10 @@ func extractFromSum(input *filesystem.ScanInput) (map[pkgKey]*extractor.Package,
 		}
 
 		packages[pkgKey{name: name, version: version}] = &extractor.Package{
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypeGolang,
-			Locations: []string{goSumPath},
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPathAndLine(goSumPath, lineNumber),
 		}
 	}
 

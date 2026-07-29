@@ -135,10 +135,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		// Note: the main package is reported as a runtime dependency.
 		if dep.Kind == rustaudit.Runtime || e.extractBuildDependencies {
 			pkgs = append(pkgs, &extractor.Package{
-				Name:      dep.Name,
-				Version:   dep.Version,
-				PURLType:  purl.TypeCargo,
-				Locations: []string{input.Path},
+				Name:     dep.Name,
+				Version:  dep.Version,
+				PURLType: purl.TypeCargo,
+				Location: extractor.LocationFromPath(input.Path),
 			})
 		}
 	}

@@ -235,32 +235,39 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			WantErr: extracttest.ContainsErrStr{Str: "could not extract"},
 		},
 		{
+			Name: "null json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.v2.jsontest",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "decoded null JSON value"},
+		},
+		{
 			Name: "valid package-lock.json only",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/package-lock-only/package-lock.json",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-lock-only/package-lock.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-lock-only/package-lock.json", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/package-lock-only/package-lock.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-lock-only/package-lock.json", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -273,26 +280,26 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/npm-shrinkwrap-only/npm-shrinkwrap.json", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/npm-shrinkwrap-only/npm-shrinkwrap.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/npm-shrinkwrap-only/npm-shrinkwrap.json", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -312,26 +319,26 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "wrappy",
-					Version:   "1.0.2",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/both/npm-shrinkwrap.json"},
+					Name:     "wrappy",
+					Version:  "1.0.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/both/npm-shrinkwrap.json", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "supports-color",
-					Version:   "5.5.0",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/both/npm-shrinkwrap.json"},
+					Name:     "supports-color",
+					Version:  "5.5.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/both/npm-shrinkwrap.json", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -366,6 +373,95 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 			gotFileSizeMetric := collector.FileExtractedFileSize(tt.InputConfig.Path)
 			if gotFileSizeMetric != scanInput.Info.Size() {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.InputConfig.Path, gotFileSizeMetric, scanInput.Info.Size())
+			}
+		})
+	}
+}
+
+func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
+	tests := []extracttest.TestTableEntry{
+		{
+			Name: "nested dependencies v1 line numbers",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/nested-dependencies.v1.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "postcss",
+					Version:    "6.0.23",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 5),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "postcss-calc",
+					Version:    "7.0.1",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 15),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "postcss",
+					Version:    "7.0.16",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 26),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "supports-color",
+					Version:    "6.1.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 36),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "supports-color",
+					Version:    "5.5.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 46),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			collector := testcollector.New()
+			extr, err := packagelockjson.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("packagelockjson.New: %v", err)
+			}
+			extr.(*packagelockjson.Extractor).Stats = collector
+
+			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			got, err := extr.Extract(t.Context(), &scanInput)
+
+			if diff := cmp.Diff(tt.WantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+				return
+			}
+
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
 	}

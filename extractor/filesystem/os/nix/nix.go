@@ -142,7 +142,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			OSVersionCodename: m["VERSION_CODENAME"],
 			OSVersionID:       m["VERSION_ID"],
 		},
-		Locations: []string{input.Path},
+		Location: extractor.LocationFromPath(input.Path),
 	}
 
 	if len(matches) > 4 {

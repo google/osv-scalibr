@@ -45,13 +45,13 @@ type Result struct {
 	Repository string
 }
 
-// ClientGRPC is the GRPC client for the deps.dev client.
+// ClientGRPC implements a client for the underlying deps.dev client.
 type ClientGRPC struct {
 	client grpcpb.InsightsClient
 }
 
 // NewClientGRPC returns a new ClientGRPC.
-func NewClientGRPC(client grpcpb.InsightsClient) *ClientGRPC {
+func NewClientGRPC(client grpcpb.InsightsClient) Client {
 	return &ClientGRPC{client: client}
 }
 

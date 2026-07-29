@@ -56,10 +56,9 @@ as an example.
 
 1.  Submit your code for review.
 
-Once your code is merged, you can add your detector to the list of available
-detectors in
-[detector/list/list.go](/detector/list/list.go).
-Please submit this code separately from the main detector logic.
+Please register your detector in
+[detector/list/list.go](/detector/list/list.go)
+in the same PR as the main detector logic.
 
 ## Code location
 

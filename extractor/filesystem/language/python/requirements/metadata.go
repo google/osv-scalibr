@@ -15,8 +15,13 @@
 package requirements
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata contains additional information from a package in a requirements file.
 type Metadata struct {
@@ -29,30 +34,20 @@ type Metadata struct {
 	Requirement string
 }
 
-// SetProto sets the PythonRequirementsMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
-	p.Metadata = &pb.Package_PythonRequirementsMetadata{
-		PythonRequirementsMetadata: &pb.PythonRequirementsMetadata{
-			HashCheckingModeValues: m.HashCheckingModeValues,
-			VersionComparator:      m.VersionComparator,
-			Requirement:            m.Requirement,
-		},
+// ToProto converts the Metadata struct to a PythonRequirementsMetadata proto.
+func ToProto(m *Metadata) *pb.PythonRequirementsMetadata {
+	return &pb.PythonRequirementsMetadata{
+		HashCheckingModeValues: m.HashCheckingModeValues,
+		VersionComparator:      m.VersionComparator,
+		Requirement:            m.Requirement,
 	}
 }
 
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
 // ToStruct converts the PythonRequirementsMetadata proto to a Metadata struct.
 func ToStruct(m *pb.PythonRequirementsMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
 	return &Metadata{
 		HashCheckingModeValues: m.GetHashCheckingModeValues(),
 		VersionComparator:      m.GetVersionComparator(),

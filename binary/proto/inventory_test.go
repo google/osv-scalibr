@@ -50,7 +50,7 @@ func TestInventoryToProto(t *testing.T) {
 			desc: "success",
 			inv: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					purlDPKGAnnotationPackage,
+					purlDPKG,
 					pkgWithLayerStruct,
 				},
 				PackageVulns: []*inventory.PackageVuln{
@@ -65,10 +65,13 @@ func TestInventoryToProto(t *testing.T) {
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					cimStructForTest,
 				},
+				SensitiveInformation: []*inventory.SensitiveInformation{
+					SensitiveInformationStruct1,
+				},
 			},
 			want: &pb.Inventory{
 				Packages: []*pb.Package{
-					purlDPKGAnnotationPackageProto,
+					PurlDPKGAnnotationPackageProto(t),
 					pkgWithLayerProto,
 				},
 				PackageVulns: []*pb.PackageVuln{
@@ -82,6 +85,9 @@ func TestInventoryToProto(t *testing.T) {
 				},
 				ContainerImageMetadata: []*pb.ContainerImageMetadata{
 					cimProtoForTest,
+				},
+				SensitiveInformation: []*pb.SensitiveInformation{
+					SensitiveInformationProto1,
 				},
 			},
 		},
@@ -97,6 +103,9 @@ func TestInventoryToProto(t *testing.T) {
 				protocmp.Transform(),
 				protocmp.IgnoreFields(&pb.PackageVuln{}, "package_id"),
 				cmpopts.EquateEmpty(),
+				// Ignore legacy location fields.
+				// TODO(b/400910349): Remove once these fields are no longer set.
+				protocmp.IgnoreFields(&pb.Secret{}, "locations"),
 			}, pkgOpts...)
 			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Errorf("InventoryToProto(%v) returned diff (-want +got):\n%s", tc.inv, diff)
@@ -107,6 +116,8 @@ func TestInventoryToProto(t *testing.T) {
 			opts = []cmp.Option{
 				protocmp.Transform(),
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ParentIDs"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ID"),
 			}
 			if diff := cmp.Diff(tc.inv, gotInv, opts...); diff != "" {
 				t.Errorf("InventoryToStruct(%v) returned diff (-want +got):\n%s", gotInv, diff)
@@ -151,18 +162,18 @@ func TestInventoryToProtoInvalidPackage(t *testing.T) {
 func TestInventoryToStruct(t *testing.T) {
 	pkgWithIDProto :=
 		&pb.Package{
-			Id:        "1234567890",
-			Name:      "software",
-			Version:   "1.0.0",
-			Locations: []string{"/file1"},
-			Plugins:   []string{"os/dpkg"},
+			Id:       "1234567890",
+			Name:     "software",
+			Version:  "1.0.0",
+			Location: pkgLocProtoFromPath("/file1"),
+			Plugins:  []string{"os/dpkg"},
 		}
 	pkgStruct :=
 		&extractor.Package{
-			Name:      "software",
-			Version:   "1.0.0",
-			Locations: []string{"/file1"},
-			Plugins:   []string{"os/dpkg"},
+			Name:     "software",
+			Version:  "1.0.0",
+			Location: extractor.LocationFromPath("/file1"),
+			Plugins:  []string{"os/dpkg"},
 		}
 	pkgVulnProto := &pb.PackageVuln{
 		Vuln:      &osvpb.Vulnerability{Id: "GHSA-1"},
@@ -193,7 +204,7 @@ func TestInventoryToStruct(t *testing.T) {
 			desc: "success",
 			inv: &pb.Inventory{
 				Packages: []*pb.Package{
-					purlDPKGAnnotationPackageProto,
+					PurlDPKGAnnotationPackageProto(t),
 					pkgWithLayerProto,
 					pkgWithIDProto,
 				},
@@ -209,10 +220,13 @@ func TestInventoryToStruct(t *testing.T) {
 				ContainerImageMetadata: []*pb.ContainerImageMetadata{
 					cimProtoForTest,
 				},
+				SensitiveInformation: []*pb.SensitiveInformation{
+					SensitiveInformationProto1,
+				},
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					purlDPKGAnnotationPackage,
+					purlDPKG,
 					pkgWithLayerStruct,
 					pkgStruct,
 				},
@@ -228,6 +242,9 @@ func TestInventoryToStruct(t *testing.T) {
 				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
 					cimStructForTest,
 				},
+				SensitiveInformation: []*inventory.SensitiveInformation{
+					SensitiveInformationStruct1,
+				},
 			},
 		},
 	}
@@ -238,6 +255,8 @@ func TestInventoryToStruct(t *testing.T) {
 			opts := []cmp.Option{
 				protocmp.Transform(),
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ParentIDs"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ID"),
 				cmpopts.EquateEmpty(),
 			}
 			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
@@ -253,6 +272,9 @@ func TestInventoryToStruct(t *testing.T) {
 				protocmp.Transform(),
 				protocmp.IgnoreFields(&pb.PackageVuln{}, "package_id"),
 				cmpopts.EquateEmpty(),
+				// Ignore legacy location fields.
+				// TODO(b/400910349): Remove once these fields are no longer set.
+				protocmp.IgnoreFields(&pb.Secret{}, "locations"),
 			}, pkgOpts...)
 			if diff := cmp.Diff(tc.inv, gotPB, revOpts...); diff != "" {
 				t.Errorf("InventoryToProto(%v) returned diff (-want +got):\n%s", got, diff)
@@ -286,8 +308,10 @@ func TestInventoryToStructInvalidPkgVuln(t *testing.T) {
 				PackageVulns: []*pb.PackageVuln{{PackageId: "pkg"}},
 			},
 			want: &inventory.Inventory{
-				Packages:     []*extractor.Package{{Name: "pkg1"}, {Name: "pkg2"}},
-				PackageVulns: []*inventory.PackageVuln{{Package: &extractor.Package{Name: "pkg1"}}},
+				Packages: []*extractor.Package{
+					{Name: "pkg1", ID: "pkg"},
+					{Name: "pkg2", ID: "pkg"}},
+				PackageVulns: []*inventory.PackageVuln{{Package: &extractor.Package{Name: "pkg1", ID: "pkg"}}},
 			},
 		},
 		{
@@ -302,7 +326,7 @@ func TestInventoryToStructInvalidPkgVuln(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := proto.InventoryToStruct(tc.inv)
-			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"), protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"), cmpopts.IgnoreFields(extractor.Package{}, "ParentIDs"), protocmp.Transform()); diff != "" {
 				t.Fatalf("InventoryToStruct(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})

@@ -16,8 +16,10 @@
 package requirements
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"deps.dev/util/pypi"
@@ -26,6 +28,7 @@ import (
 	pypiresolve "deps.dev/util/resolve/pypi"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/resolution"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/internal"
 	"github.com/google/osv-scalibr/extractor"
@@ -33,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -44,6 +48,8 @@ const (
 // Enricher performs dependency resolution for requirements.txt.
 type Enricher struct {
 	resolve.Client
+
+	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -69,17 +75,60 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 // New creates a new Enricher.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+
+	upstreamRegistry := ""
+	depsDevRequirements := false
+	var protoCfg *cpb.PluginConfig
+	localRegistry := ""
+	if cfg.ProtoConfig != nil {
+		protoCfg = cfg.ProtoConfig
+		localRegistry = cfg.ProtoConfig.LocalRegistry
+	}
+	specific := plugin.FindConfig(protoCfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsTransitiveConfig {
+		return c.GetPythonRequirementsTransitive()
+	})
+	if specific != nil {
+		upstreamRegistry = specific.UpstreamRegistry
+		depsDevRequirements = specific.DepsDevRequirements
+	}
+
+	var depClient resolve.Client
+	var err error
+	if depsDevRequirements {
+		conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
+		if err != nil {
+			return nil, err
+		}
+		depClient = resolution.NewDepsDevClientWithConn(conn)
+	} else {
+		depClient, err = resolution.NewPyPIRegistryClient(upstreamRegistry, localRegistry, cfg.ClientFactories.HTTPClient())
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Enricher{
-		// Empty remote registry indicates using the default PyPI registry.
-		Client: resolution.NewPyPIRegistryClient("", cfg.LocalRegistry),
+		Client:      depClient,
+		IDGenerator: &extractor.RandomIDGenerator{},
 	}, nil
 }
 
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
-	for path, pkgMap := range pkgGroups {
+	paths := make([]string, 0, len(pkgGroups))
+	for p := range pkgGroups {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
+
+	var errs error
+	for _, path := range paths {
+		pkgMap := pkgGroups[path]
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)
@@ -101,19 +150,27 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		}
 
 		// For each manifest, perform dependency resolution.
-		pkgs, err := e.resolve(ctx, path, list)
+		pkgs, err := e.resolve(ctx, path, list, input.ScanRoot.Path)
 		if err != nil {
-			log.Warnf("failed resolution: %v", err)
+			log.Warnf("failed resolution for %s: %v", path, err)
+			errs = errors.Join(errs, fmt.Errorf("failed resolution for %s: %w", path, err))
 			continue
 		}
 
 		internal.Add(pkgs, inv, Name, pkgMap)
 	}
-	return nil
+
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
+	return errs
 }
 
 // resolve performs dependency resolution for packages found in a single requirements.txt.
-func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Package) ([]*extractor.Package, error) {
+func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Package, scanRoot string) ([]*extractor.Package, error) {
 	overrideClient := resolution.NewOverrideClient(e.Client)
 	resolver := pypiresolve.NewResolver(overrideClient)
 
@@ -166,15 +223,29 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		return nil, errors.New(g.Error)
 	}
 
+	nameToID, err := internal.GetNameToIDMapping(g, list, e.IDGenerator)
+	if err != nil {
+		return nil, err
+	}
+
 	pkgs := make([]*extractor.Package, len(g.Nodes)-1)
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
+
+		parents, err := internal.GetParentIDs(g, nameToID, resolve.NodeID(i))
+		if err != nil {
+			return nil, err
+		}
+
 		pkgs[i-1] = &extractor.Package{
+			ID:        nameToID[node.Version.Name],
 			Name:      node.Version.Name,
+			ParentIDs: parents,
 			Version:   node.Version.Version,
 			PURLType:  purl.TypePyPi,
-			Locations: []string{path},
+			ScanRoot:  scanRoot,
+			Location:  extractor.LocationFromPath(path),
 			Plugins:   []string{Name},
 		}
 	}

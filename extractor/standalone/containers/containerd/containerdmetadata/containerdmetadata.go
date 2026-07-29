@@ -16,8 +16,13 @@
 package containerdmetadata
 
 import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a container running on the containerd runtime.
 type Metadata struct {
@@ -30,22 +35,22 @@ type Metadata struct {
 	RootFS      string
 }
 
-// SetProto sets the CtrdRuntimeMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil || p == nil {
-		return
-	}
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
 
-	p.Metadata = &pb.Package_ContainerdRuntimeContainerMetadata{
-		ContainerdRuntimeContainerMetadata: &pb.ContainerdRuntimeContainerMetadata{
-			NamespaceName: m.Namespace,
-			ImageName:     m.ImageName,
-			ImageDigest:   m.ImageDigest,
-			Runtime:       m.Runtime,
-			Id:            m.ID,
-			Pid:           int32(m.PID),
-			RootfsPath:    m.RootFS,
-		},
+// ToProto converts the Metadata struct to a ContainerdRuntimeContainerMetadata proto.
+func ToProto(m *Metadata) *pb.ContainerdRuntimeContainerMetadata {
+	if m == nil {
+		return nil
+	}
+	return &pb.ContainerdRuntimeContainerMetadata{
+		NamespaceName: m.Namespace,
+		ImageName:     m.ImageName,
+		ImageDigest:   m.ImageDigest,
+		Runtime:       m.Runtime,
+		Id:            m.ID,
+		Pid:           int32(m.PID),
+		RootfsPath:    m.RootFS,
 	}
 }
 

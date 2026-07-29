@@ -34,14 +34,14 @@ func TestPackageCmpLess(t *testing.T) {
 			name: "Location_difference",
 			args: args{
 				a: &extractor.Package{
-					Name:      "a",
-					Version:   "2.0.0",
-					Locations: []string{"aaa/bbb"},
+					Name:     "a",
+					Version:  "2.0.0",
+					Location: extractor.LocationFromPath("aaa/bbb"),
 				},
 				b: &extractor.Package{
-					Name:      "a",
-					Version:   "1.0.0",
-					Locations: []string{"ccc/ddd"},
+					Name:     "a",
+					Version:  "1.0.0",
+					Location: extractor.LocationFromPath("ccc/ddd"),
 				},
 			},
 			want: true,
@@ -50,14 +50,14 @@ func TestPackageCmpLess(t *testing.T) {
 			name: "Version_difference",
 			args: args{
 				a: &extractor.Package{
-					Name:      "a",
-					Version:   "2.0.0",
-					Locations: []string{"aaa/bbb"},
+					Name:     "a",
+					Version:  "2.0.0",
+					Location: extractor.LocationFromPath("aaa/bbb"),
 				},
 				b: &extractor.Package{
-					Name:      "a",
-					Version:   "1.0.0",
-					Locations: []string{"aaa/bbb"},
+					Name:     "a",
+					Version:  "1.0.0",
+					Location: extractor.LocationFromPath("aaa/bbb"),
 				},
 			},
 			want: false,

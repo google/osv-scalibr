@@ -24,13 +24,20 @@ import (
 // FakeImage is a fake implementation of the image.Image interface for testing purposes.
 type FakeImage struct {
 	FakeChainLayers []image.ChainLayer
+	labels          map[string]string
 }
 
 // New returns a new FakeImage.
-func New(chainLayers []image.ChainLayer) *FakeImage {
+func New(chainLayers []image.ChainLayer, labels map[string]string) *FakeImage {
 	return &FakeImage{
 		FakeChainLayers: chainLayers,
+		labels:          labels,
 	}
+}
+
+// Labels returns the labels of the image.
+func (i *FakeImage) Labels() map[string]string {
+	return i.labels
 }
 
 // Layers returns the layers of the image.

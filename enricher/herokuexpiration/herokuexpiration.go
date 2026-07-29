@@ -28,6 +28,9 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -47,19 +50,26 @@ type Enricher struct {
 }
 
 // New creates a new Enricher with default configuration.
-func New() enricher.Enricher {
-	return &Enricher{
-		baseURL:    defaultBaseURL,
-		httpClient: http.DefaultClient,
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
 	}
-}
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
 
-// NewWithBaseURL creates a new Enricher using a custom base URL (for tests).
-func NewWithBaseURL(baseURL string) enricher.Enricher {
+	baseURL := defaultBaseURL
+	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.HerokuExpirationConfig {
+		return c.GetHerokuExpiration()
+	})
+	if specific.GetBaseUrl() != "" {
+		baseURL = specific.GetBaseUrl()
+	}
 	return &Enricher{
 		baseURL:    baseURL,
-		httpClient: http.DefaultClient,
-	}
+		httpClient: httpClient,
+	}, nil
 }
 
 // Name of the Enricher.

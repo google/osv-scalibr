@@ -15,10 +15,13 @@
 package extractor
 
 import (
+	"strings"
+
 	hexpurl "github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock/purl"
 	gopurl "github.com/google/osv-scalibr/extractor/filesystem/language/golang/purl"
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
+	composerpurl "github.com/google/osv-scalibr/extractor/filesystem/language/php/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
 	osecosystem "github.com/google/osv-scalibr/extractor/filesystem/os/ecosystem"
 	ospurl "github.com/google/osv-scalibr/extractor/filesystem/os/purl"
@@ -66,10 +69,14 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return mavenpurl.MakePackageURL(p.Version, p.Metadata)
 	case purl.TypeNPM:
 		return npmpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
+	case purl.TypeComposer:
+		return composerpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeGolang:
 		return gopurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:
 		return hexpurl.MakePackageURL(p.Name, p.Version)
+	case purl.TypeGithub:
+		return githubPURL(p.Name, p.Version)
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeFlatpak, purl.TypeApk, purl.TypeCOS, purl.TypeRPM,
 		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix:
 		return ospurl.MakePackageURL(p.Name, p.Version, p.PURLType, p.Metadata)
@@ -77,6 +84,26 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
 	}
 	return nil
+}
+
+// githubPURL builds a pkg:github PURL from a Package whose Name is in
+// "owner/repo" form (the canonical pkg:github format places the owner in
+// the namespace and the repo in the name).
+func githubPURL(name, version string) *purl.PackageURL {
+	owner, repo, ok := strings.Cut(name, "/")
+	if !ok || owner == "" || repo == "" {
+		return &purl.PackageURL{
+			Type:    purl.TypeGithub,
+			Name:    name,
+			Version: version,
+		}
+	}
+	return &purl.PackageURL{
+		Type:      purl.TypeGithub,
+		Namespace: owner,
+		Name:      repo,
+		Version:   version,
+	}
 }
 
 // toEcosystem converts a SCALIBR package structure into an OSV ecosystem value
@@ -120,6 +147,22 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemJulia)
 	case purl.TypePub:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPub)
+	case purl.TypeDHI:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages)
+	case purl.TypeGithub:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions)
+	case purl.TypeSwift:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemSwiftURL)
+	case purl.TypeBrew:
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
+	case "git":
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
+	}
+
+	// No Ecosystem defined for this package, but if it has a source code commit,
+	// return GIT as the ecosystem.
+	if p.SourceCode != nil && (p.SourceCode.Commit != "" || p.SourceCode.Repo != "") {
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
 	}
 
 	// No Ecosystem defined for this package.

@@ -23,6 +23,9 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 func TestEnrich_PopulatesServicePrincipal(t *testing.T) {
@@ -49,7 +52,18 @@ func TestEnrich_PopulatesServicePrincipal(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := NewWithBaseURL(srv.URL)
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: srv.URL}}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	}
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: hcp.AccessToken{Token: "t"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -75,7 +89,18 @@ func TestEnrich_SkipsOnNon200(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := NewWithBaseURL(srv.URL)
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: srv.URL}}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	}
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: hcp.AccessToken{Token: "t"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -91,7 +116,18 @@ func TestEnrich_ConnectionError(t *testing.T) {
 	base := srv.URL
 	srv.Close()
 
-	e := NewWithBaseURL(base)
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HcpIdentity{HcpIdentity: &cpb.HCPIdentityConfig{BaseUrl: base}}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	}
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: hcp.AccessToken{Token: "t"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -103,7 +139,10 @@ func TestEnrich_ConnectionError(t *testing.T) {
 }
 
 func TestEnrich_SkipsNonHCPSecret(t *testing.T) {
-	e := New()
+	e, err := New(config.DefaultPluginConfig())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: struct{ X string }{X: "noop"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -111,7 +150,10 @@ func TestEnrich_SkipsNonHCPSecret(t *testing.T) {
 }
 
 func TestEnrich_ContextCanceled(t *testing.T) {
-	e := New()
+	e, err := New(config.DefaultPluginConfig())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: hcp.AccessToken{Token: "t"}}}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

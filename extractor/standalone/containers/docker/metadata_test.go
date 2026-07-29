@@ -15,12 +15,13 @@
 package docker_test
 
 import (
+	"net/netip"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	metadata "github.com/google/osv-scalibr/extractor/standalone/containers/docker"
-	"google.golang.org/protobuf/proto"
+	"github.com/moby/moby/api/types/container"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -31,15 +32,15 @@ var (
 		ImageName:   "test-image-name",
 		ImageDigest: "test-image-digest",
 		ID:          "test-id",
-		Ports: []container.Port{
+		Ports: []container.PortSummary{
 			{
-				IP:          "127.0.0.1",
+				IP:          netip.MustParseAddr("127.0.0.1"),
 				PrivatePort: 8080,
 				PublicPort:  8080,
 				Type:        "tcp",
 			},
 			{
-				IP:          "127.0.0.1",
+				IP:          netip.MustParseAddr("127.0.0.1"),
 				PrivatePort: 8081,
 				PublicPort:  8081,
 				Type:        "udp",
@@ -67,110 +68,33 @@ var (
 	}
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *metadata.Metadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.DockerContainersMetadata
 	}{
-		{
-			desc: "nil_metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil_package",
-			m:    metadataStruct1,
-			p:    nil,
-			want: nil,
-		},
 		{
 			desc: "set_metadata",
 			m:    metadataStruct1,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DockerContainersMetadata{
-					DockerContainersMetadata: metadataProto1,
-				},
-			},
-		},
-		{
-			desc: "override_metadata",
-			m: &metadata.Metadata{
-				ImageName:   "test-image-name-2",
-				ImageDigest: "test-image-digest-2",
-				ID:          "test-id-2",
-				Ports: []container.Port{
-					{
-						IP:          "127.0.0.2",
-						PrivatePort: 8082,
-						PublicPort:  8082,
-						Type:        "tcp",
-					},
-					{
-						IP:          "127.0.0.2",
-						PrivatePort: 8083,
-						PublicPort:  8083,
-						Type:        "udp",
-					},
-				},
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DockerContainersMetadata{
-					DockerContainersMetadata: metadataProto1,
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DockerContainersMetadata{
-					DockerContainersMetadata: &pb.DockerContainersMetadata{
-						ImageName:   "test-image-name-2",
-						ImageDigest: "test-image-digest-2",
-						Id:          "test-id-2",
-						Ports: []*pb.DockerPort{
-							{
-								Ip:          "127.0.0.2",
-								PrivatePort: 8082,
-								PublicPort:  8082,
-								Type:        "tcp",
-							},
-							{
-								Ip:          "127.0.0.2",
-								PrivatePort: 8083,
-								PublicPort:  8083,
-								Type:        "udp",
-							},
-						},
-					},
-				},
-			},
+			want: metadataProto1,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			tc.m.SetProto(p)
+			got := metadata.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
-			got := metadata.ToStruct(p.GetDockerContainersMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetDockerContainersMetadata(), diff)
+			gotStruct := metadata.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct, cmpopts.EquateComparable(netip.Addr{})); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -182,11 +106,7 @@ func TestToStruct(t *testing.T) {
 		m    *pb.DockerContainersMetadata
 		want *metadata.Metadata
 	}{
-		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
+
 		{
 			desc: "all_fields",
 			m:    metadataProto1,
@@ -197,28 +117,17 @@ func TestToStruct(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := metadata.ToStruct(tc.m)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateComparable(netip.Addr{})); diff != "" {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
-			if tc.m == nil {
-				return
-			}
-
 			// Test the reverse conversion for completeness.
-
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_DockerContainersMetadata{
-					DockerContainersMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := metadata.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metatadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

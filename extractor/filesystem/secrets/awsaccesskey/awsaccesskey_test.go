@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/awsaccesskey"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	awsaccesskeydetector "github.com/google/osv-scalibr/veles/secrets/awsaccesskey"
 
@@ -84,7 +85,7 @@ func TestExtractor_Extract(t *testing.T) {
 						AccessID: "AKIA1984R439T439HTH4",
 						Secret:   "32r923jr023rk320rk2a3rkB34tj340r32Ckt433",
 					},
-					Location: "aws_credentials",
+					Location: location.FromPath("aws_credentials"),
 				},
 			},
 		},

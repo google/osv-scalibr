@@ -90,10 +90,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		for _, dep := range mavenDeps {
 			// Create a package for each Maven dependency
 			pkg := &extractor.Package{
-				Name:      dep.Name,
-				Version:   dep.Version,
-				PURLType:  purl.TypeMaven,
-				Locations: []string{input.Path},
+				Name:     dep.Name,
+				Version:  dep.Version,
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath(input.Path),
 				Metadata: &bazelmetadata.Metadata{
 					Name:       dep.Name,
 					GroupID:    dep.GroupID,

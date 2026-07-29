@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"regexp"
+	"slices"
 
 	"github.com/google/osv-scalibr/veles"
 
@@ -27,19 +28,18 @@ import (
 
 var (
 
-	// base64Pattern is a generic pattern to detect base64 blobs
-	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]{20,}=?=?`)
+	// base64Pattern is generated from the `tinkTypeURL` known plaintext.
+	//
+	// The plaintext has 3 different base64 representations depending
+	// on its byte alignment, all of which the regex matches.
+	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]*(?:dHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbm|R5cGUuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmNyeXB0by50aW5r|0eXBlLmdvb2dsZWFwaXMuY29tL2dvb2dsZS5jcnlwdG8udGlua)[A-Za-z0-9+/]*={0,2}`)
 
 	// jsonPattern matches correctly Tink keyset json strings
 	// thanks to the known `{"primaryKeyId":` start and `]}` ending
-	jsonPattern = regexp.MustCompile(`(?s)\s*\{\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?\]\s*\}`)
+	jsonPattern = regexp.MustCompile(`(?s){\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?\]\s*\}`)
 
 	// tinkTypeURL can be found in both binary and json tink keyset encodings
 	tinkTypeURL = []byte("type.googleapis.com/google.crypto.tink")
-
-	// minBase64Len is an estimate to reduce the number of blobs to decode
-	// note that: len(base64(tinkTypeUrl)) is roughly 50 chars
-	minBase64Len = 60
 )
 
 // Detector is a Veles Detector that finds Tink plaintext keysets.
@@ -64,9 +64,6 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 	// search for secrets inside base64 blobs
 	for _, m := range base64Pattern.FindAllIndex(data, -1) {
 		l, r := m[0], m[1]
-		if (r - l) < minBase64Len {
-			continue
-		}
 
 		decoded := make([]byte, base64.StdEncoding.DecodedLen(r-l))
 		n, err := base64.StdEncoding.Decode(decoded, data[l:r])
@@ -74,32 +71,25 @@ func (d *Detector) Detect(data []byte) ([]veles.Secret, []int) {
 			continue
 		}
 
-		b64Found, _ := find(decoded[:n])
-		// use the start of the base
-		for _, found := range b64Found {
+		b64FoundJSON, _ := findJSON(decoded[:n])
+		b64FoundBinary, _ := findBinary(decoded[:n])
+		for _, found := range slices.Concat(b64FoundJSON, b64FoundBinary) {
 			res = append(res, found)
+			// use the start of the base64 match as pos
 			pos = append(pos, l)
 		}
 	}
 
 	// search for plain secrets
 	if !bytes.Contains(data, tinkTypeURL) {
-		return res, nil
+		return res, pos
 	}
 
-	plainFound, plainPos := find(data)
+	plainFound, plainPos := findJSON(data)
 	res = append(res, plainFound...)
 	pos = append(pos, plainPos...)
 
 	return res, pos
-}
-
-func find(buf []byte) ([]veles.Secret, []int) {
-	res, pos := findJSON(buf)
-	if len(res) != 0 {
-		return res, pos
-	}
-	return findBinary(buf)
 }
 
 // findBinary extract at most one binary encoded Tink keyset inside the provided buffer

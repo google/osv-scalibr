@@ -64,13 +64,15 @@ func (anno *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput,
 			continue
 		}
 
-		unknownBinariesSet[e.Locations[0]] = e
+		if e.Location.Descriptor != nil && e.Location.Descriptor.File != nil {
+			unknownBinariesSet[e.Location.Descriptor.File.Path] = e
+		}
 	}
 
 	// First account for all the files we have successfully extracted.
 	for _, e := range filteredPackages {
-		for _, location := range e.Locations {
-			delete(unknownBinariesSet, location)
+		if e.Location.Descriptor != nil && e.Location.Descriptor.File != nil {
+			delete(unknownBinariesSet, e.Location.Descriptor.File.Path)
 		}
 	}
 

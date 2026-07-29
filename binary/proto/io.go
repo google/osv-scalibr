@@ -93,7 +93,7 @@ func write(filePath string, outputProto proto.Message, ft *fileType) error {
 		}
 	} else {
 		opts := prototext.MarshalOptions{Multiline: true}
-		if p, err = (opts.Marshal(outputProto)); err != nil {
+		if p, err = opts.Marshal(outputProto); err != nil {
 			return err
 		}
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/purl"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -28,9 +29,38 @@ import (
 
 var (
 	pkgOpts = []cmp.Option{
-		protocmp.IgnoreFields(&spb.Package{}, "id"),
+		// Ignore the non-deterministic ID and the legacy location field.
+		protocmp.IgnoreFields(&spb.Package{}, "id", "locations"),
 	}
 )
+
+func exampleTransitiveDependencyPackage() *extractor.Package {
+	return &extractor.Package{
+		Name:      "transitive_package",
+		ParentIDs: map[string]bool{"parent_1": true, "parent_2": true},
+		Version:   "1.0.0",
+		PURLType:  purl.TypePyPi,
+		Location:  extractor.LocationFromPath("/file1"),
+		Plugins:   []string{"extractor_name"},
+	}
+}
+
+func exampleTransitiveDependencyPackageProto() *spb.Package {
+	return &spb.Package{
+		Name:      "transitive_package",
+		Version:   "1.0.0",
+		Ecosystem: "PyPI",
+		Location:  pkgLocProtoFromPath("/file1"),
+		Plugins:   []string{"extractor_name"},
+		ParentIds: []string{"parent_1", "parent_2"},
+		Purl: &spb.Purl{
+			Purl:    "pkg:pypi/transitive-package@1.0.0",
+			Type:    "pypi",
+			Name:    "transitive-package",
+			Version: "1.0.0",
+		},
+	}
+}
 
 func TestPackageToProto(t *testing.T) {
 	testCases := []struct {
@@ -46,8 +76,13 @@ func TestPackageToProto(t *testing.T) {
 		},
 		{
 			desc: "success",
-			pkg:  purlDPKGAnnotationPackage,
-			want: purlDPKGAnnotationPackageProto,
+			pkg:  PurlDPKGAnnotationPackage(),
+			want: PurlDPKGAnnotationPackageProto(t),
+		},
+		{
+			desc: "transitive_dependency",
+			pkg:  exampleTransitiveDependencyPackage(),
+			want: exampleTransitiveDependencyPackageProto(),
 		},
 	}
 
@@ -66,7 +101,9 @@ func TestPackageToProto(t *testing.T) {
 				got.Id = ""
 			}
 
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+			opts := append([]cmp.Option{protocmp.Transform()}, pkgOpts...)
+
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Fatalf("PackageToProto(%v) returned diff (-want +got):\n%s", tc.pkg, diff)
 			}
 
@@ -80,7 +117,7 @@ func TestPackageToProto(t *testing.T) {
 			if err != nil {
 				t.Fatalf("PackageToStruct(%v) returned error %v, want nil", got, err)
 			}
-			if diff := cmp.Diff(tc.pkg, gotPB, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.pkg, gotPB, opts...); diff != "" {
 				t.Fatalf("PackageToStruct(%v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})
@@ -101,8 +138,13 @@ func TestPackageToStruct(t *testing.T) {
 		},
 		{
 			desc: "success",
-			pkg:  purlDPKGAnnotationPackageProto,
-			want: purlDPKGAnnotationPackage,
+			pkg:  PurlDPKGAnnotationPackageProto(t),
+			want: PurlDPKGAnnotationPackage(),
+		},
+		{
+			desc: "transitive_dependency",
+			pkg:  exampleTransitiveDependencyPackageProto(),
+			want: exampleTransitiveDependencyPackage(),
 		},
 	}
 
@@ -112,7 +154,9 @@ func TestPackageToStruct(t *testing.T) {
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("PackageToStruct(%v) returned error %v, want error %v", tc.pkg, err, tc.wantErr)
 			}
-			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+
+			opts := append([]cmp.Option{protocmp.Transform()}, pkgOpts...)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
 				t.Fatalf("PackageToStruct(%v) returned diff (-want +got):\n%s", tc.pkg, diff)
 			}
 
@@ -128,7 +172,7 @@ func TestPackageToStruct(t *testing.T) {
 			}
 			// Ignore the ID field because it is randomly generated.
 			gotPB.Id = ""
-			if diff := cmp.Diff(tc.pkg, gotPB, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.pkg, gotPB, opts...); diff != "" {
 				t.Fatalf("PackageToProto(%v) returned diff (-want +got):\n%s", got, diff)
 			}
 		})

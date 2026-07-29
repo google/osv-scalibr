@@ -79,7 +79,7 @@ func (Detector) RequiredExtractors() []string {
 }
 
 // DetectedFinding returns generic vulnerability information about what is detected.
-// TODO: b/428851334 - For now, we do not return any advisories. But we want to be able to propagate
+// TODO(b/428851334): For now, we do not return any advisories. But we want to be able to propagate
 // detection capabilities here.
 func (d Detector) DetectedFinding() inventory.Finding {
 	return inventory.Finding{}
@@ -95,7 +95,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 		if !slices.Contains(p.Plugins, gobinary.Name) {
 			continue
 		}
-		for _, l := range p.Locations {
+		if l := p.Location.PathOrEmpty(); l != "" {
 			if scanned[l] {
 				continue
 			}

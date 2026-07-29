@@ -19,10 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"slices"
 
-	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -31,6 +29,10 @@ import (
 	"github.com/opencontainers/image-spec/identity"
 	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
+
+	grpcpb "deps.dev/api/v3alpha"
+	"github.com/google/osv-scalibr/depsdev"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -45,57 +47,22 @@ const (
 	maxConcurrentRequests = 1000
 )
 
-// Config is the configuration for the base image enricher.
-type Config struct {
+// Enricher enriches inventory layer details with potential base images from deps.dev.
+type Enricher struct {
 	Client Client
 }
 
-// DefaultConfig returns the default configuration for the base image enricher.
-func DefaultConfig() *Config {
-	grpcConfig := grpcclient.DefaultConfig()
-	grpcclient, err := grpcclient.New(grpcConfig)
-	if err != nil {
-		log.Fatalf("Failed to create base image client: %v", err)
-	}
-
-	client := NewClientGRPC(grpcclient)
-
-	return &Config{
-		Client: client,
-	}
-}
-
-// Enricher enriches inventory layer details with potential base images from deps.dev.
-type Enricher struct {
-	client Client
-}
-
 // New returns a new base image enricher.
-func New(cfg *Config) (*Enricher, error) {
-	if cfg == nil {
-		return nil, errors.New("config is nil")
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
 	}
-	if cfg.Client == nil {
-		return nil, errors.New("client is nil")
-	}
-	return &Enricher{client: cfg.Client}, nil
-}
-
-// NewDefault returns a new base image enricher with the default configuration.
-// It will log.Fatal if the enricher cannot be created.
-func NewDefault() enricher.Enricher {
-	e, err := New(DefaultConfig())
+	conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
 	if err != nil {
-		log.Fatalf("Failed to create base image enricher: %v", err)
+		return nil, fmt.Errorf("failed to establish gRPC connection for %s: %w", Name, err)
 	}
-	return e
-}
-
-// Config returns the configuration for the base image enricher.
-func (e *Enricher) Config() *Config {
-	return &Config{
-		Client: e.client,
-	}
+	client := grpcpb.NewInsightsClient(conn)
+	return &Enricher{Client: NewClientGRPC(client)}, nil
 }
 
 // Name of the base image enricher.
@@ -130,7 +97,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 
 		// Placeholder for the scanned image itself.
 		cim.BaseImages = [][]*extractor.BaseImageDetails{
-			[]*extractor.BaseImageDetails{},
+			{},
 		}
 
 		chainIDsByLayerIndex := make([]digest.Digest, len(cim.LayerMetadata))
@@ -170,7 +137,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 				req := &Request{
 					ChainID: chainID.String(),
 				}
-				resp, err := e.client.QueryContainerImages(ctx, req)
+				resp, err := e.Client.QueryContainerImages(ctx, req)
 				if err != nil {
 					if !errors.Is(err, errNotFound) {
 						// If one query fails even with grpc retries, we cancel the rest of the

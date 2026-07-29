@@ -64,9 +64,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      ctr.config.RawImageName,
-			Version:   ctr.config.RootfsImageID,
-			Locations: []string{input.Path},
+			Name:     ctr.config.RawImageName,
+			Version:  ctr.config.RootfsImageID,
+			Location: extractor.LocationFromPath(input.Path),
 			Metadata: &Metadata{
 				ExposedPorts: ctr.config.ExposedPorts,
 				PID:          ctr.state.PID,

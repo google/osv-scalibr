@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fakefs provides a fake file system implementation for testing.
 package fakefs
 
 import (

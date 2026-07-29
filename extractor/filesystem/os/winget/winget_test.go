@@ -118,10 +118,10 @@ func TestExtract(t *testing.T) {
 			},
 			want: []*extractor.Package{
 				{
-					Name:      "Git.Git",
-					Version:   "2.50.1",
-					PURLType:  purl.TypeWinget,
-					Locations: []string{"test.db"},
+					Name:     "Git.Git",
+					Version:  "2.50.1",
+					PURLType: purl.TypeWinget,
+					Location: extractor.LocationFromPath("test.db"),
 					Metadata: &metadata.Metadata{
 						Name:     "Git",
 						ID:       "Git.Git",
@@ -133,10 +133,10 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:      "Microsoft.VisualStudioCode",
-					Version:   "1.103.1",
-					PURLType:  purl.TypeWinget,
-					Locations: []string{"test.db"},
+					Name:     "Microsoft.VisualStudioCode",
+					Version:  "1.103.1",
+					PURLType: purl.TypeWinget,
+					Location: extractor.LocationFromPath("test.db"),
 					Metadata: &metadata.Metadata{
 						Name:     "Microsoft Visual Studio Code",
 						ID:       "Microsoft.VisualStudioCode",
@@ -215,10 +215,10 @@ func TestExtract(t *testing.T) {
 					}
 
 					extPkg := &extractor.Package{
-						Name:      pkg.ID,
-						Version:   pkg.Version,
-						PURLType:  purl.TypeWinget,
-						Locations: []string{"test.db"},
+						Name:     pkg.ID,
+						Version:  pkg.Version,
+						PURLType: purl.TypeWinget,
+						Location: extractor.LocationFromPath("test.db"),
 						Metadata: &metadata.Metadata{
 							Name:     pkg.Name,
 							ID:       pkg.ID,

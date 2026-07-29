@@ -99,17 +99,43 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: nil,
 		},
 		{
+			Name: "empty file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty-file",
+			},
+			WantPackages: nil,
+		},
+		{
 			Name: "one package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.json",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "markupsafe",
-					Version:   "2.1.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/one-package.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "markupsafe",
+					Version:  "2.1.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/one-package.json", 19),
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		// Minified JSON has all whitespace removed, putting the entire file on a single line.
+		// In this case, we expect the extractor to fallback to file-level location (LineNumber: 0).
+		{
+			Name: "minified json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/minified.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "markupsafe",
+					Version:  "2.1.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/minified.json"),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -122,11 +148,11 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "markupsafe",
-					Version:   "2.1.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/one-package-dev.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "markupsafe",
+					Version:  "2.1.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/one-package-dev.json", 20),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -139,20 +165,20 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "itsdangerous",
-					Version:   "2.1.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "itsdangerous",
+					Version:  "2.1.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.json", 19),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "markupsafe",
-					Version:   "2.1.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "markupsafe",
+					Version:  "2.1.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.json", 29),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -165,20 +191,20 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "itsdangerous",
-					Version:   "2.1.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages-alt.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "itsdangerous",
+					Version:  "2.1.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages-alt.json", 19),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "markupsafe",
-					Version:   "2.1.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/two-packages-alt.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "markupsafe",
+					Version:  "2.1.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages-alt.json", 27),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -191,38 +217,38 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "itsdangerous",
-					Version:   "2.1.2",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "itsdangerous",
+					Version:  "2.1.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.json", 19),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "pluggy",
-					Version:   "1.0.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "pluggy",
+					Version:  "1.0.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.json", 27),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "pluggy",
-					Version:   "1.0.0",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "pluggy",
+					Version:  "1.0.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.json", 88),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
-					Name:      "markupsafe",
-					Version:   "2.1.1",
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"testdata/multiple-packages.json"},
-					Metadata: osv.DepGroupMetadata{
+					Name:     "markupsafe",
+					Version:  "2.1.1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.json", 32),
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},

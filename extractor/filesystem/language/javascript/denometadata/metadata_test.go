@@ -19,45 +19,25 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
-func TestSetProto(t *testing.T) {
+func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *denometadata.DenoMetadata
-		p    *pb.Package
-		want *pb.Package
+		want *pb.JavascriptDenoMetadata
 	}{
-		{
-			desc: "nil metadata",
-			m:    nil,
-			p:    &pb.Package{Name: "some-package"},
-			want: &pb.Package{Name: "some-package"},
-		},
-		{
-			desc: "nil package",
-			m:    &denometadata.DenoMetadata{},
-			p:    nil,
-			want: nil,
-		},
 		{
 			desc: "set FromDenolandCdn",
 			m: &denometadata.DenoMetadata{
 				FromDenolandCDN: true,
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoMetadata{
-						Cdn: &pb.JavascriptDenoMetadata_FromDenolandCdn{
-							FromDenolandCdn: true,
-						},
-					},
+			want: &pb.JavascriptDenoMetadata{
+				Cdn: &pb.JavascriptDenoMetadata_FromDenolandCdn{
+					FromDenolandCdn: true,
 				},
 			},
 		},
@@ -66,15 +46,9 @@ func TestSetProto(t *testing.T) {
 			m: &denometadata.DenoMetadata{
 				FromUnpkgCDN: true,
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoMetadata{
-						Cdn: &pb.JavascriptDenoMetadata_FromUnpkgCdn{
-							FromUnpkgCdn: true,
-						},
-					},
+			want: &pb.JavascriptDenoMetadata{
+				Cdn: &pb.JavascriptDenoMetadata_FromUnpkgCdn{
+					FromUnpkgCdn: true,
 				},
 			},
 		},
@@ -83,15 +57,9 @@ func TestSetProto(t *testing.T) {
 			m: &denometadata.DenoMetadata{
 				FromESMCDN: true,
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoMetadata{
-						Cdn: &pb.JavascriptDenoMetadata_FromEsmCdn{
-							FromEsmCdn: true,
-						},
-					},
+			want: &pb.JavascriptDenoMetadata{
+				Cdn: &pb.JavascriptDenoMetadata_FromEsmCdn{
+					FromEsmCdn: true,
 				},
 			},
 		},
@@ -100,34 +68,8 @@ func TestSetProto(t *testing.T) {
 			m: &denometadata.DenoMetadata{
 				URL: "https://www.example.com",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoMetadata{
-						Url: "https://www.example.com",
-					},
-				},
-			},
-		},
-		{
-			desc: "override metadata",
-			m: &denometadata.DenoMetadata{
-				URL: "https://jsr.io/package",
-			},
-			p: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoMetadata{},
-				},
-			},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoMetadata{
-						Url: "https://jsr.io/package",
-					},
-				},
+			want: &pb.JavascriptDenoMetadata{
+				Url: "https://www.example.com",
 			},
 		},
 		{
@@ -138,16 +80,10 @@ func TestSetProto(t *testing.T) {
 				FromESMCDN:      false,
 				URL:             "https://www.example.com",
 			},
-			p: &pb.Package{Name: "some-package"},
-			want: &pb.Package{
-				Name: "some-package",
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: &pb.JavascriptDenoMetadata{
-						Url: "https://www.example.com",
-						Cdn: &pb.JavascriptDenoMetadata_FromDenolandCdn{
-							FromDenolandCdn: true,
-						},
-					},
+			want: &pb.JavascriptDenoMetadata{
+				Url: "https://www.example.com",
+				Cdn: &pb.JavascriptDenoMetadata_FromDenolandCdn{
+					FromDenolandCdn: true,
 				},
 			},
 		},
@@ -155,31 +91,24 @@ func TestSetProto(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			p := proto.Clone(tc.p).(*pb.Package)
-			if tc.m != nil {
-				tc.m.SetProto(p)
-			}
+			got := denometadata.ToProto(tc.m)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(tc.want, p, opts...); diff != "" {
-				t.Errorf("Metadata{%+v}.SetProto(%+v): (-want +got):\n%s", tc.m, tc.p, diff)
+			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
+				t.Errorf("denometadata.ToProto(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
 			// Test the reverse conversion for completeness.
-			if tc.p == nil && tc.want == nil {
-				return
-			}
-
 			// Skip the reverse comparison for the "multiple repositories" test case
 			// since we expect only one repository to be set after the round trip
 			if tc.desc == "multiple repositories" {
 				return
 			}
 
-			got := denometadata.ToStruct(p.GetDenoMetadata())
-			if diff := cmp.Diff(tc.m, got); diff != "" {
-				t.Errorf("ToStruct(%+v): (-want +got):\n%s", p.GetDenoMetadata(), diff)
+			gotStruct := denometadata.ToStruct(got)
+			if diff := cmp.Diff(tc.m, gotStruct); diff != "" {
+				t.Errorf("ToStruct(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}
@@ -191,11 +120,7 @@ func TestToStruct(t *testing.T) {
 		m    *pb.JavascriptDenoMetadata
 		want *denometadata.DenoMetadata
 	}{
-		{
-			desc: "nil",
-			m:    nil,
-			want: nil,
-		},
+
 		{
 			desc: "from npm",
 			m:    &pb.JavascriptDenoMetadata{},
@@ -257,23 +182,13 @@ func TestToStruct(t *testing.T) {
 				t.Errorf("ToStruct(%+v): (-want +got):\n%s", tc.m, diff)
 			}
 
-			if tc.m == nil {
-				return
-			}
-
 			// Test the reverse conversion for completeness.
-			gotP := &pb.Package{}
-			wantP := &pb.Package{
-				Metadata: &pb.Package_DenoMetadata{
-					DenoMetadata: tc.m,
-				},
-			}
-			got.SetProto(gotP)
+			gotProto := denometadata.ToProto(got)
 			opts := []cmp.Option{
 				protocmp.Transform(),
 			}
-			if diff := cmp.Diff(wantP, gotP, opts...); diff != "" {
-				t.Errorf("Metadata{%+v}.SetProto(%+v): (-want +got):\n%s", got, wantP, diff)
+			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
+				t.Errorf("denometadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

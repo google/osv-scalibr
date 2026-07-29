@@ -631,6 +631,7 @@ func TestFromV1Image(t *testing.T) {
 		v1Image               v1.Image
 		config                *Config
 		wantChainLayerEntries []chainLayerEntries
+		wantLabels            map[string]string
 		wantErr               bool
 		wantNonZeroSize       bool
 	}{
@@ -663,6 +664,32 @@ func TestFromV1Image(t *testing.T) {
 			},
 			config:  DefaultConfig(),
 			wantErr: true,
+		},
+		{
+			name: "image_with_labels",
+			v1Image: &fakeV1Image{
+				layers: []v1.Layer{
+					fakev1layer.New(t, diffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, false),
+				},
+				config: &v1.ConfigFile{
+					Config: v1.Config{
+						Labels: map[string]string{
+							"label1": "value1",
+							"label2": "value2",
+						},
+					},
+				},
+			},
+			wantChainLayerEntries: []chainLayerEntries{
+				chainLayerEntries{
+					filepathContentPairs: []filepathContentPair{},
+				},
+			},
+			wantLabels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+			},
+			config: DefaultConfig(),
 		},
 		{
 			name: "image_with_single_package",
@@ -699,6 +726,42 @@ func TestFromV1Image(t *testing.T) {
 				},
 			},
 			config:          DefaultConfig(),
+			wantNonZeroSize: true,
+		},
+		{
+			name: "image_with_exact_limit_file_before_valid_file",
+			v1Image: constructImageWithTarEntries(t, []*tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "limit-sized.bin",
+						Mode: 0777,
+						Size: int64(len("abcde")),
+					},
+					Data: bytes.NewBufferString("abcde"),
+				},
+				{
+					Header: &tar.Header{
+						Name: "valid.txt",
+						Mode: 0777,
+						Size: int64(len("ok")),
+					},
+					Data: bytes.NewBufferString("ok"),
+				},
+			}),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "/valid.txt",
+							content:  "ok",
+						},
+					},
+				},
+			},
+			config: &Config{
+				MaxFileBytes:    5,
+				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
+			},
 			wantNonZeroSize: true,
 		},
 		{
@@ -831,6 +894,10 @@ func TestFromV1Image(t *testing.T) {
 				}
 
 				compareChainLayerEntries(t, chainLayer, wantChainLayerEntries, nil)
+			}
+
+			if diff := cmp.Diff(tc.wantLabels, gotImage.Labels()); diff != "" {
+				t.Errorf("Labels() returned unexpected diff (-want +got):\n%s", diff)
 			}
 
 			if gotImage != nil {

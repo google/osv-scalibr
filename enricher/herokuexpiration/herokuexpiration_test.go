@@ -24,6 +24,9 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -89,7 +92,18 @@ func TestEnrich_DefiniteExpireTime(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := NewWithBaseURL(srv.URL)
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	}
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: herokuplatformkey.HerokuSecret{Key: "HRKU"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -115,7 +129,18 @@ func TestEnrich_IndefiniteExpireTime(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := NewWithBaseURL(srv.URL)
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	}
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: herokuplatformkey.HerokuSecret{Key: "TRKU"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -135,7 +160,18 @@ func TestEnrich_SkipsOnNon200(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	e := NewWithBaseURL(srv.URL)
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: srv.URL}}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	}
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: herokuplatformkey.HerokuSecret{Key: "HRKU"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -151,7 +187,18 @@ func TestEnrich_ConnectionError(t *testing.T) {
 	base := srv.URL
 	srv.Close()
 
-	e := NewWithBaseURL(base)
+	cfg := &config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_HerokuExpiration{HerokuExpiration: &cpb.HerokuExpirationConfig{BaseUrl: base}}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	}
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: herokuplatformkey.HerokuSecret{Key: "HRKU"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -163,7 +210,10 @@ func TestEnrich_ConnectionError(t *testing.T) {
 }
 
 func TestEnrich_SkipsNonHerokuSecret(t *testing.T) {
-	e := New()
+	e, err := New(config.DefaultPluginConfig())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: struct{ X string }{X: "noop"}}}}
 	if err := e.Enrich(context.Background(), &enricher.ScanInput{}, inv); err != nil {
 		t.Fatalf("Enrich error: %v", err)
@@ -171,7 +221,10 @@ func TestEnrich_SkipsNonHerokuSecret(t *testing.T) {
 }
 
 func TestEnrich_ContextCanceled(t *testing.T) {
-	e := New()
+	e, err := New(config.DefaultPluginConfig())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	inv := &inventory.Inventory{Secrets: []*inventory.Secret{{Secret: herokuplatformkey.HerokuSecret{Key: "HRKU"}}}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

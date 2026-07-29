@@ -24,23 +24,23 @@ import (
 // Semantic Version specification, except with potentially unlimited numeric
 // components and a leading "v"
 type semverLikeVersion struct {
-	LeadingV   bool
-	Components components
-	Build      string
-	Original   string
+	leadingV   bool
+	components components
+	build      string
+	original   string
 }
 
 func (v *semverLikeVersion) fetchComponentsAndBuild(maxComponents int) (components, string) {
-	if maxComponents == -1 || len(v.Components) <= maxComponents {
-		return v.Components, v.Build
+	if maxComponents == -1 || len(v.components) <= maxComponents {
+		return v.components, v.build
 	}
 
-	comps := v.Components[:maxComponents]
-	extra := v.Components[maxComponents:]
+	comps := v.components[:maxComponents]
+	extra := v.components[maxComponents:]
 
 	var build strings.Builder
 
-	build.WriteString(v.Build)
+	build.WriteString(v.build)
 
 	for _, c := range extra {
 		fmt.Fprintf(&build, ".%d", c)
@@ -55,10 +55,10 @@ func parseSemverLikeVersion(line string, maxComponents int) semverLikeVersion {
 	comps, build := v.fetchComponentsAndBuild(maxComponents)
 
 	return semverLikeVersion{
-		LeadingV:   v.LeadingV,
-		Components: comps,
-		Build:      build,
-		Original:   v.Original,
+		leadingV:   v.leadingV,
+		components: comps,
+		build:      build,
+		original:   v.original,
 	}
 }
 
@@ -124,9 +124,9 @@ func parseSemverLike(line string) semverLikeVersion {
 	}
 
 	return semverLikeVersion{
-		LeadingV:   leadingV,
-		Components: comps,
-		Build:      currentCom,
-		Original:   originStr,
+		leadingV:   leadingV,
+		components: comps,
+		build:      currentCom,
+		original:   originStr,
 	}
 }

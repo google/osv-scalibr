@@ -18,7 +18,7 @@ import (
 	"regexp"
 
 	"github.com/google/osv-scalibr/veles"
-	"github.com/google/osv-scalibr/veles/secrets/common/simpletoken"
+	"github.com/google/osv-scalibr/veles/secrets/common/pair"
 )
 
 // Azure Storage Account Access Key maximum length is 88 chars.
@@ -28,32 +28,30 @@ const (
 	maxLen         = maxTokenLength + contextLength
 )
 
-// keyRe is a regular expression that matches an azure storage account access keys.
-// Azure Storage account access keys are made by:
-// - zero to one of the greater than symbol (>), apostrophe ('), equal sign (=), quotation mark ("), or number sign (#)
-// - a combination of 86 characters that are lower- or uppercase letters, digits, the forward slash (/), or plus sign (+)
-// - two equal signs (=)
-//
-// References:
-// - https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
-var keyRe = regexp.MustCompile(`(?i)(?:(?:AZURE|ACCOUNT|STORAGE|ACCESS)[_.-]?){1,4}KEY.{0,5}?([>'=?#]?[A-Za-z0-9+\/]{86}==)`)
+var (
+	// keyRe is a regular expression that matches an azure storage account access keys.
+	// Azure Storage account access keys are made by:
+	// - zero to one of the greater than symbol (>), apostrophe ('), equal sign (=), quotation mark ("), or number sign (#)
+	// - a combination of 86 characters that are lower- or uppercase letters, digits, the forward slash (/), or plus sign (+)
+	// - two equal signs (=)
+	//
+	// References:
+	// - https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
+	keyRe = regexp.MustCompile(`(?:[>'=?#]|\b)[A-Za-z0-9+\/]{86}==`)
 
-// NewDetector returns a new simpletoken.Detector
+	// contextRe matches Azure Storage account access keys context keywords
+	contextRe = regexp.MustCompile(`(?i)(?:\bazure[a-z_-]*key\b)|(?:\baz\s+storage\b)`)
+)
+
+// NewDetector returns a new pair.Detector
 // that matches Azure Storage Account Access Key and returns the appropriate key type.
 func NewDetector() veles.Detector {
-	return simpletoken.Detector{
-		MaxLen: maxLen,
-		Re:     keyRe,
-		FromMatch: func(b []byte) (veles.Secret, bool) {
-			// Extract the capture group (the actual key)
-			matches := keyRe.FindSubmatch(b)
-			// In the regex we have the following matches:
-			// 1st is the entire string
-			// 2nd is the key
-			if len(matches) != 2 {
-				return nil, false
-			}
-			return AzureStorageAccountAccessKey{Key: string(matches[1])}, true
+	return &pair.Detector{
+		MaxElementLen: maxLen, MaxDistance: 200,
+		FindA: pair.FindAllMatches(contextRe),
+		FindB: pair.FindAllMatches(keyRe),
+		FromPair: func(p pair.Pair) (veles.Secret, bool) {
+			return AzureStorageAccountAccessKey{Key: string(p.B.Value)}, true
 		},
 	}
 }

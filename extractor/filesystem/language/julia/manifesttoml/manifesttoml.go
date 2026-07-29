@@ -107,7 +107,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Name:       name,
 			Version:    dependency.Version,
 			PURLType:   purl.TypeJulia,
-			Locations:  []string{input.Path},
+			Location:   extractor.LocationFromPath(input.Path),
 			SourceCode: srcCode,
 		})
 	}

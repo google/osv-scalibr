@@ -178,7 +178,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 			"extra": {Kind: &structpb.Value_StringValue{StringValue: buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations)}},
 		},
 	}
-	// TODO: b/421456154 - Add package information to the finding.
+	// TODO(b/421456154): Add package information to the finding.
 	return d.findingForPackage(dbSpecific, nil), nil
 }
 
@@ -271,7 +271,7 @@ type fileLocations struct {
 
 func versionLessEqual(lower, upper string) (bool, error) {
 	// Version format looks like this: 3.7.1p2, 3.7, 3.2.3, 2.9p2
-	r, err := semantic.MustParse(lower, "Packagist").CompareStr(upper)
+	r, err := semantic.ParsePackagistVersion(lower).CompareStr(upper)
 
 	return r <= 0, err
 }

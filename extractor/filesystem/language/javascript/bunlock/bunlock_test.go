@@ -87,6 +87,7 @@ func TestExtractor_FileRequired(t *testing.T) {
 }
 
 func TestExtractor_Extract(t *testing.T) {
+	loc := extractor.LocationFromPathAndLine
 	tests := []extracttest.TestTableEntry{
 		{
 			Name: "invalid json",
@@ -120,9 +121,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/one-package.json5"},
+					Location:   loc("testdata/one-package.json5", 12),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -138,9 +139,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/one-package-dev.json5"},
+					Location:   loc("testdata/one-package-dev.json5", 12),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -157,9 +158,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/bad-tuple.json5"},
+					Location:   loc("testdata/bad-tuple.json5", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -176,9 +177,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/bad-tuple.json5"},
+					Location:   loc("testdata/bad-tuple.json5", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -194,9 +195,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/two-packages.json5"},
+					Location:   loc("testdata/two-packages.json5", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -204,9 +205,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/two-packages.json5"},
+					Location:   loc("testdata/two-packages.json5", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -222,9 +223,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/same-package-different-groups.json5"},
+					Location:   loc("testdata/same-package-different-groups.json5", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -232,9 +233,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/same-package-different-groups.json5"},
+					Location:   loc("testdata/same-package-different-groups.json5", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -250,9 +251,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@typescript-eslint/types",
 					Version:    "5.62.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages.json5"},
+					Location:   loc("testdata/scoped-packages.json5", 12),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -268,9 +269,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@babel/code-frame",
 					Version:    "7.26.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
+					Location:   loc("testdata/scoped-packages-mixed.json5", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -278,9 +279,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@babel/helper-validator-identifier",
 					Version:    "7.25.9",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
+					Location:   loc("testdata/scoped-packages-mixed.json5", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -288,9 +289,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "js-tokens",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
+					Location:   loc("testdata/scoped-packages-mixed.json5", 19),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -298,9 +299,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "picocolors",
 					Version:    "1.1.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
+					Location:   loc("testdata/scoped-packages-mixed.json5", 21),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -308,9 +309,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "wrappy",
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/scoped-packages-mixed.json5"},
+					Location:   loc("testdata/scoped-packages-mixed.json5", 23),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -326,9 +327,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.14.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/optional-package.json5"},
+					Location:   loc("testdata/optional-package.json5", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -336,9 +337,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "fsevents",
 					Version:    "0.3.8",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/optional-package.json5"},
+					Location:   loc("testdata/optional-package.json5", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -346,9 +347,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "nan",
 					Version:    "2.22.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/optional-package.json5"},
+					Location:   loc("testdata/optional-package.json5", 19),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -364,9 +365,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/peer-dependencies-implicit.json5"},
+					Location:   loc("testdata/peer-dependencies-implicit.json5", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -374,9 +375,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.14.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/peer-dependencies-implicit.json5"},
+					Location:   loc("testdata/peer-dependencies-implicit.json5", 12),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -392,9 +393,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn-jsx",
 					Version:    "5.3.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/peer-dependencies-explicit.json5"},
+					Location:   loc("testdata/peer-dependencies-explicit.json5", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -402,9 +403,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "acorn",
 					Version:    "8.14.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/peer-dependencies-explicit.json5"},
+					Location:   loc("testdata/peer-dependencies-explicit.json5", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -420,9 +421,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "ansi-styles",
 					Version:    "4.3.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 16),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -430,9 +431,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "chalk",
 					Version:    "4.1.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -440,9 +441,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "color-convert",
 					Version:    "2.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 20),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -450,9 +451,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "color-name",
 					Version:    "1.1.4",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 22),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -460,9 +461,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "2.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 24),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -470,9 +471,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 26),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -480,9 +481,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "7.2.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -490,9 +491,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 30),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -500,9 +501,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies.json5"},
+					Location:   loc("testdata/nested-dependencies.json5", 32),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -518,9 +519,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "ansi-styles",
 					Version:    "4.3.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
+					Location:   loc("testdata/nested-dependencies-dup.json5", 16),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -528,9 +529,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "chalk",
 					Version:    "4.1.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
+					Location:   loc("testdata/nested-dependencies-dup.json5", 18),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -538,9 +539,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "color-convert",
 					Version:    "2.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
+					Location:   loc("testdata/nested-dependencies-dup.json5", 20),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -548,9 +549,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "color-name",
 					Version:    "1.1.4",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
+					Location:   loc("testdata/nested-dependencies-dup.json5", 22),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -558,9 +559,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "2.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
+					Location:   loc("testdata/nested-dependencies-dup.json5", 24),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -568,9 +569,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "7.2.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
+					Location:   loc("testdata/nested-dependencies-dup.json5", 26),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -578,9 +579,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/nested-dependencies-dup.json5"},
+					Location:   loc("testdata/nested-dependencies-dup.json5", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -596,9 +597,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/alias.json5"},
+					Location:   loc("testdata/alias.json5", 13),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -606,9 +607,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "7.2.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/alias.json5"},
+					Location:   loc("testdata/alias.json5", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -616,9 +617,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "supports-color",
 					Version:    "6.1.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/alias.json5"},
+					Location:   loc("testdata/alias.json5", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -626,9 +627,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "has-flag",
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/alias.json5"},
+					Location:   loc("testdata/alias.json5", 19),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -644,9 +645,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@babel/helper-plugin-utils",
 					Version:    "7.26.5",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 22),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -654,9 +655,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@babel/helper-string-parser",
 					Version:    "7.25.9",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 24),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -664,9 +665,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@babel/helper-validator-identifier",
 					Version:    "7.25.9",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 26),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -674,9 +675,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@babel/parser",
 					Version:    "7.26.5",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -684,69 +685,69 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "@babel/types",
 					Version:    "7.26.5",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 30),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "@prettier/sync",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.json5"},
+					Name:     "@prettier/sync",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/commits.json5", 32),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "527e8ce",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "babel-preset-php",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.json5"},
+					Name:     "babel-preset-php",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/commits.json5", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "1ae6dc1267500360b411ec711b8aeac8c68b2246",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "is-number",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.json5"},
+					Name:     "is-number",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/commits.json5", 36),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "is-number",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.json5"},
+					Name:     "is-number",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/commits.json5", 38),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac058",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "is-number",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.json5"},
+					Name:     "is-number",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/commits.json5", 40),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b7aef34",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -754,9 +755,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "jquery",
 					Version:    "3.7.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -764,9 +765,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "lodash",
 					Version:    "1.3.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 44),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -774,9 +775,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "make-synchronized",
 					Version:    "0.2.9",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 46),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -784,9 +785,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "php-parser",
 					Version:    "2.2.0",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 48),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -794,33 +795,33 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "prettier",
 					Version:    "3.4.2",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 50),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "raven-js",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.json5"},
+					Name:     "raven-js",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/commits.json5", 52),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "91ef2d4",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:      "slick-carousel",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/commits.json5"},
+					Name:     "slick-carousel",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/commits.json5", 54),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fc6f7d8",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -828,9 +829,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "stopwords",
 					Version:    "0.0.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/commits.json5"},
+					Location:   loc("testdata/commits.json5", 56),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -846,9 +847,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "etag",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/files.json5"},
+					Location:   loc("testdata/files.json5", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -856,9 +857,9 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "lodash",
 					Version:    "1.3.1",
 					PURLType:   purl.TypeNPM,
-					Locations:  []string{"testdata/files.json5"},
+					Location:   loc("testdata/files.json5", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
@@ -871,14 +872,14 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "uWebSockets.js",
-					Version:   "",
-					PURLType:  purl.TypeNPM,
-					Locations: []string{"testdata/blog-sample.json5"},
+					Name:     "uWebSockets.js",
+					Version:  "",
+					PURLType: purl.TypeNPM,
+					Location: loc("testdata/blog-sample.json5", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6609a88",
 					},
-					Metadata: osv.DepGroupMetadata{
+					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},

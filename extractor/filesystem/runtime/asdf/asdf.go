@@ -94,10 +94,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 				continue
 			}
 			pkgs = append(pkgs, &extractor.Package{
-				Name:      tool,
-				Version:   v,
-				PURLType:  purl.TypeAsdf,
-				Locations: []string{input.Path},
+				Name:     tool,
+				Version:  v,
+				PURLType: purl.TypeAsdf,
+				Location: extractor.LocationFromPath(input.Path),
 				Metadata: &asdfmeta.Metadata{
 					ToolName:    tool,
 					ToolVersion: v,

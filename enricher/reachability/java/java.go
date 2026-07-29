@@ -38,6 +38,8 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -62,7 +64,7 @@ var (
 
 // Enricher is the Java Reach enricher.
 type Enricher struct {
-	client *http.Client
+	Client *http.Client
 }
 
 // Name returns the name of the enricher.
@@ -87,36 +89,30 @@ func (Enricher) RequiredPlugins() []string {
 	return []string{archive.Name}
 }
 
-// NewEnricher creates a new Enricher.
-// It accepts an http.Client as a dependency. If the provided client is nil,
-// it defaults to the standard http.DefaultClient.
-func NewEnricher(client *http.Client) *Enricher {
-	if client == nil {
-		client = http.DefaultClient
+// New creates a new Enricher with default configuration.
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
 	}
-
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
 	return &Enricher{
-		client: client,
-	}
-}
-
-// NewDefault returns a new javareach enricher with the default configuration.
-func NewDefault() enricher.Enricher {
-	return &Enricher{
-		client: http.DefaultClient,
-	}
+		Client: httpClient,
+	}, nil
 }
 
 // Enrich enriches the inventory with Java Reach data.
 func (enr Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
-	client := enr.client
+	client := enr.Client
 	if client == nil {
-		client = http.DefaultClient
+		return fmt.Errorf("client not configured for %s", Name)
 	}
 	jars := make(map[string]struct{})
 	for i := range inv.Packages {
 		if slices.Contains(inv.Packages[i].Plugins, archive.Name) {
-			jars[inv.Packages[i].Locations[0]] = struct{}{}
+			jars[inv.Packages[i].Location.PathOrEmpty()] = struct{}{}
 		}
 	}
 
@@ -141,7 +137,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 		client = http.DefaultClient
 	}
 	for i := range inv.Packages {
-		if inv.Packages[i].Locations[0] == jarPath {
+		if inv.Packages[i].Location.PathOrEmpty() == jarPath {
 			allDeps = append(allDeps, inv.Packages[i])
 		}
 	}
@@ -326,7 +322,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 
 	totalUnreachable := 0
 	for i := range inv.Packages {
-		if inv.Packages[i].Locations[0] != jarPath {
+		if inv.Packages[i].Location.PathOrEmpty() != jarPath {
 			continue
 		}
 		metadata := inv.Packages[i].Metadata.(*archivemeta.Metadata)

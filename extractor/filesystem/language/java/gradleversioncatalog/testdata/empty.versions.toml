@@ -1,0 +1,4 @@
+[versions]
+foo = "1.0"
+
+[libraries]

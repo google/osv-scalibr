@@ -16,22 +16,38 @@ package semantic
 
 import "strings"
 
-type nuGetVersion struct {
+// NuGetVersion is the representation of a version of a package that is held
+// in the NuGet ecosystem.
+//
+// See https://learn.microsoft.com/en-us/nuget/concepts/package-versioning
+type NuGetVersion struct {
 	semverLikeVersion
 }
 
-func (v nuGetVersion) compare(w nuGetVersion) int {
-	if diff := v.Components.Cmp(w.Components); diff != 0 {
+var _ Version = NuGetVersion{}
+
+func (v NuGetVersion) compare(w NuGetVersion) int {
+	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
 
-	return compareBuildComponents(strings.ToLower(v.Build), strings.ToLower(w.Build))
+	return compareBuildComponents(strings.ToLower(v.build), strings.ToLower(w.build))
 }
 
-func (v nuGetVersion) CompareStr(str string) (int, error) {
-	return v.compare(parseNuGetVersion(str)), nil
+// Compare compares the given version to the receiver.
+func (v NuGetVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(NuGetVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
 }
 
-func parseNuGetVersion(str string) nuGetVersion {
-	return nuGetVersion{parseSemverLikeVersion(str, 4)}
+// CompareStr compares the given string to the receiver.
+func (v NuGetVersion) CompareStr(str string) (int, error) {
+	return v.compare(ParseNuGetVersion(str)), nil
+}
+
+// ParseNuGetVersion parses the given string as a NuGet version.
+func ParseNuGetVersion(str string) NuGetVersion {
+	return NuGetVersion{parseSemverLikeVersion(str, 4)}
 }

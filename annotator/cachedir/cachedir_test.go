@@ -70,7 +70,7 @@ func TestIsInsideCacheDir(t *testing.T) {
 
 			inv := &inventory.Inventory{
 				Packages: []*extractor.Package{&extractor.Package{
-					Locations: []string{tt.inputPath},
+					Location: extractor.LocationFromPath(tt.inputPath),
 				}},
 			}
 			anno, err := cachedir.New(&cpb.PluginConfig{})

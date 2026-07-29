@@ -15,19 +15,20 @@
 package requirements_test
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/mockidgenerator"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor"
 	requirementsextractor "github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -42,62 +43,67 @@ func TestEnricher_Enrich(t *testing.T) {
 		Packages: []*extractor.Package{
 			{
 				// Not a Python package.
-				Name:      "abc:xyz",
-				Version:   "1.0.0",
-				PURLType:  purl.TypeMaven,
-				Locations: []string{"testdata/maven/pom.xml"},
-				Plugins:   []string{"java/pomxml"},
+				Name:     "abc:xyz",
+				Version:  "1.0.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("testdata/maven/pom.xml"),
+				Plugins:  []string{"java/pomxml"},
 			},
 			{
 				// Not extracted in requirements.txt.
-				Name:      "abc",
-				Version:   "1.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/poetry/poetry.lock"},
-				Plugins:   []string{"python/poetrylock"},
+				Name:     "abc",
+				Version:  "1.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/poetry/poetry.lock"),
+				Plugins:  []string{"python/poetrylock"},
 			},
 			{
-				Name:      "alice",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
-				Metadata:  &requirementsextractor.Metadata{Requirement: "alice"},
-				Plugins:   []string{"python/requirements"},
+				Name:     "alice",
+				ID:       "id-for-alice",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/requirements.txt"),
+				Metadata: &requirementsextractor.Metadata{Requirement: "alice"},
+				Plugins:  []string{"python/requirements"},
 			},
 			{
-				Name:      "bob",
-				Version:   "2.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
-				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", Requirement: "bob==2.0.0"},
-				Plugins:   []string{"python/requirements"},
-			},
-			{
-				// Hash checking mode.
-				Name:      "hash1",
-				Version:   "1.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/hash/requirements.txt"},
-				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:123"}, Requirement: "hash1==1.0.0"},
-				Plugins:   []string{"python/requirements"},
+				Name:     "bob",
+				ID:       "id-for-bob",
+				Version:  "2.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/requirements.txt"),
+				Metadata: &requirementsextractor.Metadata{VersionComparator: "==", Requirement: "bob==2.0.0"},
+				Plugins:  []string{"python/requirements"},
 			},
 			{
 				// Hash checking mode.
-				Name:      "hash2",
-				Version:   "2.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/hash/requirements.txt"},
-				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:456"}, Requirement: "hash2==2.0.0"},
-				Plugins:   []string{"python/requirements"},
+				Name:     "hash1",
+				ID:       "id-for-hash1",
+				Version:  "1.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
+				Metadata: &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:123"}, Requirement: "hash1==1.0.0"},
+				Plugins:  []string{"python/requirements"},
+			},
+			{
+				// Hash checking mode.
+				Name:     "hash2",
+				ID:       "id-for-hash2",
+				Version:  "2.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
+				Metadata: &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:456"}, Requirement: "hash2==2.0.0"},
+				Plugins:  []string{"python/requirements"},
 			},
 		},
 	}
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe.yaml")
-	enricher, err := requirements.New(&cpb.PluginConfig{})
+	enricher, err := requirements.New(configtest.NewFakePluginConfig())
 	if err != nil {
 		log.Errorf("requirements.New(): %v", err)
 	}
 	enricher.(*requirements.Enricher).Client = resolutionClient
+	enricher.(*requirements.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 	err = enricher.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("failed to enrich: %v", err)
@@ -107,88 +113,158 @@ func TestEnricher_Enrich(t *testing.T) {
 		Packages: []*extractor.Package{
 			{
 				// Not extracted in requirements.txt.
-				Name:      "abc",
-				Version:   "1.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/poetry/poetry.lock"},
-				Plugins:   []string{"python/poetrylock"},
+				Name:     "abc",
+				Version:  "1.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/poetry/poetry.lock"),
+				Plugins:  []string{"python/poetrylock"},
 			},
 			{
 				// Not a Python package.
-				Name:      "abc:xyz",
-				Version:   "1.0.0",
-				PURLType:  purl.TypeMaven,
-				Locations: []string{"testdata/maven/pom.xml"},
-				Plugins:   []string{"java/pomxml"},
+				Name:     "abc:xyz",
+				Version:  "1.0.0",
+				PURLType: purl.TypeMaven,
+				Location: extractor.LocationFromPath("testdata/maven/pom.xml"),
+				Plugins:  []string{"java/pomxml"},
 			},
 			{
 				Name:      "alice",
+				ID:        "id-for-alice",
 				Version:   "1.0.0",
 				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
 				Metadata:  &requirementsextractor.Metadata{Requirement: "alice"},
 				Plugins:   []string{"python/requirements", "transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:      "bob",
+				ID:        "id-for-bob",
 				Version:   "2.0.0",
 				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
 				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", Requirement: "bob==2.0.0"},
 				Plugins:   []string{"python/requirements", "transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
 				Name:      "chuck",
+				ID:        "dummy-id-chuck",
 				Version:   "2.0.0",
 				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
 				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"id-for-bob": true},
 			},
 			{
 				Name:      "dave",
+				ID:        "dummy-id-dave",
 				Version:   "2.0.0",
 				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
 				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"id-for-bob": true},
 			},
 			{
 				Name:      "eve",
+				ID:        "dummy-id-eve",
 				Version:   "1.5.0",
 				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
 				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"dummy-id-dave": true},
 			},
 			{
 				Name:      "frank",
+				ID:        "dummy-id-frank",
 				Version:   "2.0.0",
 				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/requirements.txt"},
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
 				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"id-for-bob": true, "dummy-id-dave": true},
 			},
 			{
 				// Hash checking mode.
-				Name:      "hash1",
-				Version:   "1.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/hash/requirements.txt"},
-				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:123"}, Requirement: "hash1==1.0.0"},
-				Plugins:   []string{"python/requirements"},
+				Name:     "hash1",
+				ID:       "id-for-hash1",
+				Version:  "1.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
+				Metadata: &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:123"}, Requirement: "hash1==1.0.0"},
+				Plugins:  []string{"python/requirements"},
 			},
 			{
 				// Hash checking mode.
-				Name:      "hash2",
-				Version:   "2.0.0",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"testdata/hash/requirements.txt"},
-				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:456"}, Requirement: "hash2==2.0.0"},
-				Plugins:   []string{"python/requirements"},
+				Name:     "hash2",
+				ID:       "id-for-hash2",
+				Version:  "2.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
+				Metadata: &requirementsextractor.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:456"}, Requirement: "hash2==2.0.0"},
+				Plugins:  []string{"python/requirements"},
 			},
 		},
 	}
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
+
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enricher.Name(), diff)
+	}
+}
+
+func TestNewEnricher(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *cpb.PluginConfig
+	}{
+		{
+			name: "empty config",
+			cfg:  &cpb.PluginConfig{},
+		},
+		{
+			name: "depsdev enabled",
+			cfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_PythonRequirementsTransitive{
+							PythonRequirementsTransitive: &cpb.PythonRequirementsTransitiveConfig{
+								DepsDevRequirements: true,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "upstream registry",
+			cfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{
+						Config: &cpb.PluginSpecificConfig_PythonRequirementsTransitive{
+							PythonRequirementsTransitive: &cpb.PythonRequirementsTransitiveConfig{
+								UpstreamRegistry: "https://my-registry.com",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pluginCfg := configtest.NewFakePluginConfig()
+			pluginCfg.ProtoConfig = tt.cfg
+			got, err := requirements.New(pluginCfg)
+			if err != nil {
+				t.Fatalf("New(%v) error = %v", tt.cfg, err)
+			}
+			if got == nil {
+				t.Errorf("New(%v) got = nil, want non-nil", tt.cfg)
+			}
+		})
 	}
 }

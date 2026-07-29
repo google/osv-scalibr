@@ -97,10 +97,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      "nodejs",
-			Version:   version,
-			PURLType:  purl.TypeGeneric,
-			Locations: []string{input.Path},
+			Name:     "nodejs",
+			Version:  version,
+			PURLType: purl.TypeGeneric,
+			Location: extractor.LocationFromPath(input.Path),
 			Metadata: &meta.Metadata{
 				NodeJsVersion: version,
 			},

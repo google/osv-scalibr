@@ -200,12 +200,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		pkgs = append(pkgs, &extractor.Package{
-			Name:      p.Name,
-			Version:   fmt.Sprintf("%s-%s", p.Version, p.Release),
-			PURLType:  purl.TypeRPM,
-			Locations: []string{input.Path},
-			Metadata:  metadata,
-			Licenses:  []string{p.License},
+			Name:     p.Name,
+			Version:  fmt.Sprintf("%s-%s", p.Version, p.Release),
+			PURLType: purl.TypeRPM,
+			Location: extractor.LocationFromPath(input.Path),
+			Metadata: metadata,
+			Licenses: []string{p.License},
 		})
 	}
 

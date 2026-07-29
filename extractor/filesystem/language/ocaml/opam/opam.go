@@ -67,7 +67,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	for _, pkg := range packages {
-		pkg.Locations = []string{input.Path}
+		pkg.Location = extractor.LocationFromPath(input.Path)
 	}
 
 	return inventory.Inventory{Packages: packages}, nil

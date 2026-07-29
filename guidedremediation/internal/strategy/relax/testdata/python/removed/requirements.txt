@@ -1,1 +1,2 @@
+--no-index
 direct6==1.0.0

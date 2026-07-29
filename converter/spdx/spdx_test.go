@@ -24,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/common"
@@ -515,11 +516,11 @@ func TestToSPDX23(t *testing.T) {
 			desc: "One_location_reported",
 			inv: inventory.Inventory{
 				Packages: []*extractor.Package{{
-					Name:      "software",
-					Version:   "1.2.3",
-					PURLType:  purl.TypePyPi,
-					Plugins:   []string{wheelegg.Name},
-					Locations: []string{"/file1"},
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+					Location: extractor.LocationFromPath("/file1"),
 				}},
 			},
 			want: &v2_3.Document{
@@ -602,14 +603,20 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Multiple_locations_reported",
+			desc: "related_locations_reported",
 			inv: inventory.Inventory{
 				Packages: []*extractor.Package{{
-					Name:      "software",
-					Version:   "1.2.3",
-					Plugins:   []string{wheelegg.Name},
-					PURLType:  purl.TypePyPi,
-					Locations: []string{"/file1", "/file2", "/file3"},
+					Name:     "software",
+					Version:  "1.2.3",
+					Plugins:  []string{wheelegg.Name},
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Related: []location.Location{
+							{File: &location.File{Path: "/file1"}},
+							{File: &location.File{Path: "/file2"}},
+							{File: &location.File{Path: "/file3"}},
+						},
+					},
 				}},
 			},
 			want: &v2_3.Document{
@@ -682,6 +689,96 @@ func TestToSPDX23(t *testing.T) {
 					{
 						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-software-8d019192-c242-44e2-8afc-cae3a61fb586",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
+					},
+				},
+			},
+		},
+		{
+			desc: "Package_with_custom_package_id",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					ID:       "pkg-custom-id-123",
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/067d89bc-7f01-41f5-b398-1659a44ff17a",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					{
+						PackageName:           "software",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-pkg-custom-id-123",
+						PackageVersion:        "1.2.3",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/software@1.2.3",
+							},
+						},
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-DOCUMENT",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-pkg-custom-id-123",
+						},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-pkg-custom-id-123",
 						},
 						RefB: common.DocElementID{
 							SpecialID: spdx.NoAssertion,

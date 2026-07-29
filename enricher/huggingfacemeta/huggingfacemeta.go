@@ -27,6 +27,9 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -46,20 +49,26 @@ type Enricher struct {
 }
 
 // New creates a new Enricher using the default Veles Validators.
-func New() enricher.Enricher {
-	return &Enricher{
-		baseURL:    defaultBaseURL,
-		httpClient: http.DefaultClient,
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
 	}
-}
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
 
-// NewWithBaseURL creates a new Enricher that uses the provided base URL for the Hugging Face API.
-// Useful for tests with a httptest.Server.
-func NewWithBaseURL(baseURL string) enricher.Enricher {
+	baseURL := defaultBaseURL
+	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.HuggingfaceMetaConfig {
+		return c.GetHuggingfaceMeta()
+	})
+	if specific.GetBaseUrl() != "" {
+		baseURL = specific.GetBaseUrl()
+	}
 	return &Enricher{
 		baseURL:    baseURL,
-		httpClient: http.DefaultClient,
-	}
+		httpClient: httpClient,
+	}, nil
 }
 
 // Name of the Enricher.

@@ -1,0 +1,25 @@
+source https://api.nuget.org/v3/index.json
+
+nuget NUnit ~> 2.6.3 // test comment
+nuget FSharp.Core >= 4.0.0 # hash comment
+nuget Newtonsoft.Json == 12.0.3
+nuget Microsoft.Extensions.Logging
+
+nuget System.Text.Json             >= 8.0.5 lowest_matching: true // option comment
+nuget Microsoft.NETFramework.ReferenceAssemblies  = 1.0.0
+
+github fsprojects/Paket // simple github comment
+github fsharp/FAKE:5.20.4 // github with colon and comment
+
+// master branch
+github tpetricek/FSharp.Formatting
+
+// version 2.13.5
+github tpetricek/FSharp.Formatting:2.13.5// nospace comment
+
+// specific commit 30cd5366a4f3f25a443ca4cd62cd592fd16ac69
+github tpetricek/FSharp.Formatting:30cd5366a4f3f25a443ca4cd62cd592fd16ac69 # hash commit comment
+
+group Build
+  nuget FAKE
+  nuget Paket

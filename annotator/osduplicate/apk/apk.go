@@ -70,6 +70,12 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	}
 	defer f.Close()
 
+	mainOSPackages, err := extractApkCache(input.ScanRoot)
+	outOfSyncCache := errors.Is(err, ErrOutOfSyncCache)
+	if err != nil && !outOfSyncCache {
+		return fmt.Errorf("failed to read the apk cache: %w", err)
+	}
+
 	errs := []error{}
 
 	scanner := apkutil.NewScanner(f)
@@ -81,25 +87,30 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 		}
 
 		record := scanner.Record()
-
 		folder := record["F"]
 		filename := record["R"]
+		pkgName := record["P"]
+		pkgVersion := record["V"]
 
 		// if the filePath is not retrievable continue to the next package
-		if folder == "" || filename == "" {
+		if folder == "" || filename == "" || pkgName == "" || pkgVersion == "" {
+			continue
+		}
+
+		// Do not add duplication annotation on packages which are from non-main repos
+		// since vuln matching can happen only on packages hosted on main repos
+		if !outOfSyncCache && !mainOSPackages.contains(pkgName, pkgVersion) {
 			continue
 		}
 
 		filePath := path.Join(folder, filename)
 
-		if pkgs, ok := locationToPKGs[filePath]; ok {
-			for _, pkg := range pkgs {
-				pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
-					Plugin:          Name,
-					Justification:   vex.ComponentNotPresent,
-					MatchesAllVulns: true,
-				})
-			}
+		for _, pkg := range locationToPKGs[filePath] {
+			pkg.ExploitabilitySignals = append(pkg.ExploitabilitySignals, &vex.PackageExploitabilitySignal{
+				Plugin:          Name,
+				Justification:   vex.ComponentNotPresent,
+				MatchesAllVulns: true,
+			})
 		}
 	}
 

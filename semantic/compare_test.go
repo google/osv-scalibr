@@ -126,21 +126,43 @@ func expectCompareResult(
 ) bool {
 	t.Helper()
 
-	v := parseAsVersion(t, a, ecosystem)
+	// test CompareStr
+	v1 := parseAsVersion(t, a, ecosystem)
 
-	actualResult, err := v.CompareStr(b)
+	cmpStrActualResult, err := v1.CompareStr(b)
 
 	if err != nil {
 		t.Fatalf("failed to compare versions: %v", err)
 	}
 
-	if actualResult != expectedResult {
+	if cmpStrActualResult != expectedResult {
 		t.Errorf(
 			"Expected %s to be %s %s, but it was %s",
 			a,
 			compareWord(t, expectedResult),
 			b,
-			compareWord(t, actualResult),
+			compareWord(t, cmpStrActualResult),
+		)
+
+		return false
+	}
+
+	// test Compare
+	v2 := parseAsVersion(t, b, ecosystem)
+
+	cmpActualResult, err := v1.Compare(v2)
+
+	if err != nil {
+		t.Fatalf("failed to compare versions: %v", err)
+	}
+
+	if cmpActualResult != expectedResult {
+		t.Errorf(
+			"Expected %s to be %s %s, but it was %s",
+			a,
+			compareWord(t, expectedResult),
+			b,
+			compareWord(t, cmpActualResult),
 		)
 
 		return false

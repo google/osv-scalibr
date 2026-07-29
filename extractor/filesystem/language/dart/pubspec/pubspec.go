@@ -104,17 +104,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	for name, pkg := range parsedLockfile.Packages {
 		pkgDetails := &extractor.Package{
-			Name:      name,
-			Version:   pkg.Version,
-			PURLType:  purl.TypePub,
-			Locations: []string{input.Path},
+			Name:     name,
+			Version:  pkg.Version,
+			PURLType: purl.TypePub,
+			Location: extractor.LocationFromPath(input.Path),
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Description.Ref,
 			},
-			Metadata: osv.DepGroupMetadata{},
+			Metadata: &osv.DepGroupMetadata{},
 		}
 		if slices.Contains(strings.Split(pkg.Dependency, " "), "dev") {
-			pkgDetails.Metadata = osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
+			pkgDetails.Metadata = &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}}
 		}
 		packages = append(packages, pkgDetails)
 	}

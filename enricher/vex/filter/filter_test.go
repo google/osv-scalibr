@@ -22,8 +22,10 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/mohae/deepcopy"
-	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func TestEnrich(t *testing.T) {
@@ -76,7 +78,11 @@ func TestEnrich(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
 			inv := deepcopy.Copy(tc.inv).(*inventory.Inventory)
-			if err := filter.New().Enrich(t.Context(), nil, inv); err != nil {
+			e, err := filter.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("filter.New(): %v", err)
+			}
+			if err := e.Enrich(t.Context(), nil, inv); err != nil {
 				t.Errorf("Enrich(%v) returned error: %v", tc.inv, err)
 			}
 			if diff := cmp.Diff(tc.want, inv, protocmp.Transform()); diff != "" {

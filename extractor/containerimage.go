@@ -22,8 +22,9 @@ type ContainerImageMetadata struct {
 	Index int
 	// OSInfo is the key value map from /etc/os-release.
 	OSInfo map[string]string
+	// Labels stores labels of this image.
+	Labels map[string]string
 	// LayerMetadata stores metadata about the layers in the container image.
-	// Currently this does not store any empty layers.
 	LayerMetadata []*LayerMetadata
 	// BaseImages stores metadata about the base images that the container image is based on.
 	// The first element is always empty.

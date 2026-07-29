@@ -131,7 +131,6 @@ func TestValidator(t *testing.T) {
 }
 
 func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response
 	server := mockCratesioServer(t, "Bearer "+validatorValidTestKey)
 	defer server.Close()
 

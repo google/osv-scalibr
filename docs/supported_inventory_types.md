@@ -33,20 +33,22 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### OS packages
 
 | Inventory Type    | Details                        | Extractor Plugin                             |
-| ----------------- | ------------------------------ | -------------------------------------------- |
+|-------------------| ------------------------------ |----------------------------------------------|
 | Alpine            | APK                            | `os/apk`                                     |
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
+| Chisel            |                                | `os/chisel`                                  |
 | Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
+| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
 | Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
 | Kernel modules    | .ko                            | `os/kernel/module`                           |
 | Kernel archives   | vmlinuz                        | `os/kernel/vmlinuz`                          |
 | Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
 | SNAP              |                                | `os/snap`                                    |
+| Spack             |                                | `os/spack`                                   |
 | Flatpak           |                                | `os/flatpak`                                 |
 | Homebrew          | OS X                           | `os/homebrew`                                |
 | MacPorts          | OS X                           | `os/macports`                                |
@@ -63,12 +65,18 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | .NET       | packages.lock.json                                | `dotnet/packageslockjson`            |
 |            | packages.config                                   | `dotnet/packagesconfig`              |
 |            | deps.json                                         | `dotnet/depsjson`                    |
+|            | paket.dependencies                                | `dotnet/paketdependencies`           |
+|            | paket.lock                                        | `dotnet/paketlock`                   |
 |            | portable executables                              | `dotnet/pe`                          |
+|            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
+|            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
+|            | project.assets.json                               | `dotnet/projectassetsjson`           |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
 | Dart       | package_config.json                               | `dart/packageconfig`                 | 
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
 | Elixir     | mix.lock                                          | `elixir/mixlock`                     |
+| Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
@@ -77,6 +85,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
+|            | libs.versions.toml (Gradle Version Catalog)       | `java/gradleversioncatalog`          |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
 |            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
 |            | yarn.lock                                         | `javascript/yarnlock`                |
@@ -84,6 +93,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
+|            | VS Code extension                                 | `javascript/vsix`                    |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -97,6 +107,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
+|            | pyproject.toml                                    | `python/pyprojecttoml`               |
 | R          | renv.lock                                         | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
@@ -127,6 +138,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Azure Storage Account access key            | `secrets/azurestorageaccountaccesskey` |
 | Azure Token                                 | `secrets/azuretoken`                   |
 | Bitbucket                                   | `secrets/bitbucketcredentials`         |
+| Bitwarden OAuth2 access token               | `secrets/bitwardenoauth2access`        |
+| Composer Packagist credentials              | `secrets/composerpackagist`            |
 | CircleCI Personal Access Token              | `secrets/circlecipat`                  |
 | CircleCI Project Token                      | `secrets/circleciproject`              |
 | Cloudflare API Token                        | `secrets/cloudflareapitoken`           |
@@ -160,6 +173,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | 1Password Connect Token                     | `secrets/onepasswordconnecttoken`      |
 | OpenAI API key                              | `secrets/openai`                       |
 | OpenRouter API key                          | `secrets/openrouter`                   |
+| Packagist API Key                           | `secrets/packagistapi`                 |
+| Packagist API Secret                        | `secrets/packagistsecret`              |
+| Packagist Organization Read Token           | `secrets/packagistorgreadtoken`        |
+| Packagist Organization Update Token         | `secrets/packagistorgupdatetoken`      |
+| Packagist User Update Token                 | `secrets/packagistuserupdatetoken`     |
+| Packagist Conductor Update Token            | `secrets/packagistconductorupdatetoken`|
 | Perplexity API key                          | `secrets/perplexityapikey`             |
 | PyPI API Token                              | `secrets/pypiapitoken`                 |
 | Postgres pgpass file                        | `secrets/pgpass`                       |
@@ -194,6 +213,16 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
+| HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
+| HTTP Bearer                                 | `secrets/httpbearer`                   |
+| HTTP CSRF Token                             | `secrets/csrftoken`                    |
+| HTTP Cookie                                 | `secrets/httpcookie`                   |
+
+### Sensitive information
+| Type                                        | Extractor Plugin                     |
+| ------------------------------------------- | ------------------------------------ |
+| International Bank Account Number           | `sensitiveinformation/iban`            |
+| US Social Security Number                   | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 
@@ -221,6 +250,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chrome extensions                  | `chrome/extensions` |
 | Maven entries in Bazel build files | `os/bazelmaven`     |
 | NetScaler installations            | `netscaler`         |
+| GitHub Actions workflow dependencies| `github/actions`    |
+| Git repositories (and submodules)   | `misc/gitrepo`      |
 
 ### EmbeddedFS
 
@@ -234,22 +265,24 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ## Detectors
 
-| Description                                                          | Plugin Name                              |
-| -------------------------------------------------------------------- | ---------------------------------------- |
-| Checks for overly permissive permissions on /etc/passwd.             | `cis/generic-linux/etcpasswdpermissions` |
-| Finds vulns in Go binaries with reachability data using govulncheck. | `govulncheck/binary`                     |
-| Checks if the Linux distribution is end-of-life.                     | `endoflife/linuxdistro`                  |
-| Detects vulnerability CVE-2023-38408 in OpenSSH.                     | `cve/cve-2023-38408`                     |
-| Detects vulnerability CVE-2022-33891 in Spark UI.                    | `cve/cve-2022-33891`                     |
-| Detects vulnerability CVE-2020-16846 in Salt.                        | `cve/cve-2020-16846`                     |
-| Detects vulnerability CVE-2023-6019 in Ray Dashboard.                | `cve/cve-2023-6019`                      |
-| Detects vulnerability CVE-2020-11978 in Apache Airflow.              | `cve/cve-2020-11978`                     |
-| Detects vulnerability CVE-2024-2912 in BentoML.                      | `cve/cve-2024-2912`                      |
-| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway       | `cve/cve-2025-7775`                      |
-| Checks for whether code-server has authentication enabled.           | `weakcredentials/codeserver`             |
-| Checks for weak passwords in /etc/shadow.                            | `weakcredentials/etcshadow`              |
-| Checks for default credentials in File Browser.                      | `weakcredentials/filebrowser`            |
-| Checks for weak passwords for local Windows accounts.                | `weakcredentials/winlocal`               |
+| Description                                                                  | Plugin Name                              |
+| ---------------------------------------------------------------------------- | ---------------------------------------- |
+| Checks for overly permissive permissions on /etc/passwd.                     | `cis/generic-linux/etcpasswdpermissions` |
+| Finds vulns in Go binaries with reachability data using govulncheck.         | `govulncheck/binary`                     |
+| Checks if the Linux distribution is end-of-life.                             | `endoflife/linuxdistro`                  |
+| Detects vulnerability CVE-2023-38408 in OpenSSH.                             | `cve/cve-2023-38408`                     |
+| Detects vulnerability CVE-2022-33891 in Spark UI.                            | `cve/cve-2022-33891`                     |
+| Detects vulnerability CVE-2020-16846 in Salt.                                | `cve/cve-2020-16846`                     |
+| Detects vulnerability CVE-2023-6019 in Ray Dashboard.                        | `cve/cve-2023-6019`                      |
+| Detects vulnerability CVE-2020-11978 in Apache Airflow.                      | `cve/cve-2020-11978`                     |
+| Detects vulnerability CVE-2024-2912 in BentoML.                              | `cve/cve-2024-2912`                      |
+| Detects vulnerability CVE-2025-7775 in NetScaler ADC / Gateway               | `cve/cve-2025-7775`                      |
+| Detects malicious NPM packages related to Canister worm                      | `cve/npm/canisterworm`                   |
+| Checks for whether code-server has authentication enabled.                   | `weakcredentials/codeserver`             |
+| Checks for weak passwords in /etc/shadow.                                    | `weakcredentials/etcshadow`              |
+| Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |
+| Checks for weak passwords for local Windows accounts.                        | `weakcredentials/winlocal`               |
+| Detects PAM misconfigurations that allow authentication bypass. (Linux-only) | `misc/pammisconfig`                      |
 
 ## Annotators
 
@@ -274,11 +307,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Finds vulns in Go source with reachability data using govulncheck. Requires a vulnmatch enricher to be enabled. | `reachability/go/source`            |
 | Performs reachability analysis for Java code.                              | `reachability/java`                 |
 | Performs reachability analysis for Rust code. (Linux-only) *               | `reachability/rust`                 |
-| Resolves transitive dependencies for Python pip packages.                  | `transitivedependency/requirements` |
+| Resolves transitive dependencies for Java pom.xml files. *                 | `transitivedependency/pomxml`       |
+| Resolves transitive dependencies for Python requirements.txt files.        | `transitivedependency/requirements` |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |
 | Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |
 
-Warning: Plugins marked with * use or mimic native toolchains.
-Any scripts or build-time logic defined within the project will run as-is.
-Please ensure you trust the source code before proceeding.
+Warning: Plugins marked with * are considered "unsafe" and require the
+`--allow-unsafe-plugins` flag. These plugins can be risky when run on untrusted
+artifacts as they may execute build-time logic defined within the project or
+follow external registries specified in the scanned artifacts.
+Please ensure you trust the source code and artifacts before proceeding.

@@ -37,7 +37,11 @@ message PluginConfig {
   // If true, do not try to create google.DefaultClient for Artifact Registry
   // during dependency resolution.
   bool disable_google_auth = 4;
-  // The user agent to use when making requests.
+  // The user agent to use when running SCALIBR as a CLI binary. If specified,
+  // the CLI passes this value to initialize the client factory.
+  // When calling SCALIBR as a Go library, this field is ignored; instead, the
+  // caller should configure the user agent directly in their ClientFactories
+  // implementation.
   string user_agent = 5;
 
   // Config values that only apply to a single plugin.
@@ -45,7 +49,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
-  reserved 48 to 56, 59 to 61;
+  reserved 48 to 56, 59 to 61, 66 to 67, 79 to 80;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
@@ -94,12 +98,23 @@ message PluginSpecificConfig {
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
+    DotnetPaketConfig dotnet_paket = 77;
     OSVLocalConfig osvlocal = 57;
     CodeServerConfig code_server = 58;
     DenoJsonConfig denojson = 62;
     DenoTSSourceConfig denotssource = 63;
     QCOW2Config qcow2 = 64;
     PerlCPANConfig cpan = 65;
+    PythonRequirementsTransitiveConfig python_requirements_transitive = 68;
+    SpackConfig spack = 69;
+    CsProjConfig csproj = 70;
+    NugetCPMConfig nuget_cpm = 71;
+    OSVDevConfig osvdev = 72;
+    HCPIdentityConfig hcp_identity = 73;
+    HerokuExpirationConfig heroku_expiration = 74;
+    HuggingfaceMetaConfig huggingface_meta = 75;
+    ContainerdRuntimeConfig containerd_runtime = 76;
+    DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
   }
 }
 
@@ -192,6 +207,13 @@ message POMXMLNetConfig {
   bool deps_dev_requirements = 2;
 }
 
+message PythonRequirementsTransitiveConfig {
+  // The URL of the upstream PyPI registry.
+  string upstream_registry = 1;
+  // If true, use deps.dev requirements API for dependency resolution.
+  bool deps_dev_requirements = 2;
+}
+
 message DpkgConfig {
   // Includes packages that are not installed
   // (e.g. `deinstall`, `purge`, and those missing a status field).
@@ -267,6 +289,13 @@ message FlatpakConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message SpackConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
 message MacAppsConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
@@ -320,6 +349,35 @@ message DotnetDepsJsonConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message CsProjConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message NugetCPMConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message HuggingfaceMetaConfig {
+  // The base URL of the Huggingface API.
+  string base_url = 1;
+}
+
+message HerokuExpirationConfig {
+  // The base URL of the Heroku API.
+  string base_url = 1;
+}
+
+message HCPIdentityConfig {
+  // The base URL of the HCP API.
+  string base_url = 1;
+}
+
 message DotnetPackagesConfigConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
@@ -335,6 +393,20 @@ message DotnetPackagesLockJsonConfig {
 }
 
 message DotnetPeConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message DotnetPaketConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message DotnetProjectAssetsJsonConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
@@ -486,6 +558,11 @@ message OSVLocalConfig {
   string remote_host = 3;
 }
 
+message OSVDevConfig {
+  // Timeout for the initial batch query to OSV.dev.
+  int64 initial_query_timeout_seconds = 1;
+}
+
 message CodeServerConfig {
   // The URL of the Code-Server instance to check for authentication.
   string remote = 1;
@@ -500,4 +577,9 @@ message QCOW2Config {
   int64 max_file_size_bytes = 1;
   // The password the plugin requires to extract the encrypted .qcow2 file
   string password = 2;
+}
+
+message ContainerdRuntimeConfig {
+  // The local path to the containerd socket.
+  string socket_addr = 1;
 }

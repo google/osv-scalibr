@@ -135,19 +135,19 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "bunt",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeHex,
-					Locations: []string{"testdata/valid"},
+					Name:     "bunt",
+					Version:  "1.0.0",
+					PURLType: purl.TypeHex,
+					Location: extractor.LocationFromPath("testdata/valid"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "081c2c665f086849e6d57900292b3a161727ab40431219529f13c4ddcf3e7a44",
 					},
 				},
 				{
-					Name:      "certifi",
-					Version:   "2.12.0",
-					PURLType:  purl.TypeHex,
-					Locations: []string{"testdata/valid"},
+					Name:     "certifi",
+					Version:  "2.12.0",
+					PURLType: purl.TypeHex,
+					Location: extractor.LocationFromPath("testdata/valid"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "2d1cca2ec95f59643862af91f001478c9863c2ac9cb6e2f89780bfd8de987329",
 					},
@@ -161,10 +161,10 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:      "bunt",
-					Version:   "1.0.0",
-					PURLType:  purl.TypeHex,
-					Locations: []string{"testdata/invalid"},
+					Name:     "bunt",
+					Version:  "1.0.0",
+					PURLType: purl.TypeHex,
+					Location: extractor.LocationFromPath("testdata/invalid"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "081c2c665f086849e6d57900292b3a161727ab40431219529f13c4ddcf3e7a44",
 					},

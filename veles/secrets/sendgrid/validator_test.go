@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -124,10 +123,7 @@ func TestValidator(t *testing.T) {
 }
 
 func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that delays response significantly
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Sleep longer than the context timeout to trigger cancellation
-		time.Sleep(100 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"type":"free","reputation":99.7}`))
@@ -139,9 +135,9 @@ func TestValidator_ContextCancellation(t *testing.T) {
 	validator.Endpoint = server.URL + "/v3/user/account"
 	key := sendgrid.APIKey{Key: testSendGridAPIKey}
 
-	// Create context with a very short timeout
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
-	defer cancel()
+	// Create a cancelled context
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
 
 	// Test validation with cancelled context
 	got, err := validator.Validate(ctx, key)

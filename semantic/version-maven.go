@@ -131,11 +131,17 @@ func (vt *mavenVersionToken) lessThanByQualifier(wt mavenVersionToken) (bool, er
 	return vo < wo, nil
 }
 
-type mavenVersion struct {
+// MavenVersion is the representation of a version of a package that is held
+// in the Maven ecosystem.
+//
+// See https://maven.apache.org/pom.html#version-order-specification
+type MavenVersion struct {
 	tokens []mavenVersionToken
 }
 
-func (mv mavenVersion) equal(mw mavenVersion) bool {
+var _ Version = MavenVersion{}
+
+func (mv MavenVersion) equal(mw MavenVersion) bool {
 	if len(mv.tokens) != len(mw.tokens) {
 		return false
 	}
@@ -168,7 +174,7 @@ func newMavenNullVersionToken(token mavenVersionToken) (mavenVersionToken, error
 	return mavenVersionToken{}, fmt.Errorf("%w: unknown prefix '%s' (value '%s')", ErrInvalidVersion, token.prefix, token.value)
 }
 
-func (mv mavenVersion) lessThan(mw mavenVersion) (bool, error) {
+func (mv MavenVersion) lessThan(mw MavenVersion) (bool, error) {
 	numberOfTokens := max(len(mv.tokens), len(mw.tokens))
 
 	var left mavenVersionToken
@@ -244,7 +250,7 @@ func splitCharsInclusive(s, chars string) (out []string) {
 	return
 }
 
-func newMavenVersion(str string) mavenVersion {
+func newMavenVersion(str string) MavenVersion {
 	var tokens []mavenVersionToken
 
 	// The Maven coordinate is split in tokens between dots ('.'), hyphens ('-')
@@ -341,9 +347,9 @@ func newMavenVersion(str string) mavenVersion {
 		i--
 	}
 
-	return mavenVersion{tokens}
+	return MavenVersion{tokens}
 }
-func (mv mavenVersion) compare(w mavenVersion) (int, error) {
+func (mv MavenVersion) compare(w MavenVersion) (int, error) {
 	if mv.equal(w) {
 		return 0, nil
 	}
@@ -358,10 +364,20 @@ func (mv mavenVersion) compare(w mavenVersion) (int, error) {
 	return +1, nil
 }
 
-func (mv mavenVersion) CompareStr(str string) (int, error) {
-	return mv.compare(parseMavenVersion(str))
+// Compare compares the given version to the receiver.
+func (mv MavenVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(MavenVersion); ok {
+		return mv.compare(w)
+	}
+	return 0, ErrNotSameEcosystem
 }
 
-func parseMavenVersion(str string) mavenVersion {
+// CompareStr compares the given string to the receiver.
+func (mv MavenVersion) CompareStr(str string) (int, error) {
+	return mv.compare(ParseMavenVersion(str))
+}
+
+// ParseMavenVersion parses the given string as a Maven version.
+func ParseMavenVersion(str string) MavenVersion {
 	return newMavenVersion(str)
 }

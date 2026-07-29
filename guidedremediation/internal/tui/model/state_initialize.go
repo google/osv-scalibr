@@ -85,7 +85,7 @@ func (s stateInitialize) Update(m Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.relockBaseManifest = msg.resolvedManifest
 		m.relockBaseErrors = computeResolveErrors(msg.resolvedManifest.Graph)
 		if m.options.Lockfile == "" {
-			m.st = stateRelockResult{}
+			m.st = newStateRelockResult(m)
 		} else {
 			m.st = newStateChooseStrategy(m)
 		}

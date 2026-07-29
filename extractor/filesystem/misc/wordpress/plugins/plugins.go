@@ -120,10 +120,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
-		Name:      pkg.Name,
-		Version:   pkg.Version,
-		PURLType:  purl.TypeWordpress,
-		Locations: []string{input.Path},
+		Name:     pkg.Name,
+		Version:  pkg.Version,
+		PURLType: purl.TypeWordpress,
+		Location: extractor.LocationFromPath(input.Path),
 	}}}, nil
 }
 

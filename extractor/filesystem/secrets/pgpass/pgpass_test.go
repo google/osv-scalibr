@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/secrets/pgpass"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/testing/extracttest"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -89,7 +90,7 @@ func TestExtract(t *testing.T) {
 						Database: "mydb",
 						Username: "myuser",
 						Password: "mypassword"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -97,7 +98,7 @@ func TestExtract(t *testing.T) {
 						Database: "testdb",
 						Username: "testuser",
 						Password: "testpass123"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -105,7 +106,7 @@ func TestExtract(t *testing.T) {
 						Database: "testdb",
 						Username: "testuser",
 						Password: "passw*ord"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -113,7 +114,7 @@ func TestExtract(t *testing.T) {
 						Database: "testdb",
 						Username: "testuser",
 						Password: "passw ord"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "hostname",
@@ -121,7 +122,7 @@ func TestExtract(t *testing.T) {
 						Database: "db name",
 						Username: "testuser",
 						Password: "password"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "*",
@@ -129,7 +130,7 @@ func TestExtract(t *testing.T) {
 						Database: "db",
 						Username: "admin",
 						Password: "supersecret"},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 				{
 					Secret: pgpass.Pgpass{Hostname: "prod.example.com",
@@ -137,7 +138,7 @@ func TestExtract(t *testing.T) {
 						Database: "db",
 						Username: "admin",
 						Password: `pass\:word`},
-					Location: "testdata/valid",
+					Location: location.FromPath("testdata/valid"),
 				},
 			},
 		}, {

@@ -23,9 +23,19 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const testKey = `dckr_pat_7awgM4jG5SQvxcvmNzhKj8PQjxo`
+
+func TestDetectorAcceptance(t *testing.T) {
+	velestest.AcceptDetector(
+		t,
+		dockerhubpat.NewDetector(),
+		`docker login -u username -p `+testKey,
+		dockerhubpat.DockerHubPAT{Pat: testKey, Username: "username"},
+	)
+}
 
 // TestDetector_truePositives tests for cases where we know the Detector
 // will find a Docker Hub PAT/s.

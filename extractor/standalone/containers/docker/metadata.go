@@ -15,56 +15,54 @@
 package docker
 
 import (
-	"github.com/docker/docker/api/types/container"
+	"net/netip"
+
+	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/moby/moby/api/types/container"
 )
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
 
 // Metadata holds parsing information for a container running in docker.
 type Metadata struct {
 	ImageName   string
 	ImageDigest string
 	ID          string
-	Ports       []container.Port
+	Ports       []container.PortSummary
 }
 
-// SetProto sets the DockerContainersMetadata field in the Package proto.
-func (m *Metadata) SetProto(p *pb.Package) {
-	if m == nil {
-		return
-	}
-	if p == nil {
-		return
-	}
-
+// ToProto converts the Metadata struct to a DockerContainersMetadata proto.
+func ToProto(m *Metadata) *pb.DockerContainersMetadata {
 	var ports []*pb.DockerPort
 	for _, p := range m.Ports {
 		ports = append(ports, &pb.DockerPort{
-			Ip:          p.IP,
+			Ip:          p.IP.String(),
 			PrivatePort: uint32(p.PrivatePort),
 			PublicPort:  uint32(p.PublicPort),
 			Type:        p.Type,
 		})
 	}
-	p.Metadata = &pb.Package_DockerContainersMetadata{
-		DockerContainersMetadata: &pb.DockerContainersMetadata{
-			ImageName:   m.ImageName,
-			ImageDigest: m.ImageDigest,
-			Id:          m.ID,
-			Ports:       ports,
-		},
+	return &pb.DockerContainersMetadata{
+		ImageName:   m.ImageName,
+		ImageDigest: m.ImageDigest,
+		Id:          m.ID,
+		Ports:       ports,
 	}
 }
 
+// IsProtoable marks the struct as a metadata type.
+func (m *Metadata) IsProtoable() {}
+
 // ToStruct converts the DockerContainersMetadata proto to a Metadata struct.
 func ToStruct(m *pb.DockerContainersMetadata) *Metadata {
-	if m == nil {
-		return nil
-	}
-
-	var ports []container.Port
+	var ports []container.PortSummary
 	for _, p := range m.GetPorts() {
-		ports = append(ports, container.Port{
-			IP:          p.GetIp(),
+		ip, _ := netip.ParseAddr(p.GetIp())
+		ports = append(ports, container.PortSummary{
+			IP:          ip,
 			PrivatePort: uint16(p.GetPrivatePort()),
 			PublicPort:  uint16(p.GetPublicPort()),
 			Type:        p.GetType(),

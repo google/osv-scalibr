@@ -26,8 +26,8 @@ import (
 // tests with cmp.Diff to disregard the order in which the Packages
 // are reported.
 func PackageCmpLess(a, b *extractor.Package) bool {
-	aLoc := fmt.Sprintf("%v", a.Locations)
-	bLoc := fmt.Sprintf("%v", b.Locations)
+	aLoc := a.Location.Descriptor.PathOrEmpty()
+	bLoc := b.Location.Descriptor.PathOrEmpty()
 
 	aSourceCode := fmt.Sprintf("%v", a.SourceCode)
 	bSourceCode := fmt.Sprintf("%v", b.SourceCode)

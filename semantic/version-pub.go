@@ -18,30 +18,46 @@ import (
 	"strings"
 )
 
-type pubVersion struct {
+// PubVersion is the representation of a version of a package that is held
+// in the Pub ecosystem.
+//
+// See https://pub.dev/packages/pub_semver
+type PubVersion struct {
 	semverLikeVersion
 }
 
-func (v pubVersion) compare(w pubVersion) int {
-	if diff := v.Components.Cmp(w.Components); diff != 0 {
+var _ Version = PubVersion{}
+
+func (v PubVersion) compare(w PubVersion) int {
+	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
-	if diff := compareBuildComponents(v.Build, w.Build); diff != 0 {
+	if diff := compareBuildComponents(v.build, w.build); diff != 0 {
 		return diff
 	}
 
-	_, vBuild, _ := strings.Cut(v.Build, "+")
-	_, wBuild, _ := strings.Cut(w.Build, "+")
+	_, vBuild, _ := strings.Cut(v.build, "+")
+	_, wBuild, _ := strings.Cut(w.build, "+")
 
 	return strings.Compare(vBuild, wBuild)
 }
 
-func (v pubVersion) CompareStr(str string) (int, error) {
-	w := parsePubVersion(str)
+// Compare compares the given version to the receiver.
+func (v PubVersion) Compare(w Version) (int, error) {
+	if w, ok := w.(PubVersion); ok {
+		return v.compare(w), nil
+	}
+	return 0, ErrNotSameEcosystem
+}
+
+// CompareStr compares the given string to the receiver.
+func (v PubVersion) CompareStr(str string) (int, error) {
+	w := ParsePubVersion(str)
 
 	return v.compare(w), nil
 }
 
-func parsePubVersion(str string) pubVersion {
-	return pubVersion{parseSemverLikeVersion(str, 3)}
+// ParsePubVersion parses the given string as a Pub version.
+func ParsePubVersion(str string) PubVersion {
+	return PubVersion{parseSemverLikeVersion(str, 3)}
 }

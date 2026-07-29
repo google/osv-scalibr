@@ -140,10 +140,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	for _, image := range images {
 		name, version := parseName(image)
 		pkgs = append(pkgs, &extractor.Package{
-			Locations: []string{input.Path},
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypeDocker,
+			Location: extractor.LocationFromPath(input.Path),
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeDocker,
 		})
 	}
 

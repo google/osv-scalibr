@@ -30,9 +30,10 @@ import (
 
 func TestToPURL(t *testing.T) {
 	tests := []struct {
-		name string
-		pkg  *extractor.Package
-		want *purl.PackageURL
+		name    string
+		pkg     *extractor.Package
+		want    *purl.PackageURL
+		wantStr string
 	}{
 		{
 			name: "no_purl_type",
@@ -58,10 +59,10 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "python_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypePyPi,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypePyPi,
@@ -72,10 +73,10 @@ func TestToPURL(t *testing.T) {
 		{
 			name: "npm_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypeNPM,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPath("location"),
 				Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
 					Source: javascriptmeta.Unknown,
 				},
@@ -87,12 +88,47 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
+			name: "scoped_npm_purl",
+			pkg: &extractor.Package{
+				Name:     "@babel/traverse",
+				Version:  "7.29.7",
+				PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPath("location"),
+				Metadata: &javascriptmeta.JavascriptPackageJSONMetadata{
+					Source: javascriptmeta.Unknown,
+				},
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeNPM,
+				Namespace: "@babel",
+				Name:      "traverse",
+				Version:   "7.29.7",
+			},
+			wantStr: "pkg:npm/%40babel/traverse@7.29.7",
+		},
+		{
+			name: "composer_purl",
+			pkg: &extractor.Package{
+				Name:     "Symfony/HTTP-Kernel",
+				Version:  "8.1.0",
+				PURLType: purl.TypeComposer,
+				Location: extractor.LocationFromPath("location"),
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeComposer,
+				Namespace: "symfony",
+				Name:      "http-kernel",
+				Version:   "8.1.0",
+			},
+			wantStr: "pkg:composer/symfony/http-kernel@8.1.0",
+		},
+		{
 			name: "hex_purl",
 			pkg: &extractor.Package{
-				Name:      "Name",
-				Version:   "1.2.3",
-				PURLType:  purl.TypeHex,
-				Locations: []string{"location"},
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeHex,
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeHex,
@@ -114,7 +150,7 @@ func TestToPURL(t *testing.T) {
 					},
 					CPEs: []string{},
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypePyPi,
@@ -137,7 +173,7 @@ func TestToPURL(t *testing.T) {
 					},
 					CPEs: []string{},
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeCargo,
@@ -156,7 +192,7 @@ func TestToPURL(t *testing.T) {
 					PackageName:       "pkg-name",
 					OSVersionCodename: "jammy",
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeDebian,
@@ -178,7 +214,7 @@ func TestToPURL(t *testing.T) {
 					PackageName:       "pkg-name",
 					OSVersionCodename: "jammy",
 				},
-				Locations: []string{"location"},
+				Location: extractor.LocationFromPath("location"),
 			},
 			want: &purl.PackageURL{
 				Type:      purl.TypeOpkg,
@@ -190,6 +226,21 @@ func TestToPURL(t *testing.T) {
 				}),
 			},
 		},
+		{
+			name: "github_purl",
+			pkg: &extractor.Package{
+				Name:     "actions/checkout",
+				Version:  "v4",
+				PURLType: purl.TypeGithub,
+				Location: extractor.LocationFromPath("location"),
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeGithub,
+				Namespace: "actions",
+				Name:      "checkout",
+				Version:   "v4",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -197,6 +248,9 @@ func TestToPURL(t *testing.T) {
 			got := tt.pkg.PURL()
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("%v.PURL(): unexpected PURL (-want +got):\n%s", tt.pkg, diff)
+			}
+			if tt.wantStr != "" && got.String() != tt.wantStr {
+				t.Errorf("%v.PURL().String() = %q, want %q", tt.pkg, got.String(), tt.wantStr)
 			}
 		})
 	}
@@ -241,6 +295,87 @@ func TestToEcosystem(t *testing.T) {
 			want: osvecosystem.Parsed{
 				Ecosystem: osvconstants.EcosystemDebian,
 				Suffix:    "11",
+			},
+		},
+		{
+			name: "dhi_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeDHI,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages),
+		},
+		{
+			name: "github_actions_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "actions/checkout",
+				Version:  "v4",
+				PURLType: purl.TypeGithub,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions),
+		},
+		{
+			name: "spdx_alpine_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeApk,
+						Namespace:  "alpine",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "v3.18"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemAlpine,
+				Suffix:    "v3.18",
+			},
+		},
+		{
+			name: "spdx_debian_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeDebian,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeDebian,
+						Namespace:  "debian",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "11"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemDebian,
+				Suffix:    "11",
+			},
+		},
+		{
+			name: "spdx_ubuntu_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeDebian,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeDebian,
+						Namespace:  "ubuntu",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "jammy"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemUbuntu,
+				Suffix:    "22.04:LTS",
 			},
 		},
 	}

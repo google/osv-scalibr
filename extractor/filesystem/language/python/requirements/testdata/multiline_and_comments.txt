@@ -1,0 +1,7 @@
+# Comment on line 1
+
+pkgA==1.0 \
+  --hash=sha256:123
+# Another comment on line 5
+
+pkgB==2.0

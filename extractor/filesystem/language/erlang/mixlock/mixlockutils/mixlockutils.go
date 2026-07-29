@@ -80,10 +80,10 @@ func ParseMixLockFile(input *filesystem.ScanInput) (inventory.Inventory, error) 
 
 		// Directly appending to packages
 		packages = append(packages, &extractor.Package{
-			Name:      name,
-			Version:   version,
-			PURLType:  purl.TypeHex,
-			Locations: []string{input.Path},
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeHex,
+			Location: extractor.LocationFromPath(input.Path),
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},
