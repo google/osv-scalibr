@@ -16,8 +16,12 @@
 package spdx
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"maps"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"time"
@@ -38,6 +42,8 @@ const (
 	SPDXRefPrefix = "SPDXRef-"
 	// SPDXDocumentID is the string identifier used to refer to the SPDX document.
 	SPDXDocumentID = "SPDXRef-DOCUMENT"
+	// The hex-encoded sha256 of the empty string.
+	emptyFileDigest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 )
 
 // spdx_id must only contain letters, numbers, "." and "-"
@@ -68,6 +74,8 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 		IsFilesAnalyzedTagPresent: false,
 	})
 
+	var files []*v2_3.File
+
 	relationships := make([]*v2_3.Relationship, 0, 1+2*len(i.Packages))
 	relationships = append(relationships, &v2_3.Relationship{
 		RefA:         toDocElementID(SPDXDocumentID),
@@ -79,7 +87,29 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	scalibrToSPDXID := make(map[string]string)
 	pkgToSPDXID := make(map[*extractor.Package]string)
 
-	for _, pkg := range i.Packages {
+	pkgIDs := make([]string, len(i.Packages))
+	nameToID := make(map[string]string)
+	for idx, pkg := range i.Packages {
+		p := pkg.PURL()
+		if p == nil || p.Name == "" || p.Version == "" {
+			continue
+		}
+		id, err := pkg.GetIDOrGenerate(&extractor.RandomIDGenerator{})
+		if err != nil {
+			continue
+		}
+		pID := SPDXRefPrefix + "Package-" + replaceSPDXIDInvalidChars(p.Name) + "-" + replaceSPDXIDInvalidChars(id)
+		pkgIDs[idx] = pID
+		scalibrToSPDXID[id] = pID
+		pkgToSPDXID[pkg] = pID
+		nameToID[pkg.Name] = pID
+		nameToID[p.Name] = pID
+		if p.Namespace != "" {
+			nameToID[p.Namespace+"/"+p.Name] = pID
+		}
+	}
+
+	for idx, pkg := range i.Packages {
 		p := pkg.PURL()
 		if p == nil {
 			log.Warnf("Package %v has no PURL, skipping", pkg)
@@ -91,15 +121,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			log.Warnf("Package %v PURL name or version empty, skipping", pkg)
 			continue
 		}
-		id, err := pkg.GetIDOrGenerate(&extractor.RandomIDGenerator{})
-		if err != nil {
-			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
-			continue
-		}
-		pID := fmt.Sprintf("%sPackage-%s-%s", SPDXRefPrefix, replaceSPDXIDInvalidChars(pName), replaceSPDXIDInvalidChars(id))
-		scalibrToSPDXID[id] = pID
-		pkgToSPDXID[pkg] = pID
-
+		pID := pkgIDs[idx]
 		pSourceInfo := ""
 		if len(pkg.Plugins) > 0 {
 			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])
@@ -152,11 +174,71 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			continue
 		}
 		// TODO(b/313658493): Add a DESCRIBES relationship or a DocumentDescribes field.
-		relationships = append(relationships, &v2_3.Relationship{
-			RefA:         toDocElementID(mainPackageID),
-			RefB:         toDocElementID(pID),
-			Relationship: "CONTAINS",
-		})
+
+		var fileID string
+		var filePath string
+		if pkg.Location.Descriptor != nil && pkg.Location.Descriptor.File != nil && pkg.Location.Descriptor.File.Path != "" {
+			filePath = pkg.Location.Descriptor.File.Path
+		} else if len(pkg.Location.Related) > 0 && pkg.Location.Related[0].File != nil && pkg.Location.Related[0].File.Path != "" {
+			filePath = pkg.Location.Related[0].File.Path
+		}
+
+		if filePath != "" {
+			pathHash := sha256.Sum256([]byte(filePath))
+			fileID = SPDXRefPrefix + "File-" + replaceSPDXIDInvalidChars(filePath) + "-" + hex.EncodeToString(pathHash[:])[:8]
+			files = append(files, &v2_3.File{
+				FileName:           filePath,
+				FileSPDXIdentifier: common.ElementID(fileID),
+				FileTypes:          []string{"TEXT"},
+				LicenseConcluded:   NoAssertion,
+				FileCopyrightText:  NoAssertion,
+				Checksums: []common.Checksum{
+					{
+						Algorithm: "SHA256",
+						Value:     getFileSHA256(filePath, pkg.ScanRoot),
+					},
+				},
+			})
+		}
+
+		addDepManifestRels := func(parentID string) {
+			if fileID != "" {
+				relationships = append(relationships,
+					&v2_3.Relationship{
+						RefA:         toDocElementID(parentID),
+						RefB:         toDocElementID(fileID),
+						Relationship: "CONTAINS",
+					},
+					&v2_3.Relationship{
+						RefA:         toDocElementID(fileID),
+						RefB:         toDocElementID(pID),
+						Relationship: "DEPENDENCY_MANIFEST_OF",
+					},
+					&v2_3.Relationship{
+						RefA:         toDocElementID(parentID),
+						RefB:         toDocElementID(pID),
+						Relationship: "DEPENDS_ON",
+					},
+				)
+			} else {
+				relationships = append(relationships, &v2_3.Relationship{
+					RefA:         toDocElementID(parentID),
+					RefB:         toDocElementID(pID),
+					Relationship: "CONTAINS",
+				})
+			}
+		}
+
+		parentFound := false
+		for parent := range pkg.ParentIDs {
+			if parentID, ok := nameToID[parent]; ok {
+				addDepManifestRels(parentID)
+				parentFound = true
+			}
+		}
+		if !parentFound {
+			addDepManifestRels(mainPackageID)
+		}
 		relationships = append(relationships, &v2_3.Relationship{
 			RefA:         toDocElementID(pID),
 			RefB:         toDocElementID(NoAssertion),
@@ -201,6 +283,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			Created:  time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 		},
 		Packages:      packages,
+		Files:         files,
 		Relationships: relationships,
 		OtherLicenses: ToOtherLicenses(allOtherLicenses),
 	}
@@ -219,4 +302,17 @@ func toDocElementID(id string) common.DocElementID {
 	return common.DocElementID{
 		ElementRefID: common.ElementID(id),
 	}
+}
+
+func getFileSHA256(path string, rootPath string) string {
+	fullPath := path
+	if !filepath.IsAbs(fullPath) && rootPath != "" {
+		fullPath = filepath.Join(rootPath, path)
+	}
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		return emptyFileDigest
+	}
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
 }

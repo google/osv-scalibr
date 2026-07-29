@@ -520,7 +520,7 @@ func TestToSPDX23(t *testing.T) {
 					Version:  "1.2.3",
 					PURLType: purl.TypePyPi,
 					Plugins:  []string{wheelegg.Name},
-					Location: extractor.LocationFromPath("/file1"),
+					Location: extractor.LocationFromPath("relative-path/file1"),
 				}},
 			},
 			want: &v2_3.Document{
@@ -561,12 +561,27 @@ func TestToSPDX23(t *testing.T) {
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
-						PackageSourceInfo:         "Identified by the python/wheelegg extractor from /file1",
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor from relative-path/file1",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
 							{
 								Category: "PACKAGE-MANAGER",
 								RefType:  "purl",
 								Locator:  "pkg:pypi/software@1.2.3",
+							},
+						},
+					},
+				},
+				Files: []*v2_3.File{
+					{
+						FileName:           "relative-path/file1",
+						FileSPDXIdentifier: "SPDXRef-File-relative-path-file1-b9cce916",
+						FileTypes:          []string{"TEXT"},
+						LicenseConcluded:   spdx.NoAssertion,
+						FileCopyrightText:  spdx.NoAssertion,
+						Checksums: []common.Checksum{
+							{
+								Algorithm: "SHA256",
+								Value:     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 							},
 						},
 					},
@@ -586,9 +601,27 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-Package-main-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+							ElementRefID: "SPDXRef-File-relative-path-file1-b9cce916",
 						},
 						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-File-relative-path-file1-b9cce916",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+						},
+						Relationship: "DEPENDENCY_MANIFEST_OF",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+						},
+						Relationship: "DEPENDS_ON",
 					},
 					{
 						RefA: common.DocElementID{
@@ -612,7 +645,7 @@ func TestToSPDX23(t *testing.T) {
 					PURLType: purl.TypePyPi,
 					Location: extractor.PackageLocation{
 						Related: []location.Location{
-							{File: &location.File{Path: "/file1"}},
+							{File: &location.File{Path: "relative-path/file1"}},
 							{File: &location.File{Path: "/file2"}},
 							{File: &location.File{Path: "/file3"}},
 						},
@@ -657,12 +690,27 @@ func TestToSPDX23(t *testing.T) {
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
-						PackageSourceInfo:         "Identified by the python/wheelegg extractor from 3 locations, including /file1 and /file2",
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor from 3 locations, including relative-path/file1 and /file2",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
 							{
 								Category: "PACKAGE-MANAGER",
 								RefType:  "purl",
 								Locator:  "pkg:pypi/software@1.2.3",
+							},
+						},
+					},
+				},
+				Files: []*v2_3.File{
+					{
+						FileName:           "relative-path/file1",
+						FileSPDXIdentifier: "SPDXRef-File-relative-path-file1-b9cce916",
+						FileTypes:          []string{"TEXT"},
+						LicenseConcluded:   spdx.NoAssertion,
+						FileCopyrightText:  spdx.NoAssertion,
+						Checksums: []common.Checksum{
+							{
+								Algorithm: "SHA256",
+								Value:     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 							},
 						},
 					},
@@ -682,9 +730,27 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-Package-main-94040374-f692-4b98-8bf8-713f8d962d7c",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-software-8d019192-c242-44e2-8afc-cae3a61fb586",
+							ElementRefID: "SPDXRef-File-relative-path-file1-b9cce916",
 						},
 						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-File-relative-path-file1-b9cce916",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-8d019192-c242-44e2-8afc-cae3a61fb586",
+						},
+						Relationship: "DEPENDENCY_MANIFEST_OF",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-94040374-f692-4b98-8bf8-713f8d962d7c",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-8d019192-c242-44e2-8afc-cae3a61fb586",
+						},
+						Relationship: "DEPENDS_ON",
 					},
 					{
 						RefA: common.DocElementID{
