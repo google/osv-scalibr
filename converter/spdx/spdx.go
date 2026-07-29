@@ -17,7 +17,9 @@ package spdx
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
+	"slices"
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
@@ -74,6 +76,8 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	})
 
 	allOtherLicenses := stringset.Set{}
+	scalibrToSPDXID := make(map[string]string)
+	pkgToSPDXID := make(map[*extractor.Package]string)
 
 	for _, pkg := range i.Packages {
 		p := pkg.PURL()
@@ -93,6 +97,9 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			continue
 		}
 		pID := fmt.Sprintf("%sPackage-%s-%s", SPDXRefPrefix, replaceSPDXIDInvalidChars(pName), replaceSPDXIDInvalidChars(id))
+		scalibrToSPDXID[id] = pID
+		pkgToSPDXID[pkg] = pID
+
 		pSourceInfo := ""
 		if len(pkg.Plugins) > 0 {
 			pSourceInfo = fmt.Sprintf("Identified by the %s extractor", pkg.Plugins[0])
@@ -137,6 +144,13 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 				},
 			},
 		})
+	}
+
+	for _, pkg := range i.Packages {
+		pID, ok := pkgToSPDXID[pkg]
+		if !ok {
+			continue
+		}
 		// TODO(b/313658493): Add a DESCRIBES relationship or a DocumentDescribes field.
 		relationships = append(relationships, &v2_3.Relationship{
 			RefA:         toDocElementID(mainPackageID),
@@ -148,6 +162,18 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			RefB:         toDocElementID(NoAssertion),
 			Relationship: "CONTAINS",
 		})
+		parentIDs := slices.Sorted(maps.Keys(pkg.ParentIDs))
+		for _, parentID := range parentIDs {
+			if parentSPDXID, ok := scalibrToSPDXID[parentID]; ok {
+				relationships = append(relationships, &v2_3.Relationship{
+					RefA:         toDocElementID(parentSPDXID),
+					RefB:         toDocElementID(pID),
+					Relationship: "DEPENDS_ON",
+				})
+			} else if parentID != "root" {
+				log.Warnf("Parent package ID %q for package %v not found in inventory", parentID, pkg)
+			}
+		}
 	}
 	name := c.DocumentName
 	if name == "" {
