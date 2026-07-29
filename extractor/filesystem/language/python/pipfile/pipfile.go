@@ -27,7 +27,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	pyinternal "github.com/google/osv-scalibr/extractor/filesystem/language/python/internal"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -82,55 +82,54 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: sortedPackages(details)}, nil
 }
 
+// extractSpec retrieves the raw version spec string from a Pipfile dependency
+// value, which may be a plain string (e.g. "==2.31.0") or a TOML inline table
+// with a "version" key (e.g. {version = "==2.0.7", extras = ["socks"]}).
+func extractSpec(val any) string {
+	switch v := val.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case map[string]any:
+		if ver, ok := v["version"].(string); ok {
+			return strings.TrimSpace(ver)
+		}
+	}
+	return ""
+}
+
 func addPackages(details map[string]*extractor.Package, packages map[string]any, group, path string) {
-	for name, val := range packages {
-		name = strings.ToLower(strings.TrimSpace(name))
-		if name == "" {
+	for rawName, val := range packages {
+		name := pyinternal.NormalizeName(rawName)
+		if name == "" || !pyinternal.IsValidName(name) {
 			continue
 		}
 
-		version := parseVersionSpec(val)
-		if _, ok := details[name]; !ok {
-			groupSlice := []string{}
-			if group != "" {
-				groupSlice = []string{group}
-			}
+		rawSpec := extractSpec(val)
+		version, comparator := pyinternal.ParseVersionSpec(rawSpec)
+		requirement := pyinternal.BuildRequirement(name, rawSpec)
 
-			details[name] = &extractor.Package{
-				Name:     name,
-				Version:  version,
-				PURLType: purl.TypePyPi,
-				Location: extractor.LocationFromPath(path),
-				Metadata: &osv.DepGroupMetadata{
-					DepGroupVals: groupSlice,
-				},
-			}
+		// Production packages take precedence over dev packages with the same name.
+		if _, exists := details[name]; exists {
+			continue
+		}
+
+		groupSlice := []string{}
+		if group != "" {
+			groupSlice = []string{group}
+		}
+
+		details[name] = &extractor.Package{
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypePyPi,
+			Location: extractor.LocationFromPath(path),
+			Metadata: &Metadata{
+				DepGroupVals:      groupSlice,
+				Requirement:       requirement,
+				VersionComparator: comparator,
+			},
 		}
 	}
-}
-
-func parseVersionSpec(val any) string {
-	var spec string
-	switch v := val.(type) {
-	case string:
-		spec = strings.TrimSpace(v)
-	case map[string]any:
-		if ver, ok := v["version"].(string); ok {
-			spec = strings.TrimSpace(ver)
-		}
-	}
-
-	if spec == "" || spec == "*" {
-		return ""
-	}
-
-	// Strip common Pipenv/TOML version comparison prefixes if present.
-	for _, prefix := range []string{"==", ">=", "<=", "~=", ">", "<", "="} {
-		if after, ok := strings.CutPrefix(spec, prefix); ok {
-			return strings.TrimSpace(after)
-		}
-	}
-	return spec
 }
 
 func sortedPackages(packages map[string]*extractor.Package) []*extractor.Package {
