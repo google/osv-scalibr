@@ -20,10 +20,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/google/osv-scalibr/log"
-	"github.com/google/uuid"
 )
 
 // RemoveObsoleteSymlinks removes symlinks that point to a destination file or directory path that
@@ -198,15 +198,48 @@ func removeLayerPathPrefix(path, layerPath string) string {
 // For example, if a symlink with path `a/symlink.txt“ points to “../../file.text“, then
 // this function would return true because the target file is outside of the root directory.
 func TargetOutsideRoot(path, target string) bool {
-	// Create a marker directory as root to check if the target path is outside of the root directory.
-	markerDir := uuid.New().String()
-	if filepath.IsAbs(target) {
-		// Absolute paths may still point outside of the root directory.
-		// e.g. "/../file.txt"
-		markerTarget := filepath.Join(markerDir, target)
-		return !strings.Contains(markerTarget, markerDir)
+	// UNC paths (e.g. \\server\share) or device paths (e.g. \\.\PhysicalDrive0)
+	// point to resources outside the local filesystem root and always escape.
+	if isUNCOrDevice(target) {
+		return true
 	}
 
-	markerTargetAbs := filepath.Join(markerDir, filepath.Dir(path), target)
-	return !strings.Contains(markerTargetAbs, markerDir)
+	var relTarget string
+	// A path is absolute-ish if it starts with a separator after removing the volume name.
+	// E.g. "/a/b" on Linux (volume ""), "C:\a\b" on Windows (volume "C:"), or "\a\b" on Windows (volume "").
+	// E.g. "C:a\b" (drive-relative) is not absolute-ish because it doesn't start with a slash after "C:".
+	trimmedTarget := target[len(filepath.VolumeName(target)):]
+	if len(trimmedTarget) > 0 && os.IsPathSeparator(trimmedTarget[0]) {
+		// Treat absolute targets as relative to the root by stripping volume and leading slashes.
+		relTarget = trimVolumeAndSlashes(target)
+	} else {
+		// Relative targets are resolved relative to the directory of the symlink path.
+		relPath := trimVolumeAndSlashes(path)
+		relTarget = filepath.Join(filepath.Dir(relPath), target)
+	}
+
+	// filepath.IsLocal checks if the path (now relative to the root ".")
+	// escapes the root directory using lexical analysis.
+	return !filepath.IsLocal(relTarget)
+}
+
+// trimVolumeAndSlashes removes the Windows volume name (if any) and all leading
+// path separators, converting absolute-ish paths into root-relative paths.
+func trimVolumeAndSlashes(p string) string {
+	p = p[len(filepath.VolumeName(p)):]
+	for len(p) > 0 && os.IsPathSeparator(p[0]) {
+		p = p[1:]
+	}
+	return p
+}
+
+// isUNCOrDevice returns true if the path starts with two separators on Windows.
+// These paths are UNC or device paths and are not allowed as they point outside
+// the local root. On Linux, double slashes are collapsed to a single slash,
+// so they are treated as normal absolute paths.
+func isUNCOrDevice(p string) bool {
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	return len(p) >= 2 && os.IsPathSeparator(p[0]) && os.IsPathSeparator(p[1])
 }

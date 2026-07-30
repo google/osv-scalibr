@@ -63,10 +63,40 @@ func TestTargetOutsideRoot(t *testing.T) {
 		}(),
 		want: true,
 	}, {
-		name:   "absolute target inside root",
+		name:   "absolute_target_outside_root_slash",
+		path:   "a/f.txt",
+		target: "/../t.txt",
+		want:   true,
+	}, {
+		name:   "double_slash_target",
+		path:   "a/f.txt",
+		target: "//a/b/c/t.txt",
+		want:   runtime.GOOS == "windows",
+	}, {
+		name:   "absolute_target_inside_root",
 		path:   "a/b/f.txt",
 		target: "/a/../c/t.txt",
 		want:   false,
+	}, {
+		name: "volume_absolute_target_inside_root",
+		path: "a/f.txt",
+		target: func() string {
+			if runtime.GOOS == "windows" {
+				return "C:\\a\\t.txt"
+			}
+			return "/a/t.txt"
+		}(),
+		want: false,
+	}, {
+		name: "volume_absolute_target_outside_root",
+		path: "a/f.txt",
+		target: func() string {
+			if runtime.GOOS == "windows" {
+				return "C:\\..\\t.txt"
+			}
+			return "/../t.txt"
+		}(),
+		want: true,
 	}}
 
 	for _, tc := range tests {
