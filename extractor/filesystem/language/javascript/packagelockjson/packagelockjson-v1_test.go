@@ -846,6 +846,44 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 			},
 		},
 		{
+			Name: "alias with no version",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/alias-no-version.v1.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "string-width",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPath("testdata/alias-no-version.v1.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@babel/code-frame",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPath("testdata/alias-no-version.v1.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPath("testdata/alias-no-version.v1.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "optional package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/optional-package.v1.json",

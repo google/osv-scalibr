@@ -110,10 +110,18 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 
 		// If the package is aliased, get the name and version
 		// E.g. npm:string-width@^4.2.0
-		if strings.HasPrefix(detail.Version, "npm:") {
-			i := strings.LastIndex(detail.Version, "@")
-			name = detail.Version[4:i]
-			finalVersion = detail.Version[i+1:]
+		if alias, ok := strings.CutPrefix(detail.Version, "npm:"); ok {
+			// A leading "@" is the scope of e.g. "@babel/code-frame" rather than the
+			// separator before the version, so only split on a later one. Without the
+			// index check an alias with no version ("npm:", "npm:string-width") slices
+			// with a negative or zero bound. Matches npm.SplitNPMAlias.
+			if i := strings.LastIndex(alias, "@"); i > 0 {
+				name = alias[:i]
+				finalVersion = alias[i+1:]
+			} else {
+				name = alias
+				finalVersion = ""
+			}
 		}
 
 		// we can't resolve a version from a "file:" dependency
