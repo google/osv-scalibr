@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/helper"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
@@ -110,18 +111,9 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 
 		// If the package is aliased, get the name and version
 		// E.g. npm:string-width@^4.2.0
-		if alias, ok := strings.CutPrefix(detail.Version, "npm:"); ok {
-			// A leading "@" is the scope of e.g. "@babel/code-frame" rather than the
-			// separator before the version, so only split on a later one. Without the
-			// index check an alias with no version ("npm:", "npm:string-width") slices
-			// with a negative or zero bound. Matches npm.SplitNPMAlias.
-			if i := strings.LastIndex(alias, "@"); i > 0 {
-				name = alias[:i]
-				finalVersion = alias[i+1:]
-			} else {
-				name = alias
-				finalVersion = ""
-			}
+		if aliasName, aliasVersion := helper.SplitNPMAlias(detail.Version); aliasName != "" {
+			name = aliasName
+			finalVersion = aliasVersion
 		}
 
 		// we can't resolve a version from a "file:" dependency

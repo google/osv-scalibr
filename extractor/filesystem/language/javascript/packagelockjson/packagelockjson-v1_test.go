@@ -872,8 +872,10 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					},
 				},
 				{
-					Name:       "",
-					Version:    "",
+					// "npm:" specifies no package to alias, so the entry keeps its
+					// own name rather than being attributed to an empty one.
+					Name:       "empty-alias",
+					Version:    "npm:",
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPath("testdata/alias-no-version.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
