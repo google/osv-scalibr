@@ -30,6 +30,7 @@ var ecosystems = []string{
 	"Bitnami",
 	"Chainguard",
 	"ConanCenter",
+	"COS",
 	"CRAN",
 	"crates.io",
 	"Debian",
