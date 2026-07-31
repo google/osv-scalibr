@@ -16,6 +16,8 @@ package spdx_test
 
 import (
 	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -571,6 +573,19 @@ func TestToSPDX23(t *testing.T) {
 						},
 					},
 				},
+				Files: []*v2_3.File{
+					{
+						FileName:           "/file1",
+						FileSPDXIdentifier: "SPDXRef-File--file1-7c9d66ac",
+						Checksums: []common.Checksum{
+							{
+								Algorithm: common.SHA256,
+								Value:     spdx.EmptyFileDigest,
+							},
+						},
+						FileCopyrightText: spdx.NoAssertion,
+					},
+				},
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
@@ -598,6 +613,15 @@ func TestToSPDX23(t *testing.T) {
 							SpecialID: spdx.NoAssertion,
 						},
 						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-File--file1-7c9d66ac",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+						},
+						Relationship: "DEPENDENCY_MANIFEST_OF",
 					},
 				},
 			},
@@ -1142,6 +1166,224 @@ func TestToSPDX23(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "Packages_with_vendor_dependency_graph",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "rbe_input_root/github/artfs",
+						Version:  "local-fork",
+						PURLType: purl.TypeGeneric,
+						Plugins:  []string{"misc/some_metadata_scanner"},
+						SourceCode: &extractor.SourceCodeIdentifier{
+							Repo:   "https://github.com/ywmei-brt1/artfs",
+							Commit: "624bf058e5b4d18428784d7735794054845f9c1d",
+						},
+						Location: extractor.LocationFromPath("rbe_input_root/github/artfs/METADATA"),
+					},
+					{
+						Name:     "rbe_input_root/github/artfs/vendor/libfuse",
+						Version:  "local-fork",
+						PURLType: purl.TypeGeneric,
+						Plugins:  []string{"misc/some_metadata_scanner"},
+						SourceCode: &extractor.SourceCodeIdentifier{
+							Repo:   "https://github.com/libfuse/libfuse",
+							Commit: "033844748010a3b8265bf1c90b9ae8ffe4cd9ca7",
+						},
+						Location:  extractor.LocationFromPath("rbe_input_root/github/artfs/vendor/libfuse/METADATA"),
+						ParentIDs: map[string]bool{"rbe_input_root/github/artfs": true},
+					},
+				},
+			},
+			want: &v2_3.Document{
+				SPDXVersion:       "SPDX-2.3",
+				DataLicense:       "CC0-1.0",
+				SPDXIdentifier:    "DOCUMENT",
+				DocumentName:      "SCALIBR-generated SPDX",
+				DocumentNamespace: "https://spdx.google/6a40e9a1-d007-4033-8282-3061bdd0eaa5",
+				CreationInfo: &v2_3.CreationInfo{
+					Creators: []common.Creator{
+						{
+							CreatorType: "Tool",
+							Creator:     "SCALIBR",
+						},
+					},
+				},
+				Packages: []*v2_3.Package{
+					{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+					},
+					{
+						PackageName:           "rbe_input_root/github/artfs",
+						PackageSPDXIdentifier: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978",
+						PackageVersion:        "local-fork",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/METADATA",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:generic/rbe_input_root%2Fgithub%2Fartfs@local-fork",
+							},
+						},
+					},
+					{
+						PackageName:           "rbe_input_root/github/artfs/vendor/libfuse",
+						PackageSPDXIdentifier: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec",
+						PackageVersion:        "local-fork",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/vendor/libfuse/METADATA",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:generic/rbe_input_root%2Fgithub%2Fartfs%2Fvendor%2Flibfuse@local-fork",
+							},
+						},
+					},
+					{
+						PackageName:           "ywmei-brt1/artfs",
+						PackageSPDXIdentifier: "SPDXRef-Package-ywmei-brt1-artfs-624bf058e5b4d18428784d7735794054845f9c1d",
+						PackageVersion:        "624bf058e5b4d18428784d7735794054845f9c1d",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/METADATA",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:github/ywmei-brt1/artfs@624bf058e5b4d18428784d7735794054845f9c1d",
+							},
+						},
+					},
+					{
+						PackageName:           "libfuse/libfuse",
+						PackageSPDXIdentifier: "SPDXRef-Package-libfuse-libfuse-033844748010a3b8265bf1c90b9ae8ffe4cd9ca7",
+						PackageVersion:        "033844748010a3b8265bf1c90b9ae8ffe4cd9ca7",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/vendor/libfuse/METADATA",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:github/libfuse/libfuse@033844748010a3b8265bf1c90b9ae8ffe4cd9ca7",
+							},
+						},
+					},
+				},
+				Files: []*v2_3.File{
+					{
+						FileName:           "rbe_input_root/github/artfs/METADATA",
+						FileSPDXIdentifier: "SPDXRef-File-rbe-input-root-github-artfs-METADATA-3b761aba",
+						Checksums: []common.Checksum{
+							{
+								Algorithm: common.SHA256,
+								Value:     spdx.EmptyFileDigest,
+							},
+						},
+						FileCopyrightText: spdx.NoAssertion,
+					},
+					{
+						FileName:           "rbe_input_root/github/artfs/vendor/libfuse/METADATA",
+						FileSPDXIdentifier: "SPDXRef-File-rbe-input-root-github-artfs-vendor-libfuse-METADATA-5c16f292",
+						Checksums: []common.Checksum{
+							{
+								Algorithm: common.SHA256,
+								Value:     spdx.EmptyFileDigest,
+							},
+						},
+						FileCopyrightText: spdx.NoAssertion,
+					},
+				},
+				Relationships: []*v2_3.Relationship{
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-DOCUMENT"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e"},
+						Relationship: "DESCRIBES",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefB:         common.DocElementID{SpecialID: "NOASSERTION"},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-File-rbe-input-root-github-artfs-METADATA-3b761aba"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						Relationship: "DEPENDENCY_MANIFEST_OF",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-ywmei-brt1-artfs-624bf058e5b4d18428784d7735794054845f9c1d"},
+						Relationship: "DESCENDANT_OF",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefB:         common.DocElementID{SpecialID: "NOASSERTION"},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-File-rbe-input-root-github-artfs-vendor-libfuse-METADATA-5c16f292"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						Relationship: "DEPENDENCY_MANIFEST_OF",
+					},
+					{
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-libfuse-libfuse-033844748010a3b8265bf1c90b9ae8ffe4cd9ca7"},
+						Relationship: "DESCENDANT_OF",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1152,6 +1394,119 @@ func TestToSPDX23(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, got, cmp.AllowUnexported(v2_3.Package{})); diff != "" {
 				t.Errorf("converter.ToSPDX23(%v): unexpected diff (-want +got):\n%s", tc.inv, diff)
+			}
+		})
+	}
+}
+
+func TestGetFileSHA256(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "test.txt")
+	content := "hello world"
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		t.Fatalf("os.WriteFile(%q) failed: %v", testFile, err)
+	}
+
+	wantSHA256 := "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+
+	tests := []struct {
+		name     string
+		path     string
+		rootPath string
+		want     string
+	}{
+		{
+			name:     "absolute_path_exists",
+			path:     testFile,
+			rootPath: "",
+			want:     wantSHA256,
+		},
+		{
+			name:     "relative_path_with_rootPath_exists",
+			path:     "test.txt",
+			rootPath: tempDir,
+			want:     wantSHA256,
+		},
+		{
+			name:     "file_does_not_exist",
+			path:     filepath.Join(tempDir, "nonexistent.txt"),
+			rootPath: "",
+			want:     spdx.EmptyFileDigest,
+		},
+		{
+			name:     "absolute_path_with_rootPath_ignores_rootPath",
+			path:     testFile,
+			rootPath: tempDir,
+			want:     wantSHA256,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := spdx.GetFileSHA256(tc.path, tc.rootPath)
+			if got != tc.want {
+				t.Errorf("GetFileSHA256(%q, %q) = %q, want %q", tc.path, tc.rootPath, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestGetSourceCodePURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		repoURL string
+		commit  string
+		want    *purl.PackageURL
+	}{
+		{
+			name:    "github_https_url",
+			repoURL: "https://github.com/square/okhttp",
+			commit:  "4984568367caaf359b82c452bd28b5e192824d1c",
+			want: &purl.PackageURL{
+				Type:      purl.TypeGithub,
+				Namespace: "square",
+				Name:      "okhttp",
+				Version:   "4984568367caaf359b82c452bd28b5e192824d1c",
+			},
+		},
+		{
+			name:    "github_http_url",
+			repoURL: "http://github.com/square/okhttp",
+			commit:  "abc1234",
+			want: &purl.PackageURL{
+				Type:      purl.TypeGithub,
+				Namespace: "square",
+				Name:      "okhttp",
+				Version:   "abc1234",
+			},
+		},
+		{
+			name:    "generic_gitlab_url",
+			repoURL: "https://gitlab.gnome.org/GNOME/libxml2",
+			commit:  "04af2cabb9f859c198b8a553c028a87481199410",
+			want: &purl.PackageURL{
+				Type:    purl.TypeGeneric,
+				Name:    "gitlab.gnome.org/GNOME/libxml2",
+				Version: "04af2cabb9f859c198b8a553c028a87481199410",
+			},
+		},
+		{
+			name:    "github_url_without_repo",
+			repoURL: "https://github.com/norepo",
+			commit:  "def5678",
+			want: &purl.PackageURL{
+				Type:    purl.TypeGeneric,
+				Name:    "github.com/norepo",
+				Version: "def5678",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := spdx.GetSourceCodePURL(tc.repoURL, tc.commit)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("GetSourceCodePURL(%q, %q) mismatch (-want +got):\n%s", tc.repoURL, tc.commit, diff)
 			}
 		})
 	}
