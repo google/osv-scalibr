@@ -16,6 +16,7 @@ package requirements_test
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -672,5 +673,55 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
+	}
+}
+
+// TestRequirementsRecursiveIncludeEscape reproduces #2323: a `-r` include
+// that walks upward enough times to land outside the directory of the
+// top-level requirements.txt that started the extraction. Unlike a naive
+// "-r ../secret.txt", the joined-and-cleaned path here ends up with no
+// literal ".." left in it at all (it fully cancels against "a/b/reqs"),
+// which is exactly what let this slip past a plain string check.
+func TestRequirementsRecursiveIncludeEscape(t *testing.T) {
+	root := t.TempDir()
+	reqsDir := filepath.Join(root, "a", "b", "reqs")
+	if err := os.MkdirAll(reqsDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%q): %v", reqsDir, err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "secret.txt"), []byte("secret-package==1.0.0\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(secret.txt): %v", err)
+	}
+	reqPath := filepath.Join(reqsDir, "requirements.txt")
+	if err := os.WriteFile(reqPath, []byte("-r ../../../secret.txt\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(requirements.txt): %v", err)
+	}
+
+	e, err := requirements.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("requirements.New() error: %v", err)
+	}
+
+	fsys := scalibrfs.DirFS(root)
+	relPath := "a/b/reqs/requirements.txt"
+	r, err := fsys.Open(relPath)
+	if err != nil {
+		t.Fatalf("Open(%q): %v", relPath, err)
+	}
+	defer r.Close()
+	info, err := r.Stat()
+	if err != nil {
+		t.Fatalf("Stat(): %v", err)
+	}
+
+	input := &filesystem.ScanInput{FS: fsys, Path: relPath, Info: info, Reader: r}
+	got, err := e.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract(%s): %v", relPath, err)
+	}
+
+	for _, pkg := range got.Packages {
+		if pkg.Name == "secret-package" {
+			t.Errorf("Extract(%s) leaked package %+v from outside the top-level file's directory tree", relPath, pkg)
+		}
 	}
 }

@@ -162,11 +162,20 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 	// infinite loops in misconfigured lockfiles with cyclical deps.
 	var found = map[string]bool{initPath: true}
 	var pkgs []*extractor.Package
+	// Every `-r` include, however deeply chained, must stay within the
+	// directory tree of the file that started this extraction. Anchoring on
+	// initPath (rather than each include's immediate parent) stops a chain
+	// of includes from walking out one hop at a time.
+	anchor := filepath.Dir(initPath)
 
 	for len(extraPaths) > 0 {
 		inc := extraPaths[0]
 		extraPaths = extraPaths[1:]
 		if _, exists := found[inc.path]; exists {
+			continue
+		}
+		if escapesRoot(anchor, inc.path) {
+			log.Warnf("requirements: skipping -r include %q, which escapes the scan root", inc.path)
 			continue
 		}
 		newPKG, newPaths, err := openAndExtractFromFile(inc.path, fs)
@@ -187,6 +196,27 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 	}
 
 	return pkgs
+}
+
+// escapesRoot reports whether resolved (an already filepath.Join/Clean-ed
+// include path) falls outside the directory tree rooted at anchor.
+//
+// filepath.Join/Clean silently absorb ".." segments against the preceding
+// path components, so a cleaned path can end up with no literal ".." left
+// in it at all even when the include walked above the intended root -- see
+// #2323, where `-r ../../secret.txt` resolved to a clean, ".."-free path
+// once enough real directory components were available to cancel against.
+// Checking the cleaned string for a leading ".." is therefore not
+// sufficient on its own. filepath.Rel instead recomputes, from scratch,
+// how you'd actually get from anchor to resolved -- if that requires any
+// upward step, the result begins with "..", regardless of whether the
+// intermediate join happened to cancel out completely.
+func escapesRoot(anchor, resolved string) bool {
+	rel, err := filepath.Rel(anchor, resolved)
+	if err != nil {
+		return true
+	}
+	return rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
 func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Package, pathQueue, error) {
