@@ -162,10 +162,12 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 	// infinite loops in misconfigured lockfiles with cyclical deps.
 	var found = map[string]bool{initPath: true}
 	var pkgs []*extractor.Package
-	// Every `-r` include, however deeply chained, must stay within the
-	// directory tree of the file that started this extraction. Anchoring on
-	// initPath (rather than each include's immediate parent) stops a chain
-	// of includes from walking out one hop at a time.
+	// This is a scalibr-imposed security boundary rather than a pip
+	// requirement. Recursive includes are constrained to the directory tree
+	// of the initial requirements file to prevent path traversal outside the
+	// intended scan root (#2323). Anchoring on initPath (rather than each
+	// include's immediate parent) stops a chain of includes from walking out
+	// one hop at a time.
 	anchor := filepath.Dir(initPath)
 
 	for len(extraPaths) > 0 {
@@ -216,7 +218,7 @@ func escapesRoot(anchor, resolved string) bool {
 	if err != nil {
 		return true
 	}
-	return rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator))
+	return !filepath.IsLocal(rel)
 }
 
 func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Package, pathQueue, error) {
