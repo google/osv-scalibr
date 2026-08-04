@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package linefinder provides utility functions for finding package line numbers in JavaScript manifests and source files.
+// Package linefinder provides utility functions for finding package line numbers in manifest files.
 package linefinder
 
 import (
