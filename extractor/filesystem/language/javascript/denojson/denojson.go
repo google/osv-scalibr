@@ -121,7 +121,7 @@ func parseDenoJSONFile(path string, r io.Reader) ([]*extractor.Package, error) {
 	var pkgs []*extractor.Package
 
 	if len(p.Imports) > 0 {
-		finder := linefinder.NewJSONLineFinder(string(content))
+		finder := linefinder.NewJSONLineFinder(content)
 		for alias, importSpec := range p.Imports {
 			pkg := denohelper.ParseImportSpecifier(importSpec)
 			if pkg != nil {
