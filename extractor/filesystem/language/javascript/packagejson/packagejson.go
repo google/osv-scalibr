@@ -170,7 +170,7 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 		return nil, err
 	}
 
-	finder := linefinder.NewJSONLineFinder(string(content))
+	finder := linefinder.NewJSONLineFinder(content)
 
 	var p packageJSON
 	if err := json.Unmarshal(content, &p); err != nil {

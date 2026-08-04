@@ -324,7 +324,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		return nil, errors.New("could not extract: decoded null JSON value")
 	}
 
-	finder := linefinder.NewJSONLineFinder(string(b))
+	finder := linefinder.NewJSONLineFinder(b)
 
 	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile, finder)))
 	result := make([]*extractor.Package, len(packages))
