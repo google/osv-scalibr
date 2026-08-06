@@ -18,6 +18,7 @@ package purl
 import (
 	"strings"
 
+	androidmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/androidapk/metadata"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	bazelmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"
@@ -62,6 +63,13 @@ func MakePackageURL(version string, metadata any) *purl.PackageURL {
 			Name:       strings.ToLower(m.ArtifactID),
 			Version:    version,
 			Qualifiers: qualifiers,
+		}
+	case *androidmavenmeta.Metadata:
+		return &purl.PackageURL{
+			Type:      purl.TypeMaven,
+			Namespace: strings.ToLower(m.GroupID),
+			Name:      strings.ToLower(m.ArtifactID),
+			Version:   version,
 		}
 	default:
 		return nil

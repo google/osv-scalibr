@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	androidmavenmeta "github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/androidapk/metadata"
 	archivemeta "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
@@ -128,6 +129,20 @@ func TestMakePackageURL(t *testing.T) {
 				Namespace: "com.example",
 				Name:      "my-artifact",
 				Version:   "1.0.0",
+			},
+		},
+		{
+			desc:    "androidmaven_metadata",
+			version: "25.0.0",
+			metadata: &androidmavenmeta.Metadata{
+				GroupID:    "com.google.android.gms",
+				ArtifactID: "play-services-ads",
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeMaven,
+				Namespace: "com.google.android.gms",
+				Name:      "play-services-ads",
+				Version:   "25.0.0",
 			},
 		},
 	}
