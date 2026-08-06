@@ -307,6 +307,15 @@ func TestToEcosystem(t *testing.T) {
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages),
 		},
 		{
+			name: "bitnami_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeBitnami,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemBitnami),
+		},
+		{
 			name: "github_actions_ecosystem",
 			pkg: &extractor.Package{
 				Name:     "actions/checkout",

@@ -93,6 +93,11 @@ func TestFileRequired(t *testing.T) {
 			path:           "testdata/sbom.spdx.foo.ext",
 			wantIsRequired: false,
 		},
+		{
+			name:           ".spdx-postgresql.spdx",
+			path:           "testdata/bitnami/.spdx-postgresql.spdx",
+			wantIsRequired: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -298,6 +303,29 @@ func TestExtract(t *testing.T) {
 						},
 					},
 					Location: extractor.LocationFromPath("testdata/dhi/.spdx.python.json"),
+				},
+			},
+		},
+		{
+			name: "bitnami/.spdx-postgresql.spdx",
+			path: "testdata/bitnami/.spdx-postgresql.spdx",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "postgresql",
+					PURLType: purl.TypeBitnami,
+					Metadata: &spdxmeta.Metadata{
+						PURL: &purl.PackageURL{
+							Type:    purl.TypeBitnami,
+							Name:    "postgresql",
+							Version: "18.4.0-0",
+							Qualifiers: purl.QualifiersFromMap(map[string]string{
+								"arch":   "amd64",
+								"distro": "photon-5",
+							}),
+						},
+						CPEs: []string{"cpe:2.3:*:postgresql:postgresql:18.4.0:*:*:*:*:*:*:*"},
+					},
+					Location: extractor.LocationFromPath("testdata/bitnami/.spdx-postgresql.spdx"),
 				},
 			},
 		},
