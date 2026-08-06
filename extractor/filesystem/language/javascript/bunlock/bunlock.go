@@ -27,7 +27,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -128,7 +128,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("could not extract %w", err)
 	}
 
-	finder := linefinder.NewJSONLineFinder(string(b))
+	finder := linefinder.NewJSONLineFinder(b)
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
 	var errs []error
