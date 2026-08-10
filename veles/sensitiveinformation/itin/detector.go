@@ -33,10 +33,8 @@ const (
 var itinRe = regexp.MustCompile(`\b(\d{9}|\d{3}-\d{2}-\d{4}|\d{3} \d{2} \d{4})\b`)
 
 var itinKeywords = simpleregex.KeywordsRe([]string{
-	`\bitin\b`,
-	`\bitin(?:\s|[-_])*(?:number|num|no|#)\b`,
-	`individual(?:\s|[-_])*tin`,
-	`\btin(?:\s|[-_])*(?:number|num|no|#)\b`,
+	`\bitin(?:_(?:number|num|no))?\b`,
+	`\btin(?:_(?:number|num|no))?\b`,
 	`individual(?:\s|[-_])*tax`,
 	`individual(?:\s|[-_])*taxpayer`,
 	`individual(?:\s|[-_])*taxpayer\s*id`,
