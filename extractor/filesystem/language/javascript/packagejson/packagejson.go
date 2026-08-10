@@ -68,13 +68,6 @@ type packageJSON struct {
 	PeerDependencies     map[string]string `json:"peerDependencies"`
 }
 
-type dependencyConfig struct {
-	includeDependencies         bool
-	includeDevDependencies      bool
-	includeOptionalDependencies bool
-	includePeerDependencies     bool
-}
-
 type dependencyDetails struct {
 	pkg       *extractor.Package
 	depGroups []string
@@ -84,7 +77,7 @@ type dependencyDetails struct {
 type Extractor struct {
 	Stats            stats.Collector
 	maxFileSizeBytes int64
-	depConfig        dependencyConfig
+	config           *cpb.JavascriptPackageJsonConfig
 }
 
 // New returns a package.json extractor.
@@ -94,7 +87,6 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
 
-	depConfig := dependencyConfig{}
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavascriptPackageJsonConfig {
 		return c.GetJavascriptPackageJson()
 	})
@@ -102,15 +94,11 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		if specific.GetMaxFileSizeBytes() > 0 {
 			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 		}
-		depConfig.includeDependencies = specific.GetIncludeDependencies()
-		depConfig.includeDevDependencies = specific.GetIncludeDevDependencies()
-		depConfig.includeOptionalDependencies = specific.GetIncludeOptionalDependencies()
-		depConfig.includePeerDependencies = specific.GetIncludePeerDependencies()
 	}
 
 	return &Extractor{
 		maxFileSizeBytes: maxFileSizeBytes,
-		depConfig:        depConfig,
+		config:           specific,
 	}, nil
 }
 
@@ -157,7 +145,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from package.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	pkgs, err := parse(input.Path, input.Reader, e.depConfig)
+	pkgs, err := parse(input.Path, input.Reader, e.config)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
 		return inventory.Inventory{}, fmt.Errorf("packagejson.parse: %w", err)
@@ -183,7 +171,7 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 }
 
 // parse parses a package.json file and returns a list of packages.
-func parse(path string, r io.Reader, depConfig dependencyConfig) ([]*extractor.Package, error) {
+func parse(path string, r io.Reader, config *cpb.JavascriptPackageJsonConfig) ([]*extractor.Package, error) {
 	content, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -238,16 +226,16 @@ func parse(path string, r io.Reader, depConfig dependencyConfig) ([]*extractor.P
 	})
 
 	depPkgs := map[string]dependencyDetails{}
-	if depConfig.includeDependencies {
+	if config.GetIncludeDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "dependencies", p.Dependencies, nil)
 	}
-	if depConfig.includeDevDependencies {
+	if config.GetIncludeDevDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "devDependencies", p.DevDependencies, []string{"dev"})
 	}
-	if depConfig.includeOptionalDependencies {
+	if config.GetIncludeOptionalDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "optionalDependencies", p.OptionalDependencies, []string{"optional"})
 	}
-	if depConfig.includePeerDependencies {
+	if config.GetIncludePeerDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "peerDependencies", p.PeerDependencies, []string{"peer"})
 	}
 
