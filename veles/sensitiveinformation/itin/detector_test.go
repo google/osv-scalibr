@@ -168,6 +168,13 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name: "bare_w_7_is_not_a_keyword",
+			in:   []byte("w-7 applicant id: 900-70-4567"),
+			want: []veles.Secret{
+				itinFinding([]byte("900-70-4567")),
+			},
+		},
+		{
 			name: "multiple_matches",
 			in:   []byte("900-70-1234 900501234 900-99-9999"),
 			want: []veles.Secret{
@@ -272,10 +279,6 @@ func TestDetect_keywordMatches(t *testing.T) {
 		{
 			name: "form_w_7_underscored",
 			in:   []byte("form_w-7: 900-70-1234"),
-		},
-		{
-			name: "w_7",
-			in:   []byte("w-7: 900-70-1234"),
 		},
 		{
 			name: "case_insensitive",

@@ -41,8 +41,9 @@ var itinKeywords = simpleregex.KeywordsRe([]string{
 	`individual(?:\s|[-_])*taxpayer\s*identification`,
 	`taxpayer(?:\s|[-_])*identification\s*(?:number|num|no|#)?`,
 	`tax(?:\s|[-_])*identification\s*(?:number|num|no|#)?`,
+	// Form W-7 is also used to renew existing ITINs.
+	// https://www.irs.gov/forms-pubs/about-form-w-7
 	`form(?:\s|[-_])*w-?7`,
-	`\bw-?7\b`,
 })
 
 // NewDetector returns a Detector that finds US Individual Taxpayer Identification Numbers (ITINs).
