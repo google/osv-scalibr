@@ -216,11 +216,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP CSRF Token                             | `secrets/csrftoken`                    |
 
 ### Sensitive information
-| Type                                        | Extractor Plugin                       |
-| ------------------------------------------- | -------------------------------------- |
-| International Bank Account Number           | `sensitiveinformation/iban`            |
-| Individual Taxpayer Identification Number   | `secrets/itin`                         |
-| US Social Security Number                   | `sensitiveinformation/ssn`             |
+| Type                                           | Extractor Plugin                       |
+| ---------------------------------------------- | -------------------------------------- |
+| International Bank Account Number              | `sensitiveinformation/iban`              |
+| US Individual Taxpayer Identification Number   | `secrets/itin`                           |
+| US Social Security Number                      | `sensitiveinformation/ssn`               |
 
 ### Container inventory
 

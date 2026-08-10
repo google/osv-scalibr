@@ -428,7 +428,7 @@ func itinFinding(raw []byte) sensitiveinformation.SensitiveInformation {
 func itinFindingWithLikelihood(raw []byte, likelihood sensitiveinformation.Likelihood) sensitiveinformation.SensitiveInformation {
 	return sensitiveinformation.SensitiveInformation{
 		InfoType: sensitiveinformation.InfoType{
-			Name:        "INDIVIDUAL_TAXPAYER_IDENTIFICATION_NUMBER",
+			Name:        "US_INDIVIDUAL_TAXPAYER_IDENTIFICATION_NUMBER",
 			Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 		},
 		Likelihood: likelihood,
