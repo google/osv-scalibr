@@ -18,11 +18,13 @@ package osvdev
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"slices"
 	"time"
 
 	"github.com/google/osv-scalibr/enricher"
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -33,6 +35,7 @@ import (
 	"osv.dev/bindings/go/osvdevexperimental"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	osvapipb "osv.dev/bindings/go/api"
 )
@@ -59,15 +62,26 @@ type Enricher struct {
 }
 
 // New creates a new Enricher with the given configuration.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
+
 	client := osvdev.DefaultClient()
+	client.HTTPClient = httpClient
 	client.Config.UserAgent = "osv-scalibr/" + scalibrversion.ScannerVersion
 
 	initialQueryTimeout := 5 * time.Minute
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.OSVDevConfig { return c.GetOsvdev() })
-	if specific != nil {
-		if specific.InitialQueryTimeoutSeconds > 0 {
-			initialQueryTimeout = time.Duration(specific.InitialQueryTimeoutSeconds) * time.Second
+	if cfg.ProtoConfig != nil {
+		specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.OSVDevConfig { return c.GetOsvdev() })
+		if specific != nil {
+			if specific.InitialQueryTimeoutSeconds > 0 {
+				initialQueryTimeout = time.Duration(specific.InitialQueryTimeoutSeconds) * time.Second
+			}
 		}
 	}
 
@@ -229,23 +243,33 @@ func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []str
 }
 
 func pkgToQuery(pkg *extractor.Package) *osvapipb.Query {
-	if pkg.Name != "" && !pkg.Ecosystem().IsEmpty() && pkg.Version != "" {
-		// TODO(#1222): Ecosystems could return ecosystems
+	np := osvutil.ParsePackage(pkg)
+
+	// If the ecosystem is GIT, we prioritize commit queries.
+	if np.Ecosystem.String() == "GIT" && np.Commit != "" {
 		return &osvapipb.Query{
-			Package: &osvpb.Package{
-				Name:      pkg.Name,
-				Ecosystem: pkg.Ecosystem().String(),
-			},
-			Param: &osvapipb.Query_Version{
-				Version: pkg.Version,
+			Param: &osvapipb.Query_Commit{
+				Commit: np.Commit,
 			},
 		}
 	}
 
-	if pkg.SourceCode != nil && pkg.SourceCode.Commit != "" {
+	if np.Name != "" && !np.Ecosystem.IsEmpty() && np.Version != "" {
+		return &osvapipb.Query{
+			Package: &osvpb.Package{
+				Name:      np.Name,
+				Ecosystem: np.Ecosystem.String(),
+			},
+			Param: &osvapipb.Query_Version{
+				Version: np.Version,
+			},
+		}
+	}
+
+	if np.Commit != "" {
 		return &osvapipb.Query{
 			Param: &osvapipb.Query_Commit{
-				Commit: pkg.SourceCode.Commit,
+				Commit: np.Commit,
 			},
 		}
 	}

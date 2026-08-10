@@ -26,8 +26,8 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -170,7 +170,7 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 		return nil, err
 	}
 
-	finder := linefinder.NewJSONLineFinder(string(content))
+	finder := linefinder.NewJSONLineFinder(content)
 
 	var p packageJSON
 	if err := json.Unmarshal(content, &p); err != nil {

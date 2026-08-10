@@ -126,14 +126,29 @@ func TestExtract(t *testing.T) {
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:nginx:nginx:1.21.1",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx.json"),
 				},
 				{
 					Name:     "openssl",
+					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "purl",
+								Locator:  "pkg:generic/openssl@1.1.1l",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx.json"),
 				},
@@ -145,18 +160,39 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "nginx",
+					Version:  "1.21.1",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						PURL: getPURL("nginx", "1.21.1"),
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:nginx:nginx:1.21.1",
+							},
+							{
+								Category: "SECURITY",
+								RefType:  "purl",
+								Locator:  "pkg:generic/nginx@1.21.1",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/purl_and_cpe.spdx.json"),
 				},
 				{
 					Name:     "openssl",
+					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "purl",
+								Locator:  "pkg:generic/openssl@1.1.1l",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/purl_and_cpe.spdx.json"),
 				},
@@ -170,14 +206,29 @@ func TestExtract(t *testing.T) {
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:nginx:nginx:1.21.1",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx"),
 				},
 				{
 					Name:     "openssl",
+					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "purl",
+								Locator:  "pkg:generic/openssl@1.1.1l",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx"),
 				},
@@ -191,14 +242,29 @@ func TestExtract(t *testing.T) {
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:nginx:nginx:1.21.1",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx.yml"),
 				},
 				{
 					Name:     "openssl",
+					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "purl",
+								Locator:  "pkg:generic/openssl@1.1.1l",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx.yml"),
 				},
@@ -212,14 +278,29 @@ func TestExtract(t *testing.T) {
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
 						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "http://spdx.org/rdf/references/cpe23Type",
+								Locator:  "cpe:2.3:a:nginx:nginx:1.21.1",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx.rdf"),
 				},
 				{
 					Name:     "openssl",
+					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
 						PURL: getPURL("openssl", "1.1.1l"),
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "http://spdx.org/rdf/references/purl",
+								Locator:  "pkg:generic/openssl@1.1.1l",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/sbom.spdx.rdf"),
 				},
@@ -231,6 +312,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "pkg-python",
+					Version:  "3.14.3-debian13",
 					PURLType: purl.TypeDocker,
 					Metadata: &spdxmeta.Metadata{
 						PURL: &purl.PackageURL{
@@ -244,6 +326,13 @@ func TestExtract(t *testing.T) {
 								"os_version": "13",
 							}),
 						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:docker/dhi/pkg-python@3.14.3-debian13?platform=linux%2Famd64&os_name=debian&os_version=13",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/dhi/.spdx.dhi-pkg-python.json"),
 				},
@@ -255,6 +344,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "python",
+					Version:  "3.14.3-debian13-dev",
 					PURLType: purl.TypeDocker,
 					Metadata: &spdxmeta.Metadata{
 						PURL: &purl.PackageURL{
@@ -268,6 +358,13 @@ func TestExtract(t *testing.T) {
 								"os_version": "13",
 							}),
 						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:docker/dhi/python@3.14.3-debian13-dev?platform=linux%2Famd64&os_name=debian&os_version=13",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/dhi/.spdx.dhi-python.json"),
 				},
@@ -279,6 +376,7 @@ func TestExtract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "python",
+					Version:  "3.14.3",
 					PURLType: purl.TypeDHI,
 					Metadata: &spdxmeta.Metadata{
 						PURL: &purl.PackageURL{
@@ -287,8 +385,77 @@ func TestExtract(t *testing.T) {
 							Version:    "3.14.3",
 							Qualifiers: purl.Qualifiers{},
 						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:dhi/python@3.14.3",
+							},
+						},
 					},
 					Location: extractor.LocationFromPath("testdata/dhi/.spdx.python.json"),
+				},
+			},
+		},
+		{
+			name: "external_refs.spdx.json",
+			path: "testdata/external_refs.spdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name: "flatbuffers",
+					Metadata: &spdxmeta.Metadata{
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "OTHER",
+								RefType:  "SourceURI",
+								Locator:  "third_party/flatbuffers",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/external_refs.spdx.json"),
+				},
+				{
+					Name:     "flatbuffers",
+					Version:  "25.9.23",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
+						CPEs: []string{"cpe:2.3:a:some_company:flatbuffers:25.9.23:*:*:*:*:*:*:*"},
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeGeneric,
+							Namespace:  "some_company",
+							Name:       "flatbuffers",
+							Version:    "25.9.23",
+							Qualifiers: purl.Qualifiers{},
+						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:generic/some_company/flatbuffers@25.9.23",
+							},
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:some_company:flatbuffers:25.9.23:*:*:*:*:*:*:*",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/external_refs.spdx.json"),
+				},
+				{
+					Name:    "custom-pkg",
+					Version: "1.0.0",
+					Metadata: &spdxmeta.Metadata{
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "OTHER",
+								RefType:  "vcs",
+								Locator:  "git+https://example.com/repo@v1.0.0",
+								Comment:  "source code repo",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/external_refs.spdx.json"),
 				},
 			},
 		},

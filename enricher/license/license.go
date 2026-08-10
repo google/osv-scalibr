@@ -25,13 +25,12 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	scalibrversion "github.com/google/osv-scalibr/version"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	depsdevpb "deps.dev/api/v3"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -47,11 +46,26 @@ var _ enricher.Enricher = &Enricher{}
 // Enricher adds license data to software packages by querying deps.dev
 type Enricher struct {
 	Client Client
+	Config *config.PluginConfig
 }
 
 // New creates a new Enricher
-func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
-	return &Enricher{}, nil
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+	conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get gRPC connection for %s: %w", Name, err)
+	}
+	if conn == nil {
+		return nil, fmt.Errorf("gRPC connection is nil for %s", Name)
+	}
+	client := datasource.NewCachedInsightsClientWithConn(conn)
+	return &Enricher{
+		Client: client,
+		Config: cfg,
+	}, nil
 }
 
 // Name of the Enricher.
@@ -81,14 +95,6 @@ func (Enricher) RequiredPlugins() []string {
 
 // Enrich adds license data to all the packages using deps.dev
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
-	if e.Client == nil {
-		depsDevAPIClient, err := datasource.NewCachedInsightsClient(depsdev.DepsdevAPI, "osv-scalibr/"+scalibrversion.ScannerVersion)
-		if err != nil {
-			return fmt.Errorf("cannot connect with deps.dev %w", err)
-		}
-		e.Client = depsDevAPIClient
-	}
-
 	queries := make([]*depsdevpb.GetVersionRequest, len(inv.Packages))
 	for i, pkg := range inv.Packages {
 		if err := ctx.Err(); err != nil {
