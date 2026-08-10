@@ -34,15 +34,13 @@ const (
 var atinRe = regexp.MustCompile(`\b(9\d{2}93\d{4}|9\d{2}-93-\d{4}|9\d{2} 93 \d{4})\b`)
 
 var atinKeywords = simpleregex.KeywordsRe([]string{
-	`\batin\b`,
-	`\batin(?:\s|[-_])*(?:number|num|no\b|#)`,
+	`\batin(?:_(?:number|num|no))?\b`,
 	`adoption(?:\s|[-_])*taxpayer(?:\s|[-_])*identification(?:\s|[-_])*number`,
 	`adoption(?:\s|[-_])*taxpayer(?:\s|[-_])*identification`,
 	`adoption(?:\s|[-_])*tax(?:\s|[-_])*identification(?:\s|[-_])*number`,
 	`adoption(?:\s|[-_])*tax(?:\s|[-_])*id`,
 	`adoption(?:\s|[-_])*taxpayer(?:\s|[-_])*id`,
 	`adoption(?:\s|[-_])*tin`,
-	`irs(?:\s|[-_])*atin`,
 })
 
 // NewDetector returns a Detector, that finds US Adoption Taxpayer Identification Number (ATIN)
