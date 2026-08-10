@@ -556,10 +556,19 @@ message MacportsPackageMetadata {
   string package_revision = 3;
 }
 
+// An external reference to additional information about an SPDX package.
+message SPDXExternalReference {
+  string category = 1;
+  string ref_type = 2;
+  string locator = 3;
+  string comment = 4;
+}
+
 // The additional data for packages extracted from SPDX files.
 message SPDXPackageMetadata {
   Purl purl = 1;
   repeated string cpes = 2;
+  repeated SPDXExternalReference external_references = 3;
 }
 
 // The additional data for packages extracted from CDX files.
