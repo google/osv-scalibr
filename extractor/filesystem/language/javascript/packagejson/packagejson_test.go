@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -143,6 +144,9 @@ func TestExtract(t *testing.T) {
 		name             string
 		path             string
 		includeDeps      bool
+		includeDevDeps   bool
+		includeOptDeps   bool
+		includePeerDeps  bool
 		wantPackages     []*extractor.Package
 		wantErr          error
 		wantResultMetric stats.FileExtractedResult
@@ -312,6 +316,17 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "package_with_dependencies_disabled_by_default",
+			path: "testdata/package-with-deps.json",
+			wantPackages: []*extractor.Package{{
+				Name:     "package-with-deps",
+				Version:  "1.2.3",
+				PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 2),
+				Metadata: &metadata.JavascriptPackageJSONMetadata{},
+			}},
+		},
+		{
 			name:        "package_with_dependencies",
 			path:        "testdata/package-with-deps.json",
 			includeDeps: true,
@@ -328,30 +343,35 @@ func TestExtract(t *testing.T) {
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 5),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
 				},
 				{
 					Name:     "dep2",
 					Version:  "2.0.1",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 6),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
 				},
 				{
 					Name:     "dep3",
 					Version:  "3.1.0",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 7),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
 				},
 				{
 					Name:     "dep4",
 					Version:  "0.4.2",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 8),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
 				},
 				{
 					Name:     "dep5",
 					Version:  "5.0.0",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 9),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
 				},
 				// dep6 is invalid, so it should not be included.
 				{
@@ -359,6 +379,101 @@ func TestExtract(t *testing.T) {
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 11),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
+				},
+			},
+		},
+		{
+			name:            "package_with_all_dependency_groups",
+			path:            "testdata/package-with-all-deps.json",
+			includeDeps:     true,
+			includeDevDeps:  true,
+			includeOptDeps:  true,
+			includePeerDeps: true,
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "package-with-all-deps",
+					Version:  "1.2.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 2),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+				},
+				{
+					Name:     "dev-only",
+					Version:  "3.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 9),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
+				},
+				{
+					Name:     "optional-only",
+					Version:  "5.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 14),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"optional"}},
+				},
+				{
+					Name:     "peer-only",
+					Version:  "6.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 18),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"peer"}},
+				},
+				{
+					Name:     "prod-only",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 6),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
+				},
+				{
+					Name:     "prod-shared",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 5),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
+				},
+				{
+					Name:     "shared-non-prod",
+					Version:  "4.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 10),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev", "optional", "peer"}},
+				},
+			},
+		},
+		{
+			name:           "package_with_dev_dependencies_only",
+			path:           "testdata/package-with-all-deps.json",
+			includeDevDeps: true,
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "package-with-all-deps",
+					Version:  "1.2.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 2),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+				},
+				{
+					Name:     "dev-only",
+					Version:  "3.1.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 9),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
+				},
+				{
+					Name:     "prod-shared",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 11),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
+				},
+				{
+					Name:     "shared-non-prod",
+					Version:  "4.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 10),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
 				},
 			},
 		},
@@ -382,6 +497,7 @@ func TestExtract(t *testing.T) {
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/duplicate-keys.json", 8),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{}},
 				},
 			},
 		},
@@ -423,7 +539,10 @@ func TestExtract(t *testing.T) {
 				PluginSpecific: []*cpb.PluginSpecificConfig{
 					{Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{
 						JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
-							IncludeDependencies: tt.includeDeps,
+							IncludeDependencies:         tt.includeDeps,
+							IncludeDevDependencies:      tt.includeDevDeps,
+							IncludeOptionalDependencies: tt.includeOptDeps,
+							IncludePeerDependencies:     tt.includePeerDeps,
 						},
 					}},
 				},
