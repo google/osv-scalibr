@@ -59,7 +59,7 @@ func NewDetector() veles.Detector {
 
 			finding := sensitiveinformation.SensitiveInformation{
 				InfoType: sensitiveinformation.InfoType{
-					Name:        "ADOPTION_TAXPAYER_IDENTIFICATION_NUMBER",
+					Name:        "US_ADOPTION_TAXPAYER_IDENTIFICATION_NUMBER",
 					Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 				},
 				Likelihood: likelihood,
