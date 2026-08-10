@@ -30,7 +30,7 @@ const (
 	contextWindowSize = 64
 )
 
-var itinRe = regexp.MustCompile(`\b(\d{9}|\d{3}-\d{2}-\d{4}|\d{3} \d{2} \d{4})\b`)
+var itinRe = regexp.MustCompile(`\b(9\d{8}|9\d{2}-\d{2}-\d{4}|9\d{2} \d{2} \d{4})\b`)
 
 var itinKeywords = simpleregex.KeywordsRe([]string{
 	`\bitin(?:_(?:number|num|no))?\b`,
@@ -81,10 +81,6 @@ func NewDetector() veles.Detector {
 
 func validItin(s string) bool {
 	normalized := strings.ReplaceAll(s, "-", "")
-	if len(normalized) != 9 || normalized[0] != '9' {
-		return false
-	}
-
 	secondSection := normalized[3:5]
 
 	return secondSection != "89" &&
