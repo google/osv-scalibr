@@ -215,6 +215,7 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
 			Contributors: removeEmptyPersons(p.Contributors),
+			Dependencies: p.Dependencies,
 		},
 	})
 
