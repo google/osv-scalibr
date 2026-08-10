@@ -40,15 +40,7 @@ type Extractor struct {
 func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
 	e := &Extractor{
 		target:    "//...",
-		keepGoing: false,
-	}
-	for _, p := range cfg.GetPluginSpecific() {
-		if b := p.GetBazel(); b != nil {
-			if b.GetBazelTarget() != "" {
-				e.target = b.GetBazelTarget()
-			}
-			e.keepGoing = b.GetKeepGoing()
-		}
+		keepGoing: true,
 	}
 	return e, nil
 }
@@ -82,6 +74,8 @@ type aspectData struct {
 	URL string `json:"url"`
 	// URLs contains a list of URLs.
 	URLs string `json:"urls"`
+	// StripPrefix is the bazel rule strip_prefix.
+	StripPrefix string `json:"strip_prefix"`
 	// Remote is the source control remote.
 	Remote string `json:"remote"`
 	// PackageName is the rules_license package_name attribute.
@@ -169,27 +163,35 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 
 		version := data.PackageVersion
 		if version == "" {
-			version = data.Version
+			version = cleanVersion(data.Version)
 		}
 		if version == "" {
-			version = data.Tag
-		}
-		if version == "" && len(data.Commit) >= 12 {
-			version = data.Commit[:12]
-		}
-		if version == "" {
-			version = "NOASSERTION"
+			version = cleanVersion(data.Tag)
 		}
 
 		url := data.PackageURL
 		if url == "" {
 			url = data.URL
 		}
-		if url == "" {
-			url = data.URLs
+		if url == "" && data.URLs != "" {
+			// Just take the first URL if it's a JSON array or comma separated
+			url = strings.Trim(strings.Split(data.URLs, ",")[0], " []\"")
 		}
 		if url == "" {
 			url = data.Remote
+		}
+
+		if version == "" {
+			version = extractVersionFromURL(url)
+		}
+		if version == "" && data.StripPrefix != "" {
+			version = extractVersionFromStripPrefix(data.StripPrefix)
+		}
+		if version == "" && len(data.Commit) >= 12 {
+			version = data.Commit[:12]
+		}
+		if version == "" {
+			version = "NOASSERTION"
 		}
 
 		purlType := "generic"
@@ -202,9 +204,9 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		} else {
 			if strings.Contains(url, "github.com") {
 				purlType = "github"
-			} else if strings.Contains(url, "pypi.org") {
+			} else if strings.Contains(url, "pypi.org") || strings.Contains(url, "python.pkg.dev") {
 				purlType = "pypi"
-			} else if strings.Contains(url, "npmjs.org") {
+			} else if strings.Contains(url, "npmjs.org") || strings.Contains(url, "npm.pkg.dev") {
 				purlType = "npm"
 			} else if strings.Contains(url, "crates.io") {
 				purlType = "cargo"

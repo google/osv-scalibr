@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
+	"github.com/google/osv-scalibr/extractor/standalone/bazel/aspect"
 	"github.com/google/osv-scalibr/plugin/config"
 )
 
@@ -59,10 +60,15 @@ var (
 		docker.Name: {protoCfg(docker.New)},
 	}
 
+	// Bazel standalone extractors.
+	Bazel = InitMap{
+		aspect.Name: {protoCfg(aspect.New)},
+	}
+
 	// Default standalone extractors.
 	Default = Windows
 	// All standalone extractors.
-	All = concat(Windows, WindowsExperimental, Containers, OSExperimental)
+	All = concat(Windows, WindowsExperimental, Containers, OSExperimental, Bazel)
 
 	extractorNames = concat(All, InitMap{
 		// Windows
@@ -74,6 +80,7 @@ var (
 		"extractors/all":     vals(All),
 		"all":                vals(All),
 		"containers":         vals(Containers),
+		"bazel":              vals(Bazel),
 	})
 )
 
