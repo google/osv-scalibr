@@ -105,10 +105,10 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name: "form_keyword",
+			name: "form_w_7a_is_not_a_keyword",
 			in:   []byte("form w-7a applicant id: 923-93-4567"),
 			want: []veles.Secret{
-				atinFindingWithLikelihood([]byte("923-93-4567"), sensitiveinformation.LikelihoodLikely),
+				atinFinding([]byte("923-93-4567")),
 			},
 		},
 		{
@@ -224,18 +224,6 @@ func TestDetect_keywordMatches(t *testing.T) {
 		{
 			name: "irs_atin_with_dash",
 			in:   []byte("irs-atin: 912-93-6789"),
-		},
-		{
-			name: "form_w_7a",
-			in:   []byte("form w-7a: 912-93-6789"),
-		},
-		{
-			name: "form_w_7a_with_underscore",
-			in:   []byte("form_w-7a: 912-93-6789"),
-		},
-		{
-			name: "w_7a",
-			in:   []byte("w-7a: 912-93-6789"),
 		},
 		{
 			name: "case_insensitive",

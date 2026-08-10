@@ -43,8 +43,6 @@ var atinKeywords = simpleregex.KeywordsRe([]string{
 	`adoption(?:\s|[-_])*taxpayer(?:\s|[-_])*id`,
 	`adoption(?:\s|[-_])*tin`,
 	`irs(?:\s|[-_])*atin`,
-	`form(?:\s|[-_])*w-7a`,
-	`w-7a`,
 })
 
 // NewDetector returns a Detector, that finds US Adoption Taxpayer Identification Number (ATIN)
