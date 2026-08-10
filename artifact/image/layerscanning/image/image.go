@@ -31,7 +31,6 @@ import (
 
 	"archive/tar"
 
-	"github.com/docker/docker/client"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -40,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
+	"github.com/moby/moby/client"
 	"github.com/opencontainers/go-digest"
 )
 
@@ -195,7 +195,7 @@ func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Opt
 
 // CreateTarBallFromImage creates a tarball from a local docker image. This is the API version of 'docker save image' command
 func createTarBallFromImage(imageName string) (string, error) {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return "", fmt.Errorf("unable to create docker client to untar image  %s: %w", imageName, err)
 	}
@@ -230,7 +230,7 @@ func createTarBallFromImage(imageName string) (string, error) {
 
 // Check if the imageName is of the form imageName:imageTag
 func validateImageNameAndTag(imageName string) error {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return err
 	}
@@ -589,7 +589,7 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 
 		// Check if the file is a whiteout.
 		isWhiteout := whiteout.IsWhiteout(basename)
-		// TODO: b/379094217 - Handle Opaque Whiteouts
+		// TODO(b/379094217): Handle Opaque Whiteouts
 		if isWhiteout {
 			basename = whiteout.ToPath(basename)
 		}
@@ -790,7 +790,7 @@ func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *vi
 }
 
 // inWhiteoutDir returns whether the file is in a whiteout directory.
-// TODO: b/379094217 - Verify that this works for opaque whiteouts.
+// TODO(b/379094217): Verify that this works for opaque whiteouts.
 func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 	for filePath != "" {
 		dirname := path.Dir(filePath)

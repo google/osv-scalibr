@@ -17,6 +17,7 @@ package scanrunner
 
 import (
 	"context"
+	"io"
 
 	scalibr "github.com/google/osv-scalibr"
 	scalibrlayerimage "github.com/google/osv-scalibr/artifact/image/layerscanning/image"
@@ -42,6 +43,15 @@ func RunScan(flags *cli.Flags) int {
 	if err != nil {
 		log.Errorf("%v.GetScanConfig(): %v", flags, err)
 		return 1
+	}
+	if cfg.RequiredPluginConfig != nil && cfg.RequiredPluginConfig.ClientFactories != nil {
+		if closer, ok := cfg.RequiredPluginConfig.ClientFactories.(io.Closer); ok {
+			defer func() {
+				if err := closer.Close(); err != nil {
+					log.Warnf("failed to close client factories: %v", err)
+				}
+			}()
+		}
 	}
 
 	log.Infof("Running scan with %d plugins", len(cfg.Plugins))

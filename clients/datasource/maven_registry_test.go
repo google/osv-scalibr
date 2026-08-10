@@ -16,9 +16,12 @@ package datasource_test
 
 import (
 	"bytes"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -55,7 +58,7 @@ func TestGetProject(t *testing.T) {
 
 func TestGetProjectSnapshot(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false, &http.Client{}, nil)
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -252,7 +255,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 func TestMavenLocalRegistry(t *testing.T) {
 	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false, &http.Client{}, nil)
 	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
 	resp := []byte(`
 	<project>
@@ -275,5 +278,92 @@ func TestMavenLocalRegistry(t *testing.T) {
 	}
 	if !bytes.Equal(content, resp) {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), string(resp))
+	}
+}
+
+type trackingTransport struct {
+	mu     sync.Mutex
+	called bool
+}
+
+func (t *trackingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.mu.Lock()
+	t.called = true
+	t.mu.Unlock()
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader([]byte("<project><groupId>g</groupId><artifactId>a</artifactId><version>v</version></project>"))),
+	}, nil
+}
+
+func (t *trackingTransport) wasCalled() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.called
+}
+
+// TestDisableGoogleAuthRespected tests that setting disableGoogleAuth = true in
+// NewMavenRegistryAPIClient prevents the Google client from being used for
+// Artifact Registry requests, falling back to the standard HTTP client.
+func TestDisableGoogleAuthRespected(t *testing.T) {
+	standardTransport := &trackingTransport{}
+	googleTransport := &trackingTransport{}
+
+	standardClient := &http.Client{Transport: standardTransport}
+	googleClient := &http.Client{Transport: googleTransport}
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
+		"",   // localRegistry
+		true, // disableGoogleAuth
+		standardClient,
+		googleClient,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	_, _ = client.GetProject(t.Context(), "g", "a", "v")
+
+	if googleTransport.wasCalled() {
+		t.Errorf("Google client was called when disableGoogleAuth is true")
+	}
+	if !standardTransport.wasCalled() {
+		t.Errorf("Standard client was not called")
+	}
+}
+
+// TestDisableGoogleAuthMethodRespected tests that dynamically calling
+// DisableGoogleAuth() post-construction prevents the Google client from being
+// used for Artifact Registry requests.
+func TestDisableGoogleAuthMethodRespected(t *testing.T) {
+	standardTransport := &trackingTransport{}
+	googleTransport := &trackingTransport{}
+
+	standardClient := &http.Client{Transport: standardTransport}
+	googleClient := &http.Client{Transport: googleTransport}
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
+		"",    // localRegistry
+		false, // disableGoogleAuth
+		standardClient,
+		googleClient,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	client.DisableGoogleAuth()
+
+	_, _ = client.GetProject(t.Context(), "g", "a", "v")
+
+	if googleTransport.wasCalled() {
+		t.Errorf("Google client was called after DisableGoogleAuth()")
+	}
+	if !standardTransport.wasCalled() {
+		t.Errorf("Standard client was not called")
 	}
 }

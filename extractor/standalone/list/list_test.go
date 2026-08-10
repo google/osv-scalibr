@@ -18,8 +18,8 @@ import (
 	"regexp"
 	"testing"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	el "github.com/google/osv-scalibr/extractor/standalone/list"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 )
 
 var (
@@ -29,7 +29,7 @@ var (
 func TestPluginNamesValid(t *testing.T) {
 	for _, initers := range el.All {
 		for _, initer := range initers {
-			p, err := initer(&cpb.PluginConfig{})
+			p, err := initer(configtest.NewFakePluginConfig())
 			if err != nil {
 				t.Fatalf("initer(): %v", err)
 			}

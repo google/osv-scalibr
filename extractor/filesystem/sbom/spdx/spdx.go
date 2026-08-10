@@ -41,6 +41,10 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "sbom/spdx"
+	// CPE23Type is the CPE 2.3 type for SPDX package external references.
+	CPE23Type = "cpe23Type"
+	// PURLType is the PURL type for SPDX package external references.
+	PURLType = "purl"
 )
 
 // Extractor extracts software dependencies from an spdx SBOM.
@@ -131,29 +135,42 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 		}
 		m := pkg.Metadata.(*spdxmeta.Metadata)
 		for _, extRef := range spdxPkg.PackageExternalReferences {
-			// TODO(b/280991231): Support all RefTypes
-			if extRef.RefType == "cpe23Type" || extRef.RefType == "http://spdx.org/rdf/references/cpe23Type" {
+			m.ExternalReferences = append(m.ExternalReferences, spdxmeta.ExternalReference{
+				Category: extRef.Category,
+				RefType:  extRef.RefType,
+				Locator:  extRef.Locator,
+				Comment:  extRef.ExternalRefComment,
+			})
+
+			if extRef.RefType == CPE23Type || extRef.RefType == "http://spdx.org/rdf/references/cpe23Type" {
 				m.CPEs = append(m.CPEs, extRef.Locator)
-				if len(pkg.Name) == 0 {
+				if pkg.Name == "" {
 					pkg.Name = extRef.Locator
 				}
-			} else if extRef.RefType == "purl" || extRef.RefType == "http://spdx.org/rdf/references/purl" {
+			} else if extRef.RefType == PURLType || extRef.RefType == "http://spdx.org/rdf/references/purl" {
 				if m.PURL != nil {
 					log.Warnf("Multiple PURLs found for same package: %q and %q", m.PURL, extRef.Locator)
 				}
 				packageURL, err := purl.FromString(extRef.Locator)
-				pkg.Name = packageURL.Name
 				if err != nil {
 					log.Warnf("Invalid PURL %q for package: %q", extRef.Locator, spdxPkg.PackageName)
 				} else {
+					pkg.Name = packageURL.Name
+					pkg.Version = packageURL.Version
 					m.PURL = &packageURL
 					pkg.PURLType = packageURL.Type
 				}
 			}
 		}
+		if pkg.Name == "" {
+			pkg.Name = spdxPkg.PackageName
+		}
+		if pkg.Version == "" {
+			pkg.Version = spdxPkg.PackageVersion
+		}
 		pkg.Metadata = m
-		if m.PURL == nil && len(m.CPEs) == 0 {
-			log.Warnf("Neither CPE nor PURL found for package: %+v", spdxPkg)
+		if m.PURL == nil && len(m.CPEs) == 0 && len(m.ExternalReferences) == 0 {
+			log.Warnf("Neither CPE, PURL, nor external reference found for package: %+v", spdxPkg)
 			continue
 		}
 		results = append(results, pkg)

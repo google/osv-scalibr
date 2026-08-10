@@ -24,7 +24,7 @@ import (
 
 // EnableAdditionalExtractors patches the filesystem extractor lists to include containerd.
 func EnableAdditionalExtractors() {
-	fl.RegisterExtractor(containerd.Name, containerd.New, []string{
+	fl.RegisterExtractor(containerd.Name, fl.ProtoCfg(containerd.New), []string{
 		"containers",
 		"artifact",
 	})
