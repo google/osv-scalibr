@@ -347,12 +347,18 @@ message PythonPackageMetadata {
 
 // The additional data found in npm packages.
 message JavascriptPackageJSONMetadata {
+  message Dependency {
+    string name = 1;
+    string version_required = 2;
+  }
+
   reserved 4;
 
   string author = 1;
   repeated string maintainers = 2;
   repeated string contributors = 3;
   PackageSource source = 5;
+  repeated Dependency dependencies = 6;
 }
 
 // The source of the package.
