@@ -543,6 +543,36 @@ func TestExtract(t *testing.T) {
 				// https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers.
 				//
 				// foo15== --config-settings --hash=sha256:123
+
+				{
+					// foo16-Client==1.0
+					// valid package name contains "-C" (e.g. "-Client")
+					// the "-C" should not be misparsed as the short-form of --config-settings.
+					Name:     "foo16-Client",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/per_req_options.txt", 32),
+					Metadata: &requirements.Metadata{Requirement: "foo16-Client==1.0"},
+				},
+				{
+					// foo17--hash==1.0
+					// package name contains "--hash"
+					// "--hash" without leading whitespace should not be misparsed as the --hash option flag.
+					Name:     "foo17--hash",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/per_req_options.txt", 34),
+					Metadata: &requirements.Metadata{Requirement: "foo17--hash==1.0"},
+				},
+				{
+					// foo18-Client==1.0 -C bar
+					// valid package name contains "-C" while the line also includes a "-C" option flag.
+					Name:     "foo18-Client",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/per_req_options.txt", 36),
+					Metadata: &requirements.Metadata{Requirement: "foo18-Client==1.0"},
+				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
