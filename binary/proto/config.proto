@@ -37,7 +37,11 @@ message PluginConfig {
   // If true, do not try to create google.DefaultClient for Artifact Registry
   // during dependency resolution.
   bool disable_google_auth = 4;
-  // The user agent to use when making requests.
+  // The user agent to use when running SCALIBR as a CLI binary. If specified,
+  // the CLI passes this value to initialize the client factory.
+  // When calling SCALIBR as a Go library, this field is ignored; instead, the
+  // caller should configure the user agent directly in their ClientFactories
+  // implementation.
   string user_agent = 5;
 
   // Config values that only apply to a single plugin.

@@ -20,6 +20,7 @@ import (
 	"maps"
 	"slices"
 
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
 	"github.com/google/osv-scalibr/extractor/standalone/os/netports"
@@ -27,36 +28,35 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/ospackages"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regosversion"
 	"github.com/google/osv-scalibr/extractor/standalone/windows/regpatchlevel"
-
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 // InitFn is the extractor initializer function.
-type InitFn func(cfg *cpb.PluginConfig) (standalone.Extractor, error)
+type InitFn func(cfg *config.PluginConfig) (standalone.Extractor, error)
 
 // InitMap is a map of extractor names to their initers.
 type InitMap map[string][]InitFn
 
 var (
 	// Windows standalone extractors.
-	Windows = InitMap{dismpatch.Name: {dismpatch.New}}
+	Windows = InitMap{dismpatch.Name: {protoCfg(dismpatch.New)}}
 
 	// WindowsExperimental defines experimental extractors. Note that experimental does not mean
 	// dangerous.
 	WindowsExperimental = InitMap{
-		ospackages.Name:    {ospackages.New},
-		regosversion.Name:  {regosversion.New},
-		regpatchlevel.Name: {regpatchlevel.New},
+		ospackages.Name:    {protoCfg(ospackages.New)},
+		regosversion.Name:  {protoCfg(regosversion.New)},
+		regpatchlevel.Name: {protoCfg(regpatchlevel.New)},
 	}
 
 	// OSExperimental defines experimental OS extractors.
 	OSExperimental = InitMap{
-		netports.Name: {netports.New},
+		netports.Name: {protoCfg(netports.New)},
 	}
 
 	// Containers standalone extractors.
 	Containers = InitMap{
-		docker.Name: {docker.New},
+		docker.Name: {protoCfg(docker.New)},
 	}
 
 	// Default standalone extractors.
@@ -89,8 +89,22 @@ func vals(initMap InitMap) []InitFn {
 	return slices.Concat(slices.Collect(maps.Values(initMap))...)
 }
 
+func protoCfg(f func(cfg *cpb.PluginConfig) (standalone.Extractor, error)) InitFn {
+	return func(cfg *config.PluginConfig) (standalone.Extractor, error) {
+		if cfg != nil && cfg.ProtoConfig != nil {
+			return f(cfg.ProtoConfig)
+		}
+		return f(&cpb.PluginConfig{})
+	}
+}
+
+// ProtoCfg wraps a legacy initializer to the new signature.
+func ProtoCfg(f func(cfg *cpb.PluginConfig) (standalone.Extractor, error)) InitFn {
+	return protoCfg(f)
+}
+
 // ExtractorsFromName returns a list of extractors from a name.
-func ExtractorsFromName(name string, cfg *cpb.PluginConfig) ([]standalone.Extractor, error) {
+func ExtractorsFromName(name string, cfg *config.PluginConfig) ([]standalone.Extractor, error) {
 	if initers, ok := extractorNames[name]; ok {
 		result := []standalone.Extractor{}
 		for _, initer := range initers {

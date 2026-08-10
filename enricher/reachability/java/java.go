@@ -39,7 +39,7 @@ import (
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -90,9 +90,16 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 // New creates a new Enricher with default configuration.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
 	return &Enricher{
-		Client: http.DefaultClient,
+		Client: httpClient,
 	}, nil
 }
 
@@ -100,7 +107,7 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 func (enr Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	client := enr.Client
 	if client == nil {
-		client = http.DefaultClient
+		return fmt.Errorf("client not configured for %s", Name)
 	}
 	jars := make(map[string]struct{})
 	for i := range inv.Packages {

@@ -21,14 +21,15 @@ import (
 	"maps"
 	"slices"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
-	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
+	grpcpb "deps.dev/api/v3alpha"
+	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/depsdev/depsdevalpha"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -68,15 +69,16 @@ func (e *Enricher) SetClient(client Client) {
 }
 
 // New returns a new package deprecation enricher.
-func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
-	grpcConfig := grpcclient.DefaultConfig()
-	grpcclient, err := grpcclient.New(grpcConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create deps.dev gRPC client: %w", err)
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
 	}
-
+	conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to establish gRPC connection for %s: %w", Name, err)
+	}
+	grpcclient := grpcpb.NewInsightsClient(conn)
 	c := NewClient(grpcclient)
-
 	return &Enricher{client: c}, nil
 }
 

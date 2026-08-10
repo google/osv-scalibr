@@ -29,6 +29,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -98,7 +99,7 @@ func TestEnricher_Enrich(t *testing.T) {
 	}
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe.yaml")
-	enricher, err := requirements.New(&cpb.PluginConfig{})
+	enricher, err := requirements.New(configtest.NewFakePluginConfig())
 	if err != nil {
 		log.Errorf("requirements.New(): %v", err)
 	}
@@ -258,7 +259,9 @@ func TestNewEnricher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := requirements.New(tt.cfg)
+			pluginCfg := configtest.NewFakePluginConfig()
+			pluginCfg.ProtoConfig = tt.cfg
+			got, err := requirements.New(pluginCfg)
 			if err != nil {
 				t.Fatalf("New(%v) error = %v", tt.cfg, err)
 			}
