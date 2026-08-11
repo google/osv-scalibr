@@ -5,14 +5,20 @@ import (
 	"strings"
 )
 
+var (
+	splitPattern   = regexp.MustCompile(`[+~]`)
+	versionPattern = regexp.MustCompile(`^\d+[\.\d]*$`)
+	commitPattern  = regexp.MustCompile(`^[0-9a-f]{40}$`)
+)
+
 func normalizeModuleName(name string) string {
-	parts := regexp.MustCompile(`[+~]`).Split(name, -1)
+	parts := splitPattern.Split(name, -1)
 	var cleanParts []string
 	for _, p := range parts {
 		if p == "" {
 			continue
 		}
-		if regexp.MustCompile(`^\d+[\.\d]*$`).MatchString(p) || regexp.MustCompile(`^[0-9a-f]{40}$`).MatchString(p) {
+		if versionPattern.MatchString(p) || commitPattern.MatchString(p) {
 			continue
 		}
 		cleanParts = append(cleanParts, p)

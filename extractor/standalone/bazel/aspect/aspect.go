@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -38,7 +39,7 @@ type Extractor struct {
 }
 
 // New returns a new instance of the Extractor.
-func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
+func New(_ *cpb.PluginConfig) (standalone.Extractor, error) {
 	e := &Extractor{
 		target:    "//...",
 		keepGoing: true,
@@ -222,7 +223,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		pkgName = strings.TrimLeft(pkgName, "@+")
 
 		normName := normalizeModuleName(pkgName)
-		if strings.HasPrefix(pkgName, "gazelle") || strings.Contains(url, "github.com") {
+		if strings.HasPrefix(pkgName, "gazelle") {
 			goName := getGoPkgNameFromURL(url)
 			if goName != "" {
 				pkgName = goName
@@ -249,6 +250,13 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	for _, pkg := range packagesMap {
 		pkgs = append(pkgs, pkg)
 	}
+
+	sort.Slice(pkgs, func(i, j int) bool {
+		if pkgs[i].Name != pkgs[j].Name {
+			return pkgs[i].Name < pkgs[j].Name
+		}
+		return pkgs[i].Version < pkgs[j].Version
+	})
 
 	return inventory.Inventory{Packages: pkgs}, nil
 }
