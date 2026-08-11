@@ -17,7 +17,10 @@ func normalizeModuleName(name string) string {
 		}
 		cleanParts = append(cleanParts, p)
 	}
-	return strings.Join(cleanParts, "~")
+	if len(cleanParts) > 0 {
+		return cleanParts[len(cleanParts)-1]
+	}
+	return name
 }
 
 func getGoPkgNameFromURL(url string) string {
