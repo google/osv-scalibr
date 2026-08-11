@@ -187,11 +187,31 @@ func (m *mavenManifest) PatchRequirement(req resolve.RequirementVersion) error {
 
 type readWriter struct {
 	*datasource.MavenRegistryAPIClient
+
+	projectRoot string
 }
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
-func GetReadWriter(client *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
-	return readWriter{MavenRegistryAPIClient: client}, nil
+// projectRoot is the directory path to scan for local Maven modules.
+func GetReadWriter(client *datasource.MavenRegistryAPIClient, projectRoot string) (manifest.ReadWriter, error) {
+	if projectRoot != "" {
+		absProjectRoot, err := filepath.Abs(projectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get absolute path for project root %q: %w", projectRoot, err)
+		}
+		stat, err := os.Stat(absProjectRoot)
+		if err == nil && stat.IsDir() {
+			// Assume the root manifest file is named pom.xml.
+			// Downstream DiscoverModules expects a file path.
+			absProjectRoot = filepath.Join(absProjectRoot, "pom.xml")
+		}
+		vol := filepath.VolumeName(absProjectRoot) + "/"
+		projectRoot, err = filepath.Rel(vol, absProjectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make project root %q relative to volume %q: %w", absProjectRoot, vol, err)
+		}
+	}
+	return readWriter{MavenRegistryAPIClient: client, projectRoot: projectRoot}, nil
 }
 
 // System returns the ecosystem of this ReadWriter.
@@ -208,7 +228,11 @@ func (r readWriter) SupportedStrategies() []strategy.Strategy {
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
 	ctx := context.Background()
 	path = filepath.ToSlash(path)
-	mavenutil.DiscoverModules(&scalibrfs.ScanRoot{FS: fsys, Path: ""}, []string{path}, r.MavenRegistryAPIClient)
+	scanPaths := []string{path}
+	if r.projectRoot != "" {
+		scanPaths = append(scanPaths, filepath.ToSlash(r.projectRoot))
+	}
+	mavenutil.DiscoverModules(&scalibrfs.ScanRoot{FS: fsys, Path: ""}, scanPaths, r.MavenRegistryAPIClient)
 	f, err := fsys.Open(path)
 	if err != nil {
 		return nil, err
