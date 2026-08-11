@@ -598,6 +598,21 @@ message JavaLockfileMetadata {
   bool is_transitive = 4;
 }
 
+message JavaLockfileDependency {
+  string group_id = 1;
+  string artifact_id = 2;
+  // Empty, if it came from a version requirement that could not be resolved.
+  string version_requirement = 3;
+  string scope = 4;
+  bool is_optional = 5;
+}
+
+message JavaLockfileParent {
+  string group_id = 1;
+  string artifact_id = 2;
+  string version = 3;
+}
+
 // The additional data for packages extracted by an OSV extractor wrapper.
 message OSVPackageMetadata {
   string purl_type = 1;
