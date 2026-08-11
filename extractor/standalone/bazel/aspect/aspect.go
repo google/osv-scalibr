@@ -116,14 +116,14 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	if e.keepGoing {
 		args = append(args, "--keep_going")
 	}
-	
+
 	// Add check_visibility=false to bypass internal access restrictions on mega targets
 	args = append(args, "--check_visibility=false")
-	
+
 	// Add a unique cache-buster so Bazel always re-evaluates the aspect and prints to stderr
 	uuidStr := fmt.Sprintf("%d", os.Getpid()) // good enough cache buster for single runs
 	args = append(args, "--define", fmt.Sprintf("scalibr_run=%s", uuidStr))
-	
+
 	args = append(args, e.target)
 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
@@ -219,6 +219,23 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		}
 		// Clean up the name if it starts with @ or +
 		pkgName = strings.TrimLeft(pkgName, "@+")
+
+		normName := normalizeModuleName(pkgName)
+		if strings.HasPrefix(pkgName, "gazelle") || strings.Contains(url, "github.com") {
+			goName := getGoPkgNameFromURL(url)
+			if goName != "" {
+				pkgName = goName
+				purlType = "golang"
+			} else {
+				pkgName = normName
+			}
+		} else if strings.HasPrefix(pkgName, "crates_") {
+			pkgName = strings.Split(pkgName, "__")[len(strings.Split(pkgName, "__"))-1]
+			pkgName = strings.Split(pkgName, "-")[0]
+			purlType = "cargo"
+		} else {
+			pkgName = normName
+		}
 
 		packagesMap[dedupKey] = &extractor.Package{
 			Name:     pkgName,
