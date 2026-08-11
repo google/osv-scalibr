@@ -10,7 +10,7 @@ func cleanVersion(version string) string {
 		return ""
 	}
 	version = strings.TrimSpace(version)
-	version = strings.TrimRight(version, `/\\`)
+	version = strings.TrimRight(version, `/\`)
 	version = strings.TrimSpace(version)
 
 	exts := []string{
@@ -67,10 +67,10 @@ func extractVersionFromStripPrefix(stripPrefix string) string {
 		return ""
 	}
 	stripPrefix = strings.TrimSpace(stripPrefix)
-	stripPrefix = strings.TrimRight(stripPrefix, `/\\`)
+	stripPrefix = strings.TrimRight(stripPrefix, `/\`)
 	stripPrefix = strings.TrimSpace(stripPrefix)
 
-	re1 := regexp.MustCompile(`[-_.]v?(\d+\.\d+(?:\.\d+)*(?:-[a-zA-Z0-9\.]+)?)$`)
+	re1 := regexp.MustCompile(`(?:^|[-_.])v?(\d+\.\d+(?:\.\d+)*(?:-[a-zA-Z0-9\.]+)?)$`)
 	if m := re1.FindStringSubmatch(stripPrefix); len(m) > 1 {
 		return cleanVersion(m[1])
 	}

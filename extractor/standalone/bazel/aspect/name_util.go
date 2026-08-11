@@ -24,8 +24,8 @@ func getGoPkgNameFromURL(url string) string {
 	if strings.Contains(url, "github.com/") {
 		parts := strings.Split(url, "github.com/")
 		if len(parts) > 1 {
-			repoPath := strings.Split(parts[1], "/")[0:2]
-			if len(repoPath) == 2 {
+			repoPath := strings.Split(parts[1], "/")
+			if len(repoPath) >= 2 {
 				return "github.com/" + repoPath[0] + "/" + repoPath[1]
 			}
 		}

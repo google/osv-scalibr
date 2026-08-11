@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	_ "embed"
@@ -121,8 +122,8 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	args = append(args, "--check_visibility=false")
 
 	// Add a unique cache-buster so Bazel always re-evaluates the aspect and prints to stderr
-	uuidStr := fmt.Sprintf("%d", os.Getpid()) // good enough cache buster for single runs
-	args = append(args, "--define", fmt.Sprintf("scalibr_run=%s", uuidStr))
+	uuidStr := strconv.Itoa(os.Getpid()) // good enough cache buster for single runs
+	args = append(args, "--define", "scalibr_run="+uuidStr)
 
 	args = append(args, e.target)
 
