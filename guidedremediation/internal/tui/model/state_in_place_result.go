@@ -297,7 +297,7 @@ func (st stateInPlaceResult) write(m Model) tea.Msg {
 		}
 	}
 
-	return writeMsg{parser.WriteLockfilePatches(m.options.Lockfile, patches, m.lockfileRW)}
+	return writeMsg{parser.WriteLockfilePatches(m.options.Lockfile, patches, m.lockfileRW, m.options.ProjectRoot)}
 }
 
 func chooseAllCompatiblePatches(allPatches []result.Patch) []bool {

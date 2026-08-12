@@ -22,13 +22,13 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/fs"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
 func TestReadPoetry(t *testing.T) {
-	fsys := fs.DirFS("./testdata/poetry")
+	fsys := scalibrfs.DirFS("./testdata/poetry")
 	poetryRW, _ := GetPoetryReadWriter()
 	got, err := poetryRW.Read("pyproject.toml", fsys)
 	if err != nil {
@@ -125,7 +125,7 @@ func TestReadPoetry(t *testing.T) {
 
 func TestWritePoetry(t *testing.T) {
 	rw, _ := GetPoetryReadWriter()
-	fsys := fs.DirFS("./testdata/poetry")
+	fsys := scalibrfs.DirFS("./testdata/poetry")
 	manif, err := rw.Read("pyproject.toml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -171,8 +171,13 @@ func TestWritePoetry(t *testing.T) {
 	}
 	outDir := t.TempDir()
 	outFile := filepath.Join(outDir, "pyproject.toml")
+	outFS, err := os.OpenRoot(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFS.Close()
 
-	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
+	if err := rw.Write(manif, fsys, patches, outFS, "pyproject.toml"); err != nil {
 		t.Fatalf("failed to write manifest: %v", err)
 	}
 

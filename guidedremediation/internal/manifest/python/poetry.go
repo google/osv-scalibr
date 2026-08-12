@@ -31,6 +31,7 @@ package python
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -157,8 +158,8 @@ func (r poetryReadWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifes
 }
 
 // Write writes the manifest after applying the patches to outputPath.
-func (r poetryReadWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
-	return write(fsys, original.FilePath(), outputPath, patches, updatePyproject)
+func (r poetryReadWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error {
+	return write(fsys, original.FilePath(), outputRoot, outputPath, patches, updatePyproject)
 }
 
 // updatePyproject takes an io.Reader representing the pyproject.toml file

@@ -540,7 +540,12 @@ func TestReadWrite(t *testing.T) {
 
 	// Test writing the files produces the same pom.xml files.
 	dir := t.TempDir()
-	if err := mavenRW.Write(got, fsys, nil, filepath.Join(dir, "my-app", "pom.xml")); err != nil {
+	outFS, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFS.Close()
+	if err := mavenRW.Write(got, fsys, nil, outFS, "my-app/pom.xml"); err != nil {
 		t.Fatalf("error writing manifest: %v", err)
 	}
 
@@ -651,13 +656,8 @@ func TestRead_MultiModuleDiscovery(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	vol := filepath.VolumeName(dir) + "/"
-	fsys := scalibrfs.DirFS(vol)
-	relPOM, err := filepath.Rel(vol, filepath.Join(dir, "module-a", "pom.xml"))
-	if err != nil {
-		t.Fatalf("error getting relative path: %v", err)
-	}
-	got, err := mavenRW.Read(filepath.ToSlash(relPOM), fsys)
+	fsys := scalibrfs.DirFS(dir)
+	got, err := mavenRW.Read("module-a/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
 	}
@@ -674,6 +674,46 @@ func TestRead_MultiModuleDiscovery(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected to find junit:junit with version 4.12, got requirements: %v", got.Requirements())
+	}
+}
+
+func TestWriteDoesNotEscapeProjectRoot(t *testing.T) {
+	parent := t.TempDir()
+	project := filepath.Join(parent, "project")
+	if err := os.Mkdir(project, 0755); err != nil {
+		t.Fatal(err)
+	}
+	pom := `<project><modelVersion>4.0.0</modelVersion><groupId>g</groupId><artifactId>a</artifactId><version>1</version></project>`
+	if err := os.WriteFile(filepath.Join(project, "pom.xml"), []byte(pom), 0644); err != nil {
+		t.Fatal(err)
+	}
+	client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rw, err := GetReadWriter(client, project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fsys := scalibrfs.DirFS(project)
+	m, err := rw.Read("pom.xml", fsys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	specific := m.EcosystemSpecific().(ManifestSpecific)
+	specific.ParentPaths = append(specific.ParentPaths, "../outside.xml")
+	m.(*mavenManifest).specific = specific
+	outFS, err := os.OpenRoot(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFS.Close()
+
+	if err := rw.Write(m, fsys, nil, outFS, "pom.xml"); err == nil {
+		t.Fatal("Write() accepted an escaping parent path")
+	}
+	if _, err := os.Stat(filepath.Join(parent, "outside.xml")); !os.IsNotExist(err) {
+		t.Fatalf("outside file exists after confined Maven write: %v", err)
 	}
 }
 
@@ -1258,13 +1298,8 @@ func TestRead_MultiModuleDiscovery_NonStandardPOM(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	vol := filepath.VolumeName(dir) + "/"
-	fsys := scalibrfs.DirFS(vol)
-	relPOM, err := filepath.Rel(vol, filepath.Join(dir, "module-a", "pom.xml"))
-	if err != nil {
-		t.Fatalf("error getting relative path: %v", err)
-	}
-	got, err := mavenRW.Read(filepath.ToSlash(relPOM), fsys)
+	fsys := scalibrfs.DirFS(dir)
+	got, err := mavenRW.Read("module-a/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
 	}

@@ -16,6 +16,8 @@
 package manifest
 
 import (
+	"os"
+
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -49,7 +51,6 @@ type ReadWriter interface {
 
 	// Write writes the manifest after applying the patches to outputPath.
 	//
-	// original is the manifest without patches. fsys is the FS that the manifest was read from.
-	// outputPath is the path on disk (*not* in fsys) to write the entire patched manifest to (this can overwrite the original manifest).
-	Write(original Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error
+	// original is the manifest without patches. outputPath is relative to outputRoot.
+	Write(original Manifest, fsys scalibrfs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error
 }
