@@ -29,7 +29,7 @@ import (
 // If 401 Unauthorized, the key is invalid. Other status codes will result in ValidationFailed.
 func NewValidator() *simplevalidate.Validator[DigitaloceanAPIToken] {
 	return &simplevalidate.Validator[DigitaloceanAPIToken]{
-		Endpoint:   "http://api.digitalocean.com/v2/account",
+		Endpoint:   "https://api.digitalocean.com/v2/account",
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(key DigitaloceanAPIToken) map[string]string {
 			return map[string]string{
