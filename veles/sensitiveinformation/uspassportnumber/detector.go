@@ -33,10 +33,8 @@ const (
 var (
 	keywordsRe = simpleregex.KeywordsRe([]string{
 		`pass`,
-		`passport`,
 		`travel`,
 		`doc`,
-		`document`,
 	})
 	passportNumberRe = regexp.MustCompile(`\b[A-Za-z][0-9]{8}\b`)
 )
