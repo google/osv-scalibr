@@ -150,7 +150,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	return &Enricher{
 		DepClient:   depClient,
 		MavenClient: mavenClient,
-		IDGenerator: &extractor.RandomIDGenerator{},
+		IDGenerator: extractor.NewIDGenerator(),
 	}, nil
 }
 

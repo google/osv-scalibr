@@ -113,7 +113,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 
 	return &Enricher{
 		Client:      depClient,
-		IDGenerator: &extractor.RandomIDGenerator{},
+		IDGenerator: extractor.NewIDGenerator(),
 	}, nil
 }
 
