@@ -39,10 +39,21 @@ type Extractor struct {
 }
 
 // New returns a new instance of the Extractor.
-func New(_ *cpb.PluginConfig) (standalone.Extractor, error) {
+func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
 	e := &Extractor{
 		target:    "//...",
 		keepGoing: true,
+	}
+
+	for _, specific := range cfg.GetPluginSpecific() {
+		if bazelCfg := specific.GetBazelAspect(); bazelCfg != nil {
+			if bazelCfg.GetTarget() != "" {
+				e.target = bazelCfg.GetTarget()
+			}
+			if bazelCfg.KeepGoing != nil {
+				e.keepGoing = *bazelCfg.KeepGoing
+			}
+		}
 	}
 	return e, nil
 }
@@ -55,7 +66,7 @@ func (e *Extractor) Version() int { return 0 }
 
 // Requirements returns the requirements for this extractor.
 func (e *Extractor) Requirements() *plugin.Capabilities {
-	return &plugin.Capabilities{RunningSystem: true, DirectFS: true}
+	return &plugin.Capabilities{RunningSystem: true, DirectFS: true, AllowUnsafePlugins: true}
 }
 
 // aspectData represents the JSON structure output by the Bazel aspect.
@@ -99,10 +110,11 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		return inventory.Inventory{}, errors.New("bazel not found in PATH")
 	}
 
-	// Setup a temporary workspace package for the aspect
-	aspectDir := filepath.Join(input.ScanRoot.Path, ".scalibr_aspect")
-	if err := os.MkdirAll(aspectDir, 0755); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to create aspect dir: %w", err)
+	// Setup a temporary workspace package for the aspect inside the scan root
+	// so it can be referenced as a valid Bazel label.
+	aspectDir, err := os.MkdirTemp(input.ScanRoot.Path, ".scalibr_aspect_*")
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer os.RemoveAll(aspectDir)
 
@@ -114,7 +126,8 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to write aspect file: %w", err)
 	}
 
-	args := []string{"build", "--nobuild", "--aspects=//.scalibr_aspect:scalibr_aspect.bzl%scalibr_aspect"}
+	aspectPkg := filepath.Base(aspectDir)
+	args := []string{"build", "--nobuild", "--aspects=//" + aspectPkg + ":scalibr_aspect.bzl%scalibr_aspect"}
 	if e.keepGoing {
 		args = append(args, "--keep_going")
 	}
