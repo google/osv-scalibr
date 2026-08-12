@@ -84,11 +84,14 @@ func name(pkg *extractor.Package, eco osvecosystem.Parsed) string {
 		}
 	}
 
+	// Reconstruct OSV package name with PURL namespace if not already included
+	name := purlToName(pkg.Name, pkg.PURL(), eco)
+
 	// Go major version suffix patch from PURL subpath
 	if eco.Ecosystem == osvconstants.EcosystemGo && pkg.PURL() != nil && pkg.PURL().Subpath != "" {
 		match := goVersionSuffixRegexp.FindStringSubmatch(pkg.PURL().Subpath)
 		if match != nil {
-			return pkg.Name + "/" + match[1]
+			return name + "/" + match[1]
 		}
 	}
 
@@ -107,7 +110,54 @@ func name(pkg *extractor.Package, eco osvecosystem.Parsed) string {
 		return repo
 	}
 
-	return pkg.Name
+	return name
+}
+
+// purlToName formats a package name using PURL namespace metadata according to ecosystem naming conventions.
+func purlToName(pkgName string, p *purl.PackageURL, eco osvecosystem.Parsed) string {
+	if p == nil || p.Namespace == "" {
+		return pkgName
+	}
+
+	// OS distro namespaces should not prefix package name
+	if isOSPURLType(p.Type) {
+		return pkgName
+	}
+
+	purlNamespace := p.Namespace
+	switch eco.Ecosystem {
+	case osvconstants.EcosystemMaven:
+		if !strings.HasPrefix(pkgName, purlNamespace+":") {
+			return purlNamespace + ":" + pkgName
+		}
+	default:
+		if !strings.HasPrefix(pkgName, purlNamespace+"/") {
+			return purlNamespace + "/" + pkgName
+		}
+	}
+
+	return pkgName
+}
+
+func isOSPURLType(purlType string) bool {
+	switch purlType {
+	case purl.TypeDebian,
+		purl.TypeApk,
+		purl.TypeRPM,
+		purl.TypeAlpm,
+		purl.TypeOpkg,
+		purl.TypeFlatpak,
+		purl.TypeCOS,
+		purl.TypeSnap,
+		purl.TypePacman,
+		purl.TypePortage,
+		purl.TypeNix,
+		purl.TypeDHI:
+
+		return true
+	default:
+		return false
+	}
 }
 
 func normalizeRepo(repo string) string {
