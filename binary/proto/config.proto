@@ -479,6 +479,10 @@ message JavaArchiveConfig {
   // Configures if JAR files should be extracted from filenames when no
   // "pom.properties" is present.
   optional bool extract_from_filename = 5;
+  // Enable extraction from embedded "pom.xml", rather than "pom.properties".
+  // These carry more complete information, but also require more processing,
+  // which could fail. Conversely, "pom.properties" is very lightweight.
+  optional bool extract_from_pom_xml = 7;
   // Configures if JAR files should be hashed with base64(sha1()).
   optional bool hash_jars = 6;
 }

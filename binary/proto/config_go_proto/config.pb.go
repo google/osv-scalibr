@@ -3568,6 +3568,10 @@ type JavaArchiveConfig struct {
 	// Configures if JAR files should be extracted from filenames when no
 	// "pom.properties" is present.
 	ExtractFromFilename *bool `protobuf:"varint,5,opt,name=extract_from_filename,json=extractFromFilename,proto3,oneof" json:"extract_from_filename,omitempty"`
+	// Enable extraction from embedded "pom.xml", rather than "pom.properties".
+	// These carry more complete information, but also require more processing,
+	// which could fail. Conversely, "pom.properties" is very lightweight.
+	ExtractFromPomXml *bool `protobuf:"varint,7,opt,name=extract_from_pom_xml,json=extractFromPomXml,proto3,oneof" json:"extract_from_pom_xml,omitempty"`
 	// Configures if JAR files should be hashed with base64(sha1()).
 	HashJars      *bool `protobuf:"varint,6,opt,name=hash_jars,json=hashJars,proto3,oneof" json:"hash_jars,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -3635,6 +3639,13 @@ func (x *JavaArchiveConfig) GetMinZipBytes() int32 {
 func (x *JavaArchiveConfig) GetExtractFromFilename() bool {
 	if x != nil && x.ExtractFromFilename != nil {
 		return *x.ExtractFromFilename
+	}
+	return false
+}
+
+func (x *JavaArchiveConfig) GetExtractFromPomXml() bool {
+	if x != nil && x.ExtractFromPomXml != nil {
+		return *x.ExtractFromPomXml
 	}
 	return false
 }
@@ -4552,15 +4563,17 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x16HaskellStacklockConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"C\n" +
 	"\x12HaskellCabalConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"\xb7\x02\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"\x86\x03\n" +
 	"\x11JavaArchiveConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12\"\n" +
 	"\rmax_zip_depth\x18\x02 \x01(\x05R\vmaxZipDepth\x12(\n" +
 	"\x10max_opened_bytes\x18\x03 \x01(\x03R\x0emaxOpenedBytes\x12\"\n" +
 	"\rmin_zip_bytes\x18\x04 \x01(\x05R\vminZipBytes\x127\n" +
-	"\x15extract_from_filename\x18\x05 \x01(\bH\x00R\x13extractFromFilename\x88\x01\x01\x12 \n" +
-	"\thash_jars\x18\x06 \x01(\bH\x01R\bhashJars\x88\x01\x01B\x18\n" +
-	"\x16_extract_from_filenameB\f\n" +
+	"\x15extract_from_filename\x18\x05 \x01(\bH\x00R\x13extractFromFilename\x88\x01\x01\x124\n" +
+	"\x14extract_from_pom_xml\x18\a \x01(\bH\x01R\x11extractFromPomXml\x88\x01\x01\x12 \n" +
+	"\thash_jars\x18\x06 \x01(\bH\x02R\bhashJars\x88\x01\x01B\x18\n" +
+	"\x16_extract_from_filenameB\x17\n" +
+	"\x15_extract_from_pom_xmlB\f\n" +
 	"\n" +
 	"_hash_jars\"\xc7\x01\n" +
 	"\x1bJavascriptPackageJsonConfig\x12-\n" +

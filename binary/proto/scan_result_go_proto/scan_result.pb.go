@@ -4394,10 +4394,13 @@ func (x *CDXPackageMetadata) GetCpes() []string {
 
 // The additional data found in Java JAR packages.
 type JavaArchiveMetadata struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ArtifactId    string                 `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
-	GroupId       string                 `protobuf:"bytes,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	Sha1          string                 `protobuf:"bytes,4,opt,name=sha1,proto3" json:"sha1,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	ArtifactId string                 `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
+	GroupId    string                 `protobuf:"bytes,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	Sha1       string                 `protobuf:"bytes,4,opt,name=sha1,proto3" json:"sha1,omitempty"`
+	// dependencies and parent are populated only if extract_from_pom_xml is on.
+	Dependencies  []*JavaLockfileDependency `protobuf:"bytes,5,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
+	Parent        *JavaLockfileParent       `protobuf:"bytes,6,opt,name=parent,proto3" json:"parent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4451,6 +4454,20 @@ func (x *JavaArchiveMetadata) GetSha1() string {
 		return x.Sha1
 	}
 	return ""
+}
+
+func (x *JavaArchiveMetadata) GetDependencies() []*JavaLockfileDependency {
+	if x != nil {
+		return x.Dependencies
+	}
+	return nil
+}
+
+func (x *JavaArchiveMetadata) GetParent() *JavaLockfileParent {
+	if x != nil {
+		return x.Parent
+	}
+	return nil
 }
 
 // The additional data found in Java lockfiles.
@@ -13890,12 +13907,14 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x13external_references\x18\x03 \x03(\v2\x1e.scalibr.SPDXExternalReferenceR\x12externalReferences\"K\n" +
 	"\x12CDXPackageMetadata\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x12\n" +
-	"\x04cpes\x18\x02 \x03(\tR\x04cpes\"e\n" +
+	"\x04cpes\x18\x02 \x03(\tR\x04cpes\"\xdf\x01\n" +
 	"\x13JavaArchiveMetadata\x12\x1f\n" +
 	"\vartifact_id\x18\x02 \x01(\tR\n" +
 	"artifactId\x12\x19\n" +
 	"\bgroup_id\x18\x03 \x01(\tR\agroupId\x12\x12\n" +
-	"\x04sha1\x18\x04 \x01(\tR\x04sha1\"\x9d\x01\n" +
+	"\x04sha1\x18\x04 \x01(\tR\x04sha1\x12C\n" +
+	"\fdependencies\x18\x05 \x03(\v2\x1f.scalibr.JavaLockfileDependencyR\fdependencies\x123\n" +
+	"\x06parent\x18\x06 \x01(\v2\x1b.scalibr.JavaLockfileParentR\x06parent\"\x9d\x01\n" +
 	"\x14JavaLockfileMetadata\x12\x1f\n" +
 	"\vartifact_id\x18\x01 \x01(\tR\n" +
 	"artifactId\x12\x19\n" +
@@ -14840,133 +14859,135 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	19,  // 78: scalibr.SPDXPackageMetadata.purl:type_name -> scalibr.Purl
 	44,  // 79: scalibr.SPDXPackageMetadata.external_references:type_name -> scalibr.SPDXExternalReference
 	19,  // 80: scalibr.CDXPackageMetadata.purl:type_name -> scalibr.Purl
-	93,  // 81: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	190, // 82: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	190, // 83: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
-	71,  // 84: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
-	74,  // 85: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
-	76,  // 86: scalibr.Secret.secret:type_name -> scalibr.SecretData
-	77,  // 87: scalibr.Secret.status:type_name -> scalibr.SecretStatus
-	78,  // 88: scalibr.Secret.locations:type_name -> scalibr.LocationLegacy
-	83,  // 89: scalibr.Secret.location:type_name -> scalibr.Location
-	94,  // 90: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
-	96,  // 91: scalibr.SecretData.anthropic_workspace_api_key:type_name -> scalibr.SecretData.AnthropicWorkspaceAPIKey
-	97,  // 92: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
-	98,  // 93: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
-	103, // 94: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
-	100, // 95: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
-	101, // 96: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
-	109, // 97: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
-	119, // 98: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
-	108, // 99: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
-	116, // 100: scalibr.SecretData.postman_api_key:type_name -> scalibr.SecretData.PostmanAPIKey
-	117, // 101: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
-	104, // 102: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
-	107, // 103: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
-	129, // 104: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
-	112, // 105: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
-	130, // 106: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
-	131, // 107: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
-	132, // 108: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
-	133, // 109: scalibr.SecretData.hugginface:type_name -> scalibr.SecretData.HuggingfaceAPIKey
-	122, // 110: scalibr.SecretData.github_app_refresh_token:type_name -> scalibr.SecretData.GithubAppRefreshToken
-	136, // 111: scalibr.SecretData.stripe_secret_key:type_name -> scalibr.SecretData.StripeSecretKey
-	137, // 112: scalibr.SecretData.stripe_restricted_key:type_name -> scalibr.SecretData.StripeRestrictedKey
-	138, // 113: scalibr.SecretData.stripe_webhook_secret:type_name -> scalibr.SecretData.StripeWebhookSecret
-	142, // 114: scalibr.SecretData.gcp_oauth2_client_credentials:type_name -> scalibr.SecretData.GCPOAuth2ClientCredentials
-	143, // 115: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
-	123, // 116: scalibr.SecretData.github_app_server_to_server_token:type_name -> scalibr.SecretData.GithubAppServerToServerToken
-	124, // 117: scalibr.SecretData.github_classic_personal_access_token:type_name -> scalibr.SecretData.GithubClassicPersonalAccessToken
-	125, // 118: scalibr.SecretData.github_fine_grained_personal_access_token:type_name -> scalibr.SecretData.GithubFineGrainedPersonalAccessToken
-	127, // 119: scalibr.SecretData.github_app_user_to_server_token:type_name -> scalibr.SecretData.GithubAppUserToServerToken
-	126, // 120: scalibr.SecretData.github_oauth_token:type_name -> scalibr.SecretData.GithubOAuthToken
-	118, // 121: scalibr.SecretData.openrouter_api_key:type_name -> scalibr.SecretData.OpenRouterAPIKey
-	115, // 122: scalibr.SecretData.slack_app_config_refresh_token:type_name -> scalibr.SecretData.SlackAppConfigRefreshToken
-	113, // 123: scalibr.SecretData.slack_app_level_token:type_name -> scalibr.SecretData.SlackAppLevelToken
-	114, // 124: scalibr.SecretData.slack_app_config_access_token:type_name -> scalibr.SecretData.SlackAppConfigAccessToken
-	102, // 125: scalibr.SecretData.azure_storage_account_access_key:type_name -> scalibr.SecretData.AzureStorageAccountAccessKey
-	134, // 126: scalibr.SecretData.hashicorp_cloud_platform_credentials:type_name -> scalibr.SecretData.HashiCorpCloudPlatformCredentials
-	135, // 127: scalibr.SecretData.hashicorp_cloud_platform_token:type_name -> scalibr.SecretData.HashiCorpCloudPlatformToken
-	155, // 128: scalibr.SecretData.onepassword_secret_key:type_name -> scalibr.SecretData.OnePasswordSecretKey
-	156, // 129: scalibr.SecretData.onepassword_service_token:type_name -> scalibr.SecretData.OnePasswordServiceToken
-	157, // 130: scalibr.SecretData.onepassword_recovery_code:type_name -> scalibr.SecretData.OnePasswordRecoveryCode
-	147, // 131: scalibr.SecretData.onepassword_connect_token:type_name -> scalibr.SecretData.OnePasswordConnectToken
-	105, // 132: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
-	128, // 133: scalibr.SecretData.pypi:type_name -> scalibr.SecretData.PyPIAPIToken
-	120, // 134: scalibr.SecretData.crates_io_api_token:type_name -> scalibr.SecretData.CratesIOAPIToken
-	106, // 135: scalibr.SecretData.maria_db_credentials:type_name -> scalibr.SecretData.MariaDBCredentials
-	144, // 136: scalibr.SecretData.gcs_hmac_key:type_name -> scalibr.SecretData.GCSHmacKey
-	145, // 137: scalibr.SecretData.mysql_mylogin_section:type_name -> scalibr.SecretData.MysqlMyloginSection
-	146, // 138: scalibr.SecretData.vapid_key:type_name -> scalibr.SecretData.VapidKey
-	158, // 139: scalibr.SecretData.aws_access_key_credentials:type_name -> scalibr.SecretData.AwsAccessKeyCredentials
-	159, // 140: scalibr.SecretData.re_captcha_key:type_name -> scalibr.SecretData.ReCaptchaKey
-	160, // 141: scalibr.SecretData.pyx_key_v1:type_name -> scalibr.SecretData.PyxKeyV1
-	161, // 142: scalibr.SecretData.pyx_key_v2:type_name -> scalibr.SecretData.PyxKeyV2
-	162, // 143: scalibr.SecretData.code_catalyst_credentials:type_name -> scalibr.SecretData.CodeCatalystCredentials
-	95,  // 144: scalibr.SecretData.jwt_token:type_name -> scalibr.SecretData.JWTToken
-	163, // 145: scalibr.SecretData.code_commit_credentials:type_name -> scalibr.SecretData.CodeCommitCredentials
-	164, // 146: scalibr.SecretData.bitbucket_credentials:type_name -> scalibr.SecretData.BitBucketCredentials
-	166, // 147: scalibr.SecretData.paystack_secret_key:type_name -> scalibr.SecretData.PaystackSecretKey
-	170, // 148: scalibr.SecretData.telegram_bot_api_token:type_name -> scalibr.SecretData.TelegramBotToken
-	181, // 149: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
-	165, // 150: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
-	184, // 151: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
-	173, // 152: scalibr.SecretData.salesforce_oauth2_client_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2ClientCredentials
-	171, // 153: scalibr.SecretData.salesforce_oauth2_access_token:type_name -> scalibr.SecretData.SalesforceOAuth2AccessToken
-	174, // 154: scalibr.SecretData.salesforce_oauth2_refresh_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2RefreshCredentials
-	99,  // 155: scalibr.SecretData.mistral_api_key:type_name -> scalibr.SecretData.MistralAPIKey
-	182, // 156: scalibr.SecretData.circleci_personal_access_token:type_name -> scalibr.SecretData.CircleCIPersonalAccessToken
-	183, // 157: scalibr.SecretData.circleci_project_token:type_name -> scalibr.SecretData.CircleCIProjectToken
-	185, // 158: scalibr.SecretData.square_personal_access_token:type_name -> scalibr.SecretData.SquarePersonalAccessToken
-	186, // 159: scalibr.SecretData.square_oauth_application_secret:type_name -> scalibr.SecretData.SquareOAuthApplicationSecret
-	175, // 160: scalibr.SecretData.salesforce_oauth2_jwt_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2JWTCredentials
-	172, // 161: scalibr.SecretData.sendgrid_api_key:type_name -> scalibr.SecretData.SendGridAPIKey
-	111, // 162: scalibr.SecretData.deno_pat:type_name -> scalibr.SecretData.DenoPat
-	168, // 163: scalibr.SecretData.heroku_secret_key:type_name -> scalibr.SecretData.HerokuSecretKey
-	121, // 164: scalibr.SecretData.npmjs_access_token:type_name -> scalibr.SecretData.NpmJsAccessToken
-	110, // 165: scalibr.SecretData.cloudflare_api_token:type_name -> scalibr.SecretData.CloudflareAPIToken
-	139, // 166: scalibr.SecretData.supabase_pat:type_name -> scalibr.SecretData.SupabasePAT
-	140, // 167: scalibr.SecretData.supabase_project_secret_key:type_name -> scalibr.SecretData.SupabaseProjectSecretKey
-	141, // 168: scalibr.SecretData.supabase_service_role_jwt:type_name -> scalibr.SecretData.SupabaseServiceRoleJWT
-	149, // 169: scalibr.SecretData.packagist_api_key:type_name -> scalibr.SecretData.PackagistAPIKey
-	150, // 170: scalibr.SecretData.packagist_api_secret:type_name -> scalibr.SecretData.PackagistAPISecret
-	151, // 171: scalibr.SecretData.packagist_org_read_token:type_name -> scalibr.SecretData.PackagistOrgReadToken
-	152, // 172: scalibr.SecretData.packagist_org_update_token:type_name -> scalibr.SecretData.PackagistOrgUpdateToken
-	153, // 173: scalibr.SecretData.packagist_user_update_token:type_name -> scalibr.SecretData.PackagistUserUpdateToken
-	154, // 174: scalibr.SecretData.packagist_conductor_update_token:type_name -> scalibr.SecretData.PackagistConductorUpdateToken
-	148, // 175: scalibr.SecretData.composer_http_basic_credentials:type_name -> scalibr.SecretData.ComposerPackagistCredentials
-	167, // 176: scalibr.SecretData.discord_bot_token:type_name -> scalibr.SecretData.DiscordBotToken
-	176, // 177: scalibr.SecretData.bitwarden_oauth2_access_token:type_name -> scalibr.SecretData.BitwardenOAuth2AccessToken
-	177, // 178: scalibr.SecretData.http_basic_auth:type_name -> scalibr.SecretData.HTTPBasicAuth
-	178, // 179: scalibr.SecretData.http_bearer:type_name -> scalibr.SecretData.HTTPBearer
-	179, // 180: scalibr.SecretData.http_csrf_token:type_name -> scalibr.SecretData.HTTPCSRFToken
-	180, // 181: scalibr.SecretData.http_cookie:type_name -> scalibr.SecretData.HTTPCookie
-	6,   // 182: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	190, // 183: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	79,  // 184: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
-	80,  // 185: scalibr.LocationLegacy.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	81,  // 186: scalibr.LocationLegacy.environment_variable:type_name -> scalibr.EnvironmentVariable
-	82,  // 187: scalibr.LocationLegacy.container_command:type_name -> scalibr.ContainerCommand
-	15,  // 188: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	84,  // 189: scalibr.Location.file:type_name -> scalibr.File
-	88,  // 190: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	86,  // 191: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	188, // 192: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	189, // 193: scalibr.ContainerImageMetadata.labels:type_name -> scalibr.ContainerImageMetadata.LabelsEntry
-	87,  // 194: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	3,   // 195: scalibr.InfoType.sensitivity:type_name -> scalibr.SensitivityLevel
-	89,  // 196: scalibr.SensitiveInformation.info_type:type_name -> scalibr.InfoType
-	4,   // 197: scalibr.SensitiveInformation.likelihood:type_name -> scalibr.Likelihood
-	83,  // 198: scalibr.SensitiveInformation.location:type_name -> scalibr.Location
-	64,  // 199: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	169, // 200: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
-	193, // 201: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
-	187, // 202: scalibr.SecretData.HTTPCookie.values:type_name -> scalibr.SecretData.HTTPCookie.ValuesEntry
-	203, // [203:203] is the sub-list for method output_type
-	203, // [203:203] is the sub-list for method input_type
-	203, // [203:203] is the sub-list for extension type_name
-	203, // [203:203] is the sub-list for extension extendee
-	0,   // [0:203] is the sub-list for field type_name
+	49,  // 81: scalibr.JavaArchiveMetadata.dependencies:type_name -> scalibr.JavaLockfileDependency
+	50,  // 82: scalibr.JavaArchiveMetadata.parent:type_name -> scalibr.JavaLockfileParent
+	93,  // 83: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
+	190, // 84: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	190, // 85: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	71,  // 86: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
+	74,  // 87: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
+	76,  // 88: scalibr.Secret.secret:type_name -> scalibr.SecretData
+	77,  // 89: scalibr.Secret.status:type_name -> scalibr.SecretStatus
+	78,  // 90: scalibr.Secret.locations:type_name -> scalibr.LocationLegacy
+	83,  // 91: scalibr.Secret.location:type_name -> scalibr.Location
+	94,  // 92: scalibr.SecretData.gcpsak:type_name -> scalibr.SecretData.GCPSAK
+	96,  // 93: scalibr.SecretData.anthropic_workspace_api_key:type_name -> scalibr.SecretData.AnthropicWorkspaceAPIKey
+	97,  // 94: scalibr.SecretData.anthropic_model_api_key:type_name -> scalibr.SecretData.AnthropicModelAPIKey
+	98,  // 95: scalibr.SecretData.perplexity:type_name -> scalibr.SecretData.PerplexityAPIKey
+	103, // 96: scalibr.SecretData.private_key:type_name -> scalibr.SecretData.PrivateKey
+	100, // 97: scalibr.SecretData.grok_xai_api_key:type_name -> scalibr.SecretData.GrokXAIAPIKey
+	101, // 98: scalibr.SecretData.grok_xai_management_api_key:type_name -> scalibr.SecretData.GrokXAIManagementAPIKey
+	109, // 99: scalibr.SecretData.docker_hub_pat:type_name -> scalibr.SecretData.DockerHubPat
+	119, // 100: scalibr.SecretData.digitalocean:type_name -> scalibr.SecretData.DigitalOceanAPIToken
+	108, // 101: scalibr.SecretData.openai_api_key:type_name -> scalibr.SecretData.OpenAIAPIKey
+	116, // 102: scalibr.SecretData.postman_api_key:type_name -> scalibr.SecretData.PostmanAPIKey
+	117, // 103: scalibr.SecretData.postman_collection_access_token:type_name -> scalibr.SecretData.PostmanCollectionAccessToken
+	104, // 104: scalibr.SecretData.azure_access_token:type_name -> scalibr.SecretData.AzureAccessToken
+	107, // 105: scalibr.SecretData.azure_identity_token:type_name -> scalibr.SecretData.AzureIdentityToken
+	129, // 106: scalibr.SecretData.tink_keyset:type_name -> scalibr.SecretData.TinkKeyset
+	112, // 107: scalibr.SecretData.gitlab_pat:type_name -> scalibr.SecretData.GitlabPat
+	130, // 108: scalibr.SecretData.hashicorp_vault_token:type_name -> scalibr.SecretData.HashiCorpVaultToken
+	131, // 109: scalibr.SecretData.hashicorp_vault_app_role_credentials:type_name -> scalibr.SecretData.HashiCorpVaultAppRoleCredentials
+	132, // 110: scalibr.SecretData.gcp_api_key:type_name -> scalibr.SecretData.GCPAPIKey
+	133, // 111: scalibr.SecretData.hugginface:type_name -> scalibr.SecretData.HuggingfaceAPIKey
+	122, // 112: scalibr.SecretData.github_app_refresh_token:type_name -> scalibr.SecretData.GithubAppRefreshToken
+	136, // 113: scalibr.SecretData.stripe_secret_key:type_name -> scalibr.SecretData.StripeSecretKey
+	137, // 114: scalibr.SecretData.stripe_restricted_key:type_name -> scalibr.SecretData.StripeRestrictedKey
+	138, // 115: scalibr.SecretData.stripe_webhook_secret:type_name -> scalibr.SecretData.StripeWebhookSecret
+	142, // 116: scalibr.SecretData.gcp_oauth2_client_credentials:type_name -> scalibr.SecretData.GCPOAuth2ClientCredentials
+	143, // 117: scalibr.SecretData.gcp_oauth2_access_token:type_name -> scalibr.SecretData.GCPOAuth2AccessToken
+	123, // 118: scalibr.SecretData.github_app_server_to_server_token:type_name -> scalibr.SecretData.GithubAppServerToServerToken
+	124, // 119: scalibr.SecretData.github_classic_personal_access_token:type_name -> scalibr.SecretData.GithubClassicPersonalAccessToken
+	125, // 120: scalibr.SecretData.github_fine_grained_personal_access_token:type_name -> scalibr.SecretData.GithubFineGrainedPersonalAccessToken
+	127, // 121: scalibr.SecretData.github_app_user_to_server_token:type_name -> scalibr.SecretData.GithubAppUserToServerToken
+	126, // 122: scalibr.SecretData.github_oauth_token:type_name -> scalibr.SecretData.GithubOAuthToken
+	118, // 123: scalibr.SecretData.openrouter_api_key:type_name -> scalibr.SecretData.OpenRouterAPIKey
+	115, // 124: scalibr.SecretData.slack_app_config_refresh_token:type_name -> scalibr.SecretData.SlackAppConfigRefreshToken
+	113, // 125: scalibr.SecretData.slack_app_level_token:type_name -> scalibr.SecretData.SlackAppLevelToken
+	114, // 126: scalibr.SecretData.slack_app_config_access_token:type_name -> scalibr.SecretData.SlackAppConfigAccessToken
+	102, // 127: scalibr.SecretData.azure_storage_account_access_key:type_name -> scalibr.SecretData.AzureStorageAccountAccessKey
+	134, // 128: scalibr.SecretData.hashicorp_cloud_platform_credentials:type_name -> scalibr.SecretData.HashiCorpCloudPlatformCredentials
+	135, // 129: scalibr.SecretData.hashicorp_cloud_platform_token:type_name -> scalibr.SecretData.HashiCorpCloudPlatformToken
+	155, // 130: scalibr.SecretData.onepassword_secret_key:type_name -> scalibr.SecretData.OnePasswordSecretKey
+	156, // 131: scalibr.SecretData.onepassword_service_token:type_name -> scalibr.SecretData.OnePasswordServiceToken
+	157, // 132: scalibr.SecretData.onepassword_recovery_code:type_name -> scalibr.SecretData.OnePasswordRecoveryCode
+	147, // 133: scalibr.SecretData.onepassword_connect_token:type_name -> scalibr.SecretData.OnePasswordConnectToken
+	105, // 134: scalibr.SecretData.pgpass:type_name -> scalibr.SecretData.Pgpass
+	128, // 135: scalibr.SecretData.pypi:type_name -> scalibr.SecretData.PyPIAPIToken
+	120, // 136: scalibr.SecretData.crates_io_api_token:type_name -> scalibr.SecretData.CratesIOAPIToken
+	106, // 137: scalibr.SecretData.maria_db_credentials:type_name -> scalibr.SecretData.MariaDBCredentials
+	144, // 138: scalibr.SecretData.gcs_hmac_key:type_name -> scalibr.SecretData.GCSHmacKey
+	145, // 139: scalibr.SecretData.mysql_mylogin_section:type_name -> scalibr.SecretData.MysqlMyloginSection
+	146, // 140: scalibr.SecretData.vapid_key:type_name -> scalibr.SecretData.VapidKey
+	158, // 141: scalibr.SecretData.aws_access_key_credentials:type_name -> scalibr.SecretData.AwsAccessKeyCredentials
+	159, // 142: scalibr.SecretData.re_captcha_key:type_name -> scalibr.SecretData.ReCaptchaKey
+	160, // 143: scalibr.SecretData.pyx_key_v1:type_name -> scalibr.SecretData.PyxKeyV1
+	161, // 144: scalibr.SecretData.pyx_key_v2:type_name -> scalibr.SecretData.PyxKeyV2
+	162, // 145: scalibr.SecretData.code_catalyst_credentials:type_name -> scalibr.SecretData.CodeCatalystCredentials
+	95,  // 146: scalibr.SecretData.jwt_token:type_name -> scalibr.SecretData.JWTToken
+	163, // 147: scalibr.SecretData.code_commit_credentials:type_name -> scalibr.SecretData.CodeCommitCredentials
+	164, // 148: scalibr.SecretData.bitbucket_credentials:type_name -> scalibr.SecretData.BitBucketCredentials
+	166, // 149: scalibr.SecretData.paystack_secret_key:type_name -> scalibr.SecretData.PaystackSecretKey
+	170, // 150: scalibr.SecretData.telegram_bot_api_token:type_name -> scalibr.SecretData.TelegramBotToken
+	181, // 151: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
+	165, // 152: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
+	184, // 153: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
+	173, // 154: scalibr.SecretData.salesforce_oauth2_client_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2ClientCredentials
+	171, // 155: scalibr.SecretData.salesforce_oauth2_access_token:type_name -> scalibr.SecretData.SalesforceOAuth2AccessToken
+	174, // 156: scalibr.SecretData.salesforce_oauth2_refresh_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2RefreshCredentials
+	99,  // 157: scalibr.SecretData.mistral_api_key:type_name -> scalibr.SecretData.MistralAPIKey
+	182, // 158: scalibr.SecretData.circleci_personal_access_token:type_name -> scalibr.SecretData.CircleCIPersonalAccessToken
+	183, // 159: scalibr.SecretData.circleci_project_token:type_name -> scalibr.SecretData.CircleCIProjectToken
+	185, // 160: scalibr.SecretData.square_personal_access_token:type_name -> scalibr.SecretData.SquarePersonalAccessToken
+	186, // 161: scalibr.SecretData.square_oauth_application_secret:type_name -> scalibr.SecretData.SquareOAuthApplicationSecret
+	175, // 162: scalibr.SecretData.salesforce_oauth2_jwt_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2JWTCredentials
+	172, // 163: scalibr.SecretData.sendgrid_api_key:type_name -> scalibr.SecretData.SendGridAPIKey
+	111, // 164: scalibr.SecretData.deno_pat:type_name -> scalibr.SecretData.DenoPat
+	168, // 165: scalibr.SecretData.heroku_secret_key:type_name -> scalibr.SecretData.HerokuSecretKey
+	121, // 166: scalibr.SecretData.npmjs_access_token:type_name -> scalibr.SecretData.NpmJsAccessToken
+	110, // 167: scalibr.SecretData.cloudflare_api_token:type_name -> scalibr.SecretData.CloudflareAPIToken
+	139, // 168: scalibr.SecretData.supabase_pat:type_name -> scalibr.SecretData.SupabasePAT
+	140, // 169: scalibr.SecretData.supabase_project_secret_key:type_name -> scalibr.SecretData.SupabaseProjectSecretKey
+	141, // 170: scalibr.SecretData.supabase_service_role_jwt:type_name -> scalibr.SecretData.SupabaseServiceRoleJWT
+	149, // 171: scalibr.SecretData.packagist_api_key:type_name -> scalibr.SecretData.PackagistAPIKey
+	150, // 172: scalibr.SecretData.packagist_api_secret:type_name -> scalibr.SecretData.PackagistAPISecret
+	151, // 173: scalibr.SecretData.packagist_org_read_token:type_name -> scalibr.SecretData.PackagistOrgReadToken
+	152, // 174: scalibr.SecretData.packagist_org_update_token:type_name -> scalibr.SecretData.PackagistOrgUpdateToken
+	153, // 175: scalibr.SecretData.packagist_user_update_token:type_name -> scalibr.SecretData.PackagistUserUpdateToken
+	154, // 176: scalibr.SecretData.packagist_conductor_update_token:type_name -> scalibr.SecretData.PackagistConductorUpdateToken
+	148, // 177: scalibr.SecretData.composer_http_basic_credentials:type_name -> scalibr.SecretData.ComposerPackagistCredentials
+	167, // 178: scalibr.SecretData.discord_bot_token:type_name -> scalibr.SecretData.DiscordBotToken
+	176, // 179: scalibr.SecretData.bitwarden_oauth2_access_token:type_name -> scalibr.SecretData.BitwardenOAuth2AccessToken
+	177, // 180: scalibr.SecretData.http_basic_auth:type_name -> scalibr.SecretData.HTTPBasicAuth
+	178, // 181: scalibr.SecretData.http_bearer:type_name -> scalibr.SecretData.HTTPBearer
+	179, // 182: scalibr.SecretData.http_csrf_token:type_name -> scalibr.SecretData.HTTPCSRFToken
+	180, // 183: scalibr.SecretData.http_cookie:type_name -> scalibr.SecretData.HTTPCookie
+	6,   // 184: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	190, // 185: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	79,  // 186: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
+	80,  // 187: scalibr.LocationLegacy.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	81,  // 188: scalibr.LocationLegacy.environment_variable:type_name -> scalibr.EnvironmentVariable
+	82,  // 189: scalibr.LocationLegacy.container_command:type_name -> scalibr.ContainerCommand
+	15,  // 190: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	84,  // 191: scalibr.Location.file:type_name -> scalibr.File
+	88,  // 192: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	86,  // 193: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	188, // 194: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	189, // 195: scalibr.ContainerImageMetadata.labels:type_name -> scalibr.ContainerImageMetadata.LabelsEntry
+	87,  // 196: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	3,   // 197: scalibr.InfoType.sensitivity:type_name -> scalibr.SensitivityLevel
+	89,  // 198: scalibr.SensitiveInformation.info_type:type_name -> scalibr.InfoType
+	4,   // 199: scalibr.SensitiveInformation.likelihood:type_name -> scalibr.Likelihood
+	83,  // 200: scalibr.SensitiveInformation.location:type_name -> scalibr.Location
+	64,  // 201: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	169, // 202: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
+	193, // 203: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
+	187, // 204: scalibr.SecretData.HTTPCookie.values:type_name -> scalibr.SecretData.HTTPCookie.ValuesEntry
+	205, // [205:205] is the sub-list for method output_type
+	205, // [205:205] is the sub-list for method input_type
+	205, // [205:205] is the sub-list for extension type_name
+	205, // [205:205] is the sub-list for extension extendee
+	0,   // [0:205] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }

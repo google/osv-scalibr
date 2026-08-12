@@ -588,6 +588,10 @@ message JavaArchiveMetadata {
   string artifact_id = 2;
   string group_id = 3;
   string sha1 = 4;
+
+  // dependencies and parent are populated only if extract_from_pom_xml is on.
+  repeated JavaLockfileDependency dependencies = 5;
+  JavaLockfileParent parent = 6;
 }
 
 // The additional data found in Java lockfiles.
