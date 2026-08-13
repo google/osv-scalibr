@@ -288,7 +288,6 @@ func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
 	standaloneCfg := &standalone.Config{
 		Extractors: pl.StandaloneExtractors(cfg.Plugins),
 		ScanRoot:   &scalibrfs.ScanRoot{FS: sysroot.FS, Path: sysroot.Path},
-		DirsToSkip: cfg.DirsToSkip,
 	}
 	standaloneInv, standaloneStatus, err := standalone.Run(ctx, standaloneCfg)
 	if err != nil {
