@@ -244,13 +244,10 @@ var (
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name:  {packagejson.New},
-		denojson.Name:     {denojson.New},
-		electronasar.Name: {electronasar.New},
-		vsix.Name:         {vsix.New},
-		packagejson.Name: {protoCfg(packagejson.New)},
-		denojson.Name:    {protoCfg(denojson.New)},
-		vsix.Name:        {protoCfg(vsix.New)},
+		packagejson.Name:  {protoCfg(packagejson.New)},
+		denojson.Name:     {protoCfg(denojson.New)},
+		electronasar.Name: {protoCfg(electronasar.New)},
+		vsix.Name:         {protoCfg(vsix.New)},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
