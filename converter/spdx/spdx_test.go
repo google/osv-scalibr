@@ -77,6 +77,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -90,6 +93,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -180,6 +184,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -193,6 +200,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -276,6 +284,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -289,6 +300,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   "MIT",
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -310,6 +322,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   "Apache-2.0 AND LicenseRef-MADE-UP AND MIT",
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -410,6 +423,9 @@ func TestToSPDX23(t *testing.T) {
 						SupplierType: spdx.NoAssertion,
 					},
 					PackageDownloadLocation:   spdx.NoAssertion,
+					PackageLicenseConcluded:   spdx.NoAssertion,
+					PackageLicenseDeclared:    spdx.NoAssertion,
+					PackageCopyrightText:      spdx.NoAssertion,
 					IsFilesAnalyzedTagPresent: false,
 				}},
 				Relationships: []*v2_3.Relationship{
@@ -459,6 +475,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -472,6 +491,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -549,6 +569,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -562,6 +585,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor from /file1",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -583,6 +607,10 @@ func TestToSPDX23(t *testing.T) {
 								Value:     spdx.EmptyFileDigest,
 							},
 						},
+						LicenseConcluded:   spdx.NoAssertion,
+
+						LicenseInfoInFiles: []string{spdx.NoAssertion},
+
 						FileCopyrightText: spdx.NoAssertion,
 					},
 				},
@@ -667,6 +695,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -680,6 +711,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor from 3 locations, including /file1 and /file2",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -757,6 +789,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -770,6 +805,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -858,6 +894,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -871,6 +910,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -892,6 +932,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1015,6 +1056,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -1028,6 +1072,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1049,6 +1094,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1070,6 +1116,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1219,6 +1266,9 @@ func TestToSPDX23(t *testing.T) {
 							SupplierType: spdx.NoAssertion,
 						},
 						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 					},
 					{
@@ -1232,6 +1282,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/METADATA",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1253,6 +1304,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/vendor/libfuse/METADATA",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1274,6 +1326,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/METADATA",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1295,6 +1348,7 @@ func TestToSPDX23(t *testing.T) {
 						PackageDownloadLocation:   spdx.NoAssertion,
 						PackageLicenseConcluded:   spdx.NoAssertion,
 						PackageLicenseDeclared:    spdx.NoAssertion,
+						PackageCopyrightText:      spdx.NoAssertion,
 						IsFilesAnalyzedTagPresent: false,
 						PackageSourceInfo:         "Identified by the misc/some_metadata_scanner extractor from rbe_input_root/github/artfs/vendor/libfuse/METADATA",
 						PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -1316,6 +1370,10 @@ func TestToSPDX23(t *testing.T) {
 								Value:     spdx.EmptyFileDigest,
 							},
 						},
+						LicenseConcluded:   spdx.NoAssertion,
+
+						LicenseInfoInFiles: []string{spdx.NoAssertion},
+
 						FileCopyrightText: spdx.NoAssertion,
 					},
 					{
@@ -1327,6 +1385,10 @@ func TestToSPDX23(t *testing.T) {
 								Value:     spdx.EmptyFileDigest,
 							},
 						},
+						LicenseConcluded:   spdx.NoAssertion,
+
+						LicenseInfoInFiles: []string{spdx.NoAssertion},
+
 						FileCopyrightText: spdx.NoAssertion,
 					},
 				},

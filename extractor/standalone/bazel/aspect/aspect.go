@@ -2,7 +2,6 @@
 package aspect
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 
 	_ "embed"
@@ -117,8 +115,6 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		return inventory.Inventory{}, errors.New("bazel not found in PATH")
 	}
 
-	// Setup a temporary workspace package for the aspect inside the scan root
-	// so it can be referenced as a valid Bazel label.
 	aspectDir, err := os.MkdirTemp(input.ScanRoot.Path, ".scalibr_aspect_*")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temp dir: %w", err)
@@ -133,18 +129,22 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to write aspect file: %w", err)
 	}
 
+	eventsFile, err := os.MkdirTemp("", "bazel_events")
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to create events dir: %w", err)
+	}
+	defer os.RemoveAll(eventsFile)
+	bepPath := filepath.Join(eventsFile, "events.json")
+
 	aspectPkg := filepath.Base(aspectDir)
-	args := []string{"build", "--nobuild", "--aspects=//" + aspectPkg + ":scalibr_aspect.bzl%scalibr_aspect"}
+	args := []string{"build", "--nobuild", "--aspects=//" + aspectPkg + ":scalibr_aspect.bzl%scalibr_aspect", "--output_groups=scalibr_out"}
 	if e.keepGoing {
 		args = append(args, "--keep_going")
 	}
+	args = append(args, "--build_event_json_file="+bepPath)
 
 	// Add check_visibility=false to bypass internal access restrictions on mega targets
 	args = append(args, "--check_visibility=false")
-
-	// Add a unique cache-buster so Bazel always re-evaluates the aspect and prints to stderr
-	uuidStr := strconv.Itoa(os.Getpid()) // good enough cache buster for single runs
-	args = append(args, "--define", "scalibr_run="+uuidStr)
 
 	args = append(args, e.target)
 
@@ -154,22 +154,41 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	// Ignore the execution error since --nobuild or missing visibility might fail the build,
-	// but the analysis phase prints what we need.
+	// but the analysis phase outputs what we need.
 	_ = cmd.Run()
 
-	scanner := bufio.NewScanner(&stderr)
 	packagesMap := make(map[string]*extractor.Package)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		prefix := "SCALIBR_ASPECT_DATA::"
-		_, jsonStr, found := strings.Cut(line, prefix)
-		if !found {
+	bepData, err := os.ReadFile(bepPath)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to read build events: %w", err)
+	}
+
+	// Simple extraction of all file URIs ending with .scalibr.json from BEP JSON stream
+	lines := strings.Split(string(bepData), "\n")
+	for _, line := range lines {
+		if !strings.Contains(line, ".scalibr.json") {
 			continue
 		}
-
+		// Look for "uri":"file://..."
+		prefix := `"uri":"file://`
+		idx := strings.Index(line, prefix)
+		if idx == -1 {
+			continue
+		}
+		startIdx := idx + len(prefix)
+		endIdx := strings.Index(line[startIdx:], `"`)
+		if endIdx == -1 {
+			continue
+		}
+		filePath := line[startIdx : startIdx+endIdx]
+		
+		fileData, err := os.ReadFile(filePath)
+		if err != nil {
+			continue
+		}
 		var data aspectData
-		if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		if err := json.Unmarshal(fileData, &data); err != nil {
 			continue
 		}
 
@@ -239,21 +258,17 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		if pkgName == "" {
 			pkgName = data.Name
 		}
-		// Clean up the name if it starts with @ or +
 		pkgName = strings.TrimLeft(pkgName, "@+")
 
-		pkgName = parseBzlmodName(pkgName, &purlType)
 		normName := normalizeModuleName(pkgName)
+		pkgName = parseBzlmodName(normName, &purlType)
+		
 		if strings.HasPrefix(pkgName, "gazelle") {
 			goName := getGoPkgNameFromURL(url)
 			if goName != "" {
 				pkgName = goName
 				purlType = "golang"
-			} else {
-				pkgName = normName
 			}
-		} else {
-			pkgName = normName
 		}
 
 		packagesMap[dedupKey] = &extractor.Package{

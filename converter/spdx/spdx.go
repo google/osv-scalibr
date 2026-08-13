@@ -65,14 +65,14 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 	// Add a main package that contains all other top-level packages.
 	mainPackageID := SPDXRefPrefix + "Package-main-" + uuid.New().String()
 	packages = append(packages, &v2_3.Package{
-		PackageName:           "main",
-		PackageSPDXIdentifier: common.ElementID(mainPackageID),
-		PackageVersion:        "0",
-		PackageSupplier: &common.Supplier{
-			Supplier:     NoAssertion,
-			SupplierType: NoAssertion,
-		},
+		PackageName:               "main",
+		PackageSPDXIdentifier:     common.ElementID(mainPackageID),
+		PackageVersion:            "0",
+		PackageSupplier:           &common.Supplier{Supplier: NoAssertion, SupplierType: NoAssertion},
 		PackageDownloadLocation:   NoAssertion,
+		PackageLicenseConcluded:   NoAssertion,
+		PackageLicenseDeclared:    NoAssertion,
+		PackageCopyrightText:      NoAssertion,
 		IsFilesAnalyzedTagPresent: false,
 	})
 
@@ -128,6 +128,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			PackageDownloadLocation:   NoAssertion,
 			PackageLicenseConcluded:   licensesConcluded,
 			PackageLicenseDeclared:    NoAssertion,
+			PackageCopyrightText:      NoAssertion,
 			IsFilesAnalyzedTagPresent: false,
 			PackageSourceInfo:         pSourceInfo,
 			PackageExternalReferences: []*v2_3.PackageExternalReference{
@@ -281,7 +282,9 @@ func dependencyManifestOf(
 					Value:     GetFileSHA256(filePath, pkg.ScanRoot),
 				},
 			},
-			FileCopyrightText: NoAssertion,
+			FileCopyrightText:  NoAssertion,
+			LicenseConcluded:   NoAssertion,
+			LicenseInfoInFiles: []string{NoAssertion},
 		})
 	}
 	relationships = append(relationships, &v2_3.Relationship{
@@ -328,6 +331,7 @@ func descendantOf(
 			PackageDownloadLocation:   NoAssertion,
 			PackageLicenseConcluded:   NoAssertion,
 			PackageLicenseDeclared:    NoAssertion,
+			PackageCopyrightText:      NoAssertion,
 			IsFilesAnalyzedTagPresent: false,
 			PackageSourceInfo:         getPackageSourceInfo(pkg),
 			PackageExternalReferences: []*v2_3.PackageExternalReference{
