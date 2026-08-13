@@ -105,6 +105,13 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		return inventory.Inventory{}, errors.New("ScanRoot is required")
 	}
 
+	// Verify that the scan root is actually a Bazel workspace.
+	// Running 'bazel build' outside of a workspace traverses parent directories
+	// or fails in ways we want to avoid.
+	if !isBazelWorkspace(input.ScanRoot.Path) {
+		return inventory.Inventory{}, nil
+	}
+
 	_, err := exec.LookPath("bazel")
 	if err != nil {
 		return inventory.Inventory{}, errors.New("bazel not found in PATH")
@@ -272,4 +279,15 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	})
 
 	return inventory.Inventory{Packages: pkgs}, nil
+}
+
+// isBazelWorkspace checks if the given path contains a Bazel workspace indicator.
+func isBazelWorkspace(path string) bool {
+	markers := []string{"WORKSPACE", "WORKSPACE.bazel", "MODULE.bazel"}
+	for _, marker := range markers {
+		if _, err := os.Stat(filepath.Join(path, marker)); err == nil {
+			return true
+		}
+	}
+	return false
 }
