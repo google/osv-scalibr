@@ -37,12 +37,15 @@ type Extractor interface {
 type Config struct {
 	Extractors []Extractor
 	ScanRoot   *scalibrfs.ScanRoot
+	DirsToSkip []string
 }
 
 // ScanInput provides information for the extractor about the scan.
 type ScanInput struct {
 	// The root of the artifact being scanned.
 	ScanRoot *scalibrfs.ScanRoot
+	// Directories to skip during extraction.
+	DirsToSkip []string
 }
 
 // Run the extractors that are specified in the config.
@@ -58,7 +61,8 @@ func Run(ctx context.Context, config *Config) (inventory.Inventory, []*plugin.St
 	}
 
 	scanInput := &ScanInput{
-		ScanRoot: config.ScanRoot,
+		ScanRoot:   config.ScanRoot,
+		DirsToSkip: config.DirsToSkip,
 	}
 
 	inv := inventory.Inventory{}

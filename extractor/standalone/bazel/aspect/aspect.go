@@ -139,6 +139,17 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		args = append(args, "--keep_going")
 	}
 
+	// Map DirsToSkip blocklists into Bazel's --deleted_packages flag so it respects exclusions
+	var deletedPackages []string
+	for _, skipDir := range input.DirsToSkip {
+		if rel, err := filepath.Rel(input.ScanRoot.Path, skipDir); err == nil && !strings.HasPrefix(rel, "..") && rel != "." {
+			deletedPackages = append(deletedPackages, filepath.ToSlash(rel))
+		}
+	}
+	if len(deletedPackages) > 0 {
+		args = append(args, "--deleted_packages="+strings.Join(deletedPackages, ","))
+	}
+
 	// Add check_visibility=false to bypass internal access restrictions on mega targets
 	args = append(args, "--check_visibility=false")
 
