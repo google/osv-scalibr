@@ -133,7 +133,7 @@ func TestReadRequirements(t *testing.T) {
 	checkManifest(t, "Manifest", got, want)
 }
 
-func TestReadRequirementsRejectsRecursivePathOutsideProject(t *testing.T) {
+func TestReadRequirementsDoesNotReadRecursivePathOutsideProject(t *testing.T) {
 	dir := t.TempDir()
 	project := filepath.Join(dir, "project")
 	if err := os.Mkdir(project, 0755); err != nil {
@@ -149,9 +149,18 @@ func TestReadRequirementsRejectsRecursivePathOutsideProject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	root, err := os.OpenRoot(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
 
-	if _, err := rw.Read("requirements.txt", scalibrfs.DirFS(project)); err == nil {
-		t.Fatal("Read() accepted a recursive requirements path outside the project")
+	got, err := rw.Read("requirements.txt", root.FS().(scalibrfs.FS))
+	if err != nil {
+		t.Fatalf("Read() returned an error: %v", err)
+	}
+	if len(got.Requirements()) != 0 {
+		t.Fatalf("Read() included requirements from outside the project: %v", got.Requirements())
 	}
 }
 

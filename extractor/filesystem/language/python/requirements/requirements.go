@@ -18,9 +18,7 @@ package requirements
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
-	"io/fs"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -152,16 +150,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	pkgs = append(pkgs, newRepos...)
 
 	// Process all the recursive files that we found.
-	extraPKG, err := extractFromExtraPaths(input.Path, extraPaths, input.FS)
-	if err != nil {
-		return inventory.Inventory{}, err
-	}
+	extraPKG := extractFromExtraPaths(input.Path, extraPaths, input.FS)
 	pkgs = append(pkgs, extraPKG...)
 
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func extractFromExtraPaths(initPath string, extraPaths pathQueue, fsys scalibrfs.FS) ([]*extractor.Package, error) {
+func extractFromExtraPaths(initPath string, extraPaths pathQueue, fsys scalibrfs.FS) []*extractor.Package {
 	// File paths with packages already found in this extraction.
 	// We store these to remove duplicates in diamond dependency cases and prevent
 	// infinite loops in misconfigured lockfiles with cyclical deps.
@@ -174,11 +169,7 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fsys scalibrfs
 		if _, exists := found[inc.path]; exists {
 			continue
 		}
-		cleanPath := filepath.ToSlash(filepath.Clean(inc.path))
-		if !fs.ValidPath(cleanPath) {
-			return nil, fmt.Errorf("referenced requirements path %q escapes the scan root", inc.path)
-		}
-		newPKG, newPaths, err := openAndExtractFromFile(cleanPath, fsys)
+		newPKG, newPaths, err := openAndExtractFromFile(inc.path, fsys)
 		if err != nil {
 			log.Warnf("openAndExtractFromFile(%q): %v", inc.path, err)
 			continue
@@ -195,7 +186,7 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fsys scalibrfs
 		pkgs = append(pkgs, newPKG...)
 	}
 
-	return pkgs, nil
+	return pkgs
 }
 
 func openAndExtractFromFile(path string, fs scalibrfs.FS) ([]*extractor.Package, pathQueue, error) {
