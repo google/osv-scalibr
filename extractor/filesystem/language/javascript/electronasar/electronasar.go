@@ -130,7 +130,19 @@ func (e Extractor) Extract(
 func (e Extractor) extractPackages(
 	input *filesystem.ScanInput,
 ) ([]*extractor.Package, error) {
-	hdr, dataOffset, err := readHeader(input.Reader)
+	// Build a ReaderAt over the full file first. If input.Reader is not already
+	// an io.ReaderAt, NewReaderAt copies the entire stream into memory. We must
+	// do this before readHeader because readHeader consumes bytes from the
+	// reader; calling NewReaderAt afterwards would produce a ReaderAt that is
+	// missing the bytes already consumed, making all data-region offsets wrong.
+	ra, err := scalibrfs.NewReaderAt(input.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("%s: creating ReaderAt for %q: %w", e.Name(), input.Path, err)
+	}
+
+	// Wrap the ReaderAt in an io.SectionReader so readHeader gets an io.Reader
+	// starting at offset 0 of the full file.
+	hdr, dataOffset, err := readHeader(io.NewSectionReader(ra, 0, 1<<62))
 	if err != nil {
 		return nil, fmt.Errorf("%s: reading ASAR header from %q: %w",
 			e.Name(), input.Path, err)
@@ -139,11 +151,6 @@ func (e Extractor) extractPackages(
 	nmNode, ok := hdr.Files["node_modules"]
 	if !ok {
 		return nil, nil
-	}
-
-	ra, err := scalibrfs.NewReaderAt(input.Reader)
-	if err != nil {
-		return nil, fmt.Errorf("%s: creating ReaderAt for %q: %w", e.Name(), input.Path, err)
 	}
 
 	var pkgs []*extractor.Package
