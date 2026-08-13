@@ -31,7 +31,6 @@ import (
 
 	"archive/tar"
 
-	"github.com/docker/docker/client"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -40,6 +39,7 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/log"
+	"github.com/moby/moby/client"
 	"github.com/opencontainers/go-digest"
 )
 
@@ -195,7 +195,7 @@ func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Opt
 
 // CreateTarBallFromImage creates a tarball from a local docker image. This is the API version of 'docker save image' command
 func createTarBallFromImage(imageName string) (string, error) {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return "", fmt.Errorf("unable to create docker client to untar image  %s: %w", imageName, err)
 	}
@@ -230,7 +230,7 @@ func createTarBallFromImage(imageName string) (string, error) {
 
 // Check if the imageName is of the form imageName:imageTag
 func validateImageNameAndTag(imageName string) error {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return err
 	}

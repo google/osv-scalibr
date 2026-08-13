@@ -244,17 +244,31 @@ func TestExtract(t *testing.T) {
 					Metadata: &requirements.Metadata{Requirement: "under_score==1.3"},
 				},
 				{
+					Name:     "pkg.dot.name",
+					Version:  "5.0.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/with_versions.txt", 9),
+					Metadata: &requirements.Metadata{Requirement: "pkg.dot.name==5.0.0"},
+				},
+				{
+					Name:     "combination-._-.also_-._valid",
+					Version:  "3.5",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/with_versions.txt", 10),
+					Metadata: &requirements.Metadata{VersionComparator: ">=", Requirement: "combination-._-.also_-._valid>=3.5"},
+				},
+				{
 					Name:     "yolo",
 					Version:  "1.0",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/with_versions.txt", 9),
+					Location: extractor.LocationFromPathAndLine("testdata/with_versions.txt", 11),
 					Metadata: &requirements.Metadata{VersionComparator: "===", Requirement: "yolo===1.0"},
 				},
 				{
 					Name:     "pkg",
 					Version:  "1.2.3",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/with_versions.txt", 10),
+					Location: extractor.LocationFromPathAndLine("testdata/with_versions.txt", 12),
 					Metadata: &requirements.Metadata{VersionComparator: "<=", Requirement: "pkg<=1.2.3"},
 				},
 			},
@@ -475,7 +489,7 @@ func TestExtract(t *testing.T) {
 				{
 					// foo7==1.0 unexpected_text_before_options_stays_around --hash=sha256:123
 					Name:     "foo7",
-					Version:  "1.0unexpected_text_before_options_stays_around",
+					Version:  "1.0 unexpected_text_before_options_stays_around",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/per_req_options.txt", 13),
 					Metadata: &requirements.Metadata{HashCheckingModeValues: []string{"sha256:123"}, Requirement: "foo7==1.0 unexpected_text_before_options_stays_around"},
@@ -543,6 +557,36 @@ func TestExtract(t *testing.T) {
 				// https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers.
 				//
 				// foo15== --config-settings --hash=sha256:123
+
+				{
+					// foo16-Client==1.0
+					// valid package name contains "-C" (e.g. "-Client")
+					// the "-C" should not be misparsed as the short-form of --config-settings.
+					Name:     "foo16-Client",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/per_req_options.txt", 32),
+					Metadata: &requirements.Metadata{Requirement: "foo16-Client==1.0"},
+				},
+				{
+					// foo17--hash==1.0
+					// package name contains "--hash"
+					// "--hash" without leading whitespace should not be misparsed as the --hash option flag.
+					Name:     "foo17--hash",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/per_req_options.txt", 34),
+					Metadata: &requirements.Metadata{Requirement: "foo17--hash==1.0"},
+				},
+				{
+					// foo18-Client==1.0 -C bar
+					// valid package name contains "-C" while the line also includes a "-C" option flag.
+					Name:     "foo18-Client",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/per_req_options.txt", 36),
+					Metadata: &requirements.Metadata{Requirement: "foo18-Client==1.0"},
+				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},

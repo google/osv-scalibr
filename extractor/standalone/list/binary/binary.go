@@ -24,7 +24,7 @@ import (
 
 // EnableAdditionalExtractors patches the standalone extractor lists to include containerd.
 func EnableAdditionalExtractors() {
-	sl.RegisterExtractor(containerd.Name, containerd.New, []string{
+	sl.RegisterExtractor(containerd.Name, sl.ProtoCfg(containerd.New), []string{
 		"containers",
 	})
 }

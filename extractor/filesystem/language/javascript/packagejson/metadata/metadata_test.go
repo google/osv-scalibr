@@ -247,7 +247,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Unknown,
+				Source:       metadata.Unknown,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -282,6 +283,10 @@ func TestToProto(t *testing.T) {
 					},
 				},
 				Source: metadata.PublicRegistry,
+				Dependencies: map[string]string{
+					"dep1": "1.0.0",
+					"dep2": "~2.0.0",
+				},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -294,6 +299,10 @@ func TestToProto(t *testing.T) {
 					"second-contributor <second-contributor@google.com>",
 				},
 				Source: pb.PackageSource_PUBLIC_REGISTRY,
+				Dependencies: []*pb.JavascriptPackageJSONMetadata_Dependency{
+					{Name: "dep1", VersionRequired: "1.0.0"},
+					{Name: "dep2", VersionRequired: "~2.0.0"},
+				},
 			},
 		},
 		{
@@ -303,7 +312,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.PublicRegistry,
+				Source:       metadata.PublicRegistry,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -317,7 +327,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Other,
+				Source:       metadata.Other,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -331,7 +342,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Local,
+				Source:       metadata.Local,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -374,7 +386,8 @@ func TestToStruct(t *testing.T) {
 				Author: &metadata.Person{
 					Name: "some-author",
 				},
-				Source: metadata.Unknown,
+				Source:       metadata.Unknown,
+				Dependencies: map[string]string{},
 			},
 		},
 		{
@@ -416,7 +429,8 @@ func TestToStruct(t *testing.T) {
 						Email: "second-maintainer@google.com",
 					},
 				},
-				Source: metadata.PublicRegistry,
+				Source:       metadata.PublicRegistry,
+				Dependencies: map[string]string{},
 			},
 		},
 		{
@@ -430,7 +444,8 @@ func TestToStruct(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.PublicRegistry,
+				Source:       metadata.PublicRegistry,
+				Dependencies: map[string]string{},
 			},
 		},
 		{
@@ -444,7 +459,8 @@ func TestToStruct(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Other,
+				Source:       metadata.Other,
+				Dependencies: map[string]string{},
 			},
 		},
 		{
@@ -458,7 +474,8 @@ func TestToStruct(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Local,
+				Source:       metadata.Local,
+				Dependencies: map[string]string{},
 			},
 		},
 	}
