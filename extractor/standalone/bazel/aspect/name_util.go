@@ -51,15 +51,15 @@ func parseBzlmodName(name string, purlType *string) string {
 		pkg := parts[1]
 		if strings.HasPrefix(prefix, "npm") {
 			*purlType = "npm"
-			if strings.HasPrefix(pkg, "at_") {
-				pkg = "@" + strings.TrimPrefix(pkg, "at_")
+			if after, found := strings.CutPrefix(pkg, "at_"); found {
+				pkg = "@" + after
 				// Find the first underscore and replace it with a slash
 				pkg = strings.Replace(pkg, "_", "/", 1)
 			}
 			return pkg
 		} else if strings.HasPrefix(prefix, "pypi") || strings.HasPrefix(prefix, "pip") || strings.HasPrefix(prefix, "rules_python") {
 			*purlType = "pypi"
-			// Python package names typically use dashes for canonical names in PyPI, but bzlmod often preserves underscores. 
+			// Python package names typically use dashes for canonical names in PyPI, but bzlmod often preserves underscores.
 			// SCALIBR normalization handles this downstream.
 			return pkg
 		} else if strings.HasPrefix(prefix, "crates") {

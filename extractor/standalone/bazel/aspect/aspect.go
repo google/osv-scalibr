@@ -2,6 +2,7 @@
 package aspect
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -165,8 +166,9 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	}
 
 	// Simple extraction of all file URIs ending with .scalibr.json from BEP JSON stream
-	lines := strings.Split(string(bepData), "\n")
-	for _, line := range lines {
+	scanner := bufio.NewScanner(bytes.NewReader(bepData))
+	for scanner.Scan() {
+		line := scanner.Text()
 		if !strings.Contains(line, ".scalibr.json") {
 			continue
 		}
@@ -182,7 +184,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 			continue
 		}
 		filePath := line[startIdx : startIdx+endIdx]
-		
+
 		fileData, err := os.ReadFile(filePath)
 		if err != nil {
 			continue
@@ -262,7 +264,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 
 		normName := normalizeModuleName(pkgName)
 		pkgName = parseBzlmodName(normName, &purlType)
-		
+
 		if strings.HasPrefix(pkgName, "gazelle") {
 			goName := getGoPkgNameFromURL(url)
 			if goName != "" {

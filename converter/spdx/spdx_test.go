@@ -607,7 +607,7 @@ func TestToSPDX23(t *testing.T) {
 								Value:     spdx.EmptyFileDigest,
 							},
 						},
-						LicenseConcluded:   spdx.NoAssertion,
+						LicenseConcluded: spdx.NoAssertion,
 
 						LicenseInfoInFiles: []string{spdx.NoAssertion},
 
@@ -1370,7 +1370,7 @@ func TestToSPDX23(t *testing.T) {
 								Value:     spdx.EmptyFileDigest,
 							},
 						},
-						LicenseConcluded:   spdx.NoAssertion,
+						LicenseConcluded: spdx.NoAssertion,
 
 						LicenseInfoInFiles: []string{spdx.NoAssertion},
 
@@ -1385,7 +1385,7 @@ func TestToSPDX23(t *testing.T) {
 								Value:     spdx.EmptyFileDigest,
 							},
 						},
-						LicenseConcluded:   spdx.NoAssertion,
+						LicenseConcluded: spdx.NoAssertion,
 
 						LicenseInfoInFiles: []string{spdx.NoAssertion},
 
