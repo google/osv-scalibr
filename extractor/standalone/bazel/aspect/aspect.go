@@ -242,6 +242,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		// Clean up the name if it starts with @ or +
 		pkgName = strings.TrimLeft(pkgName, "@+")
 
+		pkgName = parseBzlmodName(pkgName, &purlType)
 		normName := normalizeModuleName(pkgName)
 		if strings.HasPrefix(pkgName, "gazelle") {
 			goName := getGoPkgNameFromURL(url)
@@ -251,10 +252,6 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 			} else {
 				pkgName = normName
 			}
-		} else if strings.HasPrefix(pkgName, "crates_") {
-			pkgName = strings.Split(pkgName, "__")[len(strings.Split(pkgName, "__"))-1]
-			pkgName = strings.Split(pkgName, "-")[0]
-			purlType = "cargo"
 		} else {
 			pkgName = normName
 		}

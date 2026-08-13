@@ -41,3 +41,31 @@ func getGoPkgNameFromURL(url string) string {
 	}
 	return ""
 }
+
+// parseBzlmodName attempts to un-mangle Bzlmod canonical names into their native ecosystem names
+// (e.g. npm__at_babel_core -> @babel/core, pip__requests -> requests)
+func parseBzlmodName(name string, purlType *string) string {
+	parts := strings.SplitN(name, "__", 2)
+	if len(parts) == 2 {
+		prefix := parts[0]
+		pkg := parts[1]
+		if strings.HasPrefix(prefix, "npm") {
+			*purlType = "npm"
+			if strings.HasPrefix(pkg, "at_") {
+				pkg = "@" + strings.TrimPrefix(pkg, "at_")
+				// Find the first underscore and replace it with a slash
+				pkg = strings.Replace(pkg, "_", "/", 1)
+			}
+			return pkg
+		} else if strings.HasPrefix(prefix, "pypi") || strings.HasPrefix(prefix, "pip") || strings.HasPrefix(prefix, "rules_python") {
+			*purlType = "pypi"
+			// Python package names typically use dashes for canonical names in PyPI, but bzlmod often preserves underscores. 
+			// SCALIBR normalization handles this downstream.
+			return pkg
+		} else if strings.HasPrefix(prefix, "crates") {
+			*purlType = "cargo"
+			return strings.Split(pkg, "-")[0]
+		}
+	}
+	return name
+}
