@@ -23,3 +23,6 @@ jobs:
 
       - name: Run plugger
         run: make lint-plugger
+
+      - name: Check secure protocols
+        run: make lint-secureprotocol
