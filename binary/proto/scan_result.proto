@@ -347,12 +347,18 @@ message PythonPackageMetadata {
 
 // The additional data found in npm packages.
 message JavascriptPackageJSONMetadata {
+  message Dependency {
+    string name = 1;
+    string version_required = 2;
+  }
+
   reserved 4;
 
   string author = 1;
   repeated string maintainers = 2;
   repeated string contributors = 3;
   PackageSource source = 5;
+  repeated Dependency dependencies = 6;
 }
 
 // The source of the package.
@@ -556,10 +562,19 @@ message MacportsPackageMetadata {
   string package_revision = 3;
 }
 
+// An external reference to additional information about an SPDX package.
+message SPDXExternalReference {
+  string category = 1;
+  string ref_type = 2;
+  string locator = 3;
+  string comment = 4;
+}
+
 // The additional data for packages extracted from SPDX files.
 message SPDXPackageMetadata {
   Purl purl = 1;
   repeated string cpes = 2;
+  repeated SPDXExternalReference external_references = 3;
 }
 
 // The additional data for packages extracted from CDX files.
@@ -573,6 +588,10 @@ message JavaArchiveMetadata {
   string artifact_id = 2;
   string group_id = 3;
   string sha1 = 4;
+
+  // dependencies and parent are populated only if extract_from_pom_xml is on.
+  repeated JavaLockfileDependency dependencies = 5;
+  JavaLockfileParent parent = 6;
 }
 
 // The additional data found in Java lockfiles.
@@ -581,6 +600,21 @@ message JavaLockfileMetadata {
   string group_id = 2;
   repeated string dep_group_vals = 3;
   bool is_transitive = 4;
+}
+
+message JavaLockfileDependency {
+  string group_id = 1;
+  string artifact_id = 2;
+  // Empty, if it came from a version requirement that could not be resolved.
+  string version_requirement = 3;
+  string scope = 4;
+  bool is_optional = 5;
+}
+
+message JavaLockfileParent {
+  string group_id = 1;
+  string artifact_id = 2;
+  string version = 3;
 }
 
 // The additional data for packages extracted by an OSV extractor wrapper.

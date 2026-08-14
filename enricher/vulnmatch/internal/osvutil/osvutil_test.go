@@ -246,6 +246,86 @@ func TestParsePackage(t *testing.T) {
 				Version:   "5.1-6",
 			},
 		},
+		{
+			name: "npm scoped package PURL namespace",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeNPM,
+				Name:     "client-lambda",
+				Version:  "3.1037.0",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:npm/%40aws-sdk/client-lambda@3.1037.0"),
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "@aws-sdk/client-lambda",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemNPM),
+				Version:   "3.1037.0",
+			},
+		},
+		{
+			name: "Maven group:artifact PURL namespace",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeMaven,
+				Name:     "commons-lang3",
+				Version:  "3.12.0",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:maven/org.apache.commons/commons-lang3@3.12.0"),
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "org.apache.commons:commons-lang3",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemMaven),
+				Version:   "3.12.0",
+			},
+		},
+		{
+			name: "Golang import path PURL namespace",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGolang,
+				Name:     "gin",
+				Version:  "1.9.1",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:golang/github.com/gin-gonic/gin@v1.9.1"),
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "github.com/gin-gonic/gin",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+				Version:   "1.9.1",
+			},
+		},
+		{
+			name: "Debian distro PURL namespace ignored for name",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeDebian,
+				Name:     "bash",
+				Version:  "5.1-2",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:deb/debian/bash@5.1-2?distro=debian-11"),
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "bash",
+				Ecosystem: osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemDebian, Suffix: "11"},
+				Version:   "5.1-2",
+			},
+		},
+		{
+			name: "Already-namespaced npm package (no duplicate prefix)",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeNPM,
+				Name:     "@aws-sdk/client-lambda",
+				Version:  "3.1037.0",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:npm/%40aws-sdk/client-lambda@3.1037.0"),
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "@aws-sdk/client-lambda",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemNPM),
+				Version:   "3.1037.0",
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -272,4 +352,13 @@ func TestParsePackage(t *testing.T) {
 			}
 		})
 	}
+}
+
+func purlFromString(t *testing.T, s string) *purl.PackageURL {
+	t.Helper()
+	p, err := purl.FromString(s)
+	if err != nil {
+		t.Fatalf("purl.FromString(%q) failed: %v", s, err)
+	}
+	return &p
 }
