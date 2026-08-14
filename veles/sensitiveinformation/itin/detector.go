@@ -79,6 +79,8 @@ func NewDetector() veles.Detector {
 	}
 }
 
+// Format requirements can found on Wikipedia:
+// https://en.wikipedia.org/wiki/Individual_Taxpayer_Identification_Number
 func validItin(s string) bool {
 	normalized := strings.ReplaceAll(s, "-", "")
 	secondSection := normalized[3:5]
