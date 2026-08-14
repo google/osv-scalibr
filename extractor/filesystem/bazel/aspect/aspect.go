@@ -18,9 +18,10 @@ import (
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/extractor/standalone"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+	"sync"
 )
 
 //go:embed scalibr_aspect.bzl
@@ -35,10 +36,12 @@ type Extractor struct {
 	target string
 	// keepGoing determines whether to use the --keep_going flag.
 	keepGoing bool
+	// processed tracks workspace roots that have already been processed to avoid duplicate executions.
+	processed sync.Map
 }
 
 // New returns a new instance of the Extractor.
-func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	e := &Extractor{
 		target:    "//...",
 		keepGoing: true,
@@ -65,6 +68,8 @@ func (e *Extractor) Version() int { return 0 }
 
 // Requirements returns the requirements for this extractor.
 func (e *Extractor) Requirements() *plugin.Capabilities {
+	// This plugin requires AllowUnsafePlugins because it actively invokes the `bazel build` command
+	// which executes arbitrary macros, actions, and repository rules on the host machine.
 	return &plugin.Capabilities{RunningSystem: true, DirectFS: true, AllowUnsafePlugins: true}
 }
 
@@ -99,15 +104,25 @@ type aspectData struct {
 }
 
 // Extract runs the bazel build command with the embedded aspect.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
-	if input.ScanRoot == nil || input.ScanRoot.Path == "" {
-		return inventory.Inventory{}, errors.New("ScanRoot is required")
+// FileRequired returns true if the file is a Bazel workspace marker.
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
+	base := filepath.Base(api.Path())
+	return base == "WORKSPACE" || base == "WORKSPACE.bazel" || base == "MODULE.bazel"
+}
+
+// Extract runs the bazel build command with the embedded aspect.
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	workspaceRoot := filepath.Dir(filepath.Join(input.Root, input.Path))
+
+	// Check if we already processed this workspace root
+	if _, loaded := e.processed.LoadOrStore(workspaceRoot, true); loaded {
+		return inventory.Inventory{}, nil
 	}
 
 	// Verify that the scan root is actually a Bazel workspace.
 	// Running 'bazel build' outside of a workspace traverses parent directories
 	// or fails in ways we want to avoid.
-	if !isBazelWorkspace(input.ScanRoot.Path) {
+	if !isBazelWorkspace(workspaceRoot) {
 		return inventory.Inventory{}, nil
 	}
 
@@ -116,7 +131,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 		return inventory.Inventory{}, errors.New("bazel not found in PATH")
 	}
 
-	aspectDir, err := os.MkdirTemp(input.ScanRoot.Path, ".scalibr_aspect_*")
+	aspectDir, err := os.MkdirTemp(workspaceRoot, ".scalibr_aspect_*")
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("failed to create temp dir: %w", err)
 	}
@@ -150,7 +165,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	args = append(args, e.target)
 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
-	cmd.Dir = input.ScanRoot.Path
+	cmd.Dir = workspaceRoot
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
