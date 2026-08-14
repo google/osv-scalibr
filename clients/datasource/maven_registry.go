@@ -441,17 +441,17 @@ func writeFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	// Create the directory if it doesn't exist.
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %q: %w", dir, err)
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	outFile, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("failed to create file %q: %w", path, err)
+		return fmt.Errorf("failed to create file %s: %w", path, err)
 	}
 	defer outFile.Close()
 
 	if _, err := outFile.Write(data); err != nil {
-		return fmt.Errorf("failed to write file %q: %w", path, err)
+		return fmt.Errorf("failed to write file %s: %w", path, err)
 	}
 
 	return nil
