@@ -21,6 +21,7 @@ import (
 	gopurl "github.com/google/osv-scalibr/extractor/filesystem/language/golang/purl"
 	mavenpurl "github.com/google/osv-scalibr/extractor/filesystem/language/java/purl"
 	npmpurl "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/purl"
+	composerpurl "github.com/google/osv-scalibr/extractor/filesystem/language/php/purl"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pypipurl"
 	osecosystem "github.com/google/osv-scalibr/extractor/filesystem/os/ecosystem"
 	ospurl "github.com/google/osv-scalibr/extractor/filesystem/os/purl"
@@ -68,6 +69,8 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return mavenpurl.MakePackageURL(p.Version, p.Metadata)
 	case purl.TypeNPM:
 		return npmpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
+	case purl.TypeComposer:
+		return composerpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeGolang:
 		return gopurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeHex:
@@ -150,6 +153,16 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions)
 	case purl.TypeSwift:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemSwiftURL)
+	case purl.TypeBrew:
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
+	case "git":
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
+	}
+
+	// No Ecosystem defined for this package, but if it has a source code commit,
+	// return GIT as the ecosystem.
+	if p.SourceCode != nil && (p.SourceCode.Commit != "" || p.SourceCode.Repo != "") {
+		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
 	}
 
 	// No Ecosystem defined for this package.

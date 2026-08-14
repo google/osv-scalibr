@@ -26,11 +26,16 @@ type IDGenerator interface {
 	GenerateID(pkgName string) (string, error)
 }
 
-// RandomIDGenerator generates random UUIDs for packages.
-type RandomIDGenerator struct{}
+// NewIDGenerator returns an IDGenerator, with characteristics based on the running environment.
+func NewIDGenerator() IDGenerator {
+	return &randomIDGenerator{}
+}
+
+// randomIDGenerator generates random UUIDs for packages.
+type randomIDGenerator struct{}
 
 // GenerateID generates a random UUID for the given package.
-func (g *RandomIDGenerator) GenerateID(pkgName string) (string, error) {
+func (g *randomIDGenerator) GenerateID(pkgName string) (string, error) {
 	randomID, err := uuid.NewRandom()
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random UUID: %w", err)
