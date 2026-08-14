@@ -26,6 +26,9 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev/fakeclient"
 	"github.com/google/osv-scalibr/extractor"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
+	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
@@ -40,11 +43,70 @@ func TestEnrich(t *testing.T) {
 	cancel()
 
 	var (
-		jsPkg      = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
-		goPkg      = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
-		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
-		pyPkg      = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
-		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
+		jsPkg       = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
+		goPkg       = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
+		fzfPkg      = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
+		pyPkg       = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
+		unknownPkg  = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
+		goStdlibPkg = &extractor.Package{Name: "go", Version: "1.18", PURLType: purl.TypeGolang}
+		gitPkg      = &extractor.Package{
+			Name:     "some-git-pkg",
+			Version:  "1.0.0",
+			PURLType: "git",
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo: "github.com/Some/Repo",
+			},
+		}
+		dpkgSrcPkg = &extractor.Package{
+			Name:     "bash",
+			Version:  "5.1-6",
+			PURLType: purl.TypeDebian,
+			Metadata: &dpkgmeta.Metadata{
+				OSID:              "debian",
+				OSVersionID:       "11",
+				OSVersionCodename: "bullseye",
+				SourceName:        "bash-source",
+			},
+		}
+		apkOriginPkg = &extractor.Package{
+			Name:     "busybox",
+			Version:  "1.35.0",
+			PURLType: purl.TypeApk,
+			Metadata: &apkmeta.Metadata{
+				OSID:        "alpine",
+				OSVersionID: "3.16",
+				OriginName:  "busybox-origin",
+			},
+		}
+		rpmPkgWithEpoch = &extractor.Package{
+			Name:     "bash-epoch",
+			Version:  "5.1-6",
+			PURLType: purl.TypeRPM,
+			Metadata: &rpmmeta.Metadata{
+				OSID:      "rhel",
+				OSCPEName: "cpe:/o:redhat:enterprise_linux:9::baseos",
+				Epoch:     1,
+			},
+		}
+		rpmPkgWithoutEpoch = &extractor.Package{
+			Name:     "bash-no-epoch",
+			Version:  "5.1-6",
+			PURLType: purl.TypeRPM,
+			Metadata: &rpmmeta.Metadata{
+				OSID:      "rhel",
+				OSCPEName: "cpe:/o:redhat:enterprise_linux:9::baseos",
+				Epoch:     0,
+			},
+		}
+		rpmPkgOtherDistroWithEpoch = &extractor.Package{
+			Name:     "bash-other-distro",
+			Version:  "5.1-6",
+			PURLType: purl.TypeRPM,
+			Metadata: &rpmmeta.Metadata{
+				OSID:  "openEuler",
+				Epoch: 1,
+			},
+		}
 
 		goPkgWithSignals = &extractor.Package{
 			Name:     "github.com/gin-gonic/gin",
@@ -374,12 +436,26 @@ func TestEnrich(t *testing.T) {
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
 		}
+		goStdlibVuln        = osvpb.Vulnerability{Id: "GO-STDLIB-VULN"}
+		gitVuln             = osvpb.Vulnerability{Id: "GIT-VULN"}
+		dpkgSrcVuln         = osvpb.Vulnerability{Id: "DPKG-SRC-VULN"}
+		apkOriginVuln       = osvpb.Vulnerability{Id: "APK-ORIGIN-VULN"}
+		rpmVulnWithEpoch    = osvpb.Vulnerability{Id: "RPM-EPOCH-VULN"}
+		rpmVulnWithoutEpoch = osvpb.Vulnerability{Id: "RPM-NO-EPOCH-VULN"}
+		rpmVulnOtherDistro  = osvpb.Vulnerability{Id: "RPM-OTHER-DISTRO-VULN"}
 	)
 
 	client := fakeclient.New(map[string][]*osvpb.Vulnerability{
 		fmt.Sprintf("%s:%s:", goPkg.Name, goPkg.Version): {&goVuln1, &goVuln2, &goVuln3},
 		fmt.Sprintf("%s:%s:", jsPkg.Name, jsPkg.Version): {&jsVuln1, &jsVuln2},
 		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {&pyPkgSameVulnAsFzf},
+		"stdlib:1.18:":                {&goStdlibVuln},
+		"github.com/some/repo:1.0.0:": {&gitVuln},
+		"bash-source:5.1-6:":          {&dpkgSrcVuln},
+		"busybox-origin:1.35.0:":      {&apkOriginVuln},
+		"bash-epoch:1:5.1-6:":         {&rpmVulnWithEpoch},
+		"bash-no-epoch:5.1-6:":        {&rpmVulnWithoutEpoch},
+		"bash-other-distro:5.1-6:":    {&rpmVulnOtherDistro},
 	})
 
 	tests := []struct {
@@ -482,7 +558,57 @@ func TestEnrich(t *testing.T) {
 				},
 				{Vulnerability: &goVuln2, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
 				{Vulnerability: &goVuln3, Package: goPkgWithSignals, Plugins: []string{osvdev.Name}},
-			}},
+			},
+		},
+		{
+			name:     "go_stdlib_mapping",
+			packages: []*extractor.Package{goStdlibPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &goStdlibVuln, Package: goStdlibPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "git_repo_mapping",
+			packages: []*extractor.Package{gitPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &gitVuln, Package: gitPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "dpkg_source_name_mapping",
+			packages: []*extractor.Package{dpkgSrcPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &dpkgSrcVuln, Package: dpkgSrcPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "apk_origin_name_mapping",
+			packages: []*extractor.Package{apkOriginPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &apkOriginVuln, Package: apkOriginPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "rpm_with_epoch_mapping",
+			packages: []*extractor.Package{rpmPkgWithEpoch},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &rpmVulnWithEpoch, Package: rpmPkgWithEpoch, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "rpm_without_epoch_mapping",
+			packages: []*extractor.Package{rpmPkgWithoutEpoch},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &rpmVulnWithoutEpoch, Package: rpmPkgWithoutEpoch, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "rpm_other_distro_with_epoch_mapping",
+			packages: []*extractor.Package{rpmPkgOtherDistroWithEpoch},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &rpmVulnOtherDistro, Package: rpmPkgOtherDistroWithEpoch, Plugins: []string{osvdev.Name}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

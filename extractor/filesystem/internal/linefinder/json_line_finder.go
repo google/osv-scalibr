@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package linefinder provides utility functions for finding package line numbers in JavaScript manifests and source files.
+// Package linefinder provides utility functions for finding package line numbers in manifest files.
 package linefinder
 
 import (
@@ -21,17 +21,17 @@ import (
 
 // JSONLineFinder finds line numbers of JSON paths.
 type JSONLineFinder struct {
-	// json is the raw JSON string being analyzed.
-	json string
+	// json is the raw JSON bytes being analyzed.
+	json []byte
 	// offsetFinder delegates the binary search.
 	offsetFinder *OffsetFinder
 }
 
 // NewJSONLineFinder creates a new JSONLineFinder.
-func NewJSONLineFinder(json string) *JSONLineFinder {
+func NewJSONLineFinder(json []byte) *JSONLineFinder {
 	return &JSONLineFinder{
 		json:         json,
-		offsetFinder: NewOffsetFinder([]byte(json)),
+		offsetFinder: NewOffsetFinder(json),
 	}
 }
 
@@ -39,7 +39,7 @@ func NewJSONLineFinder(json string) *JSONLineFinder {
 // If the path is not found or cannot be parsed, it returns 0.
 func (f *JSONLineFinder) LineOf(path string) int {
 	// Verify the path exists in the JSON.
-	res := gjson.Get(f.json, path)
+	res := gjson.GetBytes(f.json, path)
 	if !res.Exists() {
 		return 0
 	}

@@ -69,8 +69,8 @@ func TestRequirements(t *testing.T) {
 		t.Errorf("New() = %v, want nil", err)
 	}
 
-	if e.Requirements().Network != plugin.NetworkOffline {
-		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkOffline)
+	if e.Requirements().Network != plugin.NetworkAny {
+		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkAny)
 	}
 }
 

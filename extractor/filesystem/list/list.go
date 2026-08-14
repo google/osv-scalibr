@@ -47,6 +47,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/vendormodules"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
@@ -74,6 +75,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pylock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
@@ -184,6 +186,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/atin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/itin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
@@ -248,14 +251,15 @@ var (
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name: {protoCfg(requirements.New)},
-		setup.Name:        {protoCfg(setup.New)},
-		pipfilelock.Name:  {protoCfg(pipfilelock.New)},
-		pdmlock.Name:      {protoCfg(pdmlock.New)},
-		poetrylock.Name:   {protoCfg(poetrylock.New)},
-		pylock.Name:       {protoCfg(pylock.New)},
-		condameta.Name:    {protoCfg(condameta.New)},
-		uvlock.Name:       {protoCfg(uvlock.New)},
+		requirements.Name:  {protoCfg(requirements.New)},
+		setup.Name:         {protoCfg(setup.New)},
+		pipfilelock.Name:   {protoCfg(pipfilelock.New)},
+		pdmlock.Name:       {protoCfg(pdmlock.New)},
+		poetrylock.Name:    {protoCfg(poetrylock.New)},
+		pylock.Name:        {protoCfg(pylock.New)},
+		condameta.Name:     {protoCfg(condameta.New)},
+		uvlock.Name:        {protoCfg(uvlock.New)},
+		pyprojecttoml.Name: {protoCfg(pyprojecttoml.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
@@ -263,7 +267,8 @@ var (
 	}
 	// GoSource extractors for Go.
 	GoSource = InitMap{
-		gomod.Name: {protoCfg(gomod.New)},
+		gomod.Name:         {protoCfg(gomod.New)},
+		vendormodules.Name: {protoCfg(vendormodules.New)},
 	}
 	// GoArtifact extractors for Go.
 	GoArtifact = InitMap{
@@ -470,9 +475,11 @@ var (
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
 		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
+		{http.NewCookieDetector(), "secrets/httpcookie", 0},
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+		{atin.NewDetector(), "sensitiveinformation/atin", 0},
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
 		{itin.NewDetector(), "secrets/itin", 0},
 		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},

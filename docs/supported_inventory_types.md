@@ -78,6 +78,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
+|            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
@@ -106,6 +107,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
+|            | pyproject.toml                                    | `python/pyprojecttoml`               |
 | R          | renv.lock                                         | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
@@ -214,13 +216,15 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
 | HTTP Bearer                                 | `secrets/httpbearer`                   |
 | HTTP CSRF Token                             | `secrets/csrftoken`                    |
+| HTTP Cookie                                 | `secrets/httpcookie`                   |
 
 ### Sensitive information
 | Type                                           | Extractor Plugin                       |
 | ---------------------------------------------- | -------------------------------------- |
-| International Bank Account Number              | `sensitiveinformation/iban`              |
-| US Individual Taxpayer Identification Number   | `secrets/itin`                           |
-| US Social Security Number                      | `sensitiveinformation/ssn`               |
+| International Bank Account Number              | `sensitiveinformation/iban`            |
+| US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
+| US Individual Taxpayer Identification Number   | `secrets/itin`                         |
+| US Social Security Number                      | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 
