@@ -343,19 +343,19 @@ func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, regist
 
 func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
 	filePath := ""
-	var cacheRoot *os.Root
+	var localRegistryRoot *os.Root
 	if m.localRegistry != "" {
 		filePath = filepath.Join(paths...)
 		if err := os.MkdirAll(m.localRegistry, 0755); err != nil {
 			log.Warnf("Error creating local cache %q: %v", m.localRegistry, err)
 		} else {
 			var err error
-			cacheRoot, err = os.OpenRoot(m.localRegistry)
+			localRegistryRoot, err = os.OpenRoot(m.localRegistry)
 			if err != nil {
 				log.Warnf("Error opening local cache %q: %v", m.localRegistry, err)
 			} else {
-				defer cacheRoot.Close()
-				file, err := cacheRoot.Open(filePath)
+				defer localRegistryRoot.Close()
+				file, err := localRegistryRoot.Open(filePath)
 				if err == nil {
 					defer file.Close()
 					// We can still fetch the file from upstream if error is not nil.
@@ -398,8 +398,8 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 			return response{}, fmt.Errorf("failed to read body: %w", err)
 		}
 
-		if cacheRoot != nil && resp.StatusCode == http.StatusOK {
-			if err := writeFileInRoot(cacheRoot, filePath, b); err != nil {
+		if localRegistryRoot != nil && resp.StatusCode == http.StatusOK {
+			if err := writeFileInRoot(localRegistryRoot, filePath, b); err != nil {
 				log.Warnf("failed to write response to %s: %v", u, err)
 			}
 		}
