@@ -23,6 +23,13 @@ import (
 )
 
 func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
+	// AddRegistry validates that registry hosts resolve to public
+	// addresses. The test registries below use synthetic hostnames, so
+	// stub the resolver to return a deterministic public address.
+	origLookup := lookupHost
+	lookupHost = func(string) ([]string, error) { return []string{"203.0.113.1"}, nil }
+	t.Cleanup(func() { lookupHost = origLookup })
+
 	// Create mock server to test auth is maintained
 	srv := clienttest.NewMockHTTPServer(t)
 
