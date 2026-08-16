@@ -518,7 +518,7 @@ func TestToSPDX23(t *testing.T) {
 							{
 								Category: "PACKAGE-MANAGER",
 								RefType:  "purl",
-								Locator:  "pkg:pypi/softw%40re%26@1.2.3",
+								Locator:  "pkg:pypi/softw%40re&@1.2.3",
 							},
 						},
 					},
