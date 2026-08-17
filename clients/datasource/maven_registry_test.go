@@ -367,3 +367,107 @@ func TestDisableGoogleAuthMethodRespected(t *testing.T) {
 		t.Errorf("Standard client was not called")
 	}
 }
+
+func TestParseMavenRegistryURL(t *testing.T) {
+	tests := []struct {
+		input       string
+		wantMirror  string
+		wantOrigins []string
+	}{
+		{
+			input:       "",
+			wantMirror:  "",
+			wantOrigins: nil,
+		},
+		{
+			input:       "https://mirror.example.com/maven2",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: nil,
+		},
+		{
+			input:       "https://mirror.example.com/maven2[https://repo1.maven.org/maven2]",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: []string{"https://repo1.maven.org/maven2"},
+		},
+		{
+			input:       "https://mirror.example.com/maven2[https://repo.maven.apache.org/maven2,https://repo1.maven.org/maven2]",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: []string{"https://repo.maven.apache.org/maven2", "https://repo1.maven.org/maven2"},
+		},
+		{
+			input:       " https://mirror.example.com/maven2 [ https://repo.maven.apache.org/maven2 , https://repo1.maven.org/maven2 ] ",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: []string{"https://repo.maven.apache.org/maven2", "https://repo1.maven.org/maven2"},
+		},
+	}
+
+	for _, tc := range tests {
+		gotMirror, gotOrigins := datasource.ParseMavenRegistryURL(tc.input)
+		if gotMirror != tc.wantMirror {
+			t.Errorf("ParseMavenRegistryURL(%q) mirror: got %q, want %q", tc.input, gotMirror, tc.wantMirror)
+		}
+		if !reflect.DeepEqual(gotOrigins, tc.wantOrigins) {
+			t.Errorf("ParseMavenRegistryURL(%q) origins: got %v, want %v", tc.input, gotOrigins, tc.wantOrigins)
+		}
+	}
+}
+
+func TestMavenRegistryURLReplacementWithExplicitOrigins(t *testing.T) {
+	mirrorSrv := clienttest.NewMockHTTPServer(t)
+	flagVal := mirrorSrv.URL + "[https://repo.maven.apache.org/maven2,https://repo1.maven.org/maven2,https://rootonly.example.com]"
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: flagVal, ReleasesEnabled: true},
+		"",
+		false,
+		&http.Client{},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	mirrorSrv.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <version>1.0.0</version>
+	</project>
+	`))
+
+	// Adding explicit Maven Central URL should be rewritten to mirror and added to registries in order.
+	if err := client.AddRegistry(t.Context(), datasource.MavenRegistry{
+		URL:             "https://repo1.maven.org/maven2/",
+		ID:              "central",
+		ReleasesEnabled: true,
+	}); err != nil {
+		t.Fatalf("AddRegistry failed: %v", err)
+	}
+
+	if len(client.GetRegistries()) != 1 || client.GetRegistries()[0].URL != mirrorSrv.URL {
+		t.Errorf("Expected 1 registry with replaced URL %s, got: %v", mirrorSrv.URL, client.GetRegistries())
+	}
+
+	// Project should be fetched from mirror.
+	gotProj, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0")
+	if err != nil {
+		t.Fatalf("GetProject failed: %v", err)
+	}
+	if gotProj.GroupID != "org.example" || gotProj.ArtifactID != "x.y.z" {
+		t.Errorf("Unexpected project fetched: %v", gotProj)
+	}
+
+	// Adding a non-replaced repository should still be added to registries.
+	thirdPartySrv := clienttest.NewMockHTTPServer(t)
+	if err := client.AddRegistry(t.Context(), datasource.MavenRegistry{
+		URL:             thirdPartySrv.URL,
+		ID:              "spring-plugins",
+		ReleasesEnabled: true,
+	}); err != nil {
+		t.Fatalf("AddRegistry failed: %v", err)
+	}
+	if len(client.GetRegistries()) != 2 {
+		t.Errorf("Expected 2 registries in total, got %d", len(client.GetRegistries()))
+	}
+}

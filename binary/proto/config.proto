@@ -202,6 +202,9 @@ message SDPInspectConfig {
 
 message POMXMLNetConfig {
   // The URL of the upstream Maven registry.
+  // Supports the format "MIRROR_URL[ORIGIN_URL1,ORIGIN_URL2,...]" to replace
+  // specific origin repository URLs found in POMs with the mirror URL. If [...]
+  // is omitted, only the default registry is set without replacing POM URLs.
   string upstream_registry = 1;
   // If true, use deps.dev requirements API for dependency resolution.
   bool deps_dev_requirements = 2;
