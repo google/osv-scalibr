@@ -38,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/transitivedependency/nodemodules"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
+	enrichersetupcfg "github.com/google/osv-scalibr/enricher/transitivedependency/setupcfg"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal"
@@ -226,10 +227,11 @@ var (
 
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
-		javaarchive.Name:  {javaarchive.New},
-		nodemodules.Name:  {nodemodules.New},
-		requirements.Name: {requirements.New},
-		pomxml.Name:       {pomxml.New},
+		javaarchive.Name:      {javaarchive.New},
+		nodemodules.Name:      {nodemodules.New},
+		requirements.Name:     {requirements.New},
+		pomxml.Name:           {pomxml.New},
+		enrichersetupcfg.Name: {enrichersetupcfg.New},
 	}
 
 	// PackageDeprecation enricher.
