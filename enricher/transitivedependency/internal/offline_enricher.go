@@ -29,14 +29,12 @@ import (
 // provided [Enrich] method, or perform additional pre/post-processing on the inventory,
 // as needed by the specific application.
 type OfflineEnricher struct {
-	idGenerator  extractor.IDGenerator
 	pkgExtractor PackageExtractor[*extractor.Package]
 }
 
 // NewOfflineEnricher creates a new [OfflineEnricher], using the given [PackageExtractor].
 func NewOfflineEnricher(pkgExtractor PackageExtractor[*extractor.Package]) OfflineEnricher {
 	return OfflineEnricher{
-		idGenerator:  extractor.NewIDGenerator(),
 		pkgExtractor: pkgExtractor,
 	}
 }
@@ -57,7 +55,7 @@ func (e *OfflineEnricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv
 			continue
 		}
 
-		parentID, err := parent.RequireID(e.idGenerator)
+		parentID, err := parent.RequireID()
 		if err != nil {
 			return fmt.Errorf("failed to generate ID for %s: %w", parent.Name, err)
 		}

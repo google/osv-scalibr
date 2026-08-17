@@ -26,9 +26,18 @@ type IDGenerator interface {
 	GenerateID(pkgName string) (string, error)
 }
 
-// NewIDGenerator returns an IDGenerator, with characteristics based on the running environment.
-func NewIDGenerator() IDGenerator {
-	return &randomIDGenerator{}
+var instance IDGenerator = &randomIDGenerator{}
+
+// SetIDGenerator sets the IDGenerator type used by the current process.
+//
+// Outside of tests, this should only be called during initialization.
+func SetIDGenerator(g IDGenerator) {
+	instance = g
+}
+
+// GetIDGenerator returns the IDGenerator for the current process.
+func GetIDGenerator() IDGenerator {
+	return instance
 }
 
 // randomIDGenerator generates random UUIDs for packages.
