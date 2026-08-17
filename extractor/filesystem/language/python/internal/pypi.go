@@ -23,9 +23,9 @@ import (
 var (
 	// reNormName matches separator runs in a Python package name per PEP 503.
 	reNormName = regexp.MustCompile(`[-_.]+`)
-	// reValidPkg validates a Python package name (must start with a word character
-	// and consist of word characters and hyphens only).
-	reValidPkg = regexp.MustCompile(`^\w(\w|-)+$`)
+	// reValidPkg validates a Python package name per PEP 508 / PyPA spec.
+	// Matches the same set as python/requirements to avoid silent drops.
+	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
 	// reUnsupported matches version constraints that cannot be cleanly resolved to
 	// a single concrete version: wildcards, less-than ranges, not-equal, or
 	// compound (comma-separated) constraints.
@@ -44,16 +44,18 @@ func IsValidName(name string) bool {
 }
 
 // ParseVersionSpec parses the version-spec portion of a Pipfile dependency value
-// (e.g. "==2.31.0", ">=1.0", "~=4.2.0", "4.0.0", "*") and returns the bare
+// (e.g. "==2.31.0", ">=", "~=4.2.0", "4.0.0", "*") and returns the bare
 // version string and the comparator operator.
 //
 // For wildcards ("*"), empty strings, or unsupported constraints (compound
-// constraints with commas, less-than ranges, not-equal), both returned strings
-// are empty — callers should still emit the package for dependency-resolution
-// purposes and store the raw spec in metadata.
+// constraints with commas, bare less-than "<" without "=", or not-equal
+// "!="), both returned strings are empty — callers should still emit the
+// package for dependency-resolution purposes and store the raw spec in
+// metadata. This mirrors python/requirements behavior.
 //
-// For a bare version with no operator (e.g. "4.0.0"), the version is returned
-// as-is and comparator is empty.
+// For a bare version with no operator (e.g. "4.0.0"), equality is inferred:
+// version is returned as-is and comparator is "==" so that Metadata.Requirement
+// and Metadata.VersionComparator are consistent.
 func ParseVersionSpec(spec string) (version, comparator string) {
 	spec = strings.TrimSpace(spec)
 	if spec == "" || spec == "*" {
@@ -67,8 +69,9 @@ func ParseVersionSpec(spec string) (version, comparator string) {
 			return strings.TrimSpace(v), sep
 		}
 	}
-	// Bare version with no operator.
-	return spec, ""
+	// Bare version (no operator) — infer equality so VersionComparator and
+	// Requirement agree (e.g. "4.0.0" → version="4.0.0", comparator=="==").
+	return spec, "=="
 }
 
 // BuildRequirement constructs a pip-compatible requirement string from a
