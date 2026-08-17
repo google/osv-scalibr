@@ -16,12 +16,13 @@ import (
 
 	_ "embed"
 
+	"sync"
+
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"sync"
 )
 
 //go:embed scalibr_aspect.bzl
@@ -103,7 +104,6 @@ type aspectData struct {
 	PackageURL string `json:"package_url"`
 }
 
-// Extract runs the bazel build command with the embedded aspect.
 // FileRequired returns true if the file is a Bazel workspace marker.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	base := filepath.Base(api.Path())
