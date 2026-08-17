@@ -60,13 +60,10 @@ var (
 		docker.Name: {protoCfg(docker.New)},
 	}
 
-	// Bazel standalone extractors.
-	Bazel = InitMap{}
-
 	// Default standalone extractors.
 	Default = Windows
 	// All standalone extractors.
-	All = concat(Windows, WindowsExperimental, Containers, OSExperimental, Bazel)
+	All = concat(Windows, WindowsExperimental, Containers, OSExperimental)
 
 	extractorNames = concat(All, InitMap{
 		// Windows
@@ -78,7 +75,6 @@ var (
 		"extractors/all":     vals(All),
 		"all":                vals(All),
 		"containers":         vals(Containers),
-		"bazel":              vals(Bazel),
 	})
 )
 
