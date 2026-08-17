@@ -9,7 +9,7 @@ func TestNormalizeModuleName(t *testing.T) {
 	}{
 		{"rules_go~1.20.0", "rules_go"},
 		{"rules_go+1.20.0", "rules_go"},
-		{"my_module~1.2.3~beta1", "beta1"}, // regex matches versions, beta1 doesn't so it might end up as the last part. Wait, our regex might leave "my_module" or "beta1" - let's see. Let's stick to simple ones.
+		{"my_module~1.2.3~beta1", "beta1"},                      // regex matches versions, beta1 doesn't so it might end up as the last part. Wait, our regex might leave "my_module" or "beta1" - let's see. Let's stick to simple ones.
 		{"foo+0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b", "foo"}, // commit hash
 	}
 	for _, tt := range tests {
