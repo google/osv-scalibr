@@ -9,6 +9,12 @@ urllib3 = {version = "==2.0.7", extras = ["socks"]}
 django = "~=4.2.0"
 flask = "*"
 anyio = "4.0.0"
+# single-char package name — must not be silently dropped
+r = "==1.0"
+# VCS/path/editable entries — must be skipped, not emitted as PyPI
+mypkg = {git = "https://github.com/x/mypkg.git", ref = "main"}
+locallib = {path = "../vendor/locallib"}
+devtool = {editable = true, path = "."}
 
 [dev-packages]
 pytest = "==7.4.3"

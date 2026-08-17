@@ -90,7 +90,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Metadata: &pipfile.Metadata{
 						DepGroupVals:      []string{},
 						Requirement:       "anyio==4.0.0",
-						VersionComparator: "",
+						VersionComparator: "==", // bare version — equality inferred
 					},
 				},
 				{
@@ -137,6 +137,18 @@ func TestExtractor_Extract(t *testing.T) {
 						VersionComparator: "==",
 					},
 				},
+				// Single-char package name — must not be silently dropped (fix #3).
+				{
+					Name:     "r",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/valid.toml"),
+					Metadata: &pipfile.Metadata{
+						DepGroupVals:      []string{},
+						Requirement:       "r==1.0",
+						VersionComparator: "==",
+					},
+				},
 				{
 					Name:     "requests",
 					Version:  "2.31.0",
@@ -159,6 +171,8 @@ func TestExtractor_Extract(t *testing.T) {
 						VersionComparator: "==",
 					},
 				},
+				// mypkg (git), locallib (path), devtool (editable) must NOT appear —
+				// they are VCS/local deps, not PyPI packages (fix #1).
 			},
 		},
 		{

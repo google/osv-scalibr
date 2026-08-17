@@ -82,19 +82,41 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: sortedPackages(details)}, nil
 }
 
-// extractSpec retrieves the raw version spec string from a Pipfile dependency
+// vcsKeys are inline-table keys that indicate a non-PyPI dependency.
+// Entries containing any of these keys are skipped rather than emitted
+// as an unknown PyPI package with an empty version.
+var vcsKeys = map[string]bool{
+	"git":      true,
+	"hg":       true,
+	"svn":      true,
+	"bzr":      true,
+	"path":     true,
+	"file":     true,
+	"url":      true,
+	"editable": true,
+}
+
+// extractSpecOK retrieves the raw version spec string from a Pipfile dependency
 // value, which may be a plain string (e.g. "==2.31.0") or a TOML inline table
 // with a "version" key (e.g. {version = "==2.0.7", extras = ["socks"]}).
-func extractSpec(val any) string {
+// It returns (spec, false) on success, or ("", true) when the entry should be
+// skipped — e.g. VCS, path, or editable dependencies that are not PyPI packages.
+func extractSpecOK(val any) (spec string, skip bool) {
 	switch v := val.(type) {
 	case string:
-		return strings.TrimSpace(v)
+		return strings.TrimSpace(v), false
 	case map[string]any:
+		// Skip entries that declare a source other than PyPI.
+		for k := range v {
+			if vcsKeys[strings.ToLower(k)] {
+				return "", true
+			}
+		}
 		if ver, ok := v["version"].(string); ok {
-			return strings.TrimSpace(ver)
+			return strings.TrimSpace(ver), false
 		}
 	}
-	return ""
+	return "", false
 }
 
 func addPackages(details map[string]*extractor.Package, packages map[string]any, group, path string) {
@@ -104,7 +126,10 @@ func addPackages(details map[string]*extractor.Package, packages map[string]any,
 			continue
 		}
 
-		rawSpec := extractSpec(val)
+		rawSpec, skip := extractSpecOK(val)
+		if skip {
+			continue
+		}
 		version, comparator := pyinternal.ParseVersionSpec(rawSpec)
 		requirement := pyinternal.BuildRequirement(name, rawSpec)
 
