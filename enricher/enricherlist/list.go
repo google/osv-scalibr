@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/secrets/hashicorp"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
+	enrichersetupcfg "github.com/google/osv-scalibr/enricher/transitivedependency/setupcfg"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal"
@@ -216,8 +217,9 @@ var (
 
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
-		requirements.Name: {requirements.New},
-		pomxml.Name:       {pomxml.New},
+		requirements.Name:     {requirements.New},
+		pomxml.Name:           {pomxml.New},
+		enrichersetupcfg.Name: {enrichersetupcfg.New},
 	}
 
 	// PackageDeprecation enricher.
