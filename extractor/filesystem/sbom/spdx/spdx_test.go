@@ -125,7 +125,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -141,7 +142,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -163,8 +165,9 @@ func TestExtract(t *testing.T) {
 					Version:  "1.21.1",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
-						PURL: getPURL("nginx", "1.21.1"),
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						PURL:   getPURL("nginx", "1.21.1"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -185,7 +188,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -205,7 +209,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -221,7 +226,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -241,7 +247,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -257,7 +264,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -277,7 +285,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -293,7 +302,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -315,6 +325,7 @@ func TestExtract(t *testing.T) {
 					Version:  "3.14.3-debian13",
 					PURLType: purl.TypeDocker,
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "dhi-pkg-python",
 						PURL: &purl.PackageURL{
 							Type:      purl.TypeDocker,
 							Namespace: "dhi",
@@ -347,6 +358,7 @@ func TestExtract(t *testing.T) {
 					Version:  "3.14.3-debian13-dev",
 					PURLType: purl.TypeDocker,
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "dhi-python",
 						PURL: &purl.PackageURL{
 							Type:      purl.TypeDocker,
 							Namespace: "dhi",
@@ -379,6 +391,7 @@ func TestExtract(t *testing.T) {
 					Version:  "3.14.3",
 					PURLType: purl.TypeDHI,
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "python",
 						PURL: &purl.PackageURL{
 							Type:       purl.TypeDHI,
 							Name:       "python",
@@ -404,6 +417,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "flatbuffers",
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "Package-flatbuffers",
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "OTHER",
@@ -419,7 +433,8 @@ func TestExtract(t *testing.T) {
 					Version:  "25.9.23",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:some_company:flatbuffers:25.9.23:*:*:*:*:*:*:*"},
+						SPDXID: "SourcePackage-flatbuffers",
+						CPEs:   []string{"cpe:2.3:a:some_company:flatbuffers:25.9.23:*:*:*:*:*:*:*"},
 						PURL: &purl.PackageURL{
 							Type:       purl.TypeGeneric,
 							Namespace:  "some_company",
@@ -446,6 +461,7 @@ func TestExtract(t *testing.T) {
 					Name:    "custom-pkg",
 					Version: "1.0.0",
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "custom-pkg",
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "OTHER",
