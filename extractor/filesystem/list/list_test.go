@@ -52,7 +52,7 @@ func TestExtractorsFromName(t *testing.T) {
 		{
 			desc:     "Find_all_extractors_of_a_type",
 			name:     "python",
-			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "python/pyprojecttoml"},
+			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "python/pyprojecttoml", "python/setupcfg"},
 		},
 		{
 			desc:     "Nonexistent_plugin",

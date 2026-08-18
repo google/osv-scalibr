@@ -78,6 +78,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setupcfg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
@@ -260,6 +261,7 @@ var (
 		condameta.Name:     {protoCfg(condameta.New)},
 		uvlock.Name:        {protoCfg(uvlock.New)},
 		pyprojecttoml.Name: {protoCfg(pyprojecttoml.New)},
+		setupcfg.Name:      {protoCfg(setupcfg.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
