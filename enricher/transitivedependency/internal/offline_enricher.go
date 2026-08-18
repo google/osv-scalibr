@@ -16,8 +16,10 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -48,6 +50,9 @@ func (e *OfflineEnricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv
 
 	for _, parent := range inv.Packages {
 		reqs, err := solver.Requirements(ctx, parent)
+		if errors.Is(err, resolve.ErrNotFound) {
+			continue
+		}
 		if err != nil {
 			return fmt.Errorf("failed to fetch requirements for %s: %w", parent.Name, err)
 		}
