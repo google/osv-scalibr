@@ -48,8 +48,6 @@ const (
 // Enricher performs dependency resolution for requirements.txt.
 type Enricher struct {
 	resolve.Client
-
-	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -112,8 +110,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	}
 
 	return &Enricher{
-		Client:      depClient,
-		IDGenerator: extractor.NewIDGenerator(),
+		Client: depClient,
 	}, nil
 }
 
@@ -223,7 +220,7 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		return nil, errors.New(g.Error)
 	}
 
-	nameToID, err := internal.GetNameToIDMapping(g, list, e.IDGenerator)
+	nameToID, err := internal.GetNameToIDMapping(g, list)
 	if err != nil {
 		return nil, err
 	}

@@ -1839,6 +1839,9 @@ func (x *SDPInspectConfig) GetProjectId() string {
 type POMXMLNetConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The URL of the upstream Maven registry.
+	// Supports the format "MIRROR_URL[ORIGIN_URL1,ORIGIN_URL2,...]" to replace
+	// specific origin repository URLs found in POMs with the mirror URL. If [...]
+	// is omitted, only the default registry is set without replacing POM URLs.
 	UpstreamRegistry string `protobuf:"bytes,1,opt,name=upstream_registry,json=upstreamRegistry,proto3" json:"upstream_registry,omitempty"`
 	// If true, use deps.dev requirements API for dependency resolution.
 	DepsDevRequirements bool `protobuf:"varint,2,opt,name=deps_dev_requirements,json=depsDevRequirements,proto3" json:"deps_dev_requirements,omitempty"`

@@ -575,6 +575,7 @@ message SPDXPackageMetadata {
   Purl purl = 1;
   repeated string cpes = 2;
   repeated SPDXExternalReference external_references = 3;
+  string spdx_id = 4;
 }
 
 // The additional data for packages extracted from CDX files.

@@ -134,6 +134,9 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 			Metadata: &spdxmeta.Metadata{},
 		}
 		m := pkg.Metadata.(*spdxmeta.Metadata)
+		// Set the SPDX ID for the package in the package metadata.
+		m.SPDXID = string(spdxPkg.PackageSPDXIdentifier)
+
 		for _, extRef := range spdxPkg.PackageExternalReferences {
 			m.ExternalReferences = append(m.ExternalReferences, spdxmeta.ExternalReference{
 				Category: extRef.Category,

@@ -100,7 +100,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			log.Warnf("Package %v PURL name or version empty, skipping", pkg)
 			continue
 		}
-		id, err := pkg.GetIDOrGenerate(extractor.NewIDGenerator())
+		id, err := pkg.GetIDOrGenerate()
 		if err != nil {
 			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
 			continue
