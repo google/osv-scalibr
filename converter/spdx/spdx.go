@@ -127,7 +127,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			PackageLicenseDeclared:    NoAssertion,
 			IsFilesAnalyzedTagPresent: false,
 			PackageSourceInfo:         pSourceInfo,
-			PackageExternalReferences: purlExternalRefsOrNil(p),
+			PackageExternalReferences: purlExternalRefs(p),
 		})
 	}
 
@@ -354,7 +354,9 @@ func packageNameAndVersion(pkg *extractor.Package, p *purl.PackageURL) (string, 
 	return name, version
 }
 
-func purlExternalRefsOrNil(p *purl.PackageURL) []*v2_3.PackageExternalReference {
+// purlExternalRefs returns the package's PURL external reference, or nil if
+// the package has no PURL.
+func purlExternalRefs(p *purl.PackageURL) []*v2_3.PackageExternalReference {
 	if p == nil {
 		return nil
 	}
