@@ -26,9 +26,9 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/helper"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile"
-	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/strategy"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
@@ -223,7 +223,7 @@ func findDependencyNode(node *nodeModule, depName string) resolve.NodeID {
 func reVersionAliasedDeps(deps map[string]dependencyVersionSpec) {
 	// for the dependency maps, change versions from "npm:pkg@version" to "version"
 	for k, v := range deps {
-		_, v.Version = npm.SplitNPMAlias(v.Version)
+		_, v.Version = helper.SplitNPMAlias(v.Version)
 		deps[k] = v
 	}
 }
