@@ -108,7 +108,7 @@ func TestToCDX(t *testing.T) {
 						Name:    "sbom-2",
 						Type:    cyclonedx.ComponentTypeLibrary,
 						Version: "1.0.0",
-						BOMRef:  "81855ad8-681d-4d86-91e9-1e00167939cb",
+						BOMRef:  "6694d2c4-22ac-4208-a007-2939487f6999",
 					},
 					Authors: new([]cyclonedx.OrganizationalContact{{Name: "author"}}),
 					Tools: &cyclonedx.ToolsChoice{
@@ -125,12 +125,73 @@ func TestToCDX(t *testing.T) {
 				},
 				Components: new([]cyclonedx.Component{
 					{
-						BOMRef:     "6694d2c4-22ac-4208-a007-2939487f6999",
+						BOMRef:     "eb9d18a4-4784-445d-87f3-c67cf22746e9",
 						Type:       "library",
 						Name:       "software",
 						Version:    "1.2.3",
 						PackageURL: "pkg:pypi/software@1.2.3",
 					},
+				}),
+			},
+		},
+		{
+			desc: "Packages_with_parent_IDs_emit_dependencies",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:      "parent",
+						ID:        "parent-id",
+						Version:   "1.0.0",
+						PURLType:  purl.TypePyPi,
+						ParentIDs: map[string]bool{"root": true},
+					},
+					{
+						Name:      "child",
+						ID:        "child-id",
+						Version:   "2.0.0",
+						PURLType:  purl.TypePyPi,
+						ParentIDs: map[string]bool{"parent-id": true, "missing-id": true},
+					},
+				},
+			},
+			config: converter.CDXConfig{ComponentName: "sbom-3"},
+			want: &cyclonedx.BOM{
+				Metadata: &cyclonedx.Metadata{
+					Component: &cyclonedx.Component{
+						Name:   "sbom-3",
+						BOMRef: "5fb90bad-b37c-4821-b6d9-5526a41a9504",
+					},
+					Tools: &cyclonedx.ToolsChoice{
+						Components: &[]cyclonedx.Component{
+							{
+								Type: cyclonedx.ComponentTypeApplication,
+								Name: "SCALIBR",
+								ExternalReferences: new([]cyclonedx.ExternalReference{
+									{URL: "https://github.com/google/osv-scalibr", Type: cyclonedx.ERTypeWebsite},
+								}),
+							},
+						},
+					},
+				},
+				Components: new([]cyclonedx.Component{
+					{
+						BOMRef:     "680b4e7c-8b76-4a1b-9d49-d4955c848621",
+						Type:       "library",
+						Name:       "parent",
+						Version:    "1.0.0",
+						PackageURL: "pkg:pypi/parent@1.0.0",
+					},
+					{
+						BOMRef:     "6325253f-ec73-4dd7-a9e2-8bf921119c16",
+						Type:       "library",
+						Name:       "child",
+						Version:    "2.0.0",
+						PackageURL: "pkg:pypi/child@2.0.0",
+					},
+				}),
+				Dependencies: new([]cyclonedx.Dependency{
+					{Ref: "5fb90bad-b37c-4821-b6d9-5526a41a9504", Dependencies: new([]string{"680b4e7c-8b76-4a1b-9d49-d4955c848621"})},
+					{Ref: "680b4e7c-8b76-4a1b-9d49-d4955c848621", Dependencies: new([]string{"6325253f-ec73-4dd7-a9e2-8bf921119c16"})},
 				}),
 			},
 		},
