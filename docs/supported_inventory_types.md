@@ -249,7 +249,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |
 | Maven entries in Bazel build files | `os/bazelmaven`     |
-| Bazel build graph targets          | `bazel/aspect`      |
+| Bazel build graph targets          | `bazel/aspect` *    |
 | NetScaler installations            | `netscaler`         |
 | GitHub Actions workflow dependencies| `github/actions`    |
 | Git repositories (and submodules)   | `misc/gitrepo`      |

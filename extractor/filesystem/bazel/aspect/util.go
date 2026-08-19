@@ -33,6 +33,9 @@ func cleanVersion(version string) string {
 			break
 		}
 	}
+	if (strings.HasPrefix(version, "v") || strings.HasPrefix(version, "V")) && len(version) > 1 && (version[1] >= '0' && version[1] <= '9') {
+		version = version[1:]
+	}
 	version = strings.TrimRight(version, ".")
 	if version != "" {
 		return version

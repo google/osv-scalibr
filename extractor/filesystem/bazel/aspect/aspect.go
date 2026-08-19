@@ -1,4 +1,4 @@
-// Package aspect provides a standalone extractor for Bazel via aspects.
+// Package aspect provides a filesystem extractor for Bazel via aspects.
 package aspect
 
 import (
@@ -31,7 +31,29 @@ var scalibrAspectBzl []byte
 // Name is the unique name of this extractor.
 const Name = "bazel/aspect"
 
-// Extractor is a standalone extractor for Bazel dependencies using an aspect.
+// CommandRunner abstracts command execution for testing.
+type CommandRunner interface {
+	LookPath(file string) (string, error)
+	Run(ctx context.Context, dir string, name string, args ...string) error
+}
+
+type defaultCommandRunner struct{}
+
+func (r *defaultCommandRunner) LookPath(file string) (string, error) {
+	return exec.LookPath(file)
+}
+
+func (r *defaultCommandRunner) Run(ctx context.Context, dir string, name string, args ...string) error {
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Dir = dir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	// Bazel analysis succeeds in generating the aspect output even if the build phase fails or --nobuild is used.
+	_ = cmd.Run()
+	return nil
+}
+
+// Extractor is a filesystem extractor for Bazel dependencies using an aspect.
 type Extractor struct {
 	// target is the Bazel target to run the aspect on.
 	target string
@@ -39,13 +61,21 @@ type Extractor struct {
 	keepGoing bool
 	// processed tracks workspace roots that have already been processed to avoid duplicate executions.
 	processed sync.Map
+	// runner executes system commands.
+	runner CommandRunner
 }
 
 // New returns a new instance of the Extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	return NewWithRunner(cfg, &defaultCommandRunner{})
+}
+
+// NewWithRunner returns a new instance of the Extractor with a custom CommandRunner.
+func NewWithRunner(cfg *cpb.PluginConfig, runner CommandRunner) (filesystem.Extractor, error) {
 	e := &Extractor{
 		target:    "//...",
 		keepGoing: true,
+		runner:    runner,
 	}
 
 	for _, specific := range cfg.GetPluginSpecific() {
@@ -126,7 +156,11 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, nil
 	}
 
-	_, err := exec.LookPath("bazel")
+	if e.runner == nil {
+		e.runner = &defaultCommandRunner{}
+	}
+
+	_, err := e.runner.LookPath("bazel")
 	if err != nil {
 		return inventory.Inventory{}, errors.New("bazel not found in PATH")
 	}
@@ -164,14 +198,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 	args = append(args, e.target)
 
-	cmd := exec.CommandContext(ctx, "bazel", args...)
-	cmd.Dir = workspaceRoot
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	// Ignore the execution error since --nobuild or missing visibility might fail the build,
-	// but the analysis phase outputs what we need.
-	_ = cmd.Run()
+	_ = e.runner.Run(ctx, workspaceRoot, "bazel", args...)
 
 	packagesMap := make(map[string]*extractor.Package)
 
@@ -280,7 +307,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		normName := normalizeModuleName(pkgName)
 		pkgName = parseBzlmodName(normName, &purlType)
 
-		if strings.HasPrefix(pkgName, "gazelle") {
+		if strings.HasPrefix(data.Name, "gazelle") || strings.HasPrefix(pkgName, "gazelle") || strings.HasPrefix(normName, "com_github") {
 			goName := getGoPkgNameFromURL(url)
 			if goName != "" {
 				pkgName = goName
