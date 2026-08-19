@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
@@ -47,6 +48,8 @@ var (
 	ErrNotRelativeToScanRoots = errors.New("path not relative to any of the scan roots")
 	// ErrFailedToOpenFile is returned when opening a file fails.
 	ErrFailedToOpenFile = errors.New("failed to open file")
+	// ErrExtractorPanicked is returned when an extractor panics on a file.
+	ErrExtractorPanicked = errors.New("extractor panicked")
 )
 
 // Extractor is the filesystem-based inventory extraction plugin, used to extract inventory data
@@ -584,6 +587,30 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 	return false
 }
 
+// extractWithRecover calls ex.Extract, turning a panic into an error.
+//
+// Extractors parse files that the scan target controls, so an unchecked slice
+// bound or type assertion in any one of them is reachable from a malformed
+// input file. Without this, such a panic unwinds through the whole filesystem
+// walk: the scan dies and the inventory already collected from every other file
+// is discarded. Recovering keeps the failure scoped to the file that caused it
+// and reports it through the same per-file error path as any other extraction
+// failure, so it still surfaces in the extractor's status rather than being
+// swallowed.
+func extractWithRecover(ctx context.Context, ex Extractor, input *ScanInput) (inv inventory.Inventory, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// The stack is only useful to whoever debugs the extractor, so log it
+			// here and keep the returned error short enough to report per file.
+			log.Errorf("Extractor %s panicked on %q: %v\n%s", ex.Name(), input.Path, r, debug.Stack())
+			inv = inventory.Inventory{}
+			err = fmt.Errorf("%w on %q: %v", ErrExtractorPanicked, input.Path, r)
+		}
+	}()
+
+	return ex.Extract(ctx, input)
+}
+
 func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	var rc fs.File
 	var info fs.FileInfo
@@ -606,7 +633,7 @@ func (wc *walkContext) runExtractor(ex Extractor, path string, isDir bool) {
 	wc.extractCalls++
 
 	start := time.Now()
-	results, err := ex.Extract(wc.ctx, &ScanInput{
+	results, err := extractWithRecover(wc.ctx, ex, &ScanInput{
 		FS:     wc.fs,
 		Path:   path,
 		Root:   wc.scanRoot,
