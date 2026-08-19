@@ -41,6 +41,7 @@ var (
 		"transitivedependency/pomxml",
 		"transitivedependency/requirements",
 		"transitivedependency/javaarchive",
+		"transitivedependency/nodemodules",
 		"reachability/java",
 		"vulnmatch/osvdev",
 		// Reachability enrichers need to run after vulnmatch enrichers (in certain configurations).
