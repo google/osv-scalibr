@@ -276,6 +276,10 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 
 		cleanPath := path.Clean(header.Name)
 		fullPath := path.Join(dir, cleanPath)
+		if !strings.HasPrefix(fullPath, dir) {
+			log.Warnf("Path traversal detected in tar header: %q", header.Name)
+			continue
+		}
 
 		// Skip files already unpacked.
 		// Lstat is used instead of Stat to avoid following symlinks, because their targets may not exist yet.
