@@ -103,7 +103,11 @@ func urlToPath(rawURL string) string {
 		log.Warnf("Error parsing URL %s: %s", rawURL, err)
 		return ""
 	}
-	return path.Join(parsedURL.Hostname(), parsedURL.Path)
+	if strings.Contains(parsedURL.Path, "..") {
+		log.Warnf("Path traversal detected in URL: %s", rawURL)
+		return ""
+	}
+	return path.Join(parsedURL.Hostname(), path.Clean("/"+parsedURL.Path))
 }
 
 func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex bool) ([]byte, error) {
@@ -111,6 +115,9 @@ func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex 
 	urlPath := urlToPath(url)
 	if urlPath != "" && p.localRegistry != "" {
 		file = filepath.Join(p.localRegistry, urlPath)
+		if !strings.HasPrefix(file, p.localRegistry) {
+			return nil, fmt.Errorf("path traversal detected: %s", file)
+		}
 		if content, err := os.ReadFile(file); err == nil {
 			// We can still fetch the file from upstream if error is not nil.
 			return content, nil
