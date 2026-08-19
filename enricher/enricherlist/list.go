@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/secrets/hashicorp"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/javaarchive"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
@@ -216,6 +217,7 @@ var (
 
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
+		javaarchive.Name:  {javaarchive.New},
 		requirements.Name: {requirements.New},
 		pomxml.Name:       {pomxml.New},
 	}

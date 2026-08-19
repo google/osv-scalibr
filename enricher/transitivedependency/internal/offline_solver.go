@@ -21,14 +21,6 @@ import (
 	"deps.dev/util/resolve"
 )
 
-// DirectDependency holds metadata about direct dependencies of a software package.
-type DirectDependency struct {
-	// Version is the version of the software package declaring a set of direct dependencies.
-	Version resolve.Version
-	// Requirements is the set of requested direct dependencies, with version constraints.
-	Requirements []resolve.RequirementVersion
-}
-
 // PackageExtractor extracts a DirectDependency from a generic package type.
 //
 // All implementations must return equivalent outputs for equivalent inputs.
