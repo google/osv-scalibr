@@ -343,6 +343,7 @@ message GenericFindingTargetDetails {
 message PythonPackageMetadata {
   string author = 1;
   string author_email = 2;
+  repeated string requires_dist = 3;
 }
 
 // The additional data found in npm packages.
