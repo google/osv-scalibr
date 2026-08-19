@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 
 	"archive/tar"
@@ -136,6 +137,9 @@ func TestUnpackSquashed(t *testing.T) {
 		// TODO(b/366163334): Make tests work on Mac and Windows.
 		return
 	}
+
+	oldUmask := syscall.Umask(0022)
+	defer syscall.Umask(oldUmask)
 
 	tests := []struct {
 		name    string
