@@ -68,6 +68,10 @@ var (
 		ParentIDs: map[string]bool{"pkg-id-req-no-version": true},
 		Metadata:  &fakeMetadata{directDependency("other-child", "6.0.0")},
 	}
+
+	pkgUnrelated = &extractor.Package{
+		Metadata: &fakeMetadata{nil},
+	}
 )
 
 func TestEnrich(t *testing.T) {
@@ -85,6 +89,11 @@ func TestEnrich(t *testing.T) {
 			name:  "graph_connected",
 			input: &inventory.Inventory{Packages: []*extractor.Package{pkgParent, pkgChild}},
 			want:  &inventory.Inventory{Packages: []*extractor.Package{pkgParent, pkgChildLinkedToParent}},
+		},
+		{
+			name:  "unrelated_package",
+			input: &inventory.Inventory{Packages: []*extractor.Package{pkgUnrelated}},
+			want:  &inventory.Inventory{Packages: []*extractor.Package{pkgUnrelated}},
 		},
 		{
 			name:  "graph_disconnected",

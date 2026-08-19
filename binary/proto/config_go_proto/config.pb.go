@@ -1769,6 +1769,9 @@ func (x *SDPInspectConfig) GetProjectId() string {
 type POMXMLNetConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The URL of the upstream Maven registry.
+	// Supports the format "MIRROR_URL[ORIGIN_URL1,ORIGIN_URL2,...]" to replace
+	// specific origin repository URLs found in POMs with the mirror URL. If [...]
+	// is omitted, only the default registry is set without replacing POM URLs.
 	UpstreamRegistry string `protobuf:"bytes,1,opt,name=upstream_registry,json=upstreamRegistry,proto3" json:"upstream_registry,omitempty"`
 	// If true, use deps.dev requirements API for dependency resolution.
 	DepsDevRequirements bool `protobuf:"varint,2,opt,name=deps_dev_requirements,json=depsDevRequirements,proto3" json:"deps_dev_requirements,omitempty"`
@@ -3917,8 +3920,10 @@ type PythonWheelEggConfig struct {
 	// If set, this overrides the global max_file_size_bytes configuration
 	// for this specific plugin.
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// If enabled, extract dependency requirements from METADATA files.
+	ExtractDependencies bool `protobuf:"varint,2,opt,name=extract_dependencies,json=extractDependencies,proto3" json:"extract_dependencies,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *PythonWheelEggConfig) Reset() {
@@ -3956,6 +3961,13 @@ func (x *PythonWheelEggConfig) GetMaxFileSizeBytes() int64 {
 		return x.MaxFileSizeBytes
 	}
 	return 0
+}
+
+func (x *PythonWheelEggConfig) GetExtractDependencies() bool {
+	if x != nil {
+		return x.ExtractDependencies
+	}
+	return false
 }
 
 type GoModConfig struct {
@@ -4587,9 +4599,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x11PythonSetupConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"F\n" +
 	"\x15PythonCondametaConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"E\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"x\n" +
 	"\x14PythonWheelEggConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"8\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x121\n" +
+	"\x14extract_dependencies\x18\x02 \x01(\bR\x13extractDependencies\"8\n" +
 	"\vGoModConfig\x12)\n" +
 	"\x10exclude_indirect\x18\x01 \x01(\bR\x0fexcludeIndirect\"G\n" +
 	"\x16WordpressPluginsConfig\x12-\n" +

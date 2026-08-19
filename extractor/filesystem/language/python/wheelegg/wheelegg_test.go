@@ -296,6 +296,42 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
+			name: "with_dependencies",
+			path: "testdata/pyopenssl-26.0.0.dist-info",
+			wantPackages: []*extractor.Package{{
+				Name:     "pyOpenSSL",
+				Version:  "26.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPathAndLine("testdata/pyopenssl-26.0.0.dist-info", 2),
+				Metadata: &wheelegg.PythonPackageMetadata{
+					Author:      "The pyOpenSSL developers",
+					AuthorEmail: "cryptography-dev@python.org",
+					RequiresDist: []string{
+						"cryptography<47,>=46.0.0",
+						"typing-extensions>=4.9; python_version < \"3.13\" and python_version >= \"3.8\"",
+						"pytest-rerunfailures; extra == \"test\"",
+						"pretend; extra == \"test\"",
+						"pytest>=3.0.1; extra == \"test\"",
+						"sphinx!=5.2.0,!=5.2.0.post0,!=7.2.5; extra == \"docs\"",
+						"sphinx_rtd_theme; extra == \"docs\"",
+					},
+				},
+			}},
+		},
+		{
+			name: "repeated_pkginfo",
+			path: "testdata/repeated_pkginfo",
+			wantPackages: []*extractor.Package{{
+				Name:     "root",
+				Version:  "1.0.0", // Keep the first occurrence, ignore the others.
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPathAndLine("testdata/repeated_pkginfo", 2),
+				Metadata: &wheelegg.PythonPackageMetadata{
+					RequiresDist: []string{"dep3", "dep2", "dep1"},
+				},
+			}},
+		},
+		{
 			name:             "empty file",
 			path:             "testdata/empty",
 			wantErr:          cmpopts.AnyError,
@@ -326,7 +362,13 @@ func TestExtract(t *testing.T) {
 			collector := testcollector.New()
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			e, err := wheelegg.New(&cpb.PluginConfig{})
+			e, err := wheelegg.New(&cpb.PluginConfig{PluginSpecific: []*cpb.PluginSpecificConfig{{
+				Config: &cpb.PluginSpecificConfig_PythonWheelEgg{
+					PythonWheelEgg: &cpb.PythonWheelEggConfig{
+						ExtractDependencies: true,
+					},
+				}},
+			}})
 			if err != nil {
 				t.Fatalf("wheelegg.New() error: %v", err)
 			}

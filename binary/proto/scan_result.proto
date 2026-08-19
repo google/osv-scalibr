@@ -343,6 +343,7 @@ message GenericFindingTargetDetails {
 message PythonPackageMetadata {
   string author = 1;
   string author_email = 2;
+  repeated string requires_dist = 3;
 }
 
 // The additional data found in npm packages.
@@ -575,6 +576,7 @@ message SPDXPackageMetadata {
   Purl purl = 1;
   repeated string cpes = 2;
   repeated SPDXExternalReference external_references = 3;
+  string spdx_id = 4;
 }
 
 // The additional data for packages extracted from CDX files.

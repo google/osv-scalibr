@@ -79,10 +79,10 @@ func Add(enrichedPkgs []*extractor.Package, inv *inventory.Inventory, pluginName
 
 // GetNameToIDMapping returns a mapping of package name to package ID for a given list of packages
 // and a dependency graph. Known packages without IDs will have IDs added using the ID generator.
-func GetNameToIDMapping(g *resolve.Graph, packages []*extractor.Package, idGenerator extractor.IDGenerator) (map[string]string, error) {
+func GetNameToIDMapping(g *resolve.Graph, packages []*extractor.Package) (map[string]string, error) {
 	nameToID := make(map[string]string)
 	for _, pkg := range packages {
-		id, err := pkg.RequireID(idGenerator)
+		id, err := pkg.RequireID()
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func GetNameToIDMapping(g *resolve.Graph, packages []*extractor.Package, idGener
 	for i := 1; i < len(g.Nodes); i++ {
 		node := g.Nodes[i]
 		if _, ok := nameToID[node.Version.Name]; !ok {
-			id, err := idGenerator.GenerateID(node.Version.Name)
+			id, err := extractor.GetIDGenerator().GenerateID(node.Version.Name)
 			if err != nil {
 				return nil, fmt.Errorf("failed to generate random UUID: %w", err)
 			}

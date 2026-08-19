@@ -2557,6 +2557,7 @@ type PythonPackageMetadata struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Author        string                 `protobuf:"bytes,1,opt,name=author,proto3" json:"author,omitempty"`
 	AuthorEmail   string                 `protobuf:"bytes,2,opt,name=author_email,json=authorEmail,proto3" json:"author_email,omitempty"`
+	RequiresDist  []string               `protobuf:"bytes,3,rep,name=requires_dist,json=requiresDist,proto3" json:"requires_dist,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2603,6 +2604,13 @@ func (x *PythonPackageMetadata) GetAuthorEmail() string {
 		return x.AuthorEmail
 	}
 	return ""
+}
+
+func (x *PythonPackageMetadata) GetRequiresDist() []string {
+	if x != nil {
+		return x.RequiresDist
+	}
+	return nil
 }
 
 // The additional data found in npm packages.
@@ -4284,6 +4292,7 @@ type SPDXPackageMetadata struct {
 	Purl               *Purl                    `protobuf:"bytes,1,opt,name=purl,proto3" json:"purl,omitempty"`
 	Cpes               []string                 `protobuf:"bytes,2,rep,name=cpes,proto3" json:"cpes,omitempty"`
 	ExternalReferences []*SPDXExternalReference `protobuf:"bytes,3,rep,name=external_references,json=externalReferences,proto3" json:"external_references,omitempty"`
+	SpdxId             string                   `protobuf:"bytes,4,opt,name=spdx_id,json=spdxId,proto3" json:"spdx_id,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4337,6 +4346,13 @@ func (x *SPDXPackageMetadata) GetExternalReferences() []*SPDXExternalReference {
 		return x.ExternalReferences
 	}
 	return nil
+}
+
+func (x *SPDXPackageMetadata) GetSpdxId() string {
+	if x != nil {
+		return x.SpdxId
+	}
+	return ""
 }
 
 // The additional data for packages extracted from CDX files.
@@ -13731,10 +13747,11 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\tpublisher\x18\x01 \x01(\tR\tpublisher\x12\x1c\n" +
 	"\treference\x18\x02 \x01(\tR\treference\"E\n" +
 	"\x1bGenericFindingTargetDetails\x12\x14\n" +
-	"\x05extra\x18\x04 \x01(\tR\x05extraJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04\"R\n" +
+	"\x05extra\x18\x04 \x01(\tR\x05extraJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04\"w\n" +
 	"\x15PythonPackageMetadata\x12\x16\n" +
 	"\x06author\x18\x01 \x01(\tR\x06author\x12!\n" +
-	"\fauthor_email\x18\x02 \x01(\tR\vauthorEmail\"\xd7\x02\n" +
+	"\fauthor_email\x18\x02 \x01(\tR\vauthorEmail\x12#\n" +
+	"\rrequires_dist\x18\x03 \x03(\tR\frequiresDist\"\xd7\x02\n" +
 	"\x1dJavascriptPackageJSONMetadata\x12\x16\n" +
 	"\x06author\x18\x01 \x01(\tR\x06author\x12 \n" +
 	"\vmaintainers\x18\x02 \x03(\tR\vmaintainers\x12\"\n" +
@@ -13900,11 +13917,12 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\bcategory\x18\x01 \x01(\tR\bcategory\x12\x19\n" +
 	"\bref_type\x18\x02 \x01(\tR\arefType\x12\x18\n" +
 	"\alocator\x18\x03 \x01(\tR\alocator\x12\x18\n" +
-	"\acomment\x18\x04 \x01(\tR\acomment\"\x9d\x01\n" +
+	"\acomment\x18\x04 \x01(\tR\acomment\"\xb6\x01\n" +
 	"\x13SPDXPackageMetadata\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x12\n" +
 	"\x04cpes\x18\x02 \x03(\tR\x04cpes\x12O\n" +
-	"\x13external_references\x18\x03 \x03(\v2\x1e.scalibr.SPDXExternalReferenceR\x12externalReferences\"K\n" +
+	"\x13external_references\x18\x03 \x03(\v2\x1e.scalibr.SPDXExternalReferenceR\x12externalReferences\x12\x17\n" +
+	"\aspdx_id\x18\x04 \x01(\tR\x06spdxId\"K\n" +
 	"\x12CDXPackageMetadata\x12!\n" +
 	"\x04purl\x18\x01 \x01(\v2\r.scalibr.PurlR\x04purl\x12\x12\n" +
 	"\x04cpes\x18\x02 \x03(\tR\x04cpes\"\xdf\x01\n" +

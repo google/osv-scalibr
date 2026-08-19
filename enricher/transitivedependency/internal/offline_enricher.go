@@ -16,8 +16,10 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -29,14 +31,12 @@ import (
 // provided [Enrich] method, or perform additional pre/post-processing on the inventory,
 // as needed by the specific application.
 type OfflineEnricher struct {
-	idGenerator  extractor.IDGenerator
 	pkgExtractor PackageExtractor[*extractor.Package]
 }
 
 // NewOfflineEnricher creates a new [OfflineEnricher], using the given [PackageExtractor].
 func NewOfflineEnricher(pkgExtractor PackageExtractor[*extractor.Package]) OfflineEnricher {
 	return OfflineEnricher{
-		idGenerator:  extractor.NewIDGenerator(),
 		pkgExtractor: pkgExtractor,
 	}
 }
@@ -50,6 +50,9 @@ func (e *OfflineEnricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv
 
 	for _, parent := range inv.Packages {
 		reqs, err := solver.Requirements(ctx, parent)
+		if errors.Is(err, resolve.ErrNotFound) {
+			continue
+		}
 		if err != nil {
 			return fmt.Errorf("failed to fetch requirements for %s: %w", parent.Name, err)
 		}
@@ -57,7 +60,7 @@ func (e *OfflineEnricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv
 			continue
 		}
 
-		parentID, err := parent.RequireID(e.idGenerator)
+		parentID, err := parent.RequireID()
 		if err != nil {
 			return fmt.Errorf("failed to generate ID for %s: %w", parent.Name, err)
 		}
