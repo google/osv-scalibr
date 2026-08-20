@@ -535,6 +535,8 @@ message PythonWheelEggConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // If enabled, extract dependency requirements from METADATA files.
+  bool extract_dependencies = 2;
 }
 
 message GoModConfig {
