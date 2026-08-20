@@ -37,7 +37,9 @@ import (
 	"github.com/diskfs/go-diskfs/partition/part"
 	"github.com/dsoprea/go-exfat"
 	"github.com/google/osv-scalibr/artifact/image/symlink"
+	"github.com/google/osv-scalibr/extractor"
 	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
 	"www.velocidex.com/golang/go-ntfs/parser"
 )
@@ -733,4 +735,34 @@ loop:
 	}
 
 	return tempDir, nil
+}
+
+// FilterOutEmbeddedPackages removes packages from the supplied inventory that belong to embedded filesystems.
+func FilterOutEmbeddedPackages(inv *inventory.Inventory) *inventory.Inventory {
+	if inv == nil {
+		return &inventory.Inventory{}
+	}
+	filtered := *inv // shallow copy
+
+	var pkgs []*extractor.Package
+	for _, p := range inv.Packages {
+		if !isPackageFromEmbeddedFS(p) {
+			pkgs = append(pkgs, p)
+		}
+	}
+
+	filtered.Packages = pkgs
+	return &filtered
+}
+
+func isPackageFromEmbeddedFS(pkg *extractor.Package) bool {
+	location := pkg.Location.PathOrEmpty()
+	if location == "" {
+		return false
+	}
+
+	parts := strings.Split(location, ":")
+
+	// Embedded FS typically has at least one ":" separator.
+	return len(parts) >= 2
 }

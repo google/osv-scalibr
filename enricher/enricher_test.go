@@ -248,3 +248,74 @@ func TestRunEnricherOrdering(t *testing.T) {
 		t.Errorf("Run(%+v) returned an unexpected diff of mutated inventory (-want +got): %v", cfg, diff)
 	}
 }
+
+func TestRun_FiltersEmbeddedPackagesForRunningSystemEnrichers(t *testing.T) {
+	input := &enricher.ScanInput{}
+
+	inv := &inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "normal-package",
+				Version:  "1.0",
+				Location: extractor.LocationFromPath("file.txt"),
+			},
+			{
+				Name:     "embedded-package-unix",
+				Version:  "2.0",
+				Location: extractor.LocationFromPath("file.vmdk:1:file.txt"),
+			},
+			{
+				Name:     "embedded-package-windows",
+				Version:  "3.0",
+				Location: extractor.LocationFromPath("C:\\file.vmdk:1:file.txt"),
+			},
+		},
+	}
+
+	// Expected filtered inventory (only normal package)
+	filteredInv := &inventory.Inventory{
+		Packages: []*extractor.Package{
+			{
+				Name:     "normal-package",
+				Version:  "1.0",
+				Location: extractor.LocationFromPath("file.txt"),
+			},
+		},
+	}
+
+	// RunningSystem enricher (expects filtered inventory)
+	runningKey := fakeenricher.MustHash(t, input, filteredInv)
+
+	runningSystemEnricher := fakeenricher.MustNew(t, &fakeenricher.Config{
+		Name: "running-system-enricher",
+		Capabilities: &plugin.Capabilities{
+			RunningSystem: true,
+		},
+		WantEnrich: map[uint64]fakeenricher.InventoryAndErr{
+			runningKey: {Inventory: filteredInv},
+		},
+	})
+
+	// Normal enricher (expects full inventory)
+	normalKey := fakeenricher.MustHash(t, input, inv)
+
+	normalEnricher := fakeenricher.MustNew(t, &fakeenricher.Config{
+		Name:         "normal-enricher",
+		Capabilities: &plugin.Capabilities{},
+		WantEnrich: map[uint64]fakeenricher.InventoryAndErr{
+			normalKey: {Inventory: inv},
+		},
+	})
+
+	cfg := &enricher.Config{
+		Enrichers: []enricher.Enricher{
+			normalEnricher,
+			runningSystemEnricher,
+		},
+	}
+
+	_, err := enricher.Run(t.Context(), cfg, inv)
+	if err != nil {
+		t.Fatalf("Run() failed: %v", err)
+	}
+}
