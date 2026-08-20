@@ -372,7 +372,7 @@ func TestToSPDX23(t *testing.T) {
 			},
 		},
 		{
-			desc: "Package_with_invalid_PURLs_skipped",
+			desc: "Package_without_name_skipped_versionless_package_kept",
 			inv: inventory.Inventory{
 				Packages: []*extractor.Package{
 					// PURL field missing
@@ -392,7 +392,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/0bf50598-7592-4e66-8a5b-df2c7fc48445",
+				DocumentNamespace: "https://spdx.google/92d2572b-cd06-48d2-96c5-2f5054e2d083",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -401,17 +401,39 @@ func TestToSPDX23(t *testing.T) {
 						},
 					},
 				},
-				Packages: []*v2_3.Package{{
-					PackageName:           "main",
-					PackageSPDXIdentifier: "SPDXRef-Package-main-0f070244-8615-4bda-8831-3f6a8eb668d2",
-					PackageVersion:        "0",
-					PackageSupplier: &common.Supplier{
-						Supplier:     spdx.NoAssertion,
-						SupplierType: spdx.NoAssertion,
+				Packages: []*v2_3.Package{
+					{
+						PackageName:           "main",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-0f070244-8615-4bda-8831-3f6a8eb668d2",
+						PackageVersion:        "0",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
 					},
-					PackageDownloadLocation:   spdx.NoAssertion,
-					IsFilesAnalyzedTagPresent: false,
-				}},
+					{
+						PackageName:           "software",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-0bf50598-7592-4e66-8a5b-df2c7fc48445",
+						PackageSupplier: &common.Supplier{
+							Supplier:     spdx.NoAssertion,
+							SupplierType: spdx.NoAssertion,
+						},
+						PackageDownloadLocation:   spdx.NoAssertion,
+						PackageLicenseConcluded:   spdx.NoAssertion,
+						PackageLicenseDeclared:    spdx.NoAssertion,
+						IsFilesAnalyzedTagPresent: false,
+						PackageSourceInfo:         "Identified by the python/wheelegg extractor",
+						PackageExternalReferences: []*v2_3.PackageExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:pypi/software",
+							},
+						},
+					},
+				},
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA: common.DocElementID{
@@ -421,6 +443,24 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-Package-main-0f070244-8615-4bda-8831-3f6a8eb668d2",
 						},
 						Relationship: "DESCRIBES",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0f070244-8615-4bda-8831-3f6a8eb668d2",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-0bf50598-7592-4e66-8a5b-df2c7fc48445",
+						},
+						Relationship: "CONTAINS",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-software-0bf50598-7592-4e66-8a5b-df2c7fc48445",
+						},
+						RefB: common.DocElementID{
+							SpecialID: spdx.NoAssertion,
+						},
+						Relationship: "CONTAINS",
 					},
 				},
 			},
@@ -440,7 +480,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/172ed857-94bb-458b-8c3b-525da1786f9f",
+				DocumentNamespace: "https://spdx.google/ff094279-db19-44eb-97a1-9d0f7bbacbe0",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -452,7 +492,7 @@ func TestToSPDX23(t *testing.T) {
 				Packages: []*v2_3.Package{
 					{
 						PackageName:           "main",
-						PackageSPDXIdentifier: "SPDXRef-Package-main-92d2572b-cd06-48d2-96c5-2f5054e2d083",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
 						PackageVersion:        "0",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -463,7 +503,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						PackageName:           "softw@re&",
-						PackageSPDXIdentifier: "SPDXRef-Package-softw-re--6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
+						PackageSPDXIdentifier: "SPDXRef-Package-softw-re--172ed857-94bb-458b-8c3b-525da1786f9f",
 						PackageVersion:        "1.2.3",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -489,22 +529,22 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-92d2572b-cd06-48d2-96c5-2f5054e2d083",
+							ElementRefID: "SPDXRef-Package-main-6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
 						},
 						Relationship: "DESCRIBES",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-92d2572b-cd06-48d2-96c5-2f5054e2d083",
+							ElementRefID: "SPDXRef-Package-main-6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-softw-re--6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
+							ElementRefID: "SPDXRef-Package-softw-re--172ed857-94bb-458b-8c3b-525da1786f9f",
 						},
 						Relationship: "CONTAINS",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-softw-re--6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
+							ElementRefID: "SPDXRef-Package-softw-re--172ed857-94bb-458b-8c3b-525da1786f9f",
 						},
 						RefB: common.DocElementID{
 							SpecialID: spdx.NoAssertion,
@@ -530,7 +570,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/29b0223b-eea5-44f7-8391-f445d15afd42",
+				DocumentNamespace: "https://spdx.google/94040374-f692-4b98-8bf8-713f8d962d7c",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -542,7 +582,7 @@ func TestToSPDX23(t *testing.T) {
 				Packages: []*v2_3.Package{
 					{
 						PackageName:           "main",
-						PackageSPDXIdentifier: "SPDXRef-Package-main-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-255aa5b7-d44b-4c40-b84c-892b9bffd436",
 						PackageVersion:        "0",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -553,7 +593,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						PackageName:           "software",
-						PackageSPDXIdentifier: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-29b0223b-eea5-44f7-8391-f445d15afd42",
 						PackageVersion:        "1.2.3",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -592,22 +632,22 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
+							ElementRefID: "SPDXRef-Package-main-255aa5b7-d44b-4c40-b84c-892b9bffd436",
 						},
 						Relationship: "DESCRIBES",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-ff094279-db19-44eb-97a1-9d0f7bbacbe0",
+							ElementRefID: "SPDXRef-Package-main-255aa5b7-d44b-4c40-b84c-892b9bffd436",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+							ElementRefID: "SPDXRef-Package-software-29b0223b-eea5-44f7-8391-f445d15afd42",
 						},
 						Relationship: "CONTAINS",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+							ElementRefID: "SPDXRef-Package-software-29b0223b-eea5-44f7-8391-f445d15afd42",
 						},
 						RefB: common.DocElementID{
 							SpecialID: spdx.NoAssertion,
@@ -619,7 +659,7 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-File--file1-7c9d66ac",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-software-255aa5b7-d44b-4c40-b84c-892b9bffd436",
+							ElementRefID: "SPDXRef-Package-software-29b0223b-eea5-44f7-8391-f445d15afd42",
 						},
 						Relationship: "DEPENDENCY_MANIFEST_OF",
 					},
@@ -648,7 +688,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/b14323a6-bc8f-4e7d-b1d9-29333ff99393",
+				DocumentNamespace: "https://spdx.google/3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -660,7 +700,7 @@ func TestToSPDX23(t *testing.T) {
 				Packages: []*v2_3.Package{
 					{
 						PackageName:           "main",
-						PackageSPDXIdentifier: "SPDXRef-Package-main-94040374-f692-4b98-8bf8-713f8d962d7c",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-8d019192-c242-44e2-8afc-cae3a61fb586",
 						PackageVersion:        "0",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -671,7 +711,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						PackageName:           "software",
-						PackageSPDXIdentifier: "SPDXRef-Package-software-8d019192-c242-44e2-8afc-cae3a61fb586",
+						PackageSPDXIdentifier: "SPDXRef-Package-software-b14323a6-bc8f-4e7d-b1d9-29333ff99393",
 						PackageVersion:        "1.2.3",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -697,22 +737,22 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-94040374-f692-4b98-8bf8-713f8d962d7c",
+							ElementRefID: "SPDXRef-Package-main-8d019192-c242-44e2-8afc-cae3a61fb586",
 						},
 						Relationship: "DESCRIBES",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-94040374-f692-4b98-8bf8-713f8d962d7c",
+							ElementRefID: "SPDXRef-Package-main-8d019192-c242-44e2-8afc-cae3a61fb586",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-software-8d019192-c242-44e2-8afc-cae3a61fb586",
+							ElementRefID: "SPDXRef-Package-software-b14323a6-bc8f-4e7d-b1d9-29333ff99393",
 						},
 						Relationship: "CONTAINS",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-software-8d019192-c242-44e2-8afc-cae3a61fb586",
+							ElementRefID: "SPDXRef-Package-software-b14323a6-bc8f-4e7d-b1d9-29333ff99393",
 						},
 						RefB: common.DocElementID{
 							SpecialID: spdx.NoAssertion,
@@ -738,7 +778,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/067d89bc-7f01-41f5-b398-1659a44ff17a",
+				DocumentNamespace: "https://spdx.google/4c7215a3-b539-4b1e-9849-c6077dbb5722",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -750,7 +790,7 @@ func TestToSPDX23(t *testing.T) {
 				Packages: []*v2_3.Package{
 					{
 						PackageName:           "main",
-						PackageSPDXIdentifier: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-067d89bc-7f01-41f5-b398-1659a44ff17a",
 						PackageVersion:        "0",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -787,13 +827,13 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+							ElementRefID: "SPDXRef-Package-main-067d89bc-7f01-41f5-b398-1659a44ff17a",
 						},
 						Relationship: "DESCRIBES",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-3bea6f5b-3af6-4e03-b436-6c4719e43a1b",
+							ElementRefID: "SPDXRef-Package-main-067d89bc-7f01-41f5-b398-1659a44ff17a",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-software-pkg-custom-id-123",
@@ -839,7 +879,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/f5717a28-9a26-4f97-a479-81998ebea89c",
+				DocumentNamespace: "https://spdx.google/0b4b3739-7011-4e82-ad6f-4125c8fa7311",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -851,7 +891,7 @@ func TestToSPDX23(t *testing.T) {
 				Packages: []*v2_3.Package{
 					{
 						PackageName:           "main",
-						PackageSPDXIdentifier: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-f5717a28-9a26-4f97-a479-81998ebea89c",
 						PackageVersion:        "0",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -909,13 +949,13 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+							ElementRefID: "SPDXRef-Package-main-f5717a28-9a26-4f97-a479-81998ebea89c",
 						},
 						Relationship: "DESCRIBES",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+							ElementRefID: "SPDXRef-Package-main-f5717a28-9a26-4f97-a479-81998ebea89c",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-parent-pkg-pkg-parent",
@@ -933,7 +973,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+							ElementRefID: "SPDXRef-Package-main-f5717a28-9a26-4f97-a479-81998ebea89c",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-child-pkg-pkg-child",
@@ -996,7 +1036,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/e4d7defa-922d-4ae7-b866-67f7e936cd4f",
+				DocumentNamespace: "https://spdx.google/24abf7df-866b-4a56-8383-67ad6145de1e",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -1008,7 +1048,7 @@ func TestToSPDX23(t *testing.T) {
 				Packages: []*v2_3.Package{
 					{
 						PackageName:           "main",
-						PackageSPDXIdentifier: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-e4d7defa-922d-4ae7-b866-67f7e936cd4f",
 						PackageVersion:        "0",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -1087,13 +1127,13 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-DOCUMENT",
 						},
 						RefB: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+							ElementRefID: "SPDXRef-Package-main-e4d7defa-922d-4ae7-b866-67f7e936cd4f",
 						},
 						Relationship: "DESCRIBES",
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+							ElementRefID: "SPDXRef-Package-main-e4d7defa-922d-4ae7-b866-67f7e936cd4f",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-parent-pkg1-pkg-parent1",
@@ -1111,7 +1151,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+							ElementRefID: "SPDXRef-Package-main-e4d7defa-922d-4ae7-b866-67f7e936cd4f",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-parent-pkg2-pkg-parent2",
@@ -1129,7 +1169,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						RefA: common.DocElementID{
-							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+							ElementRefID: "SPDXRef-Package-main-e4d7defa-922d-4ae7-b866-67f7e936cd4f",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-shared-child-pkg-shared-child",
@@ -1200,7 +1240,7 @@ func TestToSPDX23(t *testing.T) {
 				DataLicense:       "CC0-1.0",
 				SPDXIdentifier:    "DOCUMENT",
 				DocumentName:      "SCALIBR-generated SPDX",
-				DocumentNamespace: "https://spdx.google/6a40e9a1-d007-4033-8282-3061bdd0eaa5",
+				DocumentNamespace: "https://spdx.google/9f8e4da6-4301-4522-8d0b-29688b734b8e",
 				CreationInfo: &v2_3.CreationInfo{
 					Creators: []common.Creator{
 						{
@@ -1212,7 +1252,7 @@ func TestToSPDX23(t *testing.T) {
 				Packages: []*v2_3.Package{
 					{
 						PackageName:           "main",
-						PackageSPDXIdentifier: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e",
+						PackageSPDXIdentifier: "SPDXRef-Package-main-e8f4a8b0-993e-4df8-883a-0ad8be9c3978",
 						PackageVersion:        "0",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -1223,7 +1263,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						PackageName:           "rbe_input_root/github/artfs",
-						PackageSPDXIdentifier: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978",
+						PackageSPDXIdentifier: "SPDXRef-Package-rbe-input-root-github-artfs-b04883e5-6a15-4a8d-a563-afa467d49dec",
 						PackageVersion:        "local-fork",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -1244,7 +1284,7 @@ func TestToSPDX23(t *testing.T) {
 					},
 					{
 						PackageName:           "rbe_input_root/github/artfs/vendor/libfuse",
-						PackageSPDXIdentifier: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec",
+						PackageSPDXIdentifier: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-6a40e9a1-d007-4033-8282-3061bdd0eaa5",
 						PackageVersion:        "local-fork",
 						PackageSupplier: &common.Supplier{
 							Supplier:     spdx.NoAssertion,
@@ -1333,51 +1373,51 @@ func TestToSPDX23(t *testing.T) {
 				Relationships: []*v2_3.Relationship{
 					{
 						RefA:         common.DocElementID{ElementRefID: "SPDXRef-DOCUMENT"},
-						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
 						Relationship: "DESCRIBES",
 					},
 					{
-						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e"},
-						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-b04883e5-6a15-4a8d-a563-afa467d49dec"},
 						Relationship: "CONTAINS",
 					},
 					{
-						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-b04883e5-6a15-4a8d-a563-afa467d49dec"},
 						RefB:         common.DocElementID{SpecialID: "NOASSERTION"},
 						Relationship: "CONTAINS",
 					},
 					{
 						RefA:         common.DocElementID{ElementRefID: "SPDXRef-File-rbe-input-root-github-artfs-METADATA-3b761aba"},
-						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-b04883e5-6a15-4a8d-a563-afa467d49dec"},
 						Relationship: "DEPENDENCY_MANIFEST_OF",
 					},
 					{
-						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-b04883e5-6a15-4a8d-a563-afa467d49dec"},
 						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-ywmei-brt1-artfs-624bf058e5b4d18428784d7735794054845f9c1d"},
 						Relationship: "DESCENDANT_OF",
 					},
 					{
-						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-24abf7df-866b-4a56-8383-67ad6145de1e"},
-						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-main-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-6a40e9a1-d007-4033-8282-3061bdd0eaa5"},
 						Relationship: "CONTAINS",
 					},
 					{
-						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-6a40e9a1-d007-4033-8282-3061bdd0eaa5"},
 						RefB:         common.DocElementID{SpecialID: "NOASSERTION"},
 						Relationship: "CONTAINS",
 					},
 					{
-						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-e8f4a8b0-993e-4df8-883a-0ad8be9c3978"},
-						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-6a40e9a1-d007-4033-8282-3061bdd0eaa5"},
 						Relationship: "DEPENDS_ON",
 					},
 					{
 						RefA:         common.DocElementID{ElementRefID: "SPDXRef-File-rbe-input-root-github-artfs-vendor-libfuse-METADATA-5c16f292"},
-						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-6a40e9a1-d007-4033-8282-3061bdd0eaa5"},
 						Relationship: "DEPENDENCY_MANIFEST_OF",
 					},
 					{
-						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-b04883e5-6a15-4a8d-a563-afa467d49dec"},
+						RefA:         common.DocElementID{ElementRefID: "SPDXRef-Package-rbe-input-root-github-artfs-vendor-libfuse-6a40e9a1-d007-4033-8282-3061bdd0eaa5"},
 						RefB:         common.DocElementID{ElementRefID: "SPDXRef-Package-libfuse-libfuse-033844748010a3b8265bf1c90b9ae8ffe4cd9ca7"},
 						Relationship: "DESCENDANT_OF",
 					},

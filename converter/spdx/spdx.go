@@ -90,14 +90,11 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 
 	for _, pkg := range i.Packages {
 		p := pkg.PURL()
-		if p == nil {
-			log.Warnf("Package %v has no PURL, skipping", pkg)
-			continue
-		}
-		pName := p.Name
-		pVersion := p.Version
-		if pName == "" || pVersion == "" {
-			log.Warnf("Package %v PURL name or version empty, skipping", pkg)
+		pName, pVersion := packageNameAndVersion(pkg, p)
+		// PackageName is the only mandatory identifying field in SPDX 2.3;
+		// an empty PackageVersion is valid and is omitted from the output.
+		if pName == "" {
+			log.Warnf("Package %v has no name, skipping", pkg)
 			continue
 		}
 		id, err := pkg.GetIDOrGenerate()
@@ -130,13 +127,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			PackageLicenseDeclared:    NoAssertion,
 			IsFilesAnalyzedTagPresent: false,
 			PackageSourceInfo:         pSourceInfo,
-			PackageExternalReferences: []*v2_3.PackageExternalReference{
-				{
-					Category: "PACKAGE-MANAGER",
-					RefType:  "purl",
-					Locator:  p.String(),
-				},
-			},
+			PackageExternalReferences: purlExternalRefs(p),
 		})
 	}
 
@@ -345,6 +336,37 @@ func descendantOf(
 		Relationship: "DESCENDANT_OF",
 	})
 	return packages, relationships
+}
+
+// packageNameAndVersion prefers the PURL's name and version, falling back to
+// the values on the package itself.
+func packageNameAndVersion(pkg *extractor.Package, p *purl.PackageURL) (string, string) {
+	name, version := pkg.Name, pkg.Version
+	if p == nil {
+		return name, version
+	}
+	if p.Name != "" {
+		name = p.Name
+	}
+	if p.Version != "" {
+		version = p.Version
+	}
+	return name, version
+}
+
+// purlExternalRefs returns the package's PURL external reference, or nil if
+// the package has no PURL.
+func purlExternalRefs(p *purl.PackageURL) []*v2_3.PackageExternalReference {
+	if p == nil {
+		return nil
+	}
+	return []*v2_3.PackageExternalReference{
+		{
+			Category: "PACKAGE-MANAGER",
+			RefType:  "purl",
+			Locator:  p.String(),
+		},
+	}
 }
 
 func getPackageSourceInfo(pkg *extractor.Package) string {
