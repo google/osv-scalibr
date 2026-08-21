@@ -453,8 +453,7 @@ func TestExtract(t *testing.T) {
 				PluginSpecific: []*cpb.PluginSpecificConfig{
 					{Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{
 						JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
-							IncludeDependencies:           tt.includeDeps,
-							IncludeDependencyRequirements: true,
+							IncludeDependencies: tt.includeDeps,
 						},
 					}},
 				},
