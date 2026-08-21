@@ -194,6 +194,14 @@ func convertVDIToRaw(in io.Reader, out io.Writer) error {
 			curPos = int64(hdr.OffsetBmap)
 		}
 
+		// Guard against malicious BlocksInImage values that would cause a
+		// multi-gigabyte heap allocation before any I/O is attempted.
+		// A valid VDI has BlocksInImage ≈ DiskSize/BlockSize; cap at 64M blocks
+		// (≥64 TiB at the minimum 1 MiB block size) as a hard safety limit.
+		const maxBlocksInImage = 64 << 20 // 67,108,864
+		if hdr.BlocksInImage > maxBlocksInImage {
+			return fmt.Errorf("BlocksInImage %d exceeds safety limit %d", hdr.BlocksInImage, maxBlocksInImage)
+		}
 		indices := make([]uint32, hdr.BlocksInImage)
 		if err := binary.Read(in, binary.LittleEndian, &indices); err != nil {
 			return fmt.Errorf("failed to read block map: %w", err)
