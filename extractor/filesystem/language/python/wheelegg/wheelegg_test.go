@@ -362,13 +362,7 @@ func TestExtract(t *testing.T) {
 			collector := testcollector.New()
 
 			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
-			e, err := wheelegg.New(&cpb.PluginConfig{PluginSpecific: []*cpb.PluginSpecificConfig{{
-				Config: &cpb.PluginSpecificConfig_PythonWheelEgg{
-					PythonWheelEgg: &cpb.PythonWheelEggConfig{
-						ExtractDependencies: true,
-					},
-				}},
-			}})
+			e, err := wheelegg.New(&cpb.PluginConfig{})
 			if err != nil {
 				t.Fatalf("wheelegg.New() error: %v", err)
 			}

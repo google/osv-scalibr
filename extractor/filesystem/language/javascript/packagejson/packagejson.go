@@ -66,10 +66,9 @@ type packageJSON struct {
 
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	Stats                         stats.Collector
-	maxFileSizeBytes              int64
-	includeDependencies           bool
-	includeDependencyRequirements bool
+	Stats               stats.Collector
+	maxFileSizeBytes    int64
+	includeDependencies bool
 }
 
 // New returns a package.json extractor.
@@ -80,7 +79,6 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	}
 
 	includeDependencies := false
-	includeDependencyRequirements := false
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavascriptPackageJsonConfig {
 		return c.GetJavascriptPackageJson()
 	})
@@ -89,13 +87,11 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 		}
 		includeDependencies = specific.GetIncludeDependencies()
-		includeDependencyRequirements = specific.GetIncludeDependencyRequirements()
 	}
 
 	return &Extractor{
-		maxFileSizeBytes:              maxFileSizeBytes,
-		includeDependencies:           includeDependencies,
-		includeDependencyRequirements: includeDependencyRequirements,
+		maxFileSizeBytes:    maxFileSizeBytes,
+		includeDependencies: includeDependencies,
 	}, nil
 }
 
@@ -210,22 +206,17 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 	rootLoc := extractor.LocationFromPath(path)
 	rootLoc.Descriptor.File.LineNumber = nameLine
 
-	metadata := &metadata.JavascriptPackageJSONMetadata{
-		Author:       p.Author,
-		Maintainers:  removeEmptyPersons(p.Maintainers),
-		Contributors: removeEmptyPersons(p.Contributors),
-	}
-
-	if e.includeDependencyRequirements {
-		metadata.Dependencies = p.Dependencies
-	}
-
 	pkgs = append(pkgs, &extractor.Package{
 		Name:     p.Name,
 		Version:  p.Version,
 		PURLType: purl.TypeNPM,
 		Location: rootLoc,
-		Metadata: metadata,
+		Metadata: &metadata.JavascriptPackageJSONMetadata{
+			Author:       p.Author,
+			Maintainers:  removeEmptyPersons(p.Maintainers),
+			Contributors: removeEmptyPersons(p.Contributors),
+			Dependencies: p.Dependencies,
+		},
 	})
 
 	if e.includeDependencies {
