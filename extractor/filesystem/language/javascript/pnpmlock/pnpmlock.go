@@ -128,8 +128,17 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 	parts = parts[1:]
 
 	if strings.HasPrefix(parts[0], "@") {
-		name = strings.Join(parts[:2], "/")
-		parts = parts[2:]
+		// A scoped dependency path normally has the form "@scope/name",
+		// which splits into two parts. However a malformed path such as
+		// "/@scope" leaves a single "@scope" element here, so guard against
+		// slicing past the end before joining the scope and name.
+		if len(parts) < 2 {
+			name = parts[0]
+			parts = parts[1:]
+		} else {
+			name = strings.Join(parts[:2], "/")
+			parts = parts[2:]
+		}
 	} else {
 		name = parts[0]
 		parts = parts[1:]
