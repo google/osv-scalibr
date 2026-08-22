@@ -91,6 +91,20 @@ func TestDetector_truePositives(t *testing.T) {
 				urlcreds.Credentials{FullURL: "http://:pass%3Aword@example.com"},
 			},
 		},
+		{
+			name:  "amqp_url_with_credentials",
+			input: "amqp://guest:guest@rabbit.example.com:5672/myvhost",
+			want: []veles.Secret{
+				urlcreds.Credentials{FullURL: "amqp://guest:guest@rabbit.example.com:5672/myvhost"},
+			},
+		},
+		{
+			name:  "amqps_url_with_credentials",
+			input: "amqps://user:s3cret@mq.prod.example.com:5671/prod",
+			want: []veles.Secret{
+				urlcreds.Credentials{FullURL: "amqps://user:s3cret@mq.prod.example.com:5671/prod"},
+			},
+		},
 	}
 
 	for _, tc := range cases {
