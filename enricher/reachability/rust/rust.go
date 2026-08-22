@@ -49,7 +49,7 @@ const (
 	rustLibExtension = ".rcgu.o/"
 )
 
-// Regex used for fuzzy funcion matching
+// Regex used for fuzzy function matching
 var antiLeadingSpecCharRegex = regexp.MustCompile(`\W*(.+)`)
 
 // ErrNoRustToolchain is returned when the cargo is not found in the system.
@@ -71,7 +71,7 @@ func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		DirectFS:      true,
 		Network:       plugin.NetworkOnline,
-		OS:            plugin.OSLinux,
+		OS:            plugin.OSUnix,
 		RunningSystem: true,
 		// Rust Reachability uses native toolchains and thus any scripts or build-time logic defined
 		// within the scanned project will run as-is. Make sure you trust the source code before
