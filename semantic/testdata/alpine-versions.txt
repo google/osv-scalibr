@@ -1,8 +1,21 @@
+# make it make sense
+1 < 1.
+1 < 1.0
+1. < 1.0
+1.. > 1.0
+1.. < 1.1
+# on apk 2.x this is >, on 3.x this is <
+1.010 < 1.09
+
+# make sure version comparisons are transitive
+2.3.4-invalid < 3.4.5-r1
+3.4.5-r1 < 10.1.1-invalid
+2.3.4-invalid < 10.1.1-invalid
+
 1-r1 = 1-r01
 1-r = 1-r0
-# on latest apk these are "<" but on 3.x they're ">"
-1-r-0 < 1-r0
-1-r-1 < 1-r0
+1-r-0 > 1-r0
+1-r-1 > 1-r0
 
 # letters
 1a = 1a
@@ -12,7 +25,7 @@
 
 1.2.3b > 1.2.0d
 
-0.r1 < 0r2
+0.r1 > 0r2
 0..1..0 < 0..1..1
 0...1...0 < 0...1...1
 0...1...0.r1 < 0...1...0.r2
@@ -21,11 +34,10 @@
 0..8 > 0...8
 0.8.21.r2 > 0.8.21.r1
 10.2.24.r0 > 10.2.22.r0
-0.8.21.r2 < 0.8.21r2
+0.8.21.r2 > 0.8.21r2
 
-# letters (invalid) - note on latest apk these are "<" but on 3.x line they're ">"
-1.2.0A < 1.2.0d
-1.2.0D < 1.2.0d
+1.2.0A > 1.2.0d
+1.2.0D > 1.2.0d
 
 # https://gitlab.alpinelinux.org/alpine/abuild/-/issues/10088
 6.6.2p1 = 6.6.2p1
@@ -36,18 +48,25 @@
 
 # invalid
 1-r2 > 1-r-1
-# on latest apk this is ">" but on 3.x they're "<"
-1 > 1-ruff
+1 < 1-ruff
 
 # yes, these are all correct...
 1-r0-1 = 1-r-2
 1-r0-1 = 1-r0-2
+
+# New test cases for edge cases
+1.0a_invalid < 1.0a
+1.2 < 1.2_
+1.2_blah < 1.2
+1.0p1p2 > 1.0p1
+1.0p1p2 < 1.0p1p3
+1.0p1p2 < 1.0p1z
 1-ruff2 = 1-ruff1
-# on latest apk these are "<" but on 3.x they're ">"
-1-ruff2 = 1--ruff1
+1-ruff2 < 1--ruff1
 1-r0-ruff2 = 1-r0-ruff1
 
 1.2 > 1.2_blah
+1.2 < 1.2_
 1.2 > 1.2_rc1
 1.2 < 1.2_cvs1
 1.2 < 1.2_svn1
