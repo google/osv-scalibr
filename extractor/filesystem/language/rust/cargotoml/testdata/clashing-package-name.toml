@@ -1,0 +1,6 @@
+[package]
+  name = "regex"
+  version = "0.1.0"
+
+[dependencies]
+  regex = "0.0.1"

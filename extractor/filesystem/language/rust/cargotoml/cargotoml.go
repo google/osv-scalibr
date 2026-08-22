@@ -30,11 +30,15 @@
 package cargotoml
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -145,19 +149,32 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedTomlFile cargoTomlFile
 
-	_, err := toml.NewDecoder(input.Reader).Decode(&parsedTomlFile)
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
+	_, err = toml.NewDecoder(bytes.NewReader(b)).Decode(&parsedTomlFile)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	lineNumbers := findLineNumbers(b, parsedTomlFile.Dependencies)
 	packages := make([]*extractor.Package, 0, len(parsedTomlFile.Dependencies)+1)
 
-	packages = append(packages, &extractor.Package{
+	rootLoc := extractor.LocationFromPath(input.Path)
+	if line := lineNumbers[""]; line > 0 {
+		rootLoc = extractor.LocationFromPathAndLine(input.Path, line)
+	}
+
+	pkg := &extractor.Package{
 		Name:     parsedTomlFile.Package.Name,
 		Version:  parsedTomlFile.Package.Version,
 		PURLType: purl.TypeCargo,
-		Location: extractor.LocationFromPath(input.Path),
-	})
+		Location: rootLoc,
+	}
+
+	packages = append(packages, pkg)
 
 	for name, dependency := range parsedTomlFile.Dependencies {
 		if err := ctx.Err(); err != nil {
@@ -177,16 +194,104 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
+		var depLoc extractor.PackageLocation
+		if line, ok := lineNumbers[name]; ok && line > 0 {
+			depLoc = extractor.LocationFromPathAndLine(input.Path, line)
+		}
+
 		packages = append(packages, &extractor.Package{
 			Name:       name,
 			Version:    dependency.Version,
 			PURLType:   purl.TypeCargo,
-			Location:   extractor.LocationFromPath(input.Path),
+			Location:   depLoc,
 			SourceCode: srcCode,
 		})
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+// findLineNumbers finds the line numbers of the package name and dependencies.
+func findLineNumbers(content []byte, deps map[string]cargoTomlDependency) map[string]int {
+	lines := make(map[string]int, len(deps)+1) // maps package name to line number
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	section := ""
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		if header, ok := parseTableHeader(line); ok {
+			section = header
+			// Dependencies can be defined directly in the header, e.g. [dependencies.foopackage].
+			if depName, ok := parseDependencyFromHeader(header); ok {
+				if _, ok := deps[depName]; ok && lines[depName] == 0 {
+					lines[depName] = lineNum
+				}
+				section = ""
+			}
+			continue
+		}
+
+		switch section {
+		case "package":
+			key, ok := parseKey(line)
+			if !ok {
+				continue
+			}
+			if key == "name" && lines[""] == 0 {
+				// Empty string is used as a key for the root package name, in case it
+				// clashes with a dependency name.
+				lines[""] = lineNum
+			}
+		case "dependencies":
+			key, ok := parseKey(line)
+			if !ok {
+				continue
+			}
+			if _, ok := deps[key]; ok && lines[key] == 0 {
+				lines[key] = lineNum
+			}
+		}
+	}
+	return lines
+}
+
+// parseTableHeader checks if a line is a TOML table header (e.g. `[section]`).
+func parseTableHeader(line string) (string, bool) {
+	// Since inline comments are allowed after table headers, we need to trim them if present
+	// (e.g. `[dependencies.foo] # comment`).
+	if idx := strings.IndexByte(line, '#'); idx != -1 {
+		line = line[:idx]
+	}
+	line = strings.TrimSpace(line)
+	if !strings.HasPrefix(line, "[") || !strings.HasSuffix(line, "]") {
+		return "", false
+	}
+	return strings.TrimSpace(line[1 : len(line)-1]), true
+}
+
+// parseDependencyFromHeader parses a dependency from a TOML table header, if it has one.
+func parseDependencyFromHeader(header string) (string, bool) {
+	if dep, ok := strings.CutPrefix(header, "dependencies."); ok {
+		return strings.Trim(dep, ` "'`), true
+	}
+	return "", false
+}
+
+// parseKey parses the key from an assignment line (e.g. `key = value`).
+func parseKey(line string) (string, bool) {
+	before, _, ok := strings.Cut(line, "=")
+	if !ok {
+		return "", false
+	}
+	return strings.Trim(strings.TrimSpace(before), `"'`), true
 }
 
 var _ filesystem.Extractor = Extractor{}
