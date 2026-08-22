@@ -197,7 +197,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	mf, err := parser.ParseManifest(opts.Manifest, manifestRW)
+	mf, err := parser.ParseManifest(opts.Manifest, manifestRW, opts.ProjectRoot)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -211,7 +211,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	err = parser.WriteManifestPatches(opts.Manifest, mf, []result.Patch{patch}, manifestRW)
+	err = parser.WriteManifestPatches(opts.Manifest, mf, []result.Patch{patch}, manifestRW, opts.ProjectRoot)
 
 	return result.Result{
 		Path:      opts.Manifest,
@@ -232,7 +232,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 	default:
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}
-	m, err := parser.ParseManifest(opts.Manifest, rw)
+	m, err := parser.ParseManifest(opts.Manifest, rw, opts.ProjectRoot)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -279,7 +279,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 	if m.System() == resolve.Maven && opts.NoMavenNewDepMgmt {
 		res.Patches = filterMavenPatches(res.Patches, m.EcosystemSpecific())
 	}
-	if err := parser.WriteManifestPatches(opts.Manifest, m, res.Patches, rw); err != nil {
+	if err := parser.WriteManifestPatches(opts.Manifest, m, res.Patches, rw, opts.ProjectRoot); err != nil {
 		return res, err
 	}
 
@@ -297,7 +297,7 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 	if s != strategy.StrategyInPlace {
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}
-	g, err := parser.ParseLockfile(opts.Lockfile, rw)
+	g, err := parser.ParseLockfile(opts.Lockfile, rw, opts.ProjectRoot)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -319,7 +319,7 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 	}
 	res.Vulnerabilities = computeVulnsResultsLockfile(resolved, allPatches, opts.RemediationOptions)
 	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, true)
-	err = parser.WriteLockfilePatches(opts.Lockfile, res.Patches, rw)
+	err = parser.WriteLockfilePatches(opts.Lockfile, res.Patches, rw, opts.ProjectRoot)
 	return res, err
 }
 
@@ -531,7 +531,7 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 		return err
 	}
 
-	g, err := parser.ParseLockfile(opts.Lockfile, lockfileRW)
+	g, err := parser.ParseLockfile(opts.Lockfile, lockfileRW, opts.ProjectRoot)
 	if err != nil {
 		return err
 	}

@@ -255,6 +255,39 @@ func TestReadWithWorkspaces(t *testing.T) {
 	checkManifest(t, "Manifest", got, want)
 }
 
+func TestReadDoesNotLoadWorkspaceOutsideProject(t *testing.T) {
+	dir := t.TempDir()
+	project := filepath.Join(dir, "project")
+	if err := os.Mkdir(project, 0755); err != nil {
+		t.Fatal(err)
+	}
+	data := []byte(`{"name":"root","version":"1.0.0","workspaces":["../outside"]}`)
+	if err := os.WriteFile(filepath.Join(project, "package.json"), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(dir, "outside")
+	if err := os.Mkdir(outside, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outside, "package.json"), []byte(`{"name":"outside","version":"1.0.0"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	rw, err := npm.GetReadWriter()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m, err := rw.Read("package.json", scalibrfs.DirFS(project))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, req := range m.Requirements() {
+		if req.Name == "outside:workspace" {
+			t.Fatal("Read() loaded a workspace outside the project")
+		}
+	}
+}
+
 func TestWrite(t *testing.T) {
 	rw, err := npm.GetReadWriter()
 	if err != nil {
@@ -327,8 +360,13 @@ func TestWrite(t *testing.T) {
 	}
 	outDir := t.TempDir()
 	outFile := filepath.Join(outDir, "package.json")
+	outFS, err := os.OpenRoot(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFS.Close()
 
-	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
+	if err := rw.Write(manif, fsys, patches, outFS, "package.json"); err != nil {
 		t.Fatalf("failed to write package.json: %v", err)
 	}
 
