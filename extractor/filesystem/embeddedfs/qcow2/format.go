@@ -191,6 +191,9 @@ func parseHeader(reader io.Reader) (*header, []headerExtension, error) {
 }
 
 func readL1Table(header *header, reader io.ReaderAt) ([]uint64, error) {
+	if header.ClusterBits < 9 || header.ClusterBits > 21 {
+		return nil, fmt.Errorf("invalid ClusterBits value: %d", header.ClusterBits)
+	}
 	l1Table := make([]uint64, header.L1Size)
 	buf := make([]byte, header.L1Size*8)
 	if _, err := reader.ReadAt(buf, int64(header.L1TableOffset)); err != nil {
@@ -203,6 +206,9 @@ func readL1Table(header *header, reader io.ReaderAt) ([]uint64, error) {
 }
 
 func readL2Table(l1Entry uint64, header *header, reader io.ReaderAt) ([]uint64, error) {
+	if header.ClusterBits < 9 || header.ClusterBits > 21 {
+		return nil, fmt.Errorf("invalid ClusterBits value: %d", header.ClusterBits)
+	}
 	if l1Entry == 0 {
 		return nil, nil
 	}
