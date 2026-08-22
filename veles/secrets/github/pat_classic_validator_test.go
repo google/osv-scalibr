@@ -25,11 +25,26 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	classicPATValidatorKey = `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`
 )
+
+func TestAcceptClassicPATValidator(t *testing.T) {
+	brokenValidator := github.NewClassicPATValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		github.NewClassicPATValidator(),
+		velestest.WithTrueNegatives(github.ClassicPersonalAccessToken{
+			Token: `ghp_000000000000000000000000000000000000`,
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 func TestClassicPATValidator(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())
