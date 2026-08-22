@@ -41,26 +41,21 @@ type manifest struct {
 	Version    string
 }
 
+type jenkinsPluginManifest struct {
+	GroupID   string
+	ShortName string
+	Version   string
+}
+
 // valid returns true if mf is a valid manifest property.
 func (mf manifest) valid() bool {
 	return mf.GroupID != "" && mf.ArtifactID != "" && mf.Version != ""
 }
 
 func parseManifest(f *zip.File) (manifest, error) {
-	file, err := f.Open()
+	h, err := parseManifestHeader(f)
 	if err != nil {
-		return manifest{}, fmt.Errorf("failed to open file %q: %w", f.Name, err)
-	}
-	defer file.Close()
-
-	log.Debugf("Parsing manifest file %s\n", f.Name)
-
-	rd := textproto.NewReader(bufio.NewReader(NewOmitEmptyLinesReader(file)))
-	h, err := rd.ReadMIMEHeader()
-	// MIME header require \n\n in the end, while MANIFEST.mf might not have this. Headers before are
-	// parsed correctly anyway, so skip the error and continue.
-	if err != nil && !errors.Is(err, io.EOF) {
-		return manifest{}, fmt.Errorf("failed to read MIME header: %w", err)
+		return manifest{}, err
 	}
 
 	artifactID := getArtifactID(h)
@@ -75,6 +70,46 @@ func parseManifest(f *zip.File) (manifest, error) {
 		ArtifactID: artifactID,
 		Version:    getVersion(h),
 	}, nil
+}
+
+func parseJenkinsPluginManifest(f *zip.File) (jenkinsPluginManifest, error) {
+	h, err := parseManifestHeader(f)
+	if err != nil {
+		return jenkinsPluginManifest{}, err
+	}
+	return jenkinsPluginManifest{
+		GroupID:   getJenkinsPluginGroupID(h),
+		ShortName: strings.TrimSpace(h.Get("Short-Name")),
+		Version:   strings.TrimSpace(h.Get("Plugin-Version")),
+	}, nil
+}
+
+func parseManifestHeader(f *zip.File) (textproto.MIMEHeader, error) {
+	file, err := f.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %q: %w", f.Name, err)
+	}
+	defer file.Close()
+
+	log.Debugf("Parsing manifest file %s\n", f.Name)
+
+	rd := textproto.NewReader(bufio.NewReader(NewOmitEmptyLinesReader(file)))
+	h, err := rd.ReadMIMEHeader()
+	// MIME header require \n\n in the end, while MANIFEST.mf might not have this. Headers before are
+	// parsed correctly anyway, so skip the error and continue.
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("failed to read MIME header: %w", err)
+	}
+
+	return h, nil
+}
+
+func getJenkinsPluginGroupID(h textproto.MIMEHeader) string {
+	groupID := strings.TrimSpace(h.Get("Group-Id"))
+	if validGroupID(groupID) {
+		return strings.ToLower(groupID)
+	}
+	return ""
 }
 
 var (
