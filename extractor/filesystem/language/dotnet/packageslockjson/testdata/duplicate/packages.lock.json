@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net6.0": {
+      "Core.Dep": {
+        "resolved": "1.24.0"
+      }
+    },
+    "net7.0": {
+      "Core.Dep": {
+        "resolved": "1.24.0"
+      }
+    }
+  }
+}

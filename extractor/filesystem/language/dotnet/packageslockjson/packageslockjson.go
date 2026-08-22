@@ -16,6 +16,7 @@
 package packageslockjson
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -137,18 +139,27 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	p, err := Parse(input.Reader)
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return nil, err
 	}
+
+	p, err := Parse(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	finder := common.NewJSONLineFinder(string(b))
+
 	var res []*extractor.Package
-	for _, packages := range p.Dependencies {
+	for framework, packages := range p.Dependencies {
 		for pkgName, info := range packages {
+			line := finder.LineOf("dependencies", framework, pkgName)
 			pkg := &extractor.Package{
 				Name:     pkgName,
 				Version:  info.Resolved,
 				PURLType: purl.TypeNuget,
-				Location: extractor.LocationFromPath(input.Path),
+				Location: extractor.LocationFromPathAndLine(input.Path, line),
 			}
 			res = append(res, pkg)
 		}
