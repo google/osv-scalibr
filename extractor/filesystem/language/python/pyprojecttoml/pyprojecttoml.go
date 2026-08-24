@@ -23,6 +23,7 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -58,6 +59,9 @@ type pyprojectFile struct {
 
 // projectTable represents the [project] table as defined by PEP 621
 type projectTable struct {
+	Name                 string              `toml:"name"`
+	Version              string              `toml:"version"`
+	Dynamic              []string            `toml:"dynamic"`
 	Dependencies         []string            `toml:"dependencies"`
 	OptionalDependencies map[string][]string `toml:"optional-dependencies"`
 }
@@ -68,9 +72,7 @@ type Extractor struct{}
 var _ filesystem.Extractor = Extractor{}
 
 // New returns a new instance of the extractor.
-//
-//nolint:plugger
-func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+func New(*cpb.PluginConfig) (filesystem.Extractor, error) {
 	return &Extractor{}, nil
 }
 
@@ -101,17 +103,27 @@ func (e Extractor) Extract(
 
 	var f pyprojectFile
 	if err := toml.Unmarshal(content, &f); err != nil {
-		// malformed TOML = return empty inventory.
 		return inventory.Inventory{}, fmt.Errorf("failed to parse pyproject.toml: %w", err)
 	}
 
-	// No [project] table or no dependencies declared.
-	if len(f.Project.Dependencies) == 0 &&
-		len(f.Project.OptionalDependencies) == 0 {
+	if f.Project.Name == "" {
+		// If no project.name is set, we assume that this is not a PEP-621 file.
+		// Other tools use this file to store their configuration: poetry, uv, etc.
 		return inventory.Inventory{}, nil
 	}
 
 	var pkgs []*extractor.Package
+	pkgs = append(pkgs, &extractor.Package{
+		Name:     f.Project.Name,
+		Version:  f.Project.Version,
+		PURLType: purl.TypePyPi,
+		Location: extractor.LocationFromPath(input.Path),
+		Metadata: &Metadata{
+			HasDynamicDependencies: slices.Contains(f.Project.Dynamic, "dependencies"),
+			Dependencies:           f.Project.Dependencies,
+			OptionalDependencies:   f.Project.OptionalDependencies,
+		},
+	})
 
 	for _, dep := range f.Project.Dependencies {
 		if pkg := parseDep(dep, input.Path); pkg != nil {

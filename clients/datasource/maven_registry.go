@@ -45,13 +45,46 @@ const artifactRegistryScheme = "artifactregistry"
 
 var errAPIFailed = errors.New("API query failed")
 
+// ParseMavenRegistryURL parses a Maven registry URL string that may contain optional origin URLs to
+// replace in the format "MIRROR_URL[ORIGIN_URL1,ORIGIN_URL2,...]" or "MIRROR_URL".
+// IPv6 URLs without a port or path should include a trailing slash (e.g. "http://[::1]/") to avoid
+// the host brackets being treated as replacement origin brackets.
+func ParseMavenRegistryURL(raw string) (string, []string) {
+	raw = strings.TrimSpace(raw)
+	if strings.HasSuffix(raw, "]") {
+		if idx := strings.LastIndex(raw, "["); idx != -1 {
+			mirror := strings.TrimSpace(raw[:idx])
+			originsPart := raw[idx+1 : len(raw)-1]
+			var origins []string
+			for s := range strings.SplitSeq(originsPart, ",") {
+				s = strings.TrimSpace(s)
+				if s != "" {
+					origins = append(origins, s)
+				}
+			}
+			return mirror, origins
+		}
+	}
+	return raw, nil
+}
+
+func normalizeRegistryURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	raw = strings.TrimSuffix(raw, "/")
+	if u, err := url.Parse(raw); err == nil && u.Host != "" {
+		return strings.TrimSuffix(strings.ToLower(u.Host)+"/"+strings.Trim(strings.ToLower(u.Path), "/"), "/")
+	}
+	return strings.ToLower(raw)
+}
+
 // MavenRegistryAPIClient defines a client to fetch metadata from a Maven registry.
 type MavenRegistryAPIClient struct {
-	defaultRegistry MavenRegistry                  // The default registry that we are making requests
-	registries      []MavenRegistry                // Additional registries specified to fetch projects
-	registryAuths   map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
-	localRegistry   string                         // The local directory that holds Maven manifests
-	localProjects   map[maven.ProjectKey][]byte    // Local projects available in the local source tree.
+	defaultRegistry  MavenRegistry                  // The default registry that we are making requests
+	originRegistries map[string]bool                // Normalized origin URLs to be replaced by the default registry
+	registries       []MavenRegistry                // Additional registries specified to fetch projects
+	registryAuths    map[string]*HTTPAuthentication // Authentication for the registries keyed by registry ID. From settings.xml
+	localRegistry    string                         // The local directory that holds Maven manifests
+	localProjects    map[maven.ProjectKey][]byte    // Local projects available in the local source tree.
 
 	httpClient        *http.Client // Custom HTTP client for regular queries.
 	googleClient      *http.Client // A client for authenticating with Google services, used for Artifact Registry.
@@ -91,6 +124,10 @@ func NewMavenRegistryAPIClient(
 	if httpClient == nil {
 		return nil, errors.New("httpClient must be configured for MavenRegistryAPIClient")
 	}
+
+	mirrorURL, originURLs := ParseMavenRegistryURL(registry.URL)
+	registry.URL = mirrorURL
+
 	if registry.URL == "" {
 		registry.URL = mavenCentral
 		registry.ID = "central"
@@ -105,6 +142,14 @@ func NewMavenRegistryAPIClient(
 	}
 	registry.Parsed = u
 
+	var originRegistries map[string]bool
+	if len(originURLs) > 0 {
+		originRegistries = make(map[string]bool, len(originURLs))
+		for _, orig := range originURLs {
+			originRegistries[normalizeRegistryURL(orig)] = true
+		}
+	}
+
 	if localRegistry != "" {
 		localRegistry = filepath.Join(localRegistry, "maven")
 	}
@@ -116,6 +161,7 @@ func NewMavenRegistryAPIClient(
 	client := &MavenRegistryAPIClient{
 		// We assume only downloading releases is allowed on the default registry.
 		defaultRegistry:   registry,
+		originRegistries:  originRegistries,
 		localRegistry:     localRegistry,
 		mu:                &sync.Mutex{},
 		responses:         NewRequestCache[string, response](),
@@ -149,6 +195,7 @@ func (m *MavenRegistryAPIClient) AddLocalProject(groupID, artifactID, version st
 func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 	return &MavenRegistryAPIClient{
 		defaultRegistry:   m.defaultRegistry,
+		originRegistries:  m.originRegistries,
 		localRegistry:     m.localRegistry,
 		mu:                m.mu,
 		cacheTimestamp:    m.cacheTimestamp,
@@ -163,12 +210,23 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 
 // AddRegistry adds the given registry to the list of registries if it has not been added.
 func (m *MavenRegistryAPIClient) AddRegistry(ctx context.Context, registry MavenRegistry) error {
-	if registry.ID == m.defaultRegistry.ID {
+	normRepoURL := normalizeRegistryURL(registry.URL)
+
+	isReplaced := false
+	if len(m.originRegistries) > 0 && m.originRegistries[normRepoURL] {
+		registry.URL = m.defaultRegistry.URL
+		// Adopt the default registry's ID so that requests to the replaced mirror
+		// do not leak the origin repository's credentials from settings.xml.
+		registry.ID = m.defaultRegistry.ID
+		isReplaced = true
+	}
+
+	if !isReplaced && registry.ID == m.defaultRegistry.ID {
 		return m.updateDefaultRegistry(ctx, registry)
 	}
 
 	for _, reg := range m.registries {
-		if reg.ID == registry.ID {
+		if (isReplaced && reg.URL == registry.URL) || reg.ID == registry.ID {
 			return nil
 		}
 	}
