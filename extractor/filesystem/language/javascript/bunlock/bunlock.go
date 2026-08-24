@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/depgraph"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
@@ -189,23 +190,17 @@ func stripLastInstallName(prefix string) string {
 	return head
 }
 
-func addParent(pkg *extractor.Package, parentID string) {
-	if pkg.ParentIDs == nil {
-		pkg.ParentIDs = map[string]bool{}
-	}
-	pkg.ParentIDs[parentID] = true
-}
-
-// addDepEdges marks the resolved target of each dependency in depMaps as a
-// child of parentID, resolving names from lockfile key baseKey.
-func addDepEdges(parentID, baseKey string, keySet map[string]bool, pkgByKey map[string]*extractor.Package, depMaps ...map[string]string) {
+// depEdges drops dependency names that resolve to no lockfile key.
+func depEdges(parent *extractor.Package, baseKey string, keySet map[string]bool, pkgByKey map[string]*extractor.Package, depMaps ...map[string]string) []depgraph.Edge {
+	var edges []depgraph.Edge
 	for _, m := range depMaps {
 		for _, depName := range slices.Sorted(maps.Keys(m)) {
 			if childKey, ok := resolveDepKey(baseKey, depName, keySet); ok {
-				addParent(pkgByKey[childKey], parentID)
+				edges = append(edges, depgraph.Edge{Parent: parent, Child: pkgByKey[childKey]})
 			}
 		}
 	}
+	return edges
 }
 
 // Extract extracts packages from bun.lock files passed through the scan input.
@@ -253,39 +248,43 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Location: extractor.LocationFromPathAndLine(input.Path, lineNum),
 		}
 		packages = append(packages, pkg)
-
-		if _, err := pkg.RequireID(); err != nil {
-			errs = append(errs, err)
-
-			continue
-		}
 		pkgByKey[key] = pkg
 		keySet[key] = true
 	}
 
+	edges := getDependencyEdges(parsedLockfile, keys, pkgByKey, keySet)
+	if err := depgraph.ApplyEdges(packages, edges); err != nil {
+		errs = append(errs, err)
+	}
+
+	return inventory.Inventory{Packages: packages}, errors.Join(errs...)
+}
+
+// getDependencyEdges can emit duplicate edges; ParentIDs is a set.
+func getDependencyEdges(lockfile *bunLockfile, keys []string, pkgByKey map[string]*extractor.Package, keySet map[string]bool) []depgraph.Edge {
+	var edges []depgraph.Edge
 	for _, key := range keys {
 		parent, ok := pkgByKey[key]
 		if !ok {
 			continue
 		}
-		deps, optionalDeps, peerDeps := packageDependencies(parsedLockfile.Packages[key])
-		addDepEdges(parent.ID, key, keySet, pkgByKey, deps, optionalDeps, peerDeps)
+		deps, optionalDeps, peerDeps := packageDependencies(lockfile.Packages[key])
+		edges = append(edges, depEdges(parent, key, keySet, pkgByKey, deps, optionalDeps, peerDeps)...)
 	}
 
-	for _, wsPath := range slices.Sorted(maps.Keys(parsedLockfile.Workspaces)) {
-		ws := parsedLockfile.Workspaces[wsPath]
-		parentID := "root"
+	for _, wsPath := range slices.Sorted(maps.Keys(lockfile.Workspaces)) {
+		ws := lockfile.Workspaces[wsPath]
+		var parent *extractor.Package
 		baseKey := ""
 		if wsPath != "" {
 			if member, ok := pkgByKey[ws.Name]; ok {
-				addParent(member, "root")
-				parentID = member.ID
+				edges = append(edges, depgraph.Edge{Child: member})
+				parent = member
 				baseKey = ws.Name
 			}
 		}
-		addDepEdges(parentID, baseKey, keySet, pkgByKey,
-			ws.Dependencies, ws.DevDependencies, ws.OptionalDependencies, ws.PeerDependencies)
+		edges = append(edges, depEdges(parent, baseKey, keySet, pkgByKey,
+			ws.Dependencies, ws.DevDependencies, ws.OptionalDependencies, ws.PeerDependencies)...)
 	}
-
-	return inventory.Inventory{Packages: packages}, errors.Join(errs...)
+	return edges
 }

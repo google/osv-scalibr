@@ -15,6 +15,7 @@
 package poetrylock_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -81,6 +82,15 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 }
 
+// testIDGenerator produces IDs unique across duplicate package names, unlike
+// mockidgenerator, and resettable per subtest, unlike SequentialIDGenerator.
+type testIDGenerator struct{ counter int }
+
+func (g *testIDGenerator) GenerateID(name string) (string, error) {
+	g.counter++
+	return fmt.Sprintf("id-%s-%d", name, g.counter), nil
+}
+
 func TestExtractor_Extract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
@@ -113,6 +123,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:     "numpy",
+					ID:       "id-numpy-1",
 					Version:  "1.23.3",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/one-package.lock", 2),
@@ -130,6 +141,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:     "proto-plus",
+					ID:       "id-proto-plus-1",
 					Version:  "1.22.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/two-packages.lock", 2),
@@ -138,10 +150,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "protobuf",
-					Version:  "4.21.5",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/two-packages.lock", 16),
+					Name:      "protobuf",
+					ID:        "id-protobuf-2",
+					ParentIDs: map[string]bool{"id-proto-plus-1": true},
+					Version:   "4.21.5",
+					PURLType:  purl.TypePyPi,
+					Location:  extractor.LocationFromPathAndLine("testdata/two-packages.lock", 16),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -156,6 +170,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:     "emoji",
+					ID:       "id-emoji-1",
 					Version:  "2.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/one-package-with-metadata.lock", 2),
@@ -173,6 +188,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:     "ike",
+					ID:       "id-ike-1",
 					Version:  "0.2.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/source-git.lock", 2),
@@ -193,6 +209,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:     "appdirs",
+					ID:       "id-appdirs-1",
 					Version:  "1.4.4",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/source-legacy.lock", 2),
@@ -210,6 +227,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:     "numpy",
+					ID:       "id-numpy-1",
 					Version:  "1.23.3",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/optional-package.lock", 2),
@@ -226,16 +244,19 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "async-timeout",
-					Version:  "5.0.1",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 4),
+					Name:      "async-timeout",
+					ID:        "id-async-timeout-1",
+					ParentIDs: map[string]bool{"id-redis-8": true},
+					Version:   "5.0.1",
+					PURLType:  purl.TypePyPi,
+					Location:  extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 4),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
 				},
 				{
 					Name:     "factory-boy",
+					ID:       "id-factory-boy-2",
 					Version:  "3.3.1",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 17),
@@ -244,16 +265,19 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "faker",
-					Version:  "33.3.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 36),
+					Name:      "faker",
+					ID:        "id-faker-3",
+					ParentIDs: map[string]bool{"id-factory-boy-2": true},
+					Version:   "33.3.0",
+					PURLType:  purl.TypePyPi,
+					Location:  extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 36),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
 					Name:     "proto-plus",
+					ID:       "id-proto-plus-4",
 					Version:  "1.22.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 52),
@@ -263,6 +287,7 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:     "proto-plus",
+					ID:       "id-proto-plus-5",
 					Version:  "1.23.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 71),
@@ -271,43 +296,52 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "protobuf",
-					Version:  "4.25.5",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 90),
+					Name:      "protobuf",
+					ID:        "id-protobuf-6",
+					ParentIDs: map[string]bool{"id-proto-plus-4": true, "id-proto-plus-5": true},
+					Version:   "4.25.5",
+					PURLType:  purl.TypePyPi,
+					Location:  extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 90),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:     "python-dateutil",
-					Version:  "2.9.0.post0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 111),
+					Name:      "python-dateutil",
+					ID:        "id-python-dateutil-7",
+					ParentIDs: map[string]bool{"id-faker-3": true},
+					Version:   "2.9.0.post0",
+					PURLType:  purl.TypePyPi,
+					Location:  extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 111),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
-					Name:     "six",
-					Version:  "1.17.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 146),
+					Name:      "six",
+					ID:        "id-six-9",
+					ParentIDs: map[string]bool{"id-python-dateutil-7": true},
+					Version:   "1.17.0",
+					PURLType:  purl.TypePyPi,
+					Location:  extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 146),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:     "typing-extensions",
-					Version:  "4.12.2",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 158),
+					Name:      "typing-extensions",
+					ID:        "id-typing-extensions-10",
+					ParentIDs: map[string]bool{"id-faker-3": true},
+					Version:   "4.12.2",
+					PURLType:  purl.TypePyPi,
+					Location:  extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 158),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev", "test"},
 					},
 				},
 				{
 					Name:     "urllib3",
+					ID:       "id-urllib3-11",
 					Version:  "2.3.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 170),
@@ -317,6 +351,7 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:     "redis",
+					ID:       "id-redis-8",
 					Version:  "5.2.1",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/multiple-packages.v2.lock", 126),
@@ -334,6 +369,7 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:     "first-pkg",
+					ID:       "id-first-pkg-1",
 					Version:  "1.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/names-outside-package-block.lock", 5),
@@ -343,6 +379,7 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:     "second-pkg",
+					ID:       "id-second-pkg-2",
 					Version:  "2.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/names-outside-package-block.lock", 18),
@@ -356,6 +393,9 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
+			extractor.SetIDGenerator(&testIDGenerator{})
+			t.Cleanup(func() { extractor.SetIDGenerator(&extractor.RandomIDGenerator{}) })
+
 			extr, err := poetrylock.New(&cpb.PluginConfig{})
 			if err != nil {
 				t.Fatalf("poetrylock.New: %v", err)

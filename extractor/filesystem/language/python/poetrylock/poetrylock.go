@@ -21,13 +21,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/depgraph"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -52,6 +55,9 @@ type poetryLockPackage struct {
 	Optional bool                    `toml:"optional"`
 	Groups   []string                `toml:"groups"`
 	Source   poetryLockPackageSource `toml:"source"`
+	// Values are version constraint strings, inline tables or arrays of
+	// inline tables; only the keys (dependency names) are used.
+	Dependencies map[string]any `toml:"dependencies"`
 }
 
 type poetryLockFile struct {
@@ -137,7 +143,23 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		packages = append(packages, pkgDetails)
 	}
 
+	// poetry.lock does not record which dependencies are direct (that's in
+	// pyproject.toml), so no root edges are created.
+	edges := depgraph.EdgesByName(packages, func(i int) []string {
+		return slices.Sorted(maps.Keys(parsedLockfile.Packages[i].Dependencies))
+	}, normalizeName)
+	if err := depgraph.ApplyEdges(packages, edges); err != nil {
+		return inventory.Inventory{Packages: packages}, err
+	}
+
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+var nameNormalizeRe = regexp.MustCompile(`[-_.]+`)
+
+// normalizeName normalizes a PyPI package name per PEP 503.
+func normalizeName(name string) string {
+	return strings.ToLower(nameNormalizeRe.ReplaceAllString(name, "-"))
 }
 
 // extractPackageName parses a TOML key-value line and returns the unquoted
