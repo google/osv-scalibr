@@ -109,6 +109,7 @@ message Package {
   // TODO(#1847): Remove once the migration is complete.
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
+    PyprojectMetadata pyproject_metadata = 73;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
     APKPackageMetadata apk_metadata = 7;
     DPKGPackageMetadata dpkg_metadata = 8;
@@ -344,6 +345,21 @@ message PythonPackageMetadata {
   string author = 1;
   string author_email = 2;
   repeated string requires_dist = 3;
+}
+
+message PyprojectMetadata {
+  // Whether the manifest is declaring the "dependencies" property as dynamic.
+  // When this is the case, the actual dependency list is found elsewhere,
+  // and the metadata should be considered incomplete.
+  bool has_dynamic_dependencies = 1;
+
+  message DependencyGroup {
+    string name = 1;
+    repeated string dependencies = 2;
+  }
+
+  DependencyGroup dependencies = 2;
+  repeated DependencyGroup optional_dependencies = 3;
 }
 
 // The additional data found in npm packages.
