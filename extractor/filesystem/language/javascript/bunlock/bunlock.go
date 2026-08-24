@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -43,9 +44,18 @@ const (
 	Name = "javascript/bunlock"
 )
 
+type bunWorkspace struct {
+	Name                 string            `json:"name"`
+	Dependencies         map[string]string `json:"dependencies"`
+	DevDependencies      map[string]string `json:"devDependencies"`
+	PeerDependencies     map[string]string `json:"peerDependencies"`
+	OptionalDependencies map[string]string `json:"optionalDependencies"`
+}
+
 type bunLockfile struct {
-	Version  int              `json:"lockfileVersion"`
-	Packages map[string][]any `json:"packages"`
+	Version    int                     `json:"lockfileVersion"`
+	Workspaces map[string]bunWorkspace `json:"workspaces"`
+	Packages   map[string][]any        `json:"packages"`
 }
 
 // Extractor extracts npm packages from bun.lock files.
@@ -106,12 +116,96 @@ func structurePackageDetails(pkgs []any) (string, string, string, error) {
 		version = ""
 	}
 
-	// file dependencies do not have a semantic version recorded
-	if strings.HasPrefix(version, "file:") {
+	// file and workspace dependencies do not have a semantic version recorded
+	if strings.HasPrefix(version, "file:") || strings.HasPrefix(version, "workspace:") {
 		version = ""
 	}
 
 	return name, version, commit, nil
+}
+
+// packageDependencies returns the dependency name->range maps from a package
+// tuple. The metadata object's index varies by package kind (2 for registry
+// packages, 1 for file/git/workspace packages), so we take the first map
+// element after the spec string.
+func packageDependencies(pkgs []any) (deps, optionalDeps, peerDeps map[string]string) {
+	for _, elem := range pkgs[1:] {
+		if meta, ok := elem.(map[string]any); ok {
+			return stringMap(meta, "dependencies"), stringMap(meta, "optionalDependencies"), stringMap(meta, "peerDependencies")
+		}
+	}
+	return nil, nil, nil
+}
+
+func stringMap(meta map[string]any, key string) map[string]string {
+	obj, ok := meta[key].(map[string]any)
+	if !ok {
+		return nil
+	}
+	result := make(map[string]string, len(obj))
+	for k, v := range obj {
+		if s, ok := v.(string); ok {
+			result[k] = s
+		}
+	}
+	return result
+}
+
+// resolveDepKey resolves dependency depName of the package at lockfile key
+// pkgKey to the key of the installed instance, following npm-style nesting:
+// "a/b" + "c" tries "a/b/c", "a/c", then "c".
+func resolveDepKey(pkgKey, depName string, keys map[string]bool) (string, bool) {
+	prefix := pkgKey
+	for {
+		candidate := depName
+		if prefix != "" {
+			candidate = prefix + "/" + depName
+		}
+		if candidate != pkgKey && keys[candidate] {
+			return candidate, true
+		}
+		if prefix == "" {
+			return "", false
+		}
+		prefix = stripLastInstallName(prefix)
+	}
+}
+
+// stripLastInstallName removes the last install-name segment from a
+// "/"-joined key prefix. A scoped name ("@scope/name") is a single segment.
+func stripLastInstallName(prefix string) string {
+	i := strings.LastIndex(prefix, "/")
+	if i == -1 {
+		return ""
+	}
+	head := prefix[:i]
+	j := strings.LastIndex(head, "/")
+	if strings.HasPrefix(head[j+1:], "@") {
+		if j == -1 {
+			return ""
+		}
+		return head[:j]
+	}
+	return head
+}
+
+func addParent(pkg *extractor.Package, parentID string) {
+	if pkg.ParentIDs == nil {
+		pkg.ParentIDs = map[string]bool{}
+	}
+	pkg.ParentIDs[parentID] = true
+}
+
+// addDepEdges marks the resolved target of each dependency in depMaps as a
+// child of parentID, resolving names from lockfile key baseKey.
+func addDepEdges(parentID, baseKey string, keySet map[string]bool, pkgByKey map[string]*extractor.Package, depMaps ...map[string]string) {
+	for _, m := range depMaps {
+		for _, depName := range slices.Sorted(maps.Keys(m)) {
+			if childKey, ok := resolveDepKey(baseKey, depName, keySet); ok {
+				addParent(pkgByKey[childKey], parentID)
+			}
+		}
+	}
 }
 
 // Extract extracts packages from bun.lock files passed through the scan input.
@@ -129,12 +223,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	finder := linefinder.NewJSONLineFinder(b)
-	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
+	keys := slices.Sorted(maps.Keys(parsedLockfile.Packages))
+	packages := make([]*extractor.Package, 0, len(keys))
+	pkgByKey := make(map[string]*extractor.Package, len(keys))
+	keySet := make(map[string]bool, len(keys))
 
 	var errs []error
 
-	for key, pkg := range parsedLockfile.Packages {
-		name, version, commit, err := structurePackageDetails(pkg)
+	for _, key := range keys {
+		name, version, commit, err := structurePackageDetails(parsedLockfile.Packages[key])
 
 		if err != nil {
 			errs = append(errs, fmt.Errorf("could not extract '%s': %w", key, err))
@@ -143,7 +240,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		lineNum := finder.LineOf("packages." + gjson.Escape(key))
-		packages = append(packages, &extractor.Package{
+		pkg := &extractor.Package{
 			Name:     name,
 			Version:  version,
 			PURLType: purl.TypeNPM,
@@ -154,7 +251,40 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 				DepGroupVals: []string{},
 			},
 			Location: extractor.LocationFromPathAndLine(input.Path, lineNum),
-		})
+		}
+		packages = append(packages, pkg)
+
+		if _, err := pkg.RequireID(); err != nil {
+			errs = append(errs, err)
+
+			continue
+		}
+		pkgByKey[key] = pkg
+		keySet[key] = true
+	}
+
+	for _, key := range keys {
+		parent, ok := pkgByKey[key]
+		if !ok {
+			continue
+		}
+		deps, optionalDeps, peerDeps := packageDependencies(parsedLockfile.Packages[key])
+		addDepEdges(parent.ID, key, keySet, pkgByKey, deps, optionalDeps, peerDeps)
+	}
+
+	for _, wsPath := range slices.Sorted(maps.Keys(parsedLockfile.Workspaces)) {
+		ws := parsedLockfile.Workspaces[wsPath]
+		parentID := "root"
+		baseKey := ""
+		if wsPath != "" {
+			if member, ok := pkgByKey[ws.Name]; ok {
+				addParent(member, "root")
+				parentID = member.ID
+				baseKey = ws.Name
+			}
+		}
+		addDepEdges(parentID, baseKey, keySet, pkgByKey,
+			ws.Dependencies, ws.DevDependencies, ws.OptionalDependencies, ws.PeerDependencies)
 	}
 
 	return inventory.Inventory{Packages: packages}, errors.Join(errs...)
