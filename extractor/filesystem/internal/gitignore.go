@@ -58,7 +58,10 @@ func ParseDirForGitignore(fs scalibrfs.FS, dirPath string) (GitignorePattern, er
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
 	ps := []gitignore.Pattern{}
-	pathTokens := strings.Split(dirPath, "/")
+	var pathTokens []string
+	if dirPath != "" && dirPath != "." {
+		pathTokens = strings.Split(dirPath, "/")
+	}
 	for scanner.Scan() {
 		s := scanner.Text()
 		if !strings.HasPrefix(s, "#") && len(strings.TrimSpace(s)) > 0 {
