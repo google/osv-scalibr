@@ -15,6 +15,7 @@
 package bunlock_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -86,6 +87,15 @@ func TestExtractor_FileRequired(t *testing.T) {
 	}
 }
 
+// testIDGenerator produces IDs unique across duplicate package names, unlike
+// mockidgenerator, and resettable per subtest, unlike SequentialIDGenerator.
+type testIDGenerator struct{ counter int }
+
+func (g *testIDGenerator) GenerateID(name string) (string, error) {
+	g.counter++
+	return fmt.Sprintf("id-%s-%d", name, g.counter), nil
+}
+
 func TestExtractor_Extract(t *testing.T) {
 	loc := extractor.LocationFromPathAndLine
 	tests := []extracttest.TestTableEntry{
@@ -119,6 +129,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
+					ID:         "id-wrappy-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/one-package.json5", 12),
@@ -137,6 +149,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
+					ID:         "id-wrappy-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/one-package-dev.json5", 12),
@@ -156,6 +170,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
+					ID:         "id-wrappy-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/bad-tuple.json5", 13),
@@ -175,6 +191,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "wrappy",
+					ID:         "id-wrappy-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/bad-tuple.json5", 13),
@@ -193,6 +211,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/two-packages.json5", 13),
@@ -203,6 +223,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "wrappy",
+					ID:         "id-wrappy-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/two-packages.json5", 15),
@@ -221,6 +243,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-1",
+					ParentIDs:  map[string]bool{"root": true, "id-supports-color-2": true},
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/same-package-different-groups.json5", 15),
@@ -231,6 +255,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "supports-color",
+					ID:         "id-supports-color-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/same-package-different-groups.json5", 17),
@@ -249,6 +275,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "@typescript-eslint/types",
+					ID:         "id-@typescript-eslint/types-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "5.62.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/scoped-packages.json5", 12),
@@ -267,6 +295,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "@babel/code-frame",
+					ID:         "id-@babel/code-frame-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "7.26.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/scoped-packages-mixed.json5", 15),
@@ -277,6 +307,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "@babel/helper-validator-identifier",
+					ID:         "id-@babel/helper-validator-identifier-2",
+					ParentIDs:  map[string]bool{"id-@babel/code-frame-1": true},
 					Version:    "7.25.9",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/scoped-packages-mixed.json5", 17),
@@ -287,6 +319,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "js-tokens",
+					ID:         "id-js-tokens-3",
+					ParentIDs:  map[string]bool{"id-@babel/code-frame-1": true},
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/scoped-packages-mixed.json5", 19),
@@ -297,6 +331,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "picocolors",
+					ID:         "id-picocolors-4",
+					ParentIDs:  map[string]bool{"id-@babel/code-frame-1": true},
 					Version:    "1.1.1",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/scoped-packages-mixed.json5", 21),
@@ -307,6 +343,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "wrappy",
+					ID:         "id-wrappy-5",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.0.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/scoped-packages-mixed.json5", 23),
@@ -325,6 +363,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn",
+					ID:         "id-acorn-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "8.14.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/optional-package.json5", 15),
@@ -335,6 +375,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "fsevents",
+					ID:         "id-fsevents-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "0.3.8",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/optional-package.json5", 17),
@@ -345,6 +387,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "nan",
+					ID:         "id-nan-3",
+					ParentIDs:  map[string]bool{"id-fsevents-2": true},
 					Version:    "2.22.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/optional-package.json5", 19),
@@ -363,6 +407,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
+					ID:         "id-acorn-jsx-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "5.3.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/peer-dependencies-implicit.json5", 14),
@@ -373,6 +419,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "acorn",
+					ID:         "id-acorn-1",
+					ParentIDs:  map[string]bool{"id-acorn-jsx-2": true},
 					Version:    "8.14.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/peer-dependencies-implicit.json5", 12),
@@ -391,6 +439,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "acorn-jsx",
+					ID:         "id-acorn-jsx-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "5.3.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/peer-dependencies-explicit.json5", 15),
@@ -401,6 +451,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "acorn",
+					ID:         "id-acorn-1",
+					ParentIDs:  map[string]bool{"root": true, "id-acorn-jsx-2": true},
 					Version:    "8.14.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/peer-dependencies-explicit.json5", 13),
@@ -419,6 +471,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-styles",
+					ID:         "id-ansi-styles-1",
+					ParentIDs:  map[string]bool{"id-chalk-2": true},
 					Version:    "4.3.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 16),
@@ -429,6 +483,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "chalk",
+					ID:         "id-chalk-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "4.1.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 18),
@@ -439,6 +495,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "color-convert",
+					ID:         "id-color-convert-5",
+					ParentIDs:  map[string]bool{"id-ansi-styles-1": true},
 					Version:    "2.0.1",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 20),
@@ -449,6 +507,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "color-name",
+					ID:         "id-color-name-6",
+					ParentIDs:  map[string]bool{"id-color-convert-5": true},
 					Version:    "1.1.4",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 22),
@@ -459,6 +519,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-7",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "2.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 24),
@@ -469,6 +531,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "supports-color",
+					ID:         "id-supports-color-8",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "5.5.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 26),
@@ -479,6 +543,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "supports-color",
+					ID:         "id-supports-color-3",
+					ParentIDs:  map[string]bool{"id-chalk-2": true},
 					Version:    "7.2.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 28),
@@ -489,6 +555,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-9",
+					ParentIDs:  map[string]bool{"id-supports-color-8": true},
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 30),
@@ -499,6 +567,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-4",
+					ParentIDs:  map[string]bool{"id-supports-color-3": true},
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies.json5", 32),
@@ -517,6 +587,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "ansi-styles",
+					ID:         "id-ansi-styles-1",
+					ParentIDs:  map[string]bool{"id-chalk-2": true},
 					Version:    "4.3.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies-dup.json5", 16),
@@ -527,6 +599,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "chalk",
+					ID:         "id-chalk-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "4.1.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies-dup.json5", 18),
@@ -537,6 +611,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "color-convert",
+					ID:         "id-color-convert-3",
+					ParentIDs:  map[string]bool{"id-ansi-styles-1": true},
 					Version:    "2.0.1",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies-dup.json5", 20),
@@ -547,6 +623,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "color-name",
+					ID:         "id-color-name-4",
+					ParentIDs:  map[string]bool{"id-color-convert-3": true},
 					Version:    "1.1.4",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies-dup.json5", 22),
@@ -557,6 +635,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-5",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "2.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies-dup.json5", 24),
@@ -567,6 +647,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "supports-color",
+					ID:         "id-supports-color-6",
+					ParentIDs:  map[string]bool{"root": true, "id-chalk-2": true},
 					Version:    "7.2.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies-dup.json5", 26),
@@ -577,6 +659,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-7",
+					ParentIDs:  map[string]bool{"id-supports-color-6": true},
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/nested-dependencies-dup.json5", 28),
@@ -595,6 +679,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-1",
+					ParentIDs:  map[string]bool{"id-supports-color-2": true},
 					Version:    "4.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/alias.json5", 13),
@@ -605,6 +691,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "supports-color",
+					ID:         "id-supports-color-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "7.2.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/alias.json5", 15),
@@ -615,6 +703,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "supports-color",
+					ID:         "id-supports-color-3",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "6.1.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/alias.json5", 17),
@@ -625,6 +715,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "has-flag",
+					ID:         "id-has-flag-4",
+					ParentIDs:  map[string]bool{"id-supports-color-3": true},
 					Version:    "3.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/alias.json5", 19),
@@ -643,6 +735,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "@babel/helper-plugin-utils",
+					ID:         "id-@babel/helper-plugin-utils-1",
+					ParentIDs:  map[string]bool{"id-babel-preset-php-7": true},
 					Version:    "7.26.5",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 22),
@@ -653,6 +747,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "@babel/helper-string-parser",
+					ID:         "id-@babel/helper-string-parser-2",
+					ParentIDs:  map[string]bool{"id-@babel/types-5": true},
 					Version:    "7.25.9",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 24),
@@ -663,6 +759,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "@babel/helper-validator-identifier",
+					ID:         "id-@babel/helper-validator-identifier-3",
+					ParentIDs:  map[string]bool{"id-@babel/types-5": true},
 					Version:    "7.25.9",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 26),
@@ -673,6 +771,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "@babel/parser",
+					ID:         "id-@babel/parser-4",
+					ParentIDs:  map[string]bool{"id-babel-preset-php-7": true},
 					Version:    "7.26.5",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 28),
@@ -683,6 +783,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "@babel/types",
+					ID:         "id-@babel/types-5",
+					ParentIDs:  map[string]bool{"id-@babel/parser-4": true},
 					Version:    "7.26.5",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 30),
@@ -692,10 +794,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "@prettier/sync",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/commits.json5", 32),
+					Name:      "@prettier/sync",
+					ID:        "id-@prettier/sync-6",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/commits.json5", 32),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "527e8ce",
 					},
@@ -704,10 +808,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "babel-preset-php",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/commits.json5", 34),
+					Name:      "babel-preset-php",
+					ID:        "id-babel-preset-php-7",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/commits.json5", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "1ae6dc1267500360b411ec711b8aeac8c68b2246",
 					},
@@ -716,10 +822,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "is-number",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/commits.json5", 36),
+					Name:      "is-number",
+					ID:        "id-is-number-8",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/commits.json5", 36),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1",
 					},
@@ -728,10 +836,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "is-number",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/commits.json5", 38),
+					Name:      "is-number",
+					ID:        "id-is-number-9",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/commits.json5", 38),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac058",
 					},
@@ -740,10 +850,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "is-number",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/commits.json5", 40),
+					Name:      "is-number",
+					ID:        "id-is-number-10",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/commits.json5", 40),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b7aef34",
 					},
@@ -753,6 +865,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "jquery",
+					ID:         "id-jquery-11",
+					ParentIDs:  map[string]bool{"id-slick-carousel-17": true},
 					Version:    "3.7.1",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 42),
@@ -763,6 +877,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "lodash",
+					ID:         "id-lodash-12",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.3.1",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 44),
@@ -773,6 +889,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "make-synchronized",
+					ID:         "id-make-synchronized-13",
+					ParentIDs:  map[string]bool{"id-@prettier/sync-6": true},
 					Version:    "0.2.9",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 46),
@@ -783,6 +901,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "php-parser",
+					ID:         "id-php-parser-14",
+					ParentIDs:  map[string]bool{"id-babel-preset-php-7": true},
 					Version:    "2.2.0",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 48),
@@ -793,6 +913,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "prettier",
+					ID:         "id-prettier-15",
+					ParentIDs:  map[string]bool{"id-@prettier/sync-6": true},
 					Version:    "3.4.2",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 50),
@@ -802,10 +924,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "raven-js",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/commits.json5", 52),
+					Name:      "raven-js",
+					ID:        "id-raven-js-16",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/commits.json5", 52),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "91ef2d4",
 					},
@@ -814,10 +938,12 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "slick-carousel",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/commits.json5", 54),
+					Name:      "slick-carousel",
+					ID:        "id-slick-carousel-17",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/commits.json5", 54),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fc6f7d8",
 					},
@@ -827,6 +953,8 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "stopwords",
+					ID:         "id-stopwords-18",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "0.0.1",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/commits.json5", 56),
@@ -845,6 +973,8 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: []*extractor.Package{
 				{
 					Name:       "etag",
+					ID:         "id-etag-1",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/files.json5", 15),
@@ -855,9 +985,79 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:       "lodash",
+					ID:         "id-lodash-2",
+					ParentIDs:  map[string]bool{"root": true},
 					Version:    "1.3.1",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/files.json5", 17),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "workspaces",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/workspaces.json5",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "has-flag",
+					ID:         "id-has-flag-1",
+					ParentIDs:  map[string]bool{"root": true, "id-supports-color-4": true},
+					Version:    "4.0.0",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/workspaces.json5", 26),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "ms",
+					ID:         "id-ms-2",
+					ParentIDs:  map[string]bool{"root": true},
+					Version:    "2.1.3",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/workspaces.json5", 28),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "pkg-a",
+					ID:         "id-pkg-a-3",
+					ParentIDs:  map[string]bool{"root": true},
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/workspaces.json5", 30),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "supports-color",
+					ID:         "id-supports-color-4",
+					ParentIDs:  map[string]bool{"id-pkg-a-3": true},
+					Version:    "7.2.0",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/workspaces.json5", 32),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "wrappy",
+					ID:         "id-wrappy-5",
+					ParentIDs:  map[string]bool{"root": true},
+					Version:    "1.0.2",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/workspaces.json5", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -872,10 +1072,12 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "uWebSockets.js",
-					Version:  "",
-					PURLType: purl.TypeNPM,
-					Location: loc("testdata/blog-sample.json5", 11),
+					Name:      "uWebSockets.js",
+					ID:        "id-uWebSockets.js-1",
+					ParentIDs: map[string]bool{"root": true},
+					Version:   "",
+					PURLType:  purl.TypeNPM,
+					Location:  loc("testdata/blog-sample.json5", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6609a88",
 					},
@@ -889,6 +1091,9 @@ func TestExtractor_Extract(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
+			extractor.SetIDGenerator(&testIDGenerator{})
+			t.Cleanup(func() { extractor.SetIDGenerator(&extractor.RandomIDGenerator{}) })
+
 			extr, err := bunlock.New(&cpb.PluginConfig{})
 			if err != nil {
 				t.Fatalf("bunlock.New: %v", err)
