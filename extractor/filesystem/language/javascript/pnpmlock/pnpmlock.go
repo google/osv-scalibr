@@ -168,7 +168,7 @@ func parseNameAtVersion(value string) (name string, version string) {
 	return matches[1], matches[2]
 }
 
-func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
+func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path string) ([]*extractor.Package, error) {
 	packages := make([]*extractor.Package, 0, len(lockfile.Packages))
 	errs := []error{}
 
@@ -211,6 +211,7 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
 			depGroups = append(depGroups, "dev")
 		}
 
+		lineNum := packageLineMap[s]
 		packages = append(packages, &extractor.Package{
 			Name:     name,
 			Version:  version,
@@ -221,6 +222,7 @@ func parsePnpmLock(lockfile pnpmLockfile) ([]*extractor.Package, error) {
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: depGroups,
 			},
+			Location: extractor.LocationFromPathAndLine(path, lineNum),
 		})
 	}
 
@@ -257,25 +259,55 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from a pnpm-lock.yaml file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var parsedLockfile *pnpmLockfile
-
-	err := yaml.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
-	if err != nil && !errors.Is(err, io.EOF) {
+	var root yaml.Node
+	if err := yaml.NewDecoder(input.Reader).Decode(&root); err != nil {
+		if errors.Is(err, io.EOF) {
+			return inventory.Inventory{Packages: []*extractor.Package{}}, nil
+		}
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
-	// this will happen if the file is empty
-	if parsedLockfile == nil {
-		parsedLockfile = &pnpmLockfile{}
+	var parsedLockfile pnpmLockfile
+	if err := root.Decode(&parsedLockfile); err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
-	packages, err := parsePnpmLock(*parsedLockfile)
-	for i := range packages {
-		packages[i].Location = extractor.LocationFromPath(input.Path)
-	}
+	packageLineMap := findLineNumbers(&root)
 
+	packages, err := parsePnpmLock(parsedLockfile, packageLineMap, input.Path)
 	return inventory.Inventory{Packages: packages}, err
+}
+
+// findLineNumbers goes through the Node tree to find the line numbers for each package.
+func findLineNumbers(root *yaml.Node) map[string]int {
+	results := make(map[string]int)
+	if len(root.Content) == 0 {
+		return results
+	}
+	doc := root.Content[0]
+
+	if doc.Kind != yaml.MappingNode {
+		return results // empty results
+	}
+
+	var packagesNode *yaml.Node
+	// Note: increment by 2 to iterate from key to key (skip the value).
+	for i := 0; i < len(doc.Content); i += 2 {
+		if doc.Content[i].Value == "packages" {
+			packagesNode = doc.Content[i+1]
+			break
+		}
+	}
+
+	if packagesNode == nil || packagesNode.Kind != yaml.MappingNode {
+		return results // empty results
+	}
+	// Note: increment by 2 to iterate from key to key (skip the value).
+	for i := 0; i < len(packagesNode.Content); i += 2 {
+		keyNode := packagesNode.Content[i]
+		results[keyNode.Value] = keyNode.Line
+	}
+	return results
 }
 
 var _ filesystem.Extractor = Extractor{}

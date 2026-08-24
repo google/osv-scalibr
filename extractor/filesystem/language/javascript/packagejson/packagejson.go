@@ -26,6 +26,7 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/inventory"
@@ -33,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/tidwall/gjson"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -64,9 +66,10 @@ type packageJSON struct {
 
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	Stats               stats.Collector
-	maxFileSizeBytes    int64
-	includeDependencies bool
+	Stats                         stats.Collector
+	maxFileSizeBytes              int64
+	includeDependencies           bool
+	includeDependencyRequirements bool
 }
 
 // New returns a package.json extractor.
@@ -77,6 +80,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	}
 
 	includeDependencies := false
+	includeDependencyRequirements := false
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavascriptPackageJsonConfig {
 		return c.GetJavascriptPackageJson()
 	})
@@ -85,11 +89,13 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 		}
 		includeDependencies = specific.GetIncludeDependencies()
+		includeDependencyRequirements = specific.GetIncludeDependencyRequirements()
 	}
 
 	return &Extractor{
-		maxFileSizeBytes:    maxFileSizeBytes,
-		includeDependencies: includeDependencies,
+		maxFileSizeBytes:              maxFileSizeBytes,
+		includeDependencies:           includeDependencies,
+		includeDependencyRequirements: includeDependencyRequirements,
 	}, nil
 }
 
@@ -136,14 +142,10 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from package.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	pkgs, err := parse(input.Path, input.Reader, e.includeDependencies)
+	pkgs, err := e.parse(input.Path, input.Reader)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
 		return inventory.Inventory{}, fmt.Errorf("packagejson.parse: %w", err)
-	}
-
-	for _, p := range pkgs {
-		p.Location = extractor.LocationFromPath(input.Path)
 	}
 
 	e.reportFileExtracted(input.Path, input.Info, nil)
@@ -165,11 +167,17 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 	})
 }
 
-func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Package, error) {
-	dec := json.NewDecoder(r)
+// parse parses a package.json file and returns a list of packages.
+func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error) {
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	finder := linefinder.NewJSONLineFinder(content)
 
 	var p packageJSON
-	if err := dec.Decode(&p); err != nil {
+	if err := json.Unmarshal(content, &p); err != nil {
 		log.Debugf("package.json file %s json decode failed: %v", path, err)
 		// TODO(b/281023532): We should not mark the overall SCALIBR scan as failed if we can't parse a file.
 		return nil, fmt.Errorf("failed to parse package.json file: %w", err)
@@ -189,18 +197,38 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 	}
 
 	var pkgs []*extractor.Package
+
+	// Find the line number of the root "name" key.
+	// This "root" package is extracted separately from the other package dependencies.
+	nameLine := finder.LineOf("name")
+	if nameLine == 0 {
+		// This should never happen because SCALIBR will not extract a package.json
+		// file that does not have a "name" key.
+		log.Debugf("could not find line number for name field in package.json file %s", path)
+	}
+
+	rootLoc := extractor.LocationFromPath(path)
+	rootLoc.Descriptor.File.LineNumber = nameLine
+
+	metadata := &metadata.JavascriptPackageJSONMetadata{
+		Author:       p.Author,
+		Maintainers:  removeEmptyPersons(p.Maintainers),
+		Contributors: removeEmptyPersons(p.Contributors),
+	}
+
+	if e.includeDependencyRequirements {
+		metadata.Dependencies = p.Dependencies
+	}
+
 	pkgs = append(pkgs, &extractor.Package{
 		Name:     p.Name,
 		Version:  p.Version,
 		PURLType: purl.TypeNPM,
-		Metadata: &metadata.JavascriptPackageJSONMetadata{
-			Author:       p.Author,
-			Maintainers:  removeEmptyPersons(p.Maintainers),
-			Contributors: removeEmptyPersons(p.Contributors),
-		},
+		Location: rootLoc,
+		Metadata: metadata,
 	})
 
-	if includeDependencies {
+	if e.includeDependencies {
 		for name, version := range p.Dependencies {
 			c, err := semver.NPM.ParseConstraint(version)
 			if err != nil {
@@ -212,6 +240,10 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 				log.Debugf("failed to calculate min NPM version for dependency %s in %s with constraint %s: %v", name, path, version, err)
 				continue
 			}
+
+			lineNum := finder.LineOf("dependencies." + gjson.Escape(name))
+
+			loc := extractor.LocationFromPathAndLine(path, lineNum)
 			pkgs = append(pkgs, &extractor.Package{
 				Name: name,
 				// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
@@ -220,6 +252,7 @@ func parse(path string, r io.Reader, includeDependencies bool) ([]*extractor.Pac
 				// does not parse out the build value, so that need to be fixed first.
 				Version:  v.Canon(false),
 				PURLType: purl.TypeNPM,
+				Location: loc,
 			})
 		}
 	}

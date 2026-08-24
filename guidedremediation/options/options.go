@@ -46,6 +46,7 @@ type FixVulnsOptions struct {
 	ResolveClient     resolve.Client                     // Client for dependency information.
 	MavenClient       *datasource.MavenRegistryAPIClient // Client for fetching Maven dependency information, may be nil.
 	DepCachePopulator DependencyCachePopulator           // Interface for populating the cache of the resolve.Client. Can be nil.
+	ProjectRoot       string                             // Optional directory path to scan for local modules.
 }
 
 // RemediationOptions are the configuration options for vulnerability remediation.
@@ -84,4 +85,5 @@ type UpdateOptions struct {
 
 	IgnoreDev     bool           // Whether to ignore updates on dev dependencies
 	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
+	ProjectRoot   string         // Optional directory path to scan for local modules.
 }

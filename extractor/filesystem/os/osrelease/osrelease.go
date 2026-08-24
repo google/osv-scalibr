@@ -17,6 +17,7 @@ package osrelease
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"os"
 	"strings"
@@ -24,9 +25,18 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
+// ErrNotADistro is returned when GetOSRelease is passed a filesystem which isn't
+// a Linux ditribution.
+var ErrNotADistro error = errors.New("does not have expected distro os-release file")
+
 // GetOSRelease tries different os-release locations and parses the first found.
 func GetOSRelease(fs scalibrfs.FS) (map[string]string, error) {
 	paths := []string{"etc/os-release", "usr/lib/os-release"}
+
+	if _, err := fs.Stat("etc"); os.IsNotExist(err) {
+		// Probably not a linux filesystem
+		return nil, ErrNotADistro
+	}
 
 	for _, p := range paths {
 		f, err := fs.Open(p)

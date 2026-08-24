@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation"
 	"github.com/google/osv-scalibr/veles/velestest"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -206,6 +207,125 @@ func TestExtract(t *testing.T) {
 			got := gotInv.Secrets
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty(), cmpopts.SortSlices(less)); diff != "" {
 				t.Errorf("Extract() diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+type fakeSensitiveDetector struct {
+	hotword string
+	info    sensitiveinformation.SensitiveInformation
+}
+
+func (d *fakeSensitiveDetector) MaxSecretLen() uint32 { return uint32(len(d.hotword)) }
+
+func (d *fakeSensitiveDetector) Detect(data []byte) ([]veles.Secret, []int) {
+	var secrets []veles.Secret
+	var positions []int
+	idx := strings.Index(string(data), d.hotword)
+	if idx != -1 {
+		secrets = append(secrets, d.info)
+		positions = append(positions, idx)
+	}
+	return secrets, positions
+}
+
+func TestExtract_SensitiveInformation(t *testing.T) {
+	path := "/foo/bar/baz.json"
+	sensitiveInfo := sensitiveinformation.SensitiveInformation{
+		InfoType: sensitiveinformation.InfoType{
+			Name:        "PERSONAL_NUMBER",
+			Sensitivity: sensitiveinformation.SensitivityLevelHigh,
+		},
+		Likelihood: sensitiveinformation.LikelihoodVeryLikely,
+		Raw:        []byte("IMPORTANT_NUMBER"),
+	}
+
+	cases := []struct {
+		name        string
+		detectors   []veles.Detector
+		input       string
+		want        []*inventory.SensitiveInformation
+		wantSecrets []*inventory.Secret
+	}{
+		{
+			name: "empty input",
+			detectors: []veles.Detector{
+				&fakeSensitiveDetector{
+					hotword: "IMPORTANT_NUMBER",
+					info:    sensitiveInfo,
+				},
+			},
+			input: "",
+			want:  nil,
+		},
+		{
+			name: "single match",
+			detectors: []veles.Detector{
+				&fakeSensitiveDetector{
+					hotword: "IMPORTANT_NUMBER",
+					info:    sensitiveInfo,
+				},
+			},
+			input: "the number is IMPORTANT_NUMBER",
+			want: []*inventory.SensitiveInformation{
+				{
+					Finding:  sensitiveInfo,
+					Location: location.FromPath(path),
+				},
+			},
+		},
+		{
+			name: "mixed findings",
+			detectors: []veles.Detector{
+				&fakeSensitiveDetector{
+					hotword: "IMPORTANT_NUMBER",
+					info:    sensitiveInfo,
+				},
+				velestest.NewFakeDetector("FOO"),
+			},
+			input: "FOO IMPORTANT_NUMBER",
+			want: []*inventory.SensitiveInformation{
+				{
+					Finding:  sensitiveInfo,
+					Location: location.FromPath(path),
+				},
+			},
+			wantSecrets: []*inventory.Secret{
+				{
+					Secret:   velestest.NewFakeStringSecret("FOO"),
+					Location: location.FromPath(path),
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			engine, err := veles.NewDetectionEngine(tc.detectors)
+			if err != nil {
+				t.Fatalf("veles.NewDetectionEngine() err: %v", err)
+			}
+			e := secrets.NewWithEngine(engine)
+			input := &filesystem.ScanInput{
+				FS:     scalibrfs.DirFS("."),
+				Path:   path,
+				Reader: strings.NewReader(tc.input),
+			}
+			gotInv, err := e.Extract(t.Context(), input)
+			if err != nil {
+				t.Errorf("Extract() err=%v, want nil", err)
+			}
+			if len(gotInv.Packages) > 0 || len(gotInv.GenericFindings) > 0 {
+				t.Errorf("Extract() got inventory other than secrets or sensitive information: %v", gotInv)
+			}
+
+			if diff := cmp.Diff(tc.want, gotInv.SensitiveInformation, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Extract() sensitive information diff (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tc.wantSecrets, gotInv.Secrets, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Extract() secrets diff (-want +got):\n%s", diff)
 			}
 		})
 	}

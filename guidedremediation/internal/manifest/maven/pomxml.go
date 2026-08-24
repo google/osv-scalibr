@@ -187,11 +187,25 @@ func (m *mavenManifest) PatchRequirement(req resolve.RequirementVersion) error {
 
 type readWriter struct {
 	*datasource.MavenRegistryAPIClient
+
+	projectRoot string
 }
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
-func GetReadWriter(client *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
-	return readWriter{MavenRegistryAPIClient: client}, nil
+// projectRoot is the directory path to scan for local Maven modules.
+func GetReadWriter(client *datasource.MavenRegistryAPIClient, projectRoot string) (manifest.ReadWriter, error) {
+	if projectRoot != "" {
+		absProjectRoot, err := filepath.Abs(projectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get absolute path for project root %q: %w", projectRoot, err)
+		}
+		vol := filepath.VolumeName(absProjectRoot) + "/"
+		projectRoot, err = filepath.Rel(vol, absProjectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make project root %q relative to volume %q: %w", absProjectRoot, vol, err)
+		}
+	}
+	return readWriter{MavenRegistryAPIClient: client, projectRoot: projectRoot}, nil
 }
 
 // System returns the ecosystem of this ReadWriter.
@@ -204,10 +218,46 @@ func (r readWriter) SupportedStrategies() []strategy.Strategy {
 	return []strategy.Strategy{strategy.StrategyOverride}
 }
 
+// isPOMFile returns true if the given path is a Maven POM file.
+// It matches "pom.xml", "pom-*.xml", and "*-pom.xml".
+func isPOMFile(path string) bool {
+	base := strings.ToLower(filepath.Base(path))
+	if base == "pom.xml" {
+		return true
+	}
+	if !strings.HasSuffix(base, ".xml") {
+		return false
+	}
+	name := strings.TrimSuffix(base, ".xml")
+	return strings.HasPrefix(name, "pom-") || strings.HasSuffix(name, "-pom")
+}
+
 // Read parses the manifest from the given file.
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
 	ctx := context.Background()
 	path = filepath.ToSlash(path)
+	scanPaths := []string{path}
+	if r.projectRoot != "" {
+		resolvedProjectRoot := filepath.ToSlash(r.projectRoot)
+		stat, err := fsys.Stat(resolvedProjectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to stat project root %q: %w", resolvedProjectRoot, err)
+		}
+		if !stat.IsDir() {
+			return nil, fmt.Errorf("project root %q is not a directory", resolvedProjectRoot)
+		}
+		entries, err := fsys.ReadDir(resolvedProjectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read project root directory %q: %w", resolvedProjectRoot, err)
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() && isPOMFile(entry.Name()) {
+				// Add all found POM files to the scan paths.
+				scanPaths = append(scanPaths, filepath.ToSlash(filepath.Join(resolvedProjectRoot, entry.Name())))
+			}
+		}
+	}
+	mavenutil.DiscoverModules(&scalibrfs.ScanRoot{FS: fsys, Path: ""}, scanPaths, r.MavenRegistryAPIClient)
 	f, err := fsys.Open(path)
 	if err != nil {
 		return nil, err

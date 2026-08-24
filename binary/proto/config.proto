@@ -37,7 +37,11 @@ message PluginConfig {
   // If true, do not try to create google.DefaultClient for Artifact Registry
   // during dependency resolution.
   bool disable_google_auth = 4;
-  // The user agent to use when making requests.
+  // The user agent to use when running SCALIBR as a CLI binary. If specified,
+  // the CLI passes this value to initialize the client factory.
+  // When calling SCALIBR as a Go library, this field is ignored; instead, the
+  // caller should configure the user agent directly in their ClientFactories
+  // implementation.
   string user_agent = 5;
 
   // Config values that only apply to a single plugin.
@@ -45,7 +49,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
-  reserved 48 to 56, 59 to 61, 66 to 67;
+  reserved 48 to 56, 59 to 61, 66 to 67, 79 to 80;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
@@ -94,6 +98,7 @@ message PluginSpecificConfig {
     GoModConfig go_mod = 45;
     WordpressPluginsConfig wordpress_plugins = 46;
     MariadbConfig mariadb = 47;
+    DotnetPaketConfig dotnet_paket = 77;
     OSVLocalConfig osvlocal = 57;
     CodeServerConfig code_server = 58;
     DenoJsonConfig denojson = 62;
@@ -108,6 +113,8 @@ message PluginSpecificConfig {
     HCPIdentityConfig hcp_identity = 73;
     HerokuExpirationConfig heroku_expiration = 74;
     HuggingfaceMetaConfig huggingface_meta = 75;
+    ContainerdRuntimeConfig containerd_runtime = 76;
+    DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
   }
 }
 
@@ -195,6 +202,9 @@ message SDPInspectConfig {
 
 message POMXMLNetConfig {
   // The URL of the upstream Maven registry.
+  // Supports the format "MIRROR_URL[ORIGIN_URL1,ORIGIN_URL2,...]" to replace
+  // specific origin repository URLs found in POMs with the mirror URL. If [...]
+  // is omitted, only the default registry is set without replacing POM URLs.
   string upstream_registry = 1;
   // If true, use deps.dev requirements API for dependency resolution.
   bool deps_dev_requirements = 2;
@@ -392,6 +402,20 @@ message DotnetPeConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message DotnetPaketConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message DotnetProjectAssetsJsonConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
 message GemspecConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
@@ -458,6 +482,10 @@ message JavaArchiveConfig {
   // Configures if JAR files should be extracted from filenames when no
   // "pom.properties" is present.
   optional bool extract_from_filename = 5;
+  // Enable extraction from embedded "pom.xml", rather than "pom.properties".
+  // These carry more complete information, but also require more processing,
+  // which could fail. Conversely, "pom.properties" is very lightweight.
+  optional bool extract_from_pom_xml = 7;
   // Configures if JAR files should be hashed with base64(sha1()).
   optional bool hash_jars = 6;
 }
@@ -469,6 +497,9 @@ message JavascriptPackageJsonConfig {
   int64 max_file_size_bytes = 1;
   // Specifies whether to extract dependencies.
   bool include_dependencies = 2;
+  // Specifies whether to extract dependency requirements for the "root" package
+  // (the one represented by the package.json file itself).
+  bool include_dependency_requirements = 3;
 }
 
 message JavascriptPackageLockJsonConfig {
@@ -504,6 +535,8 @@ message PythonWheelEggConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // If enabled, extract dependency requirements from METADATA files.
+  bool extract_dependencies = 2;
 }
 
 message GoModConfig {
@@ -556,4 +589,9 @@ message QCOW2Config {
   int64 max_file_size_bytes = 1;
   // The password the plugin requires to extract the encrypted .qcow2 file
   string password = 2;
+}
+
+message ContainerdRuntimeConfig {
+  // The local path to the containerd socket.
+  string socket_addr = 1;
 }

@@ -139,22 +139,22 @@ Package: curl
 		{
 			desc: "some_pkgs_found_in_info_and_in_main_repo",
 			txt: `
--- var/lib/dpkg/info/some.list --
+-- var/lib/dpkg/info/dpkg-pkg-name.list --
 /some/path
 /path/to/file-in-info
 /some/other/path
 -- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
-Package: file-in-info
+Package: dpkg-pkg-name
 `,
 			packages: []*extractor.Package{
 				{
-					Name:     "file-in-info",
+					Name:     "launguage-pkg",
 					Location: extractor.LocationFromPath("path/to/file-in-info"),
 				},
 			},
 			wantPackages: []*extractor.Package{
 				{
-					Name:     "file-in-info",
+					Name:     "launguage-pkg",
 					Location: extractor.LocationFromPath("path/to/file-in-info"),
 					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{{
 						Plugin:          dpkg.Name,

@@ -147,7 +147,7 @@ func TestExtract(t *testing.T) {
 					Name:     "jupyterlab",
 					Version:  "3.1.12",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 2),
 				},
 			},
 		},

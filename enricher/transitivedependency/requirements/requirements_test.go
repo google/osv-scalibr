@@ -15,23 +15,26 @@
 package requirements_test
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/enricher"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/mockidgenerator"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/extractor"
 	requirementsextractor "github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestEnricher_Enrich(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
@@ -58,6 +61,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 			{
 				Name:     "alice",
+				ID:       "id-for-alice",
 				PURLType: purl.TypePyPi,
 				Location: extractor.LocationFromPath("testdata/requirements.txt"),
 				Metadata: &requirementsextractor.Metadata{Requirement: "alice"},
@@ -65,6 +69,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 			{
 				Name:     "bob",
+				ID:       "id-for-bob",
 				Version:  "2.0.0",
 				PURLType: purl.TypePyPi,
 				Location: extractor.LocationFromPath("testdata/requirements.txt"),
@@ -74,6 +79,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			{
 				// Hash checking mode.
 				Name:     "hash1",
+				ID:       "id-for-hash1",
 				Version:  "1.0.0",
 				PURLType: purl.TypePyPi,
 				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
@@ -83,6 +89,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			{
 				// Hash checking mode.
 				Name:     "hash2",
+				ID:       "id-for-hash2",
 				Version:  "2.0.0",
 				PURLType: purl.TypePyPi,
 				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
@@ -93,11 +100,12 @@ func TestEnricher_Enrich(t *testing.T) {
 	}
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe.yaml")
-	enricher, err := requirements.New(&cpb.PluginConfig{})
+	enricher, err := requirements.New(configtest.NewFakePluginConfig())
 	if err != nil {
 		log.Errorf("requirements.New(): %v", err)
 	}
 	enricher.(*requirements.Enricher).Client = resolutionClient
+
 	err = enricher.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("failed to enrich: %v", err)
@@ -122,56 +130,69 @@ func TestEnricher_Enrich(t *testing.T) {
 				Plugins:  []string{"java/pomxml"},
 			},
 			{
-				Name:     "alice",
-				Version:  "1.0.0",
-				PURLType: purl.TypePyPi,
-				Location: extractor.LocationFromPath("testdata/requirements.txt"),
-				Metadata: &requirementsextractor.Metadata{Requirement: "alice"},
-				Plugins:  []string{"python/requirements", "transitivedependency/requirements"},
+				Name:      "alice",
+				ID:        "id-for-alice",
+				Version:   "1.0.0",
+				PURLType:  purl.TypePyPi,
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
+				Metadata:  &requirementsextractor.Metadata{Requirement: "alice"},
+				Plugins:   []string{"python/requirements", "transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
-				Name:     "bob",
-				Version:  "2.0.0",
-				PURLType: purl.TypePyPi,
-				Location: extractor.LocationFromPath("testdata/requirements.txt"),
-				Metadata: &requirementsextractor.Metadata{VersionComparator: "==", Requirement: "bob==2.0.0"},
-				Plugins:  []string{"python/requirements", "transitivedependency/requirements"},
+				Name:      "bob",
+				ID:        "id-for-bob",
+				Version:   "2.0.0",
+				PURLType:  purl.TypePyPi,
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
+				Metadata:  &requirementsextractor.Metadata{VersionComparator: "==", Requirement: "bob==2.0.0"},
+				Plugins:   []string{"python/requirements", "transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"root": true},
 			},
 			{
-				Name:     "chuck",
-				Version:  "2.0.0",
-				PURLType: purl.TypePyPi,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/requirements.txt"),
-				Plugins:  []string{"transitivedependency/requirements"},
+				Name:      "chuck",
+				ID:        "dummy-id-chuck",
+				Version:   "2.0.0",
+				PURLType:  purl.TypePyPi,
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
+				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"id-for-bob": true},
 			},
 			{
-				Name:     "dave",
-				Version:  "2.0.0",
-				PURLType: purl.TypePyPi,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/requirements.txt"),
-				Plugins:  []string{"transitivedependency/requirements"},
+				Name:      "dave",
+				ID:        "dummy-id-dave",
+				Version:   "2.0.0",
+				PURLType:  purl.TypePyPi,
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
+				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"id-for-bob": true},
 			},
 			{
-				Name:     "eve",
-				Version:  "1.5.0",
-				PURLType: purl.TypePyPi,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/requirements.txt"),
-				Plugins:  []string{"transitivedependency/requirements"},
+				Name:      "eve",
+				ID:        "dummy-id-eve",
+				Version:   "1.5.0",
+				PURLType:  purl.TypePyPi,
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
+				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"dummy-id-dave": true},
 			},
 			{
-				Name:     "frank",
-				Version:  "2.0.0",
-				PURLType: purl.TypePyPi,
-				ScanRoot: "testdata",
-				Location: extractor.LocationFromPath("testdata/requirements.txt"),
-				Plugins:  []string{"transitivedependency/requirements"},
+				Name:      "frank",
+				ID:        "dummy-id-frank",
+				Version:   "2.0.0",
+				PURLType:  purl.TypePyPi,
+				ScanRoot:  "testdata",
+				Location:  extractor.LocationFromPath("testdata/requirements.txt"),
+				Plugins:   []string{"transitivedependency/requirements"},
+				ParentIDs: map[string]bool{"id-for-bob": true, "dummy-id-dave": true},
 			},
 			{
 				// Hash checking mode.
 				Name:     "hash1",
+				ID:       "id-for-hash1",
 				Version:  "1.0.0",
 				PURLType: purl.TypePyPi,
 				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
@@ -181,6 +202,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			{
 				// Hash checking mode.
 				Name:     "hash2",
+				ID:       "id-for-hash2",
 				Version:  "2.0.0",
 				PURLType: purl.TypePyPi,
 				Location: extractor.LocationFromPath("testdata/hash/requirements.txt"),
@@ -189,9 +211,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 		},
 	}
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
+
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enricher.Name(), diff)
 	}
@@ -238,7 +258,9 @@ func TestNewEnricher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := requirements.New(tt.cfg)
+			pluginCfg := configtest.NewFakePluginConfig()
+			pluginCfg.ProtoConfig = tt.cfg
+			got, err := requirements.New(pluginCfg)
 			if err != nil {
 				t.Fatalf("New(%v) error = %v", tt.cfg, err)
 			}
