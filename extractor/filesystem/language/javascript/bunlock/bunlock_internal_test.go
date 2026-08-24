@@ -38,20 +38,20 @@ func TestResolveDepKey(t *testing.T) {
 		want            string
 		wantOK          bool
 	}{
-		{name: "nested match", pkgKey: "a/b", depName: "c", want: "a/b/c", wantOK: true},
-		{name: "walk up to top level", pkgKey: "a/b", depName: "has-flag", want: "has-flag", wantOK: true},
-		{name: "top level", pkgKey: "a", depName: "c", want: "c", wantOK: true},
+		{name: "nested_match", pkgKey: "a/b", depName: "c", want: "a/b/c", wantOK: true},
+		{name: "walk_up_to_top_level", pkgKey: "a/b", depName: "has-flag", want: "has-flag", wantOK: true},
+		{name: "top_level", pkgKey: "a", depName: "c", want: "c", wantOK: true},
 		{name: "miss", pkgKey: "a/b", depName: "missing", want: "", wantOK: false},
-		{name: "self edge blocked", pkgKey: "c", depName: "c", want: "", wantOK: false},
-		{name: "scoped dep from root", pkgKey: "", depName: "@types/prop-types", want: "@types/prop-types", wantOK: true},
+		{name: "self_edge_blocked", pkgKey: "c", depName: "c", want: "", wantOK: false},
+		{name: "scoped_dep_from_root", pkgKey: "", depName: "@types/prop-types", want: "@types/prop-types", wantOK: true},
 		{
 			// Bare "prop-types" from a scoped parent must not match
 			// "@types/prop-types" via a half-stripped "@types" prefix.
-			name: "scoped parent does not leak scope prefix", pkgKey: "@types/react-dom", depName: "prop-types",
+			name: "scoped_parent_does_not_leak_scope_prefix", pkgKey: "@types/react-dom", depName: "prop-types",
 			want: "", wantOK: false,
 		},
-		{name: "nested under scoped segment", pkgKey: "x/@babel/core", depName: "nested", want: "x/@babel/core/nested", wantOK: true},
-		{name: "scoped segment stripped whole", pkgKey: "x/@babel/core", depName: "has-flag", want: "has-flag", wantOK: true},
+		{name: "nested_under_scoped_segment", pkgKey: "x/@babel/core", depName: "nested", want: "x/@babel/core/nested", wantOK: true},
+		{name: "scoped_segment_stripped_whole", pkgKey: "x/@babel/core", depName: "has-flag", want: "has-flag", wantOK: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestPackageDependencies(t *testing.T) {
 		wantDeps, wantOptional, wantPeer map[string]string
 	}{
 		{
-			name: "registry tuple",
+			name: "registry_tuple",
 			pkgs: []any{"a@1.0.0", "", map[string]any{
 				"dependencies":         map[string]any{"b": "^1.0.0"},
 				"optionalDependencies": map[string]any{"c": "^2.0.0"},
@@ -81,20 +81,20 @@ func TestPackageDependencies(t *testing.T) {
 			wantPeer:     map[string]string{"d": "*"},
 		},
 		{
-			name:     "git tuple with metadata at index 1",
+			name:     "git_tuple_with_metadata_at_index_1",
 			pkgs:     []any{"a@github:o/r#abc", map[string]any{"dependencies": map[string]any{"b": "^1.0.0"}}, "marker"},
 			wantDeps: map[string]string{"b": "^1.0.0"},
 		},
 		{
-			name: "file tuple with empty metadata",
+			name: "file_tuple_with_empty_metadata",
 			pkgs: []any{"a@file:deps/a", map[string]any{}},
 		},
 		{
-			name: "workspace tuple without metadata",
+			name: "workspace_tuple_without_metadata",
 			pkgs: []any{"a@workspace:packages/a"},
 		},
 		{
-			name:     "non-string dep values skipped",
+			name:     "non_string_dep_values_skipped",
 			pkgs:     []any{"a@1.0.0", "", map[string]any{"dependencies": map[string]any{"b": "^1.0.0", "c": 1}}, "sha512-..."},
 			wantDeps: map[string]string{"b": "^1.0.0"},
 		},
