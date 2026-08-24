@@ -191,6 +191,9 @@ func packagesFromCommand(line string) []parsedPackage {
 
 	var pkgs []parsedPackage
 	for _, tok := range tokens[pkgStartIdx:] {
+		if strings.HasPrefix(tok, "#") {
+			break
+		}
 		tok = strings.Trim(tok, " \t\r\n,;\"'")
 		if tok == "" || strings.HasPrefix(tok, "-") {
 			continue

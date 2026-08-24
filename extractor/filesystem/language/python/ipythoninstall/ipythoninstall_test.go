@@ -86,6 +86,7 @@ func TestExtract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{Name: "pandas", Version: "2.2.2", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
+				{Name: "requests", Version: "2.32.3", PURLType: purl.TypePyPi, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
 				{Name: "scipy", Version: "1.14.1", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
 				{Name: "scikit-learn", Version: "1.5.0", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
 				{Name: "polars", Version: "0.20.31", PURLType: purl.TypeConda, Location: extractor.LocationFromPath("testdata/install_magics.ipy")},
