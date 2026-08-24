@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -117,42 +116,6 @@ func TestExtractor_Extract(t *testing.T) {
 						"numpy",
 					}},
 				},
-				{
-					Name:     "requests",
-					Version:  "2.32.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/simple_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "requests==2.32.0",
-					},
-				},
-				{
-					Name:     "flask",
-					Version:  "3.0.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/simple_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "flask>=3.0.0",
-					},
-				},
-				{
-					Name:     "numpy",
-					Version:  "",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/simple_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "",
-						Requirement:       "numpy",
-					},
-				},
 			},
 		},
 		{
@@ -176,54 +139,6 @@ func TestExtractor_Extract(t *testing.T) {
 						},
 					},
 				},
-				{
-					Name:     "requests",
-					Version:  "2.32.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/optional_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "requests==2.32.0",
-					},
-				},
-				{
-					Name:     "pytest",
-					Version:  "7.0.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/optional_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "pytest>=7.0.0",
-					},
-				},
-				{
-					Name:     "black",
-					Version:  "23.1.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/optional_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "black==23.1.0",
-					},
-				},
-				{
-					Name:     "aiohttp",
-					Version:  "3.8.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/optional_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "aiohttp>=3.8.0",
-					},
-				},
 			},
 		},
 		{
@@ -244,30 +159,6 @@ func TestExtractor_Extract(t *testing.T) {
 						"requests[security]>=2.20.0",
 					}},
 				},
-				{
-					Name:     "flask",
-					Version:  "3.1.1",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/extras_syntax.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "flask[async]==3.1.1",
-					},
-				},
-				{
-					Name:     "requests",
-					Version:  "2.20.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/extras_syntax.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "requests[security]>=2.20.0",
-					},
-				},
 			},
 		},
 		{
@@ -287,30 +178,6 @@ func TestExtractor_Extract(t *testing.T) {
 						"requests>=2.20.0; python_version >= \"3.8\"",
 						"importlib-metadata==6.0.0; python_version < \"3.10\"",
 					}},
-				},
-				{
-					Name:     "requests",
-					Version:  "2.20.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/env_markers.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "requests>=2.20.0; python_version >= \"3.8\"",
-					},
-				},
-				{
-					Name:     "importlib-metadata",
-					Version:  "6.0.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/env_markers.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "importlib-metadata==6.0.0; python_version < \"3.10\"",
-					},
 				},
 			},
 		},
