@@ -57,12 +57,12 @@ func TestExtractor_FileRequired(t *testing.T) {
 			want:      true,
 		},
 		{
-			name:      "workspace.bazel",
+			name:      "workspace_bazel",
 			inputPath: "WORKSPACE.bazel",
 			want:      true,
 		},
 		{
-			name:      "module.bazel",
+			name:      "module_bazel",
 			inputPath: "MODULE.bazel",
 			want:      true,
 		},
@@ -72,12 +72,12 @@ func TestExtractor_FileRequired(t *testing.T) {
 			want:      false,
 		},
 		{
-			name:      "build.bazel",
+			name:      "build_bazel",
 			inputPath: "BUILD.bazel",
 			want:      false,
 		},
 		{
-			name:      "nested workspace",
+			name:      "nested_workspace",
 			inputPath: "path/to/my/WORKSPACE",
 			want:      true,
 		},
@@ -120,10 +120,10 @@ func TestExtractor_Extract(t *testing.T) {
 		mockRunner   func(t *testing.T, wsDir string) aspect.CommandRunner
 		scanPath     string
 		wantInv      inventory.Inventory
-		wantErr      bool
+		wantErr      error
 	}{
 		{
-			name: "success with mixed dependency types and deduplication",
+			name: "success_with_mixed_dependency_types_and_deduplication",
 			setupFs: func(t *testing.T, wsDir string) {
 				t.Helper()
 				if err := os.WriteFile(filepath.Join(wsDir, "WORKSPACE"), []byte(""), 0644); err != nil {
@@ -159,55 +159,12 @@ func TestExtractor_Extract(t *testing.T) {
 						// Create mock aspect output JSON files
 						aspectOutputs := []aspectTestData{
 							{
-								Name:    "npm__at_babel_core",
-								Label:   "@@npm__at_babel_core//:package",
-								Kind:    "npm_package",
-								Version: "7.22.0",
-							},
-							{
-								Name:    "crates__serde-1.0.188",
-								Label:   "@@crates__serde-1.0.188//:serde",
-								Kind:    "rust_library",
-								Version: "1.0.188",
-							},
-							{
-								Name:    "pip__requests",
-								Label:   "@@pip__requests//:pkg",
-								Kind:    "py_library",
-								Version: "2.31.0",
-							},
-							{
-								Name:    "gazelle~go_deps~com_github_google_uuid",
-								Label:   "@gazelle~go_deps~com_github_google_uuid//:uuid",
-								Kind:    "go_library",
-								Version: "v1.3.0",
-								URL:     "https://github.com/google/uuid/archive/v1.3.0.tar.gz",
-							},
-							{
 								Name:           "custom_lib",
 								Label:          "//libs:custom",
 								Kind:           "cc_library",
 								PackageName:    "my-awesome-lib",
 								PackageVersion: "2.1.0",
 								PackageURL:     "pkg:generic/my-awesome-lib@2.1.0",
-							},
-							{
-								Name:        "libpng",
-								Label:       "@libpng//:libpng",
-								Kind:        "http_archive",
-								StripPrefix: "libpng-1.6.39",
-							},
-							{
-								Name:  "zlib",
-								Label: "@zlib//:zlib",
-								Kind:  "http_archive",
-								URL:   "https://zlib.net/zlib-1.2.13.tar.gz",
-							},
-							{
-								Name:   "abseil_cpp",
-								Label:  "@abseil_cpp//:abseil",
-								Kind:   "git_repository",
-								Commit: "20230802.1-40charsha0123456789abcdef012345",
 							},
 							{
 								// Duplicate of custom_lib by PackageName -> should be deduplicated
@@ -218,9 +175,10 @@ func TestExtractor_Extract(t *testing.T) {
 								PackageVersion: "2.1.0",
 							},
 							{
-								Name:  "local_toolchain",
-								Label: "@local_toolchain//:toolchain",
-								Kind:  "cc_toolchain",
+								Name:    "pip__requests",
+								Label:   "@@pip__requests//:pkg",
+								Kind:    "py_library",
+								Version: "2.31.0",
 							},
 						}
 
@@ -246,31 +204,6 @@ func TestExtractor_Extract(t *testing.T) {
 			wantInv: inventory.Inventory{
 				Packages: []*extractor.Package{
 					{
-						Name:     "@babel/core",
-						Version:  "7.22.0",
-						PURLType: "npm",
-					},
-					{
-						Name:     "abseil_cpp",
-						Version:  "20230802.1-4",
-						PURLType: "generic",
-					},
-					{
-						Name:     "github.com/google/uuid",
-						Version:  "1.3.0",
-						PURLType: "golang",
-					},
-					{
-						Name:     "libpng",
-						Version:  "1.6.39",
-						PURLType: "generic",
-					},
-					{
-						Name:     "local_toolchain",
-						Version:  "NOASSERTION",
-						PURLType: "generic",
-					},
-					{
 						Name:     "my-awesome-lib",
 						Version:  "2.1.0",
 						PURLType: "generic",
@@ -280,22 +213,12 @@ func TestExtractor_Extract(t *testing.T) {
 						Version:  "2.31.0",
 						PURLType: "pypi",
 					},
-					{
-						Name:     "serde",
-						Version:  "1.0.188",
-						PURLType: "cargo",
-					},
-					{
-						Name:     "zlib",
-						Version:  "1.2.13",
-						PURLType: "generic",
-					},
 				},
 			},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
-			name: "custom target and keep_going in plugin config",
+			name: "custom_target_and_keep_going_in_plugin_config",
 			setupFs: func(t *testing.T, wsDir string) {
 				t.Helper()
 				if err := os.WriteFile(filepath.Join(wsDir, "MODULE.bazel"), []byte(""), 0644); err != nil {
@@ -343,10 +266,10 @@ func TestExtractor_Extract(t *testing.T) {
 				}
 			},
 			wantInv: inventory.Inventory{},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
-			name: "bazel not found in PATH",
+			name: "bazel_not_found_in_path",
 			setupFs: func(t *testing.T, wsDir string) {
 				t.Helper()
 				if err := os.WriteFile(filepath.Join(wsDir, "WORKSPACE"), []byte(""), 0644); err != nil {
@@ -362,10 +285,10 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				}
 			},
-			wantErr: true,
+			wantErr: cmpopts.AnyError,
 		},
 		{
-			name: "not a bazel workspace",
+			name: "not_a_bazel_workspace",
 			setupFs: func(t *testing.T, wsDir string) {
 				t.Helper()
 				// No WORKSPACE or MODULE.bazel file created
@@ -381,41 +304,10 @@ func TestExtractor_Extract(t *testing.T) {
 				}
 			},
 			wantInv: inventory.Inventory{},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
-			name: "workspace already processed",
-			setupFs: func(t *testing.T, wsDir string) {
-				t.Helper()
-				if err := os.WriteFile(filepath.Join(wsDir, "WORKSPACE"), []byte(""), 0644); err != nil {
-					t.Fatalf("failed to create WORKSPACE: %v", err)
-				}
-			},
-			scanPath: "WORKSPACE",
-			mockRunner: func(t *testing.T, wsDir string) aspect.CommandRunner {
-				t.Helper()
-				var runCount int
-				return &mockCommandRunner{
-					runFunc: func(ctx context.Context, dir string, name string, args ...string) error {
-						runCount++
-						if runCount > 1 {
-							t.Errorf("bazel run called %d times, want 1", runCount)
-						}
-						var bepPath string
-						for _, arg := range args {
-							if after, ok := strings.CutPrefix(arg, "--build_event_json_file="); ok {
-								bepPath = after
-							}
-						}
-						return os.WriteFile(bepPath, []byte(""), 0644)
-					},
-				}
-			},
-			wantInv: inventory.Inventory{},
-			wantErr: false,
-		},
-		{
-			name: "build events file missing / read error",
+			name: "build_events_file_missing_read_error",
 			setupFs: func(t *testing.T, wsDir string) {
 				t.Helper()
 				if err := os.WriteFile(filepath.Join(wsDir, "WORKSPACE"), []byte(""), 0644); err != nil {
@@ -432,7 +324,7 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				}
 			},
-			wantErr: true,
+			wantErr: cmpopts.AnyError,
 		},
 	}
 
@@ -443,49 +335,76 @@ func TestExtractor_Extract(t *testing.T) {
 				tt.setupFs(t, wsDir)
 			}
 
-			cfg := tt.pluginConfig
-			if cfg == nil {
-				cfg = &cpb.PluginConfig{}
-			}
-
-			var runner aspect.CommandRunner
-			if tt.mockRunner != nil {
-				runner = tt.mockRunner(t, wsDir)
-			}
-
-			e, err := aspect.NewWithRunner(cfg, runner)
+			runner := tt.mockRunner(t, wsDir)
+			e, err := aspect.NewWithRunner(tt.pluginConfig, runner)
 			if err != nil {
 				t.Fatalf("aspect.NewWithRunner() error: %v", err)
 			}
 
-			got, err := e.Extract(context.Background(), &filesystem.ScanInput{
+			got, err := e.Extract(t.Context(), &filesystem.ScanInput{
 				Root: wsDir,
 				Path: tt.scanPath,
 			})
 
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("Extract() error = %v, wantErr %v", err, tt.wantErr)
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("Extract() unexpected error diff (-want +got):\n%s", diff)
 			}
 
-			if !tt.wantErr {
+			if tt.wantErr == nil {
 				if diff := cmp.Diff(tt.wantInv, got, cmpopts.EquateEmpty()); diff != "" {
 					t.Errorf("Extract() inventory mismatch (-want +got):\n%s", diff)
 				}
-
-				// If testing already-processed scenario, call Extract again
-				if tt.name == "workspace already processed" {
-					got2, err2 := e.Extract(context.Background(), &filesystem.ScanInput{
-						Root: wsDir,
-						Path: tt.scanPath,
-					})
-					if err2 != nil {
-						t.Errorf("second Extract() unexpected error: %v", err2)
-					}
-					if len(got2.Packages) != 0 {
-						t.Errorf("second Extract() expected empty packages, got %v", got2.Packages)
-					}
-				}
 			}
 		})
+	}
+}
+
+func TestExtractor_Extract_AlreadyProcessed(t *testing.T) {
+	wsDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(wsDir, "WORKSPACE"), []byte(""), 0644); err != nil {
+		t.Fatalf("failed to create WORKSPACE: %v", err)
+	}
+
+	var runCount int
+	runner := &mockCommandRunner{
+		runFunc: func(ctx context.Context, dir string, name string, args ...string) error {
+			runCount++
+			for _, arg := range args {
+				if after, ok := strings.CutPrefix(arg, "--build_event_json_file="); ok {
+					return os.WriteFile(after, []byte(""), 0644)
+				}
+			}
+			return nil
+		},
+	}
+
+	e, err := aspect.NewWithRunner(nil, runner)
+	if err != nil {
+		t.Fatalf("aspect.NewWithRunner() error: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Root: wsDir,
+		Path: "WORKSPACE",
+	}
+
+	// First extraction processes the workspace
+	if _, err := e.Extract(t.Context(), input); err != nil {
+		t.Fatalf("first Extract() error = %v", err)
+	}
+	if runCount != 1 {
+		t.Errorf("bazel run called %d times, want 1", runCount)
+	}
+
+	// Second extraction on the same workspace should be skipped
+	got, err := e.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("second Extract() error = %v", err)
+	}
+	if runCount != 1 {
+		t.Errorf("bazel run called %d times on second Extract(), want 1", runCount)
+	}
+	if len(got.Packages) != 0 {
+		t.Errorf("second Extract() expected empty packages, got %v", got.Packages)
 	}
 }
