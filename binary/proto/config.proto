@@ -497,9 +497,7 @@ message JavascriptPackageJsonConfig {
   int64 max_file_size_bytes = 1;
   // If set, extract additional packages for each declared dependency.
   bool include_dependencies = 2;
-  // Specifies whether to extract dependency requirements for the "root" package
-  // (the one represented by the package.json file itself).
-  bool include_dependency_requirements = 3 [deprecated = true];
+  reserved 3;
 }
 
 message JavascriptPackageLockJsonConfig {

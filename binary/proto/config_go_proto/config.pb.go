@@ -3668,13 +3668,8 @@ type JavascriptPackageJsonConfig struct {
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
 	// If set, extract additional packages for each declared dependency.
 	IncludeDependencies bool `protobuf:"varint,2,opt,name=include_dependencies,json=includeDependencies,proto3" json:"include_dependencies,omitempty"`
-	// Specifies whether to extract dependency requirements for the "root" package
-	// (the one represented by the package.json file itself).
-	//
-	// Deprecated: Marked as deprecated in proto/config.proto.
-	IncludeDependencyRequirements bool `protobuf:"varint,3,opt,name=include_dependency_requirements,json=includeDependencyRequirements,proto3" json:"include_dependency_requirements,omitempty"`
-	unknownFields                 protoimpl.UnknownFields
-	sizeCache                     protoimpl.SizeCache
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *JavascriptPackageJsonConfig) Reset() {
@@ -3717,14 +3712,6 @@ func (x *JavascriptPackageJsonConfig) GetMaxFileSizeBytes() int64 {
 func (x *JavascriptPackageJsonConfig) GetIncludeDependencies() bool {
 	if x != nil {
 		return x.IncludeDependencies
-	}
-	return false
-}
-
-// Deprecated: Marked as deprecated in proto/config.proto.
-func (x *JavascriptPackageJsonConfig) GetIncludeDependencyRequirements() bool {
-	if x != nil {
-		return x.IncludeDependencyRequirements
 	}
 	return false
 }
@@ -4581,11 +4568,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x16_extract_from_filenameB\x17\n" +
 	"\x15_extract_from_pom_xmlB\f\n" +
 	"\n" +
-	"_hash_jars\"\xcb\x01\n" +
+	"_hash_jars\"\x85\x01\n" +
 	"\x1bJavascriptPackageJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x121\n" +
-	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependencies\x12J\n" +
-	"\x1finclude_dependency_requirements\x18\x03 \x01(\bB\x02\x18\x01R\x1dincludeDependencyRequirements\"P\n" +
+	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependenciesJ\x04\b\x03\x10\x04\"P\n" +
 	"\x1fJavascriptPackageLockJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"I\n" +
 	"\x18PythonRequirementsConfig\x12-\n" +
