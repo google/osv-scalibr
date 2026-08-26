@@ -49,9 +49,8 @@ const (
 
 // Extractor extracts python packages from wheel/egg files.
 type Extractor struct {
-	maxFileSizeBytes    int64
-	extractDependencies bool
-	Stats               stats.Collector
+	maxFileSizeBytes int64
+	Stats            stats.Collector
 }
 
 // New returns a wheel/egg extractor.
@@ -67,8 +66,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	}
 
 	return &Extractor{
-		maxFileSizeBytes:    maxFileSizeBytes,
-		extractDependencies: specific.GetExtractDependencies(),
+		maxFileSizeBytes: maxFileSizeBytes,
 	}, nil
 }
 
@@ -273,19 +271,15 @@ func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Packa
 		return nil, fmt.Errorf("Name or Version is empty (name: %q, version: %q)", name, version)
 	}
 
-	metadata := &PythonPackageMetadata{
-		Author:      author,
-		AuthorEmail: authorEmail,
-	}
-	if e.extractDependencies {
-		metadata.RequiresDist = requiresDist
-	}
-
 	return &extractor.Package{
 		Name:     name,
 		Version:  version,
 		PURLType: purl.TypePyPi,
 		Location: extractor.LocationFromPathAndLine(path, nameLine),
-		Metadata: metadata,
+		Metadata: &PythonPackageMetadata{
+			Author:       author,
+			AuthorEmail:  authorEmail,
+			RequiresDist: requiresDist,
+		},
 	}, nil
 }

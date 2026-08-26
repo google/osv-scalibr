@@ -15,13 +15,13 @@
 package pyprojecttoml_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -104,40 +104,17 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "requests",
-					Version:  "2.32.0",
+					Name:     "my-package",
+					Version:  "1.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath(
 						"testdata/simple_deps.toml",
 					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "requests==2.32.0",
-					},
-				},
-				{
-					Name:     "flask",
-					Version:  "3.0.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/simple_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "flask>=3.0.0",
-					},
-				},
-				{
-					Name:     "numpy",
-					Version:  "",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/simple_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "",
-						Requirement:       "numpy",
-					},
+					Metadata: &pyprojecttoml.Metadata{Dependencies: []string{
+						"requests==2.32.0",
+						"flask>=3.0.0",
+						"numpy",
+					}},
 				},
 			},
 		},
@@ -148,51 +125,18 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "requests",
-					Version:  "2.32.0",
+					Name:     "my-package",
+					Version:  "1.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath(
 						"testdata/optional_deps.toml",
 					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "requests==2.32.0",
-					},
-				},
-				{
-					Name:     "pytest",
-					Version:  "7.0.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/optional_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "pytest>=7.0.0",
-					},
-				},
-				{
-					Name:     "black",
-					Version:  "23.1.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/optional_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "black==23.1.0",
-					},
-				},
-				{
-					Name:     "aiohttp",
-					Version:  "3.8.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/optional_deps.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "aiohttp>=3.8.0",
+					Metadata: &pyprojecttoml.Metadata{
+						Dependencies: []string{"requests==2.32.0"},
+						OptionalDependencies: map[string][]string{
+							"async": {"aiohttp>=3.8.0"},
+							"dev":   {"pytest>=7.0.0", "black==23.1.0"},
+						},
 					},
 				},
 			},
@@ -204,28 +148,16 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "flask",
-					Version:  "3.1.1",
+					Name:     "my-package",
+					Version:  "1.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath(
 						"testdata/extras_syntax.toml",
 					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "flask[async]==3.1.1",
-					},
-				},
-				{
-					Name:     "requests",
-					Version:  "2.20.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/extras_syntax.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "requests[security]>=2.20.0",
-					},
+					Metadata: &pyprojecttoml.Metadata{Dependencies: []string{
+						"flask[async]==3.1.1",
+						"requests[security]>=2.20.0",
+					}},
 				},
 			},
 		},
@@ -236,28 +168,16 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "requests",
-					Version:  "2.20.0",
+					Name:     "my-package",
+					Version:  "1.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath(
 						"testdata/env_markers.toml",
 					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: ">=",
-						Requirement:       "requests>=2.20.0; python_version >= \"3.8\"",
-					},
-				},
-				{
-					Name:     "importlib-metadata",
-					Version:  "6.0.0",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath(
-						"testdata/env_markers.toml",
-					),
-					Metadata: &requirements.Metadata{
-						VersionComparator: "==",
-						Requirement:       "importlib-metadata==6.0.0; python_version < \"3.10\"",
-					},
+					Metadata: &pyprojecttoml.Metadata{Dependencies: []string{
+						"requests>=2.20.0; python_version >= \"3.8\"",
+						"importlib-metadata==6.0.0; python_version < \"3.10\"",
+					}},
 				},
 			},
 		},
@@ -273,14 +193,30 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/dynamic_deps.toml",
 			},
-			WantPackages: nil,
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "my-package",
+					Version:  "1.0.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/dynamic_deps.toml"),
+					Metadata: &pyprojecttoml.Metadata{HasDynamicDependencies: true},
+				},
+			},
 		},
 		{
 			Name: "empty_deps",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty_deps.toml",
 			},
-			WantPackages: nil,
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "my-package",
+					Version:  "1.0.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPath("testdata/empty_deps.toml"),
+					Metadata: &pyprojecttoml.Metadata{Dependencies: []string{}},
+				},
+			},
 		},
 		{
 			Name: "malformed_toml",
@@ -295,6 +231,7 @@ func TestExtractor_Extract(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			e, err := pyprojecttoml.New(&cpb.PluginConfig{})
+
 			if err != nil {
 				t.Fatalf("pyprojecttoml.New(): %v", err)
 			}
@@ -318,6 +255,7 @@ func TestExtractor_Extract(t *testing.T) {
 			if diff := cmp.Diff(
 				wantInv, got,
 				cmpopts.SortSlices(extracttest.PackageCmpLess),
+				cmpopts.SortMaps(strings.Compare),
 			); diff != "" {
 				t.Errorf(
 					"%s.Extract(%q) diff (-want +got):\n%s",
