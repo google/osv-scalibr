@@ -187,7 +187,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	bepPath := filepath.Join(eventsFile, "events.json")
 
 	aspectPkg := filepath.Base(aspectDir)
-	args := []string{"build", "--nobuild", "--aspects=//" + aspectPkg + ":scalibr_aspect.bzl%scalibr_aspect", "--output_groups=scalibr_out"}
+	args := []string{"build", "--aspects=//" + aspectPkg + ":scalibr_aspect.bzl%scalibr_aspect", "--output_groups=scalibr_out"}
 	if e.keepGoing {
 		args = append(args, "--keep_going")
 	}
