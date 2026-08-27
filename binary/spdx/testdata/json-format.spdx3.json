@@ -1,0 +1,34 @@
+{
+  "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+  "@graph": [
+    {
+      "@id": "_:creationInfo_0",
+      "type": "CreationInfo",
+      "specVersion": "3.0.1",
+      "created": "2006-01-02T15:04:05Z",
+      "createdBy": [
+        "https://spdx.google/test/SPDXRef-Agent-SCALIBR"
+      ]
+    },
+    {
+      "spdxId": "https://spdx.google/test/SPDXRef-DOCUMENT",
+      "type": "SpdxDocument",
+      "name": "Document name",
+      "creationInfo": "_:creationInfo_0",
+      "rootElement": [
+        "https://spdx.google/test/SPDXRef-Package-main"
+      ],
+      "profileConformance": [
+        "core",
+        "software"
+      ]
+    },
+    {
+      "spdxId": "https://spdx.google/test/SPDXRef-Package-main",
+      "type": "software_Package",
+      "name": "main",
+      "creationInfo": "_:creationInfo_0",
+      "software_packageVersion": "0"
+    }
+  ]
+}

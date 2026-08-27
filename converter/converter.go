@@ -41,6 +41,11 @@ func ToSPDX23(i inventory.Inventory, c spdx.Config) *v2_3.Document {
 	return spdx.ToSPDX23(i, c)
 }
 
+// ToSPDX30 converts the SCALIBR scan results into an SPDX v3.0.1 document.
+func ToSPDX30(i inventory.Inventory, c spdx.Config3) *spdx.Document3 {
+	return spdx.ToSPDX30(i, c)
+}
+
 // CDXConfig describes custom settings that should be applied to the generated CDX file.
 type CDXConfig struct {
 	ComponentName    string

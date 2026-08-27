@@ -45,7 +45,7 @@ func TestValidateFlags(t *testing.T) {
 			flags: &cli.Flags{
 				Root:            "/",
 				ResultFile:      "result.textproto",
-				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml"},
+				Output:          []string{"textproto=result2.textproto", "spdx23-yaml=result.spdx.yaml", "spdx3-json=result.spdx3.json"},
 				ExtractorsToRun: []string{"java,python", "javascript"},
 				DetectorsToRun:  []string{"weakcredentials,cis"},
 				PluginsToRun:    []string{"vex"},
@@ -956,6 +956,14 @@ func TestWriteScanResults(t *testing.T) {
 			},
 			wantFilename:      "result.spdx",
 			wantContentPrefix: "SPDXVersion: SPDX-2.3",
+		},
+		{
+			desc: "Create SPDX 3.0",
+			flags: &cli.Flags{
+				Output: []string{"spdx3-json=" + filepath.Join(testDirPath, "result.spdx3.json")},
+			},
+			wantFilename:      "result.spdx3.json",
+			wantContentPrefix: "{\n  \"@context\": \"https://spdx.org/rdf/3.0.1/spdx-context.jsonld\"",
 		},
 		{
 			desc: "Create CDX",

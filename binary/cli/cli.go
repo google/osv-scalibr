@@ -158,7 +158,7 @@ type Flags struct {
 }
 
 var supportedOutputFormats = []string{
-	"textproto", "binproto", "spdx23-tag-value", "spdx23-json", "spdx23-yaml", "cdx-json", "cdx-xml",
+	"textproto", "binproto", "spdx23-tag-value", "spdx23-json", "spdx23-yaml", "spdx3-json", "cdx-json", "cdx-xml",
 }
 
 var supportedComponentTypes = []string{
@@ -457,23 +457,39 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 
 // GetSPDXConfig creates an SPDXConfig struct based on the CLI flags.
 func (f *Flags) GetSPDXConfig() convspdx.Config {
-	var creators []common.Creator
-	if len(f.SPDXCreators) > 0 {
-		for item := range strings.SplitSeq(f.SPDXCreators, ",") {
-			c := strings.Split(item, ":")
-			cType := c[0]
-			cName := c[1]
-			creators = append(creators, common.Creator{
-				CreatorType: cType,
-				Creator:     cName,
-			})
-		}
-	}
 	return convspdx.Config{
 		DocumentName:      f.SPDXDocumentName,
 		DocumentNamespace: f.SPDXDocumentNamespace,
-		Creators:          creators,
+		Creators:          f.spdxCreators(),
 	}
+}
+
+// GetSPDX3Config creates an SPDX 3.0 Config3 struct based on the CLI flags.
+func (f *Flags) GetSPDX3Config() convspdx.Config3 {
+	return convspdx.Config3{
+		DocumentName:      f.SPDXDocumentName,
+		DocumentNamespace: f.SPDXDocumentNamespace,
+		Creators:          f.spdxCreators(),
+	}
+}
+
+func (f *Flags) spdxCreators() []common.Creator {
+	if f.SPDXCreators == "" {
+		return nil
+	}
+	var creators []common.Creator
+	for item := range strings.SplitSeq(f.SPDXCreators, ",") {
+		cType, cName, ok := strings.Cut(item, ":")
+		if !ok {
+			log.Warnf("Ignoring malformed SPDX creator %q, want type:name", item)
+			continue
+		}
+		creators = append(creators, common.Creator{
+			CreatorType: cType,
+			Creator:     cName,
+		})
+	}
+	return creators
 }
 
 // GetCDXConfig creates a CDXConfig struct based on the CLI flags.
@@ -510,6 +526,11 @@ func (f *Flags) WriteScanResults(result *scalibr.ScanResult) error {
 					return err
 				}
 				if err := proto.WriteWithFormat(oPath, resultProto, oFormat); err != nil {
+					return err
+				}
+			} else if strings.HasPrefix(oFormat, "spdx3-") {
+				doc := converter.ToSPDX30(result.Inventory, f.GetSPDX3Config())
+				if err := binspdx.Write3(doc, oPath, oFormat); err != nil {
 					return err
 				}
 			} else if strings.Contains(oFormat, "spdx23") {

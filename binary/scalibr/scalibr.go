@@ -64,7 +64,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 	root := fs.String("root", "", `The root dir used by detectors and by file walking during extraction (e.g.: "/", "c:\" or ".")`)
 	resultFile := fs.String("result", "", "The path of the output scan result file")
 	var output cli.Array
-	fs.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o cdx-json=result.cyclonedx.json")
+	fs.Var(&output, "o", "The path of the scanner outputs in various formats, e.g. -o textproto=result.textproto -o spdx23-json=result.spdx.json -o spdx3-json=result.spdx3.json -o cdx-json=result.cyclonedx.json")
 	pluginsToRun := cli.NewStringListFlag(nil)
 	fs.Var(&pluginsToRun, "plugins", "Comma-separated list of plugin to run")
 	var extractorOverride cli.Array
