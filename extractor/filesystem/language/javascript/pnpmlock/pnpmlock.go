@@ -259,23 +259,42 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from a pnpm-lock.yaml file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var root yaml.Node
-	if err := yaml.NewDecoder(input.Reader).Decode(&root); err != nil {
-		if errors.Is(err, io.EOF) {
-			return inventory.Inventory{Packages: []*extractor.Package{}}, nil
+	dec := yaml.NewDecoder(input.Reader)
+	var allPackages []*extractor.Package
+	var errs []error
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return inventory.Inventory{Packages: allPackages}, err
 		}
-		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+
+		var root yaml.Node
+		if err := dec.Decode(&root); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return inventory.Inventory{Packages: allPackages}, fmt.Errorf("could not extract: %w", err)
+		}
+
+		var parsedLockfile pnpmLockfile
+		if err := root.Decode(&parsedLockfile); err != nil {
+			return inventory.Inventory{Packages: allPackages}, fmt.Errorf("could not extract: %w", err)
+		}
+
+		packageLineMap := findLineNumbers(&root)
+
+		packages, err := parsePnpmLock(parsedLockfile, packageLineMap, input.Path)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		allPackages = append(allPackages, packages...)
 	}
 
-	var parsedLockfile pnpmLockfile
-	if err := root.Decode(&parsedLockfile); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	if allPackages == nil {
+		allPackages = []*extractor.Package{}
 	}
 
-	packageLineMap := findLineNumbers(&root)
-
-	packages, err := parsePnpmLock(parsedLockfile, packageLineMap, input.Path)
-	return inventory.Inventory{Packages: packages}, err
+	return inventory.Inventory{Packages: allPackages}, errors.Join(errs...)
 }
 
 // findLineNumbers goes through the Node tree to find the line numbers for each package.
