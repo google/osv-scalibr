@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	PASSPORT_NUMBER    = "PASSPORT_NUMBER"
-	US_PASSPORT_NUMBER = "US_PASSPORT_NUMBER"
-	UK_PASSPORT_NUMBER = "UK_PASSPORT_NUMBER"
+	namePassportNumber   = "PASSPORT_NUMBER"
+	nameUsPassportNumber = "US_PASSPORT_NUMBER"
+	nameUkPassportNumber = "UK_PASSPORT_NUMBER"
 
 	maxPassportNumberLen = 8
 	maxKeywordLen        = 20
@@ -97,22 +97,22 @@ func NewDetector() veles.Detector {
 		ContextWindowBefore: contextWindowSize,
 		ContextWindowAfter:  contextWindowSize,
 		FromMatch: func(blob []byte, matchedKeywords [][]byte) (sensitiveinformation.SensitiveInformation, bool) {
-			type_name := PASSPORT_NUMBER
+			typeName := namePassportNumber
 			likelihood := sensitiveinformation.LikelihoodUnlikely
 			if len(matchedKeywords) > 0 {
 				likelihood = sensitiveinformation.LikelihoodLikely
 				if slices.ContainsFunc(matchedKeywords, hasUsSpecifier) {
-					type_name = US_PASSPORT_NUMBER
+					typeName = nameUsPassportNumber
 					likelihood = sensitiveinformation.LikelihoodVeryLikely
 				} else if slices.ContainsFunc(matchedKeywords, hasUkSpecifier) {
-					type_name = UK_PASSPORT_NUMBER
+					typeName = nameUkPassportNumber
 					likelihood = sensitiveinformation.LikelihoodVeryLikely
 				}
 			}
 
 			return sensitiveinformation.SensitiveInformation{
 				InfoType: sensitiveinformation.InfoType{
-					Name:        type_name,
+					Name:        typeName,
 					Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 				},
 				Likelihood: likelihood,
