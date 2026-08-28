@@ -189,10 +189,25 @@ func ecosystemEncodesEpoch(ecosystem string) bool {
 	return rhelFamilyEpochEcosystems[distro]
 }
 
+var rubyGemsPlatformSuffixRegexp = regexp.MustCompile(
+	`(?i)^(?:[0-9a-z_]+-)?(?:aix|cygwin|darwin|dalvik|dotnet|freebsd|java|linux|macruby|mingw32|mingw|mswin|netbsdelf|openbsd|solaris|wasi)(?:-?\d+)?(?:-[0-9a-z_]+)*$`,
+)
+
+func stripRubyGemsPlatform(version string) string {
+	base, suffix, found := strings.Cut(version, "-")
+	if !found || base == "" || !rubyGemsPlatformSuffixRegexp.MatchString(suffix) {
+		return version
+	}
+	return base
+}
+
 func version(pkg *extractor.Package, ecosystem string) string {
 	version := pkg.Version
 	if m, ok := pkg.Metadata.(*rpmmetadata.Metadata); ok && m.Epoch > 0 && ecosystemEncodesEpoch(ecosystem) {
 		return strconv.Itoa(m.Epoch) + ":" + version
+	}
+	if ecosystemFamily, _, _ := strings.Cut(ecosystem, ":"); ecosystemFamily == string(osvconstants.EcosystemRubyGems) {
+		version = stripRubyGemsPlatform(version)
 	}
 	return version
 }

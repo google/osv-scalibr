@@ -107,6 +107,16 @@ func TestEnrich(t *testing.T) {
 				Epoch: 1,
 			},
 		}
+		rubyGemsPlatformPkg = &extractor.Package{
+			Name:     "nokogiri",
+			Version:  "1.19.3-x86_64-linux-gnu",
+			PURLType: purl.TypeGem,
+		}
+		rubyGemsMalformedPkg = &extractor.Package{
+			Name:     "weird",
+			Version:  "-x86_64-linux-gnu",
+			PURLType: purl.TypeGem,
+		}
 
 		goPkgWithSignals = &extractor.Package{
 			Name:     "github.com/gin-gonic/gin",
@@ -436,13 +446,15 @@ func TestEnrich(t *testing.T) {
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
 		}
-		goStdlibVuln        = osvpb.Vulnerability{Id: "GO-STDLIB-VULN"}
-		gitVuln             = osvpb.Vulnerability{Id: "GIT-VULN"}
-		dpkgSrcVuln         = osvpb.Vulnerability{Id: "DPKG-SRC-VULN"}
-		apkOriginVuln       = osvpb.Vulnerability{Id: "APK-ORIGIN-VULN"}
-		rpmVulnWithEpoch    = osvpb.Vulnerability{Id: "RPM-EPOCH-VULN"}
-		rpmVulnWithoutEpoch = osvpb.Vulnerability{Id: "RPM-NO-EPOCH-VULN"}
-		rpmVulnOtherDistro  = osvpb.Vulnerability{Id: "RPM-OTHER-DISTRO-VULN"}
+		goStdlibVuln          = osvpb.Vulnerability{Id: "GO-STDLIB-VULN"}
+		gitVuln               = osvpb.Vulnerability{Id: "GIT-VULN"}
+		dpkgSrcVuln           = osvpb.Vulnerability{Id: "DPKG-SRC-VULN"}
+		apkOriginVuln         = osvpb.Vulnerability{Id: "APK-ORIGIN-VULN"}
+		rpmVulnWithEpoch      = osvpb.Vulnerability{Id: "RPM-EPOCH-VULN"}
+		rpmVulnWithoutEpoch   = osvpb.Vulnerability{Id: "RPM-NO-EPOCH-VULN"}
+		rpmVulnOtherDistro    = osvpb.Vulnerability{Id: "RPM-OTHER-DISTRO-VULN"}
+		rubyGemsPlatformVuln  = osvpb.Vulnerability{Id: "RUBYGEMS-PLATFORM-VULN"}
+		rubyGemsMalformedVuln = osvpb.Vulnerability{Id: "RUBYGEMS-MALFORMED-VULN"}
 	)
 
 	client := fakeclient.New(map[string][]*osvpb.Vulnerability{
@@ -456,6 +468,8 @@ func TestEnrich(t *testing.T) {
 		"bash-epoch:1:5.1-6:":         {&rpmVulnWithEpoch},
 		"bash-no-epoch:5.1-6:":        {&rpmVulnWithoutEpoch},
 		"bash-other-distro:5.1-6:":    {&rpmVulnOtherDistro},
+		"nokogiri:1.19.3:":            {&rubyGemsPlatformVuln},
+		"weird:-x86_64-linux-gnu:":    {&rubyGemsMalformedVuln},
 	})
 
 	tests := []struct {
@@ -607,6 +621,20 @@ func TestEnrich(t *testing.T) {
 			packages: []*extractor.Package{rpmPkgOtherDistroWithEpoch},
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: &rpmVulnOtherDistro, Package: rpmPkgOtherDistroWithEpoch, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "rubygems_platform_suffix_mapping",
+			packages: []*extractor.Package{rubyGemsPlatformPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &rubyGemsPlatformVuln, Package: rubyGemsPlatformPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "rubygems_malformed_leading_hyphen_mapping",
+			packages: []*extractor.Package{rubyGemsMalformedPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &rubyGemsMalformedVuln, Package: rubyGemsMalformedPkg, Plugins: []string{osvdev.Name}},
 			},
 		},
 	}

@@ -247,6 +247,136 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "RubyGems platform-specific gem version",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "nokogiri",
+				Version:  "1.19.3-x86_64-linux-gnu",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "nokogiri",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.19.3",
+			},
+		},
+		{
+			name: "RubyGems plain gem version",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "nokogiri",
+				Version:  "1.19.3",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "nokogiri",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.19.3",
+			},
+		},
+		{
+			name: "RubyGems prerelease version is not mistaken for a platform suffix",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "2.0.0-alpha",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "2.0.0-alpha",
+			},
+		},
+		{
+			name: "RubyGems rc build tag is not mistaken for a platform suffix",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "1.0.0-rc1",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.0.0-rc1",
+			},
+		},
+		{
+			name: "RubyGems malformed leading-hyphen version is left untouched",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "-x86_64-linux-gnu",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "-x86_64-linux-gnu",
+			},
+		},
+		{
+			name: "RubyGems platform suffix with libc qualifier",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "nokogiri",
+				Version:  "1.19.3-x86_64-linux-musl",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "nokogiri",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.19.3",
+			},
+		},
+		{
+			name: "RubyGems mingw platform suffix",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "2.6.0-x64-mingw-ucrt",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "2.6.0",
+			},
+		},
+		{
+			name: "RubyGems darwin platform suffix with OS version",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "1.0.0-arm64-darwin-23",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.0.0",
+			},
+		},
+		{
+			name: "RubyGems single-token java platform",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "9.4.30.0-java",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "9.4.30.0",
+			},
+		},
+		{
+			name: "RubyGems Gemfile.lock-shaped version converges with SBOM-shaped version",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "nokogiri",
+				Version:  "1.19.3",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "nokogiri",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.19.3",
+			},
+		},
+		{
 			name: "npm scoped package PURL namespace",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeNPM,
