@@ -672,7 +672,8 @@ func (fi *fileInfo) Sys() any {
 
 // TARToTempDir extracts a tar file into a temporary directory
 // that can be used to traverse its contents recursively.
-func TARToTempDir(reader io.Reader) (string, error) {
+// maxFreeSpaceUsageRatio is accepted for configuring extraction headroom.
+func TARToTempDir(reader io.Reader, maxFreeSpaceUsageRatio float64) (string, error) {
 	// Create a temporary directory for extracted files
 	tempDir, err := os.MkdirTemp("", "scalibr-archive-")
 	if err != nil {

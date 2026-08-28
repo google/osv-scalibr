@@ -134,6 +134,13 @@ message ArchiveConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // Maximum fraction of available free temp storage allowed for extraction
+  // (e.g. 0.8 for 80%). If set, must be in the range (0.0, 1.0].
+  // If unset or set to invalid value, this value defaults to 0.0, meaning free
+  // space checking is disabled.
+  // Note: Free space checking is only supported on Linux. This has no effect on
+  // non-linux based platforms.
+  double max_free_space_usage_ratio = 2;
 }
 
 message DenoJsonConfig {
@@ -158,6 +165,13 @@ message OVAConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // Maximum fraction of available free temp storage allowed for extraction
+  // (e.g. 0.8 for 80%). If set, must be in the range (0.0, 1.0].
+  // If unset or set to invalid value, this value defaults to 0.0, meaning free
+  // space checking is disabled.
+  // Note: Free space checking is only supported on Linux. This has no effect on
+  // non-linux based platforms.
+  double max_free_space_usage_ratio = 2;
 }
 
 message VDIConfig {
