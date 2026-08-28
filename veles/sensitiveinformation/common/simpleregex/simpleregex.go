@@ -75,13 +75,11 @@ func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) 
 			contextMatchLower := d.KeywordsRe.FindSubmatch(data[lowerBound:l])
 			contextMatchUpper := d.KeywordsRe.FindSubmatch(data[r:upperBound])
 
-			for _, match := range slices.Concat(contextMatchLower, contextMatchUpper) {
-				// Matches may contain duplicate items. Due to the small context window,
-				// it's unlikely that the list of matches will be larger than 5 items.
-				// Plugins will usually iterate over the matches list and check look for a specific entry,
-				// making duplicates a non-issue
-				matches = append(matches, match)
-			}
+			// Matches may contain duplicate items. Due to the small context window,
+			// it's unlikely that the list of matches will be larger than 5 items.
+			// Plugins will usually iterate over the matches list and check look for a specific entry,
+			// making duplicates a non-issue
+			matches = append(matches, slices.Concat(contextMatchLower, contextMatchUpper)...)
 		}
 
 		if match, ok := d.FromMatch(data[l:r], matches); ok {
