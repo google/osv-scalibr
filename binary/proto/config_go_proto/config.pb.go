@@ -3666,13 +3666,10 @@ type JavascriptPackageJsonConfig struct {
 	// If set, this overrides the global max_file_size_bytes configuration
 	// for this specific plugin.
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
-	// Specifies whether to extract dependencies.
+	// If set, extract additional packages for each declared dependency.
 	IncludeDependencies bool `protobuf:"varint,2,opt,name=include_dependencies,json=includeDependencies,proto3" json:"include_dependencies,omitempty"`
-	// Specifies whether to extract dependency requirements for the "root" package
-	// (the one represented by the package.json file itself).
-	IncludeDependencyRequirements bool `protobuf:"varint,3,opt,name=include_dependency_requirements,json=includeDependencyRequirements,proto3" json:"include_dependency_requirements,omitempty"`
-	unknownFields                 protoimpl.UnknownFields
-	sizeCache                     protoimpl.SizeCache
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *JavascriptPackageJsonConfig) Reset() {
@@ -3715,13 +3712,6 @@ func (x *JavascriptPackageJsonConfig) GetMaxFileSizeBytes() int64 {
 func (x *JavascriptPackageJsonConfig) GetIncludeDependencies() bool {
 	if x != nil {
 		return x.IncludeDependencies
-	}
-	return false
-}
-
-func (x *JavascriptPackageJsonConfig) GetIncludeDependencyRequirements() bool {
-	if x != nil {
-		return x.IncludeDependencyRequirements
 	}
 	return false
 }
@@ -3920,10 +3910,8 @@ type PythonWheelEggConfig struct {
 	// If set, this overrides the global max_file_size_bytes configuration
 	// for this specific plugin.
 	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
-	// If enabled, extract dependency requirements from METADATA files.
-	ExtractDependencies bool `protobuf:"varint,2,opt,name=extract_dependencies,json=extractDependencies,proto3" json:"extract_dependencies,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PythonWheelEggConfig) Reset() {
@@ -3961,13 +3949,6 @@ func (x *PythonWheelEggConfig) GetMaxFileSizeBytes() int64 {
 		return x.MaxFileSizeBytes
 	}
 	return 0
-}
-
-func (x *PythonWheelEggConfig) GetExtractDependencies() bool {
-	if x != nil {
-		return x.ExtractDependencies
-	}
-	return false
 }
 
 type GoModConfig struct {
@@ -4587,11 +4568,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x16_extract_from_filenameB\x17\n" +
 	"\x15_extract_from_pom_xmlB\f\n" +
 	"\n" +
-	"_hash_jars\"\xc7\x01\n" +
+	"_hash_jars\"\x85\x01\n" +
 	"\x1bJavascriptPackageJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x121\n" +
-	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependencies\x12F\n" +
-	"\x1finclude_dependency_requirements\x18\x03 \x01(\bR\x1dincludeDependencyRequirements\"P\n" +
+	"\x14include_dependencies\x18\x02 \x01(\bR\x13includeDependenciesJ\x04\b\x03\x10\x04\"P\n" +
 	"\x1fJavascriptPackageLockJsonConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"I\n" +
 	"\x18PythonRequirementsConfig\x12-\n" +
@@ -4599,10 +4579,9 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x11PythonSetupConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"F\n" +
 	"\x15PythonCondametaConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"x\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"K\n" +
 	"\x14PythonWheelEggConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x121\n" +
-	"\x14extract_dependencies\x18\x02 \x01(\bR\x13extractDependencies\"8\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesJ\x04\b\x02\x10\x03\"8\n" +
 	"\vGoModConfig\x12)\n" +
 	"\x10exclude_indirect\x18\x01 \x01(\bR\x0fexcludeIndirect\"G\n" +
 	"\x16WordpressPluginsConfig\x12-\n" +
