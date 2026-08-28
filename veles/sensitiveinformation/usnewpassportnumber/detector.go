@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package uspassportnumber implements logic for detecting US passport numbers
-package uspassportnumber
+// Package usnewpassportnumber implements logic for detecting the new version US passport numbers
+package usnewpassportnumber
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
+	"slices"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation"
@@ -31,15 +34,44 @@ const (
 )
 
 var (
-	keywordsRe = simpleregex.KeywordsRe([]string{
+	specifierKeywords = []string{
+		`us`,
+		`usa`,
+		`states`,
+		`america`,
+	}
+	baseKeywords = []string{
 		`pass`,
 		`travel`,
 		`doc`,
-	})
+	}
+
+	keywordsRe       *regexp.Regexp
 	passportNumberRe = regexp.MustCompile(`\b[A-Za-z][0-9]{8}\b`)
 )
 
-// NewDetector returns a Detector, that finds US Passport Numbers
+func hasSpecifier(keyword []byte) bool {
+	keywordStr := strings.ToLower(string(keyword))
+	for _, specifier := range specifierKeywords {
+		if strings.Contains(keywordStr, specifier) {
+			return true
+		}
+	}
+	return false
+}
+
+func init() {
+	specifierOrRePattern := strings.Join(specifierKeywords, "|")
+	var keywordsRePattern []string
+	for _, keyword := range baseKeywords {
+		keywordsRePattern = append(keywordsRePattern,
+			fmt.Sprintf(`(?:(?:%s)[\w _-]*)?%s(?:[\w _-]*(?:%s))?`, specifierOrRePattern, keyword, specifierOrRePattern))
+	}
+
+	keywordsRe = simpleregex.KeywordsRe(keywordsRePattern)
+}
+
+// NewDetector returns a Detector, that finds new versions of US passport numbers
 func NewDetector() veles.Detector {
 	return simpleregex.Detector{
 		MaxLen:              max(maxKeywordLen, maxPassportNumberLen),
@@ -47,10 +79,13 @@ func NewDetector() veles.Detector {
 		KeywordsRe:          keywordsRe,
 		ContextWindowBefore: contextWindowSize,
 		ContextWindowAfter:  contextWindowSize,
-		FromMatch: func(blob []byte, keywordMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+		FromMatch: func(blob []byte, matchedKeywords [][]byte) (sensitiveinformation.SensitiveInformation, bool) {
 			likelihood := sensitiveinformation.LikelihoodUnlikely
-			if keywordMatch {
+			if len(matchedKeywords) > 0 {
 				likelihood = sensitiveinformation.LikelihoodLikely
+				if slices.ContainsFunc(matchedKeywords, hasSpecifier) {
+					likelihood = sensitiveinformation.LikelihoodVeryLikely
+				}
 			}
 
 			return sensitiveinformation.SensitiveInformation{
