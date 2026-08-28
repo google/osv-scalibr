@@ -364,11 +364,56 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "RubyGems dotted OS version platform suffix",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "1.2.3-sparc-solaris-2.10",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.2.3",
+			},
+		},
+		{
+			name: "RubyGems compound prefix before platform keyword",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "1.0.0-pre-x86_64-linux",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.0.0",
+			},
+		},
+		{
+			name: "RubyGems PURL platform qualifier used even when platform keyword is unrecognized by the regexp",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "1.0.0-arm64-android",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:gem/example@1.0.0?platform=arm64-android"),
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.0.0",
+			},
+		},
+		{
 			name: "RubyGems Gemfile.lock-shaped version converges with SBOM-shaped version",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeGem,
 				Name:     "nokogiri",
-				Version:  "1.19.3",
+				Version:  "1.19.3-x86_64-linux-gnu",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:gem/nokogiri@1.19.3?platform=x86_64-linux-gnu"),
+				},
 			},
 			want: osvutil.NormalizedPackage{
 				Name:      "nokogiri",
