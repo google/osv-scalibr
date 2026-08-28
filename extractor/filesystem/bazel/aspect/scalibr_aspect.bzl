@@ -11,16 +11,16 @@ def _scalibr_aspect_impl(target, ctx):
     """Aspect implementation that traverses dependencies and collects package metadata.
 
     Args:
-        target: The target the aspect is applied to.
-        ctx: The rule context.
+      target: The target the aspect is applied to.
+      ctx: The rule context.
 
     Returns:
-        A list of providers (ScalibrInfo and OutputGroupInfo).
+      A list of providers (ScalibrInfo and OutputGroupInfo).
     """
 
-    # We care about external workspaces, or internal targets that explicitly declare rules_license metadata
+    # We care about external workspaces, or internal targets that explicitly declare rules_license metadata.
     is_external = bool(target.label.workspace_name)
-    has_package_meta = hasattr(ctx, "rule") and hasattr(ctx.rule.attr, "package_name") and ctx.rule.attr.package_name
+    has_package_meta = hasattr(ctx, "rule") and hasattr(ctx.rule.attr, "package_name") and bool(ctx.rule.attr.package_name)
 
     transitive_files = []
 
@@ -43,7 +43,7 @@ def _scalibr_aspect_impl(target, ctx):
             "name": target.label.workspace_name,
         }
 
-        # Try to gather common versioning and url attributes, including rules_license standard PackageInfo attributes
+        # Try to gather common versioning and url attributes, including rules_license standard PackageInfo attributes.
         if hasattr(ctx, "rule"):
             for attr in ["version", "tag", "commit", "url", "urls", "strip_prefix", "remote", "package_name", "package_version", "package_url"]:
                 if hasattr(ctx.rule.attr, attr):
@@ -63,7 +63,7 @@ def _scalibr_aspect_impl(target, ctx):
         OutputGroupInfo(scalibr_out = files_depset),
     ]
 
-# We traverse all attributes that can contain labels
+# We traverse all attributes that can contain labels.
 scalibr_aspect = aspect(
     doc = "Aspect that collects dependency metadata for Scalibr.",
     implementation = _scalibr_aspect_impl,
