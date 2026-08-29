@@ -78,6 +78,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setupcfg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
@@ -253,6 +254,7 @@ var (
 		// requirements extraction for environments with and without network access.
 		requirements.Name:  {protoCfg(requirements.New)},
 		setup.Name:         {protoCfg(setup.New)},
+		setupcfg.Name:      {protoCfg(setupcfg.New)},
 		pipfilelock.Name:   {protoCfg(pipfilelock.New)},
 		pdmlock.Name:       {protoCfg(pdmlock.New)},
 		poetrylock.Name:    {protoCfg(poetrylock.New)},
