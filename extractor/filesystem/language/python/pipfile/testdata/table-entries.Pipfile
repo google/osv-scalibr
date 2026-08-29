@@ -1,0 +1,12 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = { version = "==3.2" }
+sentry-sdk = { version = ">=1.0.0", extras = ["flask"] }
+celery = { version = "*" }
+
+[dev-packages]
+black = { version = "==22.3.0" }

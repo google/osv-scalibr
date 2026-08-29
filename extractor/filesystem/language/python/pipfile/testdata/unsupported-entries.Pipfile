@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "==2.0.1"
+local-pkg = { path = "./local-pkg", editable = true }
+git-pkg = { git = "https://github.com/example/repo.git" }
+git-pkg-version = { git = "https://github.com/example/repo.git", version = "==1.0.0" }
+
+[dev-packages]
+editable-pkg = { editable = true, path = "." }
