@@ -104,7 +104,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
 			continue
 		}
-		pID := fmt.Sprintf("%sPackage-%s-%s", SPDXRefPrefix, replaceSPDXIDInvalidChars(pName), replaceSPDXIDInvalidChars(id))
+		pID := fmt.Sprintf("%sPackage-%s-%s", SPDXRefPrefix, replaceSPDXIDInvalidChars(p.Name), replaceSPDXIDInvalidChars(id))
 		scalibrToSPDXID[id] = pID
 		if pkg.Name != "" {
 			scalibrToSPDXID[pkg.Name] = pID
