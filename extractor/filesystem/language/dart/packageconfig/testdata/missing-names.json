@@ -1,0 +1,21 @@
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "good_pkg",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "version": "1.0.0"
+    },
+    {
+      "rootUri": "../",
+      "packageUri": "lib/"
+    },
+    {
+      "name": "   ",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "version": "2.0.0"
+    }
+  ]
+}

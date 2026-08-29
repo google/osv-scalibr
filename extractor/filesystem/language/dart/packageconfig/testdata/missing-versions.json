@@ -1,0 +1,22 @@
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "no_version_pkg",
+      "rootUri": "../",
+      "packageUri": "lib/"
+    },
+    {
+      "name": "empty_version_pkg",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "version": ""
+    },
+    {
+      "name": "with_version_pkg",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "version": "0.4.1"
+    }
+  ]
+}
