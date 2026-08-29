@@ -364,6 +364,34 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "multi document",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multi-document.v9.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "@pnpm/exe",
+					Version:    "11.9.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/multi-document.v9.yaml", 13),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "acorn",
+					Version:    "8.11.3",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/multi-document.v9.yaml", 33),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
