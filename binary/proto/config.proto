@@ -82,6 +82,7 @@ message PluginSpecificConfig {
     DotnetPackagesLockJsonConfig dotnet_packages_lock_json = 29;
     DotnetPeConfig dotnet_pe = 30;
     GemspecConfig gemspec = 31;
+    BazelAspectConfig bazel_aspect = 81;
     CargoAuditableConfig cargo_auditable = 32;
     SwiftPackageResolvedConfig swift_package_resolved = 33;
     SwiftPodfileLockConfig swift_podfile_lock = 34;
@@ -605,4 +606,9 @@ message QCOW2Config {
 message ContainerdRuntimeConfig {
   // The local path to the containerd socket.
   string socket_addr = 1;
+}
+
+message BazelAspectConfig {
+  optional string target = 1;
+  optional bool keep_going = 2;
 }
