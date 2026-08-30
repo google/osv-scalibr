@@ -727,15 +727,21 @@ loop:
 			// TypeGNUSparse entries are always sparse, but TypeReg entries may or
 			// may not be sparse. For non-sparse data, sparseCopy falls back to
 			// dst.Write(), matching io.Copy performance.
-			written, err := sparseCopy(outFile, tr, hdr.Size)
-			if err != nil {
-				outFile.Close()
+			// The remaining budget is passed in so a single oversized entry is
+			// stopped mid-copy; checking only after the entry has been written
+			// lets one entry fill the disk before the check below runs.
+			var remaining int64
+			if maxAllowedBytes > 0 {
+				remaining = maxAllowedBytes - totalExtractedSize
+			}
+			written, err := sparseCopy(outFile, tr, hdr.Size, remaining)
+			outFile.Close()
+			totalExtractedSize += written
+			if err != nil && !errors.Is(err, errStorageBudgetExceeded) {
 				extractErr = fmt.Errorf("failed to copy file %s: %w", target, err)
 				break loop
 			}
-			outFile.Close()
-			totalExtractedSize += written
-			if maxAllowedBytes > 0 && totalExtractedSize > maxAllowedBytes {
+			if err != nil || (maxAllowedBytes > 0 && totalExtractedSize > maxAllowedBytes) {
 				extractErr = fmt.Errorf(
 					"total extracted size (%d bytes) exceeds allowed temp storage (%d bytes)",
 					totalExtractedSize, maxAllowedBytes,
@@ -760,7 +766,15 @@ loop:
 // sparse files do not expand zero-filled holes into physical disk/RAM
 // allocations (e.g. untarring a 60 GB sparse file won't consume 60 GB RAM).
 // This also saves significant processing time by skipping zero writes.
-func sparseCopy(dst *os.File, src io.Reader, size int64) (int64, error) {
+// errStorageBudgetExceeded reports that a copy stopped because it ran past the
+// storage budget it was given. The caller turns it into the canonical
+// "exceeds allowed temp storage" error once it knows the cumulative total.
+var errStorageBudgetExceeded = errors.New("storage budget exceeded")
+
+// maxBytes bounds the physical bytes this copy may write; it is not a bound on
+// size, so sparse entries still expand to their full logical length for free.
+// A value <= 0 means unlimited.
+func sparseCopy(dst *os.File, src io.Reader, size, maxBytes int64) (int64, error) {
 	buf := make([]byte, 32*1024)
 	var written int64
 	for {
@@ -775,6 +789,9 @@ func sparseCopy(dst *os.File, src io.Reader, size int64) (int64, error) {
 					return written, fmt.Errorf("dst.Write: %w", err)
 				}
 				written += int64(n)
+				if maxBytes > 0 && written > maxBytes {
+					return written, errStorageBudgetExceeded
+				}
 			}
 		}
 		if err == io.EOF {
