@@ -68,6 +68,7 @@ message PluginSpecificConfig {
     SnapConfig snap = 15;
     KernelModuleConfig kernel_module = 16;
     VmlinuzConfig vmlinuz = 17;
+    BazelAspectConfig bazel_aspect = 81;
     PacmanConfig pacman = 18;
     PortageConfig portage = 19;
     FlatpakConfig flatpak = 20;
@@ -116,6 +117,13 @@ message PluginSpecificConfig {
     ContainerdRuntimeConfig containerd_runtime = 76;
     DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
   }
+}
+
+message BazelAspectConfig {
+  // The Bazel target to evaluate. Defaults to //...
+  string target = 1;
+  // If true, passes --keep_going to Bazel. Defaults to true.
+  optional bool keep_going = 2;
 }
 
 message GoBinaryConfig {

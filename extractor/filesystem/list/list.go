@@ -21,6 +21,7 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/bazel/aspect"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
@@ -356,6 +357,11 @@ var (
 		dockercomposeimage.Name: {protoCfg(dockercomposeimage.New)},
 	}
 
+	// Bazel extractors.
+	Bazel = InitMap{
+		aspect.Name: {protoCfg(aspect.New)},
+	}
+
 	// OS extractors.
 	OS = InitMap{
 		dpkg.Name:       {protoCfg(dpkg.New)},
@@ -553,6 +559,7 @@ var (
 		Secrets,
 		MiscSource,
 		CPANSource,
+		Bazel,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -581,6 +588,7 @@ var (
 		PythonSource, PythonArtifact,
 		GoSource, GoArtifact,
 		OS,
+		Bazel,
 	)
 
 	// All extractors available from SCALIBR.
@@ -612,6 +620,7 @@ var (
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
 		"perl":       vals(CPANSource),
+		"bazel":      vals(Bazel),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
