@@ -95,7 +95,10 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			continue
 		}
 
-		if p.Name == "" {
+		pName := p.Name
+		pVersion := p.Version
+
+		if pName == "" {
 			log.Warnf("Package %v PURL name empty, skipping", pkg)
 			continue
 		}
@@ -104,7 +107,7 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
 			continue
 		}
-		pID := fmt.Sprintf("%sPackage-%s-%s", SPDXRefPrefix, replaceSPDXIDInvalidChars(p.Name), replaceSPDXIDInvalidChars(id))
+		pID := fmt.Sprintf("%sPackage-%s-%s", SPDXRefPrefix, replaceSPDXIDInvalidChars(pName), replaceSPDXIDInvalidChars(id))
 		scalibrToSPDXID[id] = pID
 		if pkg.Name != "" {
 			scalibrToSPDXID[pkg.Name] = pID
@@ -117,9 +120,9 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 		allOtherLicenses.Update(otherLicenses)
 
 		packages = append(packages, &v2_3.Package{
-			PackageName:           p.Name,
+			PackageName:           pName,
 			PackageSPDXIdentifier: common.ElementID(pID),
-			PackageVersion:        p.Version,
+			PackageVersion:        pVersion,
 			PackageSupplier: &common.Supplier{
 				Supplier:     NoAssertion,
 				SupplierType: NoAssertion,
