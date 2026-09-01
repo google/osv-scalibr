@@ -21,6 +21,7 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/bazel/aspect"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
@@ -59,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/electronasar"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -245,9 +247,10 @@ var (
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name: {protoCfg(packagejson.New)},
-		denojson.Name:    {protoCfg(denojson.New)},
-		vsix.Name:        {protoCfg(vsix.New)},
+		packagejson.Name:  {protoCfg(packagejson.New)},
+		denojson.Name:     {protoCfg(denojson.New)},
+		electronasar.Name: {protoCfg(electronasar.New)},
+		vsix.Name:         {protoCfg(vsix.New)},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
@@ -355,6 +358,11 @@ var (
 		podman.Name:             {protoCfg(podman.New)},
 		dockerbaseimage.Name:    {protoCfg(dockerbaseimage.New)},
 		dockercomposeimage.Name: {protoCfg(dockercomposeimage.New)},
+	}
+
+	// Bazel extractors.
+	Bazel = InitMap{
+		aspect.Name: {protoCfg(aspect.New)},
 	}
 
 	// OS extractors.
@@ -554,6 +562,7 @@ var (
 		Secrets,
 		MiscSource,
 		CPANSource,
+		Bazel,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -582,6 +591,7 @@ var (
 		PythonSource, PythonArtifact,
 		GoSource, GoArtifact,
 		OS,
+		Bazel,
 	)
 
 	// All extractors available from SCALIBR.
@@ -613,6 +623,7 @@ var (
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
 		"perl":       vals(CPANSource),
+		"bazel":      vals(Bazel),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
