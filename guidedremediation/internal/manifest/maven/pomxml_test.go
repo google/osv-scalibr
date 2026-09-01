@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -31,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/clients/datasource"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
+	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
@@ -674,6 +676,61 @@ func TestRead_MultiModuleDiscovery(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected to find junit:junit with version 4.12, got requirements: %v", got.Requirements())
+	}
+}
+
+func TestReadFindsLocalParentFromGitRoot(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	moduleDir := filepath.Join(repo, "module")
+	if err := os.Mkdir(moduleDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	parentPOM := `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>parent</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+</project>`
+	if err := os.WriteFile(filepath.Join(repo, "pom.xml"), []byte(parentPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+	childPOM := `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.example</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.0</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>child</artifactId>
+</project>`
+	childPath := filepath.Join(moduleDir, "pom.xml")
+	if err := os.WriteFile(childPath, []byte(childPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rw, err := GetReadWriter(client, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := parser.ParseManifest(childPath, rw, "")
+	if err != nil {
+		t.Fatalf("ParseManifest() failed to read local parent from Git root: %v", err)
+	}
+	specific := m.EcosystemSpecific().(ManifestSpecific)
+	if !slices.Contains(specific.ParentPaths, "pom.xml") {
+		t.Fatalf("parent paths = %v, want repository-root pom.xml", specific.ParentPaths)
+	}
+	if err := parser.WriteManifestPatches(childPath, m, nil, rw, ""); err != nil {
+		t.Fatalf("WriteManifestPatches() failed to update manifests under the Git root: %v", err)
 	}
 }
 

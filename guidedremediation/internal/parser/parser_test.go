@@ -45,6 +45,113 @@ func TestParseManifestRejectsPathOutsideProjectRoot(t *testing.T) {
 	}
 }
 
+func TestRootAndPathUsesNearestGitRoot(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	manifestDir := filepath.Join(repo, "module", "app")
+	if err := os.MkdirAll(manifestDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(manifestDir, "package.json")
+
+	root, relPath, err := rootAndPath(manifestPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+
+	if got := root.Name(); got != repo {
+		t.Fatalf("root.Name() = %q, want nearest Git root %q", got, repo)
+	}
+	if want := "module/app/package.json"; relPath != want {
+		t.Fatalf("relative path = %q, want %q", relPath, want)
+	}
+}
+
+func TestRootAndPathUsesNearestNestedGitRoot(t *testing.T) {
+	outer := t.TempDir()
+	if err := os.Mkdir(filepath.Join(outer, ".git"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	inner := filepath.Join(outer, "nested")
+	if err := os.MkdirAll(filepath.Join(inner, ".git"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(inner, "package.json")
+
+	root, _, err := rootAndPath(manifestPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+
+	if got := root.Name(); got != inner {
+		t.Fatalf("root.Name() = %q, want nearest nested Git root %q", got, inner)
+	}
+}
+
+func TestRootAndPathAcceptsGitFile(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repo, ".git"), []byte("gitdir: elsewhere\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	manifestDir := filepath.Join(repo, "module")
+	if err := os.Mkdir(manifestDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	root, _, err := rootAndPath(filepath.Join(manifestDir, "package.json"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+
+	if got := root.Name(); got != repo {
+		t.Fatalf("root.Name() = %q, want Git worktree root %q", got, repo)
+	}
+}
+
+func TestRootAndPathFallsBackToManifestDirectory(t *testing.T) {
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "package.json")
+
+	root, relPath, err := rootAndPath(manifestPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+
+	if got := root.Name(); got != manifestDir {
+		t.Fatalf("root.Name() = %q, want manifest directory %q", got, manifestDir)
+	}
+	if relPath != "package.json" {
+		t.Fatalf("relative path = %q, want %q", relPath, "package.json")
+	}
+}
+
+func TestRootAndPathExplicitRootOverridesGitRoot(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	projectRoot := filepath.Join(repo, "project")
+	if err := os.Mkdir(projectRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	root, _, err := rootAndPath(filepath.Join(projectRoot, "package.json"), projectRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+
+	if got := root.Name(); got != projectRoot {
+		t.Fatalf("root.Name() = %q, want explicit project root %q", got, projectRoot)
+	}
+}
+
 func TestParseManifestRejectsEscapingSymlink(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("symlink creation may require additional privileges on Windows")

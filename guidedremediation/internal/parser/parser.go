@@ -29,7 +29,8 @@ import (
 )
 
 // ParseManifest parses a manifest file into a manifest.Manifest. If projectRoot
-// is empty, the manifest's directory is used as the project boundary.
+// is empty, the nearest Git repository root or the manifest's directory is used
+// as the project boundary.
 func ParseManifest(path string, rw manifest.ReadWriter, projectRoot string) (manifest.Manifest, error) {
 	root, path, err := rootAndPath(path, projectRoot)
 	if err != nil {
@@ -45,7 +46,8 @@ func ParseManifest(path string, rw manifest.ReadWriter, projectRoot string) (man
 }
 
 // ParseLockfile parses a lockfile file into a resolve.Graph. If projectRoot is
-// empty, the lockfile's directory is used as the project boundary.
+// empty, the nearest Git repository root or the lockfile's directory is used as
+// the project boundary.
 func ParseLockfile(path string, rw lockfile.ReadWriter, projectRoot string) (*resolve.Graph, error) {
 	root, path, err := rootAndPath(path, projectRoot)
 	if err != nil {
@@ -89,7 +91,13 @@ func rootAndPath(path, projectRoot string) (*os.Root, string, error) {
 	}
 	root := projectRoot
 	if root == "" {
-		root = filepath.Dir(absPath)
+		root, err = findGitRoot(filepath.Dir(absPath))
+		if err != nil {
+			return nil, "", err
+		}
+		if root == "" {
+			root = filepath.Dir(absPath)
+		}
 	}
 	root, err = filepath.Abs(root)
 	if err != nil {
@@ -105,4 +113,21 @@ func rootAndPath(path, projectRoot string) (*os.Root, string, error) {
 	}
 
 	return rootFS, filepath.ToSlash(relPath), nil
+}
+
+func findGitRoot(start string) (string, error) {
+	dir := filepath.Clean(start)
+	for {
+		if _, err := os.Lstat(filepath.Join(dir, ".git")); err == nil {
+			return dir, nil
+		} else if !os.IsNotExist(err) {
+			return "", fmt.Errorf("failed to inspect Git repository marker in %q: %w", dir, err)
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", nil
+		}
+		dir = parent
+	}
 }
