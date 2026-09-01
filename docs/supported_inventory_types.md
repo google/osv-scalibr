@@ -94,6 +94,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
 |            | VS Code extension                                 | `javascript/vsix`                    |
+|            | Electron ASAR Archive                             | `javascript/electronasar`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
