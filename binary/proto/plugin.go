@@ -15,6 +15,8 @@
 package proto
 
 import (
+	"strings"
+
 	"github.com/google/osv-scalibr/plugin"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -70,7 +72,10 @@ func fileErrorsToProto(s []*plugin.FileError) []*spb.FileError {
 	}
 	var res []*spb.FileError
 	for _, e := range s {
-		res = append(res, &spb.FileError{FilePath: e.FilePath, ErrorMessage: e.ErrorMessage})
+		// Error messages might include binary blob snippets from files we scanned.
+		// We have to remove these so proto serialization doesn't fail.
+		msg := strings.ToValidUTF8(e.ErrorMessage, "")
+		res = append(res, &spb.FileError{FilePath: e.FilePath, ErrorMessage: msg})
 	}
 	return res
 }
