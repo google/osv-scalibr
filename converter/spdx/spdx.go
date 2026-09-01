@@ -94,10 +94,12 @@ func ToSPDX23(i inventory.Inventory, c Config) *v2_3.Document {
 			log.Warnf("Package %v has no PURL, skipping", pkg)
 			continue
 		}
+
 		pName := p.Name
 		pVersion := p.Version
-		if pName == "" || pVersion == "" {
-			log.Warnf("Package %v PURL name or version empty, skipping", pkg)
+
+		if pName == "" {
+			log.Warnf("Package %v PURL name empty, skipping", pkg)
 			continue
 		}
 		id, err := pkg.GetIDOrGenerate()
