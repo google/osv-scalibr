@@ -14,18 +14,18 @@ var _ = &simplevalidate.Validator[string]{
 }
 
 var _ = &simplevalidate.Validator[string]{
-	Endpoint: insecureBase + "/account", // want `hardcoded validator endpoint "http://api.example.com/account" uses insecure protocol "http"; use HTTPS`
+	Endpoint: insecureBase + "/account", // want `hardcoded HTTP validator endpoint "http://api.example.com/account" uses scheme "http"; use HTTPS`
 }
 
 var _ = &simplevalidate.Validator[string]{
 	Endpoints: []string{
 		"https://api.example.com/one",
-		"ftp://api.example.com/two", // want `hardcoded validator endpoint "ftp://api.example.com/two" uses insecure protocol "ftp"; use HTTPS`
+		"http://api.example.com/two", // want `hardcoded HTTP validator endpoint "http://api.example.com/two" uses scheme "http"; use HTTPS`
 	},
 }
 
 func requests(ctx context.Context, dynamicURL string) {
-	_, _ = http.NewRequest(http.MethodGet, "http://api.example.com/account", nil) // want `hardcoded validator endpoint "http://api.example.com/account" uses insecure protocol "http"; use HTTPS`
+	_, _ = http.NewRequest(http.MethodGet, "http://api.example.com/account", nil) // want `hardcoded HTTP validator endpoint "http://api.example.com/account" uses scheme "http"; use HTTPS`
 	_, _ = http.NewRequestWithContext(ctx, http.MethodGet, "https://api.example.com/account", nil)
 	_, _ = http.NewRequest(http.MethodGet, dynamicURL, nil)
 }

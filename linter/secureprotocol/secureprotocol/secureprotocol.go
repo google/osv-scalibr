@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package secureprotocol defines an analyzer that rejects hardcoded insecure
+// Package secureprotocol defines an analyzer that requires HTTPS for hardcoded
 // URLs at credential-bearing HTTP request sinks.
 package secureprotocol
 
@@ -33,7 +33,7 @@ const velesSecretsPrefix = "github.com/google/osv-scalibr/veles/secrets/"
 // Analyzer rejects compile-time-constant non-HTTPS URLs used by Veles HTTP validators.
 var Analyzer = &analysis.Analyzer{
 	Name: "secureprotocol",
-	Doc:  "reject hardcoded insecure URLs used by secret validators",
+	Doc:  "require HTTPS for hardcoded URLs used by secret HTTP validators",
 	Run:  run,
 }
 
@@ -141,6 +141,6 @@ func checkURL(pass *analysis.Pass, expr ast.Expr) {
 		return
 	}
 	if !strings.EqualFold(parsed.Scheme, "https") {
-		pass.Reportf(expr.Pos(), "hardcoded validator endpoint %q uses insecure protocol %q; use HTTPS", rawURL, parsed.Scheme)
+		pass.Reportf(expr.Pos(), "hardcoded HTTP validator endpoint %q uses scheme %q; use HTTPS", rawURL, parsed.Scheme)
 	}
 }
