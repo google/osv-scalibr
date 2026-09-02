@@ -206,6 +206,11 @@ func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path st
 			}
 		}
 
+		purlType := purl.TypeNPM
+		if commit != "" {
+			purlType = purl.TypeGit
+		}
+
 		depGroups := []string{}
 		if pkg.Dev {
 			depGroups = append(depGroups, "dev")
@@ -215,7 +220,7 @@ func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path st
 		packages = append(packages, &extractor.Package{
 			Name:     name,
 			Version:  version,
-			PURLType: purl.TypeNPM,
+			PURLType: purlType,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},
