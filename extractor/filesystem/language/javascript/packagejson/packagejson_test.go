@@ -339,7 +339,15 @@ func TestExtract(t *testing.T) {
 				Version:  "1.2.3",
 				PURLType: purl.TypeNPM,
 				Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 2),
-				Metadata: &metadata.JavascriptPackageJSONMetadata{},
+				Metadata: &metadata.JavascriptPackageJSONMetadata{Dependencies: map[string]string{
+					"dep1": "1.0.0",
+					"dep2": ">2.0.0",
+					"dep3": "~3.1.0",
+					"dep4": "^0.4.2",
+					"dep5": "5.x",
+					"dep6": "invalid",
+					"dep7": ">=1.0.0 <2.0.0",
+				}},
 			}},
 		},
 		{
@@ -422,7 +430,9 @@ func TestExtract(t *testing.T) {
 					Version:  "1.2.3",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 2),
-					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Dependencies: map[string]string{"prod-only": "2.0.0", "prod-shared": "^1.0.0"},
+					},
 				},
 				{
 					Name:     "dev-only",
@@ -478,7 +488,9 @@ func TestExtract(t *testing.T) {
 					Version:  "1.2.3",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 2),
-					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Dependencies: map[string]string{"prod-only": "2.0.0", "prod-shared": "^1.0.0"},
+					},
 				},
 				{
 					Name:     "dev-only",
