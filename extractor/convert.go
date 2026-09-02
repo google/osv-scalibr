@@ -155,7 +155,7 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemSwiftURL)
 	case purl.TypeBrew:
 		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
-	case "git":
+	case purl.TypeGit:
 		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
 	}
 

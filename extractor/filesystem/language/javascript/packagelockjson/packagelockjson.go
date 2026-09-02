@@ -334,13 +334,18 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			pkg.DepGroups = []string{}
 		}
 
+		purlType := purl.TypeNPM
+		if pkg.Commit != "" {
+			purlType = purl.TypeGit
+		}
+
 		result[i] = &extractor.Package{
 			Name: pkg.Name,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Commit,
 			},
 			Version:  pkg.Version,
-			PURLType: purl.TypeNPM,
+			PURLType: purlType,
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: pkg.DepGroups,
 			},

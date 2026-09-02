@@ -855,7 +855,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "my-bitbucket-package",
 					Version:  "1.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6104ae42cd32c3d724036d3964678f197b2c9cdb",
@@ -867,7 +867,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "@my-scope/my-package",
 					Version:  "1.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 20),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "267087851ad5fac92a184749c27cd539e2fc862e",
@@ -879,7 +879,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "@my-scope/my-other-package",
 					Version:  "1.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fbfc962ab51eb1d754749b68c064460221fbd689",
@@ -891,7 +891,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "faker-parser",
 					Version:  "0.0.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d2dc42a9351d4d89ec48c525e34f612b6d77993f",
@@ -903,7 +903,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "mocks",
 					Version:  "20.0.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "590f321b4eb3f692bb211bd74e22947639a6f79d",
