@@ -70,6 +70,10 @@ func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.Val
 		validator = &validators.FTPValidator{}
 	case "sftp":
 		validator = &validators.SFTPValidator{}
+	case "amqp":
+		validator = &validators.AMQPValidator{UseTLS: false}
+	case "amqps":
+		validator = &validators.AMQPValidator{UseTLS: true}
 	default:
 		return veles.ValidationFailed, fmt.Errorf("scheme %q not supported", scheme)
 	}

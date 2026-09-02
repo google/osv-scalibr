@@ -33,9 +33,11 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -55,6 +57,7 @@ func TestValidator(t *testing.T) {
 	digestHTTPSvrWithCookies := mockDigestHTTPServer(t, "admin", "pass", true)
 	ftpAddr := mockFTPServer(t, "user", "pass")
 	sftpAddr := mockSSHServer(t, "sshuser", "sshpass")
+	amqpAddr := mockAMQPServer(t, "mquser", "mqpass")
 
 	cases := []struct {
 		name string
@@ -112,6 +115,17 @@ func TestValidator(t *testing.T) {
 		{
 			name: "sftp_invalid",
 			url:  "sftp://sshuser:wrong@" + sftpAddr,
+			want: veles.ValidationInvalid,
+		},
+		// AMQP Tests
+		{
+			name: "amqp_valid",
+			url:  fmt.Sprintf("amqp://mquser:mqpass@%s/", amqpAddr),
+			want: veles.ValidationValid,
+		},
+		{
+			name: "amqp_invalid",
+			url:  fmt.Sprintf("amqp://mquser:wrong@%s/", amqpAddr),
 			want: veles.ValidationInvalid,
 		},
 	}
@@ -335,4 +349,187 @@ func mockDigestHTTPServer(t *testing.T, validUser, validPass string, testCookies
 
 	t.Cleanup(server.Close)
 	return server
+}
+
+// mockAMQPServer creates a minimal AMQP 0-9-1 server that validates credentials via SASL PLAIN.
+func mockAMQPServer(t *testing.T, validUser, validPass string) string {
+	t.Helper()
+
+	const (
+		classConnection = 10
+		methodStart     = 10
+		methodStartOK   = 11
+		methodTune      = 30
+		methodClose     = 50
+	)
+
+	l, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { l.Close() })
+
+	go func() {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return
+			}
+			go func(c net.Conn) {
+				defer c.Close()
+
+				// Read AMQP protocol header (8 bytes: "AMQP" + 4 version bytes).
+				header := make([]byte, 8)
+				if _, err := io.ReadFull(c, header); err != nil {
+					return
+				}
+				if string(header[:4]) != "AMQP" {
+					return
+				}
+
+				// Send Connection.Start.
+				if err := amqpWriteMethodFrame(c, methodStart, amqpConnectionStartPayload()); err != nil {
+					return
+				}
+
+				// Read Connection.Start-Ok.
+				classID, methodID, payload, err := amqpTestReadMethodFrame(c)
+				if err != nil || classID != classConnection || methodID != methodStartOK {
+					return
+				}
+
+				// Parse SASL credentials from the Start-Ok payload.
+				user, pass, ok := amqpParseSASLPlain(payload)
+				if !ok {
+					_ = amqpWriteMethodFrame(c, methodClose, amqpConnectionClosePayload(403, "ACCESS_REFUSED"))
+					return
+				}
+
+				if user == validUser && pass == validPass {
+					// Send Connection.Tune (authentication succeeded).
+					_ = amqpWriteMethodFrame(c, methodTune, amqpConnectionTunePayload())
+				} else {
+					// Send Connection.Close (authentication failed).
+					_ = amqpWriteMethodFrame(c, methodClose, amqpConnectionClosePayload(403, "ACCESS_REFUSED"))
+				}
+			}(conn)
+		}
+	}()
+	return l.Addr().String()
+}
+
+// amqpWriteMethodFrame writes a single AMQP Connection-class method frame.
+func amqpWriteMethodFrame(w io.Writer, methodID uint16, args []byte) error {
+	const classConnection uint16 = 10
+	payloadSize := 4 + len(args)
+	frame := make([]byte, 7+payloadSize+1)
+	frame[0] = 1 // method frame
+	binary.BigEndian.PutUint16(frame[1:3], 0)
+	binary.BigEndian.PutUint32(frame[3:7], uint32(payloadSize))
+	binary.BigEndian.PutUint16(frame[7:9], classConnection)
+	binary.BigEndian.PutUint16(frame[9:11], methodID)
+	copy(frame[11:], args)
+	frame[len(frame)-1] = 0xCE
+	_, err := w.Write(frame)
+	return err
+}
+
+// amqpTestReadMethodFrame reads a single AMQP method frame.
+func amqpTestReadMethodFrame(r io.Reader) (classID, methodID uint16, payload []byte, err error) {
+	header := make([]byte, 7)
+	if _, err := io.ReadFull(r, header); err != nil {
+		return 0, 0, nil, err
+	}
+	size := binary.BigEndian.Uint32(header[3:7])
+	buf := make([]byte, size+1)
+	if _, err := io.ReadFull(r, buf); err != nil {
+		return 0, 0, nil, err
+	}
+	if len(buf) < 5 {
+		return 0, 0, nil, errors.New("payload too short")
+	}
+	classID = binary.BigEndian.Uint16(buf[0:2])
+	methodID = binary.BigEndian.Uint16(buf[2:4])
+	return classID, methodID, buf[4:size], nil
+}
+
+// amqpConnectionStartPayload builds a minimal Connection.Start payload.
+func amqpConnectionStartPayload() []byte {
+	// version_major(1) + version_minor(1) + server_properties(table, empty=4) +
+	// mechanisms(long-string "PLAIN") + locales(long-string "en_US")
+	mechanism := "PLAIN"
+	locale := "en_US"
+	size := 2 + 4 + 4 + len(mechanism) + 4 + len(locale)
+	buf := make([]byte, size)
+	buf[0] = 0 // version_major
+	buf[1] = 9 // version_minor
+	offset := 2
+	binary.BigEndian.PutUint32(buf[offset:], 0) // empty server_properties table
+	offset += 4
+	binary.BigEndian.PutUint32(buf[offset:], uint32(len(mechanism)))
+	offset += 4
+	copy(buf[offset:], mechanism)
+	offset += len(mechanism)
+	binary.BigEndian.PutUint32(buf[offset:], uint32(len(locale)))
+	offset += 4
+	copy(buf[offset:], locale)
+	return buf
+}
+
+// amqpConnectionTunePayload builds a minimal Connection.Tune payload.
+func amqpConnectionTunePayload() []byte {
+	// channel_max(2) + frame_max(4) + heartbeat(2)
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint16(buf[0:2], 2047)   // channel_max
+	binary.BigEndian.PutUint32(buf[2:6], 131072) // frame_max
+	binary.BigEndian.PutUint16(buf[6:8], 60)     // heartbeat
+	return buf
+}
+
+// amqpConnectionClosePayload builds a minimal Connection.Close payload.
+func amqpConnectionClosePayload(code uint16, text string) []byte {
+	// reply_code(2) + reply_text(short-string) + class_id(2) + method_id(2)
+	size := 2 + 1 + len(text) + 4
+	buf := make([]byte, size)
+	binary.BigEndian.PutUint16(buf[0:2], code)
+	buf[2] = byte(len(text))
+	copy(buf[3:], text)
+	offset := 3 + len(text)
+	binary.BigEndian.PutUint16(buf[offset:], 0)   // class_id
+	binary.BigEndian.PutUint16(buf[offset+2:], 0) // method_id
+	return buf
+}
+
+// amqpParseSASLPlain extracts username and password from a Connection.Start-Ok payload.
+// The payload format is: client_properties(table) + mechanism(short-string) + response(long-string) + locale(short-string).
+// The SASL PLAIN response is: \x00username\x00password.
+func amqpParseSASLPlain(payload []byte) (user, pass string, ok bool) {
+	if len(payload) < 4 {
+		return "", "", false
+	}
+	// Skip client_properties table.
+	tableSize := binary.BigEndian.Uint32(payload[0:4])
+	offset := 4 + int(tableSize)
+	if offset >= len(payload) {
+		return "", "", false
+	}
+	// Skip mechanism short-string.
+	mechLen := int(payload[offset])
+	offset += 1 + mechLen
+	if offset+4 > len(payload) {
+		return "", "", false
+	}
+	// Read response long-string.
+	respLen := binary.BigEndian.Uint32(payload[offset : offset+4])
+	offset += 4
+	if offset+int(respLen) > len(payload) {
+		return "", "", false
+	}
+	response := string(payload[offset : offset+int(respLen)])
+	// SASL PLAIN format: \x00username\x00password
+	parts := strings.SplitN(response, "\x00", 3)
+	if len(parts) != 3 || parts[0] != "" {
+		return "", "", false
+	}
+	return parts[1], parts[2], true
 }
