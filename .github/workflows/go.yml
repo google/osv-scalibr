@@ -69,6 +69,8 @@ jobs:
           version-file: .golangci-lint-version
           args: --timeout=5m
   tests:
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
