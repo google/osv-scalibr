@@ -169,7 +169,7 @@ func TestReadWrite(t *testing.T) {
 `))
 
 	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
-	mavenRW, err := GetReadWriter(client)
+	mavenRW, err := GetReadWriter(client, "")
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -564,6 +564,117 @@ func TestReadWrite(t *testing.T) {
 	}
 	defer gotFile.Close()
 	compareToFile(t, gotFile, "testdata/parent/grandparent/pom.xml")
+}
+
+func TestRead_MultiModuleDiscovery(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create root/pom.xml
+	rootPOM := `
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>root</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>module-a</module>
+    <module>module-b</module>
+  </modules>
+</project>`
+	if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte(rootPOM), 0644); err != nil {
+		t.Fatalf("failed to write root pom.xml: %v", err)
+	}
+
+	if err := os.MkdirAll(filepath.Join(dir, "module-a"), 0755); err != nil {
+		t.Fatalf("failed to create module-a dir: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "module-b"), 0755); err != nil {
+		t.Fatalf("failed to create module-b dir: %v", err)
+	}
+
+	// Create module-b/pom.xml
+	moduleBPOM := `
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>module-b</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`
+	if err := os.WriteFile(filepath.Join(dir, "module-b", "pom.xml"), []byte(moduleBPOM), 0644); err != nil {
+		t.Fatalf("failed to write module-b pom.xml: %v", err)
+	}
+
+	// Create module-a/pom.xml
+	moduleAPOM := `
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>module-a</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.example</groupId>
+        <artifactId>module-b</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+	if err := os.WriteFile(filepath.Join(dir, "module-a", "pom.xml"), []byte(moduleAPOM), 0644); err != nil {
+		t.Fatalf("failed to write module-a pom.xml: %v", err)
+	}
+
+	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+
+	// Test WITH projectRoot
+	mavenRW, err := GetReadWriter(client, dir)
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+
+	vol := filepath.VolumeName(dir) + "/"
+	fsys := scalibrfs.DirFS(vol)
+	relPOM, err := filepath.Rel(vol, filepath.Join(dir, "module-a", "pom.xml"))
+	if err != nil {
+		t.Fatalf("error getting relative path: %v", err)
+	}
+	got, err := mavenRW.Read(filepath.ToSlash(relPOM), fsys)
+	if err != nil {
+		t.Fatalf("error reading manifest: %v", err)
+	}
+
+	// Verify that junit has version 4.12 (imported from module-b)
+	found := false
+	for _, req := range got.Requirements() {
+		if req.Name == "junit:junit" {
+			if req.Version == "4.12" {
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		t.Errorf("expected to find junit:junit with version 4.12, got requirements: %v", got.Requirements())
+	}
 }
 
 func TestMavenWrite(t *testing.T) {
@@ -1059,5 +1170,147 @@ func Test_generatePropertyPatches(t *testing.T) {
 		if ok != tt.possible || !reflect.DeepEqual(patches, tt.patches) {
 			t.Errorf("generatePropertyPatches(%s, %s): got %v %v, want %v %v", tt.s1, tt.s2, patches, ok, tt.patches, tt.possible)
 		}
+	}
+}
+
+func TestRead_MultiModuleDiscovery_NonStandardPOM(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create root/pom-conventions.xml
+	rootPOM := `
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>root</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>module-a</module>
+    <module>module-b</module>
+  </modules>
+</project>`
+	if err := os.WriteFile(filepath.Join(dir, "pom-conventions.xml"), []byte(rootPOM), 0644); err != nil {
+		t.Fatalf("failed to write root pom-conventions.xml: %v", err)
+	}
+
+	if err := os.MkdirAll(filepath.Join(dir, "module-a"), 0755); err != nil {
+		t.Fatalf("failed to create module-a dir: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "module-b"), 0755); err != nil {
+		t.Fatalf("failed to create module-b dir: %v", err)
+	}
+
+	// Create module-b/pom.xml
+	moduleBPOM := `
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>module-b</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`
+	if err := os.WriteFile(filepath.Join(dir, "module-b", "pom.xml"), []byte(moduleBPOM), 0644); err != nil {
+		t.Fatalf("failed to write module-b pom.xml: %v", err)
+	}
+
+	// Create module-a/pom.xml
+	moduleAPOM := `
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>module-a</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.example</groupId>
+        <artifactId>module-b</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+	if err := os.WriteFile(filepath.Join(dir, "module-a", "pom.xml"), []byte(moduleAPOM), 0644); err != nil {
+		t.Fatalf("failed to write module-a pom.xml: %v", err)
+	}
+
+	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+
+	// Test WITH projectRoot (which is dir, containing pom-conventions.xml)
+	mavenRW, err := GetReadWriter(client, dir)
+	if err != nil {
+		t.Fatalf("error creating ReadWriter: %v", err)
+	}
+
+	vol := filepath.VolumeName(dir) + "/"
+	fsys := scalibrfs.DirFS(vol)
+	relPOM, err := filepath.Rel(vol, filepath.Join(dir, "module-a", "pom.xml"))
+	if err != nil {
+		t.Fatalf("error getting relative path: %v", err)
+	}
+	got, err := mavenRW.Read(filepath.ToSlash(relPOM), fsys)
+	if err != nil {
+		t.Fatalf("error reading manifest: %v", err)
+	}
+
+	// Verify that junit has version 4.12 (imported from module-b)
+	found := false
+	for _, req := range got.Requirements() {
+		if req.Name == "junit:junit" {
+			if req.Version == "4.12" {
+				found = true
+				break
+			}
+		}
+	}
+	if !found {
+		t.Errorf("expected to find junit:junit with version 4.12, got requirements: %v", got.Requirements())
+	}
+}
+
+func Test_isPOMFile(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"pom.xml", true},
+		{"POM.XML", true},
+		{"pom-conventions.xml", true},
+		{"pom-conventions.XML", true},
+		{"pom-.xml", true},
+		{"pom-abc.xml", true},
+		{"parent-pom.xml", true},
+		{"common-pom.xml", true},
+		{"pom-conventions-pom.xml", true},
+		{"not-pom.xml", true}, // Matches *-pom.xml
+		{"my-app.pom", false},
+		{"not-a-pom-file.xml", false},
+		{"pom.xml.bak", false},
+		{"apom.xml", false},
+		{"pom", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			got := isPOMFile(tt.path)
+			if got != tt.want {
+				t.Errorf("isPOMFile(%q) = %v, want %v", tt.path, got, tt.want)
+			}
+		})
 	}
 }

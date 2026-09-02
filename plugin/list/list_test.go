@@ -131,12 +131,12 @@ func TestFromNames(t *testing.T) {
 		{
 			desc:      "Find_all_Plugins_of_a_type",
 			names:     []string{"python", "windows", "cis", "layerdetails"},
-			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "baseimage"},
+			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/pyprojecttoml", "python/requirements", "python/setup", "windows/dismpatch", "cis/generic-linux/etcpasswdpermissions", "baseimage"},
 		},
 		{
 			desc:      "Remove_duplicates",
 			names:     []string{"python", "python"},
-			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup"},
+			wantNames: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/uvlock", "python/wheelegg", "python/pyprojecttoml", "python/requirements", "python/setup"},
 		},
 		{
 			desc:      "Nonexistent_plugin",

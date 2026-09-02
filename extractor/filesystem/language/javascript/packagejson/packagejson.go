@@ -26,8 +26,8 @@ import (
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
@@ -145,7 +145,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from package.json files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	pkgs, err := parse(input.Path, input.Reader, e.config)
+	pkgs, err := e.parse(input.Path, input.Reader)
 	if err != nil {
 		e.reportFileExtracted(input.Path, input.Info, err)
 		return inventory.Inventory{}, fmt.Errorf("packagejson.parse: %w", err)
@@ -171,13 +171,13 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 }
 
 // parse parses a package.json file and returns a list of packages.
-func parse(path string, r io.Reader, config *cpb.JavascriptPackageJsonConfig) ([]*extractor.Package, error) {
+func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error) {
 	content, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	finder := linefinder.NewJSONLineFinder(string(content))
+	finder := linefinder.NewJSONLineFinder(content)
 
 	var p packageJSON
 	if err := json.Unmarshal(content, &p); err != nil {
@@ -222,26 +222,56 @@ func parse(path string, r io.Reader, config *cpb.JavascriptPackageJsonConfig) ([
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
 			Contributors: removeEmptyPersons(p.Contributors),
+			Dependencies: p.Dependencies,
 		},
 	})
 
 	depPkgs := map[string]dependencyDetails{}
-	if config.GetIncludeDependencies() {
+	if e.config.GetIncludeDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "dependencies", p.Dependencies, nil)
 	}
-	if config.GetIncludeDevDependencies() {
+	if e.config.GetIncludeDevDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "devDependencies", p.DevDependencies, []string{"dev"})
 	}
-	if config.GetIncludeOptionalDependencies() {
+	if e.config.GetIncludeOptionalDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "optionalDependencies", p.OptionalDependencies, []string{"optional"})
 	}
-	if config.GetIncludePeerDependencies() {
+	if e.config.GetIncludePeerDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "peerDependencies", p.PeerDependencies, []string{"peer"})
 	}
 
 	for _, dep := range depPkgs {
 		dep.pkg.Metadata = &osv.DepGroupMetadata{DepGroupVals: dep.depGroups}
 		pkgs = append(pkgs, dep.pkg)
+	}
+
+	if e.includeDependencies {
+		for name, version := range p.Dependencies {
+			c, err := semver.NPM.ParseConstraint(version)
+			if err != nil {
+				log.Debugf("failed to parse NPM version constraint %s for dependency %s in %s: %v", version, name, path, err)
+				continue
+			}
+			v, err := c.CalculateMinVersion()
+			if err != nil {
+				log.Debugf("failed to calculate min NPM version for dependency %s in %s with constraint %s: %v", name, path, version, err)
+				continue
+			}
+
+			lineNum := finder.LineOf("dependencies." + gjson.Escape(name))
+
+			loc := extractor.LocationFromPathAndLine(path, lineNum)
+			pkgs = append(pkgs, &extractor.Package{
+				Name: name,
+				// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
+				// Ignoring the build value, which isn't relevant for version comparison.
+				// TODO(b/444684673): Include the build value in the version string. Currently deps.dev
+				// does not parse out the build value, so that need to be fixed first.
+				Version:  v.Canon(false),
+				PURLType: purl.TypeNPM,
+				Location: loc,
+			})
+		}
 	}
 
 	return pkgs, nil

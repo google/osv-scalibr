@@ -1,0 +1,31 @@
+# github.com/BurntSushi/toml v1.2.1
+## explicit; go 1.21; toolchain go1.21.8
+github.com/BurntSushi/toml
+# golang.org/x/crypto v0.31.0
+## explicit; go 1.20
+golang.org/x/crypto/chacha20
+# golang.org/x/net v0.5.6 => example.com/fork/net v1.4.5
+## explicit
+example.com/fork/net/http2
+# example.com/local v1.0.0 => ./local
+## explicit
+example.com/local
+# example.com/noversion => ./local
+# malformed
+# github.com/example/incompatible v2.0.0+incompatible
+## explicit
+github.com/example/incompatible
+# example.com/transitive v0.2.0
+## implicit; go 1.21
+example.com/transitive/pkg
+# github.com/BurntSushi/toml v1.2.1
+## explicit; go 1.21
+github.com/BurntSushi/toml/internal
+# example.com/headeronly v0.1.0
+## explicit; go 1.21
+# example.com/afterheaderonly v0.3.0
+## implicit; go 1.21
+example.com/afterheaderonly/pkg
+# example.com/wildcard => example.com/wildcard-fork v0.2.0
+## explicit
+example.com/wildcard-fork/pkg

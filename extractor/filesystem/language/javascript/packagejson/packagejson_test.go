@@ -166,6 +166,13 @@ func TestExtract(t *testing.T) {
 							Email: "dev@corp.com",
 							URL:   "http://blog.dev.com",
 						},
+						Dependencies: map[string]string{
+							"cookie-parser": "~1.4.4",
+							"debug":         "~2.6.9",
+							"express":       "~4.16.1",
+							"http-errors":   "~1.6.3",
+							"morgan":        "~1.9.1",
+						},
 					},
 				},
 			},
@@ -180,6 +187,10 @@ func TestExtract(t *testing.T) {
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/deps/accepts/package.json", 2),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Dependencies: map[string]string{
+							"mime-types": "~2.1.34",
+							"negotiator": "0.6.3",
+						},
 						Contributors: []*metadata.Person{
 							{
 								Name:  "Douglas Christopher Wilson",
@@ -205,6 +216,10 @@ func TestExtract(t *testing.T) {
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/deps/no-person-name/package.json", 2),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Dependencies: map[string]string{
+							"mime-types": "~2.1.34",
+							"negotiator": "0.6.3",
+						},
 						Contributors: []*metadata.Person{
 							{
 								Name:  "Jonathan Ong",
@@ -280,6 +295,7 @@ func TestExtract(t *testing.T) {
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/undici-package.json", 2),
 					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Dependencies: map[string]string{"@fastify/busboy": "^2.0.0"},
 						Contributors: []*metadata.Person{
 							{
 								Name: "Daniele Belardi",
@@ -336,7 +352,17 @@ func TestExtract(t *testing.T) {
 					Version:  "1.2.3",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 2),
-					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Dependencies: map[string]string{
+							"dep1": "1.0.0",
+							"dep2": ">2.0.0",
+							"dep3": "~3.1.0",
+							"dep4": "^0.4.2",
+							"dep5": "5.x",
+							"dep6": "invalid",
+							"dep7": ">=1.0.0 <2.0.0",
+						},
+					},
 				},
 				{
 					Name:     "dep1",
@@ -490,7 +516,11 @@ func TestExtract(t *testing.T) {
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
 					Location: extractor.LocationFromPathAndLine("testdata/duplicate-keys.json", 2),
-					Metadata: &metadata.JavascriptPackageJSONMetadata{},
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Dependencies: map[string]string{
+							"my-dep": "1.0.0",
+						},
+					},
 				},
 				{
 					Name:     "my-dep",
