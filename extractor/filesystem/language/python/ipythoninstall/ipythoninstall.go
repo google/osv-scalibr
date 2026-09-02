@@ -49,8 +49,9 @@ var (
 		".ipy":   true,
 	}
 
-	installCmdRe  = regexp.MustCompile(`^(?:!|%)(pip|conda|mamba|micromamba|uv)\b`)
-	packageSpecRe = regexp.MustCompile(`^([A-Za-z0-9._-]+)(==|===|~=|>=|<=|>|<|=)?([A-Za-z0-9*._+-]+)?$`)
+	installCmdRe    = regexp.MustCompile(`^(?:!|%)(pip|conda|mamba|micromamba|uv)\b`)
+	packageSpecRe   = regexp.MustCompile(`^([A-Za-z0-9._-]+)(==|===|~=|>=|<=|>|<|=)?([A-Za-z0-9*._+-]+)?$`)
+	packageExtrasRe = regexp.MustCompile(`\[[^\[\]]*\]`)
 )
 
 // Extractor extracts packages from IPython inline install commands.
@@ -179,7 +180,7 @@ func packagesFromCommand(line string) []parsedPackage {
 	command := match[1]
 	purlType := packagePURLType(command)
 
-	tokens := strings.Fields(trimmed)
+	tokens := strings.Fields(packageExtrasRe.ReplaceAllString(trimmed, ""))
 	if len(tokens) < 3 {
 		return nil
 	}

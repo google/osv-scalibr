@@ -57,6 +57,15 @@ func TestPackagesFromCommandInstallMagics(t *testing.T) {
 			line: "%uv add fastapi==0.115.0",
 			want: []parsedPackage{{name: "fastapi", version: "0.115.0", purlType: purl.TypePyPi}},
 		},
+		{
+			name: "extras",
+			line: "%pip install requests[security]==2.32.3 pandas[html, performance]>=2.2.2 httpx[http2,cli]==0.30.0",
+			want: []parsedPackage{
+				{name: "requests", version: "2.32.3", purlType: purl.TypePyPi},
+				{name: "pandas", version: "2.2.2", purlType: purl.TypePyPi},
+				{name: "httpx", version: "0.30.0", purlType: purl.TypePyPi},
+			},
+		},
 	}
 
 	for _, tt := range tests {
