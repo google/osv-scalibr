@@ -15,7 +15,6 @@
 package dockerhubpat_test
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,10 +25,26 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/dockerhubpat"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestPat = "dckr_oat_7awgM4jG5SQvxcvmNzhKj8PQjxo"
 const validatorTestUsername = "User123"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := dockerhubpat.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		dockerhubpat.NewValidator(),
+		velestest.WithTrueNegatives(dockerhubpat.DockerHubPAT{
+			Pat:      "dckr_pat_osvscalibr_invalid000000000000000000000000",
+			Username: validatorTestUsername,
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockDockerHubServer creates a mock Docker Hub API server for testing
 func mockDockerHubServer(t *testing.T, expectedKey string, expectedUser string) *httptest.Server {
@@ -110,33 +125,6 @@ func TestValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	validator := dockerhubpat.NewValidator()
-	validator.HTTPC = server.Client()
-	validator.Endpoint = server.URL + "/v2/auth/token/"
-
-	// Create a test username and pat
-	usernamePat := dockerhubpat.DockerHubPAT{Pat: validatorTestPat, Username: validatorTestUsername}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, usernamePat)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

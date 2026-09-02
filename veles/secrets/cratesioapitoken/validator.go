@@ -46,7 +46,7 @@ func NewValidator() *simplevalidate.Validator[CratesIOAPItoken] {
 		},
 		Body:                 buildRequestBody,
 		ValidResponseCodes:   []int{http.StatusNotFound},
-		InvalidResponseCodes: []int{http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusForbidden, http.StatusUnauthorized},
 	}
 }
 

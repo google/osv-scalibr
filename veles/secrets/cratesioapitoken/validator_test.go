@@ -15,7 +15,6 @@
 package cratesioapitoken_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorValidTestKey = "cioAbCdEfGhIjKlMnOpQrStUvWxYz123456"
@@ -79,6 +79,21 @@ func mockCratesioServer(t *testing.T, expectedKey string) *httptest.Server {
 	}))
 }
 
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := cratesioapitoken.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		cratesioapitoken.NewValidator(),
+		velestest.WithTrueNegatives(
+			cratesioapitoken.CratesIOAPItoken{Token: "randomKey"},
+			cratesioapitoken.CratesIOAPItoken{Token: validatorValidTestKey},
+		),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
 func TestValidator(t *testing.T) {
 	cases := []struct {
 		name              string
@@ -127,35 +142,6 @@ func TestValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := mockCratesioServer(t, "Bearer "+validatorValidTestKey)
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := cratesioapitoken.NewValidator()
-	validator.HTTPC = client
-
-	key := cratesioapitoken.CratesIOAPItoken{Token: validatorValidTestKey}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, key)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 

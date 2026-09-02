@@ -37,6 +37,6 @@ func NewValidator() *sv.Validator[cat] {
 			return map[string]string{"Authorization": "Bearer " + s.Token}
 		},
 		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusForbidden},
+		InvalidResponseCodes: []int{http.StatusForbidden, http.StatusBadRequest},
 	}
 }
