@@ -1080,10 +1080,21 @@ func TestInitializeChainLayers(t *testing.T) {
 	fakeV1Layer2 := fakev1layer.New(t, diffID2.Encoded(), "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
 	fakeV1Layer3 := fakev1layer.New(t, diffID3.Encoded(), "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
 
+	// Layers whose own DiffID() reports a different value than the config-supplied
+	// diffIDs. Used to prove that, when the config provides a diffID per layer, the
+	// config value is used (and the layer is never decompressed to recompute it).
+	wrongDiffID1 := digest.Digest("sha256:1111111111111111111111111111111111111111111111111111111111111111")
+	wrongDiffID2 := digest.Digest("sha256:2222222222222222222222222222222222222222222222222222222222222222")
+	wrongDiffID3 := digest.Digest("sha256:3333333333333333333333333333333333333333333333333333333333333333")
+	configDiffIDLayer1 := fakev1layer.New(t, wrongDiffID1.Encoded(), "COPY ./foo.txt /foo.txt # buildkit", false, nil, false)
+	configDiffIDLayer2 := fakev1layer.New(t, wrongDiffID2.Encoded(), "COPY ./bar.txt /bar.txt # buildkit", false, nil, false)
+	configDiffIDLayer3 := fakev1layer.New(t, wrongDiffID3.Encoded(), "COPY ./baz.txt /baz.txt # buildkit", false, nil, false)
+
 	tests := []struct {
 		name            string
 		v1Layers        []v1.Layer
 		history         []v1.History
+		diffIDs         []digest.Digest
 		maxSymlinkDepth int
 		want            []*chainLayer
 		wantErr         bool
@@ -1136,6 +1147,63 @@ func TestInitializeChainLayers(t *testing.T) {
 				fakeV1Layer2,
 				fakeV1Layer3,
 			},
+			history: []v1.History{
+				{
+					CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
+				},
+				{
+					CreatedBy: "COPY ./bar.txt /bar.txt # buildkit",
+				},
+				{
+					CreatedBy: "COPY ./baz.txt /baz.txt # buildkit",
+				},
+			},
+			want: []*chainLayer{
+				{
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
+					index:        0,
+					chainID:      chainID1,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./foo.txt /foo.txt # buildkit",
+						diffID:       diffID1,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
+					index:        1,
+					chainID:      chainID2,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./bar.txt /bar.txt # buildkit",
+						diffID:       diffID2,
+						isEmpty:      false,
+					},
+				},
+				{
+					fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
+					index:        2,
+					chainID:      chainID3,
+					latestLayer: &Layer{
+						buildCommand: "COPY ./baz.txt /baz.txt # buildkit",
+						diffID:       diffID3,
+						isEmpty:      false,
+					},
+				},
+			},
+		},
+		{
+			// When the image config supplies a diffID per layer, those diffIDs are
+			// used to derive the chain IDs and populate each Layer, without
+			// decompressing the layers to recompute them. The fake layers report
+			// different diffIDs of their own, so a result built from the config
+			// diffIDs (diffID1/2/3 -> chainID1/2/3) proves the config values win.
+			name: "config_diffIDs_are_used_without_recomputing_from_layers",
+			v1Layers: []v1.Layer{
+				configDiffIDLayer1,
+				configDiffIDLayer2,
+				configDiffIDLayer3,
+			},
+			diffIDs: []digest.Digest{diffID1, diffID2, diffID3},
 			history: []v1.History{
 				{
 					CreatedBy: "COPY ./foo.txt /foo.txt # buildkit",
@@ -1321,7 +1389,7 @@ func TestInitializeChainLayers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotChainLayers, err := initializeChainLayers(tc.v1Layers, tc.history, tc.maxSymlinkDepth)
+			gotChainLayers, err := initializeChainLayers(tc.v1Layers, tc.history, tc.diffIDs, tc.maxSymlinkDepth)
 			if tc.wantErr {
 				if err != nil {
 					return

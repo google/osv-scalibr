@@ -26,6 +26,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakev1layer"
 	"github.com/google/osv-scalibr/testing/fakefs"
+	"github.com/opencontainers/go-digest"
 )
 
 func TestConvertV1Layer(t *testing.T) {
@@ -34,6 +35,7 @@ func TestConvertV1Layer(t *testing.T) {
 		v1Layer   v1.Layer
 		command   string
 		isEmpty   bool
+		diffID    digest.Digest
 		wantLayer *Layer
 	}{
 		{
@@ -43,6 +45,19 @@ func TestConvertV1Layer(t *testing.T) {
 			isEmpty: false,
 			wantLayer: &Layer{
 				diffID:       "sha256:abc123",
+				buildCommand: "ADD file",
+				isEmpty:      false,
+				fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
+			},
+		},
+		{
+			name:    "diffID supplied by caller is used without decompressing the layer",
+			v1Layer: fakev1layer.New(t, "abc123", "ADD file", false, nil, false),
+			command: "ADD file",
+			isEmpty: false,
+			diffID:  "sha256:fromconfig",
+			wantLayer: &Layer{
+				diffID:       "sha256:fromconfig",
 				buildCommand: "ADD file",
 				isEmpty:      false,
 				fileNodeTree: NewNode(DefaultMaxSymlinkDepth),
@@ -64,7 +79,7 @@ func TestConvertV1Layer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty, DefaultMaxSymlinkDepth)
+			gotLayer := convertV1Layer(tc.v1Layer, tc.command, tc.isEmpty, tc.diffID, DefaultMaxSymlinkDepth)
 
 			if diff := cmp.Diff(gotLayer, tc.wantLayer, cmp.AllowUnexported(Layer{}, fakev1layer.FakeV1Layer{}, virtualFile{}, Node{})); tc.wantLayer != nil && diff != "" {
 				t.Errorf("convertV1Layer(%v, %v, %v) returned layer: %v, want layer: %v", tc.v1Layer, tc.command, tc.isEmpty, gotLayer, tc.wantLayer)
