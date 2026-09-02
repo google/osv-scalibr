@@ -245,35 +245,6 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 		pkgs = append(pkgs, dep.pkg)
 	}
 
-	if e.includeDependencies {
-		for name, version := range p.Dependencies {
-			c, err := semver.NPM.ParseConstraint(version)
-			if err != nil {
-				log.Debugf("failed to parse NPM version constraint %s for dependency %s in %s: %v", version, name, path, err)
-				continue
-			}
-			v, err := c.CalculateMinVersion()
-			if err != nil {
-				log.Debugf("failed to calculate min NPM version for dependency %s in %s with constraint %s: %v", name, path, version, err)
-				continue
-			}
-
-			lineNum := finder.LineOf("dependencies." + gjson.Escape(name))
-
-			loc := extractor.LocationFromPathAndLine(path, lineNum)
-			pkgs = append(pkgs, &extractor.Package{
-				Name: name,
-				// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
-				// Ignoring the build value, which isn't relevant for version comparison.
-				// TODO(b/444684673): Include the build value in the version string. Currently deps.dev
-				// does not parse out the build value, so that need to be fixed first.
-				Version:  v.Canon(false),
-				PURLType: purl.TypeNPM,
-				Location: loc,
-			})
-		}
-	}
-
 	return pkgs, nil
 }
 
