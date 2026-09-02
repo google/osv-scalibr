@@ -84,6 +84,75 @@ func TestPackagesFromCommandAddOnlyAppliesToUV(t *testing.T) {
 	}
 }
 
+func TestPackagesFromCommandSkipsOptionValues(t *testing.T) {
+	wantPyPI := []parsedPackage{{name: "requests", version: "2.32.3", purlType: purl.TypePyPi}}
+	wantConda := []parsedPackage{{name: "numpy", version: "2.3.2", purlType: purl.TypeConda}}
+	tests := []struct {
+		name string
+		line string
+		want []parsedPackage
+	}{
+		{
+			name: "pip short requirement",
+			line: "%pip install -r requirements.txt requests==2.32.3",
+			want: wantPyPI,
+		},
+		{
+			name: "pip long requirement",
+			line: "%pip install --requirement requirements.txt requests==2.32.3",
+			want: wantPyPI,
+		},
+		{
+			name: "pip attached short option value",
+			line: "%pip install -rrequirements.txt requests==2.32.3",
+			want: wantPyPI,
+		},
+		{
+			name: "pip equals option value",
+			line: "%pip install --requirement=requirements.txt requests==2.32.3",
+			want: wantPyPI,
+		},
+		{
+			name: "pip boolean and value options",
+			line: "%pip install --no-deps --target vendor requests==2.32.3",
+			want: wantPyPI,
+		},
+		{
+			name: "uv pip constraint",
+			line: "%uv pip install --constraint constraints.txt requests==2.32.3",
+			want: wantPyPI,
+		},
+		{
+			name: "uv add group",
+			line: "%uv add --group dev requests==2.32.3",
+			want: wantPyPI,
+		},
+		{
+			name: "conda channel",
+			line: "%conda install -c conda-forge numpy=2.3.2",
+			want: wantConda,
+		},
+		{
+			name: "mamba environment",
+			line: "%mamba install --name analysis numpy=2.3.2",
+			want: wantConda,
+		},
+		{
+			name: "micromamba root prefix",
+			line: "%micromamba install --root-prefix envs numpy=2.3.2",
+			want: wantConda,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if diff := cmp.Diff(tt.want, packagesFromCommand(tt.line), cmp.AllowUnexported(parsedPackage{})); diff != "" {
+				t.Errorf("packagesFromCommand(%q) diff (-want +got):\n%s", tt.line, diff)
+			}
+		})
+	}
+}
+
 func TestPackagesFromCommandCondaInstallURLs(t *testing.T) {
 	line := "%conda install https://conda.anaconda.org/conda-forge/linux-64/requests-2.32.3-pyhd8ed1ab_0.conda https://repo.anaconda.com/pkgs/main/linux-64/certifi-2025.4.26-py313h06a4308_0.tar.bz2 plainpkg=1.2.3"
 	want := []parsedPackage{

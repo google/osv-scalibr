@@ -52,6 +52,79 @@ var (
 	installCmdRe    = regexp.MustCompile(`^(?:!|%)(pip|conda|mamba|micromamba|uv)\b`)
 	packageSpecRe   = regexp.MustCompile(`^([A-Za-z0-9._-]+)(==|===|~=|>=|<=|>|<|=)?([A-Za-z0-9*._+-]+)?$`)
 	packageExtrasRe = regexp.MustCompile(`\[[^\[\]]*\]`)
+
+	// These options consume the following token when passed without an inline value.
+	// Keep them command-specific so boolean and unknown options don't hide packages.
+	pipOptionsWithValues = map[string]bool{
+		"-r": true, "--requirement": true,
+		"-c": true, "--constraint": true, "--build-constraint": true,
+		"--requirements-from-script": true,
+		"-e":                         true, "--editable": true,
+		"-t": true, "--target": true,
+		"--platform": true, "--python-version": true, "--implementation": true, "--abi": true,
+		"--root": true, "--prefix": true, "--src": true,
+		"--upgrade-strategy": true, "--config-settings": true,
+		"--only-binary": true, "--no-binary": true,
+		"--report": true, "--group": true,
+		"-i": true, "--index-url": true, "--extra-index-url": true,
+		"-f": true, "--find-links": true,
+		"--trusted-host": true, "--proxy": true,
+		"--cert": true, "--client-cert": true,
+		"--timeout": true, "--retries": true,
+		"--exists-action": true, "--cache-dir": true,
+		"--log": true, "--keyring-provider": true,
+		"--progress-bar": true, "--root-user-action": true,
+	}
+	uvPipOptionsWithValues = map[string]bool{
+		"-r": true, "--requirement": true, "--requirements": true,
+		"-c": true, "--constraint": true, "--constraints": true,
+		"--build-constraint": true, "--build-constraints": true,
+		"--override": true, "--overrides": true,
+		"-e": true, "--editable": true,
+		"--extra": true, "--group": true,
+		"--resolution": true, "--prerelease": true, "--fork-strategy": true,
+		"--dependency-metadata": true, "--config-settings": true,
+		"--only-binary": true, "--no-binary": true,
+		"--reinstall-package": true, "--upgrade-package": true,
+		"--refresh-package": true, "--exclude-newer": true, "--exclude-newer-package": true,
+		"--no-build-package": true, "--no-binary-package": true,
+		"-t": true, "--target": true, "--prefix": true,
+		"-p": true, "--python": true, "--python-version": true, "--python-platform": true,
+		"--project": true, "--directory": true,
+		"--index": true, "--default-index": true,
+		"-i": true, "--index-url": true, "--extra-index-url": true,
+		"-f": true, "--find-links": true,
+		"--index-strategy": true, "--keyring-provider": true,
+		"--allow-insecure-host": true, "--trusted-host": true,
+		"--cache-dir": true, "--color": true,
+	}
+	uvAddOptionsWithValues = map[string]bool{
+		"-r": true, "--requirement": true, "--requirements": true,
+		"--optional": true, "--group": true, "--package": true, "--script": true,
+		"--bounds": true, "--resolution": true, "--prerelease": true,
+		"--config-settings":   true,
+		"--reinstall-package": true, "--upgrade-package": true,
+		"--refresh-package": true, "--exclude-newer": true, "--exclude-newer-package": true,
+		"-p": true, "--python": true, "--python-version": true, "--python-platform": true,
+		"--project": true, "--directory": true,
+		"--index": true, "--default-index": true,
+		"-i": true, "--index-url": true, "--extra-index-url": true,
+		"-f": true, "--find-links": true,
+		"--index-strategy": true, "--keyring-provider": true,
+		"--allow-insecure-host": true, "--trusted-host": true,
+		"--cache-dir": true, "--color": true,
+	}
+	condaOptionsWithValues = map[string]bool{
+		"-c": true, "--channel": true,
+		"-f": true, "--file": true,
+		"-n": true, "--name": true,
+		"-p": true, "--prefix": true,
+		"-r": true, "--root-prefix": true,
+		"--revision": true, "--repodata-fn": true,
+		"--experimental": true, "--console": true,
+		"--environment-specifier": true, "--solver": true,
+		"--subdir": true, "--rc-file": true,
+	}
 )
 
 // Extractor extracts packages from IPython inline install commands.
@@ -191,12 +264,19 @@ func packagesFromCommand(line string) []parsedPackage {
 	}
 
 	var pkgs []parsedPackage
-	for _, tok := range tokens[pkgStartIdx:] {
+	for i := pkgStartIdx; i < len(tokens); i++ {
+		tok := tokens[i]
 		if strings.HasPrefix(tok, "#") {
 			break
 		}
 		tok = strings.Trim(tok, " \t\r\n,;\"'")
-		if tok == "" || strings.HasPrefix(tok, "-") {
+		if tok == "" {
+			continue
+		}
+		if strings.HasPrefix(tok, "-") {
+			if optionTakesValue(command, tokens[pkgStartIdx-1], tok) {
+				i++
+			}
 			continue
 		}
 		if strings.Contains(tok, "/") || strings.Contains(tok, "://") {
@@ -219,6 +299,21 @@ func packagesFromCommand(line string) []parsedPackage {
 		pkgs = append(pkgs, parsedPackage{name: parts[1], version: parts[3], purlType: purlType})
 	}
 	return pkgs
+}
+
+func optionTakesValue(command, action, option string) bool {
+	switch {
+	case command == "pip":
+		return pipOptionsWithValues[option]
+	case command == "uv" && action == "add":
+		return uvAddOptionsWithValues[option]
+	case command == "uv":
+		return uvPipOptionsWithValues[option]
+	case isCondaInstallCommand(command):
+		return condaOptionsWithValues[option]
+	default:
+		return false
+	}
 }
 
 func packageStartIndex(command string, tokens []string) int {
