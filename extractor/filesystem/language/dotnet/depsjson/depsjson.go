@@ -19,11 +19,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -130,9 +132,13 @@ type DepsJSON struct {
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	b, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return nil, err
+	}
+
 	var deps DepsJSON
-	decoder := json.NewDecoder(input.Reader)
-	if err := decoder.Decode(&deps); err != nil {
+	if err := json.Unmarshal(b, &deps); err != nil {
 		log.Errorf("Error parsing deps.json: %v", err)
 		return nil, err
 	}
@@ -143,6 +149,8 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		return nil, errors.New("empty deps.json file or no libraries found")
 	}
 
+	finder := common.NewJSONLineFinder(string(b))
+
 	var packages []*extractor.Package
 	for nameVersion, library := range deps.Libraries {
 		// Split name and version from "package/version" format
@@ -152,6 +160,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 			continue
 		}
 		// If the library type is "project", this is the root/main package.
+		line := finder.LineOf("libraries", nameVersion)
 		p := &extractor.Package{
 			Name:     name,
 			Version:  version,
@@ -161,7 +170,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 				PackageVersion: version,
 				Type:           library.Type,
 			},
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, line),
 		}
 		packages = append(packages, p)
 	}
