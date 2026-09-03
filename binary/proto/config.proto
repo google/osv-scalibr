@@ -37,7 +37,11 @@ message PluginConfig {
   // If true, do not try to create google.DefaultClient for Artifact Registry
   // during dependency resolution.
   bool disable_google_auth = 4;
-  // The user agent to use when making requests.
+  // The user agent to use when running SCALIBR as a CLI binary. If specified,
+  // the CLI passes this value to initialize the client factory.
+  // When calling SCALIBR as a Go library, this field is ignored; instead, the
+  // caller should configure the user agent directly in their ClientFactories
+  // implementation.
   string user_agent = 5;
 
   // Config values that only apply to a single plugin.
@@ -45,7 +49,7 @@ message PluginConfig {
 }
 
 message PluginSpecificConfig {
-  reserved 48 to 56, 59 to 61, 66 to 67;
+  reserved 48 to 56, 59 to 61, 66 to 67, 79 to 80;
   oneof config {
     GoBinaryConfig go_binary = 1;
     GovulncheckConfig govulncheck = 2;
@@ -64,6 +68,7 @@ message PluginSpecificConfig {
     SnapConfig snap = 15;
     KernelModuleConfig kernel_module = 16;
     VmlinuzConfig vmlinuz = 17;
+    BazelAspectConfig bazel_aspect = 81;
     PacmanConfig pacman = 18;
     PortageConfig portage = 19;
     FlatpakConfig flatpak = 20;
@@ -114,6 +119,13 @@ message PluginSpecificConfig {
   }
 }
 
+message BazelAspectConfig {
+  // The Bazel target to evaluate. Defaults to //...
+  string target = 1;
+  // If true, passes --keep_going to Bazel. Defaults to true.
+  optional bool keep_going = 2;
+}
+
 message GoBinaryConfig {
   // Enables extracting the module version from the Go binary content.
   bool version_from_content = 1;
@@ -130,6 +142,13 @@ message ArchiveConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // Maximum fraction of available free temp storage allowed for extraction
+  // (e.g. 0.8 for 80%). If set, must be in the range (0.0, 1.0].
+  // If unset or set to invalid value, this value defaults to 0.0, meaning free
+  // space checking is disabled.
+  // Note: Free space checking is only supported on Linux. This has no effect on
+  // non-linux based platforms.
+  double max_free_space_usage_ratio = 2;
 }
 
 message DenoJsonConfig {
@@ -154,6 +173,13 @@ message OVAConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  // Maximum fraction of available free temp storage allowed for extraction
+  // (e.g. 0.8 for 80%). If set, must be in the range (0.0, 1.0].
+  // If unset or set to invalid value, this value defaults to 0.0, meaning free
+  // space checking is disabled.
+  // Note: Free space checking is only supported on Linux. This has no effect on
+  // non-linux based platforms.
+  double max_free_space_usage_ratio = 2;
 }
 
 message VDIConfig {
@@ -198,6 +224,9 @@ message SDPInspectConfig {
 
 message POMXMLNetConfig {
   // The URL of the upstream Maven registry.
+  // Supports the format "MIRROR_URL[ORIGIN_URL1,ORIGIN_URL2,...]" to replace
+  // specific origin repository URLs found in POMs with the mirror URL. If [...]
+  // is omitted, only the default registry is set without replacing POM URLs.
   string upstream_registry = 1;
   // If true, use deps.dev requirements API for dependency resolution.
   bool deps_dev_requirements = 2;
@@ -475,6 +504,10 @@ message JavaArchiveConfig {
   // Configures if JAR files should be extracted from filenames when no
   // "pom.properties" is present.
   optional bool extract_from_filename = 5;
+  // Enable extraction from embedded "pom.xml", rather than "pom.properties".
+  // These carry more complete information, but also require more processing,
+  // which could fail. Conversely, "pom.properties" is very lightweight.
+  optional bool extract_from_pom_xml = 7;
   // Configures if JAR files should be hashed with base64(sha1()).
   optional bool hash_jars = 6;
 }
@@ -484,8 +517,9 @@ message JavascriptPackageJsonConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
-  // Specifies whether to extract dependencies.
+  // If set, extract additional packages for each declared dependency.
   bool include_dependencies = 2;
+  reserved 3;
 }
 
 message JavascriptPackageLockJsonConfig {
@@ -521,6 +555,7 @@ message PythonWheelEggConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  reserved 2;
 }
 
 message GoModConfig {

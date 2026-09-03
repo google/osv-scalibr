@@ -749,6 +749,32 @@ func TestScanContainer(t *testing.T) {
 	}
 }
 
+func TestScanContainerVelesValidatorRequiresNetwork(t *testing.T) {
+	fakeChainLayers := fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(),
+		"testdata/populatelayers.yml")
+
+	scanConfig := scalibr.ScanConfig{
+		Plugins: []plugin.Plugin{
+			fakelayerbuilder.FakeTestLayersExtractor{},
+			fromVelesValidator(t, velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil), "secret-validator", 1),
+		},
+		Capabilities: &plugin.Capabilities{
+			Network: plugin.NetworkOffline,
+		},
+	}
+
+	got, err := scalibr.New().ScanContainer(t.Context(), fakeimage.New([]image.ChainLayer{fakeChainLayers[0]}, nil), &scanConfig)
+	if err != nil {
+		t.Fatalf("scalibr.New().ScanContainer() error: %v", err)
+	}
+	if got.Status.Status != plugin.ScanStatusFailed {
+		t.Fatalf("scalibr.New().ScanContainer() status: %v, want %v", got.Status.Status, plugin.ScanStatusFailed)
+	}
+	if got.Status.FailureReason == "" {
+		t.Fatal("scalibr.New().ScanContainer() failure reason is empty")
+	}
+}
+
 func TestScan_ExtractorOverride(t *testing.T) {
 	tmp := t.TempDir()
 	fs := scalibrfs.DirFS(tmp)
@@ -1051,6 +1077,18 @@ func TestValidatePluginRequirements(t *testing.T) {
 				Capabilities: &plugin.Capabilities{
 					Network:  plugin.NetworkOffline,
 					DirectFS: true,
+				},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			desc: "veles_validator_requires_network",
+			cfg: scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					fromVelesValidator(t, velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil), "secret-validator", 1),
+				},
+				Capabilities: &plugin.Capabilities{
+					Network: plugin.NetworkOffline,
 				},
 			},
 			wantErr: cmpopts.AnyError,

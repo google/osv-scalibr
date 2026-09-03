@@ -41,7 +41,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chisel            |                                | `os/chisel`                                  |
 | Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
+| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
 | Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
 | Kernel modules    | .ko                            | `os/kernel/module`                           |
@@ -78,12 +78,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
+|            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
+|            | libs.versions.toml (Gradle Version Catalog)       | `java/gradleversioncatalog`          |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
 |            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
 |            | yarn.lock                                         | `javascript/yarnlock`                |
@@ -91,6 +93,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
+|            | VS Code extension                                 | `javascript/vsix`                    |
+|            | Electron ASAR Archive                             | `javascript/electronasar`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -104,6 +108,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
+|            | pyproject.toml                                    | `python/pyprojecttoml`               |
 | R          | renv.lock                                         | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
@@ -210,6 +215,17 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
 | HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
+| HTTP Bearer                                 | `secrets/httpbearer`                   |
+| HTTP CSRF Token                             | `secrets/csrftoken`                    |
+| HTTP Cookie                                 | `secrets/httpcookie`                   |
+
+### Sensitive information
+| Type                                           | Extractor Plugin                       |
+| ---------------------------------------------- | -------------------------------------- |
+| International Bank Account Number              | `sensitiveinformation/iban`            |
+| US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
+| US Individual Taxpayer Identification Number   | `secrets/itin`                         |
+| US Social Security Number                      | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 
@@ -236,6 +252,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |
 | Maven entries in Bazel build files | `os/bazelmaven`     |
+| Bazel build graph targets          | `bazel/aspect` *    |
 | NetScaler installations            | `netscaler`         |
 | GitHub Actions workflow dependencies| `github/actions`    |
 | Git repositories (and submodules)   | `misc/gitrepo`      |

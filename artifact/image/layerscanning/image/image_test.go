@@ -729,6 +729,42 @@ func TestFromV1Image(t *testing.T) {
 			wantNonZeroSize: true,
 		},
 		{
+			name: "image_with_exact_limit_file_before_valid_file",
+			v1Image: constructImageWithTarEntries(t, []*tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "limit-sized.bin",
+						Mode: 0777,
+						Size: int64(len("abcde")),
+					},
+					Data: bytes.NewBufferString("abcde"),
+				},
+				{
+					Header: &tar.Header{
+						Name: "valid.txt",
+						Mode: 0777,
+						Size: int64(len("ok")),
+					},
+					Data: bytes.NewBufferString("ok"),
+				},
+			}),
+			wantChainLayerEntries: []chainLayerEntries{
+				{
+					filepathContentPairs: []filepathContentPair{
+						{
+							filepath: "/valid.txt",
+							content:  "ok",
+						},
+					},
+				},
+			},
+			config: &Config{
+				MaxFileBytes:    5,
+				MaxSymlinkDepth: DefaultMaxSymlinkDepth,
+			},
+			wantNonZeroSize: true,
+		},
+		{
 			name: "image_error_during_tar_extraction",
 			v1Image: &fakeV1Image{
 				layers: []v1.Layer{

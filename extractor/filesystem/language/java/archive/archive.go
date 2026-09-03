@@ -70,6 +70,7 @@ type Extractor struct {
 	maxOpenedBytes      int64
 	minZipBytes         int
 	extractFromFilename bool
+	extractFromPomXML   bool
 	hashJars            bool
 	Stats               stats.Collector
 }
@@ -84,6 +85,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	maxOpenedBytes := defaultMaxZipBytes
 	minZipBytes := defaultMinZipBytes
 	extractFromFilename := true
+	extractFromPomXML := false
 	hashJars := true
 
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavaArchiveConfig { return c.GetJavaArchive() })
@@ -103,6 +105,9 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		if specific.ExtractFromFilename != nil {
 			extractFromFilename = specific.GetExtractFromFilename()
 		}
+		if specific.ExtractFromPomXml != nil {
+			extractFromPomXML = specific.GetExtractFromPomXml()
+		}
 		if specific.HashJars != nil {
 			hashJars = specific.GetHashJars()
 		}
@@ -114,6 +119,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxOpenedBytes:      maxOpenedBytes,
 		minZipBytes:         minZipBytes,
 		extractFromFilename: extractFromFilename,
+		extractFromPomXML:   extractFromPomXML,
 		hashJars:            hashJars,
 	}, nil
 }
@@ -257,7 +263,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 
 		path := filepath.Join(input.Path, file.Name)
 		switch {
-		case filepath.Base(file.Name) == "pom.properties":
+		case !e.extractFromPomXML && filepath.Base(file.Name) == "pom.properties":
 			pp, err := parsePomProps(file)
 			if err != nil {
 				log.Errorf("%s failed to extract from pom.properties at %q: %v", e.Name(), path, err)
@@ -281,6 +287,35 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 					},
 				})
 			}
+
+		case e.extractFromPomXML && filepath.Base(file.Name) == "pom.xml":
+			log.Debugf("Parsing pom.xml file %q", path)
+
+			project, err := parsePomXML(file)
+			if err != nil {
+				log.Errorf("%s failed to parse pom.xml at %q: %v", e.Name(), path, err)
+				errs = append(errs, err)
+				continue
+			}
+
+			key := project.ProjectKey
+			descriptorLoc := location.FromPath(input.Path)
+			packagePom = append(packagePom, &extractor.Package{
+				Name:     key.Name(),
+				Version:  string(key.Version),
+				PURLType: purl.TypeMaven,
+				Metadata: &archivemeta.Metadata{
+					ArtifactID:   string(key.ArtifactID),
+					GroupID:      string(key.GroupID),
+					SHA1:         sha1,
+					Dependencies: project.Dependencies,
+					Parent:       &project.Parent.ProjectKey,
+				},
+				Location: extractor.PackageLocation{
+					Descriptor: &descriptorLoc,
+					Related:    []location.Location{location.FromPath(path)},
+				},
+			})
 
 		case isManifest(file.Name):
 			mf, err := parseManifest(file)

@@ -92,6 +92,13 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: nil,
 		},
 		{
+			Name: "empty file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty-file.lock",
+			},
+			WantPackages: []*extractor.Package{},
+		},
+		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",

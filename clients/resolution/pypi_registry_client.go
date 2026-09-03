@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -38,8 +39,12 @@ type PyPIRegistryClient struct {
 }
 
 // NewPyPIRegistryClient makes a new PyPIRegistryClient.
-func NewPyPIRegistryClient(registry string, localRegistry string) *PyPIRegistryClient {
-	return &PyPIRegistryClient{api: datasource.NewPyPIRegistryAPIClient(registry, localRegistry)}
+func NewPyPIRegistryClient(registry string, localRegistry string, httpClient *http.Client) (*PyPIRegistryClient, error) {
+	api, err := datasource.NewPyPIRegistryAPIClient(registry, localRegistry, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	return &PyPIRegistryClient{api: api}, nil
 }
 
 // Version returns metadata of a version specified by the VersionKey.

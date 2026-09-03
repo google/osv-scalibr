@@ -56,6 +56,31 @@ var (
 		},
 		Subpath: "some/subpath",
 	}
+	extRef1 = metadata.ExternalReference{
+		Category: "PACKAGE-MANAGER",
+		RefType:  "purl",
+		Locator:  "pkg:deb/debian/some-package@1.0.0",
+		Comment:  "comment 1",
+	}
+
+	extRefProto1 = &pb.SPDXExternalReference{
+		Category: "PACKAGE-MANAGER",
+		RefType:  "purl",
+		Locator:  "pkg:deb/debian/some-package@1.0.0",
+		Comment:  "comment 1",
+	}
+
+	extRef2 = metadata.ExternalReference{
+		Category: "OTHER",
+		RefType:  "SourceURI",
+		Locator:  "third_party/foo",
+	}
+
+	extRefProto2 = &pb.SPDXExternalReference{
+		Category: "OTHER",
+		RefType:  "SourceURI",
+		Locator:  "third_party/foo",
+	}
 )
 
 func TestToProto(t *testing.T) {
@@ -76,10 +101,18 @@ func TestToProto(t *testing.T) {
 		m: &metadata.Metadata{
 			PURL: purlStructDeb1,
 			CPEs: []string{"cpe:2.3:a:some-package:1.0.0:*:*:*:*:*:*:*"},
+			ExternalReferences: []metadata.ExternalReference{
+				extRef1,
+				extRef2,
+			},
 		},
 		want: &pb.SPDXPackageMetadata{
 			Purl: purlProtoDeb1,
 			Cpes: []string{"cpe:2.3:a:some-package:1.0.0:*:*:*:*:*:*:*"},
+			ExternalReferences: []*pb.SPDXExternalReference{
+				extRefProto1,
+				extRefProto2,
+			},
 		},
 	}}
 
@@ -122,10 +155,18 @@ func TestToStruct(t *testing.T) {
 			m: &pb.SPDXPackageMetadata{
 				Purl: purlProtoDeb1,
 				Cpes: []string{"cpe:2.3:a:some-package:1.0.0:*:*:*:*:*:*:*"},
+				ExternalReferences: []*pb.SPDXExternalReference{
+					extRefProto1,
+					extRefProto2,
+				},
 			},
 			want: &metadata.Metadata{
 				PURL: purlStructDeb1,
 				CPEs: []string{"cpe:2.3:a:some-package:1.0.0:*:*:*:*:*:*:*"},
+				ExternalReferences: []metadata.ExternalReference{
+					extRef1,
+					extRef2,
+				},
 			},
 		},
 	}

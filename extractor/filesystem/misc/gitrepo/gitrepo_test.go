@@ -91,7 +91,7 @@ func TestDirExtractor_Extract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "repo-foo",
-					Version:  "",
+					Version:  commitSHA,
 					PURLType: purl.TypeGithub,
 					Location: extractor.LocationFromPath(".git"),
 					SourceCode: &extractor.SourceCodeIdentifier{
@@ -116,7 +116,7 @@ func TestDirExtractor_Extract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "repo-foo",
-					Version:  "",
+					Version:  packedSHA,
 					PURLType: purl.TypeGithub,
 					Location: extractor.LocationFromPath(".git"),
 					SourceCode: &extractor.SourceCodeIdentifier{
@@ -145,7 +145,7 @@ func TestDirExtractor_Extract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "repo-foo",
-					Version:  "",
+					Version:  packedSHA,
 					PURLType: purl.TypeGithub,
 					Location: extractor.LocationFromPath(".git"),
 					SourceCode: &extractor.SourceCodeIdentifier{
@@ -195,7 +195,7 @@ func TestDirExtractor_Extract(t *testing.T) {
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "repo-foo",
-					Version:  "",
+					Version:  "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
 					PURLType: purl.TypeGithub,
 					Location: extractor.LocationFromPath(".git"),
 					SourceCode: &extractor.SourceCodeIdentifier{

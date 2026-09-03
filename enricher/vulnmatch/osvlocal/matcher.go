@@ -16,12 +16,14 @@ package osvlocal
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/log"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -39,10 +41,11 @@ type localMatcher struct {
 	// failedDBs keeps track of the errors when getting databases for each ecosystem
 	failedDBs map[osvconstants.Ecosystem]error
 	// userAgent sets the user agent requests for db zips are made with
-	userAgent string
+	userAgent  string
+	httpClient *http.Client
 }
 
-func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zippedDBRemoteHost string) (*localMatcher, error) {
+func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zippedDBRemoteHost string, httpClient *http.Client) (*localMatcher, error) {
 	dbBasePath, err := setupLocalDBDirectory(localDBPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not create %s: %w", dbBasePath, err)
@@ -56,6 +59,7 @@ func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zipp
 		downloadDB: downloadDB,
 		userAgent:  userAgent,
 		failedDBs:  make(map[osvconstants.Ecosystem]error),
+		httpClient: httpClient,
 	}, nil
 }
 
@@ -64,16 +68,12 @@ func (matcher *localMatcher) MatchVulnerabilities(ctx context.Context, pkg *extr
 		return nil, ctx.Err()
 	}
 
-	eco := pkg.Ecosystem().Ecosystem
+	np := osvutil.ParsePackage(pkg)
+	eco := np.Ecosystem.Ecosystem
 
-	if pkg.Ecosystem().IsEmpty() {
-		if pkg.SourceCode != nil && pkg.SourceCode.Commit == "" {
-			// This should never happen, as those results will be filtered out before matching
-			return nil, errors.New("ecosystem is empty and there is no commit hash")
-		}
-
+	if np.Ecosystem.IsEmpty() {
 		// matching ecosystem-less versions can only be attempted if we have a version
-		if pkg.Version == "" {
+		if np.Version == "" {
 			// Is a commit based query, skip local scanning
 			return nil, nil
 		}
@@ -107,13 +107,17 @@ func (matcher *localMatcher) loadDBFromCache(ctx context.Context, eco osvconstan
 		matcher.userAgent,
 		!matcher.downloadDB,
 		invs,
+		matcher.httpClient,
 	)
 
 	if err != nil {
 		matcher.failedDBs[eco] = err
+		log.Errorf("could not load db for %s ecosystem: %v", eco, err)
 
 		return nil, err
 	}
+
+	log.Infof("Loaded %s local db from %s", db.Name, db.StoredAt)
 
 	matcher.dbs[eco] = db
 

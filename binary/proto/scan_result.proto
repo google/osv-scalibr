@@ -81,7 +81,7 @@ message FileError {
 // PURL or CPE needs to be set, maybe both.
 message Package {
   reserved 3, 4, 10, 28, 35;
-  reserved 17 to 20, 29, 32, 43, 59;
+  reserved 17 to 20, 29, 32, 43, 59, 71, 72;
   // Unique identifier for the package.
   string id = 60;
   // Human-readable name of the software, to be used for things like logging.
@@ -109,6 +109,7 @@ message Package {
   // TODO(#1847): Remove once the migration is complete.
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
+    PyprojectMetadata pyproject_metadata = 73;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
     APKPackageMetadata apk_metadata = 7;
     DPKGPackageMetadata dpkg_metadata = 8;
@@ -170,6 +171,9 @@ message Package {
   }
 
   optional ContainerImageMetadataIndexes container_image_metadata_indexes = 57;
+
+  // The ID of the parent package, if this package is a transitive dependency.
+  repeated string parent_ids = 70;
 }
 
 // Paths or source of files related to an extracted package.
@@ -340,16 +344,38 @@ message GenericFindingTargetDetails {
 message PythonPackageMetadata {
   string author = 1;
   string author_email = 2;
+  repeated string requires_dist = 3;
+}
+
+message PyprojectMetadata {
+  // Whether the manifest is declaring the "dependencies" property as dynamic.
+  // When this is the case, the actual dependency list is found elsewhere,
+  // and the metadata should be considered incomplete.
+  bool has_dynamic_dependencies = 1;
+
+  message DependencyGroup {
+    string name = 1;
+    repeated string dependencies = 2;
+  }
+
+  DependencyGroup dependencies = 2;
+  repeated DependencyGroup optional_dependencies = 3;
 }
 
 // The additional data found in npm packages.
 message JavascriptPackageJSONMetadata {
+  message Dependency {
+    string name = 1;
+    string version_required = 2;
+  }
+
   reserved 4;
 
   string author = 1;
   repeated string maintainers = 2;
   repeated string contributors = 3;
   PackageSource source = 5;
+  repeated Dependency dependencies = 6;
 }
 
 // The source of the package.
@@ -553,10 +579,20 @@ message MacportsPackageMetadata {
   string package_revision = 3;
 }
 
+// An external reference to additional information about an SPDX package.
+message SPDXExternalReference {
+  string category = 1;
+  string ref_type = 2;
+  string locator = 3;
+  string comment = 4;
+}
+
 // The additional data for packages extracted from SPDX files.
 message SPDXPackageMetadata {
   Purl purl = 1;
   repeated string cpes = 2;
+  repeated SPDXExternalReference external_references = 3;
+  string spdx_id = 4;
 }
 
 // The additional data for packages extracted from CDX files.
@@ -570,6 +606,10 @@ message JavaArchiveMetadata {
   string artifact_id = 2;
   string group_id = 3;
   string sha1 = 4;
+
+  // dependencies and parent are populated only if extract_from_pom_xml is on.
+  repeated JavaLockfileDependency dependencies = 5;
+  JavaLockfileParent parent = 6;
 }
 
 // The additional data found in Java lockfiles.
@@ -578,6 +618,21 @@ message JavaLockfileMetadata {
   string group_id = 2;
   repeated string dep_group_vals = 3;
   bool is_transitive = 4;
+}
+
+message JavaLockfileDependency {
+  string group_id = 1;
+  string artifact_id = 2;
+  // Empty, if it came from a version requirement that could not be resolved.
+  string version_requirement = 3;
+  string scope = 4;
+  bool is_optional = 5;
+}
+
+message JavaLockfileParent {
+  string group_id = 1;
+  string artifact_id = 2;
+  string version = 3;
 }
 
 // The additional data for packages extracted by an OSV extractor wrapper.
@@ -862,6 +917,9 @@ message SecretData {
     DiscordBotToken discord_bot_token = 87;
     BitwardenOAuth2AccessToken bitwarden_oauth2_access_token = 88;
     HTTPBasicAuth http_basic_auth = 89;
+    HTTPBearer http_bearer = 90;
+    HTTPCSRFToken http_csrf_token = 91;
+    HTTPCookie http_cookie = 92;
   }
 
   message GCPSAK {
@@ -1304,6 +1362,19 @@ message SecretData {
     string username = 1;
     string password = 2;
   }
+
+  message HTTPBearer {
+    string value = 1;
+  }
+
+  message HTTPCSRFToken {
+    string value = 1;
+  }
+
+  message HTTPCookie {
+    map<string, string> values = 1;
+  }
+
   message CursorAPIKey {
     string key = 1;
   }

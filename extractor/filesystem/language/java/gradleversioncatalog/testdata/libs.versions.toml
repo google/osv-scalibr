@@ -1,0 +1,39 @@
+[versions]
+groovy = "3.0.5"
+checkstyle = "8.37"
+
+[libraries]
+# 1. String shorthand
+guava = "com.google.guava:guava:30.1.1-jre"
+
+# 2. Module + inline version string
+checkstyle = { module = "com.puppycrawl.tools:checkstyle", version = "8.37" }
+
+# 3. Module + version.ref shorthand (dotted-key form)
+groovy-core = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
+
+# 4. Group/name/version triple
+commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version = "3.12.0" }
+
+# 5. Rich version with strictly
+rich-strictly = { module = "org.example:strict", version = { strictly = "2.0" } }
+
+# 6. Rich version with require
+rich-require = { module = "org.example:req", version = { require = "1.5" } }
+
+# 7. Rich version with prefer
+rich-prefer = { module = "org.example:pref", version = { prefer = "1.0" } }
+
+# 8. Rich version with ref nested in object form
+groovy-json = { module = "org.codehaus.groovy:groovy-json", version = { ref = "groovy" } }
+
+# 9. Missing version — Gradle allows this; we emit unpinned
+unversioned = { module = "org.example:noversion" }
+
+[bundles]
+# Bundles only group libraries — must be ignored, not emitted.
+groovy = ["groovy-core", "groovy-json"]
+
+[plugins]
+# Plugins use a different PURL space — must be ignored in this extractor.
+versions-plugin = { id = "com.github.ben-manes.versions", version = "0.45.0" }

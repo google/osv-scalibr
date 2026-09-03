@@ -122,3 +122,15 @@ func TestGetOSRelease(t *testing.T) {
 		})
 	}
 }
+
+func TestNotAnOS(t *testing.T) {
+	d := t.TempDir()
+
+	got, err := osrelease.GetOSRelease(scalibrfs.DirFS(d))
+	if !errors.Is(err, osrelease.ErrNotADistro) {
+		t.Fatalf("Got unexpected error on empty FS: %v", err)
+	}
+	if got != nil {
+		t.Fatalf("Got OS data on empty FS: %+v", got)
+	}
+}

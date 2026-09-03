@@ -17,6 +17,7 @@ package linuxdistro
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/osv-scalibr/detector"
@@ -89,6 +90,9 @@ var eolDetector = map[string]func(map[string]string, scalibrfs.FS) bool{
 func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *packageindex.PackageIndex) (inventory.Finding, error) {
 	osRelease, err := osrelease.GetOSRelease(scanRoot.FS)
 	if err != nil {
+		if errors.Is(err, osrelease.ErrNotADistro) {
+			return inventory.Finding{}, nil
+		}
 		return inventory.Finding{}, err
 	}
 	distro, ok := osRelease["ID"]

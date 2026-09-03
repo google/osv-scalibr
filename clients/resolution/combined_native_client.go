@@ -17,6 +17,7 @@ package resolution
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 
 	"deps.dev/util/resolve"
@@ -43,10 +44,15 @@ type CombinedNativeClientOptions struct {
 	PyPIRegistry      string                             // The default PyPI registry to use.
 	MavenClient       *datasource.MavenRegistryAPIClient // The Maven registry client to use, if nil, a new client will be created.
 	DisableGoogleAuth bool                               // If true, do not try to create google.DefaultClient for Artifact Registry.
+	HTTPClient        *http.Client                       // New field: Custom HTTP client for regular queries.
+	GoogleHTTPClient  *http.Client                       // New field: Custom HTTP client for Google Artifact Registry.
 }
 
 // NewCombinedNativeClient makes a new CombinedNativeClient.
 func NewCombinedNativeClient(opts CombinedNativeClientOptions) (*CombinedNativeClient, error) {
+	if opts.HTTPClient == nil {
+		opts.HTTPClient = &http.Client{}
+	}
 	client := &CombinedNativeClient{opts: opts}
 	if opts.MavenClient != nil {
 		client.mavenRegistryClient = NewMavenRegistryClientWithAPI(opts.MavenClient)
@@ -116,7 +122,7 @@ func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.
 	switch sys {
 	case resolve.Maven:
 		if c.mavenRegistryClient == nil {
-			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, c.opts.LocalRegistry, c.opts.DisableGoogleAuth)
+			c.mavenRegistryClient, err = NewMavenRegistryClient(ctx, c.opts.MavenRegistry, c.opts.LocalRegistry, c.opts.DisableGoogleAuth, c.opts.HTTPClient, c.opts.GoogleHTTPClient)
 			if err != nil {
 				return nil, err
 			}
@@ -132,7 +138,10 @@ func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.
 		return c.npmRegistryClient, nil
 	case resolve.PyPI:
 		if c.pypiRegistryClient == nil {
-			c.pypiRegistryClient = NewPyPIRegistryClient(c.opts.PyPIRegistry, c.opts.LocalRegistry)
+			c.pypiRegistryClient, err = NewPyPIRegistryClient(c.opts.PyPIRegistry, c.opts.LocalRegistry, c.opts.HTTPClient)
+			if err != nil {
+				return nil, err
+			}
 		}
 		return c.pypiRegistryClient, nil
 	case resolve.UnknownSystem:

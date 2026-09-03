@@ -44,6 +44,8 @@ var (
 	ErrMissingCache = errors.New("rpm cache is empty")
 	// ErrMissingOSInfo is returned if there was an error extracting the OS version
 	ErrMissingOSInfo = errors.New("unable to extract os information")
+	// ErrPackageManagerNotSupported is returned if the OS package manager is not supported
+	ErrPackageManagerNotSupported = errors.New("package manager not supported")
 )
 
 type mainOSPackages struct {
@@ -117,7 +119,7 @@ func extractMainPackages(ctx context.Context, root *fs.ScanRoot) (*mainOSPackage
 		return e.extract(ctx, root, osID)
 	}
 
-	return nil, errors.New("package manager not supported")
+	return nil, ErrPackageManagerNotSupported
 }
 
 func hasPackageManager(root *fs.ScanRoot, indicators []string) bool {

@@ -16,9 +16,12 @@ package datasource_test
 
 import (
 	"bytes"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -55,7 +58,7 @@ func TestGetProject(t *testing.T) {
 
 func TestGetProjectSnapshot(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false, &http.Client{}, nil)
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -252,7 +255,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 func TestMavenLocalRegistry(t *testing.T) {
 	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false, &http.Client{}, nil)
 	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
 	resp := []byte(`
 	<project>
@@ -275,5 +278,196 @@ func TestMavenLocalRegistry(t *testing.T) {
 	}
 	if !bytes.Equal(content, resp) {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), string(resp))
+	}
+}
+
+type trackingTransport struct {
+	mu     sync.Mutex
+	called bool
+}
+
+func (t *trackingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.mu.Lock()
+	t.called = true
+	t.mu.Unlock()
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader([]byte("<project><groupId>g</groupId><artifactId>a</artifactId><version>v</version></project>"))),
+	}, nil
+}
+
+func (t *trackingTransport) wasCalled() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.called
+}
+
+// TestDisableGoogleAuthRespected tests that setting disableGoogleAuth = true in
+// NewMavenRegistryAPIClient prevents the Google client from being used for
+// Artifact Registry requests, falling back to the standard HTTP client.
+func TestDisableGoogleAuthRespected(t *testing.T) {
+	standardTransport := &trackingTransport{}
+	googleTransport := &trackingTransport{}
+
+	standardClient := &http.Client{Transport: standardTransport}
+	googleClient := &http.Client{Transport: googleTransport}
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
+		"",   // localRegistry
+		true, // disableGoogleAuth
+		standardClient,
+		googleClient,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	_, _ = client.GetProject(t.Context(), "g", "a", "v")
+
+	if googleTransport.wasCalled() {
+		t.Errorf("Google client was called when disableGoogleAuth is true")
+	}
+	if !standardTransport.wasCalled() {
+		t.Errorf("Standard client was not called")
+	}
+}
+
+// TestDisableGoogleAuthMethodRespected tests that dynamically calling
+// DisableGoogleAuth() post-construction prevents the Google client from being
+// used for Artifact Registry requests.
+func TestDisableGoogleAuthMethodRespected(t *testing.T) {
+	standardTransport := &trackingTransport{}
+	googleTransport := &trackingTransport{}
+
+	standardClient := &http.Client{Transport: standardTransport}
+	googleClient := &http.Client{Transport: googleTransport}
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
+		"",    // localRegistry
+		false, // disableGoogleAuth
+		standardClient,
+		googleClient,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	client.DisableGoogleAuth()
+
+	_, _ = client.GetProject(t.Context(), "g", "a", "v")
+
+	if googleTransport.wasCalled() {
+		t.Errorf("Google client was called after DisableGoogleAuth()")
+	}
+	if !standardTransport.wasCalled() {
+		t.Errorf("Standard client was not called")
+	}
+}
+
+func TestParseMavenRegistryURL(t *testing.T) {
+	tests := []struct {
+		input       string
+		wantMirror  string
+		wantOrigins []string
+	}{
+		{
+			input:       "",
+			wantMirror:  "",
+			wantOrigins: nil,
+		},
+		{
+			input:       "https://mirror.example.com/maven2",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: nil,
+		},
+		{
+			input:       "https://mirror.example.com/maven2[https://repo1.maven.org/maven2]",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: []string{"https://repo1.maven.org/maven2"},
+		},
+		{
+			input:       "https://mirror.example.com/maven2[https://repo.maven.apache.org/maven2,https://repo1.maven.org/maven2]",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: []string{"https://repo.maven.apache.org/maven2", "https://repo1.maven.org/maven2"},
+		},
+		{
+			input:       " https://mirror.example.com/maven2 [ https://repo.maven.apache.org/maven2 , https://repo1.maven.org/maven2 ] ",
+			wantMirror:  "https://mirror.example.com/maven2",
+			wantOrigins: []string{"https://repo.maven.apache.org/maven2", "https://repo1.maven.org/maven2"},
+		},
+	}
+
+	for _, tc := range tests {
+		gotMirror, gotOrigins := datasource.ParseMavenRegistryURL(tc.input)
+		if gotMirror != tc.wantMirror {
+			t.Errorf("ParseMavenRegistryURL(%q) mirror: got %q, want %q", tc.input, gotMirror, tc.wantMirror)
+		}
+		if !reflect.DeepEqual(gotOrigins, tc.wantOrigins) {
+			t.Errorf("ParseMavenRegistryURL(%q) origins: got %v, want %v", tc.input, gotOrigins, tc.wantOrigins)
+		}
+	}
+}
+
+func TestMavenRegistryURLReplacementWithExplicitOrigins(t *testing.T) {
+	mirrorSrv := clienttest.NewMockHTTPServer(t)
+	flagVal := mirrorSrv.URL + "[https://repo.maven.apache.org/maven2,https://repo1.maven.org/maven2,https://rootonly.example.com]"
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: flagVal, ReleasesEnabled: true},
+		"",
+		false,
+		&http.Client{},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	mirrorSrv.SetResponse(t, "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom", []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>x.y.z</artifactId>
+	  <version>1.0.0</version>
+	</project>
+	`))
+
+	// Adding explicit Maven Central URL should be rewritten to mirror and added to registries in order.
+	if err := client.AddRegistry(t.Context(), datasource.MavenRegistry{
+		URL:             "https://repo1.maven.org/maven2/",
+		ID:              "central",
+		ReleasesEnabled: true,
+	}); err != nil {
+		t.Fatalf("AddRegistry failed: %v", err)
+	}
+
+	if len(client.GetRegistries()) != 1 || client.GetRegistries()[0].URL != mirrorSrv.URL {
+		t.Errorf("Expected 1 registry with replaced URL %s, got: %v", mirrorSrv.URL, client.GetRegistries())
+	}
+
+	// Project should be fetched from mirror.
+	gotProj, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0")
+	if err != nil {
+		t.Fatalf("GetProject failed: %v", err)
+	}
+	if gotProj.GroupID != "org.example" || gotProj.ArtifactID != "x.y.z" {
+		t.Errorf("Unexpected project fetched: %v", gotProj)
+	}
+
+	// Adding a non-replaced repository should still be added to registries.
+	thirdPartySrv := clienttest.NewMockHTTPServer(t)
+	if err := client.AddRegistry(t.Context(), datasource.MavenRegistry{
+		URL:             thirdPartySrv.URL,
+		ID:              "spring-plugins",
+		ReleasesEnabled: true,
+	}); err != nil {
+		t.Fatalf("AddRegistry failed: %v", err)
+	}
+	if len(client.GetRegistries()) != 2 {
+		t.Errorf("Expected 2 registries in total, got %d", len(client.GetRegistries()))
 	}
 }
