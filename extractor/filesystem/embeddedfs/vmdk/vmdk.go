@@ -46,6 +46,10 @@ const (
 	GDAtEnd = 0xFFFFFFFFFFFFFFFF
 	// DefaultGrainSec is default sectors if header invalid (64KiB).
 	DefaultGrainSec = 128
+	// MaxGrainSec is the maximum number of sectors per grain accepted by the
+	// stream parser. It matches the validateHeader bound and prevents int64
+	// overflow when multiplied by SectorSize.
+	MaxGrainSec = 128
 )
 
 // sparseExtentHeader defines the VMDK sparse extent header structure.
@@ -260,6 +264,13 @@ func readStreamMarker(f *os.File) (val uint64, size uint32, typ uint32, data []b
 		return val, size, typ, nil, nil
 	}
 	if size > 0 {
+		// Cap grain payload size to prevent OOM from attacker-controlled uint32.
+		// Grain data is always <= grainBytes (max ~2 MB for spec-compliant images);
+		// 64 MB is a generous safety ceiling.
+		const maxMarkerDataBytes = 64 << 20 // 64 MB
+		if size > maxMarkerDataBytes {
+			return 0, 0, 0, nil, fmt.Errorf("stream marker data size %d exceeds safety limit %d", size, maxMarkerDataBytes)
+		}
 		data = make([]byte, size)
 		if _, err = io.ReadFull(f, data); err != nil {
 			return val, size, 0, nil, err
@@ -284,7 +295,10 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 		}
 	}
 	grainSec := hdr.GrainSize
-	if grainSec == 0 || (grainSec&(grainSec-1)) != 0 {
+	// grainSec must be a non-zero power of two within the spec range. The upper
+	// bound also keeps int64(grainSec)*SectorSize from overflowing (an oversized
+	// power of two would otherwise wrap to 0 or a negative value below).
+	if grainSec == 0 || grainSec > MaxGrainSec || (grainSec&(grainSec-1)) != 0 {
 		grainSec = DefaultGrainSec
 	}
 	grainBytes := int64(grainSec) * SectorSize
@@ -356,6 +370,12 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 			}
 		case 3: // FOOTER
 			if val > 0 {
+				// Cap footer metadata sectors: a footer header is exactly 512 bytes
+				// (1 sector). Any legitimate value is 1; cap at 4 to be safe.
+				const maxFooterSectors = 4
+				if val > maxFooterSectors {
+					return fmt.Errorf("footer marker sector count %d exceeds safety limit %d", val, maxFooterSectors)
+				}
 				meta := make([]byte, int64(val*SectorSize))
 				if _, err := io.ReadFull(f, meta); err != nil {
 					return fmt.Errorf("read footer meta: %w", err)
@@ -366,7 +386,7 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 					if err := binary.Read(br, binary.LittleEndian, &foot); err == nil {
 						hdr = foot
 						grainSec = hdr.GrainSize
-						if grainSec == 0 || (grainSec&(grainSec-1)) != 0 {
+						if grainSec == 0 || grainSec > MaxGrainSec || (grainSec&(grainSec-1)) != 0 {
 							grainSec = DefaultGrainSec
 						}
 						grainBytes = int64(grainSec) * SectorSize
