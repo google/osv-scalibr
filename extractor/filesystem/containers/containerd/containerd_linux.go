@@ -246,7 +246,11 @@ func containersFromMetaDB(ctx context.Context, metaDB *bolt.DB, scanRoot string,
 			if ctr.Snapshotter == "overlayfs" {
 				lowerDir, upperDir, workDir = collectOverlayFSDirs(scanRoot, snapshotMetadataCache[ctr.Snapshotter], ctr.SnapshotKey)
 			} else if ctr.Snapshotter == "gcfs" {
-				lowerDir, upperDir, workDir = collectGcfsDirs(scanRoot, snapshotMetadataCache[ctr.Snapshotter], ctr.SnapshotKey, img.Target.Digest.String(), id)
+				var gcfsErr error
+				lowerDir, upperDir, workDir, gcfsErr = collectGcfsDirs(scanRoot, snapshotMetadataCache[ctr.Snapshotter], ctr.SnapshotKey, img.Target.Digest.String(), id)
+				if gcfsErr != nil {
+					log.Errorf("Could not collect gcfs dirs for container %v: %v", id, gcfsErr)
+				}
 			}
 
 			containersMetadata = append(containersMetadata,
@@ -396,27 +400,56 @@ func getImageDiffIDs(scanRoot string, manifestDigest string) ([]string, error) {
 }
 
 // collectGcfsDirs constructs the lower, upper, and work dirs for a gcfs container.
-func collectGcfsDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshotKey string, manifestDigest string, containerID string) (string, string, string) {
+func collectGcfsDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snapshotKey string, manifestDigest string, containerID string) (string, string, string, error) {
 	if manifestDigest == "" {
-		return "", "", ""
+		return "", "", "", fmt.Errorf("empty manifest digest for container %v", containerID)
 	}
 	diffIDs, err := getImageDiffIDs(scanRoot, manifestDigest)
 	if err != nil {
 		log.Errorf("Failed to get DiffIDs for container %v: %v", containerID, err)
-		return "", "", ""
+		return "", "", "", fmt.Errorf("failed to get DiffIDs for container %v: %w", containerID, err)
 	}
 
 	var lowerDirs []string
-	// diff_ids are ordered base layer to top layer.
-	// For gcfs, lowerDirs points to the read-only unpacked layers.
-	for i := len(diffIDs) - 1; i >= 0; i-- {
-		diffIDHash := strings.TrimPrefix(diffIDs[i], "sha256:")
-		lowerDirs = append(lowerDirs, filepath.Join(scanRoot, gcfsLayersPath, "sha256="+diffIDHash))
+	var parentSnapshotIDs []uint64
+	parentSnapshotsLoaded := false
+
+	// diff_ids are ordered base layer (index 0) to top layer (index len-1).
+	// For gcfs, lowerDirs must be ordered top layer (idx 0) down to base layer.
+	for idx := range diffIDs {
+		diffID := diffIDs[len(diffIDs)-1-idx]
+		diffIDHash := strings.TrimPrefix(diffID, "sha256:")
+		layerDir := filepath.Join(scanRoot, gcfsLayersPath, "sha256="+diffIDHash)
+
+		if info, err := os.Stat(layerDir); err == nil && info.IsDir() {
+			lowerDirs = append(lowerDirs, layerDir)
+			continue
+		}
+
+		// If layers/ dir does not exist for this layer, check snapshots/<parent_id>/fs.
+		// Lazily resolve parentSnapshotIDs only when fallback to snapshots/ is needed.
+		if !parentSnapshotsLoaded {
+			parentSnapshotIDs = getParentSnapshotIDByDigest(snapshotsMetadata, snapshotKey, nil)
+			parentSnapshotsLoaded = true
+		}
+
+		// parentSnapshotIDs[idx] corresponds to layer idx.
+		if idx < len(parentSnapshotIDs) {
+			snapshotFsDir := filepath.Join(scanRoot, gcfsSnapshotsPath, strconv.FormatUint(parentSnapshotIDs[idx], 10), "fs")
+			if info, err := os.Lstat(snapshotFsDir); err == nil && info.Mode()&os.ModeSymlink == 0 && info.IsDir() {
+				lowerDirs = append(lowerDirs, snapshotFsDir)
+				continue
+			}
+		}
+
+		// If neither exists (or snapshot fs is a symlink to FUSE), layer download has not completed.
+		log.Errorf("GCFS layer download incomplete for container %v: layer %v not found in layers/ or as a directory in snapshots/", containerID, diffID)
+		return "", "", "", fmt.Errorf("gcfs layer download incomplete for container %v: layer %v not found in layers/ or as a directory in snapshots/", containerID, diffID)
 	}
 	lowerDir := strings.Join(lowerDirs, ":")
 
 	upperDir, workDir := getUpperAndWorkDirs(scanRoot, snapshotKey, gcfsSnapshotsPath, snapshotsMetadata)
-	return lowerDir, upperDir, workDir
+	return lowerDir, upperDir, workDir, nil
 }
 
 // getUpperAndWorkDirs finds the active snapshot ID for the container's snapshotKey to build upper/work dirs.
