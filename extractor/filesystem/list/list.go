@@ -192,7 +192,9 @@ import (
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/atin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/itin"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/passportnumber"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/usnewpassportnumber"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/plugin/config"
@@ -493,6 +495,8 @@ var (
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
 		{itin.NewDetector(), "secrets/itin", 0},
 		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
+		{passportnumber.NewDetector(), "sensitiveinformation/passportnumber", 0},
+		{usnewpassportnumber.NewDetector(), "sensitiveinformation/usnewpassportnumber", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.

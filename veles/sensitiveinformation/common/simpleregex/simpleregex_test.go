@@ -234,9 +234,10 @@ BAZ
 				ContextWindowBefore: tc.before,
 				ContextWindowAfter:  tc.after,
 				KeywordsRe:          KeywordsRe(tc.keywords),
-				FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
-					gotFlags = append(gotFlags, contextMatch)
-					return fromMatch(b, contextMatch)
+				FromMatch: func(b []byte, matchedKeywords [][]byte) (sensitiveinformation.SensitiveInformation, bool) {
+					hasKeywordMatch := len(matchedKeywords) > 0
+					gotFlags = append(gotFlags, hasKeywordMatch)
+					return fromMatch(b, hasKeywordMatch)
 				},
 			}
 			got, gotPos := d.Detect(tc.in)
@@ -259,8 +260,8 @@ BAZ
 
 func TestDetect_passesKeywordContextMatchToFromMatch(t *testing.T) {
 	type callbackCall struct {
-		Match        string
-		ContextMatch bool
+		Match           string
+		MatchedKeywords [][]byte
 	}
 
 	cases := []struct {
@@ -278,9 +279,9 @@ func TestDetect_passesKeywordContextMatchToFromMatch(t *testing.T) {
 			before:   4,
 			after:    4,
 			want: []callbackCall{
-				{Match: "FOO", ContextMatch: true},
-				{Match: "BAR", ContextMatch: false},
-				{Match: "BAZ", ContextMatch: true},
+				{Match: "FOO", MatchedKeywords: [][]byte{[]byte("abc")}},
+				{Match: "BAR", MatchedKeywords: nil},
+				{Match: "BAZ", MatchedKeywords: [][]byte{[]byte("def")}},
 			},
 		},
 		{
@@ -290,7 +291,7 @@ func TestDetect_passesKeywordContextMatchToFromMatch(t *testing.T) {
 			before:   4,
 			after:    4,
 			want: []callbackCall{
-				{Match: "FOO", ContextMatch: false},
+				{Match: "FOO", MatchedKeywords: nil},
 			},
 		},
 	}
@@ -304,8 +305,8 @@ func TestDetect_passesKeywordContextMatchToFromMatch(t *testing.T) {
 				ContextWindowBefore: tc.before,
 				ContextWindowAfter:  tc.after,
 				KeywordsRe:          KeywordsRe(tc.keywords),
-				FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
-					got = append(got, callbackCall{Match: string(b), ContextMatch: contextMatch})
+				FromMatch: func(b []byte, matchedKeywords [][]byte) (sensitiveinformation.SensitiveInformation, bool) {
+					got = append(got, callbackCall{Match: string(b), MatchedKeywords: matchedKeywords})
 					return fakeSensitiveInformation(b), true
 				},
 			}
@@ -338,7 +339,7 @@ func TestDetect_trueNegatives(t *testing.T) {
 	}}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fromMatch := func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+			fromMatch := func(b []byte, matchedKeywords [][]byte) (sensitiveinformation.SensitiveInformation, bool) {
 				return fakeSensitiveInformation(b), true
 			}
 			d := Detector{
