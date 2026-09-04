@@ -109,6 +109,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
 |            | pyproject.toml                                    | `python/pyprojecttoml`               |
+|            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
 | R          | renv.lock                                         | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
