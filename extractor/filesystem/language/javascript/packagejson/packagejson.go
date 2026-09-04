@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -60,15 +61,23 @@ type packageJSON struct {
 	Contributes *struct {
 	} `json:"contributes"`
 	// Not an NPM field but present for Unity package files.
-	Unity        string            `json:"unity"`
-	Dependencies map[string]string `json:"dependencies"`
+	Unity                string            `json:"unity"`
+	Dependencies         map[string]string `json:"dependencies"`
+	DevDependencies      map[string]string `json:"devDependencies"`
+	OptionalDependencies map[string]string `json:"optionalDependencies"`
+	PeerDependencies     map[string]string `json:"peerDependencies"`
+}
+
+type dependencyDetails struct {
+	pkg       *extractor.Package
+	depGroups []string
 }
 
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	Stats               stats.Collector
-	maxFileSizeBytes    int64
-	includeDependencies bool
+	Stats            stats.Collector
+	maxFileSizeBytes int64
+	config           *cpb.JavascriptPackageJsonConfig
 }
 
 // New returns a package.json extractor.
@@ -78,7 +87,6 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
 
-	includeDependencies := false
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavascriptPackageJsonConfig {
 		return c.GetJavascriptPackageJson()
 	})
@@ -86,12 +94,11 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		if specific.GetMaxFileSizeBytes() > 0 {
 			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 		}
-		includeDependencies = specific.GetIncludeDependencies()
 	}
 
 	return &Extractor{
-		maxFileSizeBytes:    maxFileSizeBytes,
-		includeDependencies: includeDependencies,
+		maxFileSizeBytes: maxFileSizeBytes,
+		config:           specific,
 	}, nil
 }
 
@@ -219,36 +226,97 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 		},
 	})
 
-	if e.includeDependencies {
-		for name, version := range p.Dependencies {
-			c, err := semver.NPM.ParseConstraint(version)
-			if err != nil {
-				log.Debugf("failed to parse NPM version constraint %s for dependency %s in %s: %v", version, name, path, err)
-				continue
-			}
-			v, err := c.CalculateMinVersion()
-			if err != nil {
-				log.Debugf("failed to calculate min NPM version for dependency %s in %s with constraint %s: %v", name, path, version, err)
-				continue
-			}
+	depPkgs := map[string]dependencyDetails{}
+	if e.config.GetIncludeDependencies() {
+		addDependencyPackages(depPkgs, path, finder, "dependencies", p.Dependencies, nil)
+	}
+	if e.config.GetIncludeDevDependencies() {
+		addDependencyPackages(depPkgs, path, finder, "devDependencies", p.DevDependencies, []string{"dev"})
+	}
+	if e.config.GetIncludeOptionalDependencies() {
+		addDependencyPackages(depPkgs, path, finder, "optionalDependencies", p.OptionalDependencies, []string{"optional"})
+	}
+	if e.config.GetIncludePeerDependencies() {
+		addDependencyPackages(depPkgs, path, finder, "peerDependencies", p.PeerDependencies, []string{"peer"})
+	}
 
-			lineNum := finder.LineOf("dependencies." + gjson.Escape(name))
-
-			loc := extractor.LocationFromPathAndLine(path, lineNum)
-			pkgs = append(pkgs, &extractor.Package{
-				Name: name,
-				// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
-				// Ignoring the build value, which isn't relevant for version comparison.
-				// TODO(b/444684673): Include the build value in the version string. Currently deps.dev
-				// does not parse out the build value, so that need to be fixed first.
-				Version:  v.Canon(false),
-				PURLType: purl.TypeNPM,
-				Location: loc,
-			})
-		}
+	for _, dep := range depPkgs {
+		dep.pkg.Metadata = &osv.DepGroupMetadata{DepGroupVals: dep.depGroups}
+		pkgs = append(pkgs, dep.pkg)
 	}
 
 	return pkgs, nil
+}
+
+// addDependencyPackages parses dependency entries and adds them to pkgs.
+// pkgs accumulates packages keyed by "name@version" so duplicate entries across
+// dependency sections can be merged. path is the package.json path used for logs
+// and locations. finder maps JSON fields back to line numbers. field is the JSON
+// dependency section, such as "dependencies" or "devDependencies". deps maps
+// package names to version constraints from that section. depGroups is the OSV
+// dependency-group metadata to apply, with nil/empty meaning production.
+func addDependencyPackages(pkgs map[string]dependencyDetails, path string, finder *linefinder.JSONLineFinder, field string, deps map[string]string, depGroups []string) {
+	for name, constraint := range deps {
+		c, err := semver.NPM.ParseConstraint(constraint)
+		if err != nil {
+			log.Debugf("failed to parse NPM version constraint %s for dependency %s in %s: %v", constraint, name, path, err)
+			continue
+		}
+		v, err := c.CalculateMinVersion()
+		if err != nil {
+			log.Debugf("failed to calculate min NPM version for dependency %s in %s with constraint %s: %v", name, path, constraint, err)
+			continue
+		}
+
+		lineNum := finder.LineOf(field + "." + gjson.Escape(name))
+		// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
+		// Ignoring the build value, which isn't relevant for version comparison.
+		// TODO(b/444684673): Include the build value in the version string. Currently deps.dev
+		// does not parse out the build value, so that need to be fixed first.
+		version := v.Canon(false)
+		key := name + "@" + version
+		pkg := &extractor.Package{
+			Name:     name,
+			Version:  version,
+			PURLType: purl.TypeNPM,
+			Location: extractor.LocationFromPathAndLine(path, lineNum),
+		}
+
+		current := dependencyDetails{pkg: pkg, depGroups: depGroups}
+		existing, ok := pkgs[key]
+		// If such dependecy was not added before just add it
+		if !ok {
+			pkgs[key] = current
+			continue
+		}
+		// Otherwise, merge dependency details to mimic tha package-lock.json logic
+		pkgs[key] = mergeDependencyDetails(existing, current)
+	}
+}
+
+// mergeDependencyDetails merges two package.json entries for the same package
+// name and version. existing is the entry already added from a previous
+// dependency section, and current is the entry being added now. Empty depGroups
+// means production and takes precedence over dev/optional/peer groups; otherwise
+// non-production groups are combined and sorted.
+func mergeDependencyDetails(existing, current dependencyDetails) dependencyDetails {
+	// Prod dependencies take precedence over other dependecy groups
+	if existing.isProdDependency() {
+		return existing
+	}
+	if current.isProdDependency() {
+		return current
+	}
+
+	// Otherwise depGroups are a sum of existing and current
+	existing.depGroups = append(existing.depGroups, current.depGroups...)
+
+	return existing
+}
+
+// Prod dependencies have empty dep groups
+func (d dependencyDetails) isProdDependency() bool {
+	return len(d.depGroups) == 0
 }
 
 func (p packageJSON) hasNameAndVersionValues() bool {

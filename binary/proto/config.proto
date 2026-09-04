@@ -520,6 +520,12 @@ message JavascriptPackageJsonConfig {
   // If set, extract additional packages for each declared dependency.
   bool include_dependencies = 2;
   reserved 3;
+  // Specifies whether to extract devDependencies.
+  bool include_dev_dependencies = 4;
+  // Specifies whether to extract optionalDependencies.
+  bool include_optional_dependencies = 5;
+  // Specifies whether to extract peerDependencies.
+  bool include_peer_dependencies = 6;
 }
 
 message JavascriptPackageLockJsonConfig {
