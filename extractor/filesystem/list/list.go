@@ -48,6 +48,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gowork"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/vendormodules"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
@@ -272,6 +273,8 @@ var (
 	}
 	// GoSource extractors for Go.
 	GoSource = InitMap{
+		gomod.Name:  {gomod.New},
+		gowork.Name: {gowork.New},
 		gomod.Name:         {protoCfg(gomod.New)},
 		vendormodules.Name: {protoCfg(vendormodules.New)},
 	}
