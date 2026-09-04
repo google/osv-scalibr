@@ -313,6 +313,9 @@ func collectOverlayFSDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata,
 func getImageDiffIDs(scanRoot string, manifestDigest string) ([]string, error) {
 	manifestHash := strings.TrimPrefix(manifestDigest, "sha256:")
 	manifestPath := filepath.Join(scanRoot, contentBlobsPath, manifestHash)
+	if !strings.HasPrefix(manifestPath, scanRoot) {
+		return nil, fmt.Errorf("path traversal detected: %s", manifestPath)
+	}
 
 	manifestBytes, err := os.ReadFile(manifestPath)
 	if err != nil {
@@ -363,6 +366,9 @@ func getImageDiffIDs(scanRoot string, manifestDigest string) ([]string, error) {
 		// Read the actual manifest
 		manifestHash = strings.TrimPrefix(selectedManifestDigest, "sha256:")
 		manifestPath = filepath.Join(scanRoot, contentBlobsPath, manifestHash)
+		if !strings.HasPrefix(manifestPath, scanRoot) {
+			return nil, fmt.Errorf("path traversal detected: %s", manifestPath)
+		}
 		manifestBytes, err = os.ReadFile(manifestPath)
 		if err != nil {
 			return nil, fmt.Errorf("could not read inner manifest blob: %w", err)
@@ -376,8 +382,10 @@ func getImageDiffIDs(scanRoot string, manifestDigest string) ([]string, error) {
 	if configHash == "" {
 		return nil, errors.New("empty config digest in manifest")
 	}
-
 	configPath := filepath.Join(scanRoot, contentBlobsPath, configHash)
+	if !strings.HasPrefix(configPath, scanRoot) {
+		return nil, fmt.Errorf("path traversal detected: %s", configPath)
+	}
 	configBytes, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read config blob: %w", err)
@@ -411,7 +419,12 @@ func collectGcfsDirs(scanRoot string, snapshotsMetadata []SnapshotMetadata, snap
 	// For gcfs, lowerDirs points to the read-only unpacked layers.
 	for i := len(diffIDs) - 1; i >= 0; i-- {
 		diffIDHash := strings.TrimPrefix(diffIDs[i], "sha256:")
-		lowerDirs = append(lowerDirs, filepath.Join(scanRoot, gcfsLayersPath, "sha256="+diffIDHash))
+		layerPath := filepath.Join(scanRoot, gcfsLayersPath, "sha256="+diffIDHash)
+		if !strings.HasPrefix(layerPath, scanRoot) {
+			log.Errorf("Path traversal detected in diff ID: %s", diffIDs[i])
+			return "", "", ""
+		}
+		lowerDirs = append(lowerDirs, layerPath)
 	}
 	lowerDir := strings.Join(lowerDirs, ":")
 
