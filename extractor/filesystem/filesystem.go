@@ -589,14 +589,9 @@ func (wc *walkContext) shouldSkipDir(path string) bool {
 
 // extractWithRecover calls ex.Extract, turning a panic into an error.
 //
-// Extractors parse files that the scan target controls, so an unchecked slice
-// bound or type assertion in any one of them is reachable from a malformed
-// input file. Without this, such a panic unwinds through the whole filesystem
-// walk: the scan dies and the inventory already collected from every other file
-// is discarded. Recovering keeps the failure scoped to the file that caused it
-// and reports it through the same per-file error path as any other extraction
-// failure, so it still surfaces in the extractor's status rather than being
-// swallowed.
+// An unchecked extractor panic would cause inventory collected from other
+// extractors to be discarded. Recovering keeps the failure scoped to the file
+// and surfaces the error in the extractor's status.
 func extractWithRecover(ctx context.Context, ex Extractor, input *ScanInput) (inv inventory.Inventory, err error) {
 	defer func() {
 		if r := recover(); r != nil {
