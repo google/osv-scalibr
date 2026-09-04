@@ -1382,9 +1382,7 @@ func TestIsInterestingExecutable(t *testing.T) {
 	}
 }
 
-// A fake extractor that panics on one specific file, in the same shape as a real
-// extractor bug: an unchecked index derived from the contents of the file being
-// parsed.
+// A fake extractor that panics on one specific file.
 type fakeExtractorPanicking struct{}
 
 func (fakeExtractorPanicking) Name() string                       { return "ex-panicking" }
@@ -1396,9 +1394,7 @@ func (fakeExtractorPanicking) FileRequired(api filesystem.FileAPI) bool {
 }
 func (fakeExtractorPanicking) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	if filepath.Base(input.Path) == "bad.txt" {
-		var parsed []string
-		// A malformed file leaves nothing parsed, and the index is never checked.
-		return inventory.Inventory{}, errors.New(parsed[len(parsed)-1])
+		panic("simulated extractor bug")
 	}
 	return inventory.Inventory{
 		Packages: []*extractor.Package{{
