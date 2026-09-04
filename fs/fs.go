@@ -68,8 +68,48 @@ func (r *ScanRoot) WithAbsolutePath() (*ScanRoot, error) {
 }
 
 // DirFS returns an FS implementation that accesses the real filesystem at the given root.
+//
+// The returned filesystem is rooted at root and prevents path traversal outside
+// that root, including through symlinks that resolve outside the root.
 func DirFS(root string) FS {
-	return os.DirFS(root).(FS)
+	if root == "" {
+		return os.DirFS(root).(FS)
+	}
+	return rootedFS{root: root}
+}
+
+type rootedFS struct {
+	root string
+}
+
+func (fsys rootedFS) Open(name string) (fs.File, error) {
+	root, err := os.OpenRoot(fsys.root)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+
+	return root.Open(filepath.FromSlash(name))
+}
+
+func (fsys rootedFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	root, err := os.OpenRoot(fsys.root)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+
+	return fs.ReadDir(root.FS(), filepath.ToSlash(name))
+}
+
+func (fsys rootedFS) Stat(name string) (fs.FileInfo, error) {
+	root, err := os.OpenRoot(fsys.root)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+
+	return root.Stat(filepath.FromSlash(name))
 }
 
 // RealFSScanRoots returns a one-element ScanRoot array representing the given
