@@ -344,26 +344,32 @@ func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, regist
 func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
 	filePath := ""
 	var localRegistryRoot *os.Root
+	var err error
 	if m.localRegistry != "" {
 		filePath = filepath.Join(paths...)
-		if err := os.MkdirAll(m.localRegistry, 0755); err != nil {
-			log.Warnf("Error creating local cache %q: %v", m.localRegistry, err)
-		} else {
-			var err error
-			localRegistryRoot, err = os.OpenRoot(m.localRegistry)
-			if err != nil {
-				log.Warnf("Error opening local cache %q: %v", m.localRegistry, err)
+
+		localRegistryRoot, err = os.OpenRoot(m.localRegistry)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if err := os.MkdirAll(m.localRegistry, 0755); err != nil {
+					log.Warnf("Error creating local cache %q: %v", m.localRegistry, err)
+				} else if localRegistryRoot, err = os.OpenRoot(m.localRegistry); err != nil {
+					log.Warnf("Error opening local cache %q: %v", m.localRegistry, err)
+				}
 			} else {
-				defer localRegistryRoot.Close()
-				file, err := localRegistryRoot.Open(filePath)
-				if err == nil {
-					defer file.Close()
-					// We can still fetch the file from upstream if error is not nil.
-					return NewMavenDecoder(file).Decode(dst)
-				}
-				if !os.IsNotExist(err) {
-					log.Warnf("Error reading %q from local cache: %v", filePath, err)
-				}
+				log.Warnf("Error opening local cache %q: %v", m.localRegistry, err)
+			}
+		}
+		if localRegistryRoot != nil {
+			defer localRegistryRoot.Close()
+			file, err := localRegistryRoot.Open(filePath)
+			if err == nil {
+				defer file.Close()
+				// We can still fetch the file from upstream if error is not nil.
+				return NewMavenDecoder(file).Decode(dst)
+			}
+			if !os.IsNotExist(err) {
+				log.Warnf("Error reading %q from local cache: %v", filePath, err)
 			}
 		}
 	}
@@ -446,12 +452,12 @@ func writeFile(path string, data []byte) error {
 
 	outFile, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", path, err)
+		return fmt.Errorf("failed to create file %q: %w", path, err)
 	}
 	defer outFile.Close()
 
 	if _, err := outFile.Write(data); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", path, err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil
