@@ -267,7 +267,7 @@ func addRelationshipsAndNodes(
 			RefB:         toDocElementID(NoAssertion),
 			Relationship: "CONTAINS",
 		})
-		relationships = dependsOn(relationships, pkg, pID, scalibrToSPDXID)
+		relationships = dependsOn(relationships, pkg, pID, scalibrToSPDXID, mainPackageID)
 		files, relationships = dependencyManifestOf(files, relationships, pkg, pID, seenFileSPDXID)
 		packages, relationships = descendantOf(packages, relationships, pkg, pID, seenSourceSPDXID)
 	}
@@ -280,20 +280,34 @@ func dependsOn(
 	pkg *extractor.Package,
 	pID string,
 	scalibrToSPDXID map[string]string,
+	mainPackageID string,
 ) []*v2_3.Relationship {
 	parentIDs := slices.Sorted(maps.Keys(pkg.ParentIDs))
 	for _, parentID := range parentIDs {
-		if parentSPDXID, ok := scalibrToSPDXID[parentID]; ok {
-			relationships = append(relationships, &v2_3.Relationship{
-				RefA:         toDocElementID(parentSPDXID),
-				RefB:         toDocElementID(pID),
-				Relationship: "DEPENDS_ON",
-			})
-		} else if parentID != "root" {
+		parentSPDXID, ok := parentSPDXID(parentID, scalibrToSPDXID, mainPackageID)
+		if !ok {
 			log.Warnf("Parent package ID %q for package %v not found in inventory", parentID, pkg)
+			continue
 		}
+		relationships = append(relationships, &v2_3.Relationship{
+			RefA:         toDocElementID(parentSPDXID),
+			RefB:         toDocElementID(pID),
+			Relationship: "DEPENDS_ON",
+		})
 	}
 	return relationships
+}
+
+// parentSPDXID resolves a SCALIBR parent ID to an SPDX ID, mapping the
+// synthetic "root" parent to the document's main package.
+func parentSPDXID(parentID string, scalibrToSPDXID map[string]string, mainPackageID string) (string, bool) {
+	if id, ok := scalibrToSPDXID[parentID]; ok {
+		return id, true
+	}
+	if parentID == "root" {
+		return mainPackageID, true
+	}
+	return "", false
 }
 
 // dependencyManifestOf appends a File node and a DEPENDENCY_MANIFEST_OF relationship
