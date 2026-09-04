@@ -247,6 +247,58 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "RubyGems plain gem version",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "nokogiri",
+				Version:  "1.19.3",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "nokogiri",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.19.3",
+			},
+		},
+		{
+			name: "RubyGems platform-specific gem version",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "nokogiri",
+				Version:  "1.19.3-x86_64-linux-gnu",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "nokogiri",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.19.3",
+			},
+		},
+		{
+			name: "RubyGems malformed leading-hyphen version is left untouched",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "-x86_64-linux-gnu",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "-x86_64-linux-gnu",
+			},
+		},
+		{
+			name: "RubyGems malformed trailing-hyphen version is left untouched",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGem,
+				Name:     "example",
+				Version:  "1.0.0-",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "example",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems),
+				Version:   "1.0.0-",
+			},
+		},
+		{
 			name: "npm scoped package PURL namespace",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeNPM,

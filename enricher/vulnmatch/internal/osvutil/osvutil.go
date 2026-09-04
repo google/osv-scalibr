@@ -189,10 +189,21 @@ func ecosystemEncodesEpoch(ecosystem string) bool {
 	return rhelFamilyEpochEcosystems[distro]
 }
 
+func stripRubyGemsPlatform(version string) string {
+	hyphenIndex := strings.IndexByte(version, '-')
+	if hyphenIndex < 1 || hyphenIndex == len(version)-1 {
+		return version
+	}
+	return version[:hyphenIndex]
+}
+
 func version(pkg *extractor.Package, ecosystem string) string {
 	version := pkg.Version
 	if m, ok := pkg.Metadata.(*rpmmetadata.Metadata); ok && m.Epoch > 0 && ecosystemEncodesEpoch(ecosystem) {
 		return strconv.Itoa(m.Epoch) + ":" + version
+	}
+	if ecosystemFamily, _, _ := strings.Cut(ecosystem, ":"); ecosystemFamily == string(osvconstants.EcosystemRubyGems) {
+		version = stripRubyGemsPlatform(version)
 	}
 	return version
 }
