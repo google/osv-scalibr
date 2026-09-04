@@ -402,15 +402,13 @@ func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, regist
 func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
 	filePath := ""
 	if m.localRegistry != "" {
-		filePath = filepath.Join(append([]string{m.localRegistry}, paths...)...)
-		file, err := os.Open(filePath)
-		if err == nil {
-			defer file.Close()
-			// We can still fetch the file from upstream if error is not nil.
-			return NewMavenDecoder(file).Decode(dst)
+		filePath = filepath.Join(paths...)
+		cacheHit, err := m.readFromCache(filePath, dst)
+		if err != nil {
+			return err
 		}
-		if !os.IsNotExist(err) {
-			log.Warnf("Error reading from local cache %s: %v", filePath, err)
+		if cacheHit {
+			return nil
 		}
 	}
 
@@ -443,9 +441,8 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		if err != nil {
 			return response{}, fmt.Errorf("failed to read body: %w", err)
 		}
-
-		if filePath != "" && resp.StatusCode == http.StatusOK {
-			if err := writeFile(filePath, b); err != nil {
+		if m.localRegistry != "" && resp.StatusCode == http.StatusOK {
+			if err := m.writeToCache(filePath, b); err != nil {
 				log.Warnf("failed to write response to %s: %v", u, err)
 			}
 		}
@@ -467,6 +464,59 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	return NewMavenDecoder(bytes.NewReader(resp.Body)).Decode(dst)
 }
 
+func (m *MavenRegistryAPIClient) readFromCache(filePath string, dst any) (bool, error) {
+	localRegistryRoot, err := os.OpenRoot(m.localRegistry)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Warnf("Error opening local cache %q: %v", m.localRegistry, err)
+		}
+		return false, nil
+	}
+	defer localRegistryRoot.Close()
+
+	file, err := localRegistryRoot.Open(filePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Warnf("Error reading %q from local cache: %v", filePath, err)
+		}
+		return false, nil
+	}
+	defer file.Close()
+
+	return true, NewMavenDecoder(file).Decode(dst)
+}
+
+func (m *MavenRegistryAPIClient) writeToCache(filePath string, data []byte) error {
+	localRegistryRoot, err := os.OpenRoot(m.localRegistry)
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(m.localRegistry, 0755); err != nil {
+			return fmt.Errorf("failed to create local cache %q: %w", m.localRegistry, err)
+		}
+		localRegistryRoot, err = os.OpenRoot(m.localRegistry)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to open local cache %q: %w", m.localRegistry, err)
+	}
+	defer localRegistryRoot.Close()
+
+	return writeFileInRoot(localRegistryRoot, filePath, data)
+}
+
+// writeFileInRoot writes the bytes to the file specified by the given path.
+func writeFileInRoot(root *os.Root, path string, data []byte) error {
+	dir := filepath.Dir(path)
+	// Create the directory if it doesn't exist.
+	if err := root.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %q: %w", dir, err)
+	}
+
+	if err := root.WriteFile(path, data, 0666); err != nil {
+		return fmt.Errorf("failed to write file %q: %w", path, err)
+	}
+
+	return nil
+}
+
 // writeFile writes the bytes to the file specified by the given path.
 func writeFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
@@ -477,12 +527,12 @@ func writeFile(path string, data []byte) error {
 
 	outFile, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", path, err)
+		return fmt.Errorf("failed to create file %q: %w", path, err)
 	}
 	defer outFile.Close()
 
 	if _, err := outFile.Write(data); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", path, err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil
