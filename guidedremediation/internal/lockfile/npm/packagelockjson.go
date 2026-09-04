@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -165,7 +166,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 }
 
 // Write writes the lockfile after applying the patches to outputPath.
-func (r readWriter) Write(path string, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
+func (r readWriter) Write(path string, fsys scalibrfs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error {
 	// Read the whole package-lock.json into memory so we can use sjson to write in-place.
 	f, err := fsys.Open(path)
 	if err != nil {
@@ -189,7 +190,11 @@ func (r readWriter) Write(path string, fsys scalibrfs.FS, patches []result.Patch
 	}
 
 	// We need access to the npm registry to get information about the new versions. (e.g. hashes)
-	api, err := datasource.NewNPMRegistryAPIClient(filepath.Dir(outputPath))
+	if !fs.ValidPath(filepath.ToSlash(outputPath)) {
+		return fmt.Errorf("invalid output path %q", outputPath)
+	}
+	hostOutputPath := filepath.Join(outputRoot.Name(), filepath.FromSlash(outputPath))
+	api, err := datasource.NewNPMRegistryAPIClient(filepath.Dir(hostOutputPath))
 	if err != nil {
 		return fmt.Errorf("failed to connect to npm registry: %w", err)
 	}
@@ -202,10 +207,10 @@ func (r readWriter) Write(path string, fsys scalibrfs.FS, patches []result.Patch
 	}
 
 	// Write the patched lockfile to the output path.
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+	if err := outputRoot.MkdirAll(filepath.ToSlash(filepath.Dir(outputPath)), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(outputPath, lockf, 0644)
+	return outputRoot.WriteFile(filepath.ToSlash(outputPath), lockf, 0644)
 }
 
 func findDependencyNode(node *nodeModule, depName string) resolve.NodeID {

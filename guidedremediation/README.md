@@ -35,6 +35,15 @@ modifying the project's dependency files (manifests or lockfiles).
 > `requirements.txt` as the lockfile (compiled output). However, a standalone
 > `requirements.txt` can also be treated as a manifest depending on usage.
 
+## Project Boundary
+
+Guided remediation confines manifest and lockfile access to a project boundary.
+Set `ProjectRoot` to choose this boundary explicitly. If it is empty, guided
+remediation uses the nearest enclosing Git repository root and falls back to the
+directory containing the selected manifest or lockfile when no Git repository
+is found. Files outside this boundary, including Maven parent POMs, are not read
+or updated.
+
 ## Remediation Strategies
 
 Strategies are defined in the `guidedremediation/strategy` subpackage:
@@ -44,4 +53,3 @@ Strategies are defined in the `guidedremediation/strategy` subpackage:
   versions.
 - **`override`**: Uses ecosystem-specific override mechanisms to force a
 specific version.
-

@@ -21,13 +21,13 @@ import (
 
 	"deps.dev/util/resolve"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/fs"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
 func TestReadRequirements(t *testing.T) {
-	fsys := fs.DirFS("./testdata/requirements")
+	fsys := scalibrfs.DirFS("./testdata/requirements")
 	pypiRW, _ := GetRequirementsReadWriter()
 	got, err := pypiRW.Read("requirements.txt", fsys)
 	if err != nil {
@@ -133,9 +133,40 @@ func TestReadRequirements(t *testing.T) {
 	checkManifest(t, "Manifest", got, want)
 }
 
+func TestReadRequirementsDoesNotReadRecursivePathOutsideProject(t *testing.T) {
+	dir := t.TempDir()
+	project := filepath.Join(dir, "project")
+	if err := os.Mkdir(project, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project, "requirements.txt"), []byte("-r ../outside.txt\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "outside.txt"), []byte("requests==1.0\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	rw, err := GetRequirementsReadWriter()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+
+	got, err := rw.Read("requirements.txt", root.FS().(scalibrfs.FS))
+	if err != nil {
+		t.Fatalf("Read() returned an error: %v", err)
+	}
+	if len(got.Requirements()) != 0 {
+		t.Fatalf("Read() included requirements from outside the project: %v", got.Requirements())
+	}
+}
+
 func TestWriteRequirements(t *testing.T) {
 	rw, _ := GetRequirementsReadWriter()
-	fsys := fs.DirFS("./testdata/requirements")
+	fsys := scalibrfs.DirFS("./testdata/requirements")
 	manif, err := rw.Read("requirements.txt", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -172,8 +203,13 @@ func TestWriteRequirements(t *testing.T) {
 	}
 	outDir := t.TempDir()
 	outFile := filepath.Join(outDir, "requirements.txt")
+	outFS, err := os.OpenRoot(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFS.Close()
 
-	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
+	if err := rw.Write(manif, fsys, patches, outFS, "requirements.txt"); err != nil {
 		t.Fatalf("failed to write requirements.txt: %v", err)
 	}
 
