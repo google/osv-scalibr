@@ -145,8 +145,15 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 			errs = errors.Join(errs, fmt.Errorf("resolving %s: %w", path, err))
 			continue
 		}
-		inv.Packages = append(inv.Packages, pkgs...)
+		internal.Add(pkgs, inv, Name, pkgMap)
 	}
+
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
 	return errs
 }
 
