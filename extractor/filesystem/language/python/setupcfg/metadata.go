@@ -14,6 +14,14 @@
 
 package setupcfg
 
+import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+)
+
+func init() {
+	metadata.RegisterNil[*Metadata]()
+}
+
 // Metadata holds setup.cfg-specific package metadata for future enrichment.
 type Metadata struct {
 	// Requirement is the full PEP 508 requirement string (e.g. "requests==2.31.0").
