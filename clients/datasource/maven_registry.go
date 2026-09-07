@@ -460,6 +460,8 @@ func writeFileInRoot(root *os.Root, path string, data []byte) error {
 }
 
 // writeFile writes the bytes to the file specified by the given path.
+//
+// TODO: Remove this function after its last use in PyPI local registry is removed (#PR2400)
 func writeFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	// Create the directory if it doesn't exist.
