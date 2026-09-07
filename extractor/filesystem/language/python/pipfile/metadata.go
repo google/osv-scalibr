@@ -14,6 +14,14 @@
 
 package pipfile
 
+import (
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+)
+
+func init() {
+	metadata.RegisterNil[*Metadata]()
+}
+
 // Metadata holds additional information about a package extracted from a Pipfile.
 type Metadata struct {
 	// DepGroupVals contains the dependency group(s) this package belongs to,
