@@ -162,7 +162,7 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 				{
 					Name:     "regex",
-					PURLType: purl.TypeCargo,
+					PURLType: purl.TypeGit,
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/rust-lang/regex.git",
 						Commit: "0c0990399270277832fbb5b91a1fa118e6f63dba",

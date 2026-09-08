@@ -84,6 +84,23 @@ func TestEnrich(t *testing.T) {
 		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
 		pyPkg      = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
 		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
+		gitPkg     = &extractor.Package{
+			Name:     "some-git-dep",
+			Version:  "1.0.0",
+			PURLType: purl.TypeGit,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo:   "https://github.com/some/repo",
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
+		goPkgWithCommit = &extractor.Package{
+			Name:     "github.com/gin-gonic/gin",
+			Version:  "1.8.1",
+			PURLType: purl.TypeGolang,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
 
 		goPkgWithSignals = &extractor.Package{
 			Name:     "github.com/gin-gonic/gin",
@@ -543,6 +560,29 @@ func TestEnrich(t *testing.T) {
 				{Vulnerability: &goVuln2, Package: goPkgWithSignals, Plugins: []string{Name}},
 				{Vulnerability: &goVuln3, Package: goPkgWithSignals, Plugins: []string{Name}},
 			}},
+		{
+			name:             "git_commit_package_skipped",
+			packages:         []*extractor.Package{gitPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
+		},
+		{
+			name:     "interleaving_git_commit_and_covered",
+			packages: []*extractor.Package{gitPkg, goPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{Name}},
+			},
+		},
+		{
+			name:     "non_git_package_with_commit_not_skipped",
+			packages: []*extractor.Package{goPkgWithCommit},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &goVuln1, Package: goPkgWithCommit, Plugins: []string{Name}},
+				{Vulnerability: &goVuln2, Package: goPkgWithCommit, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkgWithCommit, Plugins: []string{Name}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -187,15 +187,54 @@ func GetFileSHA256(path, rootPath string) string {
 	return EmptyFileDigest
 }
 
+func cleanRepoURL(rawURL string) string {
+	url := strings.TrimSpace(rawURL)
+	url, _, _ = strings.Cut(url, "?")
+	url, _, _ = strings.Cut(url, "#")
+	if _, after, ok := strings.Cut(url, "://"); ok {
+		url = after
+	}
+	if _, after, ok := strings.Cut(url, "@"); ok {
+		url = after
+	}
+	// Convert SCP host:path to host/path (e.g. github.com:owner/repo -> github.com/owner/repo)
+	if host, path, ok := strings.Cut(url, ":"); ok && !strings.Contains(host, "/") {
+		url = host + "/" + path
+	}
+	return strings.TrimSuffix(strings.Trim(url, "/"), ".git")
+}
+
 // GetSourceCodePURL returns a PackageURL for the source repository and commit.
 func GetSourceCodePURL(repoURL, commit string) *purl.PackageURL {
-	url := strings.TrimPrefix(strings.TrimPrefix(repoURL, "https://"), "http://")
-	if after, ok := strings.CutPrefix(url, "github.com/"); ok {
-		if owner, repo, ok := strings.Cut(after, "/"); ok {
-			return &purl.PackageURL{Type: purl.TypeGithub, Namespace: owner, Name: repo, Version: commit}
-		}
+	url := cleanRepoURL(repoURL)
+	if url == "" {
+		return nil
 	}
-	return &purl.PackageURL{Type: purl.TypeGeneric, Name: url, Version: commit}
+	// 1. Handle GitHub repositories: GitHub URLs must be in the format
+	// github.com/<owner>/<repo>. Both owner and repo cannot be empty, otherwise return nil.
+	if after, ok := strings.CutPrefix(url, "github.com/"); ok {
+		if owner, repo, ok := strings.Cut(after, "/"); ok && owner != "" && repo != "" {
+			return &purl.PackageURL{
+				Type:      purl.TypeGithub,
+				Namespace: owner,
+				Name:      repo,
+				Version:   commit,
+			}
+		}
+		return nil
+	}
+	// 2. Handle Generic repositories (GoB, GitLab, etc.):
+	// Split on the last '/' so leading parts form the namespace, and the trailing part forms the name.
+	namespace, name := "", url
+	if i := strings.LastIndex(url, "/"); i != -1 {
+		namespace, name = url[:i], url[i+1:]
+	}
+	return &purl.PackageURL{
+		Type:      purl.TypeGeneric,
+		Namespace: namespace,
+		Name:      name,
+		Version:   commit,
+	}
 }
 
 // addRelationshipsAndNodes generates SPDX relationships (CONTAINS, DEPENDS_ON,

@@ -522,6 +522,7 @@ func (st stateRelockResult) write(m Model) tea.Msg {
 		m.relockBaseManifest.Manifest,
 		[]result.Patch{patches},
 		m.manifestRW,
+		m.options.ProjectRoot,
 	)
 	if err != nil {
 		return writeMsg{err}

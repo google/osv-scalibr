@@ -694,7 +694,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "@prettier/sync",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 32),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "527e8ce",
@@ -706,7 +706,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "babel-preset-php",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "1ae6dc1267500360b411ec711b8aeac8c68b2246",
@@ -718,7 +718,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "is-number",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 36),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1",
@@ -730,7 +730,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "is-number",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 38),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac058",
@@ -742,7 +742,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "is-number",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 40),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b7aef34",
@@ -804,7 +804,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "raven-js",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 52),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "91ef2d4",
@@ -816,7 +816,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "slick-carousel",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 54),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fc6f7d8",
@@ -874,7 +874,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "uWebSockets.js",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/blog-sample.json5", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6609a88",
