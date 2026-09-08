@@ -15,6 +15,7 @@
 package rebarlock_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -146,7 +147,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "cowlib",
 					Version:  "2.11.0",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/one-package.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/one-package.lock", 2),
 				},
 			},
 		},
@@ -160,13 +161,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "cowboy",
 					Version:  "2.9.0",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.lock", 2),
 				},
 				{
 					Name:     "ranch",
 					Version:  "1.8.0",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.lock", 3),
 				},
 			},
 		},
@@ -182,13 +183,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "uuid_erl",
 					Version:  "2.0.1",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/differing-app-name.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/differing-app-name.lock", 2),
 				},
 				{
 					Name:     "quickrand",
 					Version:  "2.0.7",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/differing-app-name.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/differing-app-name.lock", 3),
 				},
 			},
 		},
@@ -201,7 +202,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "gradualizer",
 					PURLType: purl.TypeGit,
-					Location: extractor.LocationFromPath("testdata/git.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/git.lock", 2),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/josefs/Gradualizer.git",
 						Commit: "3021d29d82741399d131e3be38d2a8db79d146d4",
@@ -210,7 +211,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "yamerl",
 					PURLType: purl.TypeGit,
-					Location: extractor.LocationFromPath("testdata/git.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/git.lock", 6),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/erlang-ls/yamerl.git",
 						Commit: "9a9f7a2e84554992f2e8e08a8060bfe97776a5b7",
@@ -219,7 +220,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "nested_app",
 					PURLType: purl.TypeGit,
-					Location: extractor.LocationFromPath("testdata/git.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/git.lock", 10),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/my-org/umbrella.git",
 						Commit: "bef3ee1d3618017061498b96c75043e8449ef9b5",
@@ -237,12 +238,12 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "meck",
 					Version:  "0.8.13",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/legacy-format.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/legacy-format.lock", 1),
 				},
 				{
 					Name:     "legacy_dep",
 					PURLType: purl.TypeGit,
-					Location: extractor.LocationFromPath("testdata/legacy-format.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/legacy-format.lock", 2),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/my-org/legacy_dep.git",
 						Commit: "a9574ab75d6ed01e1288c453ae1d943d7a964595",
@@ -262,7 +263,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "cowlib",
 					Version:  "2.11.0",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/mercurial.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/mercurial.lock", 6),
 				},
 			},
 		},
@@ -276,42 +277,42 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "cache_tab",
 					Version:  "1.0.34",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 2),
 				},
 				{
 					Name:     "eimp",
 					Version:  "1.0.27",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 3),
 				},
 				{
 					Name:     "fast_tls",
 					Version:  "1.1.26",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 4),
 				},
 				{
 					Name:     "idna",
 					Version:  "7.1.0",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 9),
 				},
 				{
 					Name:     "jose",
 					Version:  "1.11.12",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 10),
 				},
 				{
 					Name:     "p1_utils",
 					Version:  "1.0.29",
 					PURLType: purl.TypeHex,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 11),
 				},
 				{
 					Name:     "fast_xml",
 					PURLType: purl.TypeGit,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 5),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/processone/fast_xml",
 						Commit: "ee0e6569f44659327a022c0d23d193d1c3e72288",
@@ -320,7 +321,7 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "xmpp",
 					PURLType: purl.TypeGit,
-					Location: extractor.LocationFromPath("testdata/many.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/many.lock", 12),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo:   "https://github.com/processone/xmpp",
 						Commit: "02893ce01f4d761659988edd85de99d24ccd6bdf",
@@ -350,6 +351,81 @@ func TestExtractor_Extract(t *testing.T) {
 			wantInv := inventory.Inventory{Packages: tt.WantPackages}
 			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+			}
+		})
+	}
+}
+
+// TestExtractor_Streaming covers the paths the fixture files cannot reach: a
+// long stretch with no dependency tuple before one appears, which exercises the
+// pending buffer cap, and a single line too long to be a lockfile line.
+func TestExtractor_Streaming(t *testing.T) {
+	// Erlang term files allow % comments, and an unmatched comment run well past
+	// the cap must not lose the dependency that follows it.
+	filler := strings.Repeat("% padding line that never matches a dependency tuple\n", 3000)
+	tests := []struct {
+		name         string
+		content      string
+		wantPackages []*extractor.Package
+		wantErr      bool
+	}{
+		{
+			name: "dependency after a stretch longer than the pending cap",
+			content: "{\"1.2.0\",\n[\n" + filler +
+				"{<<\"late\">>,\n  {git,\"https://example.com/late.git\",\n       {ref,\"0123456789abcdef0123456789abcdef01234567\"}},\n  0},\n" +
+				"{<<\"cowlib\">>,{pkg,<<\"cowlib\">>,<<\"2.11.0\">>},0}]}.\n",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "late",
+					PURLType: purl.TypeGit,
+					Location: extractor.LocationFromPathAndLine("rebar.lock", 3003),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Repo:   "https://example.com/late.git",
+						Commit: "0123456789abcdef0123456789abcdef01234567",
+					},
+				},
+				{
+					Name:     "cowlib",
+					Version:  "2.11.0",
+					PURLType: purl.TypeHex,
+					Location: extractor.LocationFromPathAndLine("rebar.lock", 3007),
+				},
+			},
+		},
+		{
+			name:    "two dependencies on one line",
+			content: "[{<<\"a\">>,{pkg,<<\"a\">>,<<\"1.0.0\">>},0},{<<\"b\">>,{pkg,<<\"b\">>,<<\"2.0.0\">>},1}].\n",
+			wantPackages: []*extractor.Package{
+				{Name: "a", Version: "1.0.0", PURLType: purl.TypeHex, Location: extractor.LocationFromPathAndLine("rebar.lock", 1)},
+				{Name: "b", Version: "2.0.0", PURLType: purl.TypeHex, Location: extractor.LocationFromPathAndLine("rebar.lock", 1)},
+			},
+		},
+		{
+			name:    "line longer than the limit is an error",
+			content: strings.Repeat("x", 2*1024*1024),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			extr, err := rebarlock.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("rebarlock.New() error: %v", err)
+			}
+			got, err := extr.Extract(t.Context(), &filesystem.ScanInput{
+				Path:   "rebar.lock",
+				Reader: strings.NewReader(tt.content),
+			})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Extract() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			wantInv := inventory.Inventory{Packages: tt.wantPackages}
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+				t.Errorf("Extract() diff (-want +got):\n%s", diff)
 			}
 		})
 	}

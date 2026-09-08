@@ -16,9 +16,10 @@
 package rebarlock
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"path/filepath"
 	"regexp"
 
@@ -39,6 +40,15 @@ const (
 
 	// defaultMaxFileSizeBytes is the maximum file size this extractor will process.
 	defaultMaxFileSizeBytes = 10 * units.MiB // 10 MB
+
+	// maxLineBytes bounds a single line of the lockfile. rebar3 writes short
+	// lines, so anything past this is not a lockfile we want to parse.
+	maxLineBytes = 1 * units.MiB
+
+	// maxPendingBytes bounds how much of the file is held while waiting for a
+	// dependency tuple that wraps across lines to complete. A tuple is a name,
+	// a URL and a commit, so a few hundred bytes; this leaves a wide margin.
+	maxPendingBytes = 64 * units.KiB
 )
 
 // rebar.lock is an Erlang term file written by rebar3. It comes in two shapes:
@@ -59,9 +69,10 @@ const (
 //	  ].
 //
 // Dependency tuples are pretty-printed by Erlang's ~p and wrap across lines at
-// arbitrary points, so the file is matched as a whole rather than line by line.
-// Both shapes are covered because the patterns below anchor on the dependency
-// tuples themselves rather than on the surrounding envelope.
+// arbitrary points, so lines are accumulated until a tuple completes rather
+// than matched one at a time. Both shapes are covered because the patterns
+// below anchor on the dependency tuples themselves rather than on the
+// surrounding envelope.
 var (
 	// {<<"AppName">>,{pkg,<<"HexName">>,<<"Version">>}
 	// AppName is the OTP application name, HexName is the package name on
@@ -86,7 +97,7 @@ type Extractor struct {
 
 // New returns a rebar.lock extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	maxFileSizeBytes := int64(defaultMaxFileSizeBytes)
+	maxFileSizeBytes := defaultMaxFileSizeBytes
 	if cfg.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
@@ -148,46 +159,75 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	if err := ctx.Err(); err != nil {
-		return inventory.Inventory{}, fmt.Errorf("%s halted: %w", e.Name(), err)
-	}
+	scanner := bufio.NewScanner(input.Reader)
+	scanner.Buffer(make([]byte, 0, 64*units.KiB), int(maxLineBytes))
 
-	// FileRequired already bounds the size, but a scanner can call Extract
-	// directly, so the read is capped here as well.
-	reader := io.Reader(input.Reader)
-	if e.maxFileSizeBytes > 0 {
-		reader = io.LimitReader(reader, e.maxFileSizeBytes)
-	}
-	content, err := io.ReadAll(reader)
-	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to read %q: %w", input.Path, err)
-	}
-
-	location := extractor.LocationFromPath(input.Path)
 	packages := []*extractor.Package{}
 
-	for _, match := range pkgDepRe.FindAllSubmatch(content, -1) {
-		packages = append(packages, &extractor.Package{
-			Name:     string(match[1]),
-			Version:  string(match[2]),
-			PURLType: purl.TypeHex,
-			Location: location,
-		})
-	}
+	// pending holds the lines read so far that have not yet been consumed by a
+	// match, so a tuple that wraps across lines is seen whole once its last
+	// line arrives. pendingLine is the 1-based line number of pending[0].
+	var pending []byte
+	pendingLine := 1
+	lineNo := 0
 
-	// Deps pinned to a git commit are reported against the GIT ecosystem rather
-	// than Hex: they are not hex.pm releases, and matching them by name against
-	// Hex advisories produces false positives.
-	for _, match := range gitDepRe.FindAllSubmatch(content, -1) {
-		packages = append(packages, &extractor.Package{
-			Name:     string(match[1]),
-			PURLType: purl.TypeGit,
-			Location: location,
-			SourceCode: &extractor.SourceCodeIdentifier{
-				Repo:   string(match[2]),
-				Commit: string(match[3]),
-			},
-		})
+	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
+			return inventory.Inventory{}, fmt.Errorf("%s halted at line %d: %w", e.Name(), lineNo, err)
+		}
+		lineNo++
+		if len(pending) == 0 {
+			pendingLine = lineNo
+		}
+		pending = append(pending, scanner.Bytes()...)
+		pending = append(pending, '\n')
+
+		consumed := 0
+		for _, m := range pkgDepRe.FindAllSubmatchIndex(pending, -1) {
+			packages = append(packages, &extractor.Package{
+				Name:     string(pending[m[2]:m[3]]),
+				Version:  string(pending[m[4]:m[5]]),
+				PURLType: purl.TypeHex,
+				Location: extractor.LocationFromPathAndLine(input.Path, pendingLine+bytes.Count(pending[:m[0]], []byte{'\n'})),
+			})
+			consumed = max(consumed, m[1])
+		}
+		// Deps pinned to a git commit are reported against the GIT ecosystem
+		// rather than Hex: they are not hex.pm releases, and matching them by
+		// name against Hex advisories produces false positives.
+		for _, m := range gitDepRe.FindAllSubmatchIndex(pending, -1) {
+			packages = append(packages, &extractor.Package{
+				Name:     string(pending[m[2]:m[3]]),
+				PURLType: purl.TypeGit,
+				Location: extractor.LocationFromPathAndLine(input.Path, pendingLine+bytes.Count(pending[:m[0]], []byte{'\n'})),
+				SourceCode: &extractor.SourceCodeIdentifier{
+					Repo:   string(pending[m[4]:m[5]]),
+					Commit: string(pending[m[6]:m[7]]),
+				},
+			})
+			consumed = max(consumed, m[1])
+		}
+
+		switch {
+		case consumed > 0:
+			// Drop everything up to the end of the last match; a following
+			// tuple may already have started on the same line.
+			pendingLine += bytes.Count(pending[:consumed], []byte{'\n'})
+			pending = pending[consumed:]
+		case len(pending) > int(maxPendingBytes):
+			// Nothing matched for a long stretch, which means we are inside the
+			// attribute section or a malformed file. Keep only the tail from the
+			// last point a dependency tuple could have started.
+			cut := bytes.LastIndex(pending, []byte(`{<<"`))
+			if cut < 0 {
+				cut = len(pending)
+			}
+			pendingLine += bytes.Count(pending[:cut], []byte{'\n'})
+			pending = pending[cut:]
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to read %q: %w", input.Path, err)
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
