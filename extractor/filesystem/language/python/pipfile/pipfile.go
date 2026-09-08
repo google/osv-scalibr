@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	pyinternal "github.com/google/osv-scalibr/extractor/filesystem/language/python/internal"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -148,7 +149,7 @@ func addPackages(details map[string]*extractor.Package, packages map[string]any,
 			Version:  version,
 			PURLType: purl.TypePyPi,
 			Location: extractor.LocationFromPath(path),
-			Metadata: &Metadata{
+			Metadata: &requirements.Metadata{
 				DepGroupVals:      groupSlice,
 				Requirement:       requirement,
 				VersionComparator: comparator,

@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfile"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -87,7 +88,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "4.0.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{},
 						Requirement:       "anyio==4.0.0",
 						VersionComparator: "==", // bare version — equality inferred
@@ -98,7 +99,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{"dev"},
 						Requirement:       "black",
 						VersionComparator: "",
@@ -109,7 +110,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "4.2.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{},
 						Requirement:       "django~=4.2.0",
 						VersionComparator: "~=",
@@ -120,7 +121,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{},
 						Requirement:       "flask",
 						VersionComparator: "",
@@ -131,7 +132,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "7.4.3",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{"dev"},
 						Requirement:       "pytest==7.4.3",
 						VersionComparator: "==",
@@ -143,7 +144,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "1.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{},
 						Requirement:       "r==1.0",
 						VersionComparator: "==",
@@ -154,7 +155,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "2.31.0",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{},
 						Requirement:       "requests==2.31.0",
 						VersionComparator: "==",
@@ -165,7 +166,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "2.0.7",
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPath("testdata/valid.toml"),
-					Metadata: &pipfile.Metadata{
+					Metadata: &requirements.Metadata{
 						DepGroupVals:      []string{},
 						Requirement:       "urllib3==2.0.7",
 						VersionComparator: "==",

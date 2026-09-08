@@ -4890,6 +4890,7 @@ type PythonRequirementsMetadata struct {
 	HashCheckingModeValues []string               `protobuf:"bytes,1,rep,name=hash_checking_mode_values,json=hashCheckingModeValues,proto3" json:"hash_checking_mode_values,omitempty"`
 	VersionComparator      string                 `protobuf:"bytes,2,opt,name=version_comparator,json=versionComparator,proto3" json:"version_comparator,omitempty"`
 	Requirement            string                 `protobuf:"bytes,3,opt,name=requirement,proto3" json:"requirement,omitempty"`
+	DepGroupVals           []string               `protobuf:"bytes,4,rep,name=dep_group_vals,json=depGroupVals,proto3" json:"dep_group_vals,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -4943,6 +4944,13 @@ func (x *PythonRequirementsMetadata) GetRequirement() string {
 		return x.Requirement
 	}
 	return ""
+}
+
+func (x *PythonRequirementsMetadata) GetDepGroupVals() []string {
+	if x != nil {
+		return x.DepGroupVals
+	}
+	return nil
 }
 
 type PythonSetupMetadata struct {
