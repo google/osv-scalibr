@@ -63,6 +63,13 @@ func TestDetect_truePositives(t *testing.T) {
 			},
 		},
 		{
+			name: "match_with_spaces",
+			in:   []byte("900 70 1234"),
+			want: []veles.Secret{
+				itinFinding([]byte("900 70 1234")),
+			},
+		},
+		{
 			name: "keyword_before",
 			in:   []byte("itin: 900-50-1234"),
 			want: []veles.Secret{
@@ -385,8 +392,16 @@ func TestDetect_trueNegatives(t *testing.T) {
 			in:   []byte("900 70-1234"),
 		},
 		{
-			name: "spaced",
-			in:   []byte("900 70 1234"),
+			name: "spaced_fourth_and_fifth_digits_between_ranges",
+			in:   []byte("900 66 1234"),
+		},
+		{
+			name: "spaced_fourth_and_fifth_digits_excluded_89",
+			in:   []byte("900 89 1234"),
+		},
+		{
+			name: "spaced_fourth_and_fifth_digits_excluded_93",
+			in:   []byte("900 93 1234"),
 		},
 		{
 			name: "within_longer_string",
