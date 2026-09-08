@@ -45,6 +45,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/projectassetsjson"
 	elixir "github.com/google/osv-scalibr/extractor/filesystem/language/elixir/mixlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/mixlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/rebarlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
@@ -282,7 +283,10 @@ var (
 	// DartSource extractors for Dart.
 	DartSource = InitMap{pubspec.Name: {protoCfg(pubspec.New)}}
 	// ErlangSource extractors for Erlang.
-	ErlangSource = InitMap{mixlock.Name: {protoCfg(mixlock.New)}}
+	ErlangSource = InitMap{
+		mixlock.Name:   {protoCfg(mixlock.New)},
+		rebarlock.Name: {protoCfg(rebarlock.New)},
+	}
 	// GleamSource extractors for Gleam.
 	GleamSource = InitMap{gleamtoml.Name: {protoCfg(gleamtoml.New)}}
 	// NimSource extractors for Nim.
