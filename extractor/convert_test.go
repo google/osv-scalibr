@@ -57,6 +57,19 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
+			name: "git_purl",
+			pkg: &extractor.Package{
+				Name:     "name",
+				Version:  "version",
+				PURLType: purl.TypeGit,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeGit,
+				Name:    "name",
+				Version: "version",
+			},
+		},
+		{
 			name: "python_purl",
 			pkg: &extractor.Package{
 				Name:     "Name",
@@ -278,6 +291,15 @@ func TestToEcosystem(t *testing.T) {
 				PURLType: purl.TypeGolang,
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+		},
+		{
+			name: "git_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "some-git-dep",
+				Version:  "1.0.0",
+				PURLType: purl.TypeGit,
+			},
+			want: osvecosystem.FromEcosystem("GIT"),
 		},
 		{
 			name: "os_ecosystem",

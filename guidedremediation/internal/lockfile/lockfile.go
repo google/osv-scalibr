@@ -16,6 +16,8 @@
 package lockfile
 
 import (
+	"os"
+
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -30,7 +32,6 @@ type ReadWriter interface {
 
 	// Write writes the lockfile after applying the patches to outputPath.
 	//
-	// path is the path to the original (unpatched) lockfile in fsys.
-	// outputPath is the path on disk (*not* in fsys) to write the entire patched lockfile to (this can overwrite the original lockfile).
-	Write(path string, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error
+	// path is relative to fsys and outputPath is relative to outputRoot.
+	Write(path string, fsys scalibrfs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error
 }

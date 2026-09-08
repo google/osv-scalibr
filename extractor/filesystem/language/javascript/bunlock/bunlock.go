@@ -142,11 +142,16 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
+		purlType := purl.TypeNPM
+		if commit != "" {
+			purlType = purl.TypeGit
+		}
+
 		lineNum := finder.LineOf("packages." + gjson.Escape(key))
 		packages = append(packages, &extractor.Package{
 			Name:     name,
 			Version:  version,
-			PURLType: purl.TypeNPM,
+			PURLType: purlType,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
 			},

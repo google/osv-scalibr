@@ -166,12 +166,18 @@ func parseYarnPackageGroup(desc *packageDescription) *extractor.Package {
 		log.Errorf("Failed to determine version of %s while parsing a yarn.lock", name)
 	}
 
+	purlType := purl.TypeNPM
+	commit := commitextractor.TryExtractCommit(resolution)
+	if commit != "" {
+		purlType = purl.TypeGit
+	}
+
 	return &extractor.Package{
 		Name:     name,
 		Version:  version,
-		PURLType: purl.TypeNPM,
+		PURLType: purlType,
 		SourceCode: &extractor.SourceCodeIdentifier{
-			Commit: commitextractor.TryExtractCommit(resolution),
+			Commit: commit,
 		},
 	}
 }
