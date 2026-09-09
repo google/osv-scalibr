@@ -15,7 +15,6 @@
 package requirements_test
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,6 +33,8 @@ import (
 )
 
 func TestEnricher_Enrich(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
@@ -104,7 +105,7 @@ func TestEnricher_Enrich(t *testing.T) {
 		log.Errorf("requirements.New(): %v", err)
 	}
 	enricher.(*requirements.Enricher).Client = resolutionClient
-	enricher.(*requirements.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
+
 	err = enricher.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("failed to enrich: %v", err)
@@ -210,9 +211,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 		},
 	}
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
+
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enricher.Name(), diff)
 	}

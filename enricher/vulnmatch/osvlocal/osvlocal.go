@@ -107,8 +107,9 @@ func (Enricher) Version() int {
 
 // Requirements of the Enricher.
 // Needs network access if database downloading is enabled.
+// Otherwise, defaults to NetworkAny because this enricher does not require the whole scan to be offline.
 func (e Enricher) Requirements() *plugin.Capabilities {
-	network := plugin.NetworkOffline
+	network := plugin.NetworkAny
 
 	if e.download {
 		network = plugin.NetworkOnline

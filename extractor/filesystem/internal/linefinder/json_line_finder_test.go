@@ -75,7 +75,7 @@ func TestJSONLineFinder(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			finder := NewJSONLineFinder(tc.json)
+			finder := NewJSONLineFinder([]byte(tc.json))
 			got := finder.LineOf(tc.path)
 			if got != tc.wantLine {
 				t.Errorf("LineOf(%q) = %d, want %d", tc.path, got, tc.wantLine)

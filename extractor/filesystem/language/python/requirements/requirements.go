@@ -53,9 +53,10 @@ var (
 	// * Less than (<)
 	// * Not equal to (!=)
 	// * Multiple constraints (,)
-	reUnsupportedConstraints        = regexp.MustCompile(`\*|<[^=]|,|!=`)
-	reWhitespace                    = regexp.MustCompile(`[ \t\r]`)
-	reValidPkg                      = regexp.MustCompile(`^\w(\w|-)+$`)
+	reUnsupportedConstraints = regexp.MustCompile(`\*|<[^=]|,|!=`)
+	// Regex to match valid package name (?i for case-insensitivity)
+	// https://packaging.python.org/en/latest/specifications/name-normalization/
+	reValidPkg                      = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
 	reExtras                        = regexp.MustCompile(`\[[^\[\]]*\]`)
 	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:\s+|^)(?:--hash|--global-option|--config-settings|-C).*`)
@@ -155,7 +156,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.FS) []*extractor.Package {
+func extractFromExtraPaths(initPath string, extraPaths pathQueue, fsys scalibrfs.FS) []*extractor.Package {
 	// File paths with packages already found in this extraction.
 	// We store these to remove duplicates in diamond dependency cases and prevent
 	// infinite loops in misconfigured lockfiles with cyclical deps.
@@ -168,7 +169,7 @@ func extractFromExtraPaths(initPath string, extraPaths pathQueue, fs scalibrfs.F
 		if _, exists := found[inc.path]; exists {
 			continue
 		}
-		newPKG, newPaths, err := openAndExtractFromFile(inc.path, fs)
+		newPKG, newPaths, err := openAndExtractFromFile(inc.path, fsys)
 		if err != nil {
 			log.Warnf("openAndExtractFromFile(%q): %v", inc.path, err)
 			continue
@@ -211,7 +212,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 		l, hashOptions := splitPerRequirementOptions(l)
 		requirement := strings.TrimSpace(l)
 
-		l = removeWhiteSpaces(l)
+		l = strings.TrimSpace(l)
 		l = ignorePythonSpecifier(l)
 		l = removeExtras(l)
 
@@ -221,6 +222,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 
 		// Extract paths to referenced requirements.txt files for further processing.
 		if after, ok := strings.CutPrefix(l, "-r"); ok {
+			after = strings.TrimSpace(after)
 			// Path is relative to the current requirement file's dir.
 			extraPaths = append(extraPaths, fileReference{
 				path: filepath.Join(filepath.Dir(path), after),
@@ -312,7 +314,7 @@ func nameFromRequirement(s string) string {
 	for _, sep := range []string{"===", "==", ">=", "<=", "~=", "!=", "<"} {
 		s, _, _ = strings.Cut(s, sep)
 	}
-	return s
+	return strings.TrimSpace(s)
 }
 
 func getLowestVersion(s string) (name, version, comparator string) {
@@ -335,22 +337,18 @@ func getLowestVersion(s string) (name, version, comparator string) {
 
 	if len(t) == 0 {
 		// Length of t being 0 indicates that there is no separator.
-		return s, "", ""
+		return strings.TrimSpace(s), "", ""
 	}
 	if len(t) != 2 {
 		return "", "", ""
 	}
 
 	// For all other separators the lowest version is the one we found.
-	return t[0], t[1], comp
+	return strings.TrimSpace(t[0]), strings.TrimSpace(t[1]), comp
 }
 
 func removeComments(s string) string {
 	return reComment.ReplaceAllString(s, "")
-}
-
-func removeWhiteSpaces(s string) string {
-	return reWhitespace.ReplaceAllString(s, "")
 }
 
 func ignorePythonSpecifier(s string) string {

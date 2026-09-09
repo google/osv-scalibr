@@ -143,6 +143,7 @@ type Flags struct {
 	SPDXDocumentName      string
 	SPDXDocumentNamespace string
 	SPDXCreators          string
+	DeterministicIDs      bool
 	CDXComponentName      string
 	CDXComponentType      string
 	CDXComponentVersion   string

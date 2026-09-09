@@ -1,0 +1,56 @@
+Metadata-Version: 2.4
+Name: pyOpenSSL
+Version: 26.0.0
+Summary: Python wrapper module around the OpenSSL library
+Home-page: https://pyopenssl.org/
+Author: The pyOpenSSL developers
+Author-email: cryptography-dev@python.org
+License: Apache License, Version 2.0
+Project-URL: Source, https://github.com/pyca/pyopenssl
+Classifier: Development Status :: 6 - Mature
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Security :: Cryptography
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: System :: Networking
+Requires-Python: >=3.8
+License-File: LICENSE
+Requires-Dist: cryptography<47,>=46.0.0
+Requires-Dist: typing-extensions>=4.9; python_version < "3.13" and python_version >= "3.8"
+Provides-Extra: test
+Requires-Dist: pytest-rerunfailures; extra == "test"
+Requires-Dist: pretend; extra == "test"
+Requires-Dist: pytest>=3.0.1; extra == "test"
+Provides-Extra: docs
+Requires-Dist: sphinx!=5.2.0,!=5.2.0.post0,!=7.2.5; extra == "docs"
+Requires-Dist: sphinx_rtd_theme; extra == "docs"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: home-page
+Dynamic: license
+Dynamic: license-file
+Dynamic: project-url
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+========================================================
+pyOpenSSL -- A Python wrapper around the OpenSSL library
+========================================================
+
+[Description abridged]

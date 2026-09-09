@@ -24,7 +24,6 @@ require (
 	github.com/containerd/containerd/v2 v2.1.3
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/diskfs/go-diskfs v1.7.0
-	github.com/docker/docker v28.2.2+incompatible
 	github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589
 	github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593
 	github.com/go-git/go-git/v5 v5.19.0
@@ -41,6 +40,8 @@ require (
 	github.com/michaelkedar/xml v0.0.0-20250626233154-4ec9e090d1cd
 	github.com/micromdm/plist v0.2.2
 	github.com/moby/buildkit v0.23.2
+	github.com/moby/moby/api v1.55.0
+	github.com/moby/moby/client v0.5.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/muesli/reflow v0.3.0
 	github.com/opencontainers/go-digest v1.0.0
@@ -120,7 +121,7 @@ require (
 	github.com/docker/cli v28.2.2+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
+	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -156,7 +157,6 @@ require (
 	github.com/moby/sys/signal v0.7.1 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
-	github.com/moby/term v0.5.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect

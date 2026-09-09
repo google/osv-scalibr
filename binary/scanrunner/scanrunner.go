@@ -22,6 +22,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	scalibrlayerimage "github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/binary/cli"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/version"
@@ -37,6 +38,10 @@ func RunScan(flags *cli.Flags) int {
 
 	if flags.Verbose {
 		log.SetLogger(&log.DefaultLogger{Verbose: true})
+	}
+
+	if flags.DeterministicIDs {
+		extractor.SetIDGenerator(&extractor.SequentialIDGenerator{})
 	}
 
 	cfg, err := flags.GetScanConfig()

@@ -1,0 +1,5 @@
+group Main
+  nuget NUnit
+
+group Test
+  nuget NUnit

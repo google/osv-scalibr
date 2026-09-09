@@ -15,7 +15,9 @@
 package extractor
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/google/uuid"
 )
@@ -24,6 +26,20 @@ import (
 type IDGenerator interface {
 	// GenerateID generates an ID for the given package.
 	GenerateID(pkgName string) (string, error)
+}
+
+var instance IDGenerator = &RandomIDGenerator{}
+
+// SetIDGenerator sets the IDGenerator type used by the current process.
+//
+// Outside of tests, this should only be called during initialization.
+func SetIDGenerator(g IDGenerator) {
+	instance = g
+}
+
+// GetIDGenerator returns the IDGenerator for the current process.
+func GetIDGenerator() IDGenerator {
+	return instance
 }
 
 // RandomIDGenerator generates random UUIDs for packages.
@@ -36,4 +52,16 @@ func (g *RandomIDGenerator) GenerateID(pkgName string) (string, error) {
 		return "", fmt.Errorf("failed to generate random UUID: %w", err)
 	}
 	return randomID.String(), nil
+}
+
+// sequentialIDCounter is an incrementing counter shared by all sequential generator instances.
+var sequentialIDCounter atomic.Uint64
+
+// SequentialIDGenerator generates sequential IDs for packages, based on the package name and a counter.
+type SequentialIDGenerator struct{}
+
+// GenerateID generates a sequential ID for the given package.
+func (g *SequentialIDGenerator) GenerateID(pkgName string) (string, error) {
+	hash := sha256.Sum256([]byte(pkgName))
+	return fmt.Sprintf("pkg-%x-%d", hash[:16], sequentialIDCounter.Add(1)), nil
 }

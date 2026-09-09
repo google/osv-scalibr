@@ -25,6 +25,8 @@ import (
 )
 
 func TestGetNameToIDMapping(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	testcases := []struct {
 		name         string
 		nodes        []resolve.VersionKey
@@ -166,7 +168,7 @@ func TestGetNameToIDMapping(t *testing.T) {
 				graph.AddNode(n)
 			}
 
-			gotMapping, err := internal.GetNameToIDMapping(graph, tc.packages, &mockidgenerator.MockIDGenerator{})
+			gotMapping, err := internal.GetNameToIDMapping(graph, tc.packages)
 			if err != nil {
 				t.Errorf("GetNameToIDMapping(%v, %v) returned unexpected error: %v", tc.nodes, tc.packages, err)
 			}

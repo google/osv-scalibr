@@ -15,7 +15,6 @@
 package symlink_test
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/google/osv-scalibr/artifact/image/symlink"
@@ -53,15 +52,10 @@ func TestTargetOutsideRoot(t *testing.T) {
 		target: "../../t.txt",
 		want:   true,
 	}, {
-		name: "absolute_target_outside_root",
-		path: "a/f.txt",
-		target: func() string {
-			if runtime.GOOS == "windows" {
-				return "\\\\..\\t.txt"
-			}
-			return "/../t.txt"
-		}(),
-		want: true,
+		name:   "absolute_target_outside_root",
+		path:   "a/f.txt",
+		target: "/../t.txt",
+		want:   true,
 	}, {
 		name:   "absolute target inside root",
 		path:   "a/b/f.txt",

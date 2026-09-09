@@ -303,7 +303,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:     "ansi-regex",
 					Version:  "6.0.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v9.yaml", 20),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "02fa893d619d3da85411acc8fd4e2eea0e95a9d9",
@@ -315,7 +315,7 @@ func TestExtractor_Extract_v9(t *testing.T) {
 				{
 					Name:     "is-number",
 					Version:  "7.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v9.yaml", 25),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1da1a89f93d1397a24d7413ed15421c139",
@@ -357,6 +357,34 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					Version:    "7.0.0",
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/mixed-groups.v9.yaml", 29),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "multi document",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multi-document.v9.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "@pnpm/exe",
+					Version:    "11.9.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/multi-document.v9.yaml", 13),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "acorn",
+					Version:    "8.11.3",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/multi-document.v9.yaml", 33),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},

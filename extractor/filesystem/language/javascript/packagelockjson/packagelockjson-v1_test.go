@@ -604,7 +604,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "@segment/analytics.js-integration-facebook-pixel",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3b1bb80b302c2e552685dc8a029797ec832ea7c9",
@@ -626,7 +626,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "babel-preset-php",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
@@ -638,7 +638,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-1",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
@@ -650,7 +650,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-1",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "be5935f8d2595bcd97b05718ef1eeae08d812e10",
@@ -662,7 +662,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-2",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
@@ -674,7 +674,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-2",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82dcc8e914dabd9305ab9ae580709a7825e824f5",
@@ -686,7 +686,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-3",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
@@ -698,7 +698,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-3",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82ae8802978da40d7f1be5ad5943c9e550ab2c89",
@@ -710,7 +710,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-4",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
@@ -722,7 +722,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-5",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
@@ -734,7 +734,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "is-number-6",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
@@ -756,7 +756,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "raven-js",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c2b377e7a254264fd4a1fe328e4e3cfc9e245570",
@@ -768,7 +768,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 				{
 					Name:     "slick-carousel",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "280b560161b751ba226d50c7db1e0a14a78c2de0",

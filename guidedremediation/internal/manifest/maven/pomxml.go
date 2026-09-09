@@ -187,11 +187,17 @@ func (m *mavenManifest) PatchRequirement(req resolve.RequirementVersion) error {
 
 type readWriter struct {
 	*datasource.MavenRegistryAPIClient
+
+	projectRoot string
 }
 
 // GetReadWriter returns a ReadWriter for pom.xml manifest files.
-func GetReadWriter(client *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
-	return readWriter{MavenRegistryAPIClient: client}, nil
+// projectRoot is the directory path to scan for local Maven modules.
+func GetReadWriter(client *datasource.MavenRegistryAPIClient, projectRoot string) (manifest.ReadWriter, error) {
+	if projectRoot != "" {
+		projectRoot = "."
+	}
+	return readWriter{MavenRegistryAPIClient: client, projectRoot: projectRoot}, nil
 }
 
 // System returns the ecosystem of this ReadWriter.
@@ -204,11 +210,46 @@ func (r readWriter) SupportedStrategies() []strategy.Strategy {
 	return []strategy.Strategy{strategy.StrategyOverride}
 }
 
+// isPOMFile returns true if the given path is a Maven POM file.
+// It matches "pom.xml", "pom-*.xml", and "*-pom.xml".
+func isPOMFile(path string) bool {
+	base := strings.ToLower(filepath.Base(path))
+	if base == "pom.xml" {
+		return true
+	}
+	if !strings.HasSuffix(base, ".xml") {
+		return false
+	}
+	name := strings.TrimSuffix(base, ".xml")
+	return strings.HasPrefix(name, "pom-") || strings.HasSuffix(name, "-pom")
+}
+
 // Read parses the manifest from the given file.
 func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, error) {
 	ctx := context.Background()
 	path = filepath.ToSlash(path)
-	mavenutil.DiscoverModules(&scalibrfs.ScanRoot{FS: fsys, Path: ""}, []string{path}, r.MavenRegistryAPIClient)
+	scanPaths := []string{path}
+	if r.projectRoot != "" {
+		resolvedProjectRoot := filepath.ToSlash(r.projectRoot)
+		stat, err := fsys.Stat(resolvedProjectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to stat project root %q: %w", resolvedProjectRoot, err)
+		}
+		if !stat.IsDir() {
+			return nil, fmt.Errorf("project root %q is not a directory", resolvedProjectRoot)
+		}
+		entries, err := fsys.ReadDir(resolvedProjectRoot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read project root directory %q: %w", resolvedProjectRoot, err)
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() && isPOMFile(entry.Name()) {
+				// Add all found POM files to the scan paths.
+				scanPaths = append(scanPaths, filepath.ToSlash(filepath.Join(resolvedProjectRoot, entry.Name())))
+			}
+		}
+	}
+	mavenutil.DiscoverModules(&scalibrfs.ScanRoot{FS: fsys, Path: ""}, scanPaths, r.MavenRegistryAPIClient)
 	f, err := fsys.Open(path)
 	if err != nil {
 		return nil, err
@@ -513,7 +554,7 @@ func getLocalDepsAndProps(fsys scalibrfs.FS, path string, parent maven.Parent) (
 // outputPath is the path on disk (*not* in fsys) to write the entire patched manifest to (this can overwrite the original manifest).
 //
 // If the original manifest referenced local parent POMs, they will be written alongside the patched manifest, maintaining the relative path structure as it existed in the original location.
-func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
+func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error {
 	specific, ok := original.EcosystemSpecific().(ManifestSpecific)
 	if !ok {
 		return errors.New("invalid maven ManifestSpecific data")
@@ -543,16 +584,16 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 		if err := write(in.String(), out, patches); err != nil {
 			return err
 		}
-		// Write the patched parent relative to the new outputPath
-		relativePatch, err := filepath.Rel(original.FilePath(), patchPath)
-		if err != nil {
+		// Parent paths are project-relative identities, so write them back to the
+		// same confined location. The primary manifest uses outputPath.
+		if patchPath == original.FilePath() {
+			patchPath = outputPath
+		}
+		patchPath = filepath.ToSlash(patchPath)
+		if err := outputRoot.MkdirAll(filepath.ToSlash(filepath.Dir(patchPath)), 0755); err != nil {
 			return err
 		}
-		patchPath = filepath.Join(outputPath, relativePatch)
-		if err := os.MkdirAll(filepath.Dir(patchPath), 0755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(patchPath, out.Bytes(), 0644); err != nil {
+		if err := outputRoot.WriteFile(patchPath, out.Bytes(), 0644); err != nil {
 			return err
 		}
 	}

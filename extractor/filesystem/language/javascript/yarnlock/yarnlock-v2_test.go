@@ -209,7 +209,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "domino",
 					Version:  "2.1.6+git",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/with-build-string.v2.lock", 8),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "f2435fe1f9f7c91ade0bd472c4723e5eacd7d19a",
@@ -235,7 +235,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "@my-scope/my-first-package",
 					Version:  "0.0.6",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v2.lock", 8),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0b824c650d3a03444dbcf2b27a5f3566f6e41358",
@@ -244,7 +244,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "my-second-package",
 					Version:  "0.2.2",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v2.lock", 12),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "59e2127b9f9d4fda5f928c4204213b3502cd5bb0",
@@ -253,7 +253,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "@typegoose/typegoose",
 					Version:  "7.2.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v2.lock", 21),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3ed06e5097ab929f69755676fee419318aaec73a",
@@ -262,7 +262,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "vuejs",
 					Version:  "2.5.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v2.lock", 37),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0948d999f2fddf9f90991956493f976273c5da1f",
@@ -271,7 +271,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "my-third-package",
 					Version:  "0.16.1-dev",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v2.lock", 45),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "5675a0aed98e067ff6ecccc5ac674fe8995960e0",
@@ -280,7 +280,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "my-node-sdk",
 					Version:  "1.1.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v2.lock", 50),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "053dea9e0b8af442d8f867c8e690d2fb0ceb1bf5",
@@ -289,7 +289,7 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				{
 					Name:     "is-really-great",
 					Version:  "1.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v2.lock", 58),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "191eeef50c584714e1fb8927d17ee72b3b8c97c4",

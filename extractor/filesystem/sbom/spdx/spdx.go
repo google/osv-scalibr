@@ -41,7 +41,19 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "sbom/spdx"
+	// CPE23Type is the CPE 2.3 type for SPDX package external references.
+	CPE23Type = "cpe23Type"
+	// PURLType is the PURL type for SPDX package external references.
+	PURLType = "purl"
 )
+
+// parsedPackage is a helper struct to store parsed package data.
+type parsedPackage struct {
+	pkg     *extractor.Package
+	id      string
+	hasPURL bool
+	hasCPE  bool
+}
 
 // Extractor extracts software dependencies from an spdx SBOM.
 type Extractor struct{}
@@ -122,7 +134,7 @@ func findExtractor(path string) extractFunc {
 }
 
 func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) []*extractor.Package {
-	results := []*extractor.Package{}
+	pkgByID := make(map[string]*parsedPackage)
 
 	for _, spdxPkg := range spdxDoc.Packages {
 		pkg := &extractor.Package{
@@ -130,34 +142,163 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 			Metadata: &spdxmeta.Metadata{},
 		}
 		m := pkg.Metadata.(*spdxmeta.Metadata)
+		// Set the SPDX ID for the package in the package metadata.
+		m.SPDXID = string(spdxPkg.PackageSPDXIdentifier)
+
 		for _, extRef := range spdxPkg.PackageExternalReferences {
-			// TODO(b/280991231): Support all RefTypes
-			if extRef.RefType == "cpe23Type" || extRef.RefType == "http://spdx.org/rdf/references/cpe23Type" {
+			m.ExternalReferences = append(m.ExternalReferences, spdxmeta.ExternalReference{
+				Category: extRef.Category,
+				RefType:  extRef.RefType,
+				Locator:  extRef.Locator,
+				Comment:  extRef.ExternalRefComment,
+			})
+
+			if extRef.RefType == CPE23Type || extRef.RefType == "http://spdx.org/rdf/references/cpe23Type" {
 				m.CPEs = append(m.CPEs, extRef.Locator)
-				if len(pkg.Name) == 0 {
+				if pkg.Name == "" {
 					pkg.Name = extRef.Locator
 				}
-			} else if extRef.RefType == "purl" || extRef.RefType == "http://spdx.org/rdf/references/purl" {
+			} else if extRef.RefType == PURLType || extRef.RefType == "http://spdx.org/rdf/references/purl" {
 				if m.PURL != nil {
 					log.Warnf("Multiple PURLs found for same package: %q and %q", m.PURL, extRef.Locator)
 				}
 				packageURL, err := purl.FromString(extRef.Locator)
-				pkg.Name = packageURL.Name
 				if err != nil {
 					log.Warnf("Invalid PURL %q for package: %q", extRef.Locator, spdxPkg.PackageName)
 				} else {
+					pkg.Name = packageURL.Name
+					pkg.Version = packageURL.Version
 					m.PURL = &packageURL
 					pkg.PURLType = packageURL.Type
 				}
 			}
 		}
+		if pkg.Name == "" {
+			pkg.Name = spdxPkg.PackageName
+		}
+		if pkg.Version == "" {
+			pkg.Version = spdxPkg.PackageVersion
+		}
 		pkg.Metadata = m
-		if m.PURL == nil && len(m.CPEs) == 0 {
-			log.Warnf("Neither CPE nor PURL found for package: %+v", spdxPkg)
+		hasPURL := m.PURL != nil
+		hasCPE := len(m.CPEs) > 0
+		if !hasPURL && !hasCPE && len(m.ExternalReferences) == 0 {
+			log.Warnf("Neither CPE, PURL, nor external reference found for package: %+v", spdxPkg)
 			continue
 		}
-		results = append(results, pkg)
+
+		id := normalizeElementID(string(spdxPkg.PackageSPDXIdentifier))
+		parsed := &parsedPackage{
+			pkg:     pkg,
+			id:      id,
+			hasPURL: hasPURL,
+			hasCPE:  hasCPE,
+		}
+		if id != "" {
+			pkgByID[id] = parsed
+		}
 	}
 
+	// Merge packages based on relationships.
+	for _, rel := range spdxDoc.Relationships {
+		if rel == nil {
+			continue
+		}
+		var childID, parentID string
+		switch strings.ToUpper(strings.TrimSpace(rel.Relationship)) {
+		case "DESCENDANT_OF", "DESCENDENT_OF":
+			// Node A is the descendant (child) of Node B (parent).
+			childID = normalizeElementID(string(rel.RefA.ElementRefID))
+			parentID = normalizeElementID(string(rel.RefB.ElementRefID))
+		case "ANCESTOR_OF":
+			// Node A is the ancestor (parent) of Node B (child).
+			parentID = normalizeElementID(string(rel.RefA.ElementRefID))
+			childID = normalizeElementID(string(rel.RefB.ElementRefID))
+		default:
+			continue
+		}
+
+		if childID == "" || parentID == "" || childID == parentID {
+			continue
+		}
+		child, hasChild := pkgByID[childID]
+		parent, hasParent := pkgByID[parentID]
+		if !hasChild || !hasParent {
+			continue
+		}
+
+		// Packages are removed from the map if they are merged into their parent or child.
+		mergeLineagePackages(child, parent, pkgByID)
+	}
+
+	results := []*extractor.Package{}
+	for _, p := range pkgByID {
+		results = append(results, p.pkg)
+	}
 	return results
+}
+
+// normalizeElementID normalizes the SPDX element ID by removing the SPDX prefix and any leading or
+// trailing whitespace. This function is not strictly necessary, because the underlying parser
+// already trims the "SPDXRef-" prefix, but it is included for defensive measures.
+func normalizeElementID(id string) string {
+	return strings.TrimPrefix(strings.TrimSpace(id), "SPDXRef-")
+}
+
+// A package is considered a "stub" (metadata-only node) if it lacks both a PURL and a CPE. In some
+// SBOMs, stub packages only carry provenance metadata (e.g. SourceURI codebase paths or PRs) and
+// are linked to upstream source packages via SPDX relationships.
+//
+// mergeLineagePackages absorbs stub nodes into their corresponding analyzable package so the
+// resulting inventory contains complete packages with both ecosystem PURLs and internal source
+// URIs.
+func mergeLineagePackages(child, parent *parsedPackage, pkgByID map[string]*parsedPackage) {
+	childMeta := child.pkg.Metadata.(*spdxmeta.Metadata)
+	parentMeta := parent.pkg.Metadata.(*spdxmeta.Metadata)
+
+	childIsStub := !child.hasPURL && !child.hasCPE
+	parentIsStub := !parent.hasPURL && !parent.hasCPE
+
+	if childIsStub {
+		// Child is a stub (or both are stubs): merge child's metadata into parent and absorb child.
+		// This is the most common case for lineage merging.
+		mergeExternalReferences(parentMeta, childMeta)
+		delete(pkgByID, child.id)
+	} else if parentIsStub {
+		// Parent is a stub and child is a full package: merge parent's metadata into child and absorb
+		// parent.
+		mergeExternalReferences(childMeta, parentMeta)
+		delete(pkgByID, parent.id)
+	}
+	// If neither is a stub (both are independent packages with PURLs/CPEs),
+	// do not merge metadata between distinct packages to avoid cross-package pollution.
+}
+
+// mergeExternalReferences merges the external references from the source metadata into the target
+// metadata. If a PURL is found in the source, it is only added if the target does not already have
+// a PURL.
+func mergeExternalReferences(target *spdxmeta.Metadata, source *spdxmeta.Metadata) {
+	for _, srcRef := range source.ExternalReferences {
+		if isPURLRef(srcRef) && target.PURL != nil {
+			continue
+		}
+		found := false
+		for _, tgtRef := range target.ExternalReferences {
+			if tgtRef.Category == srcRef.Category &&
+				strings.EqualFold(tgtRef.RefType, srcRef.RefType) &&
+				tgtRef.Locator == srcRef.Locator &&
+				tgtRef.Comment == srcRef.Comment {
+				found = true
+				break
+			}
+		}
+		if !found {
+			target.ExternalReferences = append(target.ExternalReferences, srcRef)
+		}
+	}
+}
+
+func isPURLRef(ref spdxmeta.ExternalReference) bool {
+	return strings.EqualFold(ref.RefType, PURLType) ||
+		strings.EqualFold(ref.RefType, "http://spdx.org/rdf/references/purl")
 }
