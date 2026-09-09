@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/url"
 	"path"
 	"path/filepath"
 	"slices"
@@ -31,7 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -56,6 +57,7 @@ type packageDetails struct {
 	Commit    string
 	Repo      string
 	DepGroups []string
+	Source    metadata.NPMPackageSource
 	Line      int
 }
 
@@ -87,6 +89,9 @@ func (pdm npmPackageDetailsMap) add(key string, details packageDetails) {
 
 	if ok {
 		details.DepGroups = mergeNpmDepsGroups(existing, details)
+		if existing.Source != metadata.Local && details.Source == metadata.Local {
+			details.Source = existing.Source
+		}
 	}
 
 	pdm[key] = details
@@ -146,12 +151,15 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			line = finder.LineOf(currentPath)
 		}
 
+		source := determinePackageSource(detail.Resolved, commit)
+
 		details.add(name+"@"+version, packageDetails{
 			Name:      name,
 			Version:   finalVersion,
 			Commit:    commit,
 			Repo:      repo,
 			DepGroups: detail.DepGroups(),
+			Source:    source,
 			Line:      line,
 		})
 	}
@@ -170,11 +178,35 @@ func extractNpmPackageName(name string) string {
 	return pkgName
 }
 
+// isHTTP checks if the raw string is an HTTP or HTTPS URL.
+// In npm lockfiles, packages fetched from a registry (such as the public npm registry
+// or private registries) have an HTTP/HTTPS resolved URL.
+func isHTTP(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == "http" || u.Scheme == "https"
+}
+
+func determinePackageSource(resolved, commit string) metadata.NPMPackageSource {
+	if commit != "" {
+		return metadata.Other
+	}
+	if strings.HasPrefix(resolved, "https://registry.npmjs.org/") {
+		return metadata.PublicRegistry
+	}
+	if isHTTP(resolved) {
+		return metadata.Other
+	}
+	return metadata.Local
+}
+
 func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *linefinder.JSONLineFinder) map[string]packageDetails {
 	details := npmPackageDetailsMap{}
 
 	for namePath, detail := range packages {
-		if namePath == "" {
+		if namePath == "" || detail.Link {
 			continue
 		}
 
@@ -206,12 +238,15 @@ func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *l
 			line = finder.LineOf("packages." + gjson.Escape(namePath))
 		}
 
+		source := determinePackageSource(detail.Resolved, commit)
+
 		details.add(finalName+"@"+finalVersion, packageDetails{
 			Name:      finalName,
 			Version:   detail.Version,
 			Commit:    commit,
 			Repo:      repo,
 			DepGroups: detail.DepGroups(),
+			Source:    source,
 			Line:      line,
 		})
 	}
@@ -366,8 +401,9 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			},
 			Version:  pkg.Version,
 			PURLType: purlType,
-			Metadata: &osv.DepGroupMetadata{
+			Metadata: &metadata.JavascriptPackageMetadata{
 				DepGroupVals: pkg.DepGroups,
+				Source:       pkg.Source,
 			},
 			Location: extractor.LocationFromPathAndLine(input.Path, pkg.Line),
 		}

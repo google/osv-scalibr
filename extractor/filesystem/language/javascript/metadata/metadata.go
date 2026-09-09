@@ -1,0 +1,255 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package metadata defines a metadata struct for Javascript packages.
+package metadata
+
+import (
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"sort"
+	"strings"
+
+	"github.com/google/osv-scalibr/binary/proto/metadata"
+	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal"
+	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+)
+
+func init() {
+	metadata.Register(ToStruct, ToProto)
+}
+
+// Person represents a person field in a javascript package.json file.
+type Person struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	URL   string `json:"url"`
+}
+
+// NPMPackageSource is the source of the NPM package.
+type NPMPackageSource string
+
+const (
+	// Unknown is when the source of the NPM package is unknown because the lockfile was not found.
+	Unknown NPMPackageSource = "UNKNOWN"
+	// PublicRegistry is the public NPM registry.
+	PublicRegistry NPMPackageSource = "PUBLIC_REGISTRY"
+	// Other is any other remote or private source (e.g. GitHub).
+	// This is used for packages that are not found in the public NPM registry.
+	Other NPMPackageSource = "OTHER"
+	// Local is the local filesystem that stores the package versions.
+	// This is used for when the package is locally-developed or -installed.
+	Local NPMPackageSource = "LOCAL"
+)
+
+// match example: "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me)"
+// ---> name: "Isaac Z. Schlueter" email: "i@izs.me" url: "http://blog.izs.me"
+var personPattern = regexp.MustCompile(`^\s*(?P<name>[^<(]*)(\s+<(?P<email>.*)>)?(\s\((?P<url>.*)\))?\s*$`)
+
+// UnmarshalJSON parses a JSON object or string into a Person struct.
+func (p *Person) UnmarshalJSON(b []byte) error {
+	var personStr string
+	var fields map[string]string
+
+	if err := json.Unmarshal(b, &personStr); err != nil {
+		// string parsing did not work, assume a map was given
+		// for more information: https://docs.npmjs.com/files/package.json#people-fields-author-contributors
+		var rawJSON map[string]any
+		if err := json.Unmarshal(b, &rawJSON); err != nil {
+			return fmt.Errorf("unable to parse package.json person: %w", err)
+		}
+		fields = rawToPerson(rawJSON)
+	} else {
+		// parse out "name <email> (url)" into a person struct
+		fields = internal.MatchNamedCaptureGroups(personPattern, personStr)
+	}
+
+	if _, ok := fields["name"]; ok {
+		// translate the map into a structure
+		*p = Person{
+			Name:  fields["name"],
+			Email: fields["email"],
+			URL:   fields["url"],
+		}
+	}
+
+	return nil
+}
+
+// PersonString produces a string format of Person struct in the format of "name <email> (url)"
+func (p *Person) PersonString() string {
+	if p == nil || p.Name == "" {
+		return ""
+	}
+	result := p.Name
+	if p.Email != "" {
+		result += fmt.Sprintf(" <%s>", p.Email)
+	}
+	if p.URL != "" {
+		result += fmt.Sprintf(" (%s)", p.URL)
+	}
+	return result
+}
+
+// PersonFromString parses a string of the form "name <email> (url)" into a Person struct.
+func PersonFromString(s string) *Person {
+	if s == "" {
+		return nil
+	}
+	fields := internal.MatchNamedCaptureGroups(personPattern, s)
+	for name, field := range fields {
+		fields[name] = strings.TrimSpace(field)
+	}
+	return &Person{
+		Name:  fields["name"],
+		Email: fields["email"],
+		URL:   fields["url"],
+	}
+}
+
+// JavascriptPackageMetadata holds metadata information for JavaScript packages across
+// package.json and various lockfile formats.
+type JavascriptPackageMetadata struct {
+	Author       *Person   `json:"author,omitempty"`
+	Maintainers  []*Person `json:"maintainers,omitempty"`
+	Contributors []*Person `json:"contributors,omitempty"`
+
+	// Source indicates whether this package's dependency was resolved from the official
+	// NPM registry, a local path, git repository, or private registry.
+	Source NPMPackageSource `json:"source,omitempty"`
+
+	// Dependencies maps direct dependencies to version constraints.
+	Dependencies map[string]string `json:"dependencies,omitempty"`
+
+	// DepGroupVals stores the dependency groups (e.g. "dev", "prod") the package belongs to.
+	DepGroupVals []string `json:"dep_groups,omitempty"`
+}
+
+// JavascriptPackageJSONMetadata is an alias for JavascriptPackageMetadata for compatibility.
+type JavascriptPackageJSONMetadata = JavascriptPackageMetadata
+
+var _ osv.DepGroups = JavascriptPackageMetadata{}
+
+// DepGroups returns the dependency groups property in the metadata.
+func (m JavascriptPackageMetadata) DepGroups() []string {
+	return m.DepGroupVals
+}
+
+// PackageSource returns the NPMPackageSource of the package.
+func (m JavascriptPackageMetadata) PackageSource() NPMPackageSource {
+	return m.Source
+}
+
+// ToProto converts the Metadata struct to a JavascriptPackageJSONMetadata proto.
+func ToProto(m *JavascriptPackageMetadata) *pb.JavascriptPackageJSONMetadata {
+	var dependencies []*pb.JavascriptPackageJSONMetadata_Dependency
+	for name, version := range m.Dependencies {
+		dependencies = append(dependencies, &pb.JavascriptPackageJSONMetadata_Dependency{
+			Name:            name,
+			VersionRequired: version,
+		})
+	}
+	sort.Slice(dependencies, func(i, j int) bool {
+		return dependencies[i].GetName() < dependencies[j].GetName()
+	})
+
+	return &pb.JavascriptPackageJSONMetadata{
+		Author:       m.Author.PersonString(),
+		Contributors: personsToProto(m.Contributors),
+		Maintainers:  personsToProto(m.Maintainers),
+		Source:       m.Source.ToProto(),
+		Dependencies: dependencies,
+		DepGroups:    m.DepGroupVals,
+	}
+}
+
+// IsProtoable marks the struct as a metadata type.
+func (m *JavascriptPackageMetadata) IsProtoable() {}
+
+// ToStruct converts the JavascriptPackageJSONMetadata proto to a Metadata struct.
+func ToStruct(m *pb.JavascriptPackageJSONMetadata) *JavascriptPackageMetadata {
+	var author *Person
+	if m.GetAuthor() != "" {
+		author = PersonFromString(m.GetAuthor())
+	}
+
+	dependencies := make(map[string]string, len(m.GetDependencies()))
+	for _, d := range m.GetDependencies() {
+		dependencies[d.GetName()] = d.GetVersionRequired()
+	}
+
+	return &JavascriptPackageMetadata{
+		Author:       author,
+		Maintainers:  personsToStruct(m.GetMaintainers()),
+		Contributors: personsToStruct(m.GetContributors()),
+		Source:       packageSourceToStruct(m.GetSource()),
+		Dependencies: dependencies,
+		DepGroupVals: m.GetDepGroups(),
+	}
+}
+
+// ToProto converts the NPMPackageSource to the proto enum.
+func (source NPMPackageSource) ToProto() pb.PackageSource {
+	switch source {
+	case PublicRegistry:
+		return pb.PackageSource_PUBLIC_REGISTRY
+	case Local:
+		return pb.PackageSource_LOCAL
+	case Other:
+		return pb.PackageSource_OTHER
+	default:
+		return pb.PackageSource_UNKNOWN
+	}
+}
+
+func packageSourceToStruct(ps pb.PackageSource) NPMPackageSource {
+	switch ps {
+	case pb.PackageSource_PUBLIC_REGISTRY:
+		return PublicRegistry
+	case pb.PackageSource_OTHER:
+		return Other
+	case pb.PackageSource_LOCAL:
+		return Local
+	default:
+		return Unknown
+	}
+}
+
+func personsToProto(persons []*Person) []string {
+	var personStrings []string
+	for _, p := range persons {
+		personStrings = append(personStrings, p.PersonString())
+	}
+	return personStrings
+}
+
+func personsToStruct(personStrings []string) []*Person {
+	var persons []*Person
+	for _, s := range personStrings {
+		persons = append(persons, PersonFromString(s))
+	}
+	return persons
+}
+
+func rawToPerson(rawJSON map[string]any) map[string]string {
+	personMap := make(map[string]string)
+	for key := range rawJSON {
+		if val, ok := rawJSON[key].(string); ok {
+			personMap[key] = val
+		}
+	}
+	return personMap
+}

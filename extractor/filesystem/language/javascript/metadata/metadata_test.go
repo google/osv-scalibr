@@ -19,7 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"

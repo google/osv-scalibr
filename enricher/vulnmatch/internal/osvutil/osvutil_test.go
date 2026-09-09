@@ -20,6 +20,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	archivemetadata "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	apkmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	rpmmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
@@ -377,4 +378,75 @@ func purlFromString(t *testing.T, s string) *purl.PackageURL {
 		t.Fatalf("purl.FromString(%q) failed: %v", s, err)
 	}
 	return &p
+}
+
+func TestIsLocal(t *testing.T) {
+	tests := []struct {
+		name string
+		pkg  *extractor.Package
+		want bool
+	}{
+		{
+			name: "metadata source local",
+			pkg: &extractor.Package{
+				Name:    "my-workspace",
+				Version: "1.0.0",
+				Metadata: &javascriptmeta.JavascriptPackageMetadata{
+					Source: javascriptmeta.Local,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "metadata source public registry",
+			pkg: &extractor.Package{
+				Name:    "lodash",
+				Version: "4.17.21",
+				Metadata: &javascriptmeta.JavascriptPackageMetadata{
+					Source: javascriptmeta.PublicRegistry,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "metadata source unknown",
+			pkg: &extractor.Package{
+				Name:    "foo",
+				Version: "1.0.0",
+				Metadata: &javascriptmeta.JavascriptPackageMetadata{
+					Source: javascriptmeta.Unknown,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "metadata source other",
+			pkg: &extractor.Package{
+				Name:    "git-pkg",
+				Version: "1.0.0",
+				Metadata: &javascriptmeta.JavascriptPackageMetadata{
+					Source: javascriptmeta.Other,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "nil metadata",
+			pkg: &extractor.Package{
+				Name:     "other-pkg",
+				Version:  "1.0.0",
+				PURLType: purl.TypeNPM,
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := osvutil.IsLocal(tc.pkg)
+			if got != tc.want {
+				t.Errorf("IsLocal(%+v) = %v, want %v", tc.pkg, got, tc.want)
+			}
+		})
+	}
 }
