@@ -25,11 +25,27 @@ import (
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	fineGrainedPATValidatorKey = `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`
 )
+
+func TestAcceptFineGrainedPATValidator(t *testing.T) {
+	brokenValidator := github.NewFineGrainedPATValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		github.NewFineGrainedPATValidator(),
+		velestest.WithTrueNegatives(github.FineGrainedPersonalAccessToken{
+			// Matches fineGrainedPATPattern: github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}
+			Token: `github_pat_0000000000000000000000_00000000000000000000000000000000000000000000000000000000000`,
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 func TestFineGrainedPATValidator(t *testing.T) {
 	cancelledContext, cancel := context.WithCancel(t.Context())
