@@ -1,0 +1,11 @@
+.{
+    .name = .hello_world,
+    .version = "0.0.0",
+    .dependencies = .{
+        .foo = .{ .url = "https://example.com/foo", .hash = "foo-1.0.0-1oDot9yRBwDA_ovd6GC1M_ViW3LarywMaGrH6vcuEjqv" },
+        .bar = .{
+            .url = "https://example.com/bar",
+            .hash = "bar-2.0.0-kr-CoAljAwBNZ9qtzbsczvhValCeJO74j7fmVhzNLdK3",
+        },
+    },
+}

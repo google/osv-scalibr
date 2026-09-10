@@ -16,6 +16,7 @@ package buildzigzon_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -170,6 +171,20 @@ func TestExtractForArtifactMode(t *testing.T) {
 			},
 			wantPackages: []*extractor.Package{},
 		},
+		{
+			name: "commented out name and version fields",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/commented.name.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "real_pkg",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/commented.name.build.zig.zon"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -278,6 +293,40 @@ func TestExtractForSourceMode(t *testing.T) {
 			},
 			wantErr: extracttest.ContainsErrStr{Str: "could not find .deps"},
 		},
+		{
+			name: "single line dependency with url",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/singleline.dep.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "foo",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/singleline.dep.build.zig.zon"),
+				},
+				{
+					Name:     "bar",
+					Version:  "2.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/singleline.dep.build.zig.zon"),
+				},
+			},
+		},
+		{
+			name: "commented out dependency block",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/commented.dep.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "real_dep",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/commented.dep.build.zig.zon"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -290,7 +339,19 @@ func TestExtractForSourceMode(t *testing.T) {
 			scanInput := extracttest.GenerateScanInputMock(t, tt.inputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
 
-			got, err := extr.Extract(t.Context(), &scanInput)
+			var got inventory.Inventory
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				got, err = extr.Extract(t.Context(), &scanInput)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(2 * time.Second):
+				t.Fatalf("%s.Extract(%q) timed out (infinite loop detected)", extr.Name(), tt.inputConfig.Path)
+				return
+			}
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("%s.Extract(%q) error diff (-want +got):\n%s", extr.Name(), tt.inputConfig.Path, diff)
