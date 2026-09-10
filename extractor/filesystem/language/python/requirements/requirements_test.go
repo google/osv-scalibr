@@ -58,6 +58,12 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             "requirements.lock",
+			path:             "RsaCtfTool/requirements.lock",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:         "non requirements.txt txt file",
 			path:         "requirements-asdf/test.txt",
 			wantRequired: false,
@@ -139,6 +145,41 @@ func TestExtract(t *testing.T) {
 		wantPackages     []*extractor.Package
 		wantResultMetric stats.FileExtractedResult
 	}{
+		{
+			name: "requirements_lock",
+			path: "testdata/requirements.lock",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "aiohttp",
+					Version:  "3.13.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/requirements.lock", 1),
+					Metadata: &requirements.Metadata{Requirement: "aiohttp==3.13.2"},
+				},
+				{
+					Name:     "Jinja2",
+					Version:  "3.1.6",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/requirements.lock", 2),
+					Metadata: &requirements.Metadata{Requirement: "Jinja2==3.1.6"},
+				},
+				{
+					Name:     "pydantic_core",
+					Version:  "2.41.5",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/requirements.lock", 3),
+					Metadata: &requirements.Metadata{Requirement: "pydantic_core==2.41.5"},
+				},
+				{
+					Name:     "xformers",
+					Version:  "0.0.32.post1",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/requirements.lock", 4),
+					Metadata: &requirements.Metadata{Requirement: "xformers==0.0.32.post1"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
 		{
 			name: "multiline_and_comments",
 			path: "testdata/multiline_and_comments.txt",
