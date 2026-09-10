@@ -376,6 +376,7 @@ message JavascriptPackageJSONMetadata {
   repeated string contributors = 3;
   PackageSource source = 5;
   repeated Dependency dependencies = 6;
+  repeated string dep_groups = 7;
 }
 
 // The source of the package.
@@ -383,7 +384,7 @@ enum PackageSource {
   UNKNOWN = 0;
   // PUBLIC_REGISTRY is the public NPM registry.
   PUBLIC_REGISTRY = 1;
-  // OTHER is any other remote or private source (e.g. Github).
+  // OTHER is any other remote or private source (e.g. GitHub).
   // This is used for packages that are not found in the public NPM registry.
   OTHER = 2;
   // LOCAL is the local filesystem that stores the package versions.

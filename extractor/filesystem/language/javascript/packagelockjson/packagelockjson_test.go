@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -255,7 +255,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -267,7 +268,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -287,7 +289,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -299,7 +302,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -326,7 +330,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -338,7 +343,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -392,7 +398,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 5),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -402,7 +409,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -412,7 +420,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 26),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -422,7 +431,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 36),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -432,7 +442,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 46),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},

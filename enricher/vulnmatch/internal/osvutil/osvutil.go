@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	archivemetadata "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	rpmmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
@@ -202,4 +203,15 @@ func commit(pkg *extractor.Package) string {
 		return pkg.SourceCode.Commit
 	}
 	return ""
+}
+
+// IsLocal checks if a package is marked as locally-installed or developed
+// (e.g. workspace members or local file dependencies in NPM).
+func IsLocal(pkg *extractor.Package) bool {
+	if m, ok := pkg.Metadata.(interface {
+		PackageSource() javascriptmeta.NPMPackageSource
+	}); ok {
+		return m.PackageSource() == javascriptmeta.Local
+	}
+	return false
 }

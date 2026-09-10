@@ -21,6 +21,7 @@
     },
     "node_modules/eslint": {
       "version": "1.2.3",
+      "resolved": "https://registry.npmjs.org/eslint/-/eslint-1.2.3.tgz",
       "dev": true
     },
     "node_modules/eslint/node_modules/ajv": {
@@ -48,7 +49,8 @@
       }
     },
     "node_modules/table": {
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/table/-/table-1.0.0.tgz"
     },
     "node_modules/table/node_modules/ajv": {
       "version": "5.5.2",

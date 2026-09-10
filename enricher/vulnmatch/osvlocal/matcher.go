@@ -68,6 +68,10 @@ func (matcher *localMatcher) MatchVulnerabilities(ctx context.Context, pkg *extr
 		return nil, ctx.Err()
 	}
 
+	if osvutil.IsLocal(pkg) {
+		return nil, nil
+	}
+
 	np := osvutil.ParsePackage(pkg)
 	eco := np.Ecosystem.Ecosystem
 
