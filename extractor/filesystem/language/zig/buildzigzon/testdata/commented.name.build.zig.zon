@@ -1,0 +1,6 @@
+.{
+    // .name = .old_unused_pkg,
+    .name = .real_pkg,
+    // .version = "9.9.9",
+    .version = "1.0.0",
+}
