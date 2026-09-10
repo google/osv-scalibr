@@ -55,7 +55,6 @@ const (
 type Enricher struct {
 	DepClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
-	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -150,7 +149,6 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	return &Enricher{
 		DepClient:   depClient,
 		MavenClient: mavenClient,
-		IDGenerator: extractor.NewIDGenerator(),
 	}, nil
 }
 
@@ -338,7 +336,7 @@ func (e Enricher) extract(ctx context.Context, packages []*extractor.Package, in
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
 	}
 
-	nameToID, err := internal.GetNameToIDMapping(g, packages, e.IDGenerator)
+	nameToID, err := internal.GetNameToIDMapping(g, packages)
 	if err != nil {
 		return inventory.Inventory{}, err
 	}

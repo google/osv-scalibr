@@ -94,6 +94,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
 |            | VS Code extension                                 | `javascript/vsix`                    |
+|            | Electron ASAR Archive                             | `javascript/electronasar`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -108,6 +109,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
 |            | pyproject.toml                                    | `python/pyprojecttoml`               |
+|            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
 | R          | renv.lock                                         | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
@@ -219,11 +221,12 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP Cookie                                 | `secrets/httpcookie`                   |
 
 ### Sensitive information
-| Type                                        | Extractor Plugin                       |
-| ------------------------------------------- | -------------------------------------- |
-| International Bank Account Number           | `sensitiveinformation/iban`            |
-| US Adoption Taxpayer Identification Number  | `sensitiveinformation/atin`            |
-| US Social Security Number                   | `sensitiveinformation/ssn`             |
+| Type                                           | Extractor Plugin                       |
+| ---------------------------------------------- | -------------------------------------- |
+| International Bank Account Number              | `sensitiveinformation/iban`            |
+| US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
+| US Individual Taxpayer Identification Number   | `secrets/itin`                         |
+| US Social Security Number                      | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 
@@ -250,6 +253,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |
 | Maven entries in Bazel build files | `os/bazelmaven`     |
+| Bazel build graph targets          | `bazel/aspect` *    |
 | NetScaler installations            | `netscaler`         |
 | GitHub Actions workflow dependencies| `github/actions`    |
 | Git repositories (and submodules)   | `misc/gitrepo`      |

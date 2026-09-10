@@ -37,6 +37,8 @@ import (
 )
 
 func TestEnricher_Enrich(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
@@ -155,7 +157,6 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -307,6 +308,8 @@ func TestEnricher_Enrich(t *testing.T) {
 //   - no <type> (defaults to jar) → kept
 //   - <type>jar</type> explicit → kept
 func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
@@ -363,7 +366,6 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -471,6 +473,8 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 }
 
 func TestEnricher_Enrich_LocalModules(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	tempDir := t.TempDir()
 
 	// Create root parent pom.xml, defining modules a and b
@@ -775,7 +779,6 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		t.Fatalf("failed to create enricher: %v", err)
 	}
 
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
 	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient)
 

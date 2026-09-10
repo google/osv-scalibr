@@ -55,14 +55,17 @@ func ParsePackage(pkg *extractor.Package) NormalizedPackage {
 }
 
 func name(pkg *extractor.Package, eco osvecosystem.Parsed) string {
+	// Reconstruct package name with PURL namespace
+	name := purlToName(pkg.Name, pkg.PURL(), eco)
+
 	// Patch Go package to stdlib
-	if eco.Ecosystem == osvconstants.EcosystemGo && pkg.Name == "go" {
+	if eco.Ecosystem == osvconstants.EcosystemGo && name == "go" {
 		return "stdlib"
 	}
 
 	// Python normalization
 	if eco.Ecosystem == osvconstants.EcosystemPyPI {
-		return strings.ToLower(pythonNormalizationRegex.ReplaceAllLiteralString(pkg.Name, "-"))
+		return strings.ToLower(pythonNormalizationRegex.ReplaceAllLiteralString(name, "-"))
 	}
 
 	// Maven group:artifact patch
@@ -83,9 +86,6 @@ func name(pkg *extractor.Package, eco osvecosystem.Parsed) string {
 			return metadata.OriginName
 		}
 	}
-
-	// Reconstruct OSV package name with PURL namespace if not already included
-	name := purlToName(pkg.Name, pkg.PURL(), eco)
 
 	// Go major version suffix patch from PURL subpath
 	if eco.Ecosystem == osvconstants.EcosystemGo && pkg.PURL() != nil && pkg.PURL().Subpath != "" {

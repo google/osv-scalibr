@@ -27,7 +27,7 @@ import (
 
 // ErrNotADistro is returned when GetOSRelease is passed a filesystem which isn't
 // a Linux ditribution.
-var ErrNotADistro error = errors.New("does not have expected distro os-release file")
+var ErrNotADistro = errors.New("does not have expected distro os-release file")
 
 // GetOSRelease tries different os-release locations and parses the first found.
 func GetOSRelease(fs scalibrfs.FS) (map[string]string, error) {

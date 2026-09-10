@@ -21,6 +21,7 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/bazel/aspect"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
@@ -58,6 +59,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/electronasar"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -71,6 +73,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/ipythoninstall"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
@@ -188,6 +191,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/atin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/itin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -243,22 +247,24 @@ var (
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name: {protoCfg(packagejson.New)},
-		denojson.Name:    {protoCfg(denojson.New)},
-		vsix.Name:        {protoCfg(vsix.New)},
+		packagejson.Name:  {protoCfg(packagejson.New)},
+		denojson.Name:     {protoCfg(denojson.New)},
+		electronasar.Name: {protoCfg(electronasar.New)},
+		vsix.Name:         {protoCfg(vsix.New)},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name:  {protoCfg(requirements.New)},
-		setup.Name:         {protoCfg(setup.New)},
-		pipfilelock.Name:   {protoCfg(pipfilelock.New)},
-		pdmlock.Name:       {protoCfg(pdmlock.New)},
-		poetrylock.Name:    {protoCfg(poetrylock.New)},
-		pylock.Name:        {protoCfg(pylock.New)},
-		condameta.Name:     {protoCfg(condameta.New)},
-		uvlock.Name:        {protoCfg(uvlock.New)},
-		pyprojecttoml.Name: {protoCfg(pyprojecttoml.New)},
+		requirements.Name:   {protoCfg(requirements.New)},
+		setup.Name:          {protoCfg(setup.New)},
+		pipfilelock.Name:    {protoCfg(pipfilelock.New)},
+		pdmlock.Name:        {protoCfg(pdmlock.New)},
+		poetrylock.Name:     {protoCfg(poetrylock.New)},
+		pylock.Name:         {protoCfg(pylock.New)},
+		condameta.Name:      {protoCfg(condameta.New)},
+		ipythoninstall.Name: {protoCfg(ipythoninstall.New)},
+		uvlock.Name:         {protoCfg(uvlock.New)},
+		pyprojecttoml.Name:  {protoCfg(pyprojecttoml.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
@@ -353,6 +359,11 @@ var (
 		podman.Name:             {protoCfg(podman.New)},
 		dockerbaseimage.Name:    {protoCfg(dockerbaseimage.New)},
 		dockercomposeimage.Name: {protoCfg(dockercomposeimage.New)},
+	}
+
+	// Bazel extractors.
+	Bazel = InitMap{
+		aspect.Name: {protoCfg(aspect.New)},
 	}
 
 	// OS extractors.
@@ -480,6 +491,7 @@ var (
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
 		{atin.NewDetector(), "sensitiveinformation/atin", 0},
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
+		{itin.NewDetector(), "secrets/itin", 0},
 		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
 	})
 
@@ -551,6 +563,7 @@ var (
 		Secrets,
 		MiscSource,
 		CPANSource,
+		Bazel,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -579,6 +592,7 @@ var (
 		PythonSource, PythonArtifact,
 		GoSource, GoArtifact,
 		OS,
+		Bazel,
 	)
 
 	// All extractors available from SCALIBR.
@@ -610,6 +624,7 @@ var (
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
 		"perl":       vals(CPANSource),
+		"bazel":      vals(Bazel),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),

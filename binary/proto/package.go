@@ -65,7 +65,7 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		}
 	}
 
-	id, err := pkg.GetIDOrGenerate(extractor.NewIDGenerator())
+	id, err := pkg.GetIDOrGenerate()
 	if err != nil {
 		return nil, err
 	}

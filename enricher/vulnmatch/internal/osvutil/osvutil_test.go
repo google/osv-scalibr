@@ -295,6 +295,22 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "Golang package name ending in '/go' with PURL namespace should not be patched to stdlib",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGolang,
+				Name:     "go",
+				Version:  "1.1.12",
+				Metadata: &cdxmeta.Metadata{
+					PURL: purlFromString(t, "pkg:golang/github.com/json-iterator/go@v1.1.12"),
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "github.com/json-iterator/go",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+				Version:   "1.1.12",
+			},
+		},
+		{
 			name: "Debian distro PURL namespace ignored for name",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeDebian,
