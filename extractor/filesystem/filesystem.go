@@ -570,9 +570,12 @@ func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
 		// Remove .gitignores that applied to this directory.
 		wc.gitignores = wc.gitignores[:len(wc.gitignores)-1]
 	}
-	if len(wc.repoRootDepthStack) > 0 {
+	if len(wc.repoRootDepthStack) > 0 && d.Type().IsDir() {
 		// Restore the repository-root depth as it was before entering this
-		// directory (e.g. after leaving a nested repository).
+		// directory (e.g. after leaving a nested repository). Only directories
+		// push onto the stack, so only directories may pop from it: popping on
+		// a file would restore the enclosing directory's value early and leave
+		// its remaining sibling directories with a stale depth.
 		wc.repoRootDepth = wc.repoRootDepthStack[len(wc.repoRootDepthStack)-1]
 		wc.repoRootDepthStack = wc.repoRootDepthStack[:len(wc.repoRootDepthStack)-1]
 	}

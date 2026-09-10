@@ -113,7 +113,7 @@ func ParseParentGitignores(fs scalibrfs.FS, dirPath string) ([]GitignorePattern,
 	if boundary < 0 {
 		boundary = len(result)
 	}
-	for i := 0; i < boundary; i++ {
+	for i := range boundary {
 		result[i] = nil
 	}
 	return result, repoRootDepth, nil
