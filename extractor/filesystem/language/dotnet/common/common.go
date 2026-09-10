@@ -18,21 +18,33 @@ package common
 import (
 	"encoding/xml"
 	"io"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 )
 
-// PackageReference represents a single <PackageReference> element in an MSBuild XML file.
+// PackageReference represents a single <PackageReference> or <PackageVersion> element in an MSBuild XML file.
 type PackageReference struct {
-	Include string `xml:"Include,attr"`
-	Version string `xml:"Version,attr"`
+	Include        string `xml:"Include,attr"`
+	VersionAttr    string `xml:"Version,attr"`
+	VersionElement string `xml:"Version"`
+}
+
+// Version returns the package version, checking the Version attribute first
+// and falling back to the <Version> child element.
+func (p PackageReference) Version() string {
+	if v := strings.TrimSpace(p.VersionAttr); v != "" {
+		return v
+	}
+	return strings.TrimSpace(p.VersionElement)
 }
 
 // ItemGroup represents an <ItemGroup> element containing package references.
 type ItemGroup struct {
 	PackageReferences []PackageReference `xml:"PackageReference"`
+	PackageVersions   []PackageReference `xml:"PackageVersion"`
 }
 
 // Project represents the top-level <Project> element in an MSBuild XML file.
@@ -42,7 +54,7 @@ type Project struct {
 }
 
 // ExtractPackagesFromMSBuildXML decodes an MSBuild-style XML document from r and
-// returns the NuGet packages declared as <PackageReference> elements.
+// returns the NuGet packages declared as <PackageReference> or <PackageVersion> elements.
 // The filePath is recorded in each package's Locations field.
 func ExtractPackagesFromMSBuildXML(r io.Reader, filePath string) ([]*extractor.Package, error) {
 	var proj Project
@@ -54,15 +66,18 @@ func ExtractPackagesFromMSBuildXML(r io.Reader, filePath string) ([]*extractor.P
 
 	var result []*extractor.Package
 	for _, ig := range proj.ItemGroups {
-		for _, pkg := range ig.PackageReferences {
-			if pkg.Include == "" || pkg.Version == "" {
+		pkgs := append([]PackageReference{}, ig.PackageReferences...)
+		pkgs = append(pkgs, ig.PackageVersions...)
+		for _, pkg := range pkgs {
+			version := pkg.Version()
+			if pkg.Include == "" || version == "" {
 				log.Warnf("Skipping package with missing name or version: %+v", pkg)
 				continue
 			}
 
 			result = append(result, &extractor.Package{
 				Name:     pkg.Include,
-				Version:  pkg.Version,
+				Version:  version,
 				PURLType: purl.TypeNuget,
 				Location: extractor.LocationFromPath(filePath),
 			})

@@ -204,6 +204,102 @@ func TestExtractPackagesFromMSBuildXML(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "package reference with child version element",
+			xml: `<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.1</Version>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>`,
+			filePath: "project.csproj",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "Newtonsoft.Json",
+					Version:  "13.0.1",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPath("project.csproj"),
+				},
+			},
+		},
+		{
+			name: "package reference with child version element containing whitespace",
+			xml: `<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>
+        13.0.1
+      </Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>`,
+			filePath: "project.csproj",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "Newtonsoft.Json",
+					Version:  "13.0.1",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPath("project.csproj"),
+				},
+			},
+		},
+		{
+			name: "package reference with both version attribute and child element prefers attribute",
+			xml: `<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2">
+      <Version>13.0.1</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>`,
+			filePath: "project.csproj",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "Newtonsoft.Json",
+					Version:  "13.0.2",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPath("project.csproj"),
+				},
+			},
+		},
+		{
+			name: "package version element with version attribute",
+			xml: `<Project>
+  <ItemGroup>
+    <PackageVersion Include="LiteDB" Version="5.0.12" />
+  </ItemGroup>
+</Project>`,
+			filePath: "Directory.Packages.props",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPath("Directory.Packages.props"),
+				},
+			},
+		},
+		{
+			name: "package version element with child version element",
+			xml: `<Project>
+  <ItemGroup>
+    <PackageVersion Include="LiteDB">
+      <Version>5.0.12</Version>
+    </PackageVersion>
+  </ItemGroup>
+</Project>`,
+			filePath: "Directory.Packages.props",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPath("Directory.Packages.props"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
