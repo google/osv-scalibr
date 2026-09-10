@@ -353,8 +353,6 @@ func newParser(r io.Reader) *parser {
 	p.scanner.Init(r)
 	p.scanner.Mode = scanner.ScanIdents | scanner.ScanFloats | scanner.ScanChars |
 		scanner.ScanStrings | scanner.ScanComments | scanner.SkipComments
-	// build.zig.zon is Zig, not Go, so the occasional token won't lex. Swallow those
-	// errors rather than printing them to stderr; the parser skips what it can't read.
 	p.scanner.Error = func(*scanner.Scanner, string) {}
 	p.advance()
 	return p
@@ -364,9 +362,6 @@ func newParser(r io.Reader) *parser {
 func (p *parser) advance() {
 	p.tok = p.scanner.Scan()
 	p.text = p.scanner.TokenText()
-	// Zig multiline strings (\\...) run to the end of the line and may contain any
-	// character, including quotes and braces. Consume them at the character level so
-	// they can't unbalance the parse.
 	for p.tok == '\\' {
 		for c := p.scanner.Next(); c != '\n' && c != scanner.EOF; {
 			c = p.scanner.Next()
@@ -409,7 +404,6 @@ func (p *parser) parseValue() *zonValue {
 		p.advance()
 		return v
 	case '{':
-		// Not valid ZON, which writes blocks as .{ ... }, but parse it anyway.
 		return p.parseBlock()
 	case '.':
 		p.advance()
@@ -427,7 +421,7 @@ func (p *parser) parseValue() *zonValue {
 }
 
 // parseBlock parses a { ... } block, which may hold named fields (.key = value),
-// unnamed elements, or both. The parser must be positioned on the opening brace.
+// unnamed elements, or both.
 func (p *parser) parseBlock() *zonValue {
 	if p.depth >= maxDepth {
 		p.err = errors.New("nesting is too deep")
@@ -436,7 +430,7 @@ func (p *parser) parseBlock() *zonValue {
 	p.depth++
 	defer func() { p.depth-- }()
 
-	p.advance() // Consume '{'.
+	p.advance()
 	block := &zonValue{kind: kindBlock}
 	for p.err == nil && p.tok != '}' && p.tok != scanner.EOF {
 		before := p.tokens
@@ -451,11 +445,9 @@ func (p *parser) parseBlock() *zonValue {
 			}
 			name, ok := p.parseName()
 			if !ok {
-				// A stray dot, already consumed.
 				break
 			}
 			if p.tok != '=' {
-				// An enum literal used as an element, e.g. .{ .foo, .bar }.
 				block.items = append(block.items, &zonValue{kind: kindEnum, text: name})
 				break
 			}
@@ -465,8 +457,6 @@ func (p *parser) parseBlock() *zonValue {
 			block.items = append(block.items, p.parseValue())
 		}
 		if p.tokens == before {
-			// Nothing was consumed this round, so skip a token. The cases above always
-			// consume, but this means malformed input can never spin forever.
 			p.advance()
 		}
 	}
@@ -477,8 +467,6 @@ func (p *parser) parseBlock() *zonValue {
 }
 
 // unquote strips the quotes from a string literal and resolves its escape sequences.
-// Zig's escapes are a subset of Go's apart from \u{...}; literals that don't unquote
-// cleanly fall back to their raw contents.
 func unquote(literal string) string {
 	if s, err := strconv.Unquote(literal); err == nil {
 		return s
