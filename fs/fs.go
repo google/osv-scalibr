@@ -69,7 +69,10 @@ func (r *ScanRoot) WithAbsolutePath() (*ScanRoot, error) {
 
 // DirFS returns an FS implementation that accesses the real filesystem at the given root.
 func DirFS(root string) FS {
-	return os.DirFS(root).(FS)
+	// os.Root is used to prevent path traversal attacks that use symbolic links to access
+	// directories outside of the root.
+	osRoot, _ := os.OpenRoot(root)
+	return osRoot.FS().(FS)
 }
 
 // RealFSScanRoots returns a one-element ScanRoot array representing the given
