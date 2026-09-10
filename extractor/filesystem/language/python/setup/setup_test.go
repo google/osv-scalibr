@@ -224,6 +224,27 @@ func TestExtract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/valid", 29),
 					Metadata: &setup.Metadata{VersionComparator: "<="},
 				},
+				{
+					Name:     "Flask-Security-Too",
+					Version:  "3.4.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 30),
+					Metadata: &setup.Metadata{VersionComparator: "=="},
+				},
+				{
+					Name:     "python-dateutil",
+					Version:  "2.8.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 31),
+					Metadata: &setup.Metadata{VersionComparator: ">="},
+				},
+				{
+					Name:     "zope.interface",
+					Version:  "5.4.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 32),
+					Metadata: &setup.Metadata{VersionComparator: "=="},
+				},
 			},
 		},
 		{
@@ -324,6 +345,13 @@ func TestExtract(t *testing.T) {
 			Name: "empty package setup.py file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty",
+			},
+			WantPackages: []*extractor.Package{},
+		},
+		{
+			Name: "setup.py file with invalid package names",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/invalid_names",
 			},
 			WantPackages: []*extractor.Package{},
 		},

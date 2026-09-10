@@ -27,6 +27,9 @@ setup(
         "pydantic>=1.8.2,<2.0",
         "certifi>=2017.4.17",
         "pkg3<= 1.2.3",
+        "Flask-Security-Too==3.4.3",
+        "python-dateutil>=2.8.0",
+        "zope.interface==5.4.0",
         # 'sslyze>=4.0.4', # todo,
         "foo"
       ],
