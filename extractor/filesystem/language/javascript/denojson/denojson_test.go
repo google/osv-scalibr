@@ -131,7 +131,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "chalk",
 					Version:  "1.0.0",
-					Location: extractor.LocationFromPath("testdata/deno.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/deno.json", 9),
 					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
 						URL: "npm:chalk@1",
@@ -141,7 +141,7 @@ func TestExtract(t *testing.T) {
 					Name:     "std1/path1",
 					Version:  "^1",
 					PURLType: purl.TypeJSR,
-					Location: extractor.LocationFromPath("testdata/deno.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/deno.json", 11),
 					Metadata: &denometadata.DenoMetadata{
 						URL: "jsr:@std1/path1@^1",
 					},

@@ -40,8 +40,20 @@ func (v HackageVersion) compare(w HackageVersion) int {
 // Compare compares the given version to the receiver.
 func (v HackageVersion) Compare(w Version) (int, error) {
 	if w, ok := w.(HackageVersion); ok {
-		return v.compare(w), nil
+		if res := v.compare(w); res != 0 {
+			return res, nil
+		}
+
+		if len(v.components) > len(w.components) {
+			return +1, nil
+		}
+		if len(v.components) < len(w.components) {
+			return -1, nil
+		}
+
+		return 0, nil
 	}
+
 	return 0, ErrNotSameEcosystem
 }
 
@@ -53,18 +65,7 @@ func (v HackageVersion) CompareStr(str string) (int, error) {
 		return 0, err
 	}
 
-	if diff := v.compare(w); diff != 0 {
-		return diff, nil
-	}
-
-	if len(v.components) > len(w.components) {
-		return +1, nil
-	}
-	if len(v.components) < len(w.components) {
-		return -1, nil
-	}
-
-	return 0, nil
+	return v.Compare(w)
 }
 
 // ParseHackageVersion parses the given string as a Hackage version.

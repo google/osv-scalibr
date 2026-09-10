@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -42,7 +43,7 @@ func TestRequirements(t *testing.T) {
 	var err error
 
 	// we should be online by default
-	e, err = New(&cpb.PluginConfig{})
+	e, err = New(config.DefaultPluginConfig())
 
 	if err != nil {
 		t.Errorf("New() = %v, want nil", err)
@@ -53,18 +54,23 @@ func TestRequirements(t *testing.T) {
 	}
 
 	// we should not be online
-	e, err = New(&cpb.PluginConfig{PluginSpecific: []*cpb.PluginSpecificConfig{
-		{Config: &cpb.PluginSpecificConfig_Osvlocal{
-			Osvlocal: &cpb.OSVLocalConfig{Download: false},
-		}},
-	}})
+	e, err = New(&config.PluginConfig{
+		ProtoConfig: &cpb.PluginConfig{
+			PluginSpecific: []*cpb.PluginSpecificConfig{
+				{Config: &cpb.PluginSpecificConfig_Osvlocal{
+					Osvlocal: &cpb.OSVLocalConfig{Download: false},
+				}},
+			},
+		},
+		ClientFactories: config.NewDefaultClientFactories(""),
+	})
 
 	if err != nil {
 		t.Errorf("New() = %v, want nil", err)
 	}
 
-	if e.Requirements().Network != plugin.NetworkOffline {
-		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkOffline)
+	if e.Requirements().Network != plugin.NetworkAny {
+		t.Errorf("requirements.Network = %v, want %v", e.Requirements().Network, plugin.NetworkAny)
 	}
 }
 
@@ -78,6 +84,41 @@ func TestEnrich(t *testing.T) {
 		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
 		pyPkg      = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
 		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
+		gitPkg     = &extractor.Package{
+			Name:     "some-git-dep",
+			Version:  "",
+			PURLType: purl.TypeGit,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo:   "https://github.com/some/repo",
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
+		gitPkgWithTag = &extractor.Package{
+			Name:     "some-git-dep",
+			Version:  "1.0.0",
+			PURLType: purl.TypeGit,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo:   "https://github.com/some/repo",
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
+		gitPkgWithVTag = &extractor.Package{
+			Name:     "some-git-dep",
+			Version:  "v1.0.0",
+			PURLType: purl.TypeGit,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo:   "https://github.com/some/repo",
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
+		goPkgWithCommit = &extractor.Package{
+			Name:     "github.com/gin-gonic/gin",
+			Version:  "1.8.1",
+			PURLType: purl.TypeGolang,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
 
 		goPkgWithSignals = &extractor.Package{
 			Name:     "github.com/gin-gonic/gin",
@@ -408,6 +449,20 @@ func TestEnrich(t *testing.T) {
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
 		}
+		gitVuln1 = osvpb.Vulnerability{
+			Id: "GHSA-git-test-vuln-1",
+			Affected: []*osvpb.Affected{
+				{
+					Ranges: []*osvpb.Range{
+						{
+							Type: osvpb.Range_GIT,
+							Repo: "https://github.com/some/repo",
+						},
+					},
+					Versions: []string{"v1.0.0"},
+				},
+			},
+		}
 	)
 
 	ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, r *http.Request) {
@@ -439,7 +494,9 @@ func TestEnrich(t *testing.T) {
 		}
 
 		if strings.HasSuffix(r.URL.Path, "GIT/all.zip") {
-			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{})
+			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+				gitVuln1.Id + ".json": &gitVuln1,
+			})
 
 			return
 		}
@@ -537,6 +594,43 @@ func TestEnrich(t *testing.T) {
 				{Vulnerability: &goVuln2, Package: goPkgWithSignals, Plugins: []string{Name}},
 				{Vulnerability: &goVuln3, Package: goPkgWithSignals, Plugins: []string{Name}},
 			}},
+		{
+			name:             "git_commit_package_skipped",
+			packages:         []*extractor.Package{gitPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
+		},
+		{
+			name:     "git_package_with_tag_matches_local_db",
+			packages: []*extractor.Package{gitPkgWithTag},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &gitVuln1, Package: gitPkgWithTag, Plugins: []string{Name}},
+			},
+		},
+		{
+			name:     "git_package_with_v_tag_matches_local_db",
+			packages: []*extractor.Package{gitPkgWithVTag},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &gitVuln1, Package: gitPkgWithVTag, Plugins: []string{Name}},
+			},
+		},
+		{
+			name:     "interleaving_git_commit_and_covered",
+			packages: []*extractor.Package{gitPkg, goPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{Name}},
+			},
+		},
+		{
+			name:     "non_git_package_with_commit_not_skipped",
+			packages: []*extractor.Package{goPkgWithCommit},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &goVuln1, Package: goPkgWithCommit, Plugins: []string{Name}},
+				{Vulnerability: &goVuln2, Package: goPkgWithCommit, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkgWithCommit, Plugins: []string{Name}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

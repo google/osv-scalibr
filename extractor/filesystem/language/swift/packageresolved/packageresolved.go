@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -66,7 +67,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e Extractor) Version() int { return 1 }
 
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
@@ -128,9 +129,12 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 	var result []*extractor.Package
 	for _, pkg := range packages {
 		result = append(result, &extractor.Package{
+			// Name is set to the normalized location URL (e.g.
+			// "github.com/apple/swift-crypto") which is the canonical package
+			// identifier in the OSV.dev SwiftURL ecosystem.
 			Name:     pkg.Name,
 			Version:  pkg.Version,
-			PURLType: purl.TypeCocoapods,
+			PURLType: purl.TypeSwift,
 			Location: extractor.LocationFromPath(input.Path),
 		})
 	}
@@ -140,16 +144,19 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 
 // pkg represents a parsed package entry from the Package.resolved file.
 type pkg struct {
+	// Name is the normalized location URL, e.g. "github.com/apple/swift-crypto".
+	// This is the canonical identifier used by the SwiftURL ecosystem in OSV.dev.
 	Name    string
 	Version string
 }
 
-// Parse reads and parses a Package.resolved file for package details.
+// parse reads and parses a Package.resolved file for package details.
 func parse(r io.Reader) ([]pkg, error) {
 	var resolvedFile struct {
 		Pins []struct {
-			Package string `json:"identity"`
-			State   struct {
+			Package  string `json:"identity"`
+			Location string `json:"location"`
+			State    struct {
 				Version string `json:"version"`
 			} `json:"state"`
 		} `json:"pins"`
@@ -161,11 +168,38 @@ func parse(r io.Reader) ([]pkg, error) {
 
 	var packages []pkg
 	for _, pin := range resolvedFile.Pins {
+		// Use the normalized location URL as the package name. This is the
+		// canonical identifier for the SwiftURL ecosystem in OSV.dev, e.g.
+		// "github.com/apple/swift-crypto" matches SwiftURL/github.com/apple/swift-crypto.
+		name := normalizeSwiftURL(pin.Location)
+		if name == "" {
+			// Fall back to the identity field if the location URL is absent.
+			name = pin.Package
+		}
 		packages = append(packages, pkg{
-			Name:    pin.Package,
+			Name:    name,
 			Version: pin.State.Version,
 		})
 	}
 
 	return packages, nil
+}
+
+// normalizeSwiftURL converts a Swift package repository URL to the canonical
+// package name used in PURL and OSV.dev SwiftURL ecosystem identifiers.
+//
+// Examples:
+//
+//	https://github.com/apple/swift-crypto.git → github.com/apple/swift-crypto
+//	https://github.com/apple/swift-nio.git    → github.com/apple/swift-nio
+func normalizeSwiftURL(rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+	// Strip scheme.
+	loc := strings.TrimPrefix(rawURL, "https://")
+	loc = strings.TrimPrefix(loc, "http://")
+	// Strip .git suffix.
+	loc = strings.TrimSuffix(loc, ".git")
+	return loc
 }

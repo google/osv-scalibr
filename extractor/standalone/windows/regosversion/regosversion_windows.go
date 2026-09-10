@@ -29,6 +29,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone/windows/common/winproducts"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 const (
@@ -37,34 +39,14 @@ const (
 	regVersionPath = `SOFTWARE\Microsoft\Windows NT\CurrentVersion`
 )
 
-// Configuration for the extractor.
-type Configuration struct {
-	// Opener is the registry engine to use (offline, live or mock).
+// Extractor provides a metadata extractor for the patch level on Windows.
+type Extractor struct {
 	Opener registry.Opener
 }
 
-// DefaultConfiguration for the extractor. It uses the live registry of the running system.
-func DefaultConfiguration() Configuration {
-	return Configuration{
-		Opener: registry.NewLiveOpener(),
-	}
-}
-
-// Extractor provides a metadata extractor for the patch level on Windows.
-type Extractor struct {
-	opener registry.Opener
-}
-
-// New creates a new Extractor from a given configuration.
-func New(config Configuration) standalone.Extractor {
-	return &Extractor{
-		opener: config.Opener,
-	}
-}
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() standalone.Extractor {
-	return New(DefaultConfiguration())
+// New returns a new instance of the extractor.
+func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
+	return &Extractor{Opener: registry.NewLiveOpener()}, nil
 }
 
 // Name of the extractor.
@@ -80,7 +62,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 
 // Extract the DISM patch level on Windows.
 func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
-	reg, err := e.opener.Open()
+	reg, err := e.Opener.Open()
 	if err != nil {
 		return inventory.Inventory{}, err
 	}

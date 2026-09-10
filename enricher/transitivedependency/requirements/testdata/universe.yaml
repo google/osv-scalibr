@@ -6,6 +6,7 @@ schema: |
     2.0.0
       chuck@>=1.0.0
       dave@==2.0.0
+      frank@
   chuck
     1.0.0
     2.0.0

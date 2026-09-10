@@ -29,10 +29,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func TestToCDX(t *testing.T) {
 	// Make UUIDs deterministic
 	uuid.SetRand(rand.New(rand.NewSource(1)))
@@ -66,20 +62,20 @@ func TestToCDX(t *testing.T) {
 						Version: "1.0.0",
 						BOMRef:  "52fdfc07-2182-454f-963f-5f0f9a621d72",
 					},
-					Authors: ptr([]cyclonedx.OrganizationalContact{{Name: "author"}}),
+					Authors: new([]cyclonedx.OrganizationalContact{{Name: "author"}}),
 					Tools: &cyclonedx.ToolsChoice{
 						Components: &[]cyclonedx.Component{
 							{
 								Type: cyclonedx.ComponentTypeApplication,
 								Name: "SCALIBR",
-								ExternalReferences: ptr([]cyclonedx.ExternalReference{
+								ExternalReferences: new([]cyclonedx.ExternalReference{
 									{URL: "https://github.com/google/osv-scalibr", Type: cyclonedx.ERTypeWebsite},
 								}),
 							},
 						},
 					},
 				},
-				Components: ptr([]cyclonedx.Component{
+				Components: new([]cyclonedx.Component{
 					{
 						BOMRef:     "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
 						Type:       "library",
@@ -114,20 +110,20 @@ func TestToCDX(t *testing.T) {
 						Version: "1.0.0",
 						BOMRef:  "81855ad8-681d-4d86-91e9-1e00167939cb",
 					},
-					Authors: ptr([]cyclonedx.OrganizationalContact{{Name: "author"}}),
+					Authors: new([]cyclonedx.OrganizationalContact{{Name: "author"}}),
 					Tools: &cyclonedx.ToolsChoice{
 						Components: &[]cyclonedx.Component{
 							{
 								Type: cyclonedx.ComponentTypeApplication,
 								Name: "SCALIBR",
-								ExternalReferences: ptr([]cyclonedx.ExternalReference{
+								ExternalReferences: new([]cyclonedx.ExternalReference{
 									{URL: "https://github.com/google/osv-scalibr", Type: cyclonedx.ERTypeWebsite},
 								}),
 							},
 						},
 					},
 				},
-				Components: ptr([]cyclonedx.Component{
+				Components: new([]cyclonedx.Component{
 					{
 						BOMRef:     "6694d2c4-22ac-4208-a007-2939487f6999",
 						Type:       "library",

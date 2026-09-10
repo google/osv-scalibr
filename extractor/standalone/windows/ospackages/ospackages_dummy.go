@@ -24,31 +24,18 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
+
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // Name of the extractor
 const Name = "windows/ospackages"
 
-// Configuration for the extractor.
-type Configuration struct{}
-
-// DefaultConfiguration for the extractor. On non-windows, it contains nothing.
-func DefaultConfiguration() Configuration {
-	return Configuration{}
-}
-
 // Extractor implements the ospackages extractor.
 type Extractor struct{}
 
-// New creates a new Extractor from a given configuration.
-func New(config Configuration) standalone.Extractor {
-	return &Extractor{}
-}
-
-// NewDefault returns an extractor with the default config settings.
-func NewDefault() standalone.Extractor {
-	return New(DefaultConfiguration())
-}
+// New returns a new instance of the extractor.
+func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) { return &Extractor{}, nil }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }

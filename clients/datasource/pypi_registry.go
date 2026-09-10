@@ -17,6 +17,7 @@ package datasource
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -41,6 +42,7 @@ const pyPIAPI = "https://pypi.org/simple"
 type PyPIRegistryAPIClient struct {
 	registry      string
 	localRegistry string
+	httpClient    *http.Client
 
 	// Cache fields
 	mu             *sync.Mutex
@@ -49,7 +51,10 @@ type PyPIRegistryAPIClient struct {
 }
 
 // NewPyPIRegistryAPIClient returns a new PyPIRegistryAPIClient.
-func NewPyPIRegistryAPIClient(registry string, localRegistry string) *PyPIRegistryAPIClient {
+func NewPyPIRegistryAPIClient(registry string, localRegistry string, httpClient *http.Client) (*PyPIRegistryAPIClient, error) {
+	if httpClient == nil {
+		return nil, errors.New("httpClient must be configured for PyPIRegistryAPIClient")
+	}
 	if registry == "" {
 		registry = pyPIAPI
 	}
@@ -59,9 +64,10 @@ func NewPyPIRegistryAPIClient(registry string, localRegistry string) *PyPIRegist
 	return &PyPIRegistryAPIClient{
 		registry:      registry,
 		localRegistry: localRegistry,
+		httpClient:    httpClient,
 		mu:            &sync.Mutex{},
 		responses:     NewRequestCache[string, response](),
-	}
+	}, nil
 }
 
 // GetIndex queries the simple API index for a given project.
@@ -120,7 +126,7 @@ func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex 
 		if queryIndex {
 			req.Header.Set("Accept", "application/vnd.pypi.simple.v1+json")
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := p.httpClient.Do(req)
 		if err != nil {
 			return response{}, fmt.Errorf("%w: PyPI registry query failed: %w", errAPIFailed, err)
 		}

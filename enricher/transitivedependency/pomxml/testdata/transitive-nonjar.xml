@@ -1,0 +1,61 @@
+<project>
+  <groupId>com.mycompany.app</groupId>
+  <artifactId>my-nonjar-app</artifactId>
+  <version>1.0</version>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- This should be kept: normal jar dep management -->
+      <dependency>
+        <groupId>org.transitive</groupId>
+        <artifactId>frank</artifactId>
+        <version>4.4.4</version>
+      </dependency>
+      <!-- This should be SKIPPED: non-jar type (aar) in dep management -->
+      <dependency>
+        <groupId>org.nonjar</groupId>
+        <artifactId>android-lib</artifactId>
+        <version>1.0.0</version>
+        <type>aar</type>
+      </dependency>
+      <!-- This should be SKIPPED: pom type WITHOUT import scope -->
+      <dependency>
+        <groupId>org.nonjar</groupId>
+        <artifactId>parent-only</artifactId>
+        <version>2.0.0</version>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Normal jar dependency (no type = jar) -->
+    <dependency>
+      <groupId>org.direct</groupId>
+      <artifactId>alice</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <!-- Explicit jar type: should be kept -->
+    <dependency>
+      <groupId>org.direct</groupId>
+      <artifactId>bob</artifactId>
+      <version>2.0.0</version>
+      <type>jar</type>
+    </dependency>
+    <!-- This should be SKIPPED: zip type (e.g. MuleSoft RAML) -->
+    <dependency>
+      <groupId>org.nonjar</groupId>
+      <artifactId>raml-spec</artifactId>
+      <version>1.0.0</version>
+      <classifier>raml</classifier>
+      <type>zip</type>
+    </dependency>
+    <!-- This should be SKIPPED: pom type in dependencies -->
+    <dependency>
+      <groupId>org.nonjar</groupId>
+      <artifactId>some-pom</artifactId>
+      <version>3.0.0</version>
+      <type>pom</type>
+    </dependency>
+  </dependencies>
+</project>

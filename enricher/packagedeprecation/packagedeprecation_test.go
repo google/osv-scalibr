@@ -19,18 +19,18 @@ import (
 
 	grpcpb "deps.dev/api/v3alpha"
 	"github.com/google/go-cmp/cmp"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestEnrich(t *testing.T) {
 	deprecationMap := map[packagedeprecation.VersionKey]bool{
-		packagedeprecation.VersionKey{System: grpcpb.System_CARGO, Name: "url", Version: "2.5.3"}: true,
-		packagedeprecation.VersionKey{System: grpcpb.System_CARGO, Name: "url", Version: "2.5.4"}: false,
+		{System: grpcpb.System_CARGO, Name: "url", Version: "2.5.3"}: true,
+		{System: grpcpb.System_CARGO, Name: "url", Version: "2.5.4"}: false,
 	}
 
 	fakeClient := newFakeClient(deprecationMap)
@@ -52,7 +52,7 @@ func TestEnrich(t *testing.T) {
 			name: "unsupported_purl_type",
 			inv: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType: "invalid",
 						Name:     "invalid",
 						Version:  "invalid",
@@ -61,7 +61,7 @@ func TestEnrich(t *testing.T) {
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType:   "invalid",
 						Name:       "invalid",
 						Version:    "invalid",
@@ -74,7 +74,7 @@ func TestEnrich(t *testing.T) {
 			name: "package_version_not_found_in_depsdev",
 			inv: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType: purl.TypePyPi,
 						Name:     "pip",
 						Version:  "invalid",
@@ -82,7 +82,7 @@ func TestEnrich(t *testing.T) {
 				}},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType:   purl.TypePyPi,
 						Name:       "pip",
 						Version:    "invalid",
@@ -95,7 +95,7 @@ func TestEnrich(t *testing.T) {
 			name: "package_version_deprecated",
 			inv: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType: purl.TypeCargo,
 						Name:     "url",
 						Version:  "2.5.3",
@@ -104,7 +104,7 @@ func TestEnrich(t *testing.T) {
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType:   purl.TypeCargo,
 						Name:       "url",
 						Version:    "2.5.3",
@@ -117,7 +117,7 @@ func TestEnrich(t *testing.T) {
 			name: "package_version_not_deprecated",
 			inv: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType: purl.TypeCargo,
 						Name:     "url",
 						Version:  "2.5.4",
@@ -126,7 +126,7 @@ func TestEnrich(t *testing.T) {
 			},
 			want: &inventory.Inventory{
 				Packages: []*extractor.Package{
-					&extractor.Package{
+					{
 						PURLType:   purl.TypeCargo,
 						Name:       "url",
 						Version:    "2.5.4",
@@ -152,7 +152,7 @@ func TestEnrich(t *testing.T) {
 
 func mustNew(t *testing.T, client packagedeprecation.Client) enricher.Enricher {
 	t.Helper()
-	e, err := packagedeprecation.New(&cpb.PluginConfig{})
+	e, err := packagedeprecation.New(configtest.NewFakePluginConfig())
 	if err != nil {
 		t.Fatalf("packagedeprecation.New: %v", err)
 	}

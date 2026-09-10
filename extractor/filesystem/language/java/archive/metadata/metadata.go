@@ -16,6 +16,9 @@
 package metadata
 
 import (
+	"deps.dev/util/maven"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
+
 	metadataproto "github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -26,17 +29,21 @@ func init() {
 
 // Metadata holds parsing information for a Java archive package.
 type Metadata struct {
-	ArtifactID string
-	GroupID    string
-	SHA1       string
+	ArtifactID   string
+	GroupID      string
+	SHA1         string
+	Dependencies []maven.Dependency
+	Parent       *maven.ProjectKey
 }
 
 // ToProto converts the Metadata struct to a JavaArchiveMetadata proto.
 func ToProto(m *Metadata) *pb.JavaArchiveMetadata {
 	return &pb.JavaArchiveMetadata{
-		ArtifactId: m.ArtifactID,
-		GroupId:    m.GroupID,
-		Sha1:       m.SHA1,
+		ArtifactId:   m.ArtifactID,
+		GroupId:      m.GroupID,
+		Sha1:         m.SHA1,
+		Dependencies: javalockfile.DependenciesToProto(m.Dependencies),
+		Parent:       javalockfile.ParentToProto(m.Parent),
 	}
 }
 
@@ -46,8 +53,10 @@ func (m *Metadata) IsProtoable() {}
 // ToStruct converts the JavaArchiveMetadata proto to a Metadata struct.
 func ToStruct(m *pb.JavaArchiveMetadata) *Metadata {
 	return &Metadata{
-		ArtifactID: m.GetArtifactId(),
-		GroupID:    m.GetGroupId(),
-		SHA1:       m.GetSha1(),
+		ArtifactID:   m.GetArtifactId(),
+		GroupID:      m.GetGroupId(),
+		SHA1:         m.GetSha1(),
+		Dependencies: javalockfile.DependenciesToStruct(m.Dependencies),
+		Parent:       javalockfile.ParentToStruct(m.Parent),
 	}
 }

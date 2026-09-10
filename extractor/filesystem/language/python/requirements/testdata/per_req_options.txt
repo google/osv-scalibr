@@ -28,3 +28,9 @@ foo13==1.0 --hash sha256:123
 foo14==1.0 -C bar
 
 foo15== --config-settings --hash=sha256:123
+
+foo16-Client==1.0
+
+foo17--hash==1.0
+
+foo18-Client==1.0 -C bar

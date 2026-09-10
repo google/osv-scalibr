@@ -1,0 +1,7 @@
+name = "my_project"
+version = "1.0.0"
+
+[dependencies]
+gleam_stdlib = ">= 0.34.0 and < 2.0.0"
+my_git_package = { git = "https://github.com/my-username/my_git_package", ref = "a8b3c5d82" }
+my_local_package = { path = "../my_local_package" }

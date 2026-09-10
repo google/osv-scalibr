@@ -37,7 +37,7 @@ import (
 
 func TestComputePatches(t *testing.T) {
 	client, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
-	mavenRW, err := maven.GetReadWriter(client)
+	mavenRW, err := maven.GetReadWriter(client, "")
 	if err != nil {
 		t.Fatalf("failed getting ReadWriter: %v", err)
 	}

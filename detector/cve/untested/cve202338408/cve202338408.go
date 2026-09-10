@@ -178,7 +178,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 			"extra": {Kind: &structpb.Value_StringValue{StringValue: buildExtra(isVulnVersion, configsWithForward, socketFiles, historyLocations, locations)}},
 		},
 	}
-	// TODO: b/421456154 - Add package information to the finding.
+	// TODO(b/421456154): Add package information to the finding.
 	return d.findingForPackage(dbSpecific, nil), nil
 }
 
