@@ -58,14 +58,47 @@ type pnpmLockPackage struct {
 	Dev        bool                      `yaml:"dev"`
 }
 
+// pnpmImporterDependency is a single entry under an importer's "dependencies",
+// "optionalDependencies" or "devDependencies" map in a v9+ lockfile.
+type pnpmImporterDependency struct {
+	Specifier string `yaml:"specifier"`
+	Version   string `yaml:"version"`
+}
+
+// pnpmImporter is a single workspace project listed under the top-level
+// "importers" key of a v9+ lockfile (a single-project repo only has one
+// importer, keyed by "."). This is where a v9+ lockfile records whether a
+// dependency was requested for production or for development use — unlike
+// v6/v8, the "packages" section of a v9+ lockfile no longer carries a "dev"
+// flag on each resolved package.
+type pnpmImporter struct {
+	Dependencies         map[string]pnpmImporterDependency `yaml:"dependencies"`
+	OptionalDependencies map[string]pnpmImporterDependency `yaml:"optionalDependencies"`
+	DevDependencies      map[string]pnpmImporterDependency `yaml:"devDependencies"`
+}
+
+// pnpmSnapshot is a single entry under the top-level "snapshots" key of a
+// v9+ lockfile: the resolved dependency graph edges for one specific
+// (package, peer-dependency resolution) pair. Snapshot keys are formatted as
+// "name@version" with zero or more "(peerName@peerVersion)" suffixes, e.g.
+// "tsutils@3.21.0(typescript@4.9.5)".
+type pnpmSnapshot struct {
+	Dependencies         map[string]string `yaml:"dependencies"`
+	OptionalDependencies map[string]string `yaml:"optionalDependencies"`
+}
+
 type pnpmLockfile struct {
-	Version  float64                    `yaml:"lockfileVersion"`
-	Packages map[string]pnpmLockPackage `yaml:"packages,omitempty"`
+	Version   float64                    `yaml:"lockfileVersion"`
+	Packages  map[string]pnpmLockPackage `yaml:"packages,omitempty"`
+	Importers map[string]pnpmImporter    `yaml:"importers,omitempty"`
+	Snapshots map[string]pnpmSnapshot    `yaml:"snapshots,omitempty"`
 }
 
 type pnpmLockfileV6 struct {
-	Version  string                     `yaml:"lockfileVersion"`
-	Packages map[string]pnpmLockPackage `yaml:"packages,omitempty"`
+	Version   string                     `yaml:"lockfileVersion"`
+	Packages  map[string]pnpmLockPackage `yaml:"packages,omitempty"`
+	Importers map[string]pnpmImporter    `yaml:"importers,omitempty"`
+	Snapshots map[string]pnpmSnapshot    `yaml:"snapshots,omitempty"`
 }
 
 // UnmarshalYAML is a custom unmarshalling function for handling v6 lockfiles.
@@ -84,6 +117,8 @@ func (l *pnpmLockfile) UnmarshalYAML(unmarshal func(any) error) error {
 
 	l.Version = parsedVersion
 	l.Packages = lockfileV6.Packages
+	l.Importers = lockfileV6.Importers
+	l.Snapshots = lockfileV6.Snapshots
 
 	return nil
 }
@@ -169,9 +204,101 @@ func parseNameAtVersion(value string) (name string, version string) {
 	return matches[1], matches[2]
 }
 
+// snapshotPeerSuffix matches everything from the first "(peer@version)" group
+// (if any) to the end of a snapshots-section key, so that stripping it turns
+// a resolved snapshot key such as "tsutils@3.21.0(typescript@4.9.5)" back
+// into the bare "name@version" form used as a packages-section key.
+var snapshotPeerSuffix = regexp.MustCompile(`\(.*$`)
+
+// snapshotKeyFor builds the snapshots-section key that a "name" -> "version"
+// dependency edge (as found in an importer's dependency maps, or in another
+// snapshot's own dependency map) resolves to.
+func snapshotKeyFor(name, version string) string {
+	return name + "@" + version
+}
+
+// bareSnapshotKey strips any peer-dependency suffix from a snapshots-section
+// key, turning it into the plain "name@version" form used as a
+// packages-section key.
+func bareSnapshotKey(key string) string {
+	return snapshotPeerSuffix.ReplaceAllString(key, "")
+}
+
+// collectDevOnlyPackages walks the dependency graph recorded in a v9+
+// lockfile's "snapshots" section to determine which resolved packages are
+// reachable *only* through a devDependency, and never through a production
+// dependency (direct or transitive, in any workspace project). It returns
+// the set of bare "name@version" packages-section keys that should be
+// reported with the "dev" dependency group.
+//
+// This graph walk exists because, starting with lockfileVersion 9.0, pnpm no
+// longer writes a computed "dev: true" flag on every transitively-dev
+// package in the "packages" section (see
+// https://github.com/google/osv-scanner/issues/1298) — dev/production
+// status is only recorded once, on each workspace's direct dependencies in
+// "importers", and has to be propagated through "snapshots" by hand.
+func collectDevOnlyPackages(lockfile pnpmLockfile) map[string]bool {
+	var walk func(key string, reached map[string]bool)
+	walk = func(key string, reached map[string]bool) {
+		if reached[key] {
+			return
+		}
+		reached[key] = true
+
+		snapshot, ok := lockfile.Snapshots[key]
+		if !ok {
+			return
+		}
+		for name, version := range snapshot.Dependencies {
+			walk(snapshotKeyFor(name, version), reached)
+		}
+		for name, version := range snapshot.OptionalDependencies {
+			walk(snapshotKeyFor(name, version), reached)
+		}
+	}
+
+	prodReachable := map[string]bool{}
+	devReachable := map[string]bool{}
+
+	for _, importer := range lockfile.Importers {
+		for name, dep := range importer.Dependencies {
+			walk(snapshotKeyFor(name, dep.Version), prodReachable)
+		}
+		for name, dep := range importer.OptionalDependencies {
+			walk(snapshotKeyFor(name, dep.Version), prodReachable)
+		}
+	}
+	for _, importer := range lockfile.Importers {
+		for name, dep := range importer.DevDependencies {
+			walk(snapshotKeyFor(name, dep.Version), devReachable)
+		}
+	}
+
+	devOnly := map[string]bool{}
+	for key := range devReachable {
+		devOnly[bareSnapshotKey(key)] = true
+	}
+	// The same package can appear as several snapshots, one per distinct
+	// peer-dependency resolution. If any variation of it is reachable from
+	// a production dependency, the package as a whole is not dev-only.
+	for key := range prodReachable {
+		delete(devOnly, bareSnapshotKey(key))
+	}
+
+	return devOnly
+}
+
 func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path string) ([]*extractor.Package, error) {
 	packages := make([]*extractor.Package, 0, len(lockfile.Packages))
 	errs := []error{}
+
+	// The "dev" flag on each packages-section entry was removed from the
+	// lockfile format in lockfileVersion 9.0; for those lockfiles dev/prod
+	// status has to be recomputed from the snapshot graph instead.
+	var devOnlyPackages map[string]bool
+	if lockfile.Version >= 9.0 {
+		devOnlyPackages = collectDevOnlyPackages(lockfile)
+	}
 
 	for s, pkg := range lockfile.Packages {
 		name, version, err := extractPnpmPackageNameAndVersion(s, lockfile.Version)
@@ -222,7 +349,11 @@ func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path st
 		}
 
 		depGroups := []string{}
-		if pkg.Dev {
+		if lockfile.Version >= 9.0 {
+			if devOnlyPackages[s] {
+				depGroups = append(depGroups, "dev")
+			}
+		} else if pkg.Dev {
 			depGroups = append(depGroups, "dev")
 		}
 
