@@ -15,9 +15,13 @@
 package java_test
 
 import (
+	"archive/zip"
+	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -143,4 +147,179 @@ func setupPackages(names []string) []*extractor.Package {
 	}
 
 	return pkgs
+}
+
+func TestGetMainClasses(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		manifest string
+		want     []string
+		wantErr  error
+	}{
+		{
+			desc:     "single_main_class",
+			manifest: "Manifest-Version: 1.0\nMain-Class: com.example.Main\n",
+			want:     []string{"com/example/Main"},
+		},
+		{
+			desc:     "start_class",
+			manifest: "Manifest-Version: 1.0\nStart-Class: com.example.Application\n",
+			want:     []string{"com/example/Application"},
+		},
+		{
+			desc:     "wrapped_line",
+			manifest: "Manifest-Version: 1.0\nMain-Class: com.example.verylongpackagename.\n MyMainClass\n",
+			want:     []string{"com/example/verylongpackagename/MyMainClass"},
+		},
+		{
+			desc:     "no_main_class",
+			manifest: "Manifest-Version: 1.0\nCreated-By: 21.0.2\n",
+			wantErr:  java.ErrNoMainClass,
+		},
+		{
+			desc:     "empty_manifest",
+			manifest: "",
+			wantErr:  java.ErrNoMainClass,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := java.GetMainClasses(strings.NewReader(tc.manifest))
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Fatalf("GetMainClasses() error = %v, wantErr = %v", err, tc.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("GetMainClasses() unexpected error: %v", err)
+			}
+			if len(got) != len(tc.want) {
+				t.Fatalf("GetMainClasses() got %v, want %v", got, tc.want)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Errorf("GetMainClasses()[%d] = %q, want %q", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestScan_WithDependencyJarsWithoutMainClass(t *testing.T) {
+	jar := filepath.Join("testdata", reachableJar)
+
+	enr, err := java.New(config.DefaultPluginConfig())
+	if err != nil {
+		t.Fatalf("Javareach enricher init failed: %s", err)
+	}
+	enr.(*java.Enricher).Client = mockClient(t)
+
+	// Scan includes the main application jar along with dependency jars that do not have Main-Class.
+	pkgs := setupPackages([]string{testJar, reachableJar, unreachableJar})
+	input := enricher.ScanInput{
+		ScanRoot: &scalibrfs.ScanRoot{
+			Path: jar,
+			FS:   scalibrfs.DirFS("."),
+		},
+	}
+	inv := inventory.Inventory{
+		Packages: pkgs,
+	}
+	err = enr.Enrich(t.Context(), &input, &inv)
+	if err != nil {
+		t.Fatalf("Javareach enrich failed: %s", err)
+	}
+
+	for _, pkg := range inv.Packages {
+		if pkg.Location.PathOrEmpty() != filepath.Join("testdata", testJar) {
+			continue
+		}
+		if pkg.Metadata.(*archivemeta.Metadata).ArtifactID == reachableArtifactID {
+			for _, signal := range pkg.ExploitabilitySignals {
+				if signal.Justification == vex.VulnerableCodeNotInExecutePath {
+					t.Fatalf("expected %s to be reachable, but marked as unreachable", pkg.Name)
+				}
+			}
+		}
+		if pkg.Metadata.(*archivemeta.Metadata).ArtifactID == unreachableArtifactID {
+			hasUnreachableSignal := false
+			for _, signal := range pkg.ExploitabilitySignals {
+				if signal.Justification == vex.VulnerableCodeNotInExecutePath {
+					hasUnreachableSignal = true
+				}
+			}
+			if !hasUnreachableSignal {
+				t.Fatalf("expected %s to be unreachable, but marked as reachable", pkg.Name)
+			}
+		}
+	}
+}
+
+func TestScan_SkipJarWithMavenDirButNoMainClass(t *testing.T) {
+	// Create a temporary JAR with META-INF/maven and META-INF/MANIFEST.MF without Main-Class.
+	depJarPath := filepath.Join("testdata", "dep-no-main-test.jar")
+	buf := new(bytes.Buffer)
+	zw := zip.NewWriter(buf)
+
+	manifestWriter, err := zw.Create("META-INF/MANIFEST.MF")
+	if err != nil {
+		t.Fatalf("failed to create manifest in zip: %v", err)
+	}
+	_, err = manifestWriter.Write([]byte("Manifest-Version: 1.0\nCreated-By: 21.0.2\n"))
+	if err != nil {
+		t.Fatalf("failed to write manifest: %v", err)
+	}
+
+	pomWriter, err := zw.Create("META-INF/maven/com.example/dep/pom.properties")
+	if err != nil {
+		t.Fatalf("failed to create pom.properties in zip: %v", err)
+	}
+	_, err = pomWriter.Write([]byte("groupId=com.example\nartifactId=dep\nversion=1.0.0\n"))
+	if err != nil {
+		t.Fatalf("failed to write pom.properties: %v", err)
+	}
+
+	if err := zw.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+
+	if err := os.WriteFile(depJarPath, buf.Bytes(), 0644); err != nil {
+		t.Fatalf("failed to write dep jar file: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(depJarPath)
+	})
+
+	enr, err := java.New(config.DefaultPluginConfig())
+	if err != nil {
+		t.Fatalf("Javareach enricher init failed: %s", err)
+	}
+	enr.(*java.Enricher).Client = mockClient(t)
+
+	depPkg := &extractor.Package{
+		Name:     "com.example:dep",
+		Version:  "1.0.0",
+		PURLType: purl.TypeMaven,
+		Metadata: &archivemeta.Metadata{ArtifactID: "dep", GroupID: "com.example"},
+		Location: extractor.LocationFromPath(depJarPath),
+		Plugins:  []string{archive.Name},
+	}
+
+	pkgs := append(setupPackages([]string{testJar}), depPkg)
+	input := enricher.ScanInput{
+		ScanRoot: &scalibrfs.ScanRoot{
+			Path: filepath.Join("testdata", reachableJar),
+			FS:   scalibrfs.DirFS("."),
+		},
+	}
+	inv := inventory.Inventory{
+		Packages: pkgs,
+	}
+
+	err = enr.Enrich(t.Context(), &input, &inv)
+	if err != nil {
+		t.Fatalf("Javareach enrich should succeed by skipping jar without Main-Class, got: %v", err)
+	}
 }
