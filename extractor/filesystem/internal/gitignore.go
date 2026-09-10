@@ -43,6 +43,16 @@ func GitignoreMatch(gitignores []GitignorePattern, filePath []string, isDir bool
 	return false
 }
 
+// HasGitMarker reports whether the specified directory contains a ".git"
+// entry, marking it as the root of a git repository. A ".git" entry is a
+// directory for a normal checkout, or a file for a submodule or a linked
+// worktree -- either is treated as a repository boundary here.
+func HasGitMarker(fs scalibrfs.FS, dirPath string) bool {
+	dirPath = strings.TrimSuffix(dirPath, "/")
+	_, err := fs.Stat(path.Join(dirPath, ".git"))
+	return err == nil
+}
+
 // ParseDirForGitignore parses .gitignore patterns found in the
 // specified directory.
 func ParseDirForGitignore(fs scalibrfs.FS, dirPath string) (GitignorePattern, error) {
@@ -69,18 +79,42 @@ func ParseDirForGitignore(fs scalibrfs.FS, dirPath string) (GitignorePattern, er
 }
 
 // ParseParentGitignores parses all .gitignore patterns between the current dir
-// and the scan root, excluding the current directory.
-func ParseParentGitignores(fs scalibrfs.FS, dirPath string) ([]GitignorePattern, error) {
+// and the scan root, excluding the current directory. It also returns the
+// depth (0-indexed, matching the returned slice) of the nearest ancestor
+// directory that is itself a git repository root, or -1 if none of the
+// ancestors are inside a git repository.
+//
+// .gitignore files found above that repository root are excluded from the
+// result: gitignore rules only apply within the boundaries of their own
+// repository, so a directory that isn't inside any repository must not have
+// stray .gitignore files applied to it, and a nested repository (e.g. a
+// submodule) must not inherit its parent repository's rules.
+func ParseParentGitignores(fs scalibrfs.FS, dirPath string) ([]GitignorePattern, int, error) {
 	var filePath strings.Builder
 	result := []GitignorePattern{}
 	components := strings.Split(dirPath, "/")
-	for _, dir := range components[:len(components)-1] {
+	repoRootDepth := -1
+	for i, dir := range components[:len(components)-1] {
 		filePath.WriteString(dir + "/")
-		gitignores, err := ParseDirForGitignore(fs, filePath.String())
+		dirStr := filePath.String()
+		if HasGitMarker(fs, dirStr) {
+			repoRootDepth = i
+		}
+		gitignores, err := ParseDirForGitignore(fs, dirStr)
 		if err != nil {
-			return nil, err
+			return nil, -1, err
 		}
 		result = append(result, gitignores)
 	}
-	return result, nil
+	// Nil out any .gitignore found above the nearest repository root (or all
+	// of them, if none of the ancestors are inside a repository) -- they
+	// don't apply to dirPath.
+	boundary := repoRootDepth
+	if boundary < 0 {
+		boundary = len(result)
+	}
+	for i := 0; i < boundary; i++ {
+		result[i] = nil
+	}
+	return result, repoRootDepth, nil
 }

@@ -288,6 +288,7 @@ func InitWalkContext(ctx context.Context, config *Config, absScanRoots []*scalib
 		inodesVisited:     0,
 		errorOnFSErrors:   config.ErrorOnFSErrors,
 		extractorOverride: config.ExtractorOverride,
+		repoRootDepth:     -1,
 
 		lastStatus: time.Now(),
 
@@ -363,6 +364,13 @@ type walkContext struct {
 
 	// applicable gitignore patterns for the current and parent directories.
 	gitignores []internal.GitignorePattern
+	// depth (index into gitignores) of the nearest ancestor-or-self directory
+	// that is a git repository root; -1 if not currently inside a detected
+	// git repository, in which case .gitignore files don't apply.
+	repoRootDepth int
+	// repoRootDepth values saved on entry to each currently-open directory, so
+	// the previous value can be restored when leaving a nested repository.
+	repoRootDepthStack []int
 	// Inventories found.
 	inventory inventory.Inventory
 	// Extractor name to file path to runtime errors.
@@ -397,14 +405,18 @@ func walkIndividualPaths(wc *walkContext) error {
 				// Recursively scan the contents of the directory.
 				if wc.useGitignore {
 					// Parse parent dir .gitignore files up to the scan root.
-					gitignores, err := internal.ParseParentGitignores(wc.fs, p)
+					gitignores, repoRootDepth, err := internal.ParseParentGitignores(wc.fs, p)
 					if err != nil {
 						return err
 					}
 					wc.gitignores = gitignores
+					wc.repoRootDepth = repoRootDepth
+					wc.repoRootDepthStack = nil
 				}
 				err = internal.WalkDirUnsorted(wc.fs, p, wc.handleFile, wc.postHandleFile)
 				wc.gitignores = nil
+				wc.repoRootDepth = -1
+				wc.repoRootDepthStack = nil
 				if err != nil {
 					return err
 				}
@@ -452,13 +464,28 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 	if d.Type().IsDir() {
 		wc.dirsVisited++
 		if wc.useGitignore {
-			gitignores := internal.EmptyGitignore()
+			depth := len(wc.gitignores)
+			wc.repoRootDepthStack = append(wc.repoRootDepthStack, wc.repoRootDepth)
+			var gitignores internal.GitignorePattern
 			var err error
 			if !wc.shouldSkipDir(path) {
-				gitignores, err = internal.ParseDirForGitignore(wc.fs, path)
-				if err != nil {
-					return err
+				if internal.HasGitMarker(wc.fs, path) {
+					// This directory is a (possibly nested) repository root:
+					// patterns inherited from any enclosing repository stop
+					// applying from here on.
+					for i := range wc.gitignores {
+						wc.gitignores[i] = nil
+					}
+					wc.repoRootDepth = depth
 				}
+				if wc.repoRootDepth >= 0 {
+					gitignores, err = internal.ParseDirForGitignore(wc.fs, path)
+					if err != nil {
+						return err
+					}
+				}
+				// else: not currently inside any git repository, so a stray
+				// .gitignore file here doesn't apply.
 			}
 			wc.gitignores = append(wc.gitignores, gitignores)
 		}
@@ -542,6 +569,12 @@ func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
 	if len(wc.gitignores) > 0 && d.Type().IsDir() {
 		// Remove .gitignores that applied to this directory.
 		wc.gitignores = wc.gitignores[:len(wc.gitignores)-1]
+	}
+	if len(wc.repoRootDepthStack) > 0 {
+		// Restore the repository-root depth as it was before entering this
+		// directory (e.g. after leaving a nested repository).
+		wc.repoRootDepth = wc.repoRootDepthStack[len(wc.repoRootDepthStack)-1]
+		wc.repoRootDepthStack = wc.repoRootDepthStack[:len(wc.repoRootDepthStack)-1]
 	}
 }
 
