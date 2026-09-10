@@ -86,7 +86,25 @@ func TestEnrich(t *testing.T) {
 		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
 		gitPkg     = &extractor.Package{
 			Name:     "some-git-dep",
+			Version:  "",
+			PURLType: purl.TypeGit,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo:   "https://github.com/some/repo",
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
+		gitPkgWithTag = &extractor.Package{
+			Name:     "some-git-dep",
 			Version:  "1.0.0",
+			PURLType: purl.TypeGit,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo:   "https://github.com/some/repo",
+				Commit: "1234567890abcdef1234567890abcdef12345678",
+			},
+		}
+		gitPkgWithVTag = &extractor.Package{
+			Name:     "some-git-dep",
+			Version:  "v1.0.0",
 			PURLType: purl.TypeGit,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Repo:   "https://github.com/some/repo",
@@ -431,6 +449,20 @@ func TestEnrich(t *testing.T) {
 				Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
 			}),
 		}
+		gitVuln1 = osvpb.Vulnerability{
+			Id: "GHSA-git-test-vuln-1",
+			Affected: []*osvpb.Affected{
+				{
+					Ranges: []*osvpb.Range{
+						{
+							Type: osvpb.Range_GIT,
+							Repo: "https://github.com/some/repo",
+						},
+					},
+					Versions: []string{"v1.0.0"},
+				},
+			},
+		}
 	)
 
 	ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, r *http.Request) {
@@ -462,7 +494,9 @@ func TestEnrich(t *testing.T) {
 		}
 
 		if strings.HasSuffix(r.URL.Path, "GIT/all.zip") {
-			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{})
+			_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+				gitVuln1.Id + ".json": &gitVuln1,
+			})
 
 			return
 		}
@@ -564,6 +598,20 @@ func TestEnrich(t *testing.T) {
 			name:             "git_commit_package_skipped",
 			packages:         []*extractor.Package{gitPkg},
 			wantPackageVulns: []*inventory.PackageVuln{},
+		},
+		{
+			name:     "git_package_with_tag_matches_local_db",
+			packages: []*extractor.Package{gitPkgWithTag},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &gitVuln1, Package: gitPkgWithTag, Plugins: []string{Name}},
+			},
+		},
+		{
+			name:     "git_package_with_v_tag_matches_local_db",
+			packages: []*extractor.Package{gitPkgWithVTag},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &gitVuln1, Package: gitPkgWithVTag, Plugins: []string{Name}},
+			},
 		},
 		{
 			name:     "interleaving_git_commit_and_covered",

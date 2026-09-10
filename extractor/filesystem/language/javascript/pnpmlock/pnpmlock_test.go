@@ -859,6 +859,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6104ae42cd32c3d724036d3964678f197b2c9cdb",
+						Repo:   "https://bitbucket.org/my-org/my-bitbucket-project",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -871,6 +872,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 20),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "267087851ad5fac92a184749c27cd539e2fc862e",
+						Repo:   "https://github.com/my-org/my-package",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -883,6 +885,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fbfc962ab51eb1d754749b68c064460221fbd689",
+						Repo:   "https://github.com/my-org/my-other-package",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -895,6 +898,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d2dc42a9351d4d89ec48c525e34f612b6d77993f",
+						Repo:   "https://github.com/my-org/faker-parser",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -907,6 +911,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "590f321b4eb3f692bb211bd74e22947639a6f79d",
+						Repo:   "https://github.com/my-org/mocks",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
