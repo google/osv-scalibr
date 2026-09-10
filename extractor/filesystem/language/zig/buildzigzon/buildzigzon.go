@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"regexp"
+	"strconv"
 	"strings"
+	"text/scanner"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
@@ -146,74 +147,48 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-// nameEnumRe is a regexp for .name = .identifier (new format enum literal)
-var nameEnumRe = regexp.MustCompile(`\.name\s*=\s*\.([A-Za-z_][A-Za-z0-9_]*)`)
+// parseFile parses the scanned file into its top-level ZON struct.
+func (e Extractor) parseFile(ctx context.Context, input *filesystem.ScanInput) (*zonValue, error) {
+	root, err := parseZON(input.Reader)
+	if err == nil && root != nil {
+		return root, nil
+	}
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), ctxErr)
+	}
+	return nil, nil
+}
 
-// nameStrRe is a regexp for .name = "string" (old format quoted string)
-var nameStrRe = regexp.MustCompile(`\.name\s*=\s*"([^"]*)"`)
-
-// versionRe is a regexp for .version = "string"
-var versionRe = regexp.MustCompile(`\.version\s*=\s*"([^"]*)"`)
-
-// parseNameVersionInfo extracts top-level .name and .version both new and legacy version
+// parseNameVersionInfo extracts the top-level .name and .version fields.
 //
-// Supports:
+// Supports both the current and the legacy spelling of .name:
 //
-//	.name = .zigmodule,   (new: enum literal)
-//	.name = "zigmodule",   (old: quoted string)
+//	.name = .zigmodule,    (current: enum literal)
+//	.name = "zigmodule",   (legacy: quoted string)
 //	.version = "0.0.1",
 func (e Extractor) parseNameVersionInfo(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	packages := []*extractor.Package{}
-	content, err := io.ReadAll(input.Reader)
+	root, err := e.parseFile(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("could not extract: %w", err)
-	}
-	contentStr := string(content)
-	parsedPackageName := ""
-	parsedVersionName := ""
-	enumName := nameEnumRe.FindStringSubmatch(contentStr)
-	stringName := nameStrRe.FindStringSubmatch(contentStr)
-	versionName := versionRe.FindStringSubmatch(contentStr)
-	if enumName != nil {
-		parsedPackageName = enumName[1]
-	} else if stringName != nil {
-		parsedPackageName = stringName[1]
-	}
-	if versionName != nil {
-		parsedVersionName = versionName[1]
+		return nil, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
-	}
-	if parsedPackageName != "" && parsedVersionName != "" {
-		pkg := &extractor.Package{
-			Name:     parsedPackageName,
-			Version:  parsedVersionName,
-			PURLType: purl.TypeZig,
-			Location: extractor.LocationFromPath(input.Path),
-		}
-		packages = append(packages, pkg)
+	name := root.field("name").stringOrEnum()
+	version := root.field("version").stringValue()
+	if name == "" || version == "" {
+		return []*extractor.Package{}, nil
 	}
 
-	return packages, err
+	return []*extractor.Package{{
+		Name:     name,
+		Version:  version,
+		PURLType: purl.TypeZig,
+		Location: extractor.LocationFromPath(input.Path),
+	}}, nil
 }
 
-// depsStartRe is a regexp for .dependencies = {...} block
-var depsStartRe = regexp.MustCompile(`\.dependencies\s*=\s*\.?\{`)
-
-// depKeyRe is a regexp for .dependencies list key ex:  .zul = .{ ... }
-var depKeyRe = regexp.MustCompile(`\.([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\.?\{`)
-
-// Dependency holds a single dependency entry
-type Dependency struct {
-	Name    string // extracted from .hash (or same as Key if legacy/path-only)
-	Version string // extracted from .hash, empty for legacy "1220..." or path deps
-}
-
-// parseDependenciesField parses .dependencies list and extracts .name and .versions from this array
+// parseDependenciesField extracts a package per entry of the .dependencies struct.
 //
-// Example Format:
+// Example format:
 //
 //	 .dependencies = .{
 //	       .zigrc = .{
@@ -222,175 +197,304 @@ type Dependency struct {
 //	       },
 //	},
 func (e Extractor) parseDependenciesField(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	packages := []*extractor.Package{}
-	content, err := io.ReadAll(input.Reader)
-	contentStr := string(content)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not extract: %w", err)
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
-	}
-	depsBlock, err := e.extractDepBlock(contentStr)
+	root, err := e.parseFile(ctx, input)
 	if err != nil {
 		return nil, err
 	}
-	depsList := e.parseDependencyList(depsBlock)
-	for _, d := range depsList {
-		if d.Name != "" && d.Version != "" {
-			pkg := &extractor.Package{
-				Name:     d.Name,
-				Version:  d.Version,
-				PURLType: purl.TypeZig,
-				Location: extractor.LocationFromPath(input.Path),
-			}
-			packages = append(packages, pkg)
-		}
-	}
 
+	packages := []*extractor.Package{}
+	for _, entry := range root.field("dependencies").namedFields() {
+		dep := parseHash(entry.value.field("hash").stringValue())
+		if dep.Name == "" || dep.Version == "" {
+			continue
+		}
+		packages = append(packages, &extractor.Package{
+			Name:     dep.Name,
+			Version:  dep.Version,
+			PURLType: purl.TypeZig,
+			Location: extractor.LocationFromPath(input.Path),
+		})
+	}
 	return packages, nil
 }
 
-func (e Extractor) extractDepBlock(contentStr string) (string, error) {
-	depsLoc := depsStartRe.FindStringIndex(contentStr)
-	if depsLoc == nil {
-		return "", errors.New("could not find .deps")
-	}
-
-	start := strings.Index(contentStr[depsLoc[0]:], "{") + depsLoc[0]
-	depth := 0
-	for i := start; i < len(contentStr); i++ {
-		// Skip line comments to avoid counting braces inside them.
-		if i+1 < len(contentStr) && contentStr[i] == '/' && contentStr[i+1] == '/' {
-			for i < len(contentStr) && contentStr[i] != '\n' {
-				i++
-			}
-			continue
-		}
-		switch contentStr[i] {
-		case '{':
-			depth++
-		case '}':
-			depth--
-			if depth == 0 {
-				return contentStr[start+1 : i], nil
-			}
-		}
-	}
-	return "", errors.New("could not find .deps")
+// Dependency holds a single dependency entry.
+type Dependency struct {
+	Name    string // extracted from .hash (empty if the hash carries no name)
+	Version string // extracted from .hash, empty for legacy "1220..." or path deps
 }
 
-func (e Extractor) parseDependencyList(dependencyBlock string) []Dependency {
-	deps := []Dependency{}
-	pos := 0
-	for pos < len(dependencyBlock) {
-		loc := depKeyRe.FindStringIndex(dependencyBlock[pos:])
-		if loc == nil {
-			break
-		}
-
-		absStart := pos + loc[0]
-		absBodyStart := pos + loc[1] - 1 // position of '{'
-
-		// Find matching closing brace
-		depth := 0
-		bodyEnd := absBodyStart
-		for i := absBodyStart; i < len(dependencyBlock); i++ {
-			// Skip line comments.
-			if i+1 < len(dependencyBlock) && dependencyBlock[i] == '/' && dependencyBlock[i+1] == '/' {
-				for i < len(dependencyBlock) && dependencyBlock[i] != '\n' {
-					i++
-				}
-				continue
-			}
-			switch dependencyBlock[i] {
-			case '{':
-				depth++
-			case '}':
-				depth--
-				if depth == 0 {
-					bodyEnd = i
-					goto foundEnd
-				}
-			}
-		}
-	foundEnd:
-		if absBodyStart < bodyEnd {
-			entryContent := dependencyBlock[absBodyStart+1 : bodyEnd]
-
-			dep := e.parseSingleDep(entryContent)
-			deps = append(deps, dep)
-
-			pos = absStart + 1
-			// Advance past this whole entry to avoid re-matching nested keys
-			if bodyEnd > pos {
-				pos = bodyEnd + 1
-			}
-		}
-	}
-	return deps
-}
-
-// hashRe is a regexp for .hash = "...",
-var hashRe = regexp.MustCompile(`\.hash\s*=\s*"([^"]*)"`)
-
-// sizedHashLen is for new hash format length: always exactly 44 chars at the end for .hash part
+// sizedHashLen is the length of the digest at the end of a current-format .hash value.
 const sizedHashLen = 44
 
-// parseSingleDep extracts name+version from a .hash value
+// parseHash extracts a name and version from a dependency's .hash value.
 //
-// Formats for .hash:
+// Formats:
 //
-//	Legacy:  "1220<hex>"                              -> no name/version
-//	No-zon:  "N-V-<44chars>"                          -> name="N", version="V" (placeholder)
-//	New:     "name-version-<44chars>"                 -> name, version (may contain dashes like "0.5.0-dev")
-func (e Extractor) parseSingleDep(entryContent string) Dependency {
-	dep := Dependency{}
+//	Legacy:  "1220<hex>"                 -> no name or version
+//	No-zon:  "N-V-<44 chars>"            -> placeholder for deps without a build.zig.zon
+//	Current: "name-version-<44 chars>"   -> version may contain dashes, e.g. "0.5.0-dev"
+func parseHash(hash string) Dependency {
+	// Legacy multihash format, and anything too short to hold a name and a version.
+	if strings.HasPrefix(hash, "1220") || len(hash) <= sizedHashLen+1 {
+		return Dependency{}
+	}
+	// The digest is always the trailing 44 characters, preceded by a dash.
+	cutpoint := len(hash) - sizedHashLen
+	if hash[cutpoint-1] != '-' {
+		return Dependency{}
+	}
+	// Zig identifiers can't contain dashes, so the first dash separates the name from
+	// the version. See https://github.com/ziglang/zig/issues/20178.
+	name, version, found := strings.Cut(hash[:cutpoint-1], "-")
+	if !found {
+		return Dependency{}
+	}
+	// Placeholder used for packages that don't ship a build.zig.zon.
+	if name == "N" && version == "V" {
+		return Dependency{}
+	}
+	return Dependency{Name: name, Version: version}
+}
 
-	if m := hashRe.FindStringSubmatch(entryContent); m != nil {
-		hashPart := m[1]
-		// Legacy multihash format
-		if strings.HasPrefix(hashPart, "1220") {
-			dep.Name = ""
-			dep.Version = ""
-			return dep
-		}
+// zonKind describes the type of a parsed ZON value.
+type zonKind int
 
-		if len(hashPart) <= sizedHashLen+1 {
-			dep.Name = ""
-			dep.Version = ""
-			return dep
-		}
+const (
+	// kindOther is any value the extractor doesn't need to inspect: numbers, bools, chars.
+	kindOther zonKind = iota
+	// kindString is a string literal, e.g. "1.0.0".
+	kindString
+	// kindEnum is an enum literal, e.g. .hello_world.
+	kindEnum
+	// kindBlock is a .{ ... } struct or tuple literal.
+	kindBlock
+)
 
-		// Verify the character before the last 44 chars is a dash
-		cutpoint := len(hashPart) - sizedHashLen
-		if hashPart[cutpoint-1] != '-' {
-			dep.Name = ""
-			dep.Version = ""
-			return dep
-		}
+// zonField is a single named field of a .{ ... } block.
+type zonField struct {
+	key   string
+	value *zonValue
+}
 
-		nameVersion := hashPart[:cutpoint-1] // e.g. "wayland-0.5.0-dev" or "zbor-0.18.0" or "N-V"
+// zonValue is a parsed ZON value.
+type zonValue struct {
+	kind zonKind
+	// text holds the contents of a string literal or the name of an enum literal.
+	text string
+	// fields holds the named fields of a block, in file order.
+	fields []zonField
+	// items holds the unnamed elements of a block, in file order.
+	items []*zonValue
+}
 
-		// Name cannot contain dashes (Zig identifier rule: [A-Za-z_][A-Za-z0-9_]*) ref: https://github.com/ziglang/zig/issues/20178
-		// so the first dash always separates name from version
-		name, version, found := strings.Cut(nameVersion, "-")
-		if !found {
-			// No dash at all — name only, no version, still not valid for us
-			dep.Name = nameVersion
-			dep.Version = ""
-			return dep
-		}
-
-		dep.Name = name
-		dep.Version = version // everything after first dash is version
-
-		// placeholder for packages which don't have build.zig.zon file
-		if dep.Name == "N" && dep.Version == "V" {
-			dep.Name = ""
-			dep.Version = ""
+// field returns the value of the named field, or nil if the value is absent, isn't a
+// block, or has no such field.
+func (v *zonValue) field(name string) *zonValue {
+	if v == nil {
+		return nil
+	}
+	for _, f := range v.fields {
+		if f.key == name {
+			return f.value
 		}
 	}
-	return dep
+	return nil
+}
+
+// namedFields returns the named fields of a block in file order, or nil if the value
+// is absent or isn't a block.
+func (v *zonValue) namedFields() []zonField {
+	if v == nil {
+		return nil
+	}
+	return v.fields
+}
+
+// stringValue returns the contents of a string literal, or "" for any other value.
+func (v *zonValue) stringValue() string {
+	if v == nil || v.kind != kindString {
+		return ""
+	}
+	return v.text
+}
+
+// stringOrEnum returns the contents of a string or enum literal, so that both
+// .name = "foo" and .name = .foo yield "foo".
+func (v *zonValue) stringOrEnum() string {
+	if v == nil || (v.kind != kindString && v.kind != kindEnum) {
+		return ""
+	}
+	return v.text
+}
+
+const (
+	// maxDepth bounds recursion so deeply nested or malformed input can't exhaust the stack.
+	maxDepth = 64
+)
+
+// parser is a recursive descent parser for ZON, the Zig object notation used by
+// build.zig.zon. It tokenizes with text/scanner so that comments, string literals and
+// nesting are handled by the lexer rather than by regexes and hand-rolled brace
+// counting, both of which trip over braces, quotes and "//" inside string values.
+type parser struct {
+	scanner scanner.Scanner
+	// tok and text are the current token and its source text.
+	tok  rune
+	text string
+	// tokens counts the tokens consumed so far, used to guarantee forward progress.
+	tokens int
+	depth  int
+	err    error
+}
+
+func newParser(r io.Reader) *parser {
+	p := &parser{}
+	p.scanner.Init(r)
+	p.scanner.Mode = scanner.ScanIdents | scanner.ScanFloats | scanner.ScanChars |
+		scanner.ScanStrings | scanner.ScanComments | scanner.SkipComments
+	// build.zig.zon is Zig, not Go, so the occasional token won't lex. Swallow those
+	// errors rather than printing them to stderr; the parser skips what it can't read.
+	p.scanner.Error = func(*scanner.Scanner, string) {}
+	p.advance()
+	return p
+}
+
+// advance reads the next token.
+func (p *parser) advance() {
+	p.tok = p.scanner.Scan()
+	p.text = p.scanner.TokenText()
+	// Zig multiline strings (\\...) run to the end of the line and may contain any
+	// character, including quotes and braces. Consume them at the character level so
+	// they can't unbalance the parse.
+	for p.tok == '\\' {
+		for c := p.scanner.Next(); c != '\n' && c != scanner.EOF; {
+			c = p.scanner.Next()
+		}
+		p.tok = p.scanner.Scan()
+		p.text = p.scanner.TokenText()
+	}
+	p.tokens++
+}
+
+// parseName reads a field or enum name: a bare identifier, or the @"..." form Zig uses
+// for names that aren't valid identifiers.
+func (p *parser) parseName() (string, bool) {
+	switch p.tok {
+	case scanner.Ident:
+		name := p.text
+		p.advance()
+		return name, true
+	case '@':
+		p.advance()
+		if p.tok == scanner.String {
+			name := unquote(p.text)
+			p.advance()
+			return name, true
+		}
+	}
+	return "", false
+}
+
+// parseValue parses a single value and leaves the parser on the token after it.
+func (p *parser) parseValue() *zonValue {
+	if p.err != nil {
+		return nil
+	}
+	switch p.tok {
+	case scanner.EOF:
+		return nil
+	case scanner.String, scanner.RawString:
+		v := &zonValue{kind: kindString, text: unquote(p.text)}
+		p.advance()
+		return v
+	case '{':
+		// Not valid ZON, which writes blocks as .{ ... }, but parse it anyway.
+		return p.parseBlock()
+	case '.':
+		p.advance()
+		if p.tok == '{' {
+			return p.parseBlock()
+		}
+		if name, ok := p.parseName(); ok {
+			return &zonValue{kind: kindEnum, text: name}
+		}
+		return &zonValue{kind: kindOther}
+	default:
+		p.advance()
+		return &zonValue{kind: kindOther}
+	}
+}
+
+// parseBlock parses a { ... } block, which may hold named fields (.key = value),
+// unnamed elements, or both. The parser must be positioned on the opening brace.
+func (p *parser) parseBlock() *zonValue {
+	if p.depth >= maxDepth {
+		p.err = errors.New("nesting is too deep")
+		return nil
+	}
+	p.depth++
+	defer func() { p.depth-- }()
+
+	p.advance() // Consume '{'.
+	block := &zonValue{kind: kindBlock}
+	for p.err == nil && p.tok != '}' && p.tok != scanner.EOF {
+		before := p.tokens
+		switch p.tok {
+		case ',':
+			p.advance()
+		case '.':
+			p.advance()
+			if p.tok == '{' {
+				block.items = append(block.items, p.parseBlock())
+				break
+			}
+			name, ok := p.parseName()
+			if !ok {
+				// A stray dot, already consumed.
+				break
+			}
+			if p.tok != '=' {
+				// An enum literal used as an element, e.g. .{ .foo, .bar }.
+				block.items = append(block.items, &zonValue{kind: kindEnum, text: name})
+				break
+			}
+			p.advance() // Consume '='.
+			block.fields = append(block.fields, zonField{key: name, value: p.parseValue()})
+		default:
+			block.items = append(block.items, p.parseValue())
+		}
+		if p.tokens == before {
+			// Nothing was consumed this round, so skip a token. The cases above always
+			// consume, but this means malformed input can never spin forever.
+			p.advance()
+		}
+	}
+	if p.tok == '}' {
+		p.advance()
+	}
+	return block
+}
+
+// unquote strips the quotes from a string literal and resolves its escape sequences.
+// Zig's escapes are a subset of Go's apart from \u{...}; literals that don't unquote
+// cleanly fall back to their raw contents.
+func unquote(literal string) string {
+	if s, err := strconv.Unquote(literal); err == nil {
+		return s
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(literal, `"`), `"`)
+}
+
+// parseZON parses the top-level struct literal of a build.zig.zon file.
+func parseZON(r io.Reader) (*zonValue, error) {
+	p := newParser(r)
+	root := p.parseValue()
+	if p.err != nil {
+		return nil, p.err
+	}
+	if root == nil || root.kind != kindBlock {
+		return nil, nil
+	}
+	return root, nil
 }

@@ -270,7 +270,7 @@ func TestExtractForSourceMode(t *testing.T) {
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no.deps.build.zig.zon",
 			},
-			wantErr: extracttest.ContainsErrStr{Str: "could not find .deps"},
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name: "empty deps field build.zig.zon file",
@@ -291,7 +291,7 @@ func TestExtractForSourceMode(t *testing.T) {
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid.build.zig.zon",
 			},
-			wantErr: extracttest.ContainsErrStr{Str: "could not find .deps"},
+			wantPackages: []*extractor.Package{},
 		},
 		{
 			name: "single line dependency with url",
