@@ -113,6 +113,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | R          | renv.lock                                         | `r/renvlock`                         |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
+|            | Gem packages (.gem)                               | `ruby/gem`                           |
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
 |            | Cargo.toml                                        | `rust/cargotoml`                     |
 |            | Rust binaries                                     | `rust/cargoauditable`                |

@@ -84,6 +84,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
@@ -304,6 +305,10 @@ var (
 	RubySource = InitMap{
 		gemspec.Name:     {protoCfg(gemspec.New)},
 		gemfilelock.Name: {protoCfg(gemfilelock.New)},
+	}
+	// RubyArtifact extractors for Ruby.
+	RubyArtifact = InitMap{
+		gem.Name: {protoCfg(gem.New)},
 	}
 	// RustSource extractors for Rust.
 	RustSource = InitMap{
@@ -583,6 +588,7 @@ var (
 		Secrets,
 		FFA,
 		JuliaArtifact,
+		RubyArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -617,7 +623,7 @@ var (
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
 		"r":          vals(RSource),
-		"ruby":       vals(RubySource),
+		"ruby":       vals(concat(RubySource, RubyArtifact)),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
