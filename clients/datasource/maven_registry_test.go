@@ -281,6 +281,82 @@ func TestMavenLocalRegistry(t *testing.T) {
 	}
 }
 
+func TestMavenLocalRegistryEscape(t *testing.T) {
+	t.Run("path traversal", func(t *testing.T) {
+		tempDir := t.TempDir()
+		localRegistry := filepath.Join(tempDir, "cache")
+		outsidePath := filepath.Join(tempDir, "outside", "maven-metadata.xml")
+		if err := os.MkdirAll(filepath.Dir(outsidePath), 0755); err != nil {
+			t.Fatalf("failed to create outside directory: %v", err)
+		}
+
+		transport := &trackingTransport{}
+		client, err := datasource.NewMavenRegistryAPIClient(
+			t.Context(),
+			datasource.MavenRegistry{URL: "https://example.com", ReleasesEnabled: true},
+			localRegistry,
+			false,
+			&http.Client{Transport: transport},
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+		}
+
+		if _, err := client.GetVersions(t.Context(), "g", filepath.Join("..", "..", "..", "outside")); err != nil {
+			t.Fatalf("GetVersions failed: %v", err)
+		}
+		if !transport.wasCalled() {
+			t.Fatal("registry was not queried")
+		}
+
+		if _, err := os.Stat(outsidePath); !os.IsNotExist(err) {
+			t.Errorf("outside file was created, os.Stat() returned %v", err)
+		}
+	})
+
+	t.Run("symlink", func(t *testing.T) {
+		tempDir := t.TempDir()
+		localRegistry := filepath.Join(tempDir, "cache")
+		cacheRoot := filepath.Join(localRegistry, "maven")
+		outsideDir := filepath.Join(tempDir, "outside")
+		if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+			t.Fatalf("failed to create cache directory: %v", err)
+		}
+		if err := os.MkdirAll(outsideDir, 0755); err != nil {
+			t.Fatalf("failed to create outside directory: %v", err)
+		}
+		if err := os.Symlink(outsideDir, filepath.Join(cacheRoot, "g")); err != nil {
+			t.Skipf("failed to create symlink: %v", err)
+		}
+
+		transport := &trackingTransport{}
+		client, err := datasource.NewMavenRegistryAPIClient(
+			t.Context(),
+			datasource.MavenRegistry{URL: "https://example.com", ReleasesEnabled: true},
+			localRegistry,
+			false,
+			&http.Client{Transport: transport},
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+		}
+
+		if _, err := client.GetVersions(t.Context(), "g", "a"); err != nil {
+			t.Fatalf("GetVersions failed: %v", err)
+		}
+		if !transport.wasCalled() {
+			t.Fatal("registry was not queried")
+		}
+
+		outsidePath := filepath.Join(outsideDir, "a", "maven-metadata.xml")
+		if _, err := os.Stat(outsidePath); !os.IsNotExist(err) {
+			t.Errorf("outside file was created, os.Stat() returned %v", err)
+		}
+	})
+}
+
 type trackingTransport struct {
 	mu     sync.Mutex
 	called bool
