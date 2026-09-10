@@ -16,6 +16,7 @@
 package common
 
 import (
+	"bytes"
 	"encoding/xml"
 	"io"
 
@@ -25,9 +26,54 @@ import (
 )
 
 // PackageReference represents a single <PackageReference> element in an MSBuild XML file.
+// PackageReference represents a single <PackageReference> element in an MSBuild XML file.
 type PackageReference struct {
-	Include string `xml:"Include,attr"`
-	Version string `xml:"Version,attr"`
+	Include    string `xml:"Include,attr"`
+	Version    string `xml:"Version,attr"`
+	ByteOffset int64
+}
+
+// UnmarshalXML implements custom xml.Unmarshaler to capture byte offset.
+func (p *PackageReference) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	p.ByteOffset = d.InputOffset()
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "Include" {
+			p.Include = attr.Value
+		}
+		if attr.Name.Local == "Version" {
+			p.Version = attr.Value
+		}
+	}
+
+	// Read child elements if any
+	for {
+		t, err := d.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		switch tt := t.(type) {
+		case xml.StartElement:
+			if tt.Name.Local == "Version" {
+				var versionVal string
+				if err := d.DecodeElement(&versionVal, &tt); err != nil {
+					return err
+				}
+				p.Version = versionVal
+			} else {
+				if err := d.Skip(); err != nil {
+					return err
+				}
+			}
+		case xml.EndElement:
+			if tt.Name == start.Name {
+				return nil
+			}
+		}
+	}
+	return nil
 }
 
 // ItemGroup represents an <ItemGroup> element containing package references.
@@ -45,12 +91,19 @@ type Project struct {
 // returns the NuGet packages declared as <PackageReference> elements.
 // The filePath is recorded in each package's Locations field.
 func ExtractPackagesFromMSBuildXML(r io.Reader, filePath string) ([]*extractor.Package, error) {
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
 	var proj Project
-	decoder := xml.NewDecoder(r)
+	decoder := xml.NewDecoder(bytes.NewReader(b))
 	if err := decoder.Decode(&proj); err != nil {
 		log.Errorf("Error parsing MSBuild XML file %s: %v", filePath, err)
 		return nil, err
 	}
+
+	finder := NewOffsetFinder(b)
 
 	var result []*extractor.Package
 	for _, ig := range proj.ItemGroups {
@@ -60,11 +113,12 @@ func ExtractPackagesFromMSBuildXML(r io.Reader, filePath string) ([]*extractor.P
 				continue
 			}
 
+			line := finder.LineOfOffset(pkg.ByteOffset)
 			result = append(result, &extractor.Package{
 				Name:     pkg.Include,
 				Version:  pkg.Version,
 				PURLType: purl.TypeNuget,
-				Location: extractor.LocationFromPath(filePath),
+				Location: extractor.LocationFromPathAndLine(filePath, line),
 			})
 		}
 	}
