@@ -699,12 +699,17 @@ loop:
 			break
 		}
 
-		if symlink.TargetOutsideRoot("/", hdr.Name) {
+		// TargetOutsideRoot is built on the "path" package, where a backslash is an
+		// ordinary filename character. filepath.Join below resolves backslashes as
+		// separators on Windows, so validate a slash-normalized name to keep the two
+		// in agreement.
+		name := strings.ReplaceAll(hdr.Name, `\`, "/")
+		if symlink.TargetOutsideRoot("/", name) {
 			extractErr = errors.New("tar contains invalid entries")
 			break
 		}
 
-		target := filepath.Join(tempDir, hdr.Name)
+		target := filepath.Join(tempDir, filepath.FromSlash(name))
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0755); err != nil {
