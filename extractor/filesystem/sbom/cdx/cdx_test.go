@@ -211,6 +211,21 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "sbom-rubygems-version-mismatch.cdx.json",
+			path: "testdata/sbom-rubygems-version-mismatch.cdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "nokogiri",
+					Version:  "1.19.3-x86_64-linux-gnu",
+					PURLType: purl.TypeGem,
+					Metadata: &cdxmeta.Metadata{
+						PURL: purlFromString(t, "pkg:gem/nokogiri@1.19.3?platform=x86_64-linux-gnu"),
+					},
+					Location: extractor.LocationFromPath("testdata/sbom-rubygems-version-mismatch.cdx.json"),
+				},
+			},
+		},
+		{
 			name:    "invalid_sbom.cdx.json",
 			path:    "testdata/invalid_sbom.cdxjson",
 			wantErr: cmpopts.AnyError,
