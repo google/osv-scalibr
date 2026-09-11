@@ -184,7 +184,6 @@ func (e Extractor) convertSpdxDocToPackage(spdxDoc *spdx.Document, path string) 
 		hasCPE := len(m.CPEs) > 0
 		if !hasPURL && !hasCPE && len(m.ExternalReferences) == 0 {
 			log.Warnf("Neither CPE, PURL, nor external reference found for package: %+v", spdxPkg)
-			continue
 		}
 
 		id := normalizeElementID(string(spdxPkg.PackageSPDXIdentifier))

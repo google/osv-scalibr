@@ -203,6 +203,28 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "no_externalref.spdx.json",
+			path: "testdata/no_externalref.spdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:    "Nginx",
+					Version: "1.21.1",
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "nginx",
+					},
+					Location: extractor.LocationFromPath("testdata/no_externalref.spdx.json"),
+				},
+				{
+					Name:    "openssl",
+					Version: "1.1.1",
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "openssl",
+					},
+					Location: extractor.LocationFromPath("testdata/no_externalref.spdx.json"),
+				},
+			},
+		},
+		{
 			name: "sbom.spdx",
 			path: "testdata/sbom.spdx",
 			wantPackages: []*extractor.Package{
