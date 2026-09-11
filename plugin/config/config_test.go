@@ -187,3 +187,16 @@ func TestDefaultClientFactories_UserAgent(t *testing.T) {
 		t.Errorf("expected User-Agent %q, got %q", ua, capturedUA)
 	}
 }
+
+func TestDefaultClientFactories_GRPCClientConn_ValidServiceConfig(t *testing.T) {
+	cf := config.NewDefaultClientFactories("")
+	defer cf.Close()
+
+	conn, err := cf.GRPCClientConn("localhost:1234")
+	if err != nil {
+		t.Fatalf("GRPCClientConn() failed with invalid service config: %v", err)
+	}
+	if conn == nil {
+		t.Fatal("GRPCClientConn() returned nil connection")
+	}
+}
