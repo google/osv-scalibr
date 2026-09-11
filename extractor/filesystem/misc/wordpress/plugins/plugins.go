@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -120,7 +121,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
-		Name:     pkg.Name,
+		Name:     filepath.Base(filepath.Dir(input.Path)),
 		Version:  pkg.Version,
 		PURLType: purl.TypeWordpress,
 		Location: extractor.LocationFromPath(input.Path),
@@ -128,26 +129,21 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 type wpPackage struct {
-	Name    string
 	Version string
 }
 
 func parsePHPFile(r io.Reader) (*wpPackage, error) {
 	scanner := bufio.NewScanner(r)
-	var name, version string
+	var version string
 
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		if strings.Contains(line, "Plugin Name:") {
-			name = strings.TrimSpace(strings.Split(line, "Plugin Name:")[1])
-		}
 
 		if strings.Contains(line, "Version:") {
 			version = strings.TrimSpace(strings.Split(line, ":")[1])
 		}
 
-		if name != "" && version != "" {
+		if version != "" {
 			break
 		}
 	}
@@ -156,9 +152,9 @@ func parsePHPFile(r io.Reader) (*wpPackage, error) {
 		return nil, fmt.Errorf("failed to read PHP file: %w", err)
 	}
 
-	if name == "" || version == "" {
+	if version == "" {
 		return nil, nil
 	}
 
-	return &wpPackage{Name: name, Version: version}, nil
+	return &wpPackage{Version: version}, nil
 }
