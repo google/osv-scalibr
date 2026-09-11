@@ -155,7 +155,7 @@ func TestExtract(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 3),
 				},
 			},
 		},

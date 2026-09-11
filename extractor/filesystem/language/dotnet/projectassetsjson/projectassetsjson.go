@@ -16,6 +16,7 @@
 package projectassetsjson
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/common"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -139,15 +141,22 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	p, err := parse(input.Reader)
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return nil, err
 	}
 
+	p, err := parse(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	finder := common.NewJSONLineFinder(string(b))
+
 	var res []*extractor.Package
 	seen := make(map[string]struct{}) // dedup: name@version
 
-	addPkg := func(name, version string) {
+	addPkg := func(name, version string, line int) {
 		if name == "" || version == "" {
 			return
 		}
@@ -162,27 +171,11 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 			Name:     name,
 			Version:  version,
 			PURLType: purl.TypeNuget,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, line),
 		})
 	}
 
-	for _, packages := range p.Targets {
-		for pkgKey, info := range packages {
-			// Extract main package
-			if info.Type == "package" {
-				parts := strings.Split(pkgKey, "/")
-				if len(parts) == 2 {
-					addPkg(parts[0], parts[1])
-				}
-			}
-			// Extract dependencies
-			for depName, depVersion := range info.Dependencies {
-				addPkg(depName, depVersion)
-			}
-		}
-	}
-
-	// Extract from libraries
+	// Extract from libraries first to get canonical library definitions and their line numbers
 	for libKey, lib := range p.Libraries {
 		if lib.Type != "package" {
 			continue
@@ -194,7 +187,32 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 			continue
 		}
 
-		addPkg(parts[0], parts[1])
+		line := finder.LineOf("libraries", libKey)
+		addPkg(parts[0], parts[1], line)
+	}
+
+	for targetName, packages := range p.Targets {
+		for pkgKey, info := range packages {
+			// Extract main package
+			if info.Type == "package" {
+				parts := strings.Split(pkgKey, "/")
+				if len(parts) == 2 {
+					line := finder.LineOf("targets", targetName, pkgKey)
+					if line == 0 {
+						line = finder.LineOf("libraries", pkgKey)
+					}
+					addPkg(parts[0], parts[1], line)
+				}
+			}
+			// Extract dependencies
+			for depName, depVersion := range info.Dependencies {
+				line := finder.LineOf("targets", targetName, pkgKey, "dependencies", depName)
+				if line == 0 {
+					line = finder.LineOf("libraries", depName+"/"+depVersion)
+				}
+				addPkg(depName, depVersion, line)
+			}
+		}
 	}
 
 	return res, nil

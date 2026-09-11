@@ -145,49 +145,49 @@ func TestExtractor(t *testing.T) {
 					Name:     "Core.Dep",
 					Version:  "1.24.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 5),
 				},
 				{
 					Name:     "Some.Dep.One",
 					Version:  "1.1.1",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 20),
 				},
 				{
 					Name:     "Some.Dep.Two",
 					Version:  "4.6.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 25),
 				},
 				{
 					Name:     "Some.Dep.Three",
 					Version:  "1.0.2",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 30),
 				},
 				{
 					Name:     "Some.Dep.Four",
 					Version:  "4.5.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 39),
 				},
 				{
 					Name:     "Some.Longer.Name.Dep",
 					Version:  "4.7.2",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 44),
 				},
 				{
 					Name:     "Some.Dep.Five",
 					Version:  "4.7.2",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 49),
 				},
 				{
 					Name:     "Another.Longer.Name.Dep",
 					Version:  "4.5.4",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid/packages.lock.json"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid/packages.lock.json", 54),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -197,6 +197,31 @@ func TestExtractor(t *testing.T) {
 			path:             "testdata/invalid/invalid",
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			name:             "empty input",
+			path:             "testdata/empty/empty",
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			name: "duplicate input across frameworks",
+			path: "testdata/duplicate/packages.lock.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "Core.Dep",
+					Version:  "1.24.0",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate/packages.lock.json", 5),
+				},
+				{
+					Name:     "Core.Dep",
+					Version:  "1.24.0",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate/packages.lock.json", 10),
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 	}
 
@@ -235,7 +260,23 @@ func TestExtractor(t *testing.T) {
 				t.Fatalf("Extract(%+v) error: got %v, want %v\n", test.name, err, test.wantErr)
 			}
 
-			sort := func(a, b *extractor.Package) bool { return a.Name < b.Name }
+			sort := func(a, b *extractor.Package) bool {
+				if a.Name != b.Name {
+					return a.Name < b.Name
+				}
+				if a.Version != b.Version {
+					return a.Version < b.Version
+				}
+				aLine := 0
+				if a.Location.Descriptor != nil && a.Location.Descriptor.File != nil {
+					aLine = a.Location.Descriptor.File.LineNumber
+				}
+				bLine := 0
+				if b.Location.Descriptor != nil && b.Location.Descriptor.File != nil {
+					bLine = b.Location.Descriptor.File.LineNumber
+				}
+				return aLine < bLine
+			}
 			wantInv := inventory.Inventory{Packages: test.wantPackages}
 			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(sort)); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", test.path, diff)
