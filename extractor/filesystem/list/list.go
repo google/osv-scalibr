@@ -283,9 +283,9 @@ var (
 	}
 	// DartSource extractors for Dart.
 	DartSource = InitMap{
-    packageconfig.Name: {protoCfg(packageconfig.New)},
-    pubspec.Name:       {protoCfg(pubspec.New)},
- }
+		packageconfig.Name: {protoCfg(packageconfig.New)},
+		pubspec.Name:       {protoCfg(pubspec.New)},
+	}
 	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {protoCfg(mixlock.New)}}
 	// GleamSource extractors for Gleam.
