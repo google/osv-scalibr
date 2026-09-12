@@ -17,6 +17,8 @@
 package converter
 
 import (
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -26,6 +28,7 @@ import (
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
@@ -86,34 +89,123 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 	}
 
 	comps := make([]cyclonedx.Component, 0, len(i.Packages))
+	scalibrToBOMRef := make(map[string]string)
+	pkgToBOMRef := make(map[*extractor.Package]string)
 	for _, pkg := range i.Packages {
-		comp := cyclonedx.Component{
-			BOMRef:  uuid.New().String(),
-			Type:    cyclonedx.ComponentTypeLibrary,
-			Name:    pkg.Name,
-			Version: pkg.Version,
-		}
-		if p := ToPURL(pkg); p != nil {
-			comp.PackageURL = p.String()
-		}
-		if cpes := extractCPEs(pkg); len(cpes) > 0 {
-			comp.CPE = cpes[0]
-		}
-		occ := []cyclonedx.EvidenceOccurrence{}
-		occ = appendOccurrenceFromLocation(pkg.Location.Descriptor, occ)
-		for _, r := range pkg.Location.Related {
-			occ = appendOccurrenceFromLocation(&r, occ)
-		}
-		if len(occ) > 0 {
-			comp.Evidence = &cyclonedx.Evidence{
-				Occurrences: &occ,
-			}
-		}
-		comps = append(comps, comp)
+		bomRef := uuid.New().String()
+		indexBOMRefByIDAndName(pkg, bomRef, scalibrToBOMRef, pkgToBOMRef)
+		comps = append(comps, toComponent(pkg, bomRef))
 	}
 	bom.Components = &comps
+	edges := dependencyEdgesByParentRef(i.Packages, pkgToBOMRef, scalibrToBOMRef, bom.Metadata.Component.BOMRef)
+	if deps := toSortedDependencies(edges); len(deps) > 0 {
+		bom.Dependencies = &deps
+	}
 
 	return bom
+}
+
+// indexBOMRefByIDAndName records bomRef under the package's SCALIBR ID and, when
+// set, its name, so that ParentIDs referring to either can be resolved later.
+// The package is left out of the index if no ID can be generated for it.
+func indexBOMRefByIDAndName(
+	pkg *extractor.Package,
+	bomRef string,
+	scalibrToBOMRef map[string]string,
+	pkgToBOMRef map[*extractor.Package]string,
+) {
+	id, err := pkg.GetIDOrGenerate()
+	if err != nil {
+		log.Warnf("Failed to get or generate ID for package %v: %v", pkg, err)
+		return
+	}
+	scalibrToBOMRef[id] = bomRef
+	if pkg.Name != "" {
+		scalibrToBOMRef[pkg.Name] = bomRef
+	}
+	pkgToBOMRef[pkg] = bomRef
+}
+
+// toComponent converts a SCALIBR package into a CycloneDX library component.
+func toComponent(pkg *extractor.Package, bomRef string) cyclonedx.Component {
+	comp := cyclonedx.Component{
+		BOMRef:  bomRef,
+		Type:    cyclonedx.ComponentTypeLibrary,
+		Name:    pkg.Name,
+		Version: pkg.Version,
+	}
+	if p := ToPURL(pkg); p != nil {
+		comp.PackageURL = p.String()
+	}
+	if cpes := extractCPEs(pkg); len(cpes) > 0 {
+		comp.CPE = cpes[0]
+	}
+	occ := []cyclonedx.EvidenceOccurrence{}
+	occ = appendOccurrenceFromLocation(pkg.Location.Descriptor, occ)
+	for _, r := range pkg.Location.Related {
+		occ = appendOccurrenceFromLocation(&r, occ)
+	}
+	if len(occ) > 0 {
+		comp.Evidence = &cyclonedx.Evidence{
+			Occurrences: &occ,
+		}
+	}
+	return comp
+}
+
+// dependencyEdgesByParentRef inverts the packages' ParentIDs into a set of
+// dependent BOM refs per parent BOM ref, warning about unresolvable parents.
+func dependencyEdgesByParentRef(
+	pkgs []*extractor.Package,
+	pkgToBOMRef map[*extractor.Package]string,
+	scalibrToBOMRef map[string]string,
+	rootRef string,
+) map[string]map[string]bool {
+	edges := make(map[string]map[string]bool)
+	for _, pkg := range pkgs {
+		ref, ok := pkgToBOMRef[pkg]
+		if !ok {
+			continue
+		}
+		for _, parentID := range slices.Sorted(maps.Keys(pkg.ParentIDs)) {
+			parentRef, ok := parentBOMRef(parentID, scalibrToBOMRef, rootRef)
+			if !ok {
+				log.Warnf("Parent package ID %q for package %v not found in inventory", parentID, pkg)
+				continue
+			}
+			if _, ok := edges[parentRef]; !ok {
+				edges[parentRef] = make(map[string]bool)
+			}
+			edges[parentRef][ref] = true
+		}
+	}
+	return edges
+}
+
+// parentBOMRef resolves a SCALIBR parent ID to a BOM ref, mapping the
+// synthetic "root" parent to the document's main component.
+func parentBOMRef(parentID string, scalibrToBOMRef map[string]string, rootRef string) (string, bool) {
+	if ref, ok := scalibrToBOMRef[parentID]; ok {
+		return ref, true
+	}
+	if parentID == "root" {
+		return rootRef, true
+	}
+	return "", false
+}
+
+// toSortedDependencies flattens the dependency edges into CycloneDX entries,
+// with both the entries and their dependency lists sorted by BOM ref.
+func toSortedDependencies(edges map[string]map[string]bool) []cyclonedx.Dependency {
+	deps := make([]cyclonedx.Dependency, 0, len(edges))
+	for _, ref := range slices.Sorted(maps.Keys(edges)) {
+		refs := slices.Sorted(maps.Keys(edges[ref]))
+		deps = append(deps, cyclonedx.Dependency{
+			Ref:          ref,
+			Dependencies: &refs,
+		})
+	}
+	return deps
 }
 
 func extractCPEs(p *extractor.Package) []string {

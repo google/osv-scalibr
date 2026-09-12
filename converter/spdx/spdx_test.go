@@ -976,6 +976,15 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-Package-main-f5717a28-9a26-4f97-a479-81998ebea89c",
 						},
 						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg-pkg-parent",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-4c7215a3-b539-4b1e-9849-c6077dbb5722",
+						},
+						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-child-pkg-pkg-child",
 						},
 						Relationship: "CONTAINS",
@@ -1154,6 +1163,15 @@ func TestToSPDX23(t *testing.T) {
 							ElementRefID: "SPDXRef-Package-main-e4d7defa-922d-4ae7-b866-67f7e936cd4f",
 						},
 						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg1-pkg-parent1",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
+						},
+						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-parent-pkg2-pkg-parent2",
 						},
 						Relationship: "CONTAINS",
@@ -1170,6 +1188,15 @@ func TestToSPDX23(t *testing.T) {
 					{
 						RefA: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-main-e4d7defa-922d-4ae7-b866-67f7e936cd4f",
+						},
+						RefB: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-parent-pkg2-pkg-parent2",
+						},
+						Relationship: "DEPENDS_ON",
+					},
+					{
+						RefA: common.DocElementID{
+							ElementRefID: "SPDXRef-Package-main-0b4b3739-7011-4e82-ad6f-4125c8fa7311",
 						},
 						RefB: common.DocElementID{
 							ElementRefID: "SPDXRef-Package-shared-child-pkg-shared-child",
