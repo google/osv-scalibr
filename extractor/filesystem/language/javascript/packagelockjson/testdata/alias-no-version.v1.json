@@ -1,0 +1,15 @@
+{
+  "requires": true,
+  "lockfileVersion": 1,
+  "dependencies": {
+    "string-width-cjs": {
+      "version": "npm:string-width"
+    },
+    "babel-code-frame": {
+      "version": "npm:@babel/code-frame"
+    },
+    "empty-alias": {
+      "version": "npm:"
+    }
+  }
+}
