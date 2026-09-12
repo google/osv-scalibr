@@ -105,6 +105,21 @@ func TestMakeEcosystemAPK(t *testing.T) {
 			},
 			want: "Chainguard",
 		},
+		{
+			desc: "MinimOS",
+			metadata: &apkmeta.Metadata{
+				OSID: "minimos",
+			},
+			want: "MinimOS",
+		},
+		{
+			desc: "MinimOS_version_not_used_as_suffix",
+			metadata: &apkmeta.Metadata{
+				OSID:        "minimos",
+				OSVersionID: "20241031",
+			},
+			want: "MinimOS",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
