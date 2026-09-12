@@ -1,0 +1,3 @@
+[{<<"meck">>,{pkg,<<"meck">>,<<"0.8.13">>},0},
+ {<<"legacy_dep">>,{git,"https://github.com/my-org/legacy_dep.git",
+                        {ref,"a9574ab75d6ed01e1288c453ae1d943d7a964595"}},0}].
