@@ -6700,6 +6700,7 @@ type SecretData struct {
 	//	*SecretData_HttpBearer
 	//	*SecretData_HttpCsrfToken
 	//	*SecretData_HttpCookie
+	//	*SecretData_Qwen_Pat
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7570,6 +7571,15 @@ func (x *SecretData) GetHttpCookie() *SecretData_HTTPCookie {
 	return nil
 }
 
+func (x *SecretData) GetQwen_Pat() *SecretData_QwenPat {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_Qwen_Pat); ok {
+			return x.Qwen_Pat
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -7942,6 +7952,10 @@ type SecretData_HttpCookie struct {
 	HttpCookie *SecretData_HTTPCookie `protobuf:"bytes,92,opt,name=http_cookie,json=httpCookie,proto3,oneof"`
 }
 
+type SecretData_Qwen_Pat struct {
+	Qwen_Pat *SecretData_QwenPat `protobuf:"bytes,93,opt,name=qwen__pat,json=qwenPat,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
 func (*SecretData_AnthropicWorkspaceApiKey) isSecretData_Secret() {}
@@ -8125,6 +8139,8 @@ func (*SecretData_HttpBearer) isSecretData_Secret() {}
 func (*SecretData_HttpCsrfToken) isSecretData_Secret() {}
 
 func (*SecretData_HttpCookie) isSecretData_Secret() {}
+
+func (*SecretData_Qwen_Pat) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -13940,6 +13956,50 @@ func (x *SecretData_SquareOAuthApplicationSecret) GetKey() string {
 	return ""
 }
 
+type SecretData_QwenPat struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pat           string                 `protobuf:"bytes,1,opt,name=pat,proto3" json:"pat,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_QwenPat) Reset() {
+	*x = SecretData_QwenPat{}
+	mi := &file_proto_scan_result_proto_msgTypes[185]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_QwenPat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_QwenPat) ProtoMessage() {}
+
+func (x *SecretData_QwenPat) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[185]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_QwenPat.ProtoReflect.Descriptor instead.
+func (*SecretData_QwenPat) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{71, 93}
+}
+
+func (x *SecretData_QwenPat) GetPat() string {
+	if x != nil {
+		return x.Pat
+	}
+	return ""
+}
+
 var File_proto_scan_result_proto protoreflect.FileDescriptor
 
 const file_proto_scan_result_proto_rawDesc = "" +
@@ -14483,7 +14543,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x129\n" +
 	"\tlocations\x18\x03 \x03(\v2\x17.scalibr.LocationLegacyB\x02\x18\x01R\tlocations\x12-\n" +
-	"\blocation\x18\x04 \x01(\v2\x11.scalibr.LocationR\blocation\"\x8dv\n" +
+	"\blocation\x18\x04 \x01(\v2\x11.scalibr.LocationR\blocation\"\xe5v\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -14590,7 +14650,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"httpBearer\x12K\n" +
 	"\x0fhttp_csrf_token\x18[ \x01(\v2!.scalibr.SecretData.HTTPCSRFTokenH\x00R\rhttpCsrfToken\x12A\n" +
 	"\vhttp_cookie\x18\\ \x01(\v2\x1e.scalibr.SecretData.HTTPCookieH\x00R\n" +
-	"httpCookie\x1a\xb0\x03\n" +
+	"httpCookie\x129\n" +
+	"\tqwen__pat\x18] \x01(\v2\x1b.scalibr.SecretData.QwenPatH\x00R\aqwenPat\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -14864,7 +14925,9 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x1a@\n" +
 	"\x1cSquareOAuthApplicationSecret\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\tR\x03keyB\b\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x1a\x1b\n" +
+	"\aQwenPat\x12\x10\n" +
+	"\x03pat\x18\x01 \x01(\tR\x03patB\b\n" +
 	"\x06secret\"\xf8\x01\n" +
 	"\fSecretStatus\x12>\n" +
 	"\x06status\x18\x01 \x01(\x0e2&.scalibr.SecretStatus.SecretStatusEnumR\x06status\x12=\n" +
@@ -14986,7 +15049,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 188)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 189)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                                    // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                                        // 1: scalibr.SeverityEnum
@@ -15180,17 +15243,18 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_URLCredentials)(nil),                       // 189: scalibr.SecretData.URLCredentials
 	(*SecretData_SquarePersonalAccessToken)(nil),            // 190: scalibr.SecretData.SquarePersonalAccessToken
 	(*SecretData_SquareOAuthApplicationSecret)(nil),         // 191: scalibr.SecretData.SquareOAuthApplicationSecret
-	nil,                             // 192: scalibr.SecretData.HTTPCookie.ValuesEntry
-	nil,                             // 193: scalibr.ContainerImageMetadata.OsInfoEntry
-	nil,                             // 194: scalibr.ContainerImageMetadata.LabelsEntry
-	(*timestamppb.Timestamp)(nil),   // 195: google.protobuf.Timestamp
-	(*anypb.Any)(nil),               // 196: google.protobuf.Any
-	(*osvschema.Vulnerability)(nil), // 197: osv.Vulnerability
-	(*durationpb.Duration)(nil),     // 198: google.protobuf.Duration
+	(*SecretData_QwenPat)(nil),                              // 192: scalibr.SecretData.QwenPat
+	nil,                                                     // 193: scalibr.SecretData.HTTPCookie.ValuesEntry
+	nil,                                                     // 194: scalibr.ContainerImageMetadata.OsInfoEntry
+	nil,                                                     // 195: scalibr.ContainerImageMetadata.LabelsEntry
+	(*timestamppb.Timestamp)(nil),                           // 196: google.protobuf.Timestamp
+	(*anypb.Any)(nil),                                       // 197: google.protobuf.Any
+	(*osvschema.Vulnerability)(nil),                         // 198: osv.Vulnerability
+	(*durationpb.Duration)(nil),                             // 199: google.protobuf.Duration
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	195, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	195, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	196, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	196, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	9,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	10,  // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	8,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
@@ -15206,7 +15270,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	14,  // 14: scalibr.Package.source_code:type_name -> scalibr.SourceCodeIdentifier
 	19,  // 15: scalibr.Package.purl:type_name -> scalibr.Purl
 	13,  // 16: scalibr.Package.location:type_name -> scalibr.PackageLocation
-	196, // 17: scalibr.Package.metadata_any:type_name -> google.protobuf.Any
+	197, // 17: scalibr.Package.metadata_any:type_name -> google.protobuf.Any
 	26,  // 18: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
 	27,  // 19: scalibr.Package.pyproject_metadata:type_name -> scalibr.PyprojectMetadata
 	28,  // 20: scalibr.Package.ruby_gem_metadata:type_name -> scalibr.RubyGemMetadata
@@ -15260,7 +15324,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	17,  // 68: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
 	0,   // 69: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
 	20,  // 70: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	197, // 71: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
+	198, // 71: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
 	18,  // 72: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
 	23,  // 73: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
 	25,  // 74: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
@@ -15278,8 +15342,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	51,  // 86: scalibr.JavaArchiveMetadata.dependencies:type_name -> scalibr.JavaLockfileDependency
 	52,  // 87: scalibr.JavaArchiveMetadata.parent:type_name -> scalibr.JavaLockfileParent
 	98,  // 88: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	195, // 89: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	195, // 90: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	196, // 89: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	196, // 90: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	73,  // 91: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	76,  // 92: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
 	78,  // 93: scalibr.Secret.secret:type_name -> scalibr.SecretData
@@ -15378,33 +15442,34 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	183, // 186: scalibr.SecretData.http_bearer:type_name -> scalibr.SecretData.HTTPBearer
 	184, // 187: scalibr.SecretData.http_csrf_token:type_name -> scalibr.SecretData.HTTPCSRFToken
 	185, // 188: scalibr.SecretData.http_cookie:type_name -> scalibr.SecretData.HTTPCookie
-	6,   // 189: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	195, // 190: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	81,  // 191: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
-	82,  // 192: scalibr.LocationLegacy.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	83,  // 193: scalibr.LocationLegacy.environment_variable:type_name -> scalibr.EnvironmentVariable
-	84,  // 194: scalibr.LocationLegacy.container_command:type_name -> scalibr.ContainerCommand
-	15,  // 195: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	86,  // 196: scalibr.Location.file:type_name -> scalibr.File
-	90,  // 197: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	88,  // 198: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	193, // 199: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	194, // 200: scalibr.ContainerImageMetadata.labels:type_name -> scalibr.ContainerImageMetadata.LabelsEntry
-	89,  // 201: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	3,   // 202: scalibr.InfoType.sensitivity:type_name -> scalibr.SensitivityLevel
-	91,  // 203: scalibr.SensitiveInformation.info_type:type_name -> scalibr.InfoType
-	4,   // 204: scalibr.SensitiveInformation.likelihood:type_name -> scalibr.Likelihood
-	85,  // 205: scalibr.SensitiveInformation.location:type_name -> scalibr.Location
-	96,  // 206: scalibr.RubyGemMetadata.Dependency.requirements:type_name -> scalibr.RubyGemMetadata.Dependency.RequirementConstraint
-	66,  // 207: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	174, // 208: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
-	198, // 209: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
-	192, // 210: scalibr.SecretData.HTTPCookie.values:type_name -> scalibr.SecretData.HTTPCookie.ValuesEntry
-	211, // [211:211] is the sub-list for method output_type
-	211, // [211:211] is the sub-list for method input_type
-	211, // [211:211] is the sub-list for extension type_name
-	211, // [211:211] is the sub-list for extension extendee
-	0,   // [0:211] is the sub-list for field type_name
+	192, // 189: scalibr.SecretData.qwen__pat:type_name -> scalibr.SecretData.QwenPat
+	6,   // 190: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	196, // 191: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	81,  // 192: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
+	82,  // 193: scalibr.LocationLegacy.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	83,  // 194: scalibr.LocationLegacy.environment_variable:type_name -> scalibr.EnvironmentVariable
+	84,  // 195: scalibr.LocationLegacy.container_command:type_name -> scalibr.ContainerCommand
+	15,  // 196: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	86,  // 197: scalibr.Location.file:type_name -> scalibr.File
+	90,  // 198: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	88,  // 199: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	194, // 200: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	195, // 201: scalibr.ContainerImageMetadata.labels:type_name -> scalibr.ContainerImageMetadata.LabelsEntry
+	89,  // 202: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	3,   // 203: scalibr.InfoType.sensitivity:type_name -> scalibr.SensitivityLevel
+	91,  // 204: scalibr.SensitiveInformation.info_type:type_name -> scalibr.InfoType
+	4,   // 205: scalibr.SensitiveInformation.likelihood:type_name -> scalibr.Likelihood
+	85,  // 206: scalibr.SensitiveInformation.location:type_name -> scalibr.Location
+	96,  // 207: scalibr.RubyGemMetadata.Dependency.requirements:type_name -> scalibr.RubyGemMetadata.Dependency.RequirementConstraint
+	66,  // 208: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	174, // 209: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
+	199, // 210: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
+	193, // 211: scalibr.SecretData.HTTPCookie.values:type_name -> scalibr.SecretData.HTTPCookie.ValuesEntry
+	212, // [212:212] is the sub-list for method output_type
+	212, // [212:212] is the sub-list for method input_type
+	212, // [212:212] is the sub-list for extension type_name
+	212, // [212:212] is the sub-list for extension extendee
+	0,   // [0:212] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -15561,6 +15626,7 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_HttpBearer)(nil),
 		(*SecretData_HttpCsrfToken)(nil),
 		(*SecretData_HttpCookie)(nil),
+		(*SecretData_Qwen_Pat)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[73].OneofWrappers = []any{
 		(*LocationLegacy_Filepath)(nil),
@@ -15575,7 +15641,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      7,
-			NumMessages:   188,
+			NumMessages:   189,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
