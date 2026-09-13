@@ -34,8 +34,8 @@ const maxTokenLength = 35
 // 2. https://qwenlm.github.io/qwen-code-docs/en/users/configuration/auth/#-option-2-api-key-flexible
 var patRe = regexp.MustCompile(`sk-[A-Za-z0-9]{32}`)
 
-// NewDetector returns a new simpletoken.Detector that matches OpenAI API keys
-// (both legacy and project-scoped formats).
+// NewDetector returns a new simpletoken.Detector that matches Qwen AI API
+// Service Accounts keys (prefix `sk-`).
 func NewDetector() veles.Detector {
 	return simpletoken.Detector{
 		MaxLen: maxTokenLength,

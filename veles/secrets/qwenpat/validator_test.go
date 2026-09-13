@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 	"time"
 
@@ -38,7 +37,7 @@ type mockTransport struct {
 
 func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Replace the original URL with our test server URL
-	if req.URL.Host == "dashscope-intlaliyuncs.com/compatible-mode/v1/models" {
+	if req.URL.Host == "dashscope-intl.aliyuncs.com" {
 		testURL, _ := url.Parse(m.testServer.URL)
 		req.URL.Scheme = testURL.Scheme
 		req.URL.Host = testURL.Host
@@ -46,8 +45,8 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-// mockDenoServer creates a mock Deno API server for testing
-func mockDenoServer(t *testing.T, expectedKey string) *httptest.Server {
+// mockDashScopeServer creates a mock DashScope API server for testing
+func mockDashScopeServer(t *testing.T, expectedKey string) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,19 +66,9 @@ func mockDenoServer(t *testing.T, expectedKey string) *httptest.Server {
 		}
 		token := auth[7:]
 
-		// Determine an expected path based on a token prefix
-		var expectedPath string
-		if strings.HasPrefix(token, "sk-") {
-			expectedPath = "/compatible-mode/v1/models"
-		} else {
-			t.Errorf("unexpected token prefix: %s", token)
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
-
 		// Check path
-		if r.URL.Path != expectedPath {
-			t.Errorf("unexpected path: %s, expected: %s", r.URL.Path, expectedPath)
+		if r.URL.Path != "/compatible-mode/v1/models" {
+			t.Errorf("unexpected path: %s, expected: /compatible-mode/v1/models", r.URL.Path)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -125,7 +114,7 @@ func TestValidator(t *testing.T) {
 			}
 
 			// Create a mock server
-			server := mockDenoServer(t, expectedKey)
+			server := mockDashScopeServer(t, expectedKey)
 			defer server.Close()
 
 			// Create a client with custom transport

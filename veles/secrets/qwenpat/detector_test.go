@@ -26,7 +26,7 @@ import (
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
-const testQwenAPIKey = `sk-8jxqzgqkdv4xvpmhczrjq7k` // 32 characters long
+const testQwenAPIKey = `sk-0123456789abcdef0123456789abcdef` // 32 characters after "sk-"
 
 func TestDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
@@ -51,7 +51,7 @@ func TestDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name:  "simple matching string with qdp_ prefix",
+			name:  "simple matching string with sk- prefix",
 			input: testQwenAPIKey,
 			want: []veles.Secret{
 				qwenpat.QwenPAT{Pat: testQwenAPIKey},
@@ -96,7 +96,6 @@ func TestDetector_truePositives(t *testing.T) {
 			if err != nil {
 				t.Errorf("Detect() error: %v, want nil", err)
 			}
-			fmt.Printf("got = %+v\n", got)
 			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Detect() diff (-want +got):\n%s", diff)
 			}
