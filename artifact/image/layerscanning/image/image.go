@@ -27,6 +27,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"archive/tar"
@@ -366,9 +367,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 
 	// Reverse loop through the layers to start from the latest layer first. This allows us to skip
 	// all files already seen.
-	for i := len(chainLayers) - 1; i >= 0; i-- {
-		chainLayer := chainLayers[i]
-
+	for i, chainLayer := range slices.Backward(chainLayers) {
 		// If the layer is empty, then there is nothing to do.
 		if chainLayer.latestLayer.IsEmpty() {
 			continue
