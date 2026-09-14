@@ -22,6 +22,7 @@ linters:
     - gocyclo          #
     - godot            #
     - godox            #
+    - gomodguard       #
     - gosec            # TODO(#274): work on enabling this
     - ireturn          #
     - lll              #
