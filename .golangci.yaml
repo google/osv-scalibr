@@ -17,6 +17,7 @@ linters:
     - funcorder        #
     - funlen           #
     - gochecknoglobals #
+    - gochecknoinits   # We are now using inits for metadata
     - gocognit         #
     - goconst          #
     - gocyclo          #
@@ -44,7 +45,6 @@ linters:
     - wrapcheck        #
     - wsl              #
     - wsl_v5           #
-    - gochecknoinits   # We are now using inits for metadata
   settings:
     forbidigo:
       forbid:
