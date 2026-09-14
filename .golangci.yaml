@@ -12,6 +12,7 @@ linters:
     - dupl             # Some interfaces end up having several lines of similar code as others
     - err113           #
     - exhaustruct      #
+    - exhaustruct_v5   #
     - forcetypeassert  #
     - funcorder        #
     - funlen           #
