@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -78,17 +79,17 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return !slices.Contains(strings.Split(dir, "/"), "node_modules")
 }
 
-// structurePackageDetails returns the name, version, and commit of a package
+// structurePackageDetails returns the name, version, commit, and repo of a package
 // specified as a tuple in a bun.lock
-func structurePackageDetails(pkgs []any) (string, string, string, error) {
+func structurePackageDetails(pkgs []any) (string, string, string, string, error) {
 	if len(pkgs) == 0 {
-		return "", "", "", errors.New("empty package tuple")
+		return "", "", "", "", errors.New("empty package tuple")
 	}
 
 	str, ok := pkgs[0].(string)
 
 	if !ok {
-		return "", "", "", errors.New("first element of package tuple is not a string")
+		return "", "", "", "", errors.New("first element of package tuple is not a string")
 	}
 
 	str, isScoped := strings.CutPrefix(str, "@")
@@ -98,11 +99,13 @@ func structurePackageDetails(pkgs []any) (string, string, string, error) {
 		name = "@" + name
 	}
 
+	repo := ""
 	version, commit, _ := strings.Cut(version, "#")
 
 	// bun.lock does not track both the commit and version,
 	// so if we have a commit then we don't have a version
 	if commit != "" {
+		repo = commitextractor.NormalizeRepo(version)
 		version = ""
 	}
 
@@ -111,7 +114,7 @@ func structurePackageDetails(pkgs []any) (string, string, string, error) {
 		version = ""
 	}
 
-	return name, version, commit, nil
+	return name, version, commit, repo, nil
 }
 
 // Extract extracts packages from bun.lock files passed through the scan input.
@@ -134,7 +137,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	var errs []error
 
 	for key, pkg := range parsedLockfile.Packages {
-		name, version, commit, err := structurePackageDetails(pkg)
+		name, version, commit, repo, err := structurePackageDetails(pkg)
 
 		if err != nil {
 			errs = append(errs, fmt.Errorf("could not extract '%s': %w", key, err))
@@ -154,6 +157,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			PURLType: purlType,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
+				Repo:   repo,
 			},
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: []string{},

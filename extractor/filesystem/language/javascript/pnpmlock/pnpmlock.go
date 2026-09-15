@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -206,6 +207,15 @@ func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path st
 			}
 		}
 
+		repo := ""
+		if commit != "" {
+			if pkg.Resolution.Repo != "" {
+				repo = commitextractor.NormalizeRepo(pkg.Resolution.Repo)
+			} else if pkg.Resolution.Tarball != "" {
+				repo = commitextractor.NormalizeRepo(pkg.Resolution.Tarball)
+			}
+		}
+
 		purlType := purl.TypeNPM
 		if commit != "" {
 			purlType = purl.TypeGit
@@ -223,6 +233,7 @@ func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path st
 			PURLType: purlType,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
+				Repo:   repo,
 			},
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: depGroups,

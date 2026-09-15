@@ -71,18 +71,12 @@ func (matcher *localMatcher) MatchVulnerabilities(ctx context.Context, pkg *extr
 	np := osvutil.ParsePackage(pkg)
 	eco := np.Ecosystem.Ecosystem
 
-	if np.Ecosystem.String() == "GIT" && np.Commit != "" {
-		// Is a commit based query, skip local scanning
+	if (np.Ecosystem.String() == "GIT" || np.Ecosystem.IsEmpty()) && np.Version == "" {
+		// Commit-only query with no version tag; commit graph reachability requires online OSV API.
 		return nil, nil
 	}
 
 	if np.Ecosystem.IsEmpty() {
-		// matching ecosystem-less versions can only be attempted if we have a version
-		if np.Version == "" {
-			// Is a commit based query, skip local scanning
-			return nil, nil
-		}
-
 		eco = "GIT"
 	}
 

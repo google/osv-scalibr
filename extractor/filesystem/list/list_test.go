@@ -55,6 +55,11 @@ func TestExtractorsFromName(t *testing.T) {
 			wantExts: []string{"python/pdmlock", "python/pipfilelock", "python/poetrylock", "python/pylock", "python/condameta", "python/ipythoninstall", "python/uvlock", "python/wheelegg", "python/requirements", "python/setup", "python/pyprojecttoml"},
 		},
 		{
+			desc:     "Find_all_ruby_extractors",
+			name:     "ruby",
+			wantExts: []string{"ruby/gem", "ruby/gemfilelock", "ruby/gemspec"},
+		},
+		{
 			desc:     "Nonexistent_plugin",
 			name:     "nonexistent",
 			wantErr:  cmpopts.AnyError,
@@ -77,5 +82,13 @@ func TestExtractorsFromName(t *testing.T) {
 				t.Errorf("el.ExtractorsFromName(%v): got diff (-want +got):\n%s", tc.name, diff)
 			}
 		})
+	}
+}
+
+func TestRubyArtifactNotInDefault(t *testing.T) {
+	for name := range el.Default {
+		if name == "ruby/gem" {
+			t.Errorf("ruby/gem should not be present in Default extractors")
+		}
 	}
 }
