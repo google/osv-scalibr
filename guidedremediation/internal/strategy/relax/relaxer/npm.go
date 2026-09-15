@@ -76,8 +76,7 @@ func (r NpmRelaxer) Relax(ctx context.Context, cl resolve.Client, req resolve.Re
 	var lastIdx int   // highest version matching constraint
 	nextIdx := -1     // next version outside of range, preferring non-prerelease
 	nextIsPre := true // if the next version is a prerelease version
-	for lastIdx = len(vers) - 1; lastIdx >= 0; lastIdx-- {
-		v := vers[lastIdx]
+	for lastIdx, v := range slices.Backward(vers) {
 		if c.MatchVersion(v) { // found the upper bound, stop iterating
 			break
 		}
