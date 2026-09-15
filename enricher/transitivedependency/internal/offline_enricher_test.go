@@ -19,9 +19,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/go-cpy/cpy"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/internal"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 )
 
 var (
@@ -43,7 +45,7 @@ var (
 
 	pkgOtherParent = &extractor.Package{
 		Metadata: &fakeMetadata{
-			directDependency("other-parent", "5.0.0", requirement("child", "2.3.4")),
+			directDependency("other-parent", "5.0.0", requirement("other-child", "6.0.0")),
 		},
 	}
 
@@ -71,6 +73,51 @@ var (
 
 	pkgUnrelated = &extractor.Package{
 		Metadata: &fakeMetadata{nil},
+	}
+
+	pkgParentWithRels = &extractor.Package{
+		ID: "pkg-id-parent",
+		Metadata: &fakeMetadata{
+			directDependency("parent", "1.0.0", requirement("child", "2.3.4")),
+		},
+		Location: extractor.PackageLocation{
+			Related: []location.Location{
+				{File: nil},
+				{File: &location.File{Path: "path/to/parent.jar"}},
+				{File: &location.File{Path: "path/to/parent.jar/inside"}},
+			},
+		},
+	}
+
+	pkgChildRelatedByLocation = &extractor.Package{
+		Metadata: &fakeMetadata{directDependency("child", "2.3.4")},
+		Location: extractor.PackageLocation{
+			Related: []location.Location{
+				{File: &location.File{Path: "path/to/parent.jar"}},
+				{File: &location.File{Path: "path/to/parent.jar/other/inside"}},
+			},
+		},
+	}
+
+	pkgChildUnrelatedByLocation = &extractor.Package{
+		Metadata: &fakeMetadata{directDependency("child", "2.3.4")},
+		Location: extractor.PackageLocation{
+			Related: []location.Location{
+				{File: nil},
+				{File: &location.File{Path: "path/to/unrelated.jar"}},
+			},
+		},
+	}
+
+	pkgChildRelatedByLocationLinkedToParent = &extractor.Package{
+		ParentIDs: map[string]bool{"pkg-id-parent": true},
+		Metadata:  &fakeMetadata{directDependency("child", "2.3.4")},
+		Location: extractor.PackageLocation{
+			Related: []location.Location{
+				{File: &location.File{Path: "path/to/parent.jar"}},
+				{File: &location.File{Path: "path/to/parent.jar/other/inside"}},
+			},
+		},
 	}
 )
 
@@ -106,6 +153,19 @@ func TestEnrich(t *testing.T) {
 			want:  &inventory.Inventory{Packages: []*extractor.Package{pkgParentMissingChild}},
 		},
 		{
+			name: "child_related_by_location_is_selected",
+			input: &inventory.Inventory{Packages: []*extractor.Package{
+				pkgParentWithRels,
+				pkgChildRelatedByLocation,
+				pkgChildUnrelatedByLocation,
+			}},
+			want: &inventory.Inventory{Packages: []*extractor.Package{
+				pkgParentWithRels,
+				pkgChildRelatedByLocationLinkedToParent,
+				pkgChildUnrelatedByLocation,
+			}},
+		},
+		{
 			name:  "no_version",
 			input: &inventory.Inventory{Packages: []*extractor.Package{pkgReqNoVersion, pkgOtherChild}},
 			want: &inventory.Inventory{Packages: []*extractor.Package{
@@ -119,13 +179,16 @@ func TestEnrich(t *testing.T) {
 			want:  &inventory.Inventory{Packages: []*extractor.Package{pkgReqNoVersion}},
 		}}
 
+	copier := cpy.New(cpy.IgnoreAllUnexported())
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			got := copier.Copy(tc.input).(*inventory.Inventory)
 			enricher := internal.NewOfflineEnricher(&nopPackageExtractor{})
-			if err := enricher.Enrich(t.Context(), nil, tc.input); err != nil {
+			if err := enricher.Enrich(t.Context(), nil, got); err != nil {
 				t.Fatalf("Enrich failed: %v", err)
 			}
-			if diff := cmp.Diff(tc.want, tc.input, cmpopts.EquateEmpty()); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("Enrich returned unexpected diff (-want +got):\n%s", diff)
 			}
 		})
