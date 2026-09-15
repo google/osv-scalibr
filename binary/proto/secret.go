@@ -1551,6 +1551,20 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
 		}, nil
+	case *spb.SecretData_HttpBasicAuth:
+		creds := s.GetHttpBasicAuth()
+		return veleshttp.BasicAuthCredentials{
+			Username: creds.GetUsername(),
+			Password: creds.GetPassword(),
+		}, nil
+	case *spb.SecretData_HttpBearer:
+		return veleshttp.BearerToken{
+			Value: s.GetHttpBearer().GetValue(),
+		}, nil
+	case *spb.SecretData_HttpCsrfToken:
+		return veleshttp.CSRFToken{
+			Value: s.GetHttpCsrfToken().GetValue(),
+		}, nil
 	case *spb.SecretData_HttpCookie:
 		return veleshttp.Cookie{
 			Values: s.GetHttpCookie().GetValues(),
