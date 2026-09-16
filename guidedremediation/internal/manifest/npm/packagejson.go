@@ -28,6 +28,7 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/helper"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -341,7 +342,7 @@ func parse(path string, fsys scalibrfs.FS, doWorkspaces bool) (*npmManifest, err
 
 func makeNPMReqVer(pkg, ver string) (resolve.RequirementVersion, bool) {
 	typ := dep.NewType() // don't use dep.NewType(dep.Dev) for devDeps to force the resolver to resolve them
-	realPkg, realVer := SplitNPMAlias(ver)
+	realPkg, realVer := helper.SplitNPMAlias(ver)
 	if realPkg != "" {
 		// This dependency is aliased, add it as a
 		// dependency on the actual name, with the
@@ -367,23 +368,6 @@ func makeNPMReqVer(pkg, ver string) (resolve.RequirementVersion, bool) {
 			VersionType: resolve.Requirement,
 		},
 	}, true
-}
-
-// SplitNPMAlias extracts the real package name and version from an alias-specified version.
-//
-// e.g. "npm:pkg@^1.2.3" -> name: "pkg", version: "^1.2.3"
-//
-// If the version is not an alias specifier, the name will be empty and the version unchanged.
-func SplitNPMAlias(v string) (name, version string) {
-	if r, ok := strings.CutPrefix(v, "npm:"); ok {
-		if i := strings.LastIndex(r, "@"); i > 0 {
-			return r[:i], r[i+1:]
-		}
-
-		return r, "" // alias with no version specified
-	}
-
-	return "", v // not an alias
 }
 
 // Write applies the patches to the original manifest, writing the resulting manifest file to the file path in the filesystem.
