@@ -25,8 +25,8 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denohelper"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
@@ -121,7 +121,7 @@ func parseDenoJSONFile(path string, r io.Reader) ([]*extractor.Package, error) {
 	var pkgs []*extractor.Package
 
 	if len(p.Imports) > 0 {
-		finder := linefinder.NewJSONLineFinder(string(content))
+		finder := linefinder.NewJSONLineFinder(content)
 		for alias, importSpec := range p.Imports {
 			pkg := denohelper.ParseImportSpecifier(importSpec)
 			if pkg != nil {

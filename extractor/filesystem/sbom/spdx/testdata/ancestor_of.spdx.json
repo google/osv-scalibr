@@ -1,0 +1,53 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-08-18T00:00:00Z",
+    "creators": ["Organization: Google"]
+  },
+  "name": "ancestor-of-test",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "http://spdx.org/spdxdocs/ancestor-of-test",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-DownstreamPackage-log4j",
+      "name": "v1_2_15",
+      "packageFileName": "log4j/v1_2_15",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "DownstreamSourceURI",
+          "referenceLocator": "path/to/log4j/v1_2_15"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-SourcePackage-log4j",
+      "name": "v1_2_15",
+      "versionInfo": "1.2.15",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:maven/log4j/log4j@1.2.15"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "cpe23Type",
+          "referenceLocator": "cpe:2.3:a:apache:log4j:1.2.15:*:*:*:*:*:*:*"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-SourcePackage-log4j",
+      "relatedSpdxElement": "SPDXRef-DownstreamPackage-log4j",
+      "relationshipType": "ANCESTOR_OF"
+    }
+  ]
+}

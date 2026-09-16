@@ -19,8 +19,9 @@ import (
 	"context"
 	"slices"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/osv-scalibr/extractor/standalone/containers/docker"
+	"github.com/moby/moby/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 )
 
 type fakeClient struct {
@@ -34,10 +35,10 @@ func New(ctrs []container.Summary) docker.Client {
 	}
 }
 
-func (f *fakeClient) ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error) {
+func (f *fakeClient) ContainerList(ctx context.Context, options dockerclient.ContainerListOptions) (dockerclient.ContainerListResult, error) {
 	ctrs := slices.Clone(f.ctrs)
 	if !options.All {
 		ctrs = slices.DeleteFunc(ctrs, func(ctr container.Summary) bool { return ctr.State != "running" })
 	}
-	return ctrs, nil
+	return dockerclient.ContainerListResult{Items: ctrs}, nil
 }

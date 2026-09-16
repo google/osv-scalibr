@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/internal"
@@ -131,15 +132,30 @@ type JavascriptPackageJSONMetadata struct {
 	// was either installed from a local path, a git repository, or another private registry.
 	// This is to identify name collisions between locally published packages and official NPM packages.
 	Source NPMPackageSource
+
+	// Dependencies maps the direct dependencies of the package to the requested version constraint.
+	Dependencies map[string]string `json:"dependencies"`
 }
 
 // ToProto converts the Metadata struct to a JavascriptPackageJSONMetadata proto.
 func ToProto(m *JavascriptPackageJSONMetadata) *pb.JavascriptPackageJSONMetadata {
+	var dependencies []*pb.JavascriptPackageJSONMetadata_Dependency
+	for name, version := range m.Dependencies {
+		dependencies = append(dependencies, &pb.JavascriptPackageJSONMetadata_Dependency{
+			Name:            name,
+			VersionRequired: version,
+		})
+	}
+	sort.Slice(dependencies, func(i, j int) bool {
+		return dependencies[i].GetName() < dependencies[j].GetName()
+	})
+
 	return &pb.JavascriptPackageJSONMetadata{
 		Author:       m.Author.PersonString(),
 		Contributors: personsToProto(m.Contributors),
 		Maintainers:  personsToProto(m.Maintainers),
 		Source:       m.Source.ToProto(),
+		Dependencies: dependencies,
 	}
 }
 
@@ -153,11 +169,17 @@ func ToStruct(m *pb.JavascriptPackageJSONMetadata) *JavascriptPackageJSONMetadat
 		author = PersonFromString(m.GetAuthor())
 	}
 
+	dependencies := make(map[string]string, len(m.GetDependencies()))
+	for _, d := range m.GetDependencies() {
+		dependencies[d.GetName()] = d.GetVersionRequired()
+	}
+
 	return &JavascriptPackageJSONMetadata{
 		Author:       author,
 		Maintainers:  personsToStruct(m.GetMaintainers()),
 		Contributors: personsToStruct(m.GetContributors()),
 		Source:       packageSourceToStruct(m.GetSource()),
+		Dependencies: dependencies,
 	}
 }
 

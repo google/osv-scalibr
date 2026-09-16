@@ -109,7 +109,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "addr2line",
 					Version:  "0.15.2",
 					PURLType: purl.TypeCargo,
-					Location: extractor.LocationFromPath("testdata/one-package.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/one-package.lock", 6),
 				},
 			},
 		},
@@ -123,13 +123,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "addr2line",
 					Version:  "0.15.2",
 					PURLType: purl.TypeCargo,
-					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.lock", 6),
 				},
 				{
 					Name:     "syn",
 					Version:  "1.0.73",
 					PURLType: purl.TypeCargo,
-					Location: extractor.LocationFromPath("testdata/two-packages.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.lock", 15),
 				},
 			},
 		},
@@ -143,13 +143,13 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "addr2line",
 					Version:  "0.15.2",
 					PURLType: purl.TypeCargo,
-					Location: extractor.LocationFromPath("testdata/two-packages-with-local.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages-with-local.lock", 6),
 				},
 				{
 					Name:     "local-rust-pkg",
 					Version:  "0.1.0",
 					PURLType: purl.TypeCargo,
-					Location: extractor.LocationFromPath("testdata/two-packages-with-local.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages-with-local.lock", 15),
 				},
 			},
 		},
@@ -163,7 +163,93 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "wasi",
 					Version:  "0.10.2+wasi-snapshot-preview1",
 					PURLType: purl.TypeCargo,
-					Location: extractor.LocationFromPath("testdata/package-with-build-string.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-build-string.lock", 6),
+				},
+			},
+		},
+		// We can disambiguate duplicate packages because cargolock defines packages
+		// in sequential blocks.
+		{
+			Name: "duplicate packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/duplicate.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "syn",
+					Version:  "1.0.73",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate.lock", 6),
+				},
+				{
+					Name:     "syn",
+					Version:  "2.0.0",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate.lock", 12),
+				},
+			},
+		},
+		{
+			Name: "package with comments",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/package-with-comments.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "addr2line",
+					Version:  "0.15.2",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-comments.lock", 6),
+				},
+				{
+					Name:     "syn",
+					Version:  "1.0.73",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-comments.lock", 13),
+				},
+			},
+		},
+		{
+			Name: "many packages in appearance order",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/many-packages.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "zstd",
+					Version:  "0.11.2",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/many-packages.lock", 6),
+				},
+				{
+					Name:     "aho-corasick",
+					Version:  "0.7.18",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/many-packages.lock", 12),
+				},
+				{
+					Name:     "memchr",
+					Version:  "2.4.1",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/many-packages.lock", 21),
+				},
+				{
+					Name:     "syn",
+					Version:  "1.0.109",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/many-packages.lock", 27),
+				},
+				{
+					Name:     "libc",
+					Version:  "0.2.140",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/many-packages.lock", 33),
+				},
+				{
+					Name:     "syn",
+					Version:  "2.0.15",
+					PURLType: purl.TypeCargo,
+					Location: extractor.LocationFromPathAndLine("testdata/many-packages.lock", 39),
 				},
 			},
 		},

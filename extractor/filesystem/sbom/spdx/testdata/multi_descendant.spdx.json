@@ -1,0 +1,67 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-08-18T00:00:00Z",
+    "creators": ["Organization: Google"]
+  },
+  "name": "multi-descendant-test",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "http://spdx.org/spdxdocs/multi-descendant-test",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-DownstreamPackage-pkg-arm",
+      "name": "v5_arm",
+      "packageFileName": "pkg/arm",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "DownstreamSourceURI",
+          "referenceLocator": "some/downstream/location"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-DownstreamPackage-pkg-x86",
+      "name": "x86",
+      "packageFileName": "pkg/x86",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "DownstreamSourceURI",
+          "referenceLocator": "another/downstream/location"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-SourcePackage-pkg",
+      "name": "pkg",
+      "versionInfo": "5.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:generic/google/pkg@5.0"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DownstreamPackage-pkg-arm",
+      "relatedSpdxElement": "SPDXRef-SourcePackage-pkg",
+      "relationshipType": "DESCENDANT_OF"
+    },
+    {
+      "spdxElementId": "SPDXRef-DownstreamPackage-pkg-x86",
+      "relatedSpdxElement": "SPDXRef-SourcePackage-pkg",
+      "relationshipType": "DESCENDANT_OF"
+    }
+  ]
+}

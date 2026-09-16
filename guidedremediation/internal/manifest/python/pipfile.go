@@ -17,6 +17,7 @@ package python
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -174,8 +175,8 @@ func extractVersionConstraint(name string, details any) (string, bool) {
 }
 
 // Write writes the manifest after applying the patches to outputPath.
-func (r pipfileReadWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
-	return write(fsys, original.FilePath(), outputPath, patches, updatePipfile)
+func (r pipfileReadWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error {
+	return write(fsys, original.FilePath(), outputRoot, outputPath, patches, updatePipfile)
 }
 
 // updatePipfile takes an io.Reader representing the Pipfile

@@ -165,11 +165,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		var srcCode *extractor.SourceCodeIdentifier
+		purlType := purl.TypeCargo
 		if dependency.IsCommitSpecified() {
 			srcCode = &extractor.SourceCodeIdentifier{
 				Repo:   dependency.Git,
 				Commit: dependency.Rev,
 			}
+			purlType = purl.TypeGit
 		}
 
 		// Skip dependencies that have no version and no useful source code information
@@ -180,7 +182,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		packages = append(packages, &extractor.Package{
 			Name:       name,
 			Version:    dependency.Version,
-			PURLType:   purl.TypeCargo,
+			PURLType:   purlType,
 			Location:   extractor.LocationFromPath(input.Path),
 			SourceCode: srcCode,
 		})

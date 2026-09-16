@@ -6,5 +6,7 @@ qwerty \
   == 0.1
 hy-phen==1.2
 under_score==1.3
+pkg.dot.name==5.0.0
+combination-._-.also_-._valid>=3.5
 yolo===1.0
 pkg<=1.2.3

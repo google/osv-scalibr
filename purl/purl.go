@@ -65,6 +65,8 @@ const (
 	TypeGem = "gem"
 	// TypeGeneric is a pkg:generic purl.
 	TypeGeneric = "generic"
+	// TypeGit is a pkg:git purl.
+	TypeGit = "git"
 	// TypeGithub is a pkg:github purl.
 	TypeGithub = "github"
 	// TypeGolang is a pkg:golang purl.
@@ -214,6 +216,7 @@ func validType(t string) bool {
 		TypeFlatpak:    true,
 		TypeGem:        true,
 		TypeGeneric:    true,
+		TypeGit:        true,
 		TypeGithub:     true,
 		TypeGolang:     true,
 		TypeHackage:    true,

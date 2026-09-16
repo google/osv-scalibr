@@ -17,6 +17,8 @@ package datasource
 import (
 	"encoding/base64"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/osv-scalibr/clients/clienttest"
@@ -95,5 +97,75 @@ func TestWithoutRegistriesMaintainsAuthData(t *testing.T) {
 
 	if len(GetVersions) != 1 {
 		t.Errorf("WithoutRegistries() returned client with %d versions, want 1", len(GetVersions))
+	}
+}
+
+// TestReplacedOriginDoesNotSendAuthToUnauthenticatedMirror tests security hardening to ensure
+// that when a repository with private credentials is replaced by an unauthenticated mirror URL,
+// no authentication is sent to the mirror.
+func TestReplacedOriginDoesNotSendAuthToUnauthenticatedMirror(t *testing.T) {
+	var authHeaderSent string
+	mirrorSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeaderSent = r.Header.Get("Authorization")
+		if r.URL.Path == "/org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom" {
+			w.WriteHeader(http.StatusOK)
+			if _, err := w.Write([]byte(`
+			<project>
+			  <groupId>org.example</groupId>
+			  <artifactId>x.y.z</artifactId>
+			  <version>1.0.0</version>
+			</project>
+			`)); err != nil {
+				t.Errorf("w.Write failed: %v", err)
+			}
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mirrorSrv.Close()
+
+	flagVal := mirrorSrv.URL + "[https://private.corp.internal/maven2]"
+	client, err := NewMavenRegistryAPIClient(
+		t.Context(),
+		MavenRegistry{URL: flagVal, ReleasesEnabled: true},
+		"",
+		false,
+		&http.Client{},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	// Configure sensitive credentials for origin repo ID "private-repo" in settings.xml.
+	client.registryAuths = map[string]*HTTPAuthentication{
+		"private-repo": {
+			SupportedMethods: []HTTPAuthMethod{AuthBasic},
+			AlwaysAuth:       true,
+			Username:         "secret_user",
+			Password:         "secret_password",
+		},
+	}
+
+	// Adding "private-repo" from POM is rewritten to the unauthenticated mirror.
+	if err := client.AddRegistry(t.Context(), MavenRegistry{
+		URL:             "https://private.corp.internal/maven2",
+		ID:              "private-repo",
+		ReleasesEnabled: true,
+	}); err != nil {
+		t.Fatalf("AddRegistry failed: %v", err)
+	}
+
+	gotProj, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0")
+	if err != nil {
+		t.Fatalf("GetProject failed: %v", err)
+	}
+	if gotProj.GroupID != "org.example" || gotProj.ArtifactID != "x.y.z" {
+		t.Errorf("Unexpected project: %v", gotProj)
+	}
+
+	// Assert NO authentication header was sent to the mirror.
+	if authHeaderSent != "" {
+		t.Errorf("Expected no Authorization header sent to mirror, got %q", authHeaderSent)
 	}
 }

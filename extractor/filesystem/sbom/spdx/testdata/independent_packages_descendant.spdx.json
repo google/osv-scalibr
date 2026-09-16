@@ -1,0 +1,53 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-08-18T00:00:00Z",
+    "creators": ["Organization: Google"]
+  },
+  "name": "independent-descendant-test",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "http://spdx.org/spdxdocs/independent-descendant-test",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-SourcePackage-Child",
+      "name": "child-pkg",
+      "versionInfo": "1.0.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:generic/child@1.0.0"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "ExtraChildRef",
+          "referenceLocator": "child-ref-value"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-SourcePackage-Parent",
+      "name": "parent-pkg",
+      "versionInfo": "2.0.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:generic/parent@2.0.0"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-SourcePackage-Child",
+      "relatedSpdxElement": "SPDXRef-SourcePackage-Parent",
+      "relationshipType": "DESCENDANT_OF"
+    }
+  ]
+}

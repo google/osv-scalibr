@@ -49,7 +49,7 @@ func (c *client) GetVulnByID(_ context.Context, id string) (*osvpb.Vulnerability
 
 // Query implements osvdev.Client.
 func (c *client) Query(_ context.Context, query *osvapipb.Query) (*osvapipb.VulnerabilityList, error) {
-	key := fmt.Sprintf("%s:%s:%s", query.Package.Name, query.GetVersion(), query.GetCommit())
+	key := fmt.Sprintf("%s:%s:%s", query.GetPackage().GetName(), query.GetVersion(), query.GetCommit())
 	return &osvapipb.VulnerabilityList{
 		Vulns: c.data[key],
 	}, nil

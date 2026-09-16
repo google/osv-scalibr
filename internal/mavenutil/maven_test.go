@@ -20,7 +20,10 @@ import (
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/semver"
+	"github.com/google/osv-scalibr/clients/datasource"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/extracttest"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestParentPOMPath(t *testing.T) {
@@ -171,5 +174,62 @@ func TestCompareVersions(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("CompareVersions(%v, %v, %v): got %b, want %b", tt.vk, tt.a, tt.b, got, tt.want)
 		}
+	}
+}
+
+func TestDiscoverModules(t *testing.T) {
+	txt := `
+-- pom.xml --
+<project>
+  <groupId>org.example</groupId>
+  <artifactId>parent-project</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>sub-dir</module>
+    <module>sub-file.xml</module>
+  </modules>
+</project>
+-- sub-dir/pom.xml --
+<project>
+  <groupId>org.example</groupId>
+  <artifactId>sub-dir-module</artifactId>
+  <version>1.0.0</version>
+</project>
+-- sub-file.xml --
+<project>
+  <groupId>org.example</groupId>
+  <artifactId>sub-file-module</artifactId>
+  <version>1.0.0</version>
+</project>
+`
+	fsys, err := fakefs.PrepareFS(txt)
+	if err != nil {
+		t.Fatalf("failed to prepare fake fs: %v", err)
+	}
+
+	client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+	if err != nil {
+		t.Fatalf("failed to create maven registry client: %v", err)
+	}
+
+	scanRoot := &scalibrfs.ScanRoot{FS: fsys, Path: ""}
+	DiscoverModules(scanRoot, []string{"pom.xml"}, client)
+
+	tests := []struct {
+		g, a, v string
+	}{
+		{g: "org.example", a: "parent-project", v: "1.0.0"},
+		{g: "org.example", a: "sub-dir-module", v: "1.0.0"},
+		{g: "org.example", a: "sub-file-module", v: "1.0.0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.a, func(t *testing.T) {
+			_, err := client.GetProject(t.Context(), tt.g, tt.a, tt.v)
+			if err != nil {
+				t.Errorf("failed to get project %s:%s:%s from local registry: %v", tt.g, tt.a, tt.v, err)
+			}
+		})
 	}
 }

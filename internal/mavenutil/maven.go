@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -354,8 +355,12 @@ func DiscoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string, client
 		// Add modules to queue
 		dir := filepath.Dir(path)
 		for _, m := range project.Modules {
-			modulePath := filepath.Join(dir, string(m), "pom.xml")
-			queue = append(queue, filepath.ToSlash(modulePath))
+			modulePath := filepath.ToSlash(filepath.Join(dir, string(m)))
+			if info, err := fs.Stat(scanRoot.FS, modulePath); err == nil && !info.IsDir() {
+				queue = append(queue, modulePath)
+			} else {
+				queue = append(queue, filepath.ToSlash(filepath.Join(modulePath, "pom.xml")))
+			}
 		}
 
 		// Add parent to queue if it exists locally

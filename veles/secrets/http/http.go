@@ -30,3 +30,8 @@ type BearerToken struct {
 type CSRFToken struct {
 	Value string
 }
+
+// Cookie contains HTTP Cookie key-value pairs.
+type Cookie struct {
+	Values map[string]string
+}

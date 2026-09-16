@@ -337,6 +337,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return httpBearerToProto(t), nil
 	case veleshttp.CSRFToken:
 		return httpCSRFToProto(t), nil
+	case veleshttp.Cookie:
+		return httpCookieToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
 	}
@@ -368,6 +370,16 @@ func httpCSRFToProto(s veleshttp.CSRFToken) *spb.SecretData {
 		Secret: &spb.SecretData_HttpCsrfToken{
 			HttpCsrfToken: &spb.SecretData_HTTPCSRFToken{
 				Value: s.Value,
+			},
+		},
+	}
+}
+
+func httpCookieToProto(s veleshttp.Cookie) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HttpCookie{
+			HttpCookie: &spb.SecretData_HTTPCookie{
+				Values: s.Values,
 			},
 		},
 	}
@@ -1555,6 +1567,10 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_HttpCsrfToken:
 		return veleshttp.CSRFToken{
 			Value: s.GetHttpCsrfToken().GetValue(),
+		}, nil
+	case *spb.SecretData_HttpCookie:
+		return veleshttp.Cookie{
+			Values: s.GetHttpCookie().GetValues(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

@@ -29,8 +29,8 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/inventory"
@@ -54,6 +54,7 @@ type packageDetails struct {
 	Name      string
 	Version   string
 	Commit    string
+	Repo      string
 	DepGroups []string
 	Line      int
 }
@@ -107,6 +108,7 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 		version := detail.Version
 		finalVersion := version
 		commit := ""
+		repo := ""
 
 		// If the package is aliased, get the name and version
 		// E.g. npm:string-width@^4.2.0
@@ -121,6 +123,9 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			finalVersion = ""
 		} else {
 			commit = commitextractor.TryExtractCommit(detail.Version)
+			if commit == "" && detail.Resolved != "" {
+				commit = commitextractor.TryExtractCommit(detail.Resolved)
+			}
 
 			// if there is a commit, we want to deduplicate based on that rather than
 			// the version (the versions must match anyway for the commits to match)
@@ -129,6 +134,10 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			if commit != "" {
 				finalVersion = ""
 				version = commit
+				repo = commitextractor.TryExtractRepo(detail.Version)
+				if repo == "" && detail.Resolved != "" {
+					repo = commitextractor.TryExtractRepo(detail.Resolved)
+				}
 			}
 		}
 
@@ -141,6 +150,7 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			Name:      name,
 			Version:   finalVersion,
 			Commit:    commit,
+			Repo:      repo,
 			DepGroups: detail.DepGroups(),
 			Line:      line,
 		})
@@ -176,11 +186,19 @@ func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *l
 		finalVersion := detail.Version
 
 		commit := commitextractor.TryExtractCommit(detail.Resolved)
+		repo := ""
+		if commit == "" && detail.Version != "" {
+			commit = commitextractor.TryExtractCommit(detail.Version)
+		}
 
 		// if there is a commit, we want to deduplicate based on that rather than
 		// the version (the versions must match anyway for the commits to match)
 		if commit != "" {
 			finalVersion = commit
+			repo = commitextractor.TryExtractRepo(detail.Resolved)
+			if repo == "" && detail.Version != "" {
+				repo = commitextractor.TryExtractRepo(detail.Version)
+			}
 		}
 
 		line := 0
@@ -192,6 +210,7 @@ func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *l
 			Name:      finalName,
 			Version:   detail.Version,
 			Commit:    commit,
+			Repo:      repo,
 			DepGroups: detail.DepGroups(),
 			Line:      line,
 		})
@@ -324,7 +343,7 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 		return nil, errors.New("could not extract: decoded null JSON value")
 	}
 
-	finder := linefinder.NewJSONLineFinder(string(b))
+	finder := linefinder.NewJSONLineFinder(b)
 
 	packages := slices.Collect(maps.Values(parseNpmLock(*parsedLockfile, finder)))
 	result := make([]*extractor.Package, len(packages))
@@ -334,13 +353,19 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			pkg.DepGroups = []string{}
 		}
 
+		purlType := purl.TypeNPM
+		if pkg.Commit != "" {
+			purlType = purl.TypeGit
+		}
+
 		result[i] = &extractor.Package{
 			Name: pkg.Name,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Commit,
+				Repo:   pkg.Repo,
 			},
 			Version:  pkg.Version,
-			PURLType: purl.TypeNPM,
+			PURLType: purlType,
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: pkg.DepGroups,
 			},

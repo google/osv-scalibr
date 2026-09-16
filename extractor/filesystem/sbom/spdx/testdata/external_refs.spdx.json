@@ -1,0 +1,68 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-02-26T17:52:05Z",
+    "creators": ["Organization: Some Company LLC"],
+    "licenseListVersion": "3.18"
+  },
+  "name": "sample-sbom",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "http://example.org/documents/sample-sbom",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-flatbuffers",
+      "name": "flatbuffers",
+      "packageFileName": "third_party/flatbuffers",
+      "supplier": "Organization: Some Company LLC",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "SourceURI",
+          "referenceLocator": "third_party/flatbuffers"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-SourcePackage-flatbuffers",
+      "name": "flatbuffers",
+      "versionInfo": "25.9.23",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:generic/some_company/flatbuffers@25.9.23"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "cpe23Type",
+          "referenceLocator": "cpe:2.3:a:some_company:flatbuffers:25.9.23:*:*:*:*:*:*:*"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-custom-pkg",
+      "name": "custom-pkg",
+      "versionInfo": "1.0.0",
+      "filesAnalyzed": false,
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "vcs",
+          "referenceLocator": "git+https://example.com/repo@v1.0.0",
+          "comment": "source code repo"
+        }
+      ]
+    }
+  ]
+}

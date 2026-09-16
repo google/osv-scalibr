@@ -17,6 +17,7 @@ package javalockfile_test
 import (
 	"testing"
 
+	"deps.dev/util/maven"
 	"github.com/google/go-cmp/cmp"
 	metadata "github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -102,6 +103,190 @@ func TestToStruct(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.m, gotProto, opts...); diff != "" {
 				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
+			}
+		})
+	}
+}
+
+func TestDependenciesToProto(t *testing.T) {
+	testCases := []struct {
+		desc string
+		deps []maven.Dependency
+		want []*pb.JavaLockfileDependency
+	}{
+		{
+			desc: "empty",
+			deps: nil,
+			want: nil,
+		},
+		{
+			desc: "single",
+			deps: []maven.Dependency{
+				{
+					GroupID:    "group-id",
+					ArtifactID: "artifact-id",
+					Version:    "1.0.0",
+					Scope:      "compile",
+					Optional:   "true",
+				},
+			},
+			want: []*pb.JavaLockfileDependency{
+				{
+					GroupId:            "group-id",
+					ArtifactId:         "artifact-id",
+					VersionRequirement: "1.0.0",
+					Scope:              "compile",
+					IsOptional:         true,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := metadata.DependenciesToProto(tc.deps)
+			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+				t.Errorf("DependenciesToProto(%+v): (-want +got):\n%s", tc.deps, diff)
+			}
+
+			// Test the reverse conversion for completeness.
+			gotStruct := metadata.DependenciesToStruct(got)
+			if diff := cmp.Diff(tc.deps, gotStruct); diff != "" {
+				t.Errorf("DependenciesToStruct(%+v): (-want +got):\n%s", got, diff)
+			}
+		})
+	}
+}
+
+func TestDependenciesToStruct(t *testing.T) {
+	testCases := []struct {
+		desc string
+		deps []*pb.JavaLockfileDependency
+		want []maven.Dependency
+	}{
+		{
+			desc: "empty",
+			deps: nil,
+			want: nil,
+		},
+		{
+			desc: "single",
+			deps: []*pb.JavaLockfileDependency{
+				{
+					GroupId:            "group-id",
+					ArtifactId:         "artifact-id",
+					VersionRequirement: "1.0.0",
+					Scope:              "compile",
+					IsOptional:         true,
+				},
+			},
+			want: []maven.Dependency{
+				{
+					GroupID:    "group-id",
+					ArtifactID: "artifact-id",
+					Version:    "1.0.0",
+					Scope:      "compile",
+					Optional:   "true",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := metadata.DependenciesToStruct(tc.deps)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("DependenciesToStruct(%+v): (-want +got):\n%s", tc.deps, diff)
+			}
+
+			// Test the reverse conversion for completeness.
+			gotProto := metadata.DependenciesToProto(got)
+			if diff := cmp.Diff(tc.deps, gotProto, protocmp.Transform()); diff != "" {
+				t.Errorf("DependenciesToProto(%+v): (-want +got):\n%s", got, diff)
+			}
+		})
+	}
+}
+
+func TestParentToProto(t *testing.T) {
+	testCases := []struct {
+		desc   string
+		parent *maven.ProjectKey
+		want   *pb.JavaLockfileParent
+	}{
+		{
+			desc:   "nil",
+			parent: nil,
+			want:   nil,
+		},
+		{
+			desc: "single",
+			parent: &maven.ProjectKey{
+				GroupID:    "group-id",
+				ArtifactID: "artifact-id",
+				Version:    "1.0.0",
+			},
+			want: &pb.JavaLockfileParent{
+				GroupId:    "group-id",
+				ArtifactId: "artifact-id",
+				Version:    "1.0.0",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := metadata.ParentToProto(tc.parent)
+			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+				t.Errorf("ParentToProto(%+v): (-want +got):\n%s", tc.parent, diff)
+			}
+
+			// Test the reverse conversion for completeness.
+			gotStruct := metadata.ParentToStruct(got)
+			if diff := cmp.Diff(tc.parent, gotStruct); diff != "" {
+				t.Errorf("ParentToStruct(%+v): (-want +got):\n%s", got, diff)
+			}
+		})
+	}
+}
+
+func TestParentToStruct(t *testing.T) {
+	testCases := []struct {
+		desc   string
+		parent *pb.JavaLockfileParent
+		want   *maven.ProjectKey
+	}{
+		{
+			desc:   "nil",
+			parent: nil,
+			want:   nil,
+		},
+		{
+			desc: "single",
+			parent: &pb.JavaLockfileParent{
+				GroupId:    "group-id",
+				ArtifactId: "artifact-id",
+				Version:    "1.0.0",
+			},
+			want: &maven.ProjectKey{
+				GroupID:    "group-id",
+				ArtifactID: "artifact-id",
+				Version:    "1.0.0",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := metadata.ParentToStruct(tc.parent)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("ParentToStruct(%+v): (-want +got):\n%s", tc.parent, diff)
+			}
+
+			// Test the reverse conversion for completeness.
+			gotProto := metadata.ParentToProto(got)
+			if diff := cmp.Diff(tc.parent, gotProto, protocmp.Transform()); diff != "" {
+				t.Errorf("ParentToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
 	}

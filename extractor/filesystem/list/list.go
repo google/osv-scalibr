@@ -21,6 +21,7 @@ import (
 	"slices"
 
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/bazel/aspect"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockerbaseimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/k8simage"
@@ -32,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/packageconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -47,6 +49,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/vendormodules"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
@@ -57,6 +60,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/bunlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denojson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/electronasar"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/pnpmlock"
@@ -70,15 +74,18 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/ipythoninstall"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pylock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
@@ -185,7 +192,9 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/atin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/itin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -241,21 +250,24 @@ var (
 	}
 	// JavascriptArtifact extractors for Javascript.
 	JavascriptArtifact = InitMap{
-		packagejson.Name: {protoCfg(packagejson.New)},
-		denojson.Name:    {protoCfg(denojson.New)},
-		vsix.Name:        {protoCfg(vsix.New)},
+		packagejson.Name:  {protoCfg(packagejson.New)},
+		denojson.Name:     {protoCfg(denojson.New)},
+		electronasar.Name: {protoCfg(electronasar.New)},
+		vsix.Name:         {protoCfg(vsix.New)},
 	}
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name: {protoCfg(requirements.New)},
-		setup.Name:        {protoCfg(setup.New)},
-		pipfilelock.Name:  {protoCfg(pipfilelock.New)},
-		pdmlock.Name:      {protoCfg(pdmlock.New)},
-		poetrylock.Name:   {protoCfg(poetrylock.New)},
-		pylock.Name:       {protoCfg(pylock.New)},
-		condameta.Name:    {protoCfg(condameta.New)},
-		uvlock.Name:       {protoCfg(uvlock.New)},
+		requirements.Name:   {protoCfg(requirements.New)},
+		setup.Name:          {protoCfg(setup.New)},
+		pipfilelock.Name:    {protoCfg(pipfilelock.New)},
+		pdmlock.Name:        {protoCfg(pdmlock.New)},
+		poetrylock.Name:     {protoCfg(poetrylock.New)},
+		pylock.Name:         {protoCfg(pylock.New)},
+		condameta.Name:      {protoCfg(condameta.New)},
+		ipythoninstall.Name: {protoCfg(ipythoninstall.New)},
+		uvlock.Name:         {protoCfg(uvlock.New)},
+		pyprojecttoml.Name:  {protoCfg(pyprojecttoml.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
@@ -263,14 +275,18 @@ var (
 	}
 	// GoSource extractors for Go.
 	GoSource = InitMap{
-		gomod.Name: {protoCfg(gomod.New)},
+		gomod.Name:         {protoCfg(gomod.New)},
+		vendormodules.Name: {protoCfg(vendormodules.New)},
 	}
 	// GoArtifact extractors for Go.
 	GoArtifact = InitMap{
 		gobinary.Name: {protoCfg(gobinary.New)},
 	}
 	// DartSource extractors for Dart.
-	DartSource = InitMap{pubspec.Name: {protoCfg(pubspec.New)}}
+	DartSource = InitMap{
+		packageconfig.Name: {protoCfg(packageconfig.New)},
+		pubspec.Name:       {protoCfg(pubspec.New)},
+	}
 	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {protoCfg(mixlock.New)}}
 	// GleamSource extractors for Gleam.
@@ -294,6 +310,10 @@ var (
 	RubySource = InitMap{
 		gemspec.Name:     {protoCfg(gemspec.New)},
 		gemfilelock.Name: {protoCfg(gemfilelock.New)},
+	}
+	// RubyArtifact extractors for Ruby.
+	RubyArtifact = InitMap{
+		gem.Name: {protoCfg(gem.New)},
 	}
 	// RustSource extractors for Rust.
 	RustSource = InitMap{
@@ -349,6 +369,11 @@ var (
 		podman.Name:             {protoCfg(podman.New)},
 		dockerbaseimage.Name:    {protoCfg(dockerbaseimage.New)},
 		dockercomposeimage.Name: {protoCfg(dockercomposeimage.New)},
+	}
+
+	// Bazel extractors.
+	Bazel = InitMap{
+		aspect.Name: {protoCfg(aspect.New)},
 	}
 
 	// OS extractors.
@@ -471,10 +496,13 @@ var (
 		{http.NewBasicAuthDetector(), "secrets/httpbasicauth", 0},
 		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
+		{http.NewCookieDetector(), "secrets/httpcookie", 0},
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+		{atin.NewDetector(), "sensitiveinformation/atin", 0},
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
+		{itin.NewDetector(), "secrets/itin", 0},
 		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
 	})
 
@@ -546,6 +574,7 @@ var (
 		Secrets,
 		MiscSource,
 		CPANSource,
+		Bazel,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -565,6 +594,7 @@ var (
 		Secrets,
 		FFA,
 		JuliaArtifact,
+		RubyArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -574,6 +604,7 @@ var (
 		PythonSource, PythonArtifact,
 		GoSource, GoArtifact,
 		OS,
+		Bazel,
 	)
 
 	// All extractors available from SCALIBR.
@@ -598,13 +629,14 @@ var (
 		"elixir":     vals(ElixirSource),
 		"haskell":    vals(HaskellSource),
 		"r":          vals(RSource),
-		"ruby":       vals(RubySource),
+		"ruby":       vals(concat(RubySource, RubyArtifact)),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
 		"julia":      vals(concat(JuliaSource, JuliaArtifact)),
 		"swift":      vals(SwiftSource),
 		"perl":       vals(CPANSource),
+		"bazel":      vals(Bazel),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),

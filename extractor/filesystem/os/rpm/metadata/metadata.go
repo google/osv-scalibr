@@ -55,11 +55,17 @@ type Metadata struct {
 
 // ToNamespace extracts the PURL namespace from the metadata.
 func (m *Metadata) ToNamespace() string {
-	if m.OSID != "" {
+	switch m.OSID {
+	case "sles":
+		return "suse"
+	case "azurelinux", "mariner":
+		return "azurelinux"
+	case "":
+		log.Errorf("os-release[ID] not set, fallback to ''")
+		return ""
+	default:
 		return m.OSID
 	}
-	log.Errorf("os-release[ID] not set, fallback to ''")
-	return ""
 }
 
 // ToDistro extracts the OS distro from the metadata.

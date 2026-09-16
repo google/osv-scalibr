@@ -53,6 +53,12 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:             "editor.deps.json file",
+			path:             "editor.deps.json",
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
 			name:             "path application1.deps.json file",
 			path:             "path/to/my/application1.deps.json",
 			wantRequired:     true,
@@ -189,6 +195,12 @@ func TestExtract(t *testing.T) {
 			path:             "testdata/empty",
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			name:             "editor.deps.json not an object",
+			path:             "testdata/editor.deps.json",
+			wantPackages:     nil,
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "valid_application1.deps.json_file_with_an_invalid_package",
