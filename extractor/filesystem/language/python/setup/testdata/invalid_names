@@ -1,0 +1,12 @@
+from setuptools import setup
+
+setup(
+    install_requires=[
+        "pkg-==1.0",
+        "pkg.==1.0",
+        "pkg_==1.0",
+        "-pkg==1.0",
+        ".pkg==1.0",
+        "_pkg==1.0",
+    ],
+)
