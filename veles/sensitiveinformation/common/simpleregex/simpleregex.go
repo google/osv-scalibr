@@ -18,6 +18,7 @@ package simpleregex
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/veles"
@@ -45,7 +46,7 @@ type Detector struct {
 
 	// Returns a sensitiveinformation.SensitiveInformation from a regexp match
 	// result.
-	FromMatch func(blob []byte, keywordMatch bool) (sensitiveinformation.SensitiveInformation, bool)
+	FromMatch func(blob []byte, matchedKeywords [][]byte) (sensitiveinformation.SensitiveInformation, bool)
 }
 
 // KeywordsRe returns a regexp of the keywords. All keywords are case insensitive.
@@ -68,12 +69,20 @@ func (d Detector) Detect(data []byte) (secrets []veles.Secret, positions []int) 
 		l, r := m[0], m[1]
 		lowerBound := max(0, l-int(d.ContextWindowBefore))
 		upperBound := min(len(data), r+int(d.ContextWindowAfter))
-		// If KeywordsRe is set, check if the keywords are present in the context
-		// window before or after the match.
-		contextMatch := d.KeywordsRe != nil &&
-			(d.KeywordsRe.Match(data[lowerBound:l]) || d.KeywordsRe.Match(data[r:upperBound]))
 
-		if match, ok := d.FromMatch(data[l:r], contextMatch); ok {
+		var matches [][]byte
+		if d.KeywordsRe != nil {
+			contextMatchLower := d.KeywordsRe.FindSubmatch(data[lowerBound:l])
+			contextMatchUpper := d.KeywordsRe.FindSubmatch(data[r:upperBound])
+
+			// Matches may contain duplicate items. Due to the small context window,
+			// it's unlikely that the list of matches will be larger than 5 items.
+			// Plugins will usually iterate over the matches list and check look for a specific entry,
+			// making duplicates a non-issue
+			matches = append(matches, slices.Concat(contextMatchLower, contextMatchUpper)...)
+		}
+
+		if match, ok := d.FromMatch(data[l:r], matches); ok {
 			secrets = append(secrets, match)
 			positions = append(positions, l)
 		}
