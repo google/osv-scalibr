@@ -159,6 +159,20 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			Name: "no_name",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/akismet/no-name",
+			},
+			WantPackages: nil,
+		},
+		{
+			Name: "no_version",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/akismet/no-version",
+			},
+			WantPackages: nil,
+		},
+		{
 			Name: "invalid_file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid",

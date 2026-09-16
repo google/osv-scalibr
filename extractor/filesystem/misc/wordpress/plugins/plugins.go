@@ -135,16 +135,20 @@ type wpPackage struct {
 
 func parsePHPFile(r io.Reader) (*wpPackage, error) {
 	scanner := bufio.NewScanner(r)
-	var version string
+	var name, version string
 
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		if strings.Contains(line, "Plugin Name:") {
+			name = strings.TrimSpace(strings.Split(line, "Plugin Name:")[1])
+		}
 
 		if strings.Contains(line, "Version:") {
 			version = strings.TrimSpace(strings.Split(line, ":")[1])
 		}
 
-		if version != "" {
+		if name != "" && version != "" {
 			break
 		}
 	}
@@ -153,7 +157,8 @@ func parsePHPFile(r io.Reader) (*wpPackage, error) {
 		return nil, fmt.Errorf("failed to read PHP file: %w", err)
 	}
 
-	if version == "" {
+	// we assume PHP files without both these fields are not WordPress plugins
+	if name == "" || version == "" {
 		return nil, nil
 	}
 
