@@ -24,5 +24,5 @@ func freeSpaceBytes(dir string) int64 {
 	if err := syscall.Statfs(dir, &stat); err != nil {
 		return 0
 	}
-	return int64(stat.Bavail) * int64(stat.Bsize)
+	return int64(stat.Bavail) * int64(stat.Bsize) //nolint:unconvert // Bsize is 32-bit on some Linux architectures.
 }
