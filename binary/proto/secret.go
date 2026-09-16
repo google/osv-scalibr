@@ -58,6 +58,7 @@ import (
 	veleshttp "github.com/google/osv-scalibr/veles/secrets/http"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
+	veleskubernetesserviceaccount "github.com/google/osv-scalibr/veles/secrets/kubernetesserviceaccount"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	velesonepasswordkeys "github.com/google/osv-scalibr/veles/secrets/onepasswordkeys"
@@ -280,6 +281,8 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return reCaptchaKeyToProto(t), nil
 	case jwt.Token:
 		return jwtTokenToProto(t), nil
+	case veleskubernetesserviceaccount.Token:
+		return jwtTokenToProto(jwt.Token{Value: t.Value}), nil
 	case pyxkeyv1.PyxKeyV1:
 		return pyxKeyV1ToProto(t), nil
 	case pyxkeyv2.PyxKeyV2:
