@@ -57,6 +57,11 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:         "required_in_sub_subdir",
+			path:         "foo/test/bar/wp-content/plugins/foo/inc/test.php",
+			wantRequired: false,
+		},
+		{
 			name:         "not_required",
 			path:         "test.php",
 			wantRequired: false,
@@ -92,6 +97,17 @@ func TestFileRequired(t *testing.T) {
 			maxFileSizeBytes: 0,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		// wordpress does not support directory plugins in mu-plugins
+		{
+			name:         "mu_plugins",
+			path:         "foo/test/bar/wp-content/mu-plugins/foo/test.php",
+			wantRequired: false,
+		},
+		{
+			name:         "mu_plugins",
+			path:         "foo/test/bar/wp-content/mu-plugins/test.php",
+			wantRequired: false,
 		},
 	}
 
