@@ -99,8 +99,17 @@ func structurePackageDetails(pkgs []any) (string, string, string, string, error)
 		name = "@" + name
 	}
 
+	// url dependencies do not have a semantic version recorded
+	if strings.HasPrefix(version, "http://") || strings.HasPrefix(version, "https://") {
+		return name, "", "", "", nil
+	}
+
 	repo := ""
 	version, commit, _ := strings.Cut(version, "#")
+
+	if commit == "" {
+		version, commit, _ = strings.Cut(version, "@")
+	}
 
 	// bun.lock does not track both the commit and version,
 	// so if we have a commit then we don't have a version
