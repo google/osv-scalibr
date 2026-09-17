@@ -243,6 +243,10 @@ func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []str
 }
 
 func pkgToQuery(pkg *extractor.Package) *osvapipb.Query {
+	if osvutil.IsLocal(pkg) {
+		return nil
+	}
+
 	np := osvutil.ParsePackage(pkg)
 
 	// If the ecosystem is GIT, we prioritize commit queries.

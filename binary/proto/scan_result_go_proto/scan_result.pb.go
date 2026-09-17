@@ -171,7 +171,7 @@ const (
 	PackageSource_UNKNOWN PackageSource = 0
 	// PUBLIC_REGISTRY is the public NPM registry.
 	PackageSource_PUBLIC_REGISTRY PackageSource = 1
-	// OTHER is any other remote or private source (e.g. Github).
+	// OTHER is any other remote or private source (e.g. GitHub).
 	// This is used for packages that are not found in the public NPM registry.
 	PackageSource_OTHER PackageSource = 2
 	// LOCAL is the local filesystem that stores the package versions.
@@ -2809,6 +2809,7 @@ type JavascriptPackageJSONMetadata struct {
 	Contributors  []string                                    `protobuf:"bytes,3,rep,name=contributors,proto3" json:"contributors,omitempty"`
 	Source        PackageSource                               `protobuf:"varint,5,opt,name=source,proto3,enum=scalibr.PackageSource" json:"source,omitempty"`
 	Dependencies  []*JavascriptPackageJSONMetadata_Dependency `protobuf:"bytes,6,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
+	DepGroups     []string                                    `protobuf:"bytes,7,rep,name=dep_groups,json=depGroups,proto3" json:"dep_groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2874,6 +2875,13 @@ func (x *JavascriptPackageJSONMetadata) GetSource() PackageSource {
 func (x *JavascriptPackageJSONMetadata) GetDependencies() []*JavascriptPackageJSONMetadata_Dependency {
 	if x != nil {
 		return x.Dependencies
+	}
+	return nil
+}
+
+func (x *JavascriptPackageJSONMetadata) GetDepGroups() []string {
+	if x != nil {
+		return x.DepGroups
 	}
 	return nil
 }
@@ -14139,13 +14147,15 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"prerelease\x1aM\n" +
 	"\x15RequirementConstraint\x12\x1a\n" +
 	"\boperator\x18\x01 \x01(\tR\boperator\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\"\xd7\x02\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\"\xf6\x02\n" +
 	"\x1dJavascriptPackageJSONMetadata\x12\x16\n" +
 	"\x06author\x18\x01 \x01(\tR\x06author\x12 \n" +
 	"\vmaintainers\x18\x02 \x03(\tR\vmaintainers\x12\"\n" +
 	"\fcontributors\x18\x03 \x03(\tR\fcontributors\x12.\n" +
 	"\x06source\x18\x05 \x01(\x0e2\x16.scalibr.PackageSourceR\x06source\x12U\n" +
-	"\fdependencies\x18\x06 \x03(\v21.scalibr.JavascriptPackageJSONMetadata.DependencyR\fdependencies\x1aK\n" +
+	"\fdependencies\x18\x06 \x03(\v21.scalibr.JavascriptPackageJSONMetadata.DependencyR\fdependencies\x12\x1d\n" +
+	"\n" +
+	"dep_groups\x18\a \x03(\tR\tdepGroups\x1aK\n" +
 	"\n" +
 	"Dependency\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12)\n" +

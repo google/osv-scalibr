@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -255,7 +255,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -267,7 +268,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -287,7 +289,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -299,7 +302,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -326,7 +330,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -338,7 +343,8 @@ func TestExtractor_Extract_Shrinkwrap_JSON(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -392,7 +398,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 5),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -402,7 +409,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 15),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -412,7 +420,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 26),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -422,7 +431,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 36),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -432,7 +442,8 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 					PURLType:   purl.TypeNPM,
 					Location:   extractor.LocationFromPathAndLine("testdata/nested-dependencies.v1.json", 46),
 					SourceCode: &extractor.SourceCodeIdentifier{},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -462,6 +473,127 @@ func TestExtractor_Extract_V1_LineNumbers(t *testing.T) {
 			wantInv := inventory.Inventory{Packages: tt.WantPackages}
 			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
+			}
+		})
+	}
+}
+
+func TestDeterminePackageSource(t *testing.T) {
+	tests := []struct {
+		name     string
+		resolved string
+		commit   string
+		want     metadata.NPMPackageSource
+	}{
+		{
+			name:     "official npm registry https",
+			resolved: "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.PublicRegistry,
+		},
+		{
+			name:     "official npm registry http",
+			resolved: "http://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.PublicRegistry,
+		},
+		{
+			name:     "npmmirror registry",
+			resolved: "https://registry.npmmirror.com/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.PublicRegistry,
+		},
+		{
+			name:     "tencent npm mirror",
+			resolved: "https://mirrors.cloud.tencent.com/npm/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.PublicRegistry,
+		},
+		{
+			name:     "huawei npm mirror",
+			resolved: "https://repo.huaweicloud.com/repository/npm/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.PublicRegistry,
+		},
+		{
+			name:     "tsinghua npm mirror",
+			resolved: "https://mirrors.tuna.tsinghua.edu.cn/npm/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.PublicRegistry,
+		},
+		{
+			name:     "custom repo containing npm in domain or path",
+			resolved: "https://my-internal-npm-repo.corp/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.PublicRegistry,
+		},
+		{
+			name:     "non-npm http tarball",
+			resolved: "https://artifactory.corp.internal/artifactory/repo/lodash/-/lodash-4.17.21.tgz",
+			want:     metadata.Other,
+		},
+		{
+			name:     "github archive tarball without commit",
+			resolved: "https://codeload.github.com/foo/bar/tar.gz/v1.0.0",
+			want:     metadata.Other,
+		},
+		{
+			name:     "git+ssh dependency",
+			resolved: "git+ssh://git@github.com/foo/bar.git",
+			want:     metadata.Other,
+		},
+		{
+			name:     "git+https dependency",
+			resolved: "git+https://github.com/foo/bar.git",
+			want:     metadata.Other,
+		},
+		{
+			name:     "git+https dependency even if containing npm",
+			resolved: "git+https://github.com/npm/cli.git",
+			want:     metadata.Other,
+		},
+		{
+			name:     "git protocol dependency",
+			resolved: "git://github.com/foo/bar.git",
+			want:     metadata.Other,
+		},
+		{
+			name:     "ssh protocol dependency",
+			resolved: "ssh://git@github.com/foo/bar.git",
+			want:     metadata.Other,
+		},
+		{
+			name:     "github shorthand dependency",
+			resolved: "github:npm/cli#af885e2e890b9ef0875edd2b117305119ee5bdc5",
+			want:     metadata.Other,
+		},
+		{
+			name:     "git dependency with commit hash",
+			resolved: "git+ssh://git@github.com/foo/bar.git",
+			commit:   "3b1bb80b302c2e552685dc8a029797ec832ea7c9",
+			want:     metadata.Other,
+		},
+		{
+			name:     "commit hash with empty resolved",
+			resolved: "",
+			commit:   "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+			want:     metadata.Other,
+		},
+		{
+			name:     "local file protocol",
+			resolved: "file:../my-pkg",
+			want:     metadata.Local,
+		},
+		{
+			name:     "local relative path",
+			resolved: "packages/auth",
+			want:     metadata.Local,
+		},
+		{
+			name:     "empty resolved",
+			resolved: "",
+			want:     metadata.Local,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := packagelockjson.DeterminePackageSource(tt.resolved, tt.commit)
+			if got != tt.want {
+				t.Errorf("DeterminePackageSource(%q, %q) = %v, want %v", tt.resolved, tt.commit, got, tt.want)
 			}
 		})
 	}
