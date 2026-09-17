@@ -116,6 +116,7 @@ message PluginSpecificConfig {
     HuggingfaceMetaConfig huggingface_meta = 75;
     ContainerdRuntimeConfig containerd_runtime = 76;
     DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
+    RubyGemConfig ruby_gem = 82;
   }
 }
 
@@ -443,6 +444,15 @@ message GemspecConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message RubyGemConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // If set, extract additional packages for each declared runtime dependency.
+  bool include_dependencies = 2;
 }
 
 message CargoAuditableConfig {

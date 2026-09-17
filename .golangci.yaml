@@ -12,22 +12,24 @@ linters:
     - dupl             # Some interfaces end up having several lines of similar code as others
     - err113           #
     - exhaustruct      #
+    - exhaustruct_v5   #
     - forcetypeassert  #
     - funcorder        #
     - funlen           #
     - gochecknoglobals #
+    - gochecknoinits   # We are now using inits for metadata
     - gocognit         #
     - goconst          #
     - gocyclo          #
     - godot            #
     - godox            #
+    - gomodguard       #
     - gosec            # TODO(#274): work on enabling this
     - ireturn          #
     - lll              #
     - maintidx         #
     - mnd              # Not every number is magic
     - nestif           #
-    - nilnesserr       # TODO(#274): work on enabling this
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
     - noinlineerr      #
@@ -43,7 +45,6 @@ linters:
     - wrapcheck        #
     - wsl              #
     - wsl_v5           #
-    - gochecknoinits   # We are now using inits for metadata
   settings:
     forbidigo:
       forbid:

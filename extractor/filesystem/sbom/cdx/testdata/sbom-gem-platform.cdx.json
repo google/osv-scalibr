@@ -1,0 +1,29 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.4.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "version": 1,
+  "components": [
+    {
+      "bom-ref": "nokogiri-1.19.3",
+      "type": "library",
+      "name": "nokogiri",
+      "version": "1.19.3",
+      "purl": "pkg:gem/nokogiri@1.19.3"
+    },
+    {
+      "bom-ref": "nokogiri-1.19.3-x86_64-linux-gnu",
+      "type": "library",
+      "name": "nokogiri",
+      "version": "1.19.3-x86_64-linux-gnu",
+      "purl": "pkg:gem/nokogiri@1.19.3-x86_64-linux-gnu"
+    },
+    {
+      "bom-ref": "nokogiri-1.19.3-aarch64-linux",
+      "type": "library",
+      "name": "nokogiri",
+      "version": "1.19.3-aarch64-linux",
+      "purl": "pkg:gem/nokogiri@1.19.3-aarch64-linux"
+    }
+  ]
+}

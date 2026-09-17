@@ -16,6 +16,7 @@ package image
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -87,9 +88,7 @@ func findBaseImageIndex(histories []v1.History) (int, error) {
 		entrypointBuildKitPrefix,
 	}
 
-	for i := len(histories) - 1; i >= 0; i-- {
-		h := histories[i]
-
+	for i, h := range slices.Backward(histories) {
 		buildCommand := h.CreatedBy
 		layerIsEmpty := h.EmptyLayer
 

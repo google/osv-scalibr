@@ -168,8 +168,10 @@ func parseYarnPackageGroup(desc *packageDescription) *extractor.Package {
 
 	purlType := purl.TypeNPM
 	commit := commitextractor.TryExtractCommit(resolution)
+	var repo string
 	if commit != "" {
 		purlType = purl.TypeGit
+		repo = commitextractor.TryExtractRepo(resolution)
 	}
 
 	return &extractor.Package{
@@ -178,6 +180,7 @@ func parseYarnPackageGroup(desc *packageDescription) *extractor.Package {
 		PURLType: purlType,
 		SourceCode: &extractor.SourceCodeIdentifier{
 			Commit: commit,
+			Repo:   repo,
 		},
 	}
 }

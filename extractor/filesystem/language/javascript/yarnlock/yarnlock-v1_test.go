@@ -309,6 +309,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 5),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0a2d2506c1fe299691fc5db53a2097db3bd615bc",
+						Repo:   "https://github.com/G-Rath/npm-git-repo-2",
 					},
 				},
 				{
@@ -318,6 +319,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "0a2d2506c1fe299691fc5db53a2097db3bd615bc",
+						Repo:   "https://github.com/G-Rath/npm-git-repo-2",
 					},
 				},
 				{
@@ -327,6 +329,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "094e581aaf927d010e4b61d706ba584551dac502",
+						Repo:   "https://github.com/G-Rath/npm-git-repo-1",
 					},
 				},
 				{
@@ -336,6 +339,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 21),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "aa3bdfcb1d845c79f14abb66f60d35b8a3ee5998",
+						Repo:   "https://github.com/G-Rath/npm-git-repo-2",
 					},
 				},
 				{
@@ -345,6 +349,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 25),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "aa3bdfcb1d845c79f14abb66f60d35b8a3ee5998",
+						Repo:   "https://github.com/G-Rath/npm-git-repo-2",
 					},
 				},
 				{
@@ -354,6 +359,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 29),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b3bd3f1b3dad036e671251f5258beaae398f983a",
+						Repo:   "https://github.com/my-org/my-package",
 					},
 				},
 				{
@@ -363,6 +369,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 33),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "e7f778fc054a086ba3326d898a00fa1bc78650a8",
+						Repo:   "https://github.com/angular/bower-angular-animate",
 					},
 				},
 				{
@@ -372,6 +379,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 37),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "e7b6c46d76604d297c389d830817b611c9a8f17c",
+						Repo:   "https://github.com/fabien-d/alertify.js-shim",
 					},
 				},
 				{
@@ -381,6 +389,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 41),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3754568bfd43a841d2d72d7fb54598635aea8fa4",
+						Repo:   "https://github.com/substack/minimist",
 					},
 				},
 				{
@@ -390,6 +399,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 45),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "4bdd58d3fbcdce3209033d44d884e87add1d8405",
+						Repo:   "https://github.com/bats-core/bats-assert",
 					},
 				},
 				{
@@ -399,6 +409,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 49),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d140a65044b2d6810381935ae7f0c94c7023c8c3",
+						Repo:   "https://github.com/bats-core/bats-support",
 					},
 				},
 				{
@@ -408,6 +419,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 53),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "172580d2ce19ee33780b5f1df817bbddced43789",
+						Repo:   "https://github.com/bats-core/bats-core",
 					},
 				},
 				{
@@ -417,6 +429,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 57),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "bb253db0b3e17124b6d1fe93fbf2db35470a1347",
+						Repo:   "https://github.com/vuejs/vue",
 					},
 				},
 				{
@@ -426,6 +439,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 61),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "5b6830c0252eb73c6024d40a8ff5106d3023a2a6",
+						Repo:   "https://bitbucket.org/kettlelogic/kit",
 					},
 				},
 				{
@@ -435,6 +449,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 68),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "f0308391f0c50104182bfb2332a53e4e523a4603",
+						Repo:   "https://bitbucket.org/casasoftag/casadistance",
 					},
 				},
 				{
@@ -444,6 +459,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 72),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
+						Repo:   "https://gitlab.com/kornelski/babel-preset-php",
 					},
 				},
 				{
@@ -453,6 +469,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 78),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
 				},
 				{
@@ -462,6 +479,7 @@ func TestExtractor_Extract_v1(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/commits.v1.lock", 82),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
 				},
 			},

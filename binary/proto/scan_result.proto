@@ -110,6 +110,7 @@ message Package {
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     PyprojectMetadata pyproject_metadata = 73;
+    RubyGemMetadata ruby_gem_metadata = 74;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
     APKPackageMetadata apk_metadata = 7;
     DPKGPackageMetadata dpkg_metadata = 8;
@@ -362,6 +363,29 @@ message PyprojectMetadata {
   repeated DependencyGroup optional_dependencies = 3;
 }
 
+// The additional data found in Ruby Gem packages.
+message RubyGemMetadata {
+  message Dependency {
+    message RequirementConstraint {
+      string operator = 1;
+      string version = 2;
+    }
+
+    string name = 1;
+    string type = 2;
+    repeated RequirementConstraint requirements = 3;
+    bool prerelease = 4;
+  }
+
+  repeated string authors = 1;
+  string description = 2;
+  string homepage = 3;
+  repeated string licenses = 4;
+  repeated Dependency dependencies = 5;
+  string platform = 6;
+  string summary = 7;
+}
+
 // The additional data found in npm packages.
 message JavascriptPackageJSONMetadata {
   message Dependency {
@@ -376,6 +400,7 @@ message JavascriptPackageJSONMetadata {
   repeated string contributors = 3;
   PackageSource source = 5;
   repeated Dependency dependencies = 6;
+  repeated string dep_groups = 7;
 }
 
 // The source of the package.
@@ -383,7 +408,7 @@ enum PackageSource {
   UNKNOWN = 0;
   // PUBLIC_REGISTRY is the public NPM registry.
   PUBLIC_REGISTRY = 1;
-  // OTHER is any other remote or private source (e.g. Github).
+  // OTHER is any other remote or private source (e.g. GitHub).
   // This is used for packages that are not found in the public NPM registry.
   OTHER = 2;
   // LOCAL is the local filesystem that stores the package versions.

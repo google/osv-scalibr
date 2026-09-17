@@ -95,7 +95,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (*resolve.Graph, error)
 		pkgJSONPath := filepath.ToSlash(filepath.Join(filepath.Dir(path), "package.json"))
 		pkgJSONFile, ferr := fsys.Open(pkgJSONPath)
 		if ferr != nil {
-			return nil, fmt.Errorf("failed to open package.json (required for parsing lockfileVersion 1): %w", err)
+			return nil, fmt.Errorf("failed to open package.json (required for parsing lockfileVersion 1): %w", ferr)
 		}
 		defer pkgJSONFile.Close()
 		g, nodeModuleTree, err = nodesFromDependencies(lockJSON, pkgJSONFile)

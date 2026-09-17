@@ -149,7 +149,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			p := &extractor.Package{
 				Name:     pkgName,
 				Version:  pkgVersion,
-				PURLType: purl.TypeHaskell,
+				PURLType: purl.TypeHackage,
 				Location: extractor.LocationFromPath(input.Path),
 			}
 
