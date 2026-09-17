@@ -15,6 +15,9 @@ lint-plugger:
 		-interface github.com/google/osv-scalibr/veles.Detector \
 		./...
 
+lint-secureprotocol:
+	go run linter/secureprotocol/main.go ./...
+
 test:
 	CGO_ENABLED=1 go test ./...
 
