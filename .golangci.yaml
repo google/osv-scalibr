@@ -12,15 +12,18 @@ linters:
     - dupl             # Some interfaces end up having several lines of similar code as others
     - err113           #
     - exhaustruct      #
+    - exhaustruct_v5   #
     - forcetypeassert  #
     - funcorder        #
     - funlen           #
     - gochecknoglobals #
+    - gochecknoinits   # We are now using inits for metadata
     - gocognit         #
     - goconst          #
     - gocyclo          #
     - godot            #
     - godox            #
+    - gomodguard       #
     - gosec            # TODO(#274): work on enabling this
     - ireturn          #
     - lll              #
@@ -42,7 +45,6 @@ linters:
     - wrapcheck        #
     - wsl              #
     - wsl_v5           #
-    - gochecknoinits   # We are now using inits for metadata
   settings:
     forbidigo:
       forbid:
