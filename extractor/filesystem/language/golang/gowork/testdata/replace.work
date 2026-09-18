@@ -1,0 +1,7 @@
+go 1.22
+
+use .
+
+replace example.com/bad/thing v1.4.5 => example.com/good/thing v1.4.5
+
+replace example.com/local/thing v1.0.0 => ./local/thing
