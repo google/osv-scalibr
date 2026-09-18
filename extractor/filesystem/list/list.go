@@ -176,6 +176,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/pypiapitoken"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv1"
 	"github.com/google/osv-scalibr/veles/secrets/pyxkeyv2"
+	"github.com/google/osv-scalibr/veles/secrets/qwenpat"
 	"github.com/google/osv-scalibr/veles/secrets/recaptchakey"
 	"github.com/google/osv-scalibr/veles/secrets/rubygemsapikey"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
@@ -495,6 +496,7 @@ var (
 		{http.NewBearerDetector(), "secrets/httpbearer", 0},
 		{http.NewCSRFTokenDetector(), "secrets/csrftoken", 0},
 		{http.NewCookieDetector(), "secrets/httpcookie", 0},
+		{qwenpat.NewDetector(), "secrets/qwenpat", 0},
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
