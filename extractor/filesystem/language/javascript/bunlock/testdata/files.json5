@@ -16,13 +16,13 @@
     },
   },
   "packages": {
-    "@adobe/css-tools1": ["@adobe/css-tools@./css-tools-4.4.0.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
+    "@adobe/css-tools1": ["@adobe/css-tools1@./css-tools-4.4.0.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
 
-    "@adobe/css-tools2": ["@adobe/css-tools@../css-tools-4.4.0.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
+    "@adobe/css-tools2": ["@adobe/css-tools2@../css-tools-4.4.0.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
 
-    "@adobe/css-tools3": ["@adobe/css-tools@/home/user/css-tools-4.4.0.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
+    "@adobe/css-tools3": ["@adobe/css-tools3@/home/user/css-tools-4.4.0.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
 
-    "@adobe/css-tools4": ["@adobe/css-tools@./css#tools.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
+    "@adobe/css-tools4": ["@adobe/css-tools4@./css#tools.tgz", {}, "sha512-Ff9+ksdQQB3rMncgqDK78uLznstjyfIf2Arnh22pW8kBpLs6rpKDwgnZT46hin5Hl1WzazzK64DOrhSwYpS7bQ=="],
 
     "etag": ["etag@file:deps/etag", {}],
 

@@ -851,7 +851,7 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:       "@adobe/css-tools",
+					Name:       "@adobe/css-tools1",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/files.json5", 19),
@@ -861,7 +861,7 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:       "@adobe/css-tools",
+					Name:       "@adobe/css-tools2",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/files.json5", 21),
@@ -871,7 +871,7 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:       "@adobe/css-tools",
+					Name:       "@adobe/css-tools3",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/files.json5", 23),
@@ -881,7 +881,7 @@ func TestExtractor_Extract(t *testing.T) {
 					},
 				},
 				{
-					Name:       "@adobe/css-tools",
+					Name:       "@adobe/css-tools4",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
 					Location:   loc("testdata/files.json5", 25),
