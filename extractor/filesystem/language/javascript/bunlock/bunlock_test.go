@@ -851,10 +851,50 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
+					Name:       "@adobe/css-tools1",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 19),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@adobe/css-tools2",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 21),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@adobe/css-tools3",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 23),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@adobe/css-tools4",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 25),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
 					Name:       "etag",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
-					Location:   loc("testdata/files.json5", 15),
+					Location:   loc("testdata/files.json5", 27),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -864,7 +904,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "lodash",
 					Version:    "1.3.1",
 					PURLType:   purl.TypeNPM,
-					Location:   loc("testdata/files.json5", 17),
+					Location:   loc("testdata/files.json5", 29),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
