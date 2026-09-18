@@ -122,7 +122,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
-		Name:     pkg.Name,
+		Name:     path.Base(path.Dir(input.Path)),
 		Version:  pkg.Version,
 		PURLType: purl.TypeWordpress,
 		Location: extractor.LocationFromPath(input.Path),
@@ -130,7 +130,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 type wpPackage struct {
-	Name    string
 	Version string
 }
 
@@ -158,9 +157,10 @@ func parsePHPFile(r io.Reader) (*wpPackage, error) {
 		return nil, fmt.Errorf("failed to read PHP file: %w", err)
 	}
 
+	// we assume PHP files without both these fields are not WordPress plugins
 	if name == "" || version == "" {
 		return nil, nil
 	}
 
-	return &wpPackage{Name: name, Version: version}, nil
+	return &wpPackage{Version: version}, nil
 }
