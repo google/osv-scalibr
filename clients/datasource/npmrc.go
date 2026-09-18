@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -128,7 +129,14 @@ func (r NPMRegistryConfig) MakeRequest(ctx context.Context, httpClient *http.Cli
 	if err != nil {
 		return nil, err
 	}
-
+	// Reject plain-HTTP registry URLs when credentials are configured.
+	// Sending auth tokens over unencrypted HTTP exposes them to network
+	// eavesdroppers (CWE-319 / OWASP A02 Cryptographic Failures).
+	if parsedReqURL, urlParseErr := url.Parse(reqURL); urlParseErr == nil && parsedReqURL.Scheme == "http" && !strings.HasPrefix(parsedReqURL.Hostname(), "127.") && parsedReqURL.Hostname() != "localhost" && parsedReqURL.Hostname() != "::1" {
+		if authCreds := r.Auths.GetAuth(reqURL); authCreds.BearerToken != "" || authCreds.BasicAuth != "" || authCreds.Username != "" || authCreds.Password != "" {
+			return nil, fmt.Errorf("refusing to send npm credentials over insecure HTTP to %q; use https:// in registry URL", parsedReqURL.Host)
+		}
+	}
 	return r.Auths.GetAuth(reqURL).Get(ctx, httpClient, reqURL)
 }
 
