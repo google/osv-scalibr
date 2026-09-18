@@ -75,8 +75,6 @@ const (
 	TypeGolang = "golang"
 	// TypeHackage is a pkg:hackage purl.
 	TypeHackage = "hackage"
-	// TypeHaskell is a pkg:haskell purl.
-	TypeHaskell = "haskell"
 	// TypeMacApps is a pkg:macapps purl.
 	TypeMacApps = "macapps"
 	// TypeHex is a pkg:hex purl.
@@ -223,7 +221,6 @@ func validType(t string) bool {
 		TypeGithub:     true,
 		TypeGolang:     true,
 		TypeHackage:    true,
-		TypeHaskell:    true,
 		TypeNim:        true,
 		TypeLua:        true,
 		TypeHex:        true,

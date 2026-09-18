@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev/fakeclient"
 	"github.com/google/osv-scalibr/extractor"
+	jsmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
@@ -72,6 +73,14 @@ func TestEnrich(t *testing.T) {
 			PURLType: purl.TypeNPM,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: "68593b1bb80b302c2e552685dc8a029797ec832e",
+			},
+		}
+		localNpmPkg = &extractor.Package{
+			Name:     "express",
+			Version:  "4.17.1",
+			PURLType: purl.TypeNPM,
+			Metadata: &jsmeta.JavascriptPackageMetadata{
+				Source: jsmeta.Local,
 			},
 		}
 		dpkgSrcPkg = &extractor.Package{
@@ -642,6 +651,11 @@ func TestEnrich(t *testing.T) {
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: &rpmVulnOtherDistro, Package: rpmPkgOtherDistroWithEpoch, Plugins: []string{osvdev.Name}},
 			},
+		},
+		{
+			name:             "local_npm_package_skipped",
+			packages:         []*extractor.Package{localNpmPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
 		},
 	}
 

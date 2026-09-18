@@ -15,13 +15,16 @@
 package cabal_test
 
 import (
+	"errors"
 	"io/fs"
 	"path/filepath"
 	"testing"
+	"testing/iotest"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -128,7 +131,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "valid stack.yaml.lock file",
+			Name: "valid cabal.project.freeze file",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid",
 			},
@@ -136,37 +139,37 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "AC-Angle",
 					Version:  "1.0",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 				{
 					Name:     "ALUT",
 					Version:  "2.4.0.3",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 				{
 					Name:     "ANum",
 					Version:  "0.2.0.2",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 				{
 					Name:     "Agda",
 					Version:  "2.6.4.3",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 				{
 					Name:     "Allure",
 					Version:  "0.11.0.0",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid"),
 				},
 			},
 		},
 		{
-			Name: "valid stack.yaml.lock file with package problems",
+			Name: "valid cabal.project.freeze file with package problems",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid_2",
 			},
@@ -174,25 +177,25 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "AC-Angle",
 					Version:  "1.0",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid_2"),
 				},
 				{
 					Name:     "ANum",
 					Version:  "0.2.0.2",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid_2"),
 				},
 				{
 					Name:     "Agda",
 					Version:  "2.6.4.3",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid_2"),
 				},
 				{
 					Name:     "Allure",
 					Version:  "0.11.0.0",
-					PURLType: purl.TypeHaskell,
+					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/valid_2"),
 				},
 			},
@@ -231,5 +234,23 @@ func TestExtract(t *testing.T) {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
+	}
+}
+
+func TestExtract_ScannerError(t *testing.T) {
+	e, err := cabal.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("cabal.New: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Path:   "cabal.project.freeze",
+		Reader: iotest.ErrReader(errors.New("mock read error")),
+	}
+
+	wantErr := extracttest.ContainsErrStr{Str: "error while scanning cabal.project.freeze file: mock read error"}
+	_, err = e.Extract(t.Context(), input)
+	if diff := cmp.Diff(wantErr, err, cmpopts.EquateErrors()); diff != "" {
+		t.Errorf("e.Extract() error diff (-want +got):\n%s", diff)
 	}
 }

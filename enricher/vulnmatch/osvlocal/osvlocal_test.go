@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
+	jsmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
@@ -80,6 +81,14 @@ func TestEnrich(t *testing.T) {
 
 	var (
 		jsPkg      = &extractor.Package{Name: "express", Version: "4.17.1", PURLType: purl.TypeNPM}
+		localJsPkg = &extractor.Package{
+			Name:     "express",
+			Version:  "4.17.1",
+			PURLType: purl.TypeNPM,
+			Metadata: &jsmeta.JavascriptPackageMetadata{
+				Source: jsmeta.Local,
+			},
+		}
 		goPkg      = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
 		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
 		pyPkg      = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
@@ -537,6 +546,11 @@ func TestEnrich(t *testing.T) {
 		{
 			name:             "unknown_package",
 			packages:         []*extractor.Package{unknownPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
+		},
+		{
+			name:             "local_npm_package_skipped",
+			packages:         []*extractor.Package{localJsPkg},
 			wantPackageVulns: []*inventory.PackageVuln{},
 		},
 		{
