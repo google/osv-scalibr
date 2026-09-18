@@ -117,6 +117,7 @@ message PluginSpecificConfig {
     ContainerdRuntimeConfig containerd_runtime = 76;
     DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
     RubyGemConfig ruby_gem = 82;
+    HaskellCabalProjectFreezeConfig haskell_cabal_project_freeze = 83;
   }
 }
 
@@ -493,6 +494,13 @@ message HaskellStacklockConfig {
 }
 
 message HaskellCabalConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message HaskellCabalProjectFreezeConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
