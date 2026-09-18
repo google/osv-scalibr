@@ -447,6 +447,44 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			// directory.
 			want: map[string]contentAndMode{},
 		},
+		{
+			name: "member names escaping the extraction root are skipped",
+			cfg:  unpack.DefaultUnpackerConfig(),
+			dir:  t.TempDir(),
+			tarEntries: []tarEntry{
+				{
+					Header: &tar.Header{
+						Name:     "../escape/pwn-link",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/etc/hostname",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name: "../escape/pwn-file",
+						Mode: 0777,
+						Size: int64(len("pwn")),
+					},
+					Data: bytes.NewBufferString("pwn"),
+				},
+				{
+					Header: &tar.Header{
+						Name: "normal.txt",
+						Mode: 0777,
+						Size: int64(len("normal")),
+					},
+					Data: bytes.NewBufferString("normal"),
+				},
+			},
+			// Only the entry with the non-escaping name is extracted. Without the escape
+			// check, os.MkdirAll and os.Symlink create the "../escape" directories and
+			// plant the symlink outside of the unpack directory, even though the content
+			// write itself is blocked by os.Root.
+			want: map[string]contentAndMode{
+				filepath.Join("unpack", "normal.txt"): {content: "normal", mode: fs.FileMode(0777)},
+			},
+		},
 	}
 
 	for _, tc := range tests {
