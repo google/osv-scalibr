@@ -93,6 +93,11 @@ func TestFileRequired(t *testing.T) {
 			path:           "testdata/sbom.spdx.foo.ext",
 			wantIsRequired: false,
 		},
+		{
+			name:           ".spdx-postgresql.spdx",
+			path:           "testdata/bitnami/.spdx-postgresql.spdx",
+			wantIsRequired: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -686,6 +691,43 @@ func TestExtract(t *testing.T) {
 						},
 					},
 					Location: extractor.LocationFromPath("testdata/overlapping_refs.spdx.json"),
+				},
+			},
+		},
+		{
+			name: "bitnami/.spdx-postgresql.spdx",
+			path: "testdata/bitnami/.spdx-postgresql.spdx",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "postgresql",
+					Version:  "18.4.0-0",
+					PURLType: purl.TypeBitnami,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "postgresql",
+						PURL: &purl.PackageURL{
+							Type:    purl.TypeBitnami,
+							Name:    "postgresql",
+							Version: "18.4.0-0",
+							Qualifiers: purl.QualifiersFromMap(map[string]string{
+								"arch":   "amd64",
+								"distro": "photon-5",
+							}),
+						},
+						CPEs: []string{"cpe:2.3:*:postgresql:postgresql:18.4.0:*:*:*:*:*:*:*"},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:*:postgresql:postgresql:18.4.0:*:*:*:*:*:*:*",
+							},
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:bitnami/postgresql@18.4.0-0?arch=amd64&distro=photon-5",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/bitnami/.spdx-postgresql.spdx"),
 				},
 			},
 		},
