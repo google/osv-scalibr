@@ -57,6 +57,19 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
+			name: "hackage_purl",
+			pkg: &extractor.Package{
+				Name:     "Agda",
+				Version:  "2.6.4.3",
+				PURLType: purl.TypeHackage,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeHackage,
+				Name:    "Agda",
+				Version: "2.6.4.3",
+			},
+		},
+		{
 			name: "git_purl",
 			pkg: &extractor.Package{
 				Name:     "name",
@@ -291,6 +304,15 @@ func TestToEcosystem(t *testing.T) {
 				PURLType: purl.TypeGolang,
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+		},
+		{
+			name: "hackage_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Agda",
+				Version:  "2.6.4.3",
+				PURLType: purl.TypeHackage,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemHackage),
 		},
 		{
 			name: "git_ecosystem",

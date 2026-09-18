@@ -155,10 +155,10 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 			packages = append(packages, p)
 		}
+	}
 
-		if s.Err() != nil {
-			return packages, fmt.Errorf("error while scanning cabal.project.freeze file: %w", s.Err())
-		}
+	if err := s.Err(); err != nil {
+		return packages, fmt.Errorf("error while scanning stack.yaml.lock file: %w", err)
 	}
 
 	return packages, nil

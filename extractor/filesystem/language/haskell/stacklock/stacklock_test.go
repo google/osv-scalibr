@@ -15,13 +15,16 @@
 package stacklock_test
 
 import (
+	"errors"
 	"io/fs"
 	"path/filepath"
 	"testing"
+	"testing/iotest"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -193,5 +196,23 @@ func TestExtract(t *testing.T) {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
 		})
+	}
+}
+
+func TestExtract_ScannerError(t *testing.T) {
+	e, err := stacklock.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("stacklock.New: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Path:   "stack.yaml.lock",
+		Reader: iotest.ErrReader(errors.New("mock read error")),
+	}
+
+	wantErr := extracttest.ContainsErrStr{Str: "error while scanning stack.yaml.lock file: mock read error"}
+	_, err = e.Extract(t.Context(), input)
+	if diff := cmp.Diff(wantErr, err, cmpopts.EquateErrors()); diff != "" {
+		t.Errorf("e.Extract() error diff (-want +got):\n%s", diff)
 	}
 }
