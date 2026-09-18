@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	"www.velocidex.com/golang/go-ntfs/parser"
 )
 
 const (
@@ -197,4 +198,150 @@ func TestIsZero(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createTarWithHeader(t *testing.T, header *tar.Header, content []byte) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	if err := tw.WriteHeader(header); err != nil {
+		t.Fatalf("tw.WriteHeader: %v", err)
+	}
+	if len(content) > 0 {
+		if _, err := tw.Write(content); err != nil {
+			t.Fatalf("tw.Write: %v", err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatalf("tw.Close: %v", err)
+	}
+	return &buf
+}
+
+func TestTARToTempDir_InvalidEntries(t *testing.T) {
+	tests := []struct {
+		name    string
+		hdrName string
+		wantErr bool
+	}{
+		{
+			name:    "valid relative path",
+			hdrName: "dir/valid.txt",
+			wantErr: false,
+		},
+		{
+			name:    "valid dot slash path",
+			hdrName: "./valid.txt",
+			wantErr: false,
+		},
+		{
+			name:    "parent directory traversal slash",
+			hdrName: "../evil.txt",
+			wantErr: true,
+		},
+		{
+			name:    "nested parent directory traversal slash",
+			hdrName: "dir/../../evil.txt",
+			wantErr: true,
+		},
+		{
+			name:    "parent directory traversal backslash",
+			hdrName: `..\evil.txt`,
+			wantErr: true,
+		},
+		{
+			name:    "nested parent directory traversal backslash",
+			hdrName: `dir\..\..\evil.txt`,
+			wantErr: true,
+		},
+		{
+			name:    "absolute path slash",
+			hdrName: "/etc/passwd",
+			wantErr: true,
+		},
+		{
+			name:    "absolute path backslash",
+			hdrName: `\Windows\system.ini`,
+			wantErr: true,
+		},
+		{
+			name:    "drive letter path",
+			hdrName: `C:\evil.txt`,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := createTarWithHeader(t, &tar.Header{
+				Name:     tc.hdrName,
+				Mode:     0644,
+				Size:     int64(len("test")),
+				Typeflag: tar.TypeReg,
+			}, []byte("test"))
+
+			tempDir, err := TARToTempDir(buf, 0.0)
+			if tempDir != "" {
+				defer os.RemoveAll(tempDir)
+			}
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("TARToTempDir(%q) expected error, got nil", tc.hdrName)
+				}
+				if !strings.Contains(err.Error(), "tar contains invalid entries") {
+					t.Errorf("TARToTempDir(%q) error = %v, want error containing 'tar contains invalid entries'", tc.hdrName, err)
+				}
+			} else if err != nil {
+				t.Fatalf("TARToTempDir(%q) unexpected error: %v", tc.hdrName, err)
+			}
+		})
+	}
+}
+
+func TestFilterEntries(t *testing.T) {
+	t.Run("filterEntriesNtfs", func(t *testing.T) {
+		entries := []*parser.FileInfo{
+			{Name: "valid.txt"},
+			{Name: "dir/traversal.txt"},
+			{Name: `dir\traversal.txt`},
+			{Name: "$MFT"},
+			{Name: "."},
+			{Name: ".."},
+		}
+		filtered := filterEntriesNtfs(entries)
+		if len(filtered) != 1 || filtered[0].Name != "valid.txt" {
+			t.Errorf("filterEntriesNtfs() = %v, want only valid.txt", filtered)
+		}
+	})
+
+	t.Run("filterEntriesFat32", func(t *testing.T) {
+		entries := []os.FileInfo{
+			&fileInfo{name: "valid.txt"},
+			&fileInfo{name: "dir/traversal.txt"},
+			&fileInfo{name: `dir\traversal.txt`},
+			&fileInfo{name: "lost+found"},
+			&fileInfo{name: "."},
+			&fileInfo{name: ".."},
+		}
+		filtered := filterEntriesFat32(entries)
+		if len(filtered) != 1 || filtered[0].Name() != "valid.txt" {
+			t.Errorf("filterEntriesFat32() = %v, want only valid.txt", filtered)
+		}
+	})
+
+	t.Run("isInvalidEntry", func(t *testing.T) {
+		invalidCases := []string{"", ".", "..", "$sys", "a/b", `a\b`}
+		for _, c := range invalidCases {
+			if !isInvalidEntry(c) {
+				t.Errorf("isInvalidEntry(%q) = false, want true", c)
+			}
+		}
+		validCases := []string{"foo.txt", "valid_name", "archive.tar"}
+		for _, c := range validCases {
+			if isInvalidEntry(c) {
+				t.Errorf("isInvalidEntry(%q) = true, want false", c)
+			}
+		}
+	})
 }
