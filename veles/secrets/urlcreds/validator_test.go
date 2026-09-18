@@ -46,8 +46,23 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
+	"github.com/google/osv-scalibr/veles/velestest"
 	"golang.org/x/crypto/ssh"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := urlcreds.NewValidator().(*urlcreds.Validator)
+	brokenValidator.Client = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		urlcreds.NewValidator(),
+		velestest.WithMalformedSecrets(urlcreds.Credentials{FullURL: ":::not-a-valid-url"}),
+		velestest.WithTrueNegatives(urlcreds.Credentials{FullURL: "http://admin:pass@domain.com/resource"}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[urlcreds.Credentials](),
+	)
+}
 
 func TestValidator(t *testing.T) {
 	basicAuthHTTPSvr := mockBasicAuthHTTPServer(t, "admin", "pass")

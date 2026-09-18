@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -61,6 +62,20 @@ func mockAnthropicModelServer(t *testing.T, expectedKey string, statusCode int, 
 	}))
 
 	return server
+}
+
+func TestAcceptModelValidator(t *testing.T) {
+	brokenValidator := anthropicapikey.NewModelValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		anthropicapikey.NewModelValidator(),
+		velestest.WithTrueNegatives(anthropicapikey.ModelAPIKey{
+			Key: "sk-ant-api03-osvscalibr-invalid000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
 }
 
 func TestModelValidator(t *testing.T) {
