@@ -893,6 +893,64 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "url_dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/urls.json5",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "@solidjs/meta",
+					Version:    "0.29.4",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 20),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@solidjs/start",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 22),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "wrangler",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 24),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "ws",
+					Version:    "8.21.0",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 26),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "path-to-regexp",
+					Version:    "6.3.0",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 28),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

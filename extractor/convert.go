@@ -135,7 +135,7 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems)
 	case purl.TypeNuget:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemNuGet)
-	case purl.TypeHaskell:
+	case purl.TypeHackage:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemHackage)
 	case purl.TypeHex:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemHex)
