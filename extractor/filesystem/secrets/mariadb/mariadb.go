@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -48,6 +49,7 @@ var (
 type Extractor struct {
 	visited       map[string]struct{}
 	followInclude bool
+	anchor        string
 }
 
 // New returns the Extractor with the specified config settings.
@@ -85,6 +87,7 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract returns a list of secret mariadb credentials
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	i := inventory.Inventory{}
+	e.anchor = filepath.Dir(input.Path)
 	secrets, err := e.includeFile(ctx, input, input.Path)
 	if err != nil {
 		return i, err
@@ -107,6 +110,10 @@ func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, li
 		path = before
 	}
 	path = strings.Trim(path, "/\\")
+	if escapesRoot(e.anchor, path) {
+		log.Warnf("mariadb: skipping !include %q, which escapes the scan root", path)
+		return nil, nil
+	}
 
 	if isDir {
 		sections, err := e.includeDir(ctx, input, path)
@@ -133,6 +140,10 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 		return nil, nil
 	}
 	e.visited[path] = struct{}{}
+	if escapesRoot(e.anchor, path) {
+		log.Warnf("mariadb: skipping !include %q, which escapes the scan root", path)
+		return nil, nil
+	}
 
 	f, err := input.FS.Open(path)
 	if err != nil {
@@ -213,6 +224,15 @@ func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput
 }
 
 // includeDir recursively loads .cnf and .ini files from a specified directory.
+// escapesRoot reports whether resolved falls outside the directory tree rooted at anchor.
+func escapesRoot(anchor, resolved string) bool {
+	rel, err := filepath.Rel(anchor, resolved)
+	if err != nil {
+		return true
+	}
+	return !filepath.IsLocal(rel)
+}
+
 func (e *Extractor) includeDir(ctx context.Context, input *filesystem.ScanInput, dir string) ([]*inventory.Secret, error) {
 	entries, err := fs.ReadDir(input.FS, dir)
 	if err != nil {
