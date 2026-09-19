@@ -119,6 +119,13 @@ func (enr Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *
 	for jar := range jars {
 		err := enumerateReachabilityForJar(ctx, jar, input, inv, client)
 		if err != nil {
+			// A JAR without a Main-Class manifest entry cannot be a root for
+			// reachability analysis. Skip it and keep processing the remaining
+			// JARs so that valid roots still produce annotations.
+			if errors.Is(err, ErrNoMainClass) {
+				log.Debug("Skipping JAR without a main class", "jar", jar)
+				continue
+			}
 			return err
 		}
 	}
