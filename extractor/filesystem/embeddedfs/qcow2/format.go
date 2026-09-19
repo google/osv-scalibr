@@ -155,6 +155,26 @@ func parseHeader(reader io.Reader) (*header, []headerExtension, error) {
 	if h.CompressionType != 0 {
 		return nil, nil, fmt.Errorf("unsupported compression type: %d (only zlib supported)", h.CompressionType)
 	}
+	// QCOW2 spec: ClusterBits must be 9–21 (512 B – 2 MB clusters).
+	// Unchecked ClusterBits lets an attacker trigger make([]byte, 1<<ClusterBits)
+	// with values up to 1<<63, causing immediate OOM.
+	if h.ClusterBits < 9 || h.ClusterBits > 21 {
+		return nil, nil, fmt.Errorf("ClusterBits %d out of valid range [9, 21]", h.ClusterBits)
+	}
+	// Cap L1Size: prevents make([]uint64, L1Size) OOM with large values.
+	// A 2M-entry L1 table covers ≥64 TiB even at the minimum cluster size.
+	const maxL1Size = 2 << 20 // 2,097,152
+	if h.L1Size > maxL1Size {
+		return nil, nil, fmt.Errorf("L1Size %d exceeds safety limit %d", h.L1Size, maxL1Size)
+	}
+	// Cap RefcountTableClusters: readRefcountTable computes
+	// header.RefcountTableClusters*uint32(clusterSize) in uint32, so large
+	// values can produce near-4 GB allocations even with valid ClusterBits.
+	// 64 clusters is generous for any real image (typical images use 1–3).
+	const maxRefcountTableClusters = 64
+	if h.RefcountTableClusters > maxRefcountTableClusters {
+		return nil, nil, fmt.Errorf("RefcountTableClusters %d exceeds safety limit %d", h.RefcountTableClusters, maxRefcountTableClusters)
+	}
 
 	if h.Version >= 3 && h.HeaderLength > 112 {
 		if _, err := reader.(io.Seeker).Seek(int64(h.HeaderLength), io.SeekStart); err != nil {
