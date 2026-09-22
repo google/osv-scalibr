@@ -265,13 +265,22 @@ func TestMavenLocalRegistry(t *testing.T) {
 	</project>`)
 	srv.SetResponse(t, path, resp)
 
+	// Seed a corrupt cache file to verify cache decoding errors are ignored
+	// and the client falls back to fetching from the upstream registry.
+	filePath := filepath.Join(tempDir, "maven", path)
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		t.Fatalf("failed to create cache dir: %v", err)
+	}
+	if err := os.WriteFile(filePath, []byte("invalid xml"), 0666); err != nil {
+		t.Fatalf("failed to write corrupt cache file: %v", err)
+	}
+
 	_, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0")
 	if err != nil {
 		t.Fatalf("failed to get Maven project %s:%s verion %s: %v", "org.example", "x.y.z", "1.0.0", err)
 	}
 
-	// Check that the pom file is stored locally.
-	filePath := filepath.Join(tempDir, "maven", path)
+	// Check that the pom file is stored locally and overwritten with valid upstream response.
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
@@ -279,6 +288,82 @@ func TestMavenLocalRegistry(t *testing.T) {
 	if !bytes.Equal(content, resp) {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), string(resp))
 	}
+}
+
+func TestMavenLocalRegistryEscape(t *testing.T) {
+	t.Run("path traversal", func(t *testing.T) {
+		tempDir := t.TempDir()
+		localRegistry := filepath.Join(tempDir, "cache")
+		outsidePath := filepath.Join(tempDir, "outside", "maven-metadata.xml")
+		if err := os.MkdirAll(filepath.Dir(outsidePath), 0755); err != nil {
+			t.Fatalf("failed to create outside directory: %v", err)
+		}
+
+		transport := &trackingTransport{}
+		client, err := datasource.NewMavenRegistryAPIClient(
+			t.Context(),
+			datasource.MavenRegistry{URL: "https://example.com", ReleasesEnabled: true},
+			localRegistry,
+			false,
+			&http.Client{Transport: transport},
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+		}
+
+		if _, err := client.GetVersions(t.Context(), "g", filepath.Join("..", "..", "..", "outside")); err != nil {
+			t.Fatalf("GetVersions failed: %v", err)
+		}
+		if !transport.wasCalled() {
+			t.Fatal("registry was not queried")
+		}
+
+		if _, err := os.Stat(outsidePath); !os.IsNotExist(err) {
+			t.Errorf("outside file was created, os.Stat() returned %v", err)
+		}
+	})
+
+	t.Run("symlink", func(t *testing.T) {
+		tempDir := t.TempDir()
+		localRegistry := filepath.Join(tempDir, "cache")
+		cacheRoot := filepath.Join(localRegistry, "maven")
+		outsideDir := filepath.Join(tempDir, "outside")
+		if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+			t.Fatalf("failed to create cache directory: %v", err)
+		}
+		if err := os.MkdirAll(outsideDir, 0755); err != nil {
+			t.Fatalf("failed to create outside directory: %v", err)
+		}
+		if err := os.Symlink(outsideDir, filepath.Join(cacheRoot, "g")); err != nil {
+			t.Skipf("failed to create symlink: %v", err)
+		}
+
+		transport := &trackingTransport{}
+		client, err := datasource.NewMavenRegistryAPIClient(
+			t.Context(),
+			datasource.MavenRegistry{URL: "https://example.com", ReleasesEnabled: true},
+			localRegistry,
+			false,
+			&http.Client{Transport: transport},
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+		}
+
+		if _, err := client.GetVersions(t.Context(), "g", "a"); err != nil {
+			t.Fatalf("GetVersions failed: %v", err)
+		}
+		if !transport.wasCalled() {
+			t.Fatal("registry was not queried")
+		}
+
+		outsidePath := filepath.Join(outsideDir, "a", "maven-metadata.xml")
+		if _, err := os.Stat(outsidePath); !os.IsNotExist(err) {
+			t.Errorf("outside file was created, os.Stat() returned %v", err)
+		}
+	})
 }
 
 type trackingTransport struct {
