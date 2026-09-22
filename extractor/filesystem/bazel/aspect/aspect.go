@@ -16,7 +16,6 @@
 package aspect
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -25,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -36,11 +36,14 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 )
 
 //go:embed scalibr_aspect.bzl
 var scalibrAspectBzl []byte
+
+var bepURIRe = regexp.MustCompile(`"uri":"file://([^"]+?\.scalibr\.json)"`)
 
 // Name is the unique name of this extractor.
 const Name = "bazel/aspect"
@@ -62,8 +65,9 @@ func (r *defaultCommandRunner) Run(ctx context.Context, dir string, name string,
 	cmd.Dir = dir
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	// Bazel analysis succeeds in generating the aspect output even if the build phase fails or --nobuild is used.
-	_ = cmd.Run()
+	if err := cmd.Run(); err != nil {
+		log.Warnf("bazel aspect command returned error: %v; stderr: %s", err, stderr.String())
+	}
 	return nil
 }
 
@@ -158,8 +162,23 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	workspaceRoot := filepath.Dir(filepath.Join(input.Root, input.Path))
 
-	// Check if we already processed this workspace root
-	if _, loaded := e.processed.LoadOrStore(workspaceRoot, true); loaded {
+	// If the scan root itself is a Bazel workspace, always scope extraction to the scan root
+	// to avoid duplicate or conflicting executions in nested sub-workspaces.
+	if isBazelWorkspace(input.Root) {
+		workspaceRoot = input.Root
+	}
+
+	// Check if this workspace root or an enclosing ancestor workspace has already been processed.
+	var alreadyCovered bool
+	e.processed.Range(func(key, _ any) bool {
+		processedDir := key.(string)
+		if processedDir == workspaceRoot || isSubdirectory(processedDir, workspaceRoot) {
+			alreadyCovered = true
+			return false
+		}
+		return true
+	})
+	if alreadyCovered {
 		return inventory.Inventory{}, nil
 	}
 
@@ -169,6 +188,8 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	if !isBazelWorkspace(workspaceRoot) {
 		return inventory.Inventory{}, nil
 	}
+
+	e.processed.Store(workspaceRoot, true)
 
 	if e.runner == nil {
 		e.runner = &defaultCommandRunner{}
@@ -210,7 +231,12 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	// Add check_visibility=false to bypass internal access restrictions on mega targets
 	args = append(args, "--check_visibility=false")
 
-	args = append(args, e.target)
+	targets := strings.Fields(e.target)
+	if len(targets) == 0 {
+		targets = []string{"//..."}
+	}
+	args = append(args, "--")
+	args = append(args, targets...)
 
 	_ = e.runner.Run(ctx, workspaceRoot, "bazel", args...)
 
@@ -221,25 +247,10 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to read build events: %w", err)
 	}
 
-	// Simple extraction of all file URIs ending with .scalibr.json from BEP JSON stream
-	scanner := bufio.NewScanner(bytes.NewReader(bepData))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !strings.Contains(line, ".scalibr.json") {
-			continue
-		}
-		// Look for "uri":"file://..."
-		prefix := `"uri":"file://`
-		idx := strings.Index(line, prefix)
-		if idx == -1 {
-			continue
-		}
-		startIdx := idx + len(prefix)
-		endIdx := strings.Index(line[startIdx:], `"`)
-		if endIdx == -1 {
-			continue
-		}
-		filePath := line[startIdx : startIdx+endIdx]
+	// Extract all file URIs ending with .scalibr.json from BEP JSON stream
+	matches := bepURIRe.FindAllSubmatch(bepData, -1)
+	for _, match := range matches {
+		filePath := string(match[1])
 
 		fileData, err := os.ReadFile(filePath)
 		if err != nil {
@@ -360,4 +371,13 @@ func isBazelWorkspace(path string) bool {
 		}
 	}
 	return false
+}
+
+// isSubdirectory reports whether sub is a subdirectory of parent.
+func isSubdirectory(parent, sub string) bool {
+	rel, err := filepath.Rel(parent, sub)
+	if err != nil {
+		return false
+	}
+	return !strings.HasPrefix(rel, "..") && rel != "."
 }
