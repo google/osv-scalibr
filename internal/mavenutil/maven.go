@@ -219,21 +219,24 @@ func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string
 
 // GetDependencyManagement returns managed dependencies in the specified Maven project by fetching remote pom.xml.
 func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegistryAPIClient, groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-	root := maven.Parent{ProjectKey: maven.ProjectKey{GroupID: groupID, ArtifactID: artifactID, Version: version}}
-	var result maven.Project
-	// To get dependency management from another project, we need the
-	// project with parents merged, so we call MergeParents by passing
-	// an empty project.
-	if err := MergeParents(ctx, root, &result, Options{
-		Client:             client,
-		AddRegistry:        false,
-		AllowLocal:         false,
-		InitialParentIndex: 0,
-	}); err != nil {
-		return maven.DependencyManagement{}, err
-	}
+	key := maven.ProjectKey{GroupID: groupID, ArtifactID: artifactID, Version: version}
+	return client.GetCachedDependencyManagement(key, func() (maven.DependencyManagement, error) {
+		root := maven.Parent{ProjectKey: key}
+		var result maven.Project
+		// To get dependency management from another project, we need the
+		// project with parents merged, so we call MergeParents by passing
+		// an empty project.
+		if err := MergeParents(ctx, root, &result, Options{
+			Client:             client,
+			AddRegistry:        false,
+			AllowLocal:         false,
+			InitialParentIndex: 0,
+		}); err != nil {
+			return maven.DependencyManagement{}, err
+		}
 
-	return result.DependencyManagement, nil
+		return result.DependencyManagement, nil
+	})
 }
 
 // CompareVersions compares two Maven semver versions with special behaviour for specific packages,

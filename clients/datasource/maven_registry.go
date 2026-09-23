@@ -94,6 +94,8 @@ type MavenRegistryAPIClient struct {
 	mu             *sync.Mutex
 	cacheTimestamp *time.Time // If set, this means we loaded from a cache
 	responses      *RequestCache[string, response]
+	projects       *RequestCache[maven.ProjectKey, maven.Project]
+	depManagement  *RequestCache[maven.ProjectKey, maven.DependencyManagement]
 }
 
 type response struct {
@@ -165,6 +167,8 @@ func NewMavenRegistryAPIClient(
 		localRegistry:     localRegistry,
 		mu:                &sync.Mutex{},
 		responses:         NewRequestCache[string, response](),
+		projects:          NewRequestCache[maven.ProjectKey, maven.Project](),
+		depManagement:     NewRequestCache[maven.ProjectKey, maven.DependencyManagement](),
 		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
 		disableGoogleAuth: disableGoogleAuth,
 		httpClient:        httpClient,
@@ -200,6 +204,8 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 		mu:                m.mu,
 		cacheTimestamp:    m.cacheTimestamp,
 		responses:         m.responses,
+		projects:          m.projects,
+		depManagement:     m.depManagement,
 		registryAuths:     m.registryAuths,
 		httpClient:        m.httpClient,
 		googleClient:      m.googleClient,
@@ -285,6 +291,61 @@ func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 	return m.registries
 }
 
+// GetCachedDependencyManagement returns cached DependencyManagement for key or computes and caches it via fn.
+func (m *MavenRegistryAPIClient) GetCachedDependencyManagement(key maven.ProjectKey, fn func() (maven.DependencyManagement, error)) (maven.DependencyManagement, error) {
+	if m == nil || m.depManagement == nil {
+		return fn()
+	}
+	dm, err := m.depManagement.Get(key, fn)
+	if err != nil {
+		return maven.DependencyManagement{}, err
+	}
+	return maven.DependencyManagement{Dependencies: cloneDependencies(dm.Dependencies)}, nil
+}
+
+// cloneDependencies returns a deep copy of a slice of maven.Dependency.
+func cloneDependencies(deps []maven.Dependency) []maven.Dependency {
+	if deps == nil {
+		return nil
+	}
+	out := slices.Clone(deps)
+	for i := range out {
+		if out[i].Exclusions != nil {
+			out[i].Exclusions = slices.Clone(out[i].Exclusions)
+		}
+	}
+	return out
+}
+
+// cloneProject returns a deep copy of a maven.Project so callers can safely mutate slices.
+func cloneProject(p maven.Project) maven.Project {
+	p.Properties.Properties = slices.Clone(p.Properties.Properties)
+	p.Licenses = slices.Clone(p.Licenses)
+	p.Developers = slices.Clone(p.Developers)
+	p.Modules = slices.Clone(p.Modules)
+	p.DependencyManagement.Dependencies = cloneDependencies(p.DependencyManagement.Dependencies)
+	p.Dependencies = cloneDependencies(p.Dependencies)
+	p.Repositories = slices.Clone(p.Repositories)
+	if p.Profiles != nil {
+		p.Profiles = slices.Clone(p.Profiles)
+		for i := range p.Profiles {
+			prof := &p.Profiles[i]
+			prof.Properties.Properties = slices.Clone(prof.Properties.Properties)
+			prof.Modules = slices.Clone(prof.Modules)
+			prof.DependencyManagement.Dependencies = cloneDependencies(prof.DependencyManagement.Dependencies)
+			prof.Dependencies = cloneDependencies(prof.Dependencies)
+			prof.Repositories = slices.Clone(prof.Repositories)
+		}
+	}
+	if p.Build.PluginManagement.Plugins != nil {
+		p.Build.PluginManagement.Plugins = slices.Clone(p.Build.PluginManagement.Plugins)
+		for i := range p.Build.PluginManagement.Plugins {
+			p.Build.PluginManagement.Plugins[i].Dependencies = cloneDependencies(p.Build.PluginManagement.Plugins[i].Dependencies)
+		}
+	}
+	return p
+}
+
 // GetProject fetches a pom.xml specified by groupID, artifactID and version and parses it to maven.Project.
 // Each registry in the list is tried until we find the project.
 // For a snapshot version, version level metadata is used to find the extact version string.
@@ -292,6 +353,19 @@ func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 // More about Maven Metadata: https://maven.apache.org/repositories/metadata.html
 func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifactID, version string) (maven.Project, error) {
 	key := maven.ProjectKey{GroupID: maven.String(groupID), ArtifactID: maven.String(artifactID), Version: maven.String(version)}
+	if m.projects != nil {
+		proj, err := m.projects.Get(key, func() (maven.Project, error) {
+			return m.fetchProject(ctx, key, groupID, artifactID, version)
+		})
+		if err != nil {
+			return maven.Project{}, err
+		}
+		return cloneProject(proj), nil
+	}
+	return m.fetchProject(ctx, key, groupID, artifactID, version)
+}
+
+func (m *MavenRegistryAPIClient) fetchProject(ctx context.Context, key maven.ProjectKey, groupID, artifactID, version string) (maven.Project, error) {
 	if content, ok := m.localProjects[key]; ok {
 		file := io.NopCloser(bytes.NewReader(content))
 		defer file.Close()
