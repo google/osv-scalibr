@@ -51,6 +51,21 @@ func TestTryExtractCommit(t *testing.T) {
 			resolution: "github:prettier/prettier-synchronized#527e8ce",
 			wantCommit: "527e8ce",
 		},
+		{
+			name:       "github URL commit parameter",
+			resolution: "https://github.com/typegoose/typegoose#commit=3ed06e5097ab929f69755676fee419318aaec73a",
+			wantCommit: "3ed06e5097ab929f69755676fee419318aaec73a",
+		},
+		{
+			name:       "git+http commit parameter",
+			resolution: "git+http://example.com/my-org/my-package.git#commit=3ed06e5097ab929f69755676fee419318aaec73a",
+			wantCommit: "3ed06e5097ab929f69755676fee419318aaec73a",
+		},
+		{
+			name:       "npm registry tarball commit fragment",
+			resolution: "https://registry.npmjs.org/lodash/-/lodash-4.17.20.tgz#commit=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			wantCommit: "",
+		},
 	}
 
 	for _, tt := range tests {
