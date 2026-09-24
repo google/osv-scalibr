@@ -6708,7 +6708,7 @@ type SecretData struct {
 	//	*SecretData_HttpBearer
 	//	*SecretData_HttpCsrfToken
 	//	*SecretData_HttpCookie
-	//	*SecretData_Qwen_Pat
+	//	*SecretData_QwenPat_
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7579,10 +7579,10 @@ func (x *SecretData) GetHttpCookie() *SecretData_HTTPCookie {
 	return nil
 }
 
-func (x *SecretData) GetQwen_Pat() *SecretData_QwenPat {
+func (x *SecretData) GetQwenPat() *SecretData_QwenPat {
 	if x != nil {
-		if x, ok := x.Secret.(*SecretData_Qwen_Pat); ok {
-			return x.Qwen_Pat
+		if x, ok := x.Secret.(*SecretData_QwenPat_); ok {
+			return x.QwenPat
 		}
 	}
 	return nil
@@ -7960,8 +7960,8 @@ type SecretData_HttpCookie struct {
 	HttpCookie *SecretData_HTTPCookie `protobuf:"bytes,92,opt,name=http_cookie,json=httpCookie,proto3,oneof"`
 }
 
-type SecretData_Qwen_Pat struct {
-	Qwen_Pat *SecretData_QwenPat `protobuf:"bytes,93,opt,name=qwen__pat,json=qwenPat,proto3,oneof"`
+type SecretData_QwenPat_ struct {
+	QwenPat *SecretData_QwenPat `protobuf:"bytes,93,opt,name=qwen_pat,json=qwenPat,proto3,oneof"`
 }
 
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
@@ -8148,7 +8148,7 @@ func (*SecretData_HttpCsrfToken) isSecretData_Secret() {}
 
 func (*SecretData_HttpCookie) isSecretData_Secret() {}
 
-func (*SecretData_Qwen_Pat) isSecretData_Secret() {}
+func (*SecretData_QwenPat_) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -14553,7 +14553,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x129\n" +
 	"\tlocations\x18\x03 \x03(\v2\x17.scalibr.LocationLegacyB\x02\x18\x01R\tlocations\x12-\n" +
-	"\blocation\x18\x04 \x01(\v2\x11.scalibr.LocationR\blocation\"\xe5v\n" +
+	"\blocation\x18\x04 \x01(\v2\x11.scalibr.LocationR\blocation\"\xe4v\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -14660,8 +14660,8 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"httpBearer\x12K\n" +
 	"\x0fhttp_csrf_token\x18[ \x01(\v2!.scalibr.SecretData.HTTPCSRFTokenH\x00R\rhttpCsrfToken\x12A\n" +
 	"\vhttp_cookie\x18\\ \x01(\v2\x1e.scalibr.SecretData.HTTPCookieH\x00R\n" +
-	"httpCookie\x129\n" +
-	"\tqwen__pat\x18] \x01(\v2\x1b.scalibr.SecretData.QwenPatH\x00R\aqwenPat\x1a\xb0\x03\n" +
+	"httpCookie\x128\n" +
+	"\bqwen_pat\x18] \x01(\v2\x1b.scalibr.SecretData.QwenPatH\x00R\aqwenPat\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -15452,7 +15452,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	183, // 186: scalibr.SecretData.http_bearer:type_name -> scalibr.SecretData.HTTPBearer
 	184, // 187: scalibr.SecretData.http_csrf_token:type_name -> scalibr.SecretData.HTTPCSRFToken
 	185, // 188: scalibr.SecretData.http_cookie:type_name -> scalibr.SecretData.HTTPCookie
-	192, // 189: scalibr.SecretData.qwen__pat:type_name -> scalibr.SecretData.QwenPat
+	192, // 189: scalibr.SecretData.qwen_pat:type_name -> scalibr.SecretData.QwenPat
 	6,   // 190: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
 	196, // 191: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
 	81,  // 192: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
@@ -15636,7 +15636,7 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_HttpBearer)(nil),
 		(*SecretData_HttpCsrfToken)(nil),
 		(*SecretData_HttpCookie)(nil),
-		(*SecretData_Qwen_Pat)(nil),
+		(*SecretData_QwenPat_)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[73].OneofWrappers = []any{
 		(*LocationLegacy_Filepath)(nil),

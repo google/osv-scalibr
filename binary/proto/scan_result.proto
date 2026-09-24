@@ -945,7 +945,7 @@ message SecretData {
     HTTPBearer http_bearer = 90;
     HTTPCSRFToken http_csrf_token = 91;
     HTTPCookie http_cookie = 92;
-    QwenPat qwen__pat = 93;
+    QwenPat qwen_pat = 93;
   }
 
   message GCPSAK {

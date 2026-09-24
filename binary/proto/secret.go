@@ -1201,8 +1201,8 @@ func salesforceOAuth2ClientCredentialsToProto(s salesforceoauth2client.Credentia
 
 func qwenPATToProto(s qwenpat.QwenPAT) *spb.SecretData {
 	return &spb.SecretData{
-		Secret: &spb.SecretData_Qwen_Pat{
-			Qwen_Pat: &spb.SecretData_QwenPat{
+		Secret: &spb.SecretData_QwenPat_{
+			QwenPat: &spb.SecretData_QwenPat{
 				Pat: s.Pat,
 			},
 		},
@@ -1570,8 +1570,8 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 		return veleshttp.Cookie{
 			Values: s.GetHttpCookie().GetValues(),
 		}, nil
-	case *spb.SecretData_Qwen_Pat:
-		return qwenPATToStruct(s.GetQwen_Pat()), nil
+	case *spb.SecretData_QwenPat_:
+		return qwenPATToStruct(s.GetQwenPat()), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())
 	}
