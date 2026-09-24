@@ -1381,3 +1381,73 @@ func TestIsInterestingExecutable(t *testing.T) {
 		})
 	}
 }
+
+// A fake extractor that panics on one specific file.
+type fakeExtractorPanicking struct{}
+
+func (fakeExtractorPanicking) Name() string                       { return "ex-panicking" }
+func (fakeExtractorPanicking) Version() int                       { return 1 }
+func (fakeExtractorPanicking) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (fakeExtractorPanicking) FileRequired(api filesystem.FileAPI) bool {
+	name := filepath.Base(api.Path())
+	return name == "bad.txt" || name == "good.txt"
+}
+func (fakeExtractorPanicking) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	if filepath.Base(input.Path) == "bad.txt" {
+		panic("simulated extractor bug")
+	}
+	return inventory.Inventory{
+		Packages: []*extractor.Package{{
+			Name:     "good-package",
+			Location: extractor.LocationFromPath(filepath.ToSlash(input.Path)),
+		}},
+	}, nil
+}
+
+// A panicking extractor must not abort the walk: the packages found in every
+// other file have to survive, and the failure has to be reported rather than
+// swallowed.
+func TestRunFS_ExtractorPanic(t *testing.T) {
+	fsys := setupMapFS(t, mapFS{
+		"bad.txt":  []byte("malformed"),
+		"good.txt": []byte("fine"),
+	})
+
+	config := &filesystem.Config{
+		Extractors: []filesystem.Extractor{fakeExtractorPanicking{}},
+		ScanRoots:  []*scalibrfs.ScanRoot{{FS: fsys, Path: "."}},
+		Stats:      &fakeCollector{},
+	}
+
+	gotInv, gotStatus, err := filesystem.Run(t.Context(), config)
+	if err != nil {
+		t.Fatalf("filesystem.Run(%v): %v", config, err)
+	}
+
+	// The other file's package survived the panic.
+	var gotNames []string
+	for _, p := range gotInv.Packages {
+		gotNames = append(gotNames, p.Name)
+	}
+	if diff := cmp.Diff([]string{"good-package"}, gotNames); diff != "" {
+		t.Errorf("filesystem.Run(%v): unexpected packages (-want +got):\n%s", config, diff)
+	}
+
+	// The panic is reported against the extractor that caused it.
+	if len(gotStatus) != 1 {
+		t.Fatalf("filesystem.Run(%v): got %d statuses, want 1", config, len(gotStatus))
+	}
+	if got := gotStatus[0].Status.Status; got != plugin.ScanStatusPartiallySucceeded {
+		t.Errorf("filesystem.Run(%v): got status %v, want PartiallySucceeded", config, got)
+	}
+	fileErrs := gotStatus[0].Status.FileErrors
+	if len(fileErrs) != 1 {
+		t.Fatalf("filesystem.Run(%v): got %d file errors, want 1", config, len(fileErrs))
+	}
+	if got := filepath.Base(fileErrs[0].FilePath); got != "bad.txt" {
+		t.Errorf("filesystem.Run(%v): file error on %q, want bad.txt", config, got)
+	}
+	if msg := fileErrs[0].ErrorMessage; !strings.Contains(msg, "panicked") {
+		t.Errorf("filesystem.Run(%v): file error %q does not mention the panic", config, msg)
+	}
+}
