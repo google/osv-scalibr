@@ -136,8 +136,8 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	s := bufio.NewScanner(input.Reader)
 	packages := []*extractor.Package{}
 
-	var pkgName string = ""
-	var pkgVersion string = ""
+	var pkgName string
+	var pkgVersion string
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
