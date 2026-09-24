@@ -167,6 +167,7 @@ func TestFileRequired(t *testing.T) {
 
 type countingReader struct {
 	io.Reader
+
 	bytesRead int
 }
 
@@ -216,6 +217,7 @@ func TestExtractAllowsMetadataAtExactLimit(t *testing.T) {
 
 type errorAfterDataReader struct {
 	io.Reader
+
 	err error
 }
 
