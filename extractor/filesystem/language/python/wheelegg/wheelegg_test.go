@@ -15,11 +15,15 @@
 package wheelegg_test
 
 import (
+	"archive/zip"
 	"bytes"
+	"encoding/binary"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -113,6 +117,14 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
 		},
 		{
+			name:             "ZIP64 member with overflowing size is not required",
+			path:             "python3.10/site-packages/bomb.dist-info/METADATA",
+			maxFileSizeBytes: 100,
+			fileSizeBytes:    -1,
+			wantRequired:     false,
+			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
+		},
+		{
 			name:             ".egg required if maxFileSizeBytes explicitly set to 0",
 			path:             "python3.10/site-packages/monotonic-1.6-py3.10.egg",
 			maxFileSizeBytes: 0,
@@ -150,6 +162,137 @@ func TestFileRequired(t *testing.T) {
 				t.Errorf("FileRequired(%s) recorded result metric %v, want result metric %v", tt.path, gotResultMetric, tt.wantResultMetric)
 			}
 		})
+	}
+}
+
+type countingReader struct {
+	io.Reader
+	bytesRead int
+}
+
+func (r *countingReader) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
+	r.bytesRead += n
+	return n, err
+}
+
+func TestExtractCapsStandaloneMetadataRead(t *testing.T) {
+	const limit = 64
+	metadata := "Name: bomb\nVersion: 1\n" + strings.Repeat("Requires-Dist: x\n", 100)
+	r := &countingReader{Reader: strings.NewReader(metadata)}
+	e, err := wheelegg.New(&cpb.PluginConfig{MaxFileSizeBytes: limit})
+	if err != nil {
+		t.Fatalf("wheelegg.New(): %v", err)
+	}
+	_, err = e.Extract(t.Context(), &filesystem.ScanInput{
+		Path:   "bomb.dist-info/METADATA",
+		Reader: r,
+	})
+	if err == nil || !strings.Contains(err.Error(), "read limit") {
+		t.Fatalf("Extract() error = %v, want read limit error", err)
+	}
+	if r.bytesRead > limit+1 {
+		t.Errorf("Extract() read %d bytes, want at most %d", r.bytesRead, limit+1)
+	}
+}
+
+func TestExtractAllowsMetadataAtExactLimit(t *testing.T) {
+	metadata := "Name: bomb\nVersion: 1\n\n"
+	e, err := wheelegg.New(&cpb.PluginConfig{MaxFileSizeBytes: int64(len(metadata))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := e.Extract(t.Context(), &filesystem.ScanInput{
+		Path:   "bomb.dist-info/METADATA",
+		Reader: strings.NewReader(metadata),
+	})
+	if err != nil {
+		t.Fatalf("Extract(): %v", err)
+	}
+	if len(got.Packages) != 1 || got.Packages[0].Name != "bomb" {
+		t.Errorf("Extract() packages = %v, want bomb", got.Packages)
+	}
+}
+
+type errorAfterDataReader struct {
+	io.Reader
+	err error
+}
+
+func (r errorAfterDataReader) Read(p []byte) (int, error) {
+	n, err := r.Reader.Read(p)
+	if errors.Is(err, io.EOF) {
+		return 0, r.err
+	}
+	return n, err
+}
+
+func TestExtractPropagatesReadErrorAtLimit(t *testing.T) {
+	metadata := "Name: bomb\nVersion: 1\n\n"
+	readErr := errors.New("source read failed")
+	e, err := wheelegg.New(&cpb.PluginConfig{MaxFileSizeBytes: int64(len(metadata))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = e.Extract(t.Context(), &filesystem.ScanInput{
+		Path: "bomb.dist-info/METADATA",
+		Reader: errorAfterDataReader{
+			Reader: strings.NewReader(metadata),
+			err:    readErr,
+		},
+	})
+	if !errors.Is(err, readErr) {
+		t.Errorf("Extract() error = %v, want %v", err, readErr)
+	}
+}
+
+func TestExtractSkipsZIP64MemberWithOverflowingSize(t *testing.T) {
+	var archive bytes.Buffer
+	w := zip.NewWriter(&archive)
+	member, err := w.Create("bomb.dist-info/METADATA")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := member.Write([]byte("Name: bomb\nVersion: 1\n\n")); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Replace the declared uncompressed size with MaxUint64 in a ZIP64
+	// extra field. FileInfo.Size() then reports -1.
+	data := archive.Bytes()
+	central := bytes.Index(data, []byte("PK\x01\x02"))
+	end := bytes.Index(data, []byte("PK\x05\x06"))
+	if central < 0 || end < 0 {
+		t.Fatal("missing ZIP directory")
+	}
+	nameLen := int(binary.LittleEndian.Uint16(data[central+28 : central+30]))
+	extraLen := int(binary.LittleEndian.Uint16(data[central+30 : central+32]))
+	insertAt := central + 46 + nameLen + extraLen
+	zip64 := []byte{1, 0, 8, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	data = append(append(append([]byte(nil), data[:insertAt]...), zip64...), data[insertAt:]...)
+	binary.LittleEndian.PutUint32(data[central+24:central+28], 0xffffffff)
+	binary.LittleEndian.PutUint16(data[central+30:central+32], uint16(extraLen+len(zip64)))
+	end += len(zip64)
+	centralSize := binary.LittleEndian.Uint32(data[end+12 : end+16])
+	binary.LittleEndian.PutUint32(data[end+12:end+16], centralSize+uint32(len(zip64)))
+
+	e, err := wheelegg.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := e.Extract(t.Context(), &filesystem.ScanInput{
+		Path:   "bomb.whl",
+		Info:   fakefs.FakeFileInfo{FileName: "bomb.whl", FileSize: int64(len(data))},
+		Reader: bytes.NewReader(data),
+	})
+	if err != nil {
+		t.Fatalf("Extract(): %v", err)
+	}
+	if len(got.Packages) != 0 {
+		t.Errorf("Extract() returned %d packages from an invalid ZIP64 member", len(got.Packages))
 	}
 }
 
