@@ -16,26 +16,38 @@ package qwenpat
 
 import (
 	"net/http"
+	"time"
 
 	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 )
 
-const (
-	// dashScopeModels is the API endpoint for DashScope model list.
-	dashScopeModels = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models"
-)
+// validationTimeout is the timeout for a single DashScope endpoint query.
+const validationTimeout = 10 * time.Second
+
+// dashScopeModels are the DashScope model list endpoints of all four regional
+// domains. API keys are bound to the region they were created in, so a key is
+// only reported as invalid when none of the endpoints accepts it.
+var dashScopeModels = []string{
+	"https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models",
+	"https://dashscope-us.aliyuncs.com/compatible-mode/v1/models",
+	"https://cn-hongkong.dashscope.aliyuncs.com/compatible-mode/v1/models",
+	"https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+}
 
 // NewValidator creates a new Validator checks whether the given QwenPAT is valid via the DashScope API.
 //
-// It performs a GET request to the appropriate Qwen API endpoint
-// If the request returns HTTP 200, the key is considered valid.
-// If 401 Unauthorized, the key is invalid. Other errors return ValidationFailed.
+// It performs a GET request to each of the four DashScope regional endpoints
+// until one of them returns a definitive answer.
+// If any request returns HTTP 200 or 400, the key is considered valid.
+// If every request returns 401 Unauthorized or 403 Forbidden, the key is invalid.
+// Other errors return ValidationFailed.
 // See following links:
 // 1. https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope
 // 2. https://www.alibabacloud.com/help/en/model-studio/error-code
+// 3. https://www.alibabacloud.com/help/en/model-studio/base-url#dashscope-domain
 func NewValidator() *sv.Validator[QwenPAT] {
 	return &sv.Validator[QwenPAT]{
-		Endpoint:   dashScopeModels,
+		Endpoints:  dashScopeModels,
 		HTTPMethod: http.MethodGet,
 		HTTPHeaders: func(s QwenPAT) map[string]string {
 			return map[string]string{"Authorization": "Bearer " + s.Pat}
@@ -46,5 +58,8 @@ func NewValidator() *sv.Validator[QwenPAT] {
 		// 401 Unauthorized: Invalid API Key
 		// 403 Forbidden: API Key valid format but permission denied/invalid
 		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
+		HTTPC: &http.Client{
+			Timeout: validationTimeout,
+		},
 	}
 }

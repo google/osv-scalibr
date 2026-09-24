@@ -16,9 +16,11 @@ package qwenpat_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,19 +32,53 @@ import (
 
 const validatorTestQwenPat = "sk-[A-Za-z0-9]{32}"
 
+// regionalHosts are the hosts of the DashScope regional domains, in the order
+// the validator queries them.
+var regionalHosts = []string{
+	"dashscope-intl.aliyuncs.com",
+	"dashscope-us.aliyuncs.com",
+	"cn-hongkong.dashscope.aliyuncs.com",
+	"dashscope.aliyuncs.com",
+}
+
 // mockTransport redirects requests to the test server
 type mockTransport struct {
 	testServer *httptest.Server
 }
 
 func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Replace the original URL with our test server URL
-	if req.URL.Host == "dashscope-intl.aliyuncs.com" {
+	// Replace the original URL with our test server URL. Every DashScope
+	// regional domain has to be redirected, not only the international one.
+	if strings.HasSuffix(req.URL.Host, ".aliyuncs.com") {
 		testURL, _ := url.Parse(m.testServer.URL)
 		req.URL.Scheme = testURL.Scheme
 		req.URL.Host = testURL.Host
 	}
 	return http.DefaultTransport.RoundTrip(req)
+}
+
+// hostStatusTransport answers every regional DashScope endpoint without any
+// network access and records the order in which the endpoints were queried.
+type hostStatusTransport struct {
+	// statuses maps a DashScope host to the status code it replies with.
+	// Hosts missing from the map reply 404.
+	statuses map[string]int
+	// queried records the hosts in the order they were requested.
+	queried []string
+}
+
+func (t *hostStatusTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.queried = append(t.queried, req.URL.Host)
+	status := http.StatusNotFound
+	if s, ok := t.statuses[req.URL.Host]; ok {
+		status = s
+	}
+	return &http.Response{
+		StatusCode: status,
+		Body:       io.NopCloser(strings.NewReader("")),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
 }
 
 // mockDashScopeServer creates a mock DashScope API server for testing
@@ -143,6 +179,69 @@ func TestValidator(t *testing.T) {
 		})
 	}
 }
+
+// TestValidator_RegionalEndpoints checks that every DashScope regional
+// endpoint is queried before a key is classified as invalid, because API
+// keys are bound to the region they were created in.
+func TestValidator_RegionalEndpoints(t *testing.T) {
+	unauthorized := http.StatusUnauthorized
+	cases := []struct {
+		name        string
+		statuses    map[string]int
+		want        veles.ValidationStatus
+		wantQueried []string
+	}{
+		{
+			// The key was created in the US, so only the second endpoint
+			// accepts it: validation has to succeed instead of stopping at
+			// the first 401.
+			name: "accepted by a non-first endpoint",
+			statuses: map[string]int{
+				"dashscope-intl.aliyuncs.com":        unauthorized,
+				"dashscope-us.aliyuncs.com":          http.StatusOK,
+				"cn-hongkong.dashscope.aliyuncs.com": unauthorized,
+				"dashscope.aliyuncs.com":             unauthorized,
+			},
+			want: veles.ValidationValid,
+			// Validation stops as soon as an endpoint accepts the key.
+			wantQueried: regionalHosts[:2],
+		},
+		{
+			// No endpoint accepts the key: all four have to be tried before
+			// the key is reported as invalid.
+			name: "rejected by every endpoint",
+			statuses: map[string]int{
+				"dashscope-intl.aliyuncs.com":        unauthorized,
+				"dashscope-us.aliyuncs.com":          unauthorized,
+				"cn-hongkong.dashscope.aliyuncs.com": unauthorized,
+				"dashscope.aliyuncs.com":             unauthorized,
+			},
+			want:        veles.ValidationInvalid,
+			wantQueried: regionalHosts,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			transport := &hostStatusTransport{statuses: tc.statuses}
+
+			validator := qwenpat.NewValidator()
+			validator.HTTPC = &http.Client{Transport: transport}
+
+			got, err := validator.Validate(context.Background(), qwenpat.QwenPAT{Pat: validatorTestQwenPat})
+			if err != nil {
+				t.Fatalf("Validate() error: %v, want nil", err)
+			}
+			if got != tc.want {
+				t.Errorf("Validate() = %v, want %v", got, tc.want)
+			}
+			if diff := cmp.Diff(tc.wantQueried, transport.queried); diff != "" {
+				t.Errorf("queried endpoints diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestValidator_ContextCancellation(t *testing.T) {
 	// Create a server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
