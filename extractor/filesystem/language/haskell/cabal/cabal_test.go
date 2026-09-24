@@ -166,12 +166,6 @@ func TestExtract(t *testing.T) {
 					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf"),
 				},
-				{
-					Name:     "base",
-					Version:  "4.18.2.1",
-					PURLType: purl.TypeHackage,
-					Location: extractor.LocationFromPath("testdata/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf"),
-				},
 			},
 		},
 		{
@@ -186,16 +180,10 @@ func TestExtract(t *testing.T) {
 					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/haskell-say-1.0.0.0-5a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c08.conf"),
 				},
-				{
-					Name:     "base",
-					Version:  "4.18.2.1",
-					PURLType: purl.TypeHackage,
-					Location: extractor.LocationFromPath("testdata/haskell-say-1.0.0.0-5a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c08.conf"),
-				},
 			},
 		},
 		{
-			Name: "abx2xml-go package with multiline dependencies",
+			Name: "abx2xml-go package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf",
 			},
@@ -203,18 +191,6 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "abx2xml-go",
 					Version:  "1.0",
-					PURLType: purl.TypeHackage,
-					Location: extractor.LocationFromPath("testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf"),
-				},
-				{
-					Name:     "whatchu-expecting-brah",
-					Version:  "1.0",
-					PURLType: purl.TypeHackage,
-					Location: extractor.LocationFromPath("testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf"),
-				},
-				{
-					Name:     "base",
-					Version:  "4.18.2.1",
 					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf"),
 				},

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -133,28 +132,22 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-// dependencyRe will match package names and versions in the following format:
-// foo-1.2.3
-// foo-bar-1.2.3
-// foo-bar-2.0
-// foo-bar-1.2.3.4
-// foo-bar-1.0rc1
-// foo-bar-1.0-alpha.1
-var dependencyRe = regexp.MustCompile(`^(.+)-([0-9][A-Za-z0-9.-]*)$`)
-
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	s := bufio.NewScanner(input.Reader)
 	packages := []*extractor.Package{}
 
-	var pkgName string
-	var pkgVersion string
-	var dependencies []string
-	inDepends := false
+	var pkgName string = ""
+	var pkgVersion string = ""
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
 			return packages, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
+		}
+
+		// Stop scanning once both the package name and version have been found.
+		if pkgName != "" && pkgVersion != "" {
+			break
 		}
 
 		line := s.Text()
@@ -168,40 +161,14 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		isIndented := len(line) > 0 && (line[0] == ' ' || line[0] == '\t')
 
 		if strings.HasPrefix(trimmed, "name:") && !isIndented {
-			inDepends = false
 			pkgName = strings.TrimSpace(strings.TrimPrefix(trimmed, "name:"))
 			continue
 		}
 
 		if strings.HasPrefix(trimmed, "version:") && !isIndented {
-			inDepends = false
 			pkgVersion = strings.TrimSpace(strings.TrimPrefix(trimmed, "version:"))
 			continue
 		}
-
-		if strings.HasPrefix(trimmed, "depends:") && !isIndented {
-			inDepends = true
-
-			depends := strings.TrimSpace(strings.TrimPrefix(trimmed, "depends:"))
-			if depends != "" {
-				dependencies = append(dependencies, strings.Fields(depends)...)
-			}
-			continue
-		}
-
-		// Handle multiline depends:
-		//
-		// depends:
-		//     base-4.18.2.1
-		//     containers-0.6.7.1
-		//     text-2.0.2
-		if inDepends && isIndented {
-			dependencies = append(dependencies, strings.Fields(trimmed)...)
-			continue
-		}
-
-		// We reached another top-level field.
-		inDepends = false
 	}
 
 	if err := s.Err(); err != nil {
@@ -221,29 +188,6 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		PURLType: purl.TypeHackage,
 		Location: location,
 	})
-
-	// Packages listed in depends.
-	for _, dependency := range dependencies {
-		matches := dependencyRe.FindStringSubmatch(dependency)
-
-		// Because FindStringSubmatch() returns the entire match plus each captured group.
-		// For instance, when invoked on regex `^(.+)-([0-9][A-Za-z0-9.-]*)$` with "containers-0.6.7.1" argument.
-		// 		It returns roughly:
-		//			matches[0] = "containers-0.6.7.1" // entire match
-		//			matches[1] = "containers"         // first capture group
-		//			matches[2] = "0.6.7.1"            // second capture group
-		// Thus, length of 3.
-		if len(matches) != 3 {
-			continue
-		}
-
-		packages = append(packages, &extractor.Package{
-			Name:     matches[1],
-			Version:  matches[2],
-			PURLType: purl.TypeHackage,
-			Location: location,
-		})
-	}
 
 	return packages, nil
 }
