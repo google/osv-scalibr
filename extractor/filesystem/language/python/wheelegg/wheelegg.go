@@ -108,12 +108,14 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 			// We only want to skip the file for being too large if it is a relevant
 			// file at all, so we check the file size after checking the file suffix.
-			if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-				e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+			size := fileinfo.Size()
+			// A ZIP64 member size above MaxInt64 wraps to a negative FileInfo size.
+			if size < 0 || (e.maxFileSizeBytes > 0 && size > e.maxFileSizeBytes) {
+				e.reportFileRequired(path, size, stats.FileRequiredResultSizeLimitExceeded)
 				return false
 			}
 
-			e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+			e.reportFileRequired(path, size, stats.FileRequiredResultOK)
 			return true
 		}
 	}
@@ -217,6 +219,31 @@ var repeatedKeys = map[string]bool{
 
 // extractSingleFile parses the metadata from a single file.
 func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Package, error) {
+	// Bound reads from both ZIP members and standalone metadata. ZIP member
+	// sizes come from archive headers, which may be attacker-controlled.
+	limit := e.maxFileSizeBytes
+	if limit <= 0 {
+		limit = defaultMaxFileSizeBytes
+	}
+	limited := &io.LimitedReader{R: r, N: limit}
+	p, err := parseSingleFile(limited, path)
+	if err != nil {
+		return nil, err
+	}
+	if limited.N == 0 {
+		var next [1]byte
+		n, readErr := io.ReadFull(r, next[:])
+		if n > 0 {
+			return nil, fmt.Errorf("metadata exceeds %d-byte read limit", limit)
+		}
+		if readErr != nil && !errors.Is(readErr, io.EOF) {
+			return nil, fmt.Errorf("read metadata after size limit: %w", readErr)
+		}
+	}
+	return p, nil
+}
+
+func parseSingleFile(r io.Reader, path string) (*extractor.Package, error) {
 	scanner := bufio.NewScanner(r)
 
 	var name, version, author, authorEmail string
