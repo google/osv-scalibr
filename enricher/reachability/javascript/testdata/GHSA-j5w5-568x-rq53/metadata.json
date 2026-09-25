@@ -1,0 +1,25 @@
+[
+  {
+    "osv": {
+      "id": "GHSA-j5w5-568x-rq53",
+      "affected": [
+        {
+          "package": { "ecosystem": "npm", "name": "@evomap/evolver" },
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                { "introduced": "0" },
+                { "fixed": "1.69.3" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": { "filename": "__jelly_sentinel_suppress_module_wide_sink__" },
+    "patterns": [
+      "call <@evomap/evolver/**>.extractSignals"
+    ]
+  }
+]

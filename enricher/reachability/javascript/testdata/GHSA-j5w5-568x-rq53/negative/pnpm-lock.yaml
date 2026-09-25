@@ -1,0 +1,31 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@evomap/evolver':
+        specifier: 1.69.1
+        version: 1.69.1
+
+packages:
+
+  '@evomap/evolver@1.69.1':
+    resolution: {integrity: sha512-3g6c5ooEpi10LCQufQ64J6LWsKeMjokVKJeVHytlBdU5ciaFvy81u3KOYzDkgFnOJdvi9NcEDZWK0dx2zvPNbQ==}
+    hasBin: true
+
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
+
+snapshots:
+
+  '@evomap/evolver@1.69.1':
+    dependencies:
+      dotenv: 16.6.1
+
+  dotenv@16.6.1: {}
