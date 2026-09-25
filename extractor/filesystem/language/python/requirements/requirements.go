@@ -274,28 +274,30 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 // readLine reads a line from the scanner, removes comments and joins it with
 // the next line if it ends with a backslash.
 func readLine(scanner *bufio.Scanner, currentLine int, builder *strings.Builder) (string, int) {
-	l := scanner.Text()
-	l = removeComments(l)
+	// Iterative rather than recursive: the continuation depth is the number of
+	// lines in the file, and a Go stack overflow is fatal, not recoverable.
+	for {
+		l := scanner.Text()
+		l = removeComments(l)
 
-	if hasEnvVariable(l) {
-		// Ignore env variables
-		// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L503
-		// TODO(b/286213823): Implement metric
-		return "", currentLine
-	}
-
-	if strings.HasSuffix(l, `\`) {
-		builder.WriteString(l[:len(l)-1])
-		if scanner.Scan() {
-			currentLine++
-			return readLine(scanner, currentLine, builder)
+		if hasEnvVariable(l) {
+			// Ignore env variables
+			// https://github.com/pypa/pip/blob/72a32e/src/pip/_internal/req/req_file.py#L503
+			// TODO(b/286213823): Implement metric
+			return "", currentLine
 		}
-		return builder.String(), currentLine
+
+		if !strings.HasSuffix(l, `\`) {
+			builder.WriteString(l)
+			return builder.String(), currentLine
+		}
+
+		builder.WriteString(l[:len(l)-1])
+		if !scanner.Scan() {
+			return builder.String(), currentLine
+		}
+		currentLine++
 	}
-
-	builder.WriteString(l)
-
-	return builder.String(), currentLine
 }
 
 func (e Extractor) exportStats(input *filesystem.ScanInput, err error) {
