@@ -192,6 +192,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/atin"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/creditcard"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/itin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/ssn"
@@ -498,6 +499,7 @@ var (
 	})
 
 	SensitiveInformationDetectors = initMapFromVelesPlugins([]velesPlugin{
+		{creditcard.NewDetector(), "sensitiveinformation/creditcard", 0},
 		{atin.NewDetector(), "sensitiveinformation/atin", 0},
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
 		{itin.NewDetector(), "secrets/itin", 0},
