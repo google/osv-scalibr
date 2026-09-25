@@ -19,7 +19,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strings"
 
@@ -77,9 +77,9 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired return true if the specified file matched the cabal.project.freeze file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	path := api.Path()
+	filepath := api.Path()
 
-	if filepath.Base(path) != "cabal.project.freeze" {
+	if path.Base(filepath) != "cabal.project.freeze" {
 		return false
 	}
 
@@ -88,11 +88,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		e.reportFileRequired(filepath, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
 
-	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	e.reportFileRequired(filepath, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
 }
 
