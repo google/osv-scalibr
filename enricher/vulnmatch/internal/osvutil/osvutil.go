@@ -132,7 +132,8 @@ func purlToName(pkgName string, p *purl.PackageURL, eco osvecosystem.Parsed) str
 			return purlNamespace + ":" + pkgName
 		}
 	default:
-		if !strings.HasPrefix(pkgName, purlNamespace+"/") {
+		// PURL namespaces may be lowercased (e.g. Go), while pkgName keeps its original case.
+		if !strings.HasPrefix(strings.ToLower(pkgName), strings.ToLower(purlNamespace)+"/") {
 			return purlNamespace + "/" + pkgName
 		}
 	}
