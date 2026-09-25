@@ -19,7 +19,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -74,19 +74,19 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if the specified file is a cabal store package database conf file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	path := api.Path()
+	filePath := api.Path()
 
-	if filepath.Ext(path) != ".conf" {
+	if path.Ext(filePath) != ".conf" {
 		return false
 	}
 
 	// The path Cabal package database entries are stored under includes "cabal/store".
-	if !strings.Contains(filepath.ToSlash(path), "cabal/store") {
+	if !strings.Contains(filePath, "cabal/store") {
 		return false
 	}
 
 	// Cabal package database entries are stored directly under a package.db directory.
-	if filepath.Base(filepath.Dir(path)) != "package.db" {
+	if path.Base(path.Dir(filePath)) != "package.db" {
 		return false
 	}
 
@@ -95,11 +95,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		e.reportFileRequired(filePath, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
 
-	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	e.reportFileRequired(filePath, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
 }
 
