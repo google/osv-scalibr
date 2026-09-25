@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
+	"deps.dev/util/pypi"
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -37,18 +39,8 @@ const (
 )
 
 var (
-	// reValidPkg matches valid PyPI package names per PEP 508.
-	// https://packaging.python.org/en/latest/specifications/name-normalization/
-	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
-	// reUnsupportedConstraints covers wildcards, less-than, not-equal, and
-	// compound constraints that we cannot resolve to a single version.
-	reUnsupportedConstraints = regexp.MustCompile(`\*|<[^=]|,|!=`)
-	// reExtras strips extras from a requirement string (e.g. "requests[security]").
-	reExtras = regexp.MustCompile(`\[[^\[\]]*\]`)
 	// reSection matches an INI section header such as "[options]".
 	reSection = regexp.MustCompile(`^\[([^\]]+)\]$`)
-	// reEnvMarker matches PEP 508 environment markers ("; python_version ...").
-	reEnvMarker = regexp.MustCompile(`;.*$`)
 	// reSkippedDep matches entries that should be skipped: file://, attr:, VCS
 	// URLs, local paths (starting with . or /), and editable installs (-e).
 	reSkippedDep = regexp.MustCompile(`(?i)^(file:|attr:|git\+|hg\+|svn\+|bzr\+|\.|/|-e\s)`)
@@ -91,8 +83,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 // parse reads a setup.cfg file and returns all discovered packages.
 func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	// seen deduplicates by normalized name.
-	seen := map[string]bool{}
+	// seen deduplicates by normalized name and merges DepGroupVals
+	// when a package appears in multiple extras groups.
+	seen := map[string]*extractor.Package{}
 	var pkgs []*extractor.Package
 
 	addDep := func(raw, group string) {
@@ -100,10 +93,17 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 		if pkg == nil {
 			return
 		}
-		if seen[pkg.Name] {
+		if existing, ok := seen[pkg.Name]; ok {
+			// Merge dep group: if this package appears in a new group, append it.
+			if group != "" {
+				em := existing.Metadata.(*Metadata)
+				if !slices.Contains(em.DepGroupVals, group) {
+					em.DepGroupVals = append(em.DepGroupVals, group)
+				}
+			}
 			return
 		}
-		seen[pkg.Name] = true
+		seen[pkg.Name] = pkg
 		pkgs = append(pkgs, pkg)
 	}
 
@@ -134,8 +134,9 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 		trimmed := strings.TrimSpace(line)
 
 		// Skip blank lines and full-line comments.
+		// Do NOT reset inValue here — blank lines and comments can appear
+		// between continuation lines in multi-line values.
 		if trimmed == "" || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, ";") {
-			inValue = false
 			continue
 		}
 
@@ -209,15 +210,18 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	return pkgs, nil
 }
 
-// parseDep parses a single PEP 508 dependency string and returns a Package, or
-// nil if the entry should be skipped (invalid name, unsupported format, etc.).
-func parseDep(raw, group, path string) *extractor.Package {
-	// Strip environment markers ("; python_version < '3.10'").
-	raw = reEnvMarker.ReplaceAllString(raw, "")
-	// Strip extras like [security].
-	raw = reExtras.ReplaceAllString(raw, "")
-	raw = strings.TrimSpace(raw)
+// normalizeName applies PEP 503 normalization: lowercase and collapse [-_.]+
+// runs to a single hyphen.
+var reNorm = regexp.MustCompile(`[-_.]+`)
 
+func normalizeName(name string) string {
+	return reNorm.ReplaceAllString(strings.ToLower(name), "-")
+}
+
+// parseDep parses a single PEP 508 dependency string using pypi.ParseDependency
+// and returns a Package, or nil if the entry should be skipped.
+func parseDep(raw, group, path string) *extractor.Package {
+	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil
 	}
@@ -227,17 +231,24 @@ func parseDep(raw, group, path string) *extractor.Package {
 		return nil
 	}
 
-	name, version, comparator := getLowestVersion(raw)
-	// Normalize per PEP 503.
-	name = normalizeName(name)
-	if name == "" || !reValidPkg.MatchString(name) {
+	// Use the standard PEP 508 parser from deps.dev/util/pypi.
+	dep, err := pypi.ParseDependency(raw)
+	if err != nil {
 		return nil
 	}
 
-	req := name
-	if version != "" {
-		req = name + comparator + version
+	name := normalizeName(dep.Name)
+	if name == "" {
+		return nil
 	}
+
+	// Extract version and comparator from the constraint string.
+	version, comparator := parseConstraint(dep.Constraint)
+
+	// Store the full original requirement string (preserving extras and markers)
+	// so that the transitive dependency enricher can parse it with
+	// pypi.ParseDependency for resolution.
+	requirement := raw
 
 	var groupVals []string
 	if group != "" {
@@ -250,41 +261,40 @@ func parseDep(raw, group, path string) *extractor.Package {
 		PURLType: purl.TypePyPi,
 		Location: extractor.LocationFromPath(path),
 		Metadata: &Metadata{
-			Requirement:       req,
+			Requirement:       requirement,
 			VersionComparator: comparator,
 			DepGroupVals:      groupVals,
 		},
 	}
 }
 
-// normalizeName applies PEP 503 normalization: lowercase and collapse [-_.]+
-// runs to a single hyphen.
-var reNorm = regexp.MustCompile(`[-_.]+`)
-
-func normalizeName(name string) string {
-	return reNorm.ReplaceAllString(strings.ToLower(name), "-")
-}
-
-// getLowestVersion extracts the package name, version string, and comparator
-// from a PEP 508 requirement string, matching the logic in requirements.go.
-func getLowestVersion(s string) (name, version, comparator string) {
-	if reUnsupportedConstraints.FindString(s) != "" {
-		return nameFromRequirement(s), "", ""
+// parseConstraint extracts version and comparator from a PEP 508 constraint
+// string (e.g. ">=2.0", "==1.0", "~=1.24.0"). For compound/unsupported
+// constraints (containing commas, wildcards, !=, bare <), it returns empty
+// strings to indicate the version cannot be resolved to a single value.
+func parseConstraint(constraint string) (version, comparator string) {
+	constraint = strings.TrimSpace(constraint)
+	if constraint == "" {
+		return "", ""
 	}
+
+	// Compound constraints or unsupported operators — cannot resolve.
+	if strings.Contains(constraint, ",") || strings.Contains(constraint, "*") ||
+		strings.Contains(constraint, "!=") {
+		return "", ""
+	}
+	// Bare < without = (e.g. "<2.0")
+	if strings.HasPrefix(constraint, "<") && !strings.HasPrefix(constraint, "<=") {
+		return "", ""
+	}
+
 	separators := []string{"===", "==", ">=", "<=", "~="}
 	for _, sep := range separators {
-		if v, after, ok := strings.Cut(s, sep); ok {
-			return strings.TrimSpace(v), strings.TrimSpace(after), sep
+		if strings.HasPrefix(constraint, sep) {
+			return strings.TrimSpace(constraint[len(sep):]), sep
 		}
 	}
-	return strings.TrimSpace(s), "", ""
-}
-
-func nameFromRequirement(s string) string {
-	for _, sep := range []string{"===", "==", ">=", "<=", "~=", "!=", "<"} {
-		s, _, _ = strings.Cut(s, sep)
-	}
-	return strings.TrimSpace(s)
+	return "", ""
 }
 
 var _ filesystem.Extractor = Extractor{}

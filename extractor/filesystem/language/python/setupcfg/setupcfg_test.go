@@ -91,7 +91,7 @@ func TestExtract(t *testing.T) {
 					Version:  "",
 					PURLType: purl.TypePyPi,
 					Metadata: &setupcfg.Metadata{
-						Requirement: "click",
+						Requirement: "Click",
 					},
 				},
 				{
@@ -104,30 +104,32 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				// cryptography>=41.0,<42.0 — compound, version stripped but pkg kept.
+				// Requirement preserves the full original string.
 				{
 					Name:     "cryptography",
 					Version:  "",
 					PURLType: purl.TypePyPi,
 					Metadata: &setupcfg.Metadata{
-						Requirement: "cryptography",
+						Requirement: "cryptography>=41.0,<42.0",
 					},
 				},
-				// importlib-metadata with env marker — included (marker stripped).
+				// importlib-metadata with env marker — included.
+				// Requirement preserves the full original string with marker.
 				{
 					Name:     "importlib-metadata",
 					Version:  "",
 					PURLType: purl.TypePyPi,
 					Metadata: &setupcfg.Metadata{
-						Requirement: "importlib-metadata",
+						Requirement: "importlib-metadata; python_version < \"3.10\"",
 					},
 				},
-				// Pillow[jpeg]==10.0.0 — extras stripped, name normalized.
+				// Pillow[jpeg]==10.0.0 — extras preserved in Requirement, name normalized.
 				{
 					Name:     "pillow",
 					Version:  "10.0.0",
 					PURLType: purl.TypePyPi,
 					Metadata: &setupcfg.Metadata{
-						Requirement:       "pillow==10.0.0",
+						Requirement:       "Pillow[jpeg]==10.0.0",
 						VersionComparator: "==",
 					},
 				},
@@ -163,6 +165,56 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				// coverage!=5.0 — unsupported constraint, version stripped but kept.
+				// Requirement preserves the full original string.
+				{
+					Name:     "coverage",
+					Version:  "",
+					PURLType: purl.TypePyPi,
+					Metadata: &setupcfg.Metadata{
+						Requirement:  "coverage!=5.0",
+						DepGroupVals: []string{"test"},
+					},
+				},
+			},
+		},
+		{
+			name: "comments between continuation lines",
+			path: "testdata/comments_between.cfg",
+			wantPkgs: []*extractor.Package{
+				{
+					Name:     "requests",
+					Version:  "2.31.0",
+					PURLType: purl.TypePyPi,
+					Metadata: &setupcfg.Metadata{
+						Requirement:       "requests==2.31.0",
+						VersionComparator: "==",
+					},
+				},
+				{
+					Name:     "urllib3",
+					Version:  "1.26.0",
+					PURLType: purl.TypePyPi,
+					Metadata: &setupcfg.Metadata{
+						Requirement:       "urllib3>=1.26.0",
+						VersionComparator: ">=",
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate dep across extras merges groups",
+			path: "testdata/duplicate_extras.cfg",
+			wantPkgs: []*extractor.Package{
+				{
+					Name:     "pytest",
+					Version:  "7.0",
+					PURLType: purl.TypePyPi,
+					Metadata: &setupcfg.Metadata{
+						Requirement:       "pytest>=7.0",
+						VersionComparator: ">=",
+						DepGroupVals:      []string{"dev", "test"},
+					},
+				},
 				{
 					Name:     "coverage",
 					Version:  "",
