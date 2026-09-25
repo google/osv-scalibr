@@ -108,6 +108,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pdm.lock                                          | `python/pdmlock`                     |
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
+|            | setup.cfg                                         | `python/setupcfg`                    |
 |            | uv.lock                                           | `python/uvlock`                      |
 |            | pyproject.toml                                    | `python/pyprojecttoml`               |
 |            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
