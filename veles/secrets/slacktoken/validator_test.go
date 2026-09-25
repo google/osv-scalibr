@@ -15,7 +15,6 @@
 package slacktoken_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -25,7 +24,50 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/slacktoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptAppLevelTokenValidator(t *testing.T) {
+	brokenValidator := slacktoken.NewAppLevelTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		slacktoken.NewAppLevelTokenValidator(),
+		velestest.WithTrueNegatives(slacktoken.SlackAppLevelToken{
+			Token: "xapp-1-A000-OSVSCALIBR-00000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptAppConfigAccessTokenValidator(t *testing.T) {
+	brokenValidator := slacktoken.NewAppConfigAccessTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		slacktoken.NewAppConfigAccessTokenValidator(),
+		velestest.WithTrueNegatives(slacktoken.SlackAppConfigAccessToken{
+			Token: "xoxe.xoxp-1-MsNw-osvscalibr-invalid-000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
+
+func TestAcceptAppConfigRefreshTokenValidator(t *testing.T) {
+	brokenValidator := slacktoken.NewAppConfigRefreshTokenValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		slacktoken.NewAppConfigRefreshTokenValidator(),
+		velestest.WithTrueNegatives(slacktoken.SlackAppConfigRefreshToken{
+			Token: "xoxe-1-OSVSCALIBR-invalid-000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockSlackServer creates a mock Slack API server for testing
 func mockSlackServer(t *testing.T, expectedKey string, responseBody string, expectedEndpoint string) *httptest.Server {
@@ -222,78 +264,6 @@ func TestAppConfigRefreshTokenValidator(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"ok":true"}`))
-	}))
-	defer server.Close()
-
-	t.Run("app_level_token", func(t *testing.T) {
-		validator := slacktoken.NewAppLevelTokenValidator()
-		validator.HTTPC = server.Client()
-		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
-		key := slacktoken.SlackAppLevelToken{Token: testAppLevelToken}
-
-		// Create a cancelled context
-		ctx, cancel := context.WithCancel(t.Context())
-		cancel()
-
-		// Test validation with cancelled context
-		got, err := validator.Validate(ctx, key)
-
-		if err == nil {
-			t.Errorf("Validate() expected error due to context cancellation, got nil")
-		}
-		if got != veles.ValidationFailed {
-			t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-		}
-	})
-
-	// Test with App Config Access Token validator
-	t.Run("app_config_access_token", func(t *testing.T) {
-		validator := slacktoken.NewAppConfigAccessTokenValidator()
-		validator.HTTPC = server.Client()
-		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
-		key := slacktoken.SlackAppConfigAccessToken{Token: testAppConfigAccessToken}
-		ctx, cancel := context.WithCancel(t.Context())
-		cancel()
-
-		// Test validation with cancelled context
-		got, err := validator.Validate(ctx, key)
-
-		if err == nil {
-			t.Errorf("Validate() expected error due to context cancellation, got nil")
-		}
-		if got != veles.ValidationFailed {
-			t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-		}
-	})
-
-	// Test with App Config Refresh Token validator
-	t.Run("app_config_refresh_token", func(t *testing.T) {
-		validator := slacktoken.NewAppConfigRefreshTokenValidator()
-		validator.HTTPC = server.Client()
-		validator.Endpoint = server.URL + slacktoken.SlackAPIEndpoint
-		key := slacktoken.SlackAppConfigRefreshToken{Token: testAppConfigRefreshToken}
-
-		// Create a cancelled context
-		ctx, cancel := context.WithCancel(t.Context())
-		cancel()
-
-		// Test validation with cancelled context
-		got, err := validator.Validate(ctx, key)
-
-		if err == nil {
-			t.Errorf("Validate() expected error due to context cancellation, got nil")
-		}
-		if got != veles.ValidationFailed {
-			t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-		}
-	})
 }
 
 func TestValidator_InvalidRequest(t *testing.T) {

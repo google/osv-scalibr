@@ -29,11 +29,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2access"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	endpoint = "https://www.googleapis.com/oauth2/v3/tokeninfo"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := gcpoauth2access.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		gcpoauth2access.NewValidator(),
+		velestest.WithTrueNegatives(gcpoauth2access.Token{Token: "osvscalibr-not-a-real-gcp-access-token"}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 type mockRoundTripper struct {
 	want *http.Request
