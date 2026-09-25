@@ -67,7 +67,13 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					Location:   extractor.LocationFromPathAndLine("testdata/one-package-dev.v9.yaml", 17),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
-						DepGroupVals: []string{},
+						// acorn is only ever listed under the "." importer's
+						// devDependencies, and lockfileVersion 9.0+ no longer
+						// writes a computed "dev" flag into the packages
+						// section itself (github.com/google/osv-scanner/issues/1298),
+						// so this can only be recovered by walking the
+						// importers -> snapshots graph.
+						DepGroupVals: []string{"dev"},
 					},
 				},
 			},
@@ -355,13 +361,91 @@ func TestExtractor_Extract_v9(t *testing.T) {
 					},
 				},
 				{
-					Name:       "is-number",
-					Version:    "7.0.0",
+					Name:     "is-number",
+					Version:  "7.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/mixed-groups.v9.yaml", 29),
+					// is-number is only listed under devDependencies and has
+					// no snapshot edges reachable from a production or
+					// optional dependency, so it must be classified as dev.
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+			},
+		},
+		{
+			Name: "transitive dev dependency",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/transitive-dev.v9.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					// acorn is never listed in any importer's dependency maps.
+					// It is reachable only as a dependency of acorn-jsx, which
+					// is a devDependency, so only the walk through "snapshots"
+					// can classify it -- and the snapshot key carries a peer
+					// suffix, "acorn-jsx@5.3.2(acorn@8.11.3)".
+					Name:       "acorn",
+					Version:    "8.11.3",
 					PURLType:   purl.TypeNPM,
-					Location:   extractor.LocationFromPathAndLine("testdata/mixed-groups.v9.yaml", 29),
+					Location:   extractor.LocationFromPathAndLine("testdata/transitive-dev.v9.yaml", 21),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
+					Name:       "acorn-jsx",
+					Version:    "5.3.2",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/transitive-dev.v9.yaml", 26),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
+					Name:       "ansi-regex",
+					Version:    "5.0.1",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/transitive-dev.v9.yaml", 31),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "package reachable from both a production and a dev dependency",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/shared-prod-and-dev.v9.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					// acorn is a direct production dependency here, and also a
+					// dependency of the devDependency acorn-jsx. Production
+					// wins: an implementation that marks everything reachable
+					// from devDependencies would get this wrong.
+					Name:       "acorn",
+					Version:    "8.11.3",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/shared-prod-and-dev.v9.yaml", 21),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "acorn-jsx",
+					Version:    "5.3.2",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/shared-prod-and-dev.v9.yaml", 26),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
 					},
 				},
 			},
