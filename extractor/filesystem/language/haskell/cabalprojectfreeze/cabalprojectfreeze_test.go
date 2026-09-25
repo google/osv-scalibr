@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cabal_test
+package cabalprojectfreeze_test
 
 import (
 	"errors"
@@ -26,7 +26,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabalprojectfreeze"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
@@ -48,67 +48,51 @@ func TestFileRequired(t *testing.T) {
 		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:             "cabal package database conf file 1",
-			path:             "home/user/.local/state/cabal/store/ghc-9.6.6/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+			name:             "cabal.project.freeze file",
+			path:             "software-develop/cabal.project.freeze",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:             "cabal package database conf file 2",
-			path:             "home/user/.cabal/store/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
-		},
-		{
-			name:             "cabal package database conf file required if file size < max file size",
-			path:             "home/user/.local/state/cabal/store/ghc-9.6.6/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+			name:             "cabal.project.freeze file required if file size < max file size",
+			path:             "software-develop/cabal.project.freeze",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:             "cabal package database conf file required if file size == max file size",
-			path:             "home/user/.local/state/cabal/store/ghc-9.6.6/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+			name:             "cabal.project.freeze file required if file size == max file size",
+			path:             "software-develop/cabal.project.freeze",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 1000 * units.KiB,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:             "cabal package database conf file not required if file size > max file size",
-			path:             "home/user/.local/state/cabal/store/ghc-9.6.6/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+			name:             "cabal.project.freeze file not required if file size > max file size",
+			path:             "software-develop/cabal.project.freeze",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 100 * units.KiB,
 			wantRequired:     false,
 			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
 		},
 		{
-			name:             "cabal package database conf file required if max file size is zero",
-			path:             "home/user/.local/state/cabal/store/ghc-9.6.6/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+			name:             "cabal.project.freeze file required if max file size set to 0",
+			path:             "software-develop/cabal.project.freeze",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 0,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:         "conf file outside package.db",
-			path:         "home/user/.local/state/cabal/store/ghc-9.6.6/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+			name:         "not required",
+			path:         "software-develop/cabal.project.freeze/foo",
 			wantRequired: false,
 		},
 		{
-			name:         "conf file outside cabal store",
-			path:         "home/user/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
-			wantRequired: false,
-		},
-		{
-			name:         "non-conf file",
-			path:         "home/user/.local/state/cabal/store/ghc-9.6.6/package.db/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.txt",
-			wantRequired: false,
-		},
-		{
-			name:         "directory",
-			path:         "home/user/.local/state/cabal/store/ghc-9.6.6/package.db",
+			name:         "not required",
+			path:         "software-develop/foocabal.project.freeze",
 			wantRequired: false,
 		},
 	}
@@ -116,30 +100,22 @@ func TestFileRequired(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := testcollector.New()
-
-			e, err := cabal.New(&cpb.PluginConfig{
-				MaxFileSizeBytes: tt.maxFileSizeBytes,
-			})
+			e, err := cabalprojectfreeze.New(&cpb.PluginConfig{MaxFileSizeBytes: tt.maxFileSizeBytes})
 			if err != nil {
 				t.Fatalf("New() unexpected error: %v", err)
 			}
-
-			e.(*cabal.Extractor).Stats = collector
+			e.(*cabalprojectfreeze.Extractor).Stats = collector
 
 			fileSizeBytes := tt.fileSizeBytes
 			if fileSizeBytes == 0 {
 				fileSizeBytes = 1000
 			}
 
-			isRequired := e.FileRequired(simplefileapi.New(
-				tt.path,
-				fakefs.FakeFileInfo{
-					FileName: filepath.Base(tt.path),
-					FileMode: fs.ModePerm,
-					FileSize: fileSizeBytes,
-				},
-			))
-
+			isRequired := e.FileRequired(simplefileapi.New(tt.path, fakefs.FakeFileInfo{
+				FileName: filepath.Base(tt.path),
+				FileMode: fs.ModePerm,
+				FileSize: fileSizeBytes,
+			}))
 			if isRequired != tt.wantRequired {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, isRequired, tt.wantRequired)
 			}
@@ -155,44 +131,72 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "safe package",
+			Name: "valid cabal.project.freeze file",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+				Path: "testdata/valid",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "safe",
-					Version:  "0.3.21",
-					PURLType: purl.TypeHackage,
-					Location: extractor.LocationFromPath("testdata/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf"),
-				},
-			},
-		},
-		{
-			Name: "haskell-say package",
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/haskell-say-1.0.0.0-5a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c08.conf",
-			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:     "haskell-say",
-					Version:  "1.0.0.0",
-					PURLType: purl.TypeHackage,
-					Location: extractor.LocationFromPath("testdata/haskell-say-1.0.0.0-5a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c08.conf"),
-				},
-			},
-		},
-		{
-			Name: "abx2xml-go package",
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf",
-			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:     "abx2xml-go",
+					Name:     "AC-Angle",
 					Version:  "1.0",
 					PURLType: purl.TypeHackage,
-					Location: extractor.LocationFromPath("testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf"),
+					Location: extractor.LocationFromPath("testdata/valid"),
+				},
+				{
+					Name:     "ALUT",
+					Version:  "2.4.0.3",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid"),
+				},
+				{
+					Name:     "ANum",
+					Version:  "0.2.0.2",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid"),
+				},
+				{
+					Name:     "Agda",
+					Version:  "2.6.4.3",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid"),
+				},
+				{
+					Name:     "Allure",
+					Version:  "0.11.0.0",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid"),
+				},
+			},
+		},
+		{
+			Name: "valid cabal.project.freeze file with package problems",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/valid_2",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "AC-Angle",
+					Version:  "1.0",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid_2"),
+				},
+				{
+					Name:     "ANum",
+					Version:  "0.2.0.2",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid_2"),
+				},
+				{
+					Name:     "Agda",
+					Version:  "2.6.4.3",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid_2"),
+				},
+				{
+					Name:     "Allure",
+					Version:  "0.11.0.0",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/valid_2"),
 				},
 			},
 		},
@@ -202,7 +206,6 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/invalid",
 			},
 			WantPackages: []*extractor.Package{},
-			WantErr:      cmpopts.AnyError,
 		},
 	}
 
@@ -210,14 +213,11 @@ func TestExtract(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			collector := testcollector.New()
 
-			e, err := cabal.New(&cpb.PluginConfig{
-				MaxFileSizeBytes: 30 * units.MiB,
-			})
+			e, err := cabalprojectfreeze.New(&cpb.PluginConfig{MaxFileSizeBytes: 100})
 			if err != nil {
 				t.Fatalf("New() unexpected error: %v", err)
 			}
-
-			e.(*cabal.Extractor).Stats = collector
+			e.(*cabalprojectfreeze.Extractor).Stats = collector
 
 			scanInput := extracttest.GenerateScanInputMock(t, tt.InputConfig)
 			defer extracttest.CloseTestScanInput(t, scanInput)
@@ -229,10 +229,7 @@ func TestExtract(t *testing.T) {
 				return
 			}
 
-			wantInv := inventory.Inventory{
-				Packages: tt.WantPackages,
-			}
-
+			wantInv := inventory.Inventory{Packages: tt.WantPackages}
 			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", e.Name(), tt.InputConfig.Path, diff)
 			}
@@ -241,17 +238,17 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtract_ScannerError(t *testing.T) {
-	e, err := cabal.New(&cpb.PluginConfig{})
+	e, err := cabalprojectfreeze.New(&cpb.PluginConfig{})
 	if err != nil {
-		t.Fatalf("cabal.New: %v", err)
+		t.Fatalf("cabalprojectfreeze.New: %v", err)
 	}
 
 	input := &filesystem.ScanInput{
-		Path:   "home/user/.local/state/cabal/store/ghc-9.6.6/safe-0.3.21-bf7883b24e2927b8c2c172a7483f6c3e88459b69f9bf915968d889e82f47f177.conf",
+		Path:   "cabal.project.freeze",
 		Reader: iotest.ErrReader(errors.New("mock read error")),
 	}
 
-	wantErr := extracttest.ContainsErrStr{Str: "error while scanning cabal store conf file: mock read error"}
+	wantErr := extracttest.ContainsErrStr{Str: "error while scanning cabal.project.freeze file: mock read error"}
 	_, err = e.Extract(t.Context(), input)
 	if diff := cmp.Diff(wantErr, err, cmpopts.EquateErrors()); diff != "" {
 		t.Errorf("e.Extract() error diff (-want +got):\n%s", diff)
