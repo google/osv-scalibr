@@ -306,8 +306,11 @@ var (
 	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
 		stacklock.Name:          {protoCfg(stacklock.New)},
-		cabal.Name:              {protoCfg(cabal.New)},
 		cabalprojectfreeze.Name: {protoCfg(cabalprojectfreeze.New)},
+	}
+	// HaskellArtifact extractors for Haskell.
+	HaskellArtifact = InitMap{
+		cabal.Name: {protoCfg(cabal.New)},
 	}
 	// RSource extractors for R source extractors
 	RSource = InitMap{
@@ -609,6 +612,7 @@ var (
 		JuliaArtifact,
 		RubyArtifact,
 		ZigArtifact,
+		HaskellArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
