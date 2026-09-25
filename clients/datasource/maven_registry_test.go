@@ -556,3 +556,127 @@ func TestMavenRegistryURLReplacementWithExplicitOrigins(t *testing.T) {
 		t.Errorf("Expected 2 registries in total, got %d", len(client.GetRegistries()))
 	}
 }
+
+func TestGetProjectCacheAndCloneIsolation(t *testing.T) {
+	tempDir := t.TempDir()
+	srv := clienttest.NewMockHTTPServer(t)
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true},
+		tempDir,
+		false,
+		&http.Client{},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	pomPath := "org/example/cached/1.0.0/cached-1.0.0.pom"
+	srv.SetResponse(t, pomPath, []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>cached</artifactId>
+	  <version>1.0.0</version>
+	  <properties>
+	    <dep.version>2.0.0</dep.version>
+	  </properties>
+	  <dependencies>
+	    <dependency>
+	      <groupId>org.dep</groupId>
+	      <artifactId>lib</artifactId>
+	      <version>${dep.version}</version>
+	      <exclusions>
+	        <exclusion>
+	          <groupId>org.excl</groupId>
+	          <artifactId>excluded</artifactId>
+	        </exclusion>
+	      </exclusions>
+	    </dependency>
+	  </dependencies>
+	</project>`))
+
+	proj1, err := client.GetProject(t.Context(), "org.example", "cached", "1.0.0")
+	if err != nil {
+		t.Fatalf("first GetProject failed: %v", err)
+	}
+
+	// Mutate the returned project's slices in place (simulating Interpolate / MergeParent).
+	proj1.Properties.Properties[0].Value = "mutated"
+	proj1.Dependencies[0].Version = "mutated"
+	proj1.Dependencies[0].Exclusions[0].ArtifactID = "mutated"
+
+	// Corrupt the on-disk localRegistry file to verify subsequent GetProject calls hit the
+	// in-memory project cache rather than re-reading and re-decoding XML from disk.
+	diskPath := filepath.Join(tempDir, "maven", pomPath)
+	if err := os.WriteFile(diskPath, []byte("corrupted xml"), 0666); err != nil {
+		t.Fatalf("failed to overwrite disk cache file: %v", err)
+	}
+
+	// Verify WithoutRegistries() shares the in-memory project cache and returns an unmutated copy.
+	clonedClient := client.WithoutRegistries()
+	proj2, err := clonedClient.GetProject(t.Context(), "org.example", "cached", "1.0.0")
+	if err != nil {
+		t.Fatalf("second GetProject via WithoutRegistries() failed: %v", err)
+	}
+	if got := proj2.Properties.Properties[0].Value; got != "2.0.0" {
+		t.Errorf("cached project property was mutated: got %q, want %q", got, "2.0.0")
+	}
+	if got := string(proj2.Dependencies[0].Version); got != "${dep.version}" {
+		t.Errorf("cached project dependency version was mutated: got %q, want %q", got, "${dep.version}")
+	}
+	if got := string(proj2.Dependencies[0].Exclusions[0].ArtifactID); got != "excluded" {
+		t.Errorf("cached project exclusion was mutated: got %q, want %q", got, "excluded")
+	}
+}
+
+func TestGetCachedDependencyManagement(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	if err != nil {
+		t.Fatalf("NewDefaultMavenRegistryAPIClient failed: %v", err)
+	}
+
+	key := maven.ProjectKey{GroupID: "org.example", ArtifactID: "bom", Version: "1.0.0"}
+	calls := 0
+	loader := func() (maven.DependencyManagement, error) {
+		calls++
+		return maven.DependencyManagement{
+			Dependencies: []maven.Dependency{
+				{
+					GroupID:    "org.dep",
+					ArtifactID: "a",
+					Version:    "1.2.3",
+					Exclusions: []maven.Exclusion{{GroupID: "org.excl", ArtifactID: "b"}},
+				},
+			},
+		}, nil
+	}
+
+	dm1, err := client.GetCachedDependencyManagement(key, loader)
+	if err != nil {
+		t.Fatalf("first GetCachedDependencyManagement failed: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("loader calls = %d, want 1", calls)
+	}
+
+	// Mutate dm1 to verify clone isolation.
+	dm1.Dependencies[0].Version = "mutated"
+	dm1.Dependencies[0].Exclusions[0].ArtifactID = "mutated"
+
+	// Call via WithoutRegistries() to verify cache sharing and isolation.
+	dm2, err := client.WithoutRegistries().GetCachedDependencyManagement(key, loader)
+	if err != nil {
+		t.Fatalf("second GetCachedDependencyManagement failed: %v", err)
+	}
+	if calls != 1 {
+		t.Errorf("loader calls after cached lookup = %d, want 1", calls)
+	}
+	if got := string(dm2.Dependencies[0].Version); got != "1.2.3" {
+		t.Errorf("cached DependencyManagement version was mutated: got %q, want %q", got, "1.2.3")
+	}
+	if got := string(dm2.Dependencies[0].Exclusions[0].ArtifactID); got != "b" {
+		t.Errorf("cached DependencyManagement exclusion was mutated: got %q, want %q", got, "b")
+	}
+}

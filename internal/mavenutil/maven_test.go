@@ -15,9 +15,14 @@
 package mavenutil
 
 import (
+	"bytes"
+	"io"
+	"net/http"
 	"path/filepath"
+	"reflect"
 	"testing"
 
+	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
 	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/clients/datasource"
@@ -231,5 +236,87 @@ func TestDiscoverModules(t *testing.T) {
 				t.Errorf("failed to get project %s:%s:%s from local registry: %v", tt.g, tt.a, tt.v, err)
 			}
 		})
+	}
+}
+
+type countingTransport struct {
+	calls int
+	body  []byte
+}
+
+func (c *countingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	c.calls++
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(c.body)),
+	}, nil
+}
+
+func TestGetDependencyManagementCache(t *testing.T) {
+	transport := &countingTransport{
+		body: []byte(`
+		<project>
+		  <groupId>org.example</groupId>
+		  <artifactId>bom</artifactId>
+		  <version>1.0.0</version>
+		  <packaging>pom</packaging>
+		  <properties>
+		    <lib.version>2.3.4</lib.version>
+		  </properties>
+		  <dependencyManagement>
+		    <dependencies>
+		      <dependency>
+		        <groupId>org.dep</groupId>
+		        <artifactId>lib</artifactId>
+		        <version>${lib.version}</version>
+		      </dependency>
+		    </dependencies>
+		  </dependencyManagement>
+		</project>`),
+	}
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: "https://example.com/maven2", ReleasesEnabled: true},
+		"",
+		false,
+		&http.Client{Transport: transport},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("failed to create maven registry client: %v", err)
+	}
+
+	dm1, err := GetDependencyManagement(t.Context(), client, "org.example", "bom", "1.0.0")
+	if err != nil {
+		t.Fatalf("first GetDependencyManagement failed: %v", err)
+	}
+	want := maven.DependencyManagement{
+		Dependencies: []maven.Dependency{
+			{
+				GroupID:    "org.dep",
+				ArtifactID: "lib",
+				Version:    "2.3.4",
+			},
+		},
+	}
+	if !reflect.DeepEqual(dm1, want) {
+		t.Fatalf("GetDependencyManagement() = %v, want %v", dm1, want)
+	}
+	if transport.calls != 1 {
+		t.Fatalf("transport.calls = %d, want 1", transport.calls)
+	}
+
+	// Mutate dm1 to verify the cached DependencyManagement is isolated.
+	dm1.Dependencies[0].Version = "mutated"
+
+	dm2, err := GetDependencyManagement(t.Context(), client.WithoutRegistries(), "org.example", "bom", "1.0.0")
+	if err != nil {
+		t.Fatalf("second GetDependencyManagement failed: %v", err)
+	}
+	if !reflect.DeepEqual(dm2, want) {
+		t.Errorf("second GetDependencyManagement() = %v, want %v", dm2, want)
+	}
+	if transport.calls != 1 {
+		t.Errorf("transport.calls = %d after cached call, want 1", transport.calls)
 	}
 }
