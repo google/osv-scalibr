@@ -147,16 +147,30 @@ func TestExtract(t *testing.T) {
 		{
 			Name: "valid_plugin_file",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/valid",
+				Path: "testdata/akismet/valid",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "Akismet Anti-spam: Spam Protection",
+					Name:     "akismet",
 					Version:  "5.3",
 					PURLType: purl.TypeWordpress,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPath("testdata/akismet/valid"),
 				},
 			},
+		},
+		{
+			Name: "no_name",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/akismet/no-name",
+			},
+			WantPackages: nil,
+		},
+		{
+			Name: "no_version",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/akismet/no-version",
+			},
+			WantPackages: nil,
 		},
 		{
 			Name: "invalid_file",
