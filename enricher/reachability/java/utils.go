@@ -83,7 +83,12 @@ func openFromRoot(root *scalibrfs.ScanRoot, fullPath string) (fs.File, error) {
 
 	relPath := fullPath
 	if strings.HasPrefix(fullPath, rootPath) {
-		relPath = fullPath[len(rootPath):]
+		relPath = strings.TrimPrefix(fullPath[len(rootPath):], string(filepath.Separator))
+		relPath = strings.TrimPrefix(relPath, "/")
+	}
+
+	if relPath == "" {
+		relPath = fullPath
 	}
 
 	return root.FS.Open(filepath.ToSlash(relPath))
