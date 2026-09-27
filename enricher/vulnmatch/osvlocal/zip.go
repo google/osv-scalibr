@@ -16,7 +16,6 @@ package osvlocal
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/binary"
@@ -88,37 +87,49 @@ func fetchRemoteArchiveCRC32CHash(ctx context.Context, url string, httpClient *h
 	return 0, errors.New("could not find crc32c= checksum")
 }
 
-func fetchLocalArchiveCRC32CHash(data []byte) uint32 {
-	return crc32.Checksum(data, crc32.MakeTable(crc32.Castagnoli))
-}
+func fetchLocalArchiveCRC32CHash(filePath string) (uint32, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
 
-func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
-	cache, err := os.ReadFile(db.StoredAt)
-
-	if db.Offline {
-		if err != nil {
-			return nil, errOfflineDatabaseNotFound
-		}
-
-		return cache, nil
+	h := crc32.New(crc32.MakeTable(crc32.Castagnoli))
+	if _, err := io.Copy(h, f); err != nil {
+		return 0, err
 	}
 
-	if err == nil {
+	return h.Sum32(), nil
+}
+
+func (db *zipDB) fetchZip(ctx context.Context) error {
+	_, statErr := os.Stat(db.StoredAt)
+
+	if db.Offline {
+		if statErr != nil {
+			return errOfflineDatabaseNotFound
+		}
+
+		return nil
+	}
+
+	if statErr == nil {
 		remoteHash, err := fetchRemoteArchiveCRC32CHash(ctx, db.ArchiveURL, db.httpClient)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		if fetchLocalArchiveCRC32CHash(cache) == remoteHash {
-			return cache, nil
+		localHash, err := fetchLocalArchiveCRC32CHash(db.StoredAt)
+		if err == nil && localHash == remoteHash {
+			return nil
 		}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, db.ArchiveURL, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve OSV database archive: %w", err)
+		return fmt.Errorf("could not retrieve OSV database archive: %w", err)
 	}
 
 	if db.UserAgent != "" {
@@ -127,31 +138,42 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 
 	resp, err := db.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve OSV database archive: %w", err)
+		return fmt.Errorf("could not retrieve OSV database archive: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("db host returned %s", resp.Status)
+		return fmt.Errorf("db host returned %s", resp.Status)
 	}
 
-	var body []byte
+	if err := os.MkdirAll(path.Dir(db.StoredAt), 0750); err != nil {
+		return fmt.Errorf("could not create directory for database archive: %w", err)
+	}
 
-	body, err = io.ReadAll(resp.Body)
-
+	tmpFile, err := os.CreateTemp(path.Dir(db.StoredAt), "all-*.zip.tmp")
 	if err != nil {
-		return nil, fmt.Errorf("could not read OSV database archive from response: %w", err)
+		return fmt.Errorf("could not create temp file for database archive: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(tmpPath)
+	}()
+
+	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
+		_ = tmpFile.Close()
+		return fmt.Errorf("could not read OSV database archive from response: %w", err)
 	}
 
-	err = os.MkdirAll(path.Dir(db.StoredAt), 0750)
-
-	if err == nil {
-		//nolint:gosec // being world readable is fine
-		_ = os.WriteFile(db.StoredAt, body, 0644)
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("could not close temp file: %w", err)
 	}
 
-	return body, nil
+	if err := os.Rename(tmpPath, db.StoredAt); err != nil {
+		return fmt.Errorf("could not save OSV database archive: %w", err)
+	}
+
+	return nil
 }
 
 func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
@@ -211,16 +233,15 @@ func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
 func (db *zipDB) load(ctx context.Context, names []string) error {
 	db.Vulnerabilities = []*osvpb.Vulnerability{}
 
-	body, err := db.fetchZip(ctx)
-
-	if err != nil {
+	if err := db.fetchZip(ctx); err != nil {
 		return err
 	}
 
-	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	zipReader, err := zip.OpenReader(db.StoredAt)
 	if err != nil {
 		return fmt.Errorf("could not read OSV database archive: %w", err)
 	}
+	defer zipReader.Close()
 
 	// Read all the files from the zip archive
 	for _, zipFile := range zipReader.File {
