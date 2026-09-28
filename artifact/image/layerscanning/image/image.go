@@ -27,6 +27,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"archive/tar"
@@ -366,9 +367,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 
 	// Reverse loop through the layers to start from the latest layer first. This allows us to skip
 	// all files already seen.
-	for i := len(chainLayers) - 1; i >= 0; i-- {
-		chainLayer := chainLayers[i]
-
+	for i, chainLayer := range slices.Backward(chainLayers) {
 		// If the layer is empty, then there is nothing to do.
 		if chainLayer.latestLayer.IsEmpty() {
 			continue
@@ -589,7 +588,6 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 
 		// Check if the file is a whiteout.
 		isWhiteout := whiteout.IsWhiteout(basename)
-		// TODO(b/379094217): Handle Opaque Whiteouts
 		if isWhiteout {
 			basename = whiteout.ToPath(basename)
 		}
@@ -790,7 +788,6 @@ func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *vi
 }
 
 // inWhiteoutDir returns whether the file is in a whiteout directory.
-// TODO(b/379094217): Verify that this works for opaque whiteouts.
 func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 	for filePath != "" {
 		dirname := path.Dir(filePath)

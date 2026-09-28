@@ -60,9 +60,11 @@ func (e *OfflineEnricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv
 			continue
 		}
 
-		parentID, err := parent.RequireID()
-		if err != nil {
-			return fmt.Errorf("failed to generate ID for %s: %w", parent.Name, err)
+		parentPaths := map[string]bool{}
+		for _, rel := range parent.Location.Related {
+			if path := rel.PathOrEmpty(); path != "" {
+				parentPaths[path] = true
+			}
 		}
 
 		for _, req := range reqs {
@@ -70,7 +72,11 @@ func (e *OfflineEnricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv
 			if err != nil {
 				return fmt.Errorf("failed to solve %s: %w", parent.Name, err)
 			}
-			for _, child := range children {
+			for _, child := range filterPathRelations(parentPaths, children) {
+				parentID, err := parent.RequireID()
+				if err != nil {
+					return fmt.Errorf("failed to generate ID for %s: %w", parent.Name, err)
+				}
 				if child.ParentIDs == nil {
 					child.ParentIDs = make(map[string]bool)
 				}
@@ -80,4 +86,22 @@ func (e *OfflineEnricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv
 	}
 
 	return nil
+}
+
+func filterPathRelations(parentPaths map[string]bool, children []*extractor.Package) []*extractor.Package {
+	var filtered []*extractor.Package
+	for _, child := range children {
+		for _, childRel := range child.Location.Related {
+			if childPath := childRel.PathOrEmpty(); childPath != "" {
+				if _, found := parentPaths[childPath]; found {
+					filtered = append(filtered, child)
+					break
+				}
+			}
+		}
+	}
+	if len(filtered) == 0 {
+		return children
+	}
+	return filtered
 }
