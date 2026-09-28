@@ -133,6 +133,8 @@ const (
 	TypeCPAN = "cpan"
 	// TypeDHI is a pkg:dhi purl.
 	TypeDHI = "dhi"
+	// TypeFreeBSD is pkg:freebsd purl.
+	TypeFreeBSD = "freebsd"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -247,6 +249,7 @@ func validType(t string) bool {
 		TypeMise:       true,
 		TypeCPAN:       true,
 		TypeDHI:        true,
+		TypeFreeBSD:    true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

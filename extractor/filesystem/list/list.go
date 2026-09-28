@@ -106,6 +106,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/freebsd"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
@@ -389,6 +390,7 @@ var (
 		portage.Name:    {protoCfg(portage.New)},
 		flatpak.Name:    {protoCfg(flatpak.New)},
 		spack.Name:      {protoCfg(spack.New)},
+		freebsd.Name:    {protoCfg(freebsd.New)},
 		homebrew.Name:   {protoCfg(homebrew.New)},
 		macapps.Name:    {protoCfg(macapps.New)},
 		macports.Name:   {protoCfg(macports.New)},
