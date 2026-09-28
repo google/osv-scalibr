@@ -48,7 +48,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/opencontainers/runtime-spec v1.2.1
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260424063704-83285ce2a866
-	github.com/package-url/packageurl-go v0.1.5
+	github.com/package-url/packageurl-go v0.1.6
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/pierrec/lz4/v4 v4.1.26
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
