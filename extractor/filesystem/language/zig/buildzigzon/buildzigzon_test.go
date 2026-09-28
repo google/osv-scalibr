@@ -185,6 +185,48 @@ func TestExtractForArtifactMode(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "multiline string before closing brace",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multiline.brace.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "real_pkg",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/multiline.brace.build.zig.zon"),
+				},
+			},
+		},
+		{
+			name: "multiline string version field",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multiline.value.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "multiline_pkg",
+					Version:  "1.2.3",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/multiline.value.build.zig.zon"),
+				},
+			},
+		},
+		{
+			name: "unicode escape in version field",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/unicode.escape.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "hello_world",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/unicode.escape.build.zig.zon"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -324,6 +366,54 @@ func TestExtractForSourceMode(t *testing.T) {
 					Version:  "1.0.0",
 					PURLType: purl.TypeZig,
 					Location: extractor.LocationFromPath("testdata/commented.dep.build.zig.zon"),
+				},
+			},
+		},
+		{
+			name: "multiline string before closing brace in dependency",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multiline.brace.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "foo",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/multiline.brace.build.zig.zon"),
+				},
+				{
+					Name:     "bar",
+					Version:  "2.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/multiline.brace.build.zig.zon"),
+				},
+			},
+		},
+		{
+			name: "multiline string hash in dependency",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/multiline.value.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "zigrc",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/multiline.value.build.zig.zon"),
+				},
+			},
+		},
+		{
+			name: "unicode escape in dependency hash",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/unicode.escape.build.zig.zon",
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "zigrc",
+					Version:  "1.0.0",
+					PURLType: purl.TypeZig,
+					Location: extractor.LocationFromPath("testdata/unicode.escape.build.zig.zon"),
 				},
 			},
 		},
