@@ -90,6 +90,19 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "Go module with uppercase path",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGolang,
+				Name:     "github.com/Azure/azure-sdk-for-go/sdk/azidentity",
+				Version:  "1.2.0",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "github.com/Azure/azure-sdk-for-go/sdk/azidentity",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+				Version:   "1.2.0",
+			},
+		},
+		{
 			name: "Maven archive group:artifact",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeMaven,
