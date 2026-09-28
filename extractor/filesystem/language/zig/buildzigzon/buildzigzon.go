@@ -157,7 +157,7 @@ func (e Extractor) parseFile(ctx context.Context, input *filesystem.ScanInput) (
 		return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), ctxErr)
 	}
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	return root, nil
 }
