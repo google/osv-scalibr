@@ -93,6 +93,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/zig/buildzigzon"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
@@ -362,6 +363,11 @@ var (
 		podfilelock.Name:     {protoCfg(podfilelock.New)},
 	}
 
+	// ZigSource extractors for Zig Package Source extractors.
+	ZigSource = InitMap{buildzigzon.Name: {protoCfg(buildzigzon.NewWithDeps)}}
+	// ZigArtifact extractors for Zig Package Artifacts
+	ZigArtifact = InitMap{buildzigzon.Name: {protoCfg(buildzigzon.New)}}
+
 	// Containers extractors.
 	Containers = InitMap{
 		k8simage.Name:           {protoCfg(k8simage.New)},
@@ -573,6 +579,7 @@ var (
 		MiscSource,
 		CPANSource,
 		Bazel,
+		ZigSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -593,6 +600,7 @@ var (
 		FFA,
 		JuliaArtifact,
 		RubyArtifact,
+		ZigArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -635,6 +643,7 @@ var (
 		"swift":      vals(SwiftSource),
 		"perl":       vals(CPANSource),
 		"bazel":      vals(Bazel),
+		"zig":        vals(ZigSource),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
