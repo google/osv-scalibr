@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"text/scanner"
+	"unicode/utf8"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
@@ -147,16 +148,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-// parseFile parses the scanned file into its top-level ZON struct.
+// parseFile parses the scanned file into its top-level ZON struct. A file that isn't
+// valid ZON yields a nil struct rather than an error: there is nothing to report in it,
+// but that is not an extraction failure. All of the accessors below are nil-safe.
 func (e Extractor) parseFile(ctx context.Context, input *filesystem.ScanInput) (*zonValue, error) {
 	root, err := parseZON(input.Reader)
-	if err == nil && root != nil {
-		return root, nil
-	}
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return nil, fmt.Errorf("%s halted due to context error: %w", e.Name(), ctxErr)
 	}
-	return nil, nil
+	if err != nil {
+		return nil, nil
+	}
+	return root, nil
 }
 
 // parseNameVersionInfo extracts the top-level .name and .version fields.
@@ -333,14 +336,33 @@ const (
 	maxDepth = 64
 )
 
+// tokenKind is the type of a lexed token. Only the punctuation that shapes a ZON
+// document is distinguished; numbers, bools and chars all arrive as tokOther because
+// the extractor never reads them.
+type tokenKind int
+
+const (
+	tokEOF tokenKind = iota
+	tokDot
+	tokLBrace
+	tokRBrace
+	tokComma
+	tokEquals
+	tokAt
+	tokIdent
+	tokString
+	tokOther
+)
+
 // parser is a recursive descent parser for ZON, the Zig object notation used by
 // build.zig.zon. It tokenizes with text/scanner so that comments, string literals and
 // nesting are handled by the lexer rather than by regexes and hand-rolled brace
 // counting, both of which trip over braces, quotes and "//" inside string values.
 type parser struct {
 	scanner scanner.Scanner
-	// tok and text are the current token and its source text.
-	tok  rune
+	// tok and text are the current token and its text. For tokString, text is the
+	// contents of the literal with escapes already resolved.
+	tok  tokenKind
 	text string
 	// tokens counts the tokens consumed so far, used to guarantee forward progress.
 	tokens int
@@ -351,39 +373,201 @@ type parser struct {
 func newParser(r io.Reader) *parser {
 	p := &parser{}
 	p.scanner.Init(r)
-	p.scanner.Mode = scanner.ScanIdents | scanner.ScanFloats | scanner.ScanChars |
-		scanner.ScanStrings | scanner.ScanComments | scanner.SkipComments
+	p.scanner.Mode = scanner.ScanIdents | scanner.ScanFloats
 	p.scanner.Error = func(*scanner.Scanner, string) {}
 	p.advance()
 	return p
 }
 
-// advance reads the next token.
+// set records the current token.
+func (p *parser) set(kind tokenKind, text string) {
+	p.tok = kind
+	p.text = text
+}
+
+// advance reads the next token, discarding comments.
 func (p *parser) advance() {
-	p.tok = p.scanner.Scan()
-	p.text = p.scanner.TokenText()
-	for p.tok == '\\' {
-		for c := p.scanner.Next(); c != '\n' && c != scanner.EOF; {
-			c = p.scanner.Next()
-		}
-		p.tok = p.scanner.Scan()
-		p.text = p.scanner.TokenText()
-	}
 	p.tokens++
+	for {
+		switch r := p.scanner.Scan(); r {
+		case scanner.EOF:
+			p.set(tokEOF, "")
+		case scanner.Ident:
+			p.set(tokIdent, p.scanner.TokenText())
+		case '.':
+			p.set(tokDot, ".")
+		case '{':
+			p.set(tokLBrace, "{")
+		case '}':
+			p.set(tokRBrace, "}")
+		case ',':
+			p.set(tokComma, ",")
+		case '=':
+			p.set(tokEquals, "=")
+		case '@':
+			p.set(tokAt, "@")
+		case '/':
+			// Zig has line comments only; a lone '/' isn't valid ZON.
+			if p.scanner.Peek() == '/' {
+				p.skipLineComment()
+				continue
+			}
+			p.set(tokOther, "/")
+		case '"':
+			p.set(tokString, p.scanString())
+		case '\\':
+			// A \\ line opens a multiline string value; a lone backslash is junk.
+			if p.scanner.Peek() == '\\' {
+				p.set(tokString, p.scanMultilineString())
+				return
+			}
+			p.set(tokOther, `\`)
+		case '\'':
+			p.skipCharLiteral()
+			p.set(tokOther, "'")
+		default:
+			p.set(tokOther, p.scanner.TokenText())
+		}
+		return
+	}
+}
+
+// skipLineComment consumes the rest of the line, leaving the newline in place. The
+// first '/' has already been consumed and the second is the next rune.
+func (p *parser) skipLineComment() {
+	for c := p.scanner.Peek(); c != '\n' && c != scanner.EOF; c = p.scanner.Peek() {
+		p.scanner.Next()
+	}
+}
+
+// scanString reads a quoted string literal and resolves its escapes. The opening quote
+// has already been consumed. An unterminated literal yields what was read so far.
+func (p *parser) scanString() string {
+	var b strings.Builder
+	for {
+		switch c := p.scanner.Next(); c {
+		case '"':
+			return b.String()
+		case scanner.EOF, '\n':
+			return b.String()
+		case '\\':
+			p.scanEscape(&b)
+		default:
+			b.WriteRune(c)
+		}
+	}
+}
+
+// scanEscape resolves one escape sequence. The backslash has already been consumed.
+// An escape that isn't recognized is kept verbatim rather than dropped, so that a
+// value is never silently corrupted.
+func (p *parser) scanEscape(b *strings.Builder) {
+	switch c := p.scanner.Next(); c {
+	case 'n':
+		b.WriteByte('\n')
+	case 'r':
+		b.WriteByte('\r')
+	case 't':
+		b.WriteByte('\t')
+	case '\\', '\'', '"':
+		b.WriteRune(c)
+	case 'x':
+		// \xNN is a raw byte in Zig, not a code point.
+		digits := string([]rune{p.scanner.Next(), p.scanner.Next()})
+		n, err := strconv.ParseUint(digits, 16, 8)
+		if err != nil {
+			b.WriteString(`\x` + digits)
+			return
+		}
+		b.WriteByte(byte(n))
+	case 'u':
+		// unicode test case
+		if p.scanner.Peek() != '{' {
+			b.WriteString(`\u`)
+			return
+		}
+		p.scanner.Next()
+		var hex strings.Builder
+		for {
+			d := p.scanner.Peek()
+			if d == '}' || d == scanner.EOF || d == '\n' || hex.Len() > 8 {
+				break
+			}
+			hex.WriteRune(p.scanner.Next())
+		}
+		if p.scanner.Peek() == '}' {
+			p.scanner.Next()
+		}
+		n, err := strconv.ParseUint(hex.String(), 16, 32)
+		if err != nil || n > utf8.MaxRune {
+			b.WriteString(`\u{` + hex.String() + `}`)
+			return
+		}
+		b.WriteRune(rune(n))
+	case scanner.EOF:
+		b.WriteString(`\`)
+	default:
+		b.WriteRune('\\')
+		b.WriteRune(c)
+	}
+}
+
+// scanMultilineString reads a run of \\-introduced lines as one string value, joined
+// with newlines. Everything after \\ up to the end of the line is literal, including
+// quotes, braces and "//". The first backslash has already been consumed.
+func (p *parser) scanMultilineString() string {
+	p.scanner.Next() // The second backslash of the opening line.
+	var lines []string
+	for {
+		var line strings.Builder
+		for c := p.scanner.Peek(); c != '\n' && c != scanner.EOF; c = p.scanner.Peek() {
+			line.WriteRune(p.scanner.Next())
+		}
+		lines = append(lines, strings.TrimSuffix(line.String(), "\r"))
+
+		for isSpace(p.scanner.Peek()) {
+			p.scanner.Next()
+		}
+		if p.scanner.Peek() != '\\' {
+			return strings.Join(lines, "\n")
+		}
+		p.scanner.Next()
+		if p.scanner.Peek() != '\\' {
+			return strings.Join(lines, "\n")
+		}
+		p.scanner.Next()
+	}
+}
+
+// skipCharLiteral consumes a character literal, which may hold a quote or a brace.
+// The opening quote has already been consumed.
+func (p *parser) skipCharLiteral() {
+	for {
+		switch c := p.scanner.Next(); c {
+		case '\'', '\n', scanner.EOF:
+			return
+		case '\\':
+			p.scanner.Next()
+		}
+	}
+}
+
+func isSpace(c rune) bool {
+	return c == ' ' || c == '\t' || c == '\r' || c == '\n'
 }
 
 // parseName reads a field or enum name: a bare identifier, or the @"..." form Zig uses
 // for names that aren't valid identifiers.
 func (p *parser) parseName() (string, bool) {
 	switch p.tok {
-	case scanner.Ident:
+	case tokIdent:
 		name := p.text
 		p.advance()
 		return name, true
-	case '@':
+	case tokAt:
 		p.advance()
-		if p.tok == scanner.String {
-			name := unquote(p.text)
+		if p.tok == tokString {
+			name := p.text
 			p.advance()
 			return name, true
 		}
@@ -397,17 +581,19 @@ func (p *parser) parseValue() *zonValue {
 		return nil
 	}
 	switch p.tok {
-	case scanner.EOF:
+	case tokEOF:
 		return nil
-	case scanner.String, scanner.RawString:
-		v := &zonValue{kind: kindString, text: unquote(p.text)}
+	case tokRBrace, tokComma:
+		return &zonValue{kind: kindOther}
+	case tokString:
+		v := &zonValue{kind: kindString, text: p.text}
 		p.advance()
 		return v
-	case '{':
+	case tokLBrace:
 		return p.parseBlock()
-	case '.':
+	case tokDot:
 		p.advance()
-		if p.tok == '{' {
+		if p.tok == tokLBrace {
 			return p.parseBlock()
 		}
 		if name, ok := p.parseName(); ok {
@@ -432,14 +618,14 @@ func (p *parser) parseBlock() *zonValue {
 
 	p.advance()
 	block := &zonValue{kind: kindBlock}
-	for p.err == nil && p.tok != '}' && p.tok != scanner.EOF {
+	for p.err == nil && p.tok != tokRBrace && p.tok != tokEOF {
 		before := p.tokens
 		switch p.tok {
-		case ',':
+		case tokComma:
 			p.advance()
-		case '.':
+		case tokDot:
 			p.advance()
-			if p.tok == '{' {
+			if p.tok == tokLBrace {
 				block.items = append(block.items, p.parseBlock())
 				break
 			}
@@ -447,7 +633,7 @@ func (p *parser) parseBlock() *zonValue {
 			if !ok {
 				break
 			}
-			if p.tok != '=' {
+			if p.tok != tokEquals {
 				block.items = append(block.items, &zonValue{kind: kindEnum, text: name})
 				break
 			}
@@ -460,18 +646,10 @@ func (p *parser) parseBlock() *zonValue {
 			p.advance()
 		}
 	}
-	if p.tok == '}' {
+	if p.tok == tokRBrace {
 		p.advance()
 	}
 	return block
-}
-
-// unquote strips the quotes from a string literal and resolves its escape sequences.
-func unquote(literal string) string {
-	if s, err := strconv.Unquote(literal); err == nil {
-		return s
-	}
-	return strings.TrimSuffix(strings.TrimPrefix(literal, `"`), `"`)
 }
 
 // parseZON parses the top-level struct literal of a build.zig.zon file.
