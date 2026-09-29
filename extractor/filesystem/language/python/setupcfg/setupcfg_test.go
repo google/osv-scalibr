@@ -226,6 +226,33 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "malformed deps are skipped",
+			path: "testdata/malformed.cfg",
+			wantPkgs: []*extractor.Package{
+				// Only requests==2.31.0 is valid; all others are malformed and skipped.
+				{
+					Name:     "requests",
+					Version:  "2.31.0",
+					PURLType: purl.TypePyPi,
+					Metadata: &setupcfg.Metadata{
+						Requirement:       "requests==2.31.0",
+						VersionComparator: "==",
+					},
+				},
+				// "asdf 1.0" — pypi.ParseDependency interprets as bare name "asdf"
+				// (space-separated version is not PEP 508), so it's emitted with
+				// no version. This matches how requirements.go handles bare names.
+				{
+					Name:     "asdf",
+					Version:  "",
+					PURLType: purl.TypePyPi,
+					Metadata: &setupcfg.Metadata{
+						Requirement: "asdf 1.0",
+					},
+				},
+			},
+		},
 	}
 
 	e := setupcfg.Extractor{}
