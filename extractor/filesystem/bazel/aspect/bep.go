@@ -101,9 +101,12 @@ func aspectOutputsFromBEP(r io.Reader) ([]string, error) {
 func localPath(f bepFile, execRoot string) string {
 	if u, err := url.Parse(f.URI); err == nil && u.Scheme == "file" {
 		p := u.Path
-		// On Windows, file:///C:/foo is parsed as the path /C:/foo.
+		// On Windows, file:///C:/foo is parsed as the path /C:/foo, and the non-standard
+		// file://C:/foo as the host C: with the path /foo.
 		if len(p) >= 3 && p[0] == '/' && p[2] == ':' && isASCIILetter(p[1]) {
 			p = p[1:]
+		} else if len(u.Host) == 2 && u.Host[1] == ':' && isASCIILetter(u.Host[0]) {
+			p = u.Host + p
 		}
 		return filepath.FromSlash(p)
 	}

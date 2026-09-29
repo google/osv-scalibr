@@ -103,6 +103,11 @@ func TestLocalPath(t *testing.T) {
 			want: filepath.FromSlash("C:/out/a.scalibr.json"),
 		},
 		{
+			name: "windows_file_uri_with_drive_as_host",
+			file: bepFile{URI: "file://C:/out/a.scalibr.json"},
+			want: filepath.FromSlash("C:/out/a.scalibr.json"),
+		},
+		{
 			name:     "bytestream_uri",
 			file:     bepFile{Name: "pkg/a.scalibr.json", URI: "bytestream://host/blobs/h/1", PathPrefix: []string{"bazel-out", "cfg", "bin"}},
 			execRoot: "/root",

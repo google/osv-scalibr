@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -87,6 +88,16 @@ func targetsFromArgs(t *testing.T, args []string) []string {
 	}
 	t.Fatalf("missing -- in args: %v", args)
 	return nil
+}
+
+// fileURI returns the file:// URI that Bazel reports for the local file at path.
+func fileURI(path string) string {
+	p := filepath.ToSlash(path)
+	if !strings.HasPrefix(p, "/") {
+		// Windows paths start with a drive letter: file:///C:/foo.
+		p = "/" + p
+	}
+	return (&url.URL{Scheme: "file", Path: p}).String()
 }
 
 func writeFile(t *testing.T, path, content string) {
@@ -253,7 +264,7 @@ func TestExtractor_Extract(t *testing.T) {
 							if err := os.WriteFile(jsonPath, data, 0644); err != nil {
 								t.Fatalf("failed to write aspect json: %v", err)
 							}
-							bepLines = append(bepLines, fmt.Sprintf(`{"id":{"namedSet":{"id":"%d"}},"namedSetOfFiles":{"files":[{"uri":"file://%s"}]}}`, i, jsonPath))
+							bepLines = append(bepLines, fmt.Sprintf(`{"id":{"namedSet":{"id":"%d"}},"namedSetOfFiles":{"files":[{"uri":%q}]}}`, i, fileURI(jsonPath)))
 						}
 
 						return os.WriteFile(bepPath, []byte(strings.Join(bepLines, "\n")), 0644)
@@ -642,7 +653,7 @@ func TestExtractor_Extract_ModGraphFailureIsNotFatal(t *testing.T) {
 		runFunc: func(ctx context.Context, dir string, name string, args ...string) error {
 			p := filepath.Join(outDir, "a.scalibr.json")
 			writeFile(t, p, `{"name":"rules_foo+","label":"@@rules_foo+//:foo","kind":"cc_library","version":"1.2.3"}`)
-			bep := fmt.Sprintf(`{"id":{"namedSet":{"id":"0"}},"namedSetOfFiles":{"files":[{"name":"a.scalibr.json","uri":"file://%s"}]}}`, filepath.ToSlash(p))
+			bep := fmt.Sprintf(`{"id":{"namedSet":{"id":"0"}},"namedSetOfFiles":{"files":[{"name":"a.scalibr.json","uri":%q}]}}`, fileURI(p))
 			// A failed build still produces the aspect's outputs.
 			if err := os.WriteFile(bepPathFromArgs(t, args), []byte(bep), 0644); err != nil {
 				return err
@@ -683,7 +694,7 @@ func TestExtractor_Extract_ShowRepoFailureIsIsolated(t *testing.T) {
 			for _, repo := range repos {
 				p := filepath.Join(outDir, repo+".scalibr.json")
 				writeFile(t, p, fmt.Sprintf(`{"name":%q,"label":"@@%s//:lib","kind":"cc_library"}`, repo, repo))
-				files = append(files, fmt.Sprintf(`{"name":"lib.scalibr.json","uri":"file://%s"}`, filepath.ToSlash(p)))
+				files = append(files, fmt.Sprintf(`{"name":"lib.scalibr.json","uri":%q}`, fileURI(p)))
 			}
 			bep := `{"id":{"namedSet":{"id":"0"}},"namedSetOfFiles":{"files":[` + strings.Join(files, ",") + `]}}`
 			return os.WriteFile(bepPathFromArgs(t, args), []byte(bep), 0644)
