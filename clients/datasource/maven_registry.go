@@ -94,6 +94,8 @@ type MavenRegistryAPIClient struct {
 	mu             *sync.Mutex
 	cacheTimestamp *time.Time // If set, this means we loaded from a cache
 	responses      *RequestCache[string, response]
+	projects       *RequestCache[maven.ProjectKey, maven.Project]
+	depManagement  *RequestCache[maven.ProjectKey, maven.DependencyManagement]
 }
 
 type response struct {
@@ -118,6 +120,7 @@ func NewMavenRegistryAPIClient(
 	registry MavenRegistry,
 	localRegistry string,
 	disableGoogleAuth bool,
+	enableCache bool,
 	httpClient *http.Client,
 	googleClient *http.Client,
 ) (*MavenRegistryAPIClient, error) {
@@ -158,6 +161,13 @@ func NewMavenRegistryAPIClient(
 	globalSettings := ParseMavenSettings(globalMavenSettingsFile())
 	userSettings := ParseMavenSettings(userMavenSettingsFile())
 
+	var projects *RequestCache[maven.ProjectKey, maven.Project]
+	var depManagement *RequestCache[maven.ProjectKey, maven.DependencyManagement]
+	if enableCache {
+		projects = NewRequestCache[maven.ProjectKey, maven.Project]()
+		depManagement = NewRequestCache[maven.ProjectKey, maven.DependencyManagement]()
+	}
+
 	client := &MavenRegistryAPIClient{
 		// We assume only downloading releases is allowed on the default registry.
 		defaultRegistry:   registry,
@@ -165,6 +175,8 @@ func NewMavenRegistryAPIClient(
 		localRegistry:     localRegistry,
 		mu:                &sync.Mutex{},
 		responses:         NewRequestCache[string, response](),
+		projects:          projects,
+		depManagement:     depManagement,
 		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
 		disableGoogleAuth: disableGoogleAuth,
 		httpClient:        httpClient,
@@ -179,7 +191,7 @@ func NewMavenRegistryAPIClient(
 // NewDefaultMavenRegistryAPIClient creates a new MavenRegistryAPIClient with default settings,
 // using the provided registry URL.
 func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*MavenRegistryAPIClient, error) {
-	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false, &http.Client{}, nil)
+	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false, false, &http.Client{}, nil)
 }
 
 // AddLocalProject adds a project by its Maven POM contents to the local projects map.
@@ -200,6 +212,8 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 		mu:                m.mu,
 		cacheTimestamp:    m.cacheTimestamp,
 		responses:         m.responses,
+		projects:          m.projects,
+		depManagement:     m.depManagement,
 		registryAuths:     m.registryAuths,
 		httpClient:        m.httpClient,
 		googleClient:      m.googleClient,
@@ -285,13 +299,38 @@ func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 	return m.registries
 }
 
+// GetDependencyManagement returns cached DependencyManagement for key or computes and caches it via fn.
+func (m *MavenRegistryAPIClient) GetDependencyManagement(key maven.ProjectKey, fn func() (maven.DependencyManagement, error)) (maven.DependencyManagement, error) {
+	if m == nil || m.depManagement == nil {
+		return fn()
+	}
+	dm, err := m.depManagement.Get(key, fn)
+	if err != nil {
+		return maven.DependencyManagement{}, err
+	}
+	return dm, nil
+}
+
 // GetProject fetches a pom.xml specified by groupID, artifactID and version and parses it to maven.Project.
 // Each registry in the list is tried until we find the project.
-// For a snapshot version, version level metadata is used to find the extact version string.
+// For a snapshot version, version level metadata is used to find the exact version string.
 // More about Maven Repository Metadata Model: https://maven.apache.org/ref/3.9.9/maven-repository-metadata/
 // More about Maven Metadata: https://maven.apache.org/repositories/metadata.html
 func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifactID, version string) (maven.Project, error) {
 	key := maven.ProjectKey{GroupID: maven.String(groupID), ArtifactID: maven.String(artifactID), Version: maven.String(version)}
+	if m.projects != nil {
+		proj, err := m.projects.Get(key, func() (maven.Project, error) {
+			return m.fetchProject(ctx, key, groupID, artifactID, version)
+		})
+		if err != nil {
+			return maven.Project{}, err
+		}
+		return proj, nil
+	}
+	return m.fetchProject(ctx, key, groupID, artifactID, version)
+}
+
+func (m *MavenRegistryAPIClient) fetchProject(ctx context.Context, key maven.ProjectKey, groupID, artifactID, version string) (maven.Project, error) {
 	if content, ok := m.localProjects[key]; ok {
 		file := io.NopCloser(bytes.NewReader(content))
 		defer file.Close()
