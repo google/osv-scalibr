@@ -98,6 +98,13 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: nil,
 		},
 		{
+			Name: "null json",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/null.jsontest",
+			},
+			WantErr: extracttest.ContainsErrStr{Str: "decoded null JSON value"},
+		},
+		{
 			Name: "empty",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.json5",
