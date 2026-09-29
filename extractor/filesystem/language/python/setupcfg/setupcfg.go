@@ -41,6 +41,9 @@ const (
 var (
 	// reSection matches an INI section header such as "[options]".
 	reSection = regexp.MustCompile(`^\[([^\]]+)\]$`)
+	// reValidPkg matches valid PyPI package names per PEP 508.
+	// https://packaging.python.org/en/latest/specifications/name-normalization/
+	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
 	// reSkippedDep matches entries that should be skipped: file://, attr:, VCS
 	// URLs, local paths (starting with . or /), and editable installs (-e).
 	reSkippedDep = regexp.MustCompile(`(?i)^(file:|attr:|git\+|hg\+|svn\+|bzr\+|\.|/|-e\s)`)
@@ -238,12 +241,22 @@ func parseDep(raw, group, path string) *extractor.Package {
 	}
 
 	name := normalizeName(dep.Name)
-	if name == "" {
+	if name == "" || !reValidPkg.MatchString(dep.Name) {
+		return nil
+	}
+
+	// Skip URL requirements (e.g. "urllib3 @ https://...").
+	if strings.Contains(raw, " @ ") {
 		return nil
 	}
 
 	// Extract version and comparator from the constraint string.
 	version, comparator := parseConstraint(dep.Constraint)
+
+	// Skip if comparator is present but version is empty (e.g. "asdf==").
+	if version == "" && comparator != "" {
+		return nil
+	}
 
 	// Store the full original requirement string (preserving extras and markers)
 	// so that the transitive dependency enricher can parse it with
