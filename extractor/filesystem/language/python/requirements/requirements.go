@@ -274,8 +274,6 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 // readLine reads a line from the scanner, removes comments and joins it with
 // the next line if it ends with a backslash.
 func readLine(scanner *bufio.Scanner, currentLine int, builder *strings.Builder) (string, int) {
-	// Iterative rather than recursive: the continuation depth is the number of
-	// lines in the file, and a Go stack overflow is fatal, not recoverable.
 	for {
 		l := scanner.Text()
 		l = removeComments(l)
