@@ -27,7 +27,9 @@ type pomXMLSource interface {
 	Open() (io.ReadCloser, error)
 }
 
-func parsePomXML(file pomXMLSource) (*maven.Project, error) {
+// ParsePomXML parses a Maven project from the given source, attempting to preserve as
+// much dependency metadata as possible.
+func ParsePomXML(file pomXMLSource) (*maven.Project, error) {
 	reader, err := file.Open()
 	if err != nil {
 		return nil, fmt.Errorf("could not open POM: %w", err)
@@ -40,6 +42,20 @@ func parsePomXML(file pomXMLSource) (*maven.Project, error) {
 	}
 
 	project.ProjectKey = mavenutil.ProjectKey(*project)
+
+	// Do best-effort interpolation for dependencies only. If a version identifier is still
+	// unresolved, treat it as missing. This is the only fixable case, as an unresolved groupId,
+	// artifactId, etc. means we can't even identify the dependency. If that happens, we leave the
+	// property placeholder and we let Interpolate() drop the entire dependency section.
+	if err := project.InterpolateDependencies(); err != nil {
+		return nil, fmt.Errorf("could not interpolate dependencies: %w", err)
+	}
+	for i, dep := range project.Dependencies {
+		if dep.Version.ContainsProperty() {
+			project.Dependencies[i].Version = ""
+		}
+	}
+
 	if err := project.Interpolate(); err != nil {
 		return nil, fmt.Errorf("could not interpolate POM: %w", err)
 	}
