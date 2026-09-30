@@ -60,6 +60,8 @@ var (
 
 	// ErrMavenDependencyNotFound is returned when a JAR is not a Maven dependency.
 	ErrMavenDependencyNotFound = errors.New(MavenDepDirPath + " directory not found")
+	// ErrNoManifest is returned when a JAR does not have a MANIFEST.MF file.
+	ErrNoManifest = errors.New(ManifestFilePath + " file not found")
 )
 
 // Enricher is the Java Reach enricher.
@@ -117,9 +119,18 @@ func (enr Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *
 	}
 
 	for jar := range jars {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		err := enumerateReachabilityForJar(ctx, jar, input, inv, client)
 		if err != nil {
-			return err
+			if errors.Is(err, ErrNoMainClass) || errors.Is(err, ErrMavenDependencyNotFound) || errors.Is(err, ErrNoManifest) {
+				log.Debugf("skipping reachability analysis for %s: %v", jar, err)
+				continue
+			}
+			log.Errorf("reachability/java failed for %s: %v", jar, err)
+			continue
 		}
 	}
 
@@ -162,6 +173,7 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	if err != nil {
 		return err
 	}
+	defer jarRoot.Close()
 
 	nestedJARs, err := unzipJAR(jarPath, input, jarRoot)
 	if err != nil {
@@ -172,7 +184,6 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	// Check for the existence of the Maven metadata directory.
 	_, err = jarRoot.Stat(MavenDepDirPath)
 	if err != nil {
-		log.Error("reachability analysis is only supported for JARs built with Maven.")
 		return ErrMavenDependencyNotFound
 	}
 
@@ -186,8 +197,12 @@ func enumerateReachabilityForJar(ctx context.Context, jarPath string, input *enr
 	// Extract the main entrypoint.
 	manifest, err := jarRoot.Open(ManifestFilePath)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return ErrNoManifest
+		}
 		return err
 	}
+	defer manifest.Close()
 
 	mainClasses, err := GetMainClasses(manifest)
 	if err != nil {
