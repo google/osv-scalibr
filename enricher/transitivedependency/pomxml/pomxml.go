@@ -98,6 +98,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 
 	upstreamRegistry := ""
 	depsdevRequirements := false
+	enableCache := false
 	localRegistry := ""
 	disableGoogleAuth := false
 	if cfg.ProtoConfig != nil {
@@ -108,6 +109,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	if specific != nil {
 		upstreamRegistry = specific.UpstreamRegistry
 		depsdevRequirements = specific.DepsDevRequirements
+		enableCache = specific.EnableCache
 	}
 
 	httpClient := cfg.ClientFactories.HTTPClient()
@@ -128,6 +130,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 		},
 		localRegistry,
 		disableGoogleAuth,
+		enableCache,
 		httpClient,
 		googleClient,
 	)
@@ -143,7 +146,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 		}
 		depClient = resolution.NewDepsDevClientWithConn(conn)
 	} else {
-		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
+		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient, enableCache)
 	}
 
 	return &Enricher{
