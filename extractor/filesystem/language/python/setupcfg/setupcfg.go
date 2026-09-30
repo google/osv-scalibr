@@ -39,11 +39,6 @@ const (
 )
 
 var (
-	// reSection matches an INI section header such as "[options]".
-	reSection = regexp.MustCompile(`^\[([^\]]+)\]$`)
-	// reValidPkg matches valid PyPI package names per PEP 508.
-	// https://packaging.python.org/en/latest/specifications/name-normalization/
-	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
 	// reSkippedDep matches entries that should be skipped: file://, attr:, VCS
 	// URLs, local paths (starting with . or /), and editable installs (-e).
 	reSkippedDep = regexp.MustCompile(`(?i)^(file:|attr:|git\+|hg\+|svn\+|bzr\+|\.|/|-e\s)`)
@@ -143,9 +138,9 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 			continue
 		}
 
-		// Detect section headers.
-		if m := reSection.FindStringSubmatch(trimmed); m != nil {
-			sec := strings.ToLower(strings.TrimSpace(m[1]))
+		// Detect section headers: lines like "[options]" or "[options.extras_require]".
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			sec := strings.ToLower(strings.TrimSpace(trimmed[1 : len(trimmed)-1]))
 			switch sec {
 			case "options":
 				current = sectionOptions
@@ -213,14 +208,6 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	return pkgs, nil
 }
 
-// normalizeName applies PEP 503 normalization: lowercase and collapse [-_.]+
-// runs to a single hyphen.
-var reNorm = regexp.MustCompile(`[-_.]+`)
-
-func normalizeName(name string) string {
-	return reNorm.ReplaceAllString(strings.ToLower(name), "-")
-}
-
 // parseDep parses a single PEP 508 dependency string using pypi.ParseDependency
 // and returns a Package, or nil if the entry should be skipped.
 func parseDep(raw, group, path string) *extractor.Package {
@@ -234,19 +221,20 @@ func parseDep(raw, group, path string) *extractor.Package {
 		return nil
 	}
 
+	// Skip URL requirements (e.g. "urllib3 @ https://...").
+	if strings.Contains(raw, " @ ") {
+		return nil
+	}
+
 	// Use the standard PEP 508 parser from deps.dev/util/pypi.
+	// ParseDependency validates names, normalizes via CanonPackageName,
+	// and rejects malformed entries (empty names, bad syntax, etc.).
 	dep, err := pypi.ParseDependency(raw)
 	if err != nil {
 		return nil
 	}
 
-	name := normalizeName(dep.Name)
-	if name == "" || !reValidPkg.MatchString(dep.Name) {
-		return nil
-	}
-
-	// Skip URL requirements (e.g. "urllib3 @ https://...").
-	if strings.Contains(raw, " @ ") {
+	if dep.Name == "" || strings.HasPrefix(dep.Name, "-") {
 		return nil
 	}
 
@@ -269,7 +257,7 @@ func parseDep(raw, group, path string) *extractor.Package {
 	}
 
 	return &extractor.Package{
-		Name:     name,
+		Name:     dep.Name,
 		Version:  version,
 		PURLType: purl.TypePyPi,
 		Location: extractor.LocationFromPath(path),
