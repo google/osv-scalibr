@@ -1,0 +1,17 @@
+# SemVer excludes build metadata, so `+echo.N` is ordered on the build number
+1.2.3 < 1.2.3+echo.1
+1.2.3+echo.1 < 1.2.3+echo.2
+1.2.3+echo.2 < 1.2.4
+1.2.3+echo.9 < 1.2.3+echo.10
+1.2.3+echo.1 = 1.2.3+echo.1
+
+# the base SemVer ordering still applies
+1.2.3+echo.2 < 1.3.0+echo.1
+2.0.0 > 1.9.9+echo.5
+
+# a pre-release is still lower than the release it precedes
+1.2.3-rc.1+echo.1 < 1.2.3+echo.1
+1.2.3-rc.1 < 1.2.3-rc.1+echo.1
+
+# build metadata that is not Echo's is ignored, per SemVer
+1.2.3+build.1 = 1.2.3+build.2
