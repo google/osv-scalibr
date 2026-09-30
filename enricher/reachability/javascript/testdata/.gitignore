@@ -1,0 +1,6 @@
+# Per-CVE fixture node_modules are populated locally via `npm install`
+# (or pnpm/yarn) before integration tests run. Do not commit them — they
+# are large, environment-specific, and reproducible from the lockfiles.
+GHSA-*/positive/node_modules/
+GHSA-*/negative/node_modules/
+GHSA-*/fixed/node_modules/
