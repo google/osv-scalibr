@@ -15,7 +15,6 @@
 package mistralapikey_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,9 +25,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestKey = "abcdefghij1234567890ABCDEFGHIJ12"
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := mistralapikey.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		mistralapikey.NewValidator(),
+		velestest.WithTrueNegatives(mistralapikey.MistralAPIKey{
+			Key: "osvscalibrinvalidmistralkey000000",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
+}
 
 // mockTransport redirects requests to the test server.
 type mockTransport struct {
@@ -127,42 +141,5 @@ func TestValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	// Create a server that responds normally.
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create client with custom transport.
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	// Create validator with mock client.
-	validator := mistralapikey.NewValidator()
-	validator.HTTPC = client
-
-	// Create a cancelled context.
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	// Create test key.
-	key := mistralapikey.MistralAPIKey{Key: validatorTestKey}
-
-	// Test validation with cancelled context.
-	got, err := validator.Validate(ctx, key)
-
-	// Should return an error due to cancelled context.
-	if err == nil {
-		t.Error("Validate() expected error due to cancelled context, got nil")
-	}
-
-	// Status should be ValidationFailed.
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
