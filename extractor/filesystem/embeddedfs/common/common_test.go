@@ -17,6 +17,7 @@ package common
 import (
 	"archive/tar"
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -197,4 +198,123 @@ func TestIsZero(t *testing.T) {
 			}
 		})
 	}
+}
+
+// createDenseTAR builds a TAR with a single entry of `size` non-zero bytes, so
+// sparseCopy has to physically write every one of them.
+func createDenseTAR(t *testing.T, size int64) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	if err := tw.WriteHeader(&tar.Header{
+		Name: "dense.bin",
+		Mode: 0644,
+		Size: size,
+	}); err != nil {
+		t.Fatalf("tw.WriteHeader: %v", err)
+	}
+	if _, err := tw.Write(bytes.Repeat([]byte("A"), int(size))); err != nil {
+		t.Fatalf("tw.Write: %v", err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatalf("tw.Close: %v", err)
+	}
+	return &buf
+}
+
+// TestTARToTempDirSingleEntryStoppedMidCopy is the end-to-end shape of the
+// case that matters: a TAR whose first entry alone exceeds the storage budget.
+// The error is reported either way; what the mid-copy bound changes is how many
+// bytes reach the disk first, which TestSparseCopyStopsAtBudget measures.
+func TestTARToTempDirSingleEntryStoppedMidCopy(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("TARToTempDir tests are only supported on Linux")
+	}
+
+	const entrySize = 4 * units.MiB
+	// A ratio this small makes the allowed budget a handful of bytes on any
+	// realistic filesystem, so the single entry cannot fit.
+	tempDir, err := TARToTempDir(createDenseTAR(t, entrySize), 1e-9)
+	defer os.RemoveAll(tempDir)
+
+	if err == nil {
+		t.Fatal("TARToTempDir() = nil error, want the storage budget to reject the entry")
+	}
+	if !strings.Contains(err.Error(), "exceeds allowed temp storage") {
+		t.Fatalf("TARToTempDir() error = %v, want error containing %q", err, "exceeds allowed temp storage")
+	}
+	if tempDir != "" {
+		t.Errorf("TARToTempDir() tempDir = %q, want it removed on failure", tempDir)
+	}
+}
+
+// TestSparseCopyBudgetCountsPhysicalBytes pins the property that makes the
+// budget safe to enforce mid-copy: it bounds bytes actually written, not the
+// entry's logical size, so a sparse entry far larger than the budget still
+// extracts. Without this, bounding the copy would break sparse extraction.
+func TestSparseCopyBudgetCountsPhysicalBytes(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("TARToTempDir tests are only supported on Linux")
+	}
+
+	dst := filepath.Join(t.TempDir(), "sparse.bin")
+	f, err := os.Create(dst)
+	if err != nil {
+		t.Fatalf("os.Create: %v", err)
+	}
+	defer f.Close()
+
+	// 8 MiB logical, of which only the trailing 1 KiB is non-zero, against a
+	// 1 MiB budget: the logical size blows the budget, the physical size does not.
+	const logical = 8 * units.MiB
+	const dense = 1024
+	src := bytes.NewReader(append(make([]byte, logical-dense), bytes.Repeat([]byte("A"), dense)...))
+
+	written, err := sparseCopy(f, src, logical, 1*units.MiB)
+	if err != nil {
+		t.Fatalf("sparseCopy() error = %v, want nil (only ~%d physical bytes)", err, dense)
+	}
+	// Zero detection is per 32 KiB read, so the chunk holding the trailing
+	// non-zero bytes is written whole. What matters is that it stays orders of
+	// magnitude below both the logical size and the budget.
+	if written > 64*1024 {
+		t.Errorf("sparseCopy() written = %d, want at most one read chunk", written)
+	}
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatalf("Stat: %v", err)
+	}
+	if fi.Size() != logical {
+		t.Errorf("file size = %d, want the full logical size %d", fi.Size(), logical)
+	}
+}
+
+// TestSparseCopyStopsAtBudget is the discriminating check: the copy must stop
+// once it has written past its budget, rather than writing the whole entry and
+// leaving the caller to notice afterwards. Accounting the budget only between
+// entries let a single entry materialise in full before it was rejected.
+func TestSparseCopyStopsAtBudget(t *testing.T) {
+	dst := filepath.Join(t.TempDir(), "dense.bin")
+	f, err := os.Create(dst)
+	if err != nil {
+		t.Fatalf("os.Create: %v", err)
+	}
+	defer f.Close()
+
+	const entrySize = 4 * units.MiB
+	const budget = 1 * units.MiB
+	src := bytes.NewReader(bytes.Repeat([]byte("A"), int(entrySize)))
+
+	written, err := sparseCopy(f, src, entrySize, budget)
+	if err == nil {
+		t.Fatalf("sparseCopy() = nil error after writing %d bytes, want the budget to stop it", written)
+	}
+	if !errors.Is(err, errStorageBudgetExceeded) {
+		t.Fatalf("sparseCopy() error = %v, want errStorageBudgetExceeded", err)
+	}
+	// It may overshoot by at most the read chunk that crossed the line.
+	if written > budget+32*1024 {
+		t.Errorf("sparseCopy() written = %d, want it to stop near the %d byte budget", written, budget)
+	}
+	t.Logf("stopped after %d bytes of a %d byte entry (budget %d)", written, entrySize, budget)
 }
