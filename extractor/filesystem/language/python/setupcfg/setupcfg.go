@@ -39,9 +39,9 @@ const (
 )
 
 var (
-	// reSkippedDep matches entries that should be skipped: file://, attr:, VCS
-	// URLs, local paths (starting with . or /), and editable installs (-e).
-	reSkippedDep = regexp.MustCompile(`(?i)^(file:|attr:|git\+|hg\+|svn\+|bzr\+|\.|/|-e\s)`)
+	// reValidPkg matches valid PyPI package names per PEP 508,
+	// consistent with requirements.go.
+	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
 )
 
 // Extractor extracts Python packages from setup.cfg manifests.
@@ -216,25 +216,30 @@ func parseDep(raw, group, path string) *extractor.Package {
 		return nil
 	}
 
-	// Skip file:, attr:, VCS URLs, local paths, editable installs.
-	if reSkippedDep.MatchString(raw) {
-		return nil
-	}
-
 	// Skip URL requirements (e.g. "urllib3 @ https://...").
 	if strings.Contains(raw, " @ ") {
 		return nil
 	}
 
+	// Extract the raw package name (before any version/extras/markers)
+	// and validate it using the same regex as requirements.go.
+	// This rejects file:, attr:, VCS URLs, paths, editable installs, etc.
+	rawName := raw
+	if i := strings.IndexAny(raw, " \t[(;<=!~>"); i > 0 {
+		rawName = raw[:i]
+	}
+	if !reValidPkg.MatchString(rawName) {
+		return nil
+	}
+
 	// Use the standard PEP 508 parser from deps.dev/util/pypi.
-	// ParseDependency validates names, normalizes via CanonPackageName,
-	// and rejects malformed entries (empty names, bad syntax, etc.).
+	// ParseDependency normalizes names via CanonPackageName.
 	dep, err := pypi.ParseDependency(raw)
 	if err != nil {
 		return nil
 	}
 
-	if dep.Name == "" || strings.HasPrefix(dep.Name, "-") {
+	if dep.Name == "" {
 		return nil
 	}
 
