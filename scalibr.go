@@ -96,7 +96,7 @@ type ScanConfig struct {
 	// Optional: If the glob matches a directory, it will be skipped.
 	SkipDirGlob glob.Glob
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
-	MaxFileSize int
+	MaxFileSize int64
 	// Optional: Skip files declared in .gitignore files in source repos.
 	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.

@@ -140,7 +140,7 @@ func RunScan(flags *cli.Flags) int {
 func newLayerConfig(flags *cli.Flags) *scalibrlayerimage.Config {
 	config := scalibrlayerimage.DefaultConfig()
 	if flags.MaxFileSize > 0 {
-		config.MaxFileBytes = int64(flags.MaxFileSize)
+		config.MaxFileBytes = flags.MaxFileSize
 	} else {
 		log.Infof("Max file size not specified, defaulting to %d bytes", config.MaxFileBytes)
 	}

@@ -679,7 +679,7 @@ func TestGetScanConfig_MaxFileSize(t *testing.T) {
 	for _, tc := range []struct {
 		desc            string
 		flags           *cli.Flags
-		wantMaxFileSize int
+		wantMaxFileSize int64
 	}{
 		{
 			desc: "max file size unset",
