@@ -6,7 +6,7 @@ require (
 	bitbucket.org/creachadair/stringset v0.0.14
 	deps.dev/api/v3 v3.0.0-20260422013440-90c27f84dd6f
 	deps.dev/api/v3alpha v0.0.0-20260422013440-90c27f84dd6f
-	deps.dev/util/maven v0.0.0-20260528042559-b92437de09fd
+	deps.dev/util/maven v0.0.0-20260928000106-0e158e8db197
 	deps.dev/util/pypi v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/resolve v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/semver v0.0.0-20260529052642-cf1e78d92744
@@ -48,7 +48,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/opencontainers/runtime-spec v1.2.1
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260424063704-83285ce2a866
-	github.com/package-url/packageurl-go v0.1.5
+	github.com/package-url/packageurl-go v0.1.6
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/pierrec/lz4/v4 v4.1.26
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
