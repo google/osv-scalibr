@@ -275,9 +275,8 @@ var (
 	}
 	// GoSource extractors for Go.
 	GoSource = InitMap{
-		gomod.Name:  {gomod.New},
-		gowork.Name: {gowork.New},
 		gomod.Name:         {protoCfg(gomod.New)},
+		gowork.Name:        {protoCfg(gowork.New)},
 		vendormodules.Name: {protoCfg(vendormodules.New)},
 	}
 	// GoArtifact extractors for Go.
