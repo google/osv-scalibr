@@ -207,7 +207,7 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 		lineNum++
 		startLine := lineNum
 		var l string
-		l, lineNum = readLine(s, lineNum, &strings.Builder{})
+		l, lineNum = readLine(s, lineNum)
 		// Per-requirement options may be present. We extract the --hash options, and discard the others.
 		l, hashOptions := splitPerRequirementOptions(l)
 		requirement := strings.TrimSpace(l)
@@ -273,7 +273,9 @@ func extractFromPath(reader io.Reader, path string) ([]*extractor.Package, pathQ
 
 // readLine reads a line from the scanner, removes comments and joins it with
 // the next line if it ends with a backslash.
-func readLine(scanner *bufio.Scanner, currentLine int, builder *strings.Builder) (string, int) {
+func readLine(scanner *bufio.Scanner, currentLine int) (string, int) {
+	var builder strings.Builder
+
 	for {
 		l := scanner.Text()
 		l = removeComments(l)
