@@ -23,6 +23,9 @@ var (
 	splitPattern   = regexp.MustCompile(`[+~]`)
 	versionPattern = regexp.MustCompile(`^\d+[\.\d]*$`)
 	commitPattern  = regexp.MustCompile(`^[0-9a-f]{40}$`)
+	// crateVersionSuffix matches the "-<version>" suffix of rules_rust crate repository names,
+	// e.g. "-1.0.95" in "proc-macro2-1.0.95".
+	crateVersionSuffix = regexp.MustCompile(`-\d+\.\d+\.\d+[0-9A-Za-z.-]*$`)
 )
 
 func normalizeModuleName(name string) string {
@@ -78,8 +81,24 @@ func parseBzlmodName(name string, purlType *string) string {
 			return pkg
 		} else if strings.HasPrefix(prefix, "crates") {
 			*purlType = "cargo"
-			return strings.Split(pkg, "-")[0]
+			// rules_rust names crate repositories <crate>-<version>, and crate names can contain dashes.
+			if m := crateVersionSuffix.FindStringIndex(pkg); m != nil {
+				return pkg[:m[0]]
+			}
+			return pkg
 		}
 	}
 	return name
+}
+
+// crateName returns the crates.io name of a rules_rust crate. The "crate-name=" tag uses
+// underscores, while crates.io names can contain dashes, so the spelling from the repository name
+// is preferred when both refer to the same crate.
+func crateName(d *aspectData) string {
+	purlType := ""
+	fromRepo := parseBzlmodName(normalizeModuleName(strings.TrimLeft(d.Name, "@+")), &purlType)
+	if purlType == "cargo" && strings.ReplaceAll(fromRepo, "-", "_") == d.CrateName {
+		return fromRepo
+	}
+	return d.CrateName
 }

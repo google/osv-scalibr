@@ -121,7 +121,9 @@ message PluginSpecificConfig {
 }
 
 message BazelAspectConfig {
-  // The Bazel target to evaluate. Defaults to //...
+  // Whitespace-separated Bazel target patterns to evaluate, e.g.
+  // "//... -//third_party/...". Defaults to //... Only applies to top-level
+  // workspaces: independent nested workspaces are evaluated with //...
   string target = 1;
   // If true, passes --keep_going to Bazel. Defaults to true.
   optional bool keep_going = 2;
