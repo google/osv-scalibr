@@ -75,6 +75,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Dart       | package_config.json                               | `dart/packageconfig`                 |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
+| Erlang     | rebar.lock                                        | `erlang/rebarlock`                   |
 | Elixir     | mix.lock                                          | `elixir/mixlock`                     |
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
