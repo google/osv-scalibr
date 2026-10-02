@@ -32,6 +32,9 @@ type Metadata struct {
 	VersionComparator string
 	// The dependency requirement to used for dependency resolution
 	Requirement string
+	// DepGroupVals contains the dependency group(s) this package belongs to,
+	// e.g. ["dev"] for dev-only packages or [] for production packages.
+	DepGroupVals []string
 }
 
 // ToProto converts the Metadata struct to a PythonRequirementsMetadata proto.
@@ -40,6 +43,7 @@ func ToProto(m *Metadata) *pb.PythonRequirementsMetadata {
 		HashCheckingModeValues: m.HashCheckingModeValues,
 		VersionComparator:      m.VersionComparator,
 		Requirement:            m.Requirement,
+		DepGroupVals:           m.DepGroupVals,
 	}
 }
 
@@ -52,5 +56,6 @@ func ToStruct(m *pb.PythonRequirementsMetadata) *Metadata {
 		HashCheckingModeValues: m.GetHashCheckingModeValues(),
 		VersionComparator:      m.GetVersionComparator(),
 		Requirement:            m.GetRequirement(),
+		DepGroupVals:           m.GetDepGroupVals(),
 	}
 }
