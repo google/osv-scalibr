@@ -25,7 +25,7 @@ require (
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/diskfs/go-diskfs v1.7.0
 	github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589
-	github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593
+	github.com/erikvarga/go-rpmdb v0.0.0-20261001143808-1a11b79cbdd3
 	github.com/go-git/go-git/v5 v5.19.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gohugoio/hashstructure v0.6.0

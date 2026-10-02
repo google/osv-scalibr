@@ -171,8 +171,8 @@ github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f h1:Y/CXytFA4m6baUTXGLOoWe4PQhGxaX0KpnayAqC48p4=
 github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f/go.mod h1:vw97MGsxSvLiUE2X8qFplwetxpGLQrlU1Q9AUEIzCaM=
-github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593 h1:cIQ/Ziclb/qreqg1nqGEtH4V9UJCTaNSKz9gBRaeZlA=
-github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593/go.mod h1:MiEorPk0IChAoCwpg2FXyqVgbNvOlPWZAYHqqIoDNoY=
+github.com/erikvarga/go-rpmdb v0.0.0-20261001143808-1a11b79cbdd3 h1:rX5hmz+Oru8THw9NJp4pF2P/VPeosuF33nUXS3hD1Lw=
+github.com/erikvarga/go-rpmdb v0.0.0-20261001143808-1a11b79cbdd3/go.mod h1:MiEorPk0IChAoCwpg2FXyqVgbNvOlPWZAYHqqIoDNoY=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/glebarez/go-sqlite v1.20.3 h1:89BkqGOXR9oRmG58ZrzgoY/Fhy5x0M+/WV48U5zVrZ4=
