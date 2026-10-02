@@ -26,6 +26,7 @@ import (
 	"deps.dev/util/resolve/version"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/internal/mavenutil"
+	"github.com/google/osv-scalibr/log"
 )
 
 // MavenRegistryClient is a client to fetch data from Maven registry.
@@ -73,6 +74,16 @@ func (c *MavenRegistryClient) fetchVersion(ctx context.Context, vk resolve.Versi
 	g, a, found := strings.Cut(vk.Name, ":")
 	if !found {
 		return resolve.Version{}, fmt.Errorf("invalid Maven package name %s", vk.Name)
+	}
+	if vk.Version == datasource.MavenRelease || vk.Version == datasource.MavenLatest {
+		// The returned version carries the concrete version, so the resolved
+		// graph and any requirement lookups use it in place of the metaversion.
+		v, err := c.api.ResolveMetaversion(ctx, g, a, vk.Version)
+		if err != nil {
+			return resolve.Version{}, err
+		}
+		log.Infof("Resolved Maven %s %s to %s", vk.Name, vk.Version, v)
+		vk.Version = v
 	}
 	proj, err := c.api.GetProject(ctx, g, a, vk.Version)
 	if err != nil {
