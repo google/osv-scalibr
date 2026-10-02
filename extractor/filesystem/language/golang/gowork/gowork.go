@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
@@ -44,6 +46,10 @@ const (
 // directories participating in the workspace. go.work.sum pins the exact
 // checksums of all resolved dependencies across those modules and is parsed
 // to produce the versioned package inventory.
+//
+// Replace directives in go.work are applied as mutations to the packages
+// found in go.work.sum: the old module name/version is replaced with the
+// new one, mirroring the behaviour of the gomod extractor.
 type Extractor struct{}
 
 // New returns a new instance of the extractor.
@@ -93,7 +99,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		goVersion = workFile.Go.Version
 		stdlibLine = workFile.Go.Syntax.Start.Line
 	}
-	if workFile.Toolchain != nil && workFile.Toolchain.Name != "" {
+	// toolchain can be set to the special values "default" or "local", which
+	// are not versioned Go toolchains. Only override goVersion when the name
+	// starts with "go" (e.g. "go1.23.6" or "go1.23.6-bigcorp").
+	if workFile.Toolchain != nil && strings.HasPrefix(workFile.Toolchain.Name, "go") {
 		v, _, _ := strings.Cut(workFile.Toolchain.Name, "-")
 		goVersion = strings.TrimPrefix(v, "go")
 		stdlibLine = workFile.Toolchain.Syntax.Start.Line
@@ -107,32 +116,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 	}
 
-	// Extract versioned replace targets from go.work replace directives.
-	// Local path replacements (no version) are skipped.
-	for _, r := range workFile.Replace {
-		if r.New.Version == "" {
-			continue
-		}
-		version := strings.TrimPrefix(r.New.Version, "v")
-		k := pkgKey{name: r.New.Path, version: version}
-		packages[k] = &extractor.Package{
-			Name:     r.New.Path,
-			Version:  version,
-			PURLType: purl.TypeGolang,
-			Location: extractor.LocationFromPathAndLine(input.Path, r.Syntax.Start.Line),
-		}
-	}
-
 	// Parse go.work.sum for versioned dependencies.
-	sumPath := input.Path + ".sum"
+	// filepath.ToSlash is required because input.Path uses OS path separators
+	// on Windows, but fs.FS always expects forward-slash paths.
+	sumPath := filepath.ToSlash(input.Path + ".sum")
 	f, err := input.FS.Open(sumPath)
 	if err != nil {
 		log.Debugf("go.work.sum not found at %s: %v", sumPath, err)
-		pkgs := make([]*extractor.Package, 0, len(packages))
-		for _, p := range packages {
-			pkgs = append(pkgs, p)
-		}
-		return inventory.Inventory{Packages: pkgs}, nil
+		return inventory.Inventory{Packages: slices.Collect(maps.Values(packages))}, nil
 	}
 	defer f.Close()
 
@@ -166,11 +157,52 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("go.work.sum: scan error: %w", err)
 	}
 
-	pkgs := make([]*extractor.Package, 0, len(packages))
-	for _, p := range packages {
-		pkgs = append(pkgs, p)
+	// Apply go.work replace directives to the collected packages by updating
+	// their name and version, mirroring the behaviour of the gomod extractor.
+	// Local path replacements (no version on the new side) are skipped.
+	for _, r := range workFile.Replace {
+		if r.New.Version == "" {
+			// Local path replacement — not a versioned module, skip.
+			continue
+		}
+
+		var targets []pkgKey
+
+		if r.Old.Version == "" {
+			// No version on the old side: replace all versions of the module.
+			for k, pkg := range packages {
+				if pkg.Name == r.Old.Path {
+					targets = append(targets, k)
+				}
+			}
+		} else {
+			// Specific version: only replace that exact version.
+			k := pkgKey{
+				name:    r.Old.Path,
+				version: strings.TrimPrefix(r.Old.Version, "v"),
+			}
+			if _, ok := packages[k]; ok {
+				targets = []pkgKey{k}
+			}
+		}
+
+		for _, t := range targets {
+			packages[t] = &extractor.Package{
+				Name:     r.New.Path,
+				Version:  strings.TrimPrefix(r.New.Version, "v"),
+				PURLType: purl.TypeGolang,
+				Location: extractor.LocationFromPathAndLine(input.Path, r.Syntax.Start.Line),
+			}
+		}
 	}
-	return inventory.Inventory{Packages: pkgs}, nil
+
+	// Deduplication pass: keys may collide after replacements.
+	deduped := make(map[pkgKey]*extractor.Package, len(packages))
+	for _, p := range packages {
+		deduped[pkgKey{name: p.Name, version: p.Version}] = p
+	}
+
+	return inventory.Inventory{Packages: slices.Collect(maps.Values(deduped))}, nil
 }
 
 var _ filesystem.Extractor = Extractor{}

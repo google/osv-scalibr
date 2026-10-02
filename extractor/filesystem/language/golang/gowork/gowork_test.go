@@ -118,7 +118,27 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			Name: "replace_versioned_target_extracted_local_skipped",
+			// toolchain default / local are special non-versioned values; the go
+			// directive version should be used instead.
+			Name: "toolchain_default_falls_back_to_go_directive",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/toolchain-default.work",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "stdlib",
+					Version:  "1.22",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/toolchain-default.work", 1),
+				},
+			},
+		},
+		{
+			// replace directives are applied as mutations to packages found in
+			// go.work.sum. The old entry is replaced with the new name/version.
+			// Local path replacements (no version on the new side) leave the
+			// original entry unchanged.
+			Name: "replace_applied_to_sum_packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace.work",
 			},
@@ -129,11 +149,30 @@ func TestExtract(t *testing.T) {
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/replace.work", 1),
 				},
+				// example.com/bad/thing v1.4.5 is replaced by
+				// example.com/good/thing v1.4.5 (specific version replace).
 				{
 					Name:     "example.com/good/thing",
 					Version:  "1.4.5",
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/replace.work", 5),
+				},
+				// example.com/any/version (all versions) is replaced by
+				// example.com/replaced/any v2.0.0 — both v1.0.0 and v1.1.0
+				// collapse to the same replacement entry (deduplication keeps one).
+				{
+					Name:     "example.com/replaced/any",
+					Version:  "2.0.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/replace.work", 9),
+				},
+				// example.com/local/thing v1.0.0 has a local path replacement
+				// (no version on the new side) so it is left as-is.
+				{
+					Name:     "example.com/local/thing",
+					Version:  "1.0.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/replace.work.sum", 7),
 				},
 			},
 		},
