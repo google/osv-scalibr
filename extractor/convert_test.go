@@ -57,6 +57,32 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
+			name: "hackage_purl",
+			pkg: &extractor.Package{
+				Name:     "Agda",
+				Version:  "2.6.4.3",
+				PURLType: purl.TypeHackage,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeHackage,
+				Name:    "Agda",
+				Version: "2.6.4.3",
+			},
+		},
+		{
+			name: "git_purl",
+			pkg: &extractor.Package{
+				Name:     "name",
+				Version:  "version",
+				PURLType: purl.TypeGit,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeGit,
+				Name:    "name",
+				Version: "version",
+			},
+		},
+		{
 			name: "python_purl",
 			pkg: &extractor.Package{
 				Name:     "Name",
@@ -280,6 +306,24 @@ func TestToEcosystem(t *testing.T) {
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
 		},
 		{
+			name: "hackage_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Agda",
+				Version:  "2.6.4.3",
+				PURLType: purl.TypeHackage,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemHackage),
+		},
+		{
+			name: "git_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "some-git-dep",
+				Version:  "1.0.0",
+				PURLType: purl.TypeGit,
+			},
+			want: osvecosystem.FromEcosystem("GIT"),
+		},
+		{
 			name: "os_ecosystem",
 			pkg: &extractor.Package{
 				Name:     "Name",
@@ -305,6 +349,15 @@ func TestToEcosystem(t *testing.T) {
 				PURLType: purl.TypeDHI,
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages),
+		},
+		{
+			name: "bitnami_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeBitnami,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemBitnami),
 		},
 		{
 			name: "github_actions_ecosystem",

@@ -94,6 +94,8 @@ type MavenRegistryAPIClient struct {
 	mu             *sync.Mutex
 	cacheTimestamp *time.Time // If set, this means we loaded from a cache
 	responses      *RequestCache[string, response]
+	projects       *RequestCache[maven.ProjectKey, maven.Project]
+	depManagement  *RequestCache[maven.ProjectKey, maven.DependencyManagement]
 }
 
 type response struct {
@@ -118,6 +120,7 @@ func NewMavenRegistryAPIClient(
 	registry MavenRegistry,
 	localRegistry string,
 	disableGoogleAuth bool,
+	enableCache bool,
 	httpClient *http.Client,
 	googleClient *http.Client,
 ) (*MavenRegistryAPIClient, error) {
@@ -158,6 +161,13 @@ func NewMavenRegistryAPIClient(
 	globalSettings := ParseMavenSettings(globalMavenSettingsFile())
 	userSettings := ParseMavenSettings(userMavenSettingsFile())
 
+	var projects *RequestCache[maven.ProjectKey, maven.Project]
+	var depManagement *RequestCache[maven.ProjectKey, maven.DependencyManagement]
+	if enableCache {
+		projects = NewRequestCache[maven.ProjectKey, maven.Project]()
+		depManagement = NewRequestCache[maven.ProjectKey, maven.DependencyManagement]()
+	}
+
 	client := &MavenRegistryAPIClient{
 		// We assume only downloading releases is allowed on the default registry.
 		defaultRegistry:   registry,
@@ -165,6 +175,8 @@ func NewMavenRegistryAPIClient(
 		localRegistry:     localRegistry,
 		mu:                &sync.Mutex{},
 		responses:         NewRequestCache[string, response](),
+		projects:          projects,
+		depManagement:     depManagement,
 		registryAuths:     MakeMavenAuth(globalSettings, userSettings),
 		disableGoogleAuth: disableGoogleAuth,
 		httpClient:        httpClient,
@@ -179,7 +191,7 @@ func NewMavenRegistryAPIClient(
 // NewDefaultMavenRegistryAPIClient creates a new MavenRegistryAPIClient with default settings,
 // using the provided registry URL.
 func NewDefaultMavenRegistryAPIClient(ctx context.Context, registry string) (*MavenRegistryAPIClient, error) {
-	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false, &http.Client{}, nil)
+	return NewMavenRegistryAPIClient(ctx, MavenRegistry{URL: registry, ReleasesEnabled: true}, "", false, false, &http.Client{}, nil)
 }
 
 // AddLocalProject adds a project by its Maven POM contents to the local projects map.
@@ -200,6 +212,8 @@ func (m *MavenRegistryAPIClient) WithoutRegistries() *MavenRegistryAPIClient {
 		mu:                m.mu,
 		cacheTimestamp:    m.cacheTimestamp,
 		responses:         m.responses,
+		projects:          m.projects,
+		depManagement:     m.depManagement,
 		registryAuths:     m.registryAuths,
 		httpClient:        m.httpClient,
 		googleClient:      m.googleClient,
@@ -285,13 +299,38 @@ func (m *MavenRegistryAPIClient) GetRegistries() (registries []MavenRegistry) {
 	return m.registries
 }
 
+// GetDependencyManagement returns cached DependencyManagement for key or computes and caches it via fn.
+func (m *MavenRegistryAPIClient) GetDependencyManagement(key maven.ProjectKey, fn func() (maven.DependencyManagement, error)) (maven.DependencyManagement, error) {
+	if m == nil || m.depManagement == nil {
+		return fn()
+	}
+	dm, err := m.depManagement.Get(key, fn)
+	if err != nil {
+		return maven.DependencyManagement{}, err
+	}
+	return dm, nil
+}
+
 // GetProject fetches a pom.xml specified by groupID, artifactID and version and parses it to maven.Project.
 // Each registry in the list is tried until we find the project.
-// For a snapshot version, version level metadata is used to find the extact version string.
+// For a snapshot version, version level metadata is used to find the exact version string.
 // More about Maven Repository Metadata Model: https://maven.apache.org/ref/3.9.9/maven-repository-metadata/
 // More about Maven Metadata: https://maven.apache.org/repositories/metadata.html
 func (m *MavenRegistryAPIClient) GetProject(ctx context.Context, groupID, artifactID, version string) (maven.Project, error) {
 	key := maven.ProjectKey{GroupID: maven.String(groupID), ArtifactID: maven.String(artifactID), Version: maven.String(version)}
+	if m.projects != nil {
+		proj, err := m.projects.Get(key, func() (maven.Project, error) {
+			return m.fetchProject(ctx, key, groupID, artifactID, version)
+		})
+		if err != nil {
+			return maven.Project{}, err
+		}
+		return proj, nil
+	}
+	return m.fetchProject(ctx, key, groupID, artifactID, version)
+}
+
+func (m *MavenRegistryAPIClient) fetchProject(ctx context.Context, key maven.ProjectKey, groupID, artifactID, version string) (maven.Project, error) {
 	if content, ok := m.localProjects[key]; ok {
 		file := io.NopCloser(bytes.NewReader(content))
 		defer file.Close()
@@ -402,15 +441,12 @@ func (m *MavenRegistryAPIClient) getArtifactMetadata(ctx context.Context, regist
 func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthentication, registry MavenRegistry, paths []string, dst any) error {
 	filePath := ""
 	if m.localRegistry != "" {
-		filePath = filepath.Join(append([]string{m.localRegistry}, paths...)...)
-		file, err := os.Open(filePath)
-		if err == nil {
-			defer file.Close()
-			// We can still fetch the file from upstream if error is not nil.
-			return NewMavenDecoder(file).Decode(dst)
-		}
-		if !os.IsNotExist(err) {
-			log.Warnf("Error reading from local cache %s: %v", filePath, err)
+		filePath = filepath.Join(paths...)
+		if m.readFromCache(filePath, dst) {
+			// On a cache hit with no errors, readFromCache returns true and populates dst, so return
+			// early without querying upstream.
+			// On a cache miss or error, readFromCache returns false and we continue to query upstream.
+			return nil
 		}
 	}
 
@@ -443,9 +479,8 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 		if err != nil {
 			return response{}, fmt.Errorf("failed to read body: %w", err)
 		}
-
-		if filePath != "" && resp.StatusCode == http.StatusOK {
-			if err := writeFile(filePath, b); err != nil {
+		if m.localRegistry != "" && resp.StatusCode == http.StatusOK {
+			if err := m.writeToCache(filePath, b); err != nil {
 				log.Warnf("failed to write response to %s: %v", u, err)
 			}
 		}
@@ -467,7 +502,70 @@ func (m *MavenRegistryAPIClient) get(ctx context.Context, auth *HTTPAuthenticati
 	return NewMavenDecoder(bytes.NewReader(resp.Body)).Decode(dst)
 }
 
+// readFromCache attempts to read and decode filePath from the local registry cache into dst.
+// It returns true on a valid cache hit, and false on a cache miss or error so the caller
+// can continue and fetch from the upstream registry.
+func (m *MavenRegistryAPIClient) readFromCache(filePath string, dst any) bool {
+	localRegistryRoot, err := os.OpenRoot(m.localRegistry)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Warnf("Error opening local cache %q: %v", m.localRegistry, err)
+		}
+		return false
+	}
+	defer localRegistryRoot.Close()
+
+	file, err := localRegistryRoot.Open(filePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Warnf("Error reading %q from local cache: %v", filePath, err)
+		}
+		return false
+	}
+	defer file.Close()
+
+	if err := NewMavenDecoder(file).Decode(dst); err != nil {
+		log.Warnf("Error decoding %q from local cache: %v", filePath, err)
+		return false
+	}
+
+	return true
+}
+
+func (m *MavenRegistryAPIClient) writeToCache(filePath string, data []byte) error {
+	localRegistryRoot, err := os.OpenRoot(m.localRegistry)
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(m.localRegistry, 0755); err != nil {
+			return fmt.Errorf("failed to create local cache %q: %w", m.localRegistry, err)
+		}
+		localRegistryRoot, err = os.OpenRoot(m.localRegistry)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to open local cache %q: %w", m.localRegistry, err)
+	}
+	defer localRegistryRoot.Close()
+
+	return writeFileInRoot(localRegistryRoot, filePath, data)
+}
+
+// writeFileInRoot writes the bytes to the file specified by the given path.
+func writeFileInRoot(root *os.Root, path string, data []byte) error {
+	dir := filepath.Dir(path)
+	// Create the directory if it doesn't exist.
+	if err := root.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %q: %w", dir, err)
+	}
+
+	if err := root.WriteFile(path, data, 0666); err != nil {
+		return fmt.Errorf("failed to write file %q: %w", path, err)
+	}
+
+	return nil
+}
+
 // writeFile writes the bytes to the file specified by the given path.
+//
+// TODO: Remove this function after its last use in PyPI local registry is removed (#PR2400)
 func writeFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	// Create the directory if it doesn't exist.
@@ -477,12 +575,12 @@ func writeFile(path string, data []byte) error {
 
 	outFile, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", path, err)
+		return fmt.Errorf("failed to create file %q: %w", path, err)
 	}
 	defer outFile.Close()
 
 	if _, err := outFile.Write(data); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", path, err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil

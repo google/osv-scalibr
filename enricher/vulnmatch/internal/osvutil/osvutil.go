@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	archivemetadata "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
+	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	rpmmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
@@ -131,7 +132,8 @@ func purlToName(pkgName string, p *purl.PackageURL, eco osvecosystem.Parsed) str
 			return purlNamespace + ":" + pkgName
 		}
 	default:
-		if !strings.HasPrefix(pkgName, purlNamespace+"/") {
+		// PURL namespaces may be lowercased (e.g. Go), while pkgName keeps its original case.
+		if !strings.HasPrefix(strings.ToLower(pkgName), strings.ToLower(purlNamespace)+"/") {
 			return purlNamespace + "/" + pkgName
 		}
 	}
@@ -202,4 +204,18 @@ func commit(pkg *extractor.Package) string {
 		return pkg.SourceCode.Commit
 	}
 	return ""
+}
+
+// IsLocal checks if a package is marked as locally-installed or developed
+// (e.g. workspace members or local file dependencies in NPM).
+func IsLocal(pkg *extractor.Package) bool {
+	if pkg == nil || pkg.Metadata == nil {
+		return false
+	}
+	if m, ok := pkg.Metadata.(interface {
+		PackageSource() javascriptmeta.NPMPackageSource
+	}); ok {
+		return m.PackageSource() == javascriptmeta.Local
+	}
+	return false
 }

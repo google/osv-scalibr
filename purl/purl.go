@@ -35,6 +35,8 @@ const (
 	TypeApk = "apk"
 	// TypeBitbucket is a pkg:bitbucket purl.
 	TypeBitbucket = "bitbucket"
+	// TypeBitnami is a pkg:bitnami purl.
+	TypeBitnami = "bitnami"
 	// TypeBrew is a pkg:brew purl.
 	TypeBrew = "brew"
 	// TypeCocoapods is a pkg:cocoapods purl.
@@ -65,14 +67,14 @@ const (
 	TypeGem = "gem"
 	// TypeGeneric is a pkg:generic purl.
 	TypeGeneric = "generic"
+	// TypeGit is a pkg:git purl.
+	TypeGit = "git"
 	// TypeGithub is a pkg:github purl.
 	TypeGithub = "github"
 	// TypeGolang is a pkg:golang purl.
 	TypeGolang = "golang"
 	// TypeHackage is a pkg:hackage purl.
 	TypeHackage = "hackage"
-	// TypeHaskell is a pkg:haskell purl.
-	TypeHaskell = "haskell"
 	// TypeMacApps is a pkg:macapps purl.
 	TypeMacApps = "macapps"
 	// TypeHex is a pkg:hex purl.
@@ -200,6 +202,7 @@ func validType(t string) bool {
 		TypeAlpm:       true,
 		TypeApk:        true,
 		TypeBitbucket:  true,
+		TypeBitnami:    true,
 		TypeBrew:       true,
 		TypeCargo:      true,
 		TypeCocoapods:  true,
@@ -214,10 +217,10 @@ func validType(t string) bool {
 		TypeFlatpak:    true,
 		TypeGem:        true,
 		TypeGeneric:    true,
+		TypeGit:        true,
 		TypeGithub:     true,
 		TypeGolang:     true,
 		TypeHackage:    true,
-		TypeHaskell:    true,
 		TypeNim:        true,
 		TypeLua:        true,
 		TypeHex:        true,

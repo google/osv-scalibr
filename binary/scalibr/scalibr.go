@@ -83,7 +83,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
 	skipDirRegex := fs.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
 	skipDirGlob := fs.String("skip-dir-glob", "", "If the glob matches a directory, it will be skipped. The glob is matched against the absolute file path.")
-	maxFileSize := fs.Int("max-file-size", 0, "Files larger than this size in bytes are skipped. If 0, no limit is applied.")
+	maxFileSize := fs.Int64("max-file-size", 0, "Files larger than this size in bytes are skipped. If 0, no limit is applied.")
 	useGitignore := fs.Bool("use-gitignore", false, "Skip files declared in .gitignore files in source repos.")
 	remoteImage := fs.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
 	imageTarball := fs.String("image-tarball", "", "The path to a tarball containing a container image. These are commonly procuded using `docker save`. If specified, SCALIBR scans this image instead of the local filesystem.")

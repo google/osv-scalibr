@@ -694,10 +694,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "@prettier/sync",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 32),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "527e8ce",
+						Repo:   "https://github.com/prettier/prettier-synchronized",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -706,10 +707,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "babel-preset-php",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "1ae6dc1267500360b411ec711b8aeac8c68b2246",
+						Repo:   "https://gitlab.com/kornelski/babel-preset-php",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -718,10 +720,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "is-number",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 36),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "98e8ff1",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -730,10 +733,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "is-number",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 38),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac058",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -742,10 +746,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "is-number",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 40),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "b7aef34",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -804,10 +809,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "raven-js",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 52),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "91ef2d4",
+						Repo:   "https://github.com/getsentry/raven-js",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -816,10 +822,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "slick-carousel",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/commits.json5", 54),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fc6f7d8",
+						Repo:   "https://github.com/brianfryer/slick",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -844,10 +851,50 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
+					Name:       "@adobe/css-tools",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 19),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@adobe/css-tools",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 21),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@adobe/css-tools",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 23),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@adobe/css-tools",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/files.json5", 25),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
 					Name:       "etag",
 					Version:    "",
 					PURLType:   purl.TypeNPM,
-					Location:   loc("testdata/files.json5", 15),
+					Location:   loc("testdata/files.json5", 27),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -857,7 +904,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:       "lodash",
 					Version:    "1.3.1",
 					PURLType:   purl.TypeNPM,
-					Location:   loc("testdata/files.json5", 17),
+					Location:   loc("testdata/files.json5", 29),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -874,11 +921,70 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "uWebSockets.js",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: loc("testdata/blog-sample.json5", 11),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6609a88",
+						Repo:   "https://github.com/uNetworking/uWebSockets.js",
 					},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "url_dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/urls.json5",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "@solidjs/meta",
+					Version:    "0.29.4",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 20),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@solidjs/start",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 22),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "wrangler",
+					Version:    "",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 24),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "ws",
+					Version:    "8.21.0",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 26),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "path-to-regexp",
+					Version:    "6.3.0",
+					PURLType:   purl.TypeNPM,
+					Location:   loc("testdata/urls.json5", 28),
+					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},

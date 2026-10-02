@@ -26,6 +26,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvdev/fakeclient"
 	"github.com/google/osv-scalibr/extractor"
+	jsmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
@@ -55,6 +56,31 @@ func TestEnrich(t *testing.T) {
 			PURLType: "git",
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Repo: "github.com/Some/Repo",
+			},
+		}
+		gitCommitPkg = &extractor.Package{
+			Name:     "pinned-git-pkg",
+			Version:  "1.0.0",
+			PURLType: purl.TypeGit,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Repo:   "https://github.com/some/repo",
+				Commit: "68593b1bb80b302c2e552685dc8a029797ec832e",
+			},
+		}
+		npmWithCommitPkg = &extractor.Package{
+			Name:     "express",
+			Version:  "4.17.1",
+			PURLType: purl.TypeNPM,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Commit: "68593b1bb80b302c2e552685dc8a029797ec832e",
+			},
+		}
+		localNpmPkg = &extractor.Package{
+			Name:     "express",
+			Version:  "4.17.1",
+			PURLType: purl.TypeNPM,
+			Metadata: &jsmeta.JavascriptPackageMetadata{
+				Source: jsmeta.Local,
 			},
 		}
 		dpkgSrcPkg = &extractor.Package{
@@ -438,6 +464,7 @@ func TestEnrich(t *testing.T) {
 		}
 		goStdlibVuln        = osvpb.Vulnerability{Id: "GO-STDLIB-VULN"}
 		gitVuln             = osvpb.Vulnerability{Id: "GIT-VULN"}
+		gitCommitVuln       = osvpb.Vulnerability{Id: "GIT-COMMIT-VULN"}
 		dpkgSrcVuln         = osvpb.Vulnerability{Id: "DPKG-SRC-VULN"}
 		apkOriginVuln       = osvpb.Vulnerability{Id: "APK-ORIGIN-VULN"}
 		rpmVulnWithEpoch    = osvpb.Vulnerability{Id: "RPM-EPOCH-VULN"}
@@ -449,13 +476,14 @@ func TestEnrich(t *testing.T) {
 		fmt.Sprintf("%s:%s:", goPkg.Name, goPkg.Version): {&goVuln1, &goVuln2, &goVuln3},
 		fmt.Sprintf("%s:%s:", jsPkg.Name, jsPkg.Version): {&jsVuln1, &jsVuln2},
 		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {&pyPkgSameVulnAsFzf},
-		"stdlib:1.18:":                {&goStdlibVuln},
-		"github.com/some/repo:1.0.0:": {&gitVuln},
-		"bash-source:5.1-6:":          {&dpkgSrcVuln},
-		"busybox-origin:1.35.0:":      {&apkOriginVuln},
-		"bash-epoch:1:5.1-6:":         {&rpmVulnWithEpoch},
-		"bash-no-epoch:5.1-6:":        {&rpmVulnWithoutEpoch},
-		"bash-other-distro:5.1-6:":    {&rpmVulnOtherDistro},
+		"stdlib:1.18:":                               {&goStdlibVuln},
+		"github.com/some/repo:1.0.0:":                {&gitVuln},
+		"::68593b1bb80b302c2e552685dc8a029797ec832e": {&gitCommitVuln},
+		"bash-source:5.1-6:":                         {&dpkgSrcVuln},
+		"busybox-origin:1.35.0:":                     {&apkOriginVuln},
+		"bash-epoch:1:5.1-6:":                        {&rpmVulnWithEpoch},
+		"bash-no-epoch:5.1-6:":                       {&rpmVulnWithoutEpoch},
+		"bash-other-distro:5.1-6:":                   {&rpmVulnOtherDistro},
 	})
 
 	tests := []struct {
@@ -575,6 +603,21 @@ func TestEnrich(t *testing.T) {
 			},
 		},
 		{
+			name:     "git_commit_mapping",
+			packages: []*extractor.Package{gitCommitPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &gitCommitVuln, Package: gitCommitPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
+			name:     "npm_with_commit_uses_version_not_commit",
+			packages: []*extractor.Package{npmWithCommitPkg},
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &jsVuln1, Package: npmWithCommitPkg, Plugins: []string{osvdev.Name}},
+				{Vulnerability: &jsVuln2, Package: npmWithCommitPkg, Plugins: []string{osvdev.Name}},
+			},
+		},
+		{
 			name:     "dpkg_source_name_mapping",
 			packages: []*extractor.Package{dpkgSrcPkg},
 			wantPackageVulns: []*inventory.PackageVuln{
@@ -608,6 +651,11 @@ func TestEnrich(t *testing.T) {
 			wantPackageVulns: []*inventory.PackageVuln{
 				{Vulnerability: &rpmVulnOtherDistro, Package: rpmPkgOtherDistroWithEpoch, Plugins: []string{osvdev.Name}},
 			},
+		},
+		{
+			name:             "local_npm_package_skipped",
+			packages:         []*extractor.Package{localNpmPkg},
+			wantPackageVulns: []*inventory.PackageVuln{},
 		},
 	}
 

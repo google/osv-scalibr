@@ -218,7 +218,7 @@ func validateGoVersion(vers string) (string, error) {
 	// The Go version can have multiple parts, in particular for development
 	// versions of Go. The actual Go version should be the first part (e.g.
 	// 'go1.20-pre3 +a813be86df' -> 'go1.20-pre3')
-	goVersion := strings.Split(vers, " ")[0]
+	goVersion, _, _ := strings.Cut(vers, " ")
 
 	// Strip the "go" prefix from the Go version. (e.g. go1.16.3 => 1.16.3)
 	res := strings.TrimPrefix(goVersion, "go")

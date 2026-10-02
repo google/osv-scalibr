@@ -20,7 +20,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -44,11 +43,6 @@ import (
 )
 
 func TestFileRequired(t *testing.T) {
-	// supported OSes
-	if runtime.GOOS == "windows" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name             string
 		path             string
@@ -173,11 +167,6 @@ SUPPORT_END=2024-05-14
 VARIANT="Container Image"`
 
 func TestExtract(t *testing.T) {
-	// supported OSes
-	if runtime.GOOS == "windows" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name       string
 		path       string
@@ -588,11 +577,6 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtract_VirtualFilesystem(t *testing.T) {
-	// supported OSes
-	if runtime.GOOS == "windows" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name       string
 		path       string

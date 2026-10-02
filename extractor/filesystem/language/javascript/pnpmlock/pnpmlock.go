@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -128,8 +129,17 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 	parts = parts[1:]
 
 	if strings.HasPrefix(parts[0], "@") {
-		name = strings.Join(parts[:2], "/")
-		parts = parts[2:]
+		// A scoped dependency path normally has the form "@scope/name",
+		// which splits into two parts. However a malformed path such as
+		// "/@scope" leaves a single "@scope" element here, so guard against
+		// slicing past the end before joining the scope and name.
+		if len(parts) < 2 {
+			name = parts[0]
+			parts = parts[1:]
+		} else {
+			name = strings.Join(parts[:2], "/")
+			parts = parts[2:]
+		}
 	} else {
 		name = parts[0]
 		parts = parts[1:]
@@ -206,6 +216,20 @@ func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path st
 			}
 		}
 
+		repo := ""
+		if commit != "" {
+			if pkg.Resolution.Repo != "" {
+				repo = commitextractor.NormalizeRepo(pkg.Resolution.Repo)
+			} else if pkg.Resolution.Tarball != "" {
+				repo = commitextractor.NormalizeRepo(pkg.Resolution.Tarball)
+			}
+		}
+
+		purlType := purl.TypeNPM
+		if commit != "" {
+			purlType = purl.TypeGit
+		}
+
 		depGroups := []string{}
 		if pkg.Dev {
 			depGroups = append(depGroups, "dev")
@@ -215,9 +239,10 @@ func parsePnpmLock(lockfile pnpmLockfile, packageLineMap map[string]int, path st
 		packages = append(packages, &extractor.Package{
 			Name:     name,
 			Version:  version,
-			PURLType: purl.TypeNPM,
+			PURLType: purlType,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: commit,
+				Repo:   repo,
 			},
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: depGroups,

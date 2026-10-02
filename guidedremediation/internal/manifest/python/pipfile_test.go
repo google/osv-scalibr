@@ -22,13 +22,13 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv-scalibr/fs"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
 func TestReadPipfile(t *testing.T) {
-	fsys := fs.DirFS("./testdata/pipfile")
+	fsys := scalibrfs.DirFS("./testdata/pipfile")
 	pipfileRW, _ := GetPipfileReadWriter()
 	got, err := pipfileRW.Read("Pipfile", fsys)
 	if err != nil {
@@ -160,7 +160,7 @@ func TestReadPipfile(t *testing.T) {
 
 func TestWritePipfile(t *testing.T) {
 	rw, _ := GetPipfileReadWriter()
-	fsys := fs.DirFS("./testdata/pipfile")
+	fsys := scalibrfs.DirFS("./testdata/pipfile")
 	manif, err := rw.Read("Pipfile", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -194,8 +194,13 @@ func TestWritePipfile(t *testing.T) {
 	}
 	outDir := t.TempDir()
 	outFile := filepath.Join(outDir, "Pipfile")
+	outFS, err := os.OpenRoot(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFS.Close()
 
-	if err := rw.Write(manif, fsys, patches, outFile); err != nil {
+	if err := rw.Write(manif, fsys, patches, outFS, "Pipfile"); err != nil {
 		t.Fatalf("failed to write manifest: %v", err)
 	}
 
