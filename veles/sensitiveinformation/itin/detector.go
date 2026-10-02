@@ -54,14 +54,14 @@ func NewDetector() veles.Detector {
 		ContextWindowBefore: contextWindowSize,
 		ContextWindowAfter:  contextWindowSize,
 		KeywordsRe:          itinKeywords,
-		FromMatch: func(b []byte, contextMatch bool) (sensitiveinformation.SensitiveInformation, bool) {
+		FromMatch: func(b []byte, matchedKeywords [][]byte) (sensitiveinformation.SensitiveInformation, bool) {
 			itin := string(b)
 			if !validItin(itin) {
 				return sensitiveinformation.SensitiveInformation{}, false
 			}
 
 			likelihood := sensitiveinformation.LikelihoodUnlikely
-			if contextMatch {
+			if len(matchedKeywords) > 0 {
 				likelihood = sensitiveinformation.LikelihoodLikely
 			}
 
