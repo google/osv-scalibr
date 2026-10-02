@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/clients/resolution"
@@ -964,5 +965,23 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	})
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
+	}
+}
+
+func TestNew_LocalModuleDirs(t *testing.T) {
+	cfg := configtest.NewFakePluginConfig()
+	cfg.ProtoConfig.PluginSpecific = []*cpb.PluginSpecificConfig{{
+		Config: &cpb.PluginSpecificConfig_PomXmlNet{PomXmlNet: &cpb.POMXMLNetConfig{
+			LocalModuleDirs: []string{"submodule", "other"},
+		}},
+	}}
+
+	e, err := pomxml.New(cfg)
+	if err != nil {
+		t.Fatalf("pomxml.New() error: %v", err)
+	}
+
+	if diff := cmp.Diff([]string{"submodule", "other"}, e.(*pomxml.Enricher).LocalModuleDirs); diff != "" {
+		t.Errorf("LocalModuleDirs mismatch (-want +got):\n%s", diff)
 	}
 }
