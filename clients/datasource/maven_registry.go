@@ -338,6 +338,21 @@ func (m *MavenRegistryAPIClient) fetchProject(ctx context.Context, key maven.Pro
 		if err := NewMavenDecoder(file).Decode(&project); err != nil {
 			return maven.Project{}, fmt.Errorf("failed to decode local project content: %w", err)
 		}
+		// A local project with CI-friendly coordinates such as ${revision} is also added under their
+		// values; report the coordinates it was requested by, as Maven would after interpolation.
+		groupID, version := project.GroupID, project.Version
+		if groupID == "" {
+			groupID = project.Parent.GroupID
+		}
+		if version == "" {
+			version = project.Parent.Version
+		}
+		if strings.Contains(string(groupID), "${") {
+			project.GroupID = key.GroupID
+		}
+		if strings.Contains(string(version), "${") {
+			project.Version = key.Version
+		}
 		return project, nil
 	}
 
