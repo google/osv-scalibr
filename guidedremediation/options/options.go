@@ -47,6 +47,10 @@ type FixVulnsOptions struct {
 	MavenClient       *datasource.MavenRegistryAPIClient // Client for fetching Maven dependency information, may be nil.
 	DepCachePopulator DependencyCachePopulator           // Interface for populating the cache of the resolve.Client. Can be nil.
 	ProjectRoot       string                             // Optional filesystem boundary for all manifest and lockfile access. Defaults to the nearest Git root, then the primary file's directory.
+
+	// Directories, relative to ProjectRoot, whose POMs are local Maven modules even outside the
+	// manifest's module tree. Requires ProjectRoot.
+	MavenLocalModuleDirs []string
 }
 
 // RemediationOptions are the configuration options for vulnerability remediation.
@@ -86,4 +90,8 @@ type UpdateOptions struct {
 	IgnoreDev     bool           // Whether to ignore updates on dev dependencies
 	UpgradeConfig upgrade.Config // Allowed upgrade levels per package.
 	ProjectRoot   string         // Optional filesystem boundary for all manifest access. Defaults to the nearest Git root, then the manifest's directory.
+
+	// Directories, relative to ProjectRoot, whose POMs are local Maven modules even outside the
+	// manifest's module tree. Requires ProjectRoot.
+	MavenLocalModuleDirs []string
 }
