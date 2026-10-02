@@ -15,6 +15,7 @@
 package datasource_test
 
 import (
+	"bytes"
 	"net/http"
 	"net/url"
 	"os"
@@ -217,5 +218,40 @@ func TestPyPILocalRegistry(t *testing.T) {
 	}
 	if string(content) != jsonResp {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), jsonResp)
+	}
+}
+
+func TestPyPILocalRegistryPathTraversal(t *testing.T) {
+	tempDir := t.TempDir()
+
+	secretPath := filepath.Join(tempDir, "secret")
+	secretContent := []byte("this is secret")
+
+	if err := os.WriteFile(secretPath, secretContent, 0600); err != nil {
+		t.Fatalf("failed to create secret file: %v", err)
+	}
+
+	srv := clienttest.NewMockHTTPServer(t)
+
+	client, err := datasource.NewPyPIRegistryAPIClient(
+		srv.URL,
+		tempDir,
+		&http.Client{},
+	)
+	if err != nil {
+		t.Fatalf("failed to create PyPI client: %v", err)
+	}
+
+	traversalURL := srv.URL + "/../../secret"
+
+	got, err := client.GetFile(t.Context(), traversalURL)
+
+	// The request should NOT be satisfied from the local filesystem.
+	// With the vulnerable implementation, got == secretContent.
+	if err == nil && bytes.Equal(got, secretContent) {
+		t.Fatalf(
+			"path traversal succeeded: read %q outside the local registry",
+			secretPath,
+		)
 	}
 }
