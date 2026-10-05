@@ -1534,6 +1534,16 @@ message LayerMetadata {
   // The index of the base image match within the
   // ContainerImageMetadata.base_image_chains field.
   int32 base_image_index = 6;
+  // Attributes attached to this layer by plugins.
+  repeated LayerAttribute attributes = 7;
+}
+
+// An attribute attached to a layer by a plugin.
+message LayerAttribute {
+  // The value of the attribute, with a meaning defined by the plugin.
+  string value = 1;
+  // The name of the plugin that generated this attribute.
+  string plugin = 2;
 }
 
 message InfoType {
