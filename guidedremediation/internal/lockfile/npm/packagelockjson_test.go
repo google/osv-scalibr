@@ -236,7 +236,12 @@ func TestWrite(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 	gotPath := filepath.Join(outDir, "package-lock.json")
-	if err := rw.Write("write/package-lock.json", scalibrfs.DirFS("testdata"), patches, gotPath); err != nil {
+	outFS, err := os.OpenRoot(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFS.Close()
+	if err := rw.Write("write/package-lock.json", scalibrfs.DirFS("testdata"), patches, outFS, "package-lock.json"); err != nil {
 		t.Fatalf("error writing lockfile: %v", err)
 	}
 	got, err := os.ReadFile(gotPath)

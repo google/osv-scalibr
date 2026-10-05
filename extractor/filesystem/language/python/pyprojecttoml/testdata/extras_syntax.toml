@@ -1,0 +1,7 @@
+[project]
+name = "my-package"
+version = "1.0.0"
+dependencies = [
+    "flask[async]==3.1.1",
+    "requests[security]>=2.20.0",
+]

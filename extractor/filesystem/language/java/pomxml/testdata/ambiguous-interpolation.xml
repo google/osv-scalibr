@@ -1,0 +1,19 @@
+<project>
+  <!-- This file tests that when multiple raw dependencies with variables resolve to the same GroupID and ArtifactID, the line number becomes ambiguous and falls back to line 0. -->
+  <properties>
+    <foo>common-lib</foo>
+    <bar>common-lib</bar>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>${foo}</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>${bar}</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+</project>

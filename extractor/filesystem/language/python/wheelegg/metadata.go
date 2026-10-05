@@ -25,15 +25,17 @@ func init() {
 
 // PythonPackageMetadata holds parsing information from a python egg or wheel package.
 type PythonPackageMetadata struct {
-	Author      string `json:"author"`
-	AuthorEmail string `json:"authorEmail"`
+	Author       string   `json:"author"`
+	AuthorEmail  string   `json:"authorEmail"`
+	RequiresDist []string `json:"requiresDist"`
 }
 
 // ToProto converts the PythonPackageMetadata struct to a PythonPackageMetadata proto.
 func ToProto(m *PythonPackageMetadata) *pb.PythonPackageMetadata {
 	return &pb.PythonPackageMetadata{
-		Author:      m.Author,
-		AuthorEmail: m.AuthorEmail,
+		Author:       m.Author,
+		AuthorEmail:  m.AuthorEmail,
+		RequiresDist: m.RequiresDist,
 	}
 }
 
@@ -43,7 +45,8 @@ func (m *PythonPackageMetadata) IsProtoable() {}
 // ToStruct converts the PythonPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.PythonPackageMetadata) *PythonPackageMetadata {
 	return &PythonPackageMetadata{
-		Author:      m.GetAuthor(),
-		AuthorEmail: m.GetAuthorEmail(),
+		Author:       m.GetAuthor(),
+		AuthorEmail:  m.GetAuthorEmail(),
+		RequiresDist: m.GetRequiresDist(),
 	}
 }

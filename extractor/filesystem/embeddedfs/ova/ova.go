@@ -41,6 +41,8 @@ type Extractor struct {
 	// If this limit is greater than zero and a file is encountered that is larger
 	// than this limit, the file is ignored.
 	maxFileSizeBytes int64
+	// maxFreeSpaceUsageRatio limits archive extraction to a fraction of free temp space on Linux.
+	maxFreeSpaceUsageRatio float64
 }
 
 // New returns a new ova extractor.
@@ -50,12 +52,21 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	if specific.GetMaxFileSizeBytes() > 0 {
 		maxSize = specific.GetMaxFileSizeBytes()
 	}
-	return &Extractor{maxFileSizeBytes: maxSize}, nil
+	ratio := specific.GetMaxFreeSpaceUsageRatio()
+	return &Extractor{
+		maxFileSizeBytes:       maxSize,
+		maxFreeSpaceUsageRatio: ratio,
+	}, nil
 }
 
 // Name returns the name of the extractor.
 func (e *Extractor) Name() string {
 	return Name
+}
+
+// MaxFreeSpaceUsageRatio returns the configured max free space usage ratio.
+func (e *Extractor) MaxFreeSpaceUsageRatio() float64 {
+	return e.maxFreeSpaceUsageRatio
 }
 
 // Version returns the version of the extractor.
@@ -96,7 +107,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, errors.New("input.Reader is nil")
 	}
 
-	tempDir, err := common.TARToTempDir(input.Reader)
+	tempDir, err := common.TARToTempDir(input.Reader, e.maxFreeSpaceUsageRatio)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 	}

@@ -1,0 +1,30 @@
+<project>
+  <!-- This file tests that dependency declarations with explicit <type>jar</type> are correctly
+       mapped to their line numbers by normalizing them against empty types during matching.
+       It declares both a "pom" type dependency (line 5) and an implicit "jar" type dependency (line 11)
+       on the same groupId and artifactId to force an ambiguous collision -->
+  <properties>
+    <wildcard>my-lib</wildcard>
+  </properties>
+  <dependencies>
+    <!-- To test line number behavior: use an ArtifactID variable to force an approximate check
+         for the dependency declaration, vs. matching by exact artifact/group ID.  -->
+    <dependency>
+      <groupId>org.different</groupId>
+      <artifactId>${wildcard}</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-lib</artifactId>
+      <type>pom</type>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-lib</artifactId>
+      <type>jar</type>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+</project>

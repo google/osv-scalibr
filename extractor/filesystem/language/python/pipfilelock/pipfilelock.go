@@ -16,9 +16,12 @@
 package pipfilelock
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -28,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 
@@ -37,6 +41,13 @@ import (
 const (
 	// Name is the unique name of this extractor.
 	Name = "python/pipfilelock"
+
+	// JSON keys for relevant package groups in pipfilelock.
+	jsonGroupDefault = "default"
+	jsonGroupDevelop = "develop"
+
+	// Keyword that SCALIBR uses for packages in the dev group.
+	groupDev = "dev"
 )
 
 type pipenvPackage struct {
@@ -72,27 +83,30 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from Pipfile.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var parsedLockfile *pipenvLockFile
+	content, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not read: %w", err)
+	}
 
-	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
+	if len(strings.TrimSpace(string(content))) == 0 {
+		return inventory.Inventory{}, nil
+	}
 
+	var parsedLockfile pipenvLockFile
+	err = json.Unmarshal(content, &parsedLockfile)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
 	details := make(map[string]*extractor.Package)
 
-	addPkgDetails(details, parsedLockfile.Packages, "")
-	addPkgDetails(details, parsedLockfile.PackagesDev, "dev")
-
-	for key := range details {
-		details[key].Location = extractor.LocationFromPath(input.Path)
-	}
+	addPkgDetails(input.Path, content, details, parsedLockfile.Packages, "")
+	addPkgDetails(input.Path, content, details, parsedLockfile.PackagesDev, groupDev)
 
 	return inventory.Inventory{Packages: slices.Collect(maps.Values(details))}, nil
 }
 
-func addPkgDetails(details map[string]*extractor.Package, packages map[string]pipenvPackage, group string) {
+func addPkgDetails(path string, content []byte, details map[string]*extractor.Package, packages map[string]pipenvPackage, group string) {
 	for name, pipenvPackage := range packages {
 		if pipenvPackage.Version == "" {
 			continue
@@ -115,6 +129,20 @@ func addPkgDetails(details map[string]*extractor.Package, packages map[string]pi
 				groupSlice = []string{group}
 			}
 
+			jsonGroup := jsonGroupDefault
+			if group == groupDev {
+				jsonGroup = jsonGroupDevelop
+			}
+			line := findLineNumber(content, jsonGroup, name)
+
+			var loc extractor.PackageLocation
+			if line > 0 {
+				loc = extractor.LocationFromPathAndLine(path, line)
+			} else {
+				log.Debugf("Failed to find line number for package %s in group %s of %s", name, jsonGroup, path)
+				loc = extractor.LocationFromPath(path)
+			}
+
 			pkg := &extractor.Package{
 				Name:     name,
 				Version:  version,
@@ -122,11 +150,46 @@ func addPkgDetails(details map[string]*extractor.Package, packages map[string]pi
 				Metadata: &osv.DepGroupMetadata{
 					DepGroupVals: groupSlice,
 				},
+				Location: loc,
 			}
 
 			details[name+"@"+version] = pkg
 		}
 	}
+}
+
+// findLineNumber scans the JSON content to find the line number of a package.
+func findLineNumber(content []byte, group string, pkgName string) int {
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	currentGroup := ""
+	lineIdx := 0
+
+	defaultPrefix := fmt.Sprintf(`"%s":`, jsonGroupDefault)
+	developPrefix := fmt.Sprintf(`"%s":`, jsonGroupDevelop)
+	expectedKey := fmt.Sprintf(`"%s":`, pkgName)
+
+	for scanner.Scan() {
+		lineIdx++
+		trimmed := strings.TrimSpace(scanner.Text())
+
+		// Detect group block in the JSON file.
+		if strings.HasPrefix(trimmed, defaultPrefix) {
+			currentGroup = jsonGroupDefault
+			continue
+		}
+		if strings.HasPrefix(trimmed, developPrefix) {
+			currentGroup = jsonGroupDevelop
+			continue
+		}
+
+		// If we are in the target group, look for the package name.
+		if currentGroup == group {
+			if strings.HasPrefix(trimmed, expectedKey) {
+				return lineIdx
+			}
+		}
+	}
+	return 0
 }
 
 var _ filesystem.Extractor = Extractor{}

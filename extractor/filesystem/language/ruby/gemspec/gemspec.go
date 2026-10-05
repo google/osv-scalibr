@@ -118,7 +118,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 
 // Extract extracts packages from the .gemspec file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	p, err := extract(input.Path, input.FS, input.Reader)
+	p, lineNum, err := extract(input.Path, input.FS, input.Reader)
 	e.reportFileExtracted(input.Path, input.Info, filesystem.ExtractorErrorToFileExtractedResult(err))
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("gemspec.parse: %w", err)
@@ -127,7 +127,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, nil
 	}
 
-	p.Location = extractor.LocationFromPath(input.Path)
+	p.Location = extractor.LocationFromPathAndLine(input.Path, lineNum)
 	return inventory.Inventory{Packages: []*extractor.Package{p}}, nil
 }
 
@@ -149,8 +149,9 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, result
 // extract searches for the required name and version lines in the gemspec
 // file using regex. It handles version strings defined either inline or via a
 // constant populated through require_relative.
+// Returns the parsed package, the 1-based line number of the name declaration, and any parsing error.
 // Based on: https://guides.rubygems.org/specification-reference/
-func extract(path string, fsys fs.FS, r io.Reader) (*extractor.Package, error) {
+func extract(path string, fsys fs.FS, r io.Reader) (*extractor.Package, int, error) {
 	buf := bufio.NewScanner(r)
 	gemName, gemVer := "", ""
 	foundStart := false
@@ -160,8 +161,11 @@ func extract(path string, fsys fs.FS, r io.Reader) (*extractor.Package, error) {
 		inlineConstants = make(map[string]string)
 	)
 	reqAccum := &requireAccumulator{}
+	nameLine := 0
+	lineNum := 0
 
 	for buf.Scan() {
+		lineNum++
 		line := buf.Text()
 
 		requirePaths = appendUnique(requirePaths, reqAccum.Add(line)...)
@@ -186,6 +190,7 @@ func extract(path string, fsys fs.FS, r io.Reader) (*extractor.Package, error) {
 			nameArr := reName.FindStringSubmatch(line)
 			if len(nameArr) > 1 {
 				gemName = nameArr[1]
+				nameLine = lineNum
 				continue
 			}
 		}
@@ -210,7 +215,7 @@ func extract(path string, fsys fs.FS, r io.Reader) (*extractor.Package, error) {
 	// This was likely a marshalled gemspec. Not a readable text file.
 	if !foundStart {
 		log.Warnf("error scanning gemspec (%s) could not find start of spec definition", path)
-		return nil, nil
+		return nil, 0, nil
 	}
 
 	if gemVer == "" && versionConst != "" {
@@ -226,12 +231,12 @@ func extract(path string, fsys fs.FS, r io.Reader) (*extractor.Package, error) {
 	}
 
 	if gemName == "" || gemVer == "" {
-		return nil, fmt.Errorf("failed to parse gemspec name (%v) and version (%v)", gemName, gemVer)
+		return nil, 0, fmt.Errorf("failed to parse gemspec name (%v) and version (%v)", gemName, gemVer)
 	}
 
 	return &extractor.Package{
 		Name:     gemName,
 		Version:  gemVer,
 		PURLType: purl.TypeGem,
-	}, nil
+	}, nameLine, nil
 }

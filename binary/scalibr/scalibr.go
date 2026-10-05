@@ -83,7 +83,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 	fs.Var(&dirsToSkip, "skip-dirs", "Comma-separated list of file paths to avoid traversing")
 	skipDirRegex := fs.String("skip-dir-regex", "", "If the regex matches a directory, it will be skipped. The regex is matched against the absolute file path.")
 	skipDirGlob := fs.String("skip-dir-glob", "", "If the glob matches a directory, it will be skipped. The glob is matched against the absolute file path.")
-	maxFileSize := fs.Int("max-file-size", 0, "Files larger than this size in bytes are skipped. If 0, no limit is applied.")
+	maxFileSize := fs.Int64("max-file-size", 0, "Files larger than this size in bytes are skipped. If 0, no limit is applied.")
 	useGitignore := fs.Bool("use-gitignore", false, "Skip files declared in .gitignore files in source repos.")
 	remoteImage := fs.String("remote-image", "", "The remote image to scan. If specified, SCALIBR pulls and scans this image instead of the local filesystem.")
 	imageTarball := fs.String("image-tarball", "", "The path to a tarball containing a container image. These are commonly procuded using `docker save`. If specified, SCALIBR scans this image instead of the local filesystem.")
@@ -92,6 +92,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 	spdxDocumentName := fs.String("spdx-document-name", "", "The 'name' field for the output SPDX document")
 	spdxDocumentNamespace := fs.String("spdx-document-namespace", "", "The 'documentNamespace' field for the output SPDX document")
 	spdxCreators := fs.String("spdx-creators", "", "The 'creators' field for the output SPDX document. Format is --spdx-creators=creatortype1:creator1,creatortype2:creator2")
+	deterministicIDs := fs.Bool("deterministic-ids", false, "If set, SCALIBR will generate deterministic IDs for packages instead of random UUIDs")
 	cdxComponentName := fs.String("cdx-component-name", "", "The 'metadata.component.name' field for the output CDX document")
 	cdxComponentType := fs.String("cdx-component-type", "", "The 'metadata.component.type' field for the output CDX document")
 	cdxComponentVersion := fs.String("cdx-component-version", "", "The 'metadata.component.version' field for the output CDX document")
@@ -133,6 +134,7 @@ func parseFlags(args []string, fs *flag.FlagSet) (*cli.Flags, error) {
 		SPDXDocumentName:      *spdxDocumentName,
 		SPDXDocumentNamespace: *spdxDocumentNamespace,
 		SPDXCreators:          *spdxCreators,
+		DeterministicIDs:      *deterministicIDs,
 		CDXComponentName:      *cdxComponentName,
 		CDXComponentType:      *cdxComponentType,
 		CDXComponentVersion:   *cdxComponentVersion,

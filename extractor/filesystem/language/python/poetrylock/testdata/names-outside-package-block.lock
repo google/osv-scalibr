@@ -1,0 +1,24 @@
+version = 1
+
+[[package]]
+other-field = "value"
+name = "first-pkg"
+version = "1.0.0"
+description = """
+This is a multiline description.
+name = "second-pkg"
+"""
+
+[package.tool.poetry]
+name = "first-pkg-tool"
+
+[[package]]
+# name = "fake-pkg"
+name_other = "not-this"
+name = "second-pkg"
+version = "2.0.0"
+
+[metadata]
+lock-version = "1.1"
+python-versions = "^3.7"
+content-hash = "1e6f29ae514d3dd64bd2a40ee33215bec7a7853fee7a469c9c9445f5e27bc3a3"

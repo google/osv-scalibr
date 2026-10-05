@@ -16,8 +16,11 @@
 package pomxml
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+
 	"maps"
 	"path/filepath"
 	"regexp"
@@ -37,6 +40,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/java/pomxml/internal/linetracker"
 )
 
 const (
@@ -84,18 +88,41 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract extracts packages from pom.xml files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	content, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not read input: %w", err)
+	}
+
 	var project *maven.Project
 
-	if err := datasource.NewMavenDecoder(input.Reader).Decode(&project); err != nil {
+	if err := datasource.NewMavenDecoder(bytes.NewReader(content)).Decode(&project); err != nil {
 		err := fmt.Errorf("could not extract pom from %s: %w", input.Path, err)
 		log.Errorf("%v", err)
 		return inventory.Inventory{}, err
 	}
+
+	// Capture line numbers before Interpolate() and MergeParents().
+	//
+	// Interpolate() and MergeParents() will:
+	//  - Resolve variables (e.g., ${spring.version} into 6.0.0)
+	//  - Merge dependencies from parent POMs
+	//
+	// After these steps, the resolved dependencies in memory will no longer match the raw text in
+	// the file, making it impossible to find where they were originally defined by simple string
+	// matching.
+	rawDeps := linetracker.RawDependencyLinesList(content)
+
 	if err := project.Interpolate(); err != nil {
 		err := fmt.Errorf("failed to interpolate pom for %s in %s: %w", project.Name, input.Path, err)
 		log.Errorf("%v", err)
 		return inventory.Inventory{}, err
 	}
+
+	// We'll map final dependencies to rawDeps after ProcessDependencies.
+	// We also find the line number of the <parent> tag. If we fail to find a specific
+	// line number for a dependency (e.g., because it was inherited from a parent POM
+	// and thus doesn't exist in this file's raw XML), we will fallback to attributing
+	parentLine := linetracker.ParentLine(content)
 
 	// Merging parents data by parsing local parent pom.xml.
 	if err := mavenutil.MergeParents(ctx, project.Parent, project, mavenutil.Options{
@@ -118,6 +145,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	details := map[string]*extractor.Package{}
 
+	// Keep track of which raw dependencies have been used to prevent wildcard hijacking.
+	usedRawDeps := make(map[int]bool)
+
 	for _, dep := range project.Dependencies {
 		g, a, found := strings.Cut(dep.Name(), ":")
 		if !found {
@@ -138,11 +168,24 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			Classifier:   string(dep.Classifier),
 			DepGroupVals: []string{},
 		}
+
+		lineNum := linetracker.FindLineNumber(linetracker.FindLineNumberArgs{
+			GroupID:     g,
+			ArtifactID:  a,
+			Version:     string(dep.Version),
+			DepType:     depType,
+			Classifier:  string(dep.Classifier),
+			RawDeps:     rawDeps,
+			UsedRawDeps: usedRawDeps,
+			ParentLine:  parentLine,
+			InputPath:   input.Path,
+		})
+
 		pkgDetails := &extractor.Package{
 			Name:     dep.Name(),
 			Version:  parseResolvedVersion(dep.Version),
 			PURLType: purl.TypeMaven,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(filepath.ToSlash(input.Path), lineNum),
 			Metadata: &metadata,
 		}
 		if scope := strings.TrimSpace(string(dep.Scope)); scope != "" && scope != "compile" {

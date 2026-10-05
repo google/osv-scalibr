@@ -9,14 +9,22 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Restrict jobs in this workflow to have no permissions by default; permissions
+# should be granted per job as needed using a dedicated `permissions` block
+permissions: {}
+
 jobs:
   linelint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: fernandrone/linelint@7907a5dca0c28ea7dd05c6d8d8cacded713aca11 # v0.0.6
   filenames:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,6 +35,8 @@ jobs:
               'printf "::error file=%q::This filename contains undesired characters\n" "$1" && false' _ {}
   tidy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +51,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     steps:
         # gofmt and goimports expect that files on Window use \r\n
         # so we need git to not automatically translate between \n
@@ -62,6 +74,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/gcpapikey"
 	"github.com/google/osv-scalibr/veles/secrets/gcpoauth2client"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	veleshttp "github.com/google/osv-scalibr/veles/secrets/http"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -119,6 +120,26 @@ var (
 			},
 		},
 	}
+	secretHTTPCSRFStruct = &inventory.Secret{
+		Secret: veleshttp.CSRFToken{
+			Value: "csrf-token-value",
+		},
+		Location: location.FromPath("/foo/bar/baz.json"),
+	}
+	secretHTTPCSRFProto = &spb.Secret{
+		Secret: &spb.SecretData{
+			Secret: &spb.SecretData_HttpCsrfToken{
+				HttpCsrfToken: &spb.SecretData_HTTPCSRFToken{
+					Value: "csrf-token-value",
+				},
+			},
+		},
+		Location: &spb.Location{
+			File: &spb.File{
+				Path: "/foo/bar/baz.json",
+			},
+		},
+	}
 )
 
 // --- Struct to Proto
@@ -166,6 +187,11 @@ func TestSecretToProto(t *testing.T) {
 			desc: "GCP_OAuth2_client_credentials",
 			s:    secretGCPOAuth2ClientCredentialsStruct,
 			want: secretGCPOAuth2ClientCredentialsProto,
+		},
+		{
+			desc: "HTTP_CSRF",
+			s:    secretHTTPCSRFStruct,
+			want: secretHTTPCSRFProto,
 		},
 	}
 
@@ -241,6 +267,11 @@ func TestSecretToStruct(t *testing.T) {
 			desc: "GCP_OAuth2_client_credentials",
 			s:    secretGCPOAuth2ClientCredentialsProto,
 			want: secretGCPOAuth2ClientCredentialsStruct,
+		},
+		{
+			desc: "HTTP_CSRF",
+			s:    secretHTTPCSRFProto,
+			want: secretHTTPCSRFStruct,
 		},
 	}
 

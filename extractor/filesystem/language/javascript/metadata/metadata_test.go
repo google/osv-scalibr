@@ -19,7 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -247,7 +247,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Unknown,
+				Source:       metadata.Unknown,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -282,6 +283,11 @@ func TestToProto(t *testing.T) {
 					},
 				},
 				Source: metadata.PublicRegistry,
+				Dependencies: map[string]string{
+					"dep1": "1.0.0",
+					"dep2": "~2.0.0",
+				},
+				DepGroupVals: []string{"dev", "prod"},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -294,6 +300,11 @@ func TestToProto(t *testing.T) {
 					"second-contributor <second-contributor@google.com>",
 				},
 				Source: pb.PackageSource_PUBLIC_REGISTRY,
+				Dependencies: []*pb.JavascriptPackageJSONMetadata_Dependency{
+					{Name: "dep1", VersionRequired: "1.0.0"},
+					{Name: "dep2", VersionRequired: "~2.0.0"},
+				},
+				DepGroups: []string{"dev", "prod"},
 			},
 		},
 		{
@@ -303,7 +314,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.PublicRegistry,
+				Source:       metadata.PublicRegistry,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -317,7 +329,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Other,
+				Source:       metadata.Other,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -331,7 +344,8 @@ func TestToProto(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Local,
+				Source:       metadata.Local,
+				Dependencies: map[string]string{},
 			},
 			want: &pb.JavascriptPackageJSONMetadata{
 				Author: "some-author <some-author@google.com>",
@@ -374,7 +388,8 @@ func TestToStruct(t *testing.T) {
 				Author: &metadata.Person{
 					Name: "some-author",
 				},
-				Source: metadata.Unknown,
+				Source:       metadata.Unknown,
+				Dependencies: map[string]string{},
 			},
 		},
 		{
@@ -389,7 +404,8 @@ func TestToStruct(t *testing.T) {
 					"first-contributor <first-contributor@google.com>",
 					"second-contributor <second-contributor@google.com>",
 				},
-				Source: pb.PackageSource_PUBLIC_REGISTRY,
+				Source:    pb.PackageSource_PUBLIC_REGISTRY,
+				DepGroups: []string{"dev", "prod"},
 			},
 			want: &metadata.JavascriptPackageJSONMetadata{
 				Author: &metadata.Person{
@@ -416,7 +432,9 @@ func TestToStruct(t *testing.T) {
 						Email: "second-maintainer@google.com",
 					},
 				},
-				Source: metadata.PublicRegistry,
+				Source:       metadata.PublicRegistry,
+				Dependencies: map[string]string{},
+				DepGroupVals: []string{"dev", "prod"},
 			},
 		},
 		{
@@ -430,7 +448,8 @@ func TestToStruct(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.PublicRegistry,
+				Source:       metadata.PublicRegistry,
+				Dependencies: map[string]string{},
 			},
 		},
 		{
@@ -444,7 +463,8 @@ func TestToStruct(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Other,
+				Source:       metadata.Other,
+				Dependencies: map[string]string{},
 			},
 		},
 		{
@@ -458,7 +478,8 @@ func TestToStruct(t *testing.T) {
 					Name:  "some-author",
 					Email: "some-author@google.com",
 				},
-				Source: metadata.Local,
+				Source:       metadata.Local,
+				Dependencies: map[string]string{},
 			},
 		},
 	}
@@ -483,5 +504,29 @@ func TestToStruct(t *testing.T) {
 				t.Errorf("metadata.ToProto(%+v): (-want +got):\n%s", got, diff)
 			}
 		})
+	}
+}
+
+func TestDepGroupsAndPackageSource(t *testing.T) {
+	m := &metadata.JavascriptPackageMetadata{
+		DepGroupVals: []string{"dev", "optional"},
+		Source:       metadata.PublicRegistry,
+	}
+
+	if diff := cmp.Diff([]string{"dev", "optional"}, m.DepGroups()); diff != "" {
+		t.Errorf("m.DepGroups() diff (-want +got):\n%s", diff)
+	}
+
+	if got := m.PackageSource(); got != metadata.PublicRegistry {
+		t.Errorf("m.PackageSource() = %v, want %v", got, metadata.PublicRegistry)
+	}
+
+	// Verify safe behavior on nil pointer
+	var nilMeta *metadata.JavascriptPackageMetadata
+	if got := nilMeta.DepGroups(); got != nil {
+		t.Errorf("nilMeta.DepGroups() = %v, want nil", got)
+	}
+	if got := nilMeta.PackageSource(); got != metadata.Unknown {
+		t.Errorf("nilMeta.PackageSource() = %v, want %v", got, metadata.Unknown)
 	}
 }

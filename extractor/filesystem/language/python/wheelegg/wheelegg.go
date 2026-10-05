@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/textproto"
 	"path/filepath"
 	"strings"
 
@@ -66,7 +65,9 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
 
-	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
+	return &Extractor{
+		maxFileSizeBytes: maxFileSizeBytes,
+	}, nil
 }
 
 // Name of the extractor.
@@ -107,12 +108,14 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 			// We only want to skip the file for being too large if it is a relevant
 			// file at all, so we check the file size after checking the file suffix.
-			if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-				e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+			size := fileinfo.Size()
+			// A ZIP64 member size above MaxInt64 wraps to a negative FileInfo size.
+			if size < 0 || (e.maxFileSizeBytes > 0 && size > e.maxFileSizeBytes) {
+				e.reportFileRequired(path, size, stats.FileRequiredResultSizeLimitExceeded)
 				return false
 			}
 
-			e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+			e.reportFileRequired(path, size, stats.FileRequiredResultOK)
 			return true
 		}
 	}
@@ -210,37 +213,101 @@ func (e Extractor) openAndExtract(f *zip.File, input *filesystem.ScanInput) (*ex
 	return p, nil
 }
 
-func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Package, error) {
-	p, err := parse(r)
-	if err != nil {
-		return nil, fmt.Errorf("wheelegg.parse: %w", err)
-	}
+var repeatedKeys = map[string]bool{
+	"requires-dist": true,
+}
 
-	p.Location = extractor.LocationFromPath(path)
+// extractSingleFile parses the metadata from a single file.
+func (e Extractor) extractSingleFile(r io.Reader, path string) (*extractor.Package, error) {
+	// Bound reads from both ZIP members and standalone metadata. ZIP member
+	// sizes come from archive headers, which may be attacker-controlled.
+	limit := e.maxFileSizeBytes
+	if limit <= 0 {
+		limit = defaultMaxFileSizeBytes
+	}
+	limited := &io.LimitedReader{R: r, N: limit}
+	p, err := parseSingleFile(limited, path)
+	if err != nil {
+		return nil, err
+	}
+	if limited.N == 0 {
+		var next [1]byte
+		n, readErr := io.ReadFull(r, next[:])
+		if n > 0 {
+			return nil, fmt.Errorf("%w: %s metadata exceeds %d bytes at %q",
+				filesystem.ErrExtractorMemoryLimitExceeded, e.Name(), limit, path)
+		}
+		if readErr != nil && !errors.Is(readErr, io.EOF) {
+			return nil, fmt.Errorf("read metadata after size limit: %w", readErr)
+		}
+	}
 	return p, nil
 }
 
-func parse(r io.Reader) (*extractor.Package, error) {
-	rd := textproto.NewReader(bufio.NewReader(r))
-	h, err := rd.ReadMIMEHeader()
-	name := h.Get("Name")
-	version := h.Get("version")
-	if name == "" || version == "" {
-		// In case we got name and version but also an error, we ignore the error. This can happen in
-		// malformed files like passlib 1.7.4.
-		if err != nil {
-			return nil, fmt.Errorf("ReadMIMEHeader(): %w %s %s", err, h.Get("Name"), h.Get("version"))
+func parseSingleFile(r io.Reader, path string) (*extractor.Package, error) {
+	scanner := bufio.NewScanner(r)
+
+	var name, version, author, authorEmail string
+	var requiresDist []string
+	var nameLine int
+	seen := make(map[string]bool)
+
+	// Parse the file line-by-line, since common MIME parsers don't support line number tracking.
+	for lineNumber := 1; scanner.Scan(); lineNumber++ {
+		line := scanner.Text()
+		if len(strings.TrimSpace(line)) == 0 {
+			break // no content
 		}
-		return nil, fmt.Errorf("Name or version is empty (name: %q, version: %q)", name, version)
+		if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
+			continue // line starts with space, it's a continuation line
+		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			// Stop parsing if line is malformed.
+			// We don't return an error so we can still extract packages from malformed files,
+			// like passlib 1.7.4.
+			break
+		}
+
+		key := strings.ToLower(strings.TrimSpace(parts[0]))
+		val := strings.TrimSpace(parts[1])
+
+		if seen[key] && !repeatedKeys[key] {
+			continue // ignore duplicate keys, unless they explicitly allow repeated values.
+		}
+		seen[key] = true
+
+		switch key {
+		case "name":
+			name = val
+			nameLine = lineNumber
+		case "version":
+			version = val
+		case "author":
+			author = val
+		case "author-email":
+			authorEmail = val
+		case "requires-dist":
+			requiresDist = append(requiresDist, val)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("wheelegg.parse: failed to scan metadata: %w", err)
+	}
+
+	if name == "" || version == "" {
+		return nil, fmt.Errorf("Name or Version is empty (name: %q, version: %q)", name, version)
 	}
 
 	return &extractor.Package{
 		Name:     name,
 		Version:  version,
 		PURLType: purl.TypePyPi,
+		Location: extractor.LocationFromPathAndLine(path, nameLine),
 		Metadata: &PythonPackageMetadata{
-			Author:      h.Get("Author"),
-			AuthorEmail: h.Get("Author-email"),
+			Author:       author,
+			AuthorEmail:  authorEmail,
+			RequiresDist: requiresDist,
 		},
 	}, nil
 }

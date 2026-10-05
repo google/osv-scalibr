@@ -16,10 +16,14 @@
 package poetrylock
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -97,22 +101,30 @@ func resolveGroups(pkg poetryLockPackage) []string {
 
 // Extract extracts packages from poetry.lock files passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var parsedLockfile *poetryLockFile
-
-	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	content, err := io.ReadAll(input.Reader)
 	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not read file: %w", err)
+	}
+
+	var parsedLockfile poetryLockFile
+	if err := toml.Unmarshal(content, &parsedLockfile); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
+	packageNames := make([]string, 0, len(parsedLockfile.Packages))
+	for _, p := range parsedLockfile.Packages {
+		packageNames = append(packageNames, p.Name)
+	}
+	lineNums := findPackageLineNumbers(content, packageNames)
+
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
-	for _, lockPackage := range parsedLockfile.Packages {
+	for i, lockPackage := range parsedLockfile.Packages {
 		pkgDetails := &extractor.Package{
 			Name:     lockPackage.Name,
 			Version:  lockPackage.Version,
 			PURLType: purl.TypePyPi,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, lineNums[i]),
 			Metadata: &osv.DepGroupMetadata{
 				DepGroupVals: resolveGroups(lockPackage),
 			},
@@ -126,6 +138,75 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+// extractPackageName parses a TOML key-value line and returns the unquoted
+// package name if the key is "name". Returns false if the line is not a valid name assignment.
+// TODO(b/491518484): Put in common location for all Python extractors to use.
+func extractPackageName(line string) (string, bool) {
+	if !strings.HasPrefix(line, "name") {
+		return "", false
+	}
+	k, _, ok := strings.Cut(line, "=")
+	if !ok || strings.TrimSpace(k) != "name" {
+		return "", false
+	}
+	var pkg poetryLockPackage
+	if err := toml.Unmarshal([]byte(line), &pkg); err != nil {
+		return "", false
+	}
+	return pkg.Name, true
+}
+
+// findPackageLineNumbers returns the line numbers of the specified package names.
+// If package line number is not found, the value will be 0.
+func findPackageLineNumbers(content []byte, packageNames []string) []int {
+	lineNums := make([]int, len(packageNames))
+	if len(packageNames) == 0 {
+		return lineNums
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	pkgIdx := 0
+	inPackageBlock := false
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		if line == "[[package]]" {
+			inPackageBlock = true
+			continue
+		}
+
+		if line == "[metadata]" {
+			break
+		}
+
+		if inPackageBlock && strings.HasPrefix(line, "[") && !strings.HasPrefix(line, "[[package]]") {
+			inPackageBlock = false
+			continue
+		}
+
+		if !inPackageBlock || pkgIdx >= len(packageNames) {
+			continue
+		}
+
+		name, ok := extractPackageName(line)
+		if !ok || name != packageNames[pkgIdx] {
+			continue
+		}
+
+		lineNums[pkgIdx] = lineNum
+		pkgIdx++
+		inPackageBlock = false
+
+		if pkgIdx == len(packageNames) {
+			break
+		}
+	}
+	return lineNums
 }
 
 var _ filesystem.Extractor = Extractor{}

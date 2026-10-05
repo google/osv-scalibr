@@ -147,7 +147,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "lodash-es",
 					Version:  "4.17.22",
-					Location: extractor.LocationFromPath("testdata/importSpecifiers.tstest"),
+					Location: extractor.LocationFromPathAndLine("testdata/importSpecifiers.tstest", 15),
 					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
 						FromUnpkgCDN: true,
@@ -157,7 +157,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "lodash-es",
 					Version:  "4.17.21",
-					Location: extractor.LocationFromPath("testdata/importSpecifiers.tstest"),
+					Location: extractor.LocationFromPathAndLine("testdata/importSpecifiers.tstest", 13),
 					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
 						FromUnpkgCDN: true,
@@ -168,7 +168,7 @@ func TestExtract(t *testing.T) {
 					Name:     "canvas-confetti",
 					Version:  "1.6.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/importSpecifiers.tstest"),
+					Location: extractor.LocationFromPathAndLine("testdata/importSpecifiers.tstest", 5),
 					Metadata: &denometadata.DenoMetadata{
 						FromESMCDN: true,
 						URL:        "https://esm.sh/canvas-confetti@1.6.0",
@@ -177,7 +177,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "openai",
 					Version:  "4.69.0",
-					Location: extractor.LocationFromPath("testdata/importSpecifiers.tstest"),
+					Location: extractor.LocationFromPathAndLine("testdata/importSpecifiers.tstest", 9),
 					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
 						FromDenolandCDN: true,
@@ -187,7 +187,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "luca/cases",
 					Version:  "1.0.0",
-					Location: extractor.LocationFromPath("testdata/importSpecifiers.tstest"),
+					Location: extractor.LocationFromPathAndLine("testdata/importSpecifiers.tstest", 19),
 					PURLType: purl.TypeJSR,
 					Metadata: &denometadata.DenoMetadata{
 						URL: "jsr:@luca/cases@1.0.0",
@@ -196,7 +196,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name:     "cowsay",
 					Version:  "1.6.0",
-					Location: extractor.LocationFromPath("testdata/importSpecifiers.tstest"),
+					Location: extractor.LocationFromPathAndLine("testdata/importSpecifiers.tstest", 20),
 					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{
 						URL: "npm:cowsay@1.6.0",
@@ -278,7 +278,7 @@ func TestExtractDenoConfigAncestorCheck(t *testing.T) {
 				{
 					Name:     "cowsay",
 					Version:  "1.6.0",
-					Location: extractor.LocationFromPath("src/main.ts"),
+					Location: extractor.LocationFromPathAndLine("src/main.ts", 1),
 					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{URL: "npm:cowsay@1.6.0"},
 				},
@@ -301,7 +301,7 @@ func TestExtractDenoConfigAncestorCheck(t *testing.T) {
 				{
 					Name:     "cowsay",
 					Version:  "1.6.0",
-					Location: extractor.LocationFromPath("main.ts"),
+					Location: extractor.LocationFromPathAndLine("main.ts", 1),
 					PURLType: purl.TypeNPM,
 					Metadata: &denometadata.DenoMetadata{URL: "npm:cowsay@1.6.0"},
 				},

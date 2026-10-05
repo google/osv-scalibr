@@ -31,38 +31,48 @@ import (
 	"github.com/google/osv-scalibr/annotator/osduplicate/cos"
 	"github.com/google/osv-scalibr/annotator/osduplicate/dpkg"
 	"github.com/google/osv-scalibr/annotator/osduplicate/rpm"
+	"github.com/google/osv-scalibr/plugin/config"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 // InitFn is the annotator initializer function.
-type InitFn func(cfg *cpb.PluginConfig) (annotator.Annotator, error)
+type InitFn func(cfg *config.PluginConfig) (annotator.Annotator, error)
+
+func protoCfg(f func(cfg *cpb.PluginConfig) (annotator.Annotator, error)) InitFn {
+	return func(cfg *config.PluginConfig) (annotator.Annotator, error) {
+		if cfg != nil && cfg.ProtoConfig != nil {
+			return f(cfg.ProtoConfig)
+		}
+		return f(&cpb.PluginConfig{})
+	}
+}
 
 // InitMap is a map of annotator names to their initers.
 type InitMap map[string][]InitFn
 
 // VEX generation related annotators.
 var VEX = InitMap{
-	apk.Name:              {apk.New},
-	cachedir.Name:         {cachedir.New},
-	cos.Name:              {cos.New},
-	dpkg.Name:             {dpkg.New},
-	rpm.Name:              {rpm.New},
-	noexecutabledpkg.Name: {noexecutabledpkg.New},
+	apk.Name:              {protoCfg(apk.New)},
+	cachedir.Name:         {protoCfg(cachedir.New)},
+	cos.Name:              {protoCfg(cos.New)},
+	dpkg.Name:             {protoCfg(dpkg.New)},
+	rpm.Name:              {protoCfg(rpm.New)},
+	noexecutabledpkg.Name: {protoCfg(noexecutabledpkg.New)},
 }
 
 // Misc annotators.
 var Misc = InitMap{
-	npmsource.Name:  {npmsource.New},
-	dpkgsource.Name: {dpkgsource.New},
-	brewsource.Name: {brewsource.New},
+	npmsource.Name:  {protoCfg(npmsource.New)},
+	dpkgsource.Name: {protoCfg(dpkgsource.New)},
+	brewsource.Name: {protoCfg(brewsource.New)},
 }
 
 // FFA (Full Filesystem Accountability) related annotators.
-var FFA = InitMap{unknownbinariesanno.Name: {unknownbinariesanno.New}}
+var FFA = InitMap{unknownbinariesanno.Name: {protoCfg(unknownbinariesanno.New)}}
 
 // Default detectors that are recommended to be enabled.
-var Default = InitMap{cachedir.Name: {cachedir.New}}
+var Default = InitMap{cachedir.Name: {protoCfg(cachedir.New)}}
 
 // All annotators.
 var All = concat(
@@ -94,7 +104,7 @@ func vals(initMap InitMap) []InitFn {
 }
 
 // AnnotatorsFromName returns a list of annotators from a name.
-func AnnotatorsFromName(name string, cfg *cpb.PluginConfig) ([]annotator.Annotator, error) {
+func AnnotatorsFromName(name string, cfg *config.PluginConfig) ([]annotator.Annotator, error) {
 	if initers, ok := annotatorNames[name]; ok {
 		result := []annotator.Annotator{}
 		for _, initer := range initers {

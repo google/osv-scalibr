@@ -317,21 +317,21 @@ func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHead
 				if zerr != nil {
 					return fmt.Errorf("zlib reader at lba %d: %w", lba, zerr)
 				}
-				dec, derr := io.ReadAll(zr)
+				// Limit decompression to one grain to prevent decompression bomb attacks.
+				decompressed, err := io.ReadAll(io.LimitReader(zr, grainBytes+1))
 				zr.Close()
-				if derr != nil && !errors.Is(derr, io.EOF) {
-					return fmt.Errorf("zlib read at lba %d: %w", lba, derr)
+				if err != nil && !errors.Is(err, io.EOF) {
+					return fmt.Errorf("zlib read at lba %d: %w", lba, err)
 				}
-				if int64(len(dec)) < grainBytes {
+				if int64(len(decompressed)) > grainBytes {
+					return fmt.Errorf("decompressed grain at lba %d exceeds grain size %d", lba, grainBytes)
+				}
+				if int64(len(decompressed)) < grainBytes {
 					tmp := make([]byte, grainBytes)
-					copy(tmp, dec)
-					dec = tmp
-				} else if int64(len(dec)) > grainBytes {
-					tmp := make([]byte, int64(len(dec))+(-int64(len(dec))%grainBytes))
-					copy(tmp, dec)
-					dec = tmp
+					copy(tmp, decompressed)
+					decompressed = tmp
 				}
-				if _, werr := out.WriteAt(dec, woff); werr != nil {
+				if _, werr := out.WriteAt(decompressed, woff); werr != nil {
 					return fmt.Errorf("write decompressed grain at lba %d: %w", lba, werr)
 				}
 			} else {

@@ -1,0 +1,12 @@
+## explicit; go 1.20
+github.com/example/no-header
+# github.com/example/no-version
+# github.com/example/local => ../local
+# github.com/example/unused v1.2.3
+## explicit; go 1.20
+# github.com/example/badversion nope
+github.com/example/badversion
+# github.com/example/v2 v1.0.0
+github.com/example/v2
+# github.com/example/replaced v1.0.0 => not a local path
+github.com/example/replaced

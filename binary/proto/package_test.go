@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/purl"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -32,6 +33,34 @@ var (
 		protocmp.IgnoreFields(&spb.Package{}, "id", "locations"),
 	}
 )
+
+func exampleTransitiveDependencyPackage() *extractor.Package {
+	return &extractor.Package{
+		Name:      "transitive_package",
+		ParentIDs: map[string]bool{"parent_1": true, "parent_2": true},
+		Version:   "1.0.0",
+		PURLType:  purl.TypePyPi,
+		Location:  extractor.LocationFromPath("/file1"),
+		Plugins:   []string{"extractor_name"},
+	}
+}
+
+func exampleTransitiveDependencyPackageProto() *spb.Package {
+	return &spb.Package{
+		Name:      "transitive_package",
+		Version:   "1.0.0",
+		Ecosystem: "PyPI",
+		Location:  pkgLocProtoFromPath("/file1"),
+		Plugins:   []string{"extractor_name"},
+		ParentIds: []string{"parent_1", "parent_2"},
+		Purl: &spb.Purl{
+			Purl:    "pkg:pypi/transitive-package@1.0.0",
+			Type:    "pypi",
+			Name:    "transitive-package",
+			Version: "1.0.0",
+		},
+	}
+}
 
 func TestPackageToProto(t *testing.T) {
 	testCases := []struct {
@@ -49,6 +78,11 @@ func TestPackageToProto(t *testing.T) {
 			desc: "success",
 			pkg:  PurlDPKGAnnotationPackage(),
 			want: PurlDPKGAnnotationPackageProto(t),
+		},
+		{
+			desc: "transitive_dependency",
+			pkg:  exampleTransitiveDependencyPackage(),
+			want: exampleTransitiveDependencyPackageProto(),
 		},
 	}
 
@@ -106,6 +140,11 @@ func TestPackageToStruct(t *testing.T) {
 			desc: "success",
 			pkg:  PurlDPKGAnnotationPackageProto(t),
 			want: PurlDPKGAnnotationPackage(),
+		},
+		{
+			desc: "transitive_dependency",
+			pkg:  exampleTransitiveDependencyPackageProto(),
+			want: exampleTransitiveDependencyPackage(),
 		},
 	}
 

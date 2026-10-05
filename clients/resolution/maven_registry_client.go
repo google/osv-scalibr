@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"deps.dev/util/maven"
@@ -29,28 +30,46 @@ import (
 
 // MavenRegistryClient is a client to fetch data from Maven registry.
 type MavenRegistryClient struct {
-	api *datasource.MavenRegistryAPIClient
+	api          *datasource.MavenRegistryAPIClient
+	versionCache *datasource.RequestCache[resolve.VersionKey, resolve.Version]
+	reqCache     *datasource.RequestCache[resolve.VersionKey, []resolve.RequirementVersion]
 }
 
 // NewMavenRegistryClient makes a new MavenRegistryClient.
-func NewMavenRegistryClient(ctx context.Context, remote, local string, disableGoogleAuth bool) (*MavenRegistryClient, error) {
-	client, err := datasource.NewMavenRegistryAPIClient(ctx, datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local, disableGoogleAuth)
+func NewMavenRegistryClient(ctx context.Context, remote, local string, disableGoogleAuth, enableCache bool, httpClient *http.Client, googleClient *http.Client) (*MavenRegistryClient, error) {
+	client, err := datasource.NewMavenRegistryAPIClient(ctx, datasource.MavenRegistry{URL: remote, ReleasesEnabled: true}, local, disableGoogleAuth, enableCache, httpClient, googleClient)
 	if err != nil {
 		return nil, err
 	}
-	return &MavenRegistryClient{api: client}, nil
+	return NewMavenRegistryClientWithAPI(client, enableCache), nil
 }
 
 // NewMavenRegistryClientWithAPI makes a new MavenRegistryClient with the given Maven registry client.
-func NewMavenRegistryClientWithAPI(api *datasource.MavenRegistryAPIClient) *MavenRegistryClient {
+func NewMavenRegistryClientWithAPI(api *datasource.MavenRegistryAPIClient, enableCache bool) *MavenRegistryClient {
 	if api == nil {
 		panic("NewMavenRegistryClientWithAPI: api must not be nil")
 	}
-	return &MavenRegistryClient{api: api}
+	c := &MavenRegistryClient{
+		api: api,
+	}
+	if enableCache {
+		c.versionCache = datasource.NewRequestCache[resolve.VersionKey, resolve.Version]()
+		c.reqCache = datasource.NewRequestCache[resolve.VersionKey, []resolve.RequirementVersion]()
+	}
+	return c
 }
 
 // Version returns metadata of a version specified by the VersionKey.
 func (c *MavenRegistryClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
+	if c.versionCache != nil {
+		return c.versionCache.Get(vk, func() (resolve.Version, error) {
+			return c.fetchVersion(ctx, vk)
+		})
+	}
+	return c.fetchVersion(ctx, vk)
+}
+
+func (c *MavenRegistryClient) fetchVersion(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
 	g, a, found := strings.Cut(vk.Name, ":")
 	if !found {
 		return resolve.Version{}, fmt.Errorf("invalid Maven package name %s", vk.Name)
@@ -112,6 +131,15 @@ func (c *MavenRegistryClient) Versions(ctx context.Context, pk resolve.PackageKe
 
 // Requirements returns requirements of a version specified by the VersionKey.
 func (c *MavenRegistryClient) Requirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
+	if c.reqCache != nil {
+		return c.reqCache.Get(vk, func() ([]resolve.RequirementVersion, error) {
+			return c.fetchRequirements(ctx, vk)
+		})
+	}
+	return c.fetchRequirements(ctx, vk)
+}
+
+func (c *MavenRegistryClient) fetchRequirements(ctx context.Context, vk resolve.VersionKey) ([]resolve.RequirementVersion, error) {
 	if vk.System != resolve.Maven {
 		return nil, fmt.Errorf("wrong system: %v", vk.System)
 	}

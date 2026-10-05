@@ -27,9 +27,6 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-var connections = make(map[string]*grpc.ClientConn, 0)
-var connectionsMu sync.Mutex
-
 // CachedInsightsClient is a wrapper for InsightsClient that caches requests.
 type CachedInsightsClient struct {
 	pb.InsightsClient
@@ -71,19 +68,6 @@ func makeVersionKey(k *pb.VersionKey) versionKey {
 
 // NewCachedInsightsClient creates a CachedInsightsClient.
 func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClient, error) {
-	connectionsMu.Lock()
-	defer connectionsMu.Unlock()
-
-	key := addr + "|" + userAgent
-	if conn, ok := connections[key]; ok {
-		return &CachedInsightsClient{
-			InsightsClient:    pb.NewInsightsClient(conn),
-			packageCache:      NewRequestCache[packageKey, *pb.Package](),
-			versionCache:      NewRequestCache[versionKey, *pb.Version](),
-			requirementsCache: NewRequestCache[versionKey, *pb.Requirements](),
-		}, nil
-	}
-
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
 		return nil, fmt.Errorf("getting system cert pool: %w", err)
@@ -100,14 +84,22 @@ func NewCachedInsightsClient(addr string, userAgent string) (*CachedInsightsClie
 		return nil, fmt.Errorf("dialling %q: %w", addr, err)
 	}
 
-	connections[key] = conn
-
 	return &CachedInsightsClient{
 		InsightsClient:    pb.NewInsightsClient(conn),
 		packageCache:      NewRequestCache[packageKey, *pb.Package](),
 		versionCache:      NewRequestCache[versionKey, *pb.Version](),
 		requirementsCache: NewRequestCache[versionKey, *pb.Requirements](),
 	}, nil
+}
+
+// NewCachedInsightsClientWithConn creates a CachedInsightsClient with a provided connection.
+func NewCachedInsightsClientWithConn(conn grpc.ClientConnInterface) *CachedInsightsClient {
+	return &CachedInsightsClient{
+		InsightsClient:    pb.NewInsightsClient(conn),
+		packageCache:      NewRequestCache[packageKey, *pb.Package](),
+		versionCache:      NewRequestCache[versionKey, *pb.Version](),
+		requirementsCache: NewRequestCache[versionKey, *pb.Requirements](),
+	}
 }
 
 // GetPackage returns metadata about a package by querying deps.dev API.

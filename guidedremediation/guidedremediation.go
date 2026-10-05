@@ -77,7 +77,7 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 
 	if hasManifest {
 		var err error
-		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
+		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient, opts.ProjectRoot)
 		if err != nil {
 			return result.Result{}, err
 		}
@@ -137,7 +137,7 @@ func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetai
 	var lockfileRW lockfile.ReadWriter
 	if opts.Manifest != "" {
 		var err error
-		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
+		manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient, opts.ProjectRoot)
 		if err != nil {
 			return err
 		}
@@ -192,12 +192,12 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 	}
 
 	var err error
-	manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient)
+	manifestRW, err = readWriterForManifest(opts.Manifest, opts.MavenClient, opts.ProjectRoot)
 	if err != nil {
 		return result.Result{}, err
 	}
 
-	mf, err := parser.ParseManifest(opts.Manifest, manifestRW)
+	mf, err := parser.ParseManifest(opts.Manifest, manifestRW, opts.ProjectRoot)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -211,7 +211,7 @@ func Update(opts options.UpdateOptions) (result.Result, error) {
 		return result.Result{}, err
 	}
 
-	err = parser.WriteManifestPatches(opts.Manifest, mf, []result.Patch{patch}, manifestRW)
+	err = parser.WriteManifestPatches(opts.Manifest, mf, []result.Patch{patch}, manifestRW, opts.ProjectRoot)
 
 	return result.Result{
 		Path:      opts.Manifest,
@@ -232,7 +232,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 	default:
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}
-	m, err := parser.ParseManifest(opts.Manifest, rw)
+	m, err := parser.ParseManifest(opts.Manifest, rw, opts.ProjectRoot)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -279,7 +279,7 @@ func doManifestStrategy(ctx context.Context, s strategy.Strategy, rw manifest.Re
 	if m.System() == resolve.Maven && opts.NoMavenNewDepMgmt {
 		res.Patches = filterMavenPatches(res.Patches, m.EcosystemSpecific())
 	}
-	if err := parser.WriteManifestPatches(opts.Manifest, m, res.Patches, rw); err != nil {
+	if err := parser.WriteManifestPatches(opts.Manifest, m, res.Patches, rw, opts.ProjectRoot); err != nil {
 		return res, err
 	}
 
@@ -297,7 +297,7 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 	if s != strategy.StrategyInPlace {
 		return result.Result{}, fmt.Errorf("unsupported strategy: %q", s)
 	}
-	g, err := parser.ParseLockfile(opts.Lockfile, rw)
+	g, err := parser.ParseLockfile(opts.Lockfile, rw, opts.ProjectRoot)
 	if err != nil {
 		return result.Result{}, err
 	}
@@ -319,7 +319,7 @@ func doLockfileStrategy(ctx context.Context, s strategy.Strategy, rw lockfile.Re
 	}
 	res.Vulnerabilities = computeVulnsResultsLockfile(resolved, allPatches, opts.RemediationOptions)
 	res.Patches = choosePatches(allPatches, opts.MaxUpgrades, opts.NoIntroduce, true)
-	err = parser.WriteLockfilePatches(opts.Lockfile, res.Patches, rw)
+	err = parser.WriteLockfilePatches(opts.Lockfile, res.Patches, rw, opts.ProjectRoot)
 	return res, err
 }
 
@@ -531,7 +531,7 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 		return err
 	}
 
-	g, err := parser.ParseLockfile(opts.Lockfile, lockfileRW)
+	g, err := parser.ParseLockfile(opts.Lockfile, lockfileRW, opts.ProjectRoot)
 	if err != nil {
 		return err
 	}
@@ -640,14 +640,15 @@ func writePythonLockfile(ctx context.Context, path, executable, lockfileName str
 
 // readWriterForManifest returns the manifest read/write interface for the given manifest path.
 // mavenClient is used to read/write Maven manifests, and may be nil for other ecosystems.
-func readWriterForManifest(manifestPath string, mavenClient *datasource.MavenRegistryAPIClient) (manifest.ReadWriter, error) {
+func readWriterForManifest(manifestPath string, mavenClient *datasource.MavenRegistryAPIClient, projectRoot string) (manifest.ReadWriter, error) {
 	baseName := filepath.Base(manifestPath)
 	switch strings.ToLower(baseName) {
 	case "pom.xml":
 		if mavenClient == nil {
 			return nil, errors.New("a maven client must be provided for pom.xml")
 		}
-		return maven.GetReadWriter(mavenClient)
+
+		return maven.GetReadWriter(mavenClient, projectRoot)
 	case "package.json":
 		return npm.GetReadWriter()
 	case "requirements.in", "requirements.txt":

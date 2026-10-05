@@ -98,6 +98,13 @@ func TestExtractor_Extract(t *testing.T) {
 			WantPackages: nil,
 		},
 		{
+			Name: "empty file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty-file.toml",
+			},
+			WantPackages: []*extractor.Package{},
+		},
+		{
 			Name: "no packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.toml",
@@ -114,7 +121,7 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "toml",
 					Version:  "0.10.2",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/single-package.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/single-package.toml", 11),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -128,19 +135,19 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "toml",
-					Version:  "0.10.2",
+					Name:     "six",
+					Version:  "1.16.0",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/two-packages.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.toml", 11),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 				},
 				{
-					Name:     "six",
-					Version:  "1.16.0",
+					Name:     "toml",
+					Version:  "0.10.2",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/two-packages.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.toml", 22),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
@@ -154,28 +161,28 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "toml",
-					Version:  "0.10.2",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/dev-dependency.toml"),
-					Metadata: &osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
 					Name:     "pyroute2",
 					Version:  "0.7.11",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/dev-dependency.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/dev-dependency.toml", 11),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
+					Name:     "toml",
+					Version:  "0.10.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/dev-dependency.toml", 23),
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
 					},
 				},
 				{
 					Name:     "win-inet-pton",
 					Version:  "1.1.0",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/dev-dependency.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/dev-dependency.toml", 34),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"dev"},
 					},
@@ -189,28 +196,28 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "toml",
-					Version:  "0.10.2",
-					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/optional-dependency.toml"),
-					Metadata: &osv.DepGroupMetadata{
-						DepGroupVals: []string{},
-					},
-				},
-				{
 					Name:     "pyroute2",
 					Version:  "0.7.11",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/optional-dependency.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/optional-dependency.toml", 11),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
+					},
+				},
+				{
+					Name:     "toml",
+					Version:  "0.10.2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/optional-dependency.toml", 23),
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
 					},
 				},
 				{
 					Name:     "win-inet-pton",
 					Version:  "1.1.0",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/optional-dependency.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/optional-dependency.toml", 34),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{"optional"},
 					},
@@ -227,12 +234,38 @@ func TestExtractor_Extract(t *testing.T) {
 					Name:     "toml",
 					Version:  "0.10.2",
 					PURLType: purl.TypePyPi,
-					Location: extractor.LocationFromPath("testdata/git-dependency.toml"),
+					Location: extractor.LocationFromPathAndLine("testdata/git-dependency.toml", 11),
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
 					},
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "65bab7582ce14c55cdeec2244c65ea23039c9e6f",
+					},
+				},
+			},
+		},
+		{
+			Name: "names outside package block",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/names-outside-package-block.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "first-pkg",
+					Version:  "1.0.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/names-outside-package-block.toml", 12),
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "second-pkg",
+					Version:  "2.0.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/names-outside-package-block.toml", 26),
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
 					},
 				},
 			},

@@ -29,7 +29,7 @@ import (
 	"github.com/opencontainers/image-spec/identity"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 )
 
 func TestVersion(t *testing.T) {
@@ -129,14 +129,14 @@ func TestEnrich(t *testing.T) {
 			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 				{
 					req:  &baseimage.Request{ChainID: lm123ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
 				},
 				{
 					req: &baseimage.Request{ChainID: lm12ChainID},
 				},
 				{
 					req:  &baseimage.Request{ChainID: lm1ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
 				},
 			}}),
 			inv: &inventory.Inventory{
@@ -149,17 +149,17 @@ func TestEnrich(t *testing.T) {
 					{
 						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2Enriched, lm3Enriched},
 						BaseImages: [][]*extractor.BaseImageDetails{
-							[]*extractor.BaseImageDetails{},
-							[]*extractor.BaseImageDetails{
-								&extractor.BaseImageDetails{
+							{},
+							{
+								{
 									Repository: "nginx",
 									Registry:   "docker.io",
 									ChainID:    digest.Digest(lm123ChainID),
 									Plugin:     "baseimage",
 								},
 							},
-							[]*extractor.BaseImageDetails{
-								&extractor.BaseImageDetails{
+							{
+								{
 									Repository: "alpine",
 									Registry:   "docker.io",
 									ChainID:    digest.Digest(lm1ChainID),
@@ -176,7 +176,7 @@ func TestEnrich(t *testing.T) {
 			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 				{
 					req:  &baseimage.Request{ChainID: lm1ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
 				},
 			}}),
 			inv: &inventory.Inventory{
@@ -190,9 +190,9 @@ func TestEnrich(t *testing.T) {
 					{
 						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
 						BaseImages: [][]*extractor.BaseImageDetails{
-							[]*extractor.BaseImageDetails{},
-							[]*extractor.BaseImageDetails{
-								&extractor.BaseImageDetails{
+							{},
+							{
+								{
 									Repository: "alpine",
 									Registry:   "docker.io",
 									ChainID:    digest.Digest(lm1ChainID),
@@ -204,9 +204,9 @@ func TestEnrich(t *testing.T) {
 					{
 						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
 						BaseImages: [][]*extractor.BaseImageDetails{
-							[]*extractor.BaseImageDetails{},
-							[]*extractor.BaseImageDetails{
-								&extractor.BaseImageDetails{
+							{},
+							{
+								{
 									Repository: "alpine",
 									Registry:   "docker.io",
 									ChainID:    digest.Digest(lm1ChainID),
@@ -230,7 +230,7 @@ func TestEnrich(t *testing.T) {
 				},
 				{
 					req:  &baseimage.Request{ChainID: lm1ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"alpine"}}},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
 				},
 			}}),
 			inv: &inventory.Inventory{
@@ -246,7 +246,7 @@ func TestEnrich(t *testing.T) {
 						// lmErr is not enriched because the client returns an error.
 						LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lmErr},
 						BaseImages: [][]*extractor.BaseImageDetails{
-							[]*extractor.BaseImageDetails{},
+							{},
 						},
 					},
 				},
@@ -258,7 +258,7 @@ func TestEnrich(t *testing.T) {
 			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
 				{
 					req:  &baseimage.Request{ChainID: lmErr23ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{&baseimage.Result{"nginx"}}},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
 				},
 				{
 					req: &baseimage.Request{ChainID: lmErr2ChainID},
@@ -279,7 +279,7 @@ func TestEnrich(t *testing.T) {
 						// Nothing is enriched because one of the layer requests failed, everything is cancelled
 						LayerMetadata: []*extractor.LayerMetadata{lmErr, lm2, lm3},
 						BaseImages: [][]*extractor.BaseImageDetails{
-							[]*extractor.BaseImageDetails{},
+							{},
 						},
 					},
 				},
@@ -290,7 +290,7 @@ func TestEnrich(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			enr, err := baseimage.New(&cpb.PluginConfig{})
+			enr, err := baseimage.New(configtest.NewFakePluginConfig())
 			if err != nil {
 				t.Fatalf("New: %v", err)
 			}

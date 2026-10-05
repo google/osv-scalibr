@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -48,9 +49,17 @@ type Enricher struct {
 }
 
 // New creates a new Enricher using the default Veles Validators.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+	httpClient := cfg.ClientFactories.HTTPClient()
+	if httpClient == nil {
+		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
+	}
+
 	baseURL := defaultBaseURL
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.HuggingfaceMetaConfig {
+	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.HuggingfaceMetaConfig {
 		return c.GetHuggingfaceMeta()
 	})
 	if specific.GetBaseUrl() != "" {
@@ -58,7 +67,7 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	}
 	return &Enricher{
 		baseURL:    baseURL,
-		httpClient: http.DefaultClient,
+		httpClient: httpClient,
 	}, nil
 }
 

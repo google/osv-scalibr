@@ -16,6 +16,8 @@
 package purl
 
 import (
+	"strings"
+
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	"github.com/google/osv-scalibr/purl"
 )
@@ -34,10 +36,23 @@ func MakePackageURL(name string, version string, metadata any) *purl.PackageURL 
 	if len(q) > 0 {
 		qualifiers = purl.QualifiersFromMap(q)
 	}
+	namespace, name := splitScopedPackageName(name)
 	return &purl.PackageURL{
 		Type:       purl.TypeNPM,
+		Namespace:  namespace,
 		Name:       name,
 		Version:    version,
 		Qualifiers: qualifiers,
 	}
+}
+
+func splitScopedPackageName(name string) (string, string) {
+	if !strings.HasPrefix(name, "@") {
+		return "", name
+	}
+	parts := strings.Split(name, "/")
+	if len(parts) != 2 || len(parts[0]) == 1 || parts[1] == "" {
+		return "", name
+	}
+	return parts[0], parts[1]
 }

@@ -20,9 +20,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagelockjson"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 	"github.com/google/osv-scalibr/testing/testcollector"
@@ -60,7 +61,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -80,7 +82,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -100,7 +103,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -112,7 +116,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -132,7 +137,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -144,7 +150,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -164,7 +171,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -176,7 +184,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -188,7 +197,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -200,7 +210,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -212,7 +223,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -232,7 +244,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -244,7 +257,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -259,12 +273,14 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 				{
 					Name:     "@segment/analytics.js-integration-facebook-pixel",
 					Version:  "2.4.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "3b1bb80b302c2e552685dc8a029797ec832ea7c9",
+						Repo:   "https://github.com/segmentio/analytics.js-integrations",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{},
 					},
 				},
@@ -276,115 +292,134 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
 				{
 					Name:     "babel-preset-php",
 					Version:  "1.1.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
+						Repo:   "https://gitlab.com/kornelski/babel-preset-php",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-1",
 					Version:  "3.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-1",
 					Version:  "3.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "be5935f8d2595bcd97b05718ef1eeae08d812e10",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-2",
 					Version:  "2.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-2",
 					Version:  "2.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82dcc8e914dabd9305ab9ae580709a7825e824f5",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-3",
 					Version:  "2.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-3",
 					Version:  "3.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "82ae8802978da40d7f1be5ad5943c9e550ab2c89",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-4",
 					Version:  "3.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
 				{
 					Name:     "is-number-5",
 					Version:  "3.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+						Repo:   "https://github.com/jonschlinkert/is-number",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -396,31 +431,36 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
 				{
 					Name:     "raven-js",
 					Version:  "",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "c2b377e7a254264fd4a1fe328e4e3cfc9e245570",
+						Repo:   "https://github.com/getsentry/raven-js",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{},
 					},
 				},
 				{
 					Name:     "slick-carousel",
 					Version:  "1.7.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPath("testdata/commits.v2.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "280b560161b751ba226d50c7db1e0a14a78c2de0",
+						Repo:   "https://github.com/brianfryer/slick",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Other,
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -433,18 +473,6 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "etag",
-					Version:  "1.8.0",
-					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPath("testdata/files.v2.json"),
-					SourceCode: &extractor.SourceCodeIdentifier{
-						Commit: "",
-					},
-					Metadata: &osv.DepGroupMetadata{
-						DepGroupVals: []string{"dev"},
-					},
-				},
-				{
 					Name:     "abbrev",
 					Version:  "1.0.9",
 					PURLType: purl.TypeNPM,
@@ -452,7 +480,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -464,7 +493,21 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
+						DepGroupVals: []string{"dev"},
+					},
+				},
+				{
+					Name:     "etag",
+					Version:  "1.8.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/files.v2.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Local,
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -484,7 +527,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -496,7 +540,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -508,7 +553,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -528,7 +574,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"optional"},
 					},
 				},
@@ -540,7 +587,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"dev", "optional"},
 					},
 				},
@@ -560,7 +608,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -572,7 +621,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -584,7 +634,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -604,7 +655,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"bundled"},
 					},
 				},
@@ -616,7 +668,8 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"bundled", "dev"},
 					},
 				},
@@ -628,7 +681,115 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "",
 					},
-					Metadata: &osv.DepGroupMetadata{
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "workspaces",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/workspaces.v3.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "@my-monorepo/client",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/workspaces.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Local,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "@my-monorepo/excluded",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/workspaces.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Local,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "@my-monorepo/pkg-a",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/workspaces.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Local,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "debug",
+					Version:  "4.3.4",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/workspaces.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "dotenv",
+					Version:  "16.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/workspaces.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
+			Name: "workspaces object",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/workspaces-object.v3.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "@my-monorepo/pkg-b",
+					Version:  "2.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/workspaces-object.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Local,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "lodash",
+					Version:  "4.17.21",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/workspaces-object.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
@@ -656,7 +817,7 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 			}
 
 			wantInv := inventory.Inventory{Packages: tt.WantPackages}
-			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.IgnoreFields(location.File{}, "LineNumber")); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 

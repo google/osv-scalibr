@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation"
 )
 
 const (
@@ -104,6 +105,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 	i := inventory.Inventory{}
 	for _, s := range secrets {
+		// Secrets detected by Veles can be either a Credential or SensitiveInformation.
+		// Here we differentiate between the two so that the secrets inventory will
+		// be credentials which can be validated, while the sensitive information
+		// will be informational only.
+		if si, ok := s.(sensitiveinformation.SensitiveInformation); ok {
+			i.SensitiveInformation = append(i.SensitiveInformation, &inventory.SensitiveInformation{
+				Finding:  si,
+				Location: location.FromPath(input.Path),
+			})
+			continue
+		}
 		i.Secrets = append(i.Secrets, &inventory.Secret{
 			Secret:   s,
 			Location: location.FromPath(input.Path),

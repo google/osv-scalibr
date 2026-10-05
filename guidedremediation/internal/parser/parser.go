@@ -17,7 +17,9 @@ package parser
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"deps.dev/util/resolve"
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -26,28 +28,34 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/result"
 )
 
-// ParseManifest parses a manifest file into a manifest.Manifest.
-func ParseManifest(path string, rw manifest.ReadWriter) (manifest.Manifest, error) {
-	fsys, path, err := fsAndPath(path)
+// ParseManifest parses a manifest file into a manifest.Manifest. If projectRoot
+// is empty, the nearest Git repository root or the manifest's directory is used
+// as the project boundary.
+func ParseManifest(path string, rw manifest.ReadWriter, projectRoot string) (manifest.Manifest, error) {
+	root, path, err := rootAndPath(path, projectRoot)
 	if err != nil {
 		return nil, err
 	}
+	defer root.Close()
 
-	m, err := rw.Read(path, fsys)
+	m, err := rw.Read(path, root.FS().(scalibrfs.FS))
 	if err != nil {
 		return nil, fmt.Errorf("error reading manifest: %w", err)
 	}
 	return m, nil
 }
 
-// ParseLockfile parses a lockfile file into a resolve.Graph.
-func ParseLockfile(path string, rw lockfile.ReadWriter) (*resolve.Graph, error) {
-	fsys, path, err := fsAndPath(path)
+// ParseLockfile parses a lockfile file into a resolve.Graph. If projectRoot is
+// empty, the nearest Git repository root or the lockfile's directory is used as
+// the project boundary.
+func ParseLockfile(path string, rw lockfile.ReadWriter, projectRoot string) (*resolve.Graph, error) {
+	root, path, err := rootAndPath(path, projectRoot)
 	if err != nil {
 		return nil, err
 	}
+	defer root.Close()
 
-	g, err := rw.Read(path, fsys)
+	g, err := rw.Read(path, root.FS().(scalibrfs.FS))
 	if err != nil {
 		return nil, fmt.Errorf("error reading lockfile: %w", err)
 	}
@@ -55,48 +63,71 @@ func ParseLockfile(path string, rw lockfile.ReadWriter) (*resolve.Graph, error) 
 }
 
 // WriteManifestPatches writes the patches to the manifest file.
-func WriteManifestPatches(path string, m manifest.Manifest, patches []result.Patch, rw manifest.ReadWriter) error {
-	fsys, _, err := fsAndPath(path)
+func WriteManifestPatches(path string, m manifest.Manifest, patches []result.Patch, rw manifest.ReadWriter, projectRoot string) error {
+	root, relPath, err := rootAndPath(path, projectRoot)
 	if err != nil {
 		return err
 	}
+	defer root.Close()
 
-	return rw.Write(m, fsys, patches, path)
+	return rw.Write(m, root.FS().(scalibrfs.FS), patches, root, relPath)
 }
 
 // WriteLockfilePatches writes the patches to the lockfile file.
-func WriteLockfilePatches(path string, patches []result.Patch, rw lockfile.ReadWriter) error {
-	fsys, relPath, err := fsAndPath(path)
+func WriteLockfilePatches(path string, patches []result.Patch, rw lockfile.ReadWriter, projectRoot string) error {
+	root, relPath, err := rootAndPath(path, projectRoot)
 	if err != nil {
 		return err
 	}
+	defer root.Close()
 
-	return rw.Write(relPath, fsys, patches, path)
+	return rw.Write(relPath, root.FS().(scalibrfs.FS), patches, root, relPath)
 }
 
-func fsAndPath(path string) (scalibrfs.FS, string, error) {
-	// We need a DirFS that can potentially access files in parent directories from the file.
-	// But you cannot escape the base directory of dirfs.
-	// e.g. "pkg/core/pom.xml" may have a parent at "pkg/parent/pom.xml",
-	// if we had fsys := scalibrfs.DirFS("pkg/core"), we can't do fsys.Open("../parent/pom.xml")
-	//
-	// Since we don't know ahead of time which files might be needed,
-	// we must use the system root as the directory.
-
+func rootAndPath(path, projectRoot string) (*os.Root, string, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to resolve path %q: %w", path, err)
 	}
-
-	// Get the path relative to the root (i.e. without the leading '/')
-	// On Windows, we need the path relative to the drive letter,
-	// which also means we can't open files across drives.
-	root := filepath.VolumeName(absPath) + "/"
-	relPath, err := filepath.Rel(root, absPath)
+	root := projectRoot
+	if root == "" {
+		root, err = findGitRoot(filepath.Dir(absPath))
+		if err != nil {
+			return nil, "", err
+		}
+		if root == "" {
+			root = filepath.Dir(absPath)
+		}
+	}
+	root, err = filepath.Abs(root)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to resolve project root %q: %w", projectRoot, err)
 	}
-	relPath = filepath.ToSlash(relPath)
+	relPath, err := filepath.Rel(root, absPath)
+	if err != nil || relPath == ".." || filepath.IsAbs(relPath) || strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
+		return nil, "", fmt.Errorf("path %q is outside project root %q", path, root)
+	}
+	rootFS, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to open project root %q: %w", root, err)
+	}
 
-	return scalibrfs.DirFS(root), relPath, nil
+	return rootFS, filepath.ToSlash(relPath), nil
+}
+
+func findGitRoot(start string) (string, error) {
+	dir := filepath.Clean(start)
+	for {
+		if _, err := os.Lstat(filepath.Join(dir, ".git")); err == nil {
+			return dir, nil
+		} else if !os.IsNotExist(err) {
+			return "", fmt.Errorf("failed to inspect Git repository marker in %q: %w", dir, err)
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", nil
+		}
+		dir = parent
+	}
 }
