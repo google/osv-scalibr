@@ -23,6 +23,7 @@ import (
 	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/annotator/ffa/unknownbinariesanno"
+	"github.com/google/osv-scalibr/annotator/layerdetails/buildpacks"
 	"github.com/google/osv-scalibr/annotator/misc/brewsource"
 	"github.com/google/osv-scalibr/annotator/misc/dpkgsource"
 	"github.com/google/osv-scalibr/annotator/misc/npmsource"
@@ -51,6 +52,11 @@ func protoCfg(f func(cfg *cpb.PluginConfig) (annotator.Annotator, error)) InitFn
 // InitMap is a map of annotator names to their initers.
 type InitMap map[string][]InitFn
 
+// LayerDetails related annotators.
+var LayerDetails = InitMap{
+	buildpacks.Name: {protoCfg(buildpacks.New)},
+}
+
 // VEX generation related annotators.
 var VEX = InitMap{
 	apk.Name:              {protoCfg(apk.New)},
@@ -76,12 +82,14 @@ var Default = InitMap{cachedir.Name: {protoCfg(cachedir.New)}}
 
 // All annotators.
 var All = concat(
+	LayerDetails,
 	VEX,
 	Misc,
 	FFA,
 )
 
 var annotatorNames = concat(All, InitMap{
+	"layerdetails":       vals(LayerDetails),
 	"vex":                vals(VEX),
 	"misc":               vals(Misc),
 	"ffa":                vals(FFA),
