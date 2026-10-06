@@ -1,0 +1,24 @@
+.{
+    .name = "battlebuds",
+
+    .version = "0.0.1",
+
+    .minimum_zig_version = "0.14.0",
+
+    .dependencies = .{
+        .sdl = .{ .path = "SDL.zig" },
+        .rgbapng = .{
+            .url = "git+https://github.com/Jesperoka/zig-rgbapng#c471ba41f6821a4d067115d03cac472bb834cefc",
+            .hash = "12209837a6227c9502eb98c84318d80d984e7138551c333764224698702ff275cacf",
+        },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "SDL.zig",
+        "LICENSE",
+        "README.md",
+    },
+}

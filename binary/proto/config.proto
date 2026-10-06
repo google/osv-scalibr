@@ -117,7 +117,8 @@ message PluginSpecificConfig {
     ContainerdRuntimeConfig containerd_runtime = 76;
     DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
     RubyGemConfig ruby_gem = 82;
-    HaskellCabalProjectFreezeConfig haskell_cabal_project_freeze = 83;
+    ZigBuildZigZonConfig buildzigzon = 83;
+    HaskellCabalProjectFreezeConfig haskell_cabal_project_freeze = 84;
   }
 }
 
@@ -232,6 +233,9 @@ message POMXMLNetConfig {
   string upstream_registry = 1;
   // If true, use deps.dev requirements API for dependency resolution.
   bool deps_dev_requirements = 2;
+  // If true, enable in-memory caching of decoded Maven projects, dependency
+  // management, versions, and requirements during dependency resolution.
+  bool enable_cache = 3;
 }
 
 message PythonRequirementsTransitiveConfig {
@@ -454,6 +458,14 @@ message RubyGemConfig {
   int64 max_file_size_bytes = 1;
   // If set, extract additional packages for each declared runtime dependency.
   bool include_dependencies = 2;
+}
+
+message ZigBuildZigZonConfig{
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  bool scan_dependencies = 2;
 }
 
 message CargoAuditableConfig {

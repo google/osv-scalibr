@@ -133,7 +133,7 @@ type Flags struct {
 	DirsToSkip            []string
 	SkipDirRegex          string
 	SkipDirGlob           string
-	MaxFileSize           int
+	MaxFileSize           int64
 	UseGitignore          bool
 	RemoteImage           string
 	ImageLocal            string
