@@ -1,0 +1,12 @@
+{
+  "name": "vendor/project",
+  "require": {
+    "vendor/branch": "dev-master",
+    "vendor/prerelease-above-bound": ">=1.0.0-beta1 <1.0",
+    "vendor/valid": "^1.2.3"
+  },
+  "require-dev": {
+    "vendor/dev-branch": "dev-main",
+    "vendor/dev-valid": "~4.5"
+  }
+}

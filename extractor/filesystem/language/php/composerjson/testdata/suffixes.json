@@ -1,0 +1,15 @@
+{
+  "name": "vendor/project",
+  "require": {
+    "vendor/caret-prerelease": "^1.2.3-beta1",
+    "vendor/tilde-prerelease": "~1.2.3-alpha",
+    "vendor/exact-prerelease": "1.2.3-RC2",
+    "vendor/caret-patch": "^1.2.3-p1",
+    "vendor/stable-suffix": ">=1.0.0-stable1 <=1.0.0",
+    "vendor/gte-dev": ">=1.0-dev",
+    "vendor/build": "1.2.3+build5",
+    "vendor/caret-flag": "^1.0@dev",
+    "vendor/gte-flag": ">=1.0@stable",
+    "vendor/exact-flag": "1.0.0@beta"
+  }
+}
