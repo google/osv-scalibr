@@ -159,13 +159,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	// Apply go.work replace directives to the collected packages by updating
 	// their name and version, mirroring the behaviour of the gomod extractor.
-	// Local path replacements (no version on the new side) are skipped.
+	// Local path replacements (no version on the new side) set the version to
+	// "" since we cannot know the actual version of a local directory.
 	for _, r := range workFile.Replace {
-		if r.New.Version == "" {
-			// Local path replacement — not a versioned module, skip.
-			continue
-		}
-
 		var targets []pkgKey
 
 		if r.Old.Version == "" {
@@ -187,8 +183,15 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 
 		for _, t := range targets {
+			// For local path replacements (r.New.Version == ""), the new path is
+			// a relative directory, not a module path. Keep the original module
+			// name and set the version to "" since the actual version is unknown.
+			name := r.New.Path
+			if r.New.Version == "" {
+				name = t.name
+			}
 			packages[t] = &extractor.Package{
-				Name:     r.New.Path,
+				Name:     name,
 				Version:  strings.TrimPrefix(r.New.Version, "v"),
 				PURLType: purl.TypeGolang,
 				Location: extractor.LocationFromPathAndLine(input.Path, r.Syntax.Start.Line),

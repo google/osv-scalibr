@@ -136,8 +136,8 @@ func TestExtract(t *testing.T) {
 		{
 			// replace directives are applied as mutations to packages found in
 			// go.work.sum. The old entry is replaced with the new name/version.
-			// Local path replacements (no version on the new side) leave the
-			// original entry unchanged.
+			// Local path replacements (no version on the new side) result in a
+			// package with version "" since the actual version is unknown.
 			Name: "replace_applied_to_sum_packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/replace.work",
@@ -167,12 +167,13 @@ func TestExtract(t *testing.T) {
 					Location: extractor.LocationFromPathAndLine("testdata/replace.work", 9),
 				},
 				// example.com/local/thing v1.0.0 has a local path replacement
-				// (no version on the new side) so it is left as-is.
+				// (no version on the new side) so the version is set to "" since
+				// we cannot know the actual version of a local directory.
 				{
 					Name:     "example.com/local/thing",
-					Version:  "1.0.0",
+					Version:  "",
 					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/replace.work.sum", 7),
+					Location: extractor.LocationFromPathAndLine("testdata/replace.work", 7),
 				},
 			},
 		},
