@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vdi"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/clojure/projectclj"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/packageconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
@@ -294,6 +295,8 @@ var (
 		packageconfig.Name: {protoCfg(packageconfig.New)},
 		pubspec.Name:       {protoCfg(pubspec.New)},
 	}
+	// ClojureSource extractors for Clojure.
+	ClojureSource = InitMap{projectclj.Name: {protoCfg(projectclj.New)}}
 	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {protoCfg(mixlock.New)}}
 	// GleamSource extractors for Gleam.
@@ -576,6 +579,7 @@ var (
 		PythonSource,
 		GoSource,
 		DartSource,
+		ClojureSource,
 		ErlangSource,
 		ElixirSource,
 		GleamSource,
@@ -643,6 +647,7 @@ var (
 		"python":     vals(concat(PythonSource, PythonArtifact)),
 		"go":         vals(concat(GoSource, GoArtifact)),
 		"dart":       vals(DartSource),
+		"clojure":    vals(ClojureSource),
 		"erlang":     vals(ErlangSource),
 		"gleam":      vals(GleamSource),
 		"lua":        vals(LuaSource),
