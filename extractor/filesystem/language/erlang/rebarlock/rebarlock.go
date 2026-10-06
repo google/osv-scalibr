@@ -160,7 +160,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 func (e Extractor) extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	scanner := bufio.NewScanner(input.Reader)
-	scanner.Buffer(make([]byte, 0, 64*units.KiB), int(maxLineBytes))
+	scanner.Buffer(make([]byte, 0, int(maxPendingBytes)), int(maxLineBytes))
 
 	packages := []*extractor.Package{}
 

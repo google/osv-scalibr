@@ -23,6 +23,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/erlang/rebarlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	"github.com/google/osv-scalibr/inventory"
@@ -40,61 +41,61 @@ func TestExtractor_FileRequired(t *testing.T) {
 		want             bool
 	}{
 		{
-			name:      "empty path",
+			name:      "empty_path",
 			inputPath: "",
 			want:      false,
 		},
 		{
-			name:      "rebar.lock at the root",
+			name:      "rebar.lock_at_the_root",
 			inputPath: "rebar.lock",
 			want:      true,
 		},
 		{
-			name:      "nested rebar.lock",
+			name:      "nested_rebar.lock",
 			inputPath: "path/to/my/rebar.lock",
 			want:      true,
 		},
 		{
-			name:      "rebar.lock used as a directory name",
+			name:      "rebar.lock_used_as_a_directory_name",
 			inputPath: "path/to/my/rebar.lock/file",
 			want:      false,
 		},
 		{
-			name:      "rebar.lock as a filename prefix",
+			name:      "rebar.lock_as_a_filename_prefix",
 			inputPath: "path/to/my/rebar.lock.file",
 			want:      false,
 		},
 		{
-			name:      "rebar.lock as a filename suffix",
+			name:      "rebar.lock_as_a_filename_suffix",
 			inputPath: "path/to/my/backup.rebar.lock",
 			want:      false,
 		},
 		{
-			name:      "the elixir lockfile is not ours",
+			name:      "the_elixir_lockfile_is_not_ours",
 			inputPath: "path/to/my/mix.lock",
 			want:      false,
 		},
 		{
-			name:      "rebar.config is not a lockfile",
+			name:      "rebar.config_is_not_a_lockfile",
 			inputPath: "path/to/my/rebar.config",
 			want:      false,
 		},
 		{
-			name:             "file below the size limit",
+			name:             "file_below_the_size_limit",
 			inputPath:        "rebar.lock",
 			fileSizeBytes:    100,
 			maxFileSizeBytes: 1000,
 			want:             true,
 		},
 		{
-			name:             "file above the size limit",
+			name:             "file_above_the_size_limit",
 			inputPath:        "rebar.lock",
 			fileSizeBytes:    10000,
 			maxFileSizeBytes: 1000,
 			want:             false,
 		},
 		{
-			name:             "size limit disabled",
+			name:             "size_limit_disabled",
 			inputPath:        "rebar.lock",
 			fileSizeBytes:    10000,
 			maxFileSizeBytes: 0,
@@ -124,21 +125,21 @@ func TestExtractor_FileRequired(t *testing.T) {
 func TestExtractor_Extract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "empty lockfile",
+			Name: "empty_lockfile",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty.lock",
 			},
 			WantPackages: []*extractor.Package{},
 		},
 		{
-			Name: "malformed lockfile yields no packages and no error",
+			Name: "malformed_lockfile_yields_no_packages_and_no_error",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-a-lock.lock",
 			},
 			WantPackages: []*extractor.Package{},
 		},
 		{
-			Name: "one package",
+			Name: "one_package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/one-package.lock",
 			},
@@ -152,7 +153,7 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			Name: "direct and transitive packages",
+			Name: "direct_and_transitive_packages",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/two-packages.lock",
 			},
@@ -174,7 +175,7 @@ func TestExtractor_Extract(t *testing.T) {
 		{
 			// The hex.pm package name, not the OTP application name, is what
 			// vulnerability feeds key off.
-			Name: "app name differing from the hex package name",
+			Name: "app_name_differing_from_the_hex_package_name",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/differing-app-name.lock",
 			},
@@ -194,7 +195,7 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			Name: "git and git_subdir dependencies wrapped across lines",
+			Name: "git_and_git_subdir_dependencies_wrapped_across_lines",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/git.lock",
 			},
@@ -229,7 +230,7 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			Name: "legacy lockfile without the version envelope",
+			Name: "legacy_lockfile_without_the_version_envelope",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/legacy-format.lock",
 			},
@@ -254,7 +255,7 @@ func TestExtractor_Extract(t *testing.T) {
 		{
 			// A Mercurial changeset ID is not a git commit, so hg deps are
 			// skipped rather than reported against the GIT ecosystem.
-			Name: "mercurial dependencies are skipped",
+			Name: "mercurial_dependencies_are_skipped",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/mercurial.lock",
 			},
@@ -268,7 +269,7 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
-			Name: "many mixed dependencies",
+			Name: "many_mixed_dependencies",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/many.lock",
 			},
@@ -370,7 +371,7 @@ func TestExtractor_Streaming(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name: "dependency after a stretch longer than the pending cap",
+			name: "dependency_after_a_stretch_longer_than_the_pending_cap",
 			content: "{\"1.2.0\",\n[\n" + filler +
 				"{<<\"late\">>,\n  {git,\"https://example.com/late.git\",\n       {ref,\"0123456789abcdef0123456789abcdef01234567\"}},\n  0},\n" +
 				"{<<\"cowlib\">>,{pkg,<<\"cowlib\">>,<<\"2.11.0\">>},0}]}.\n",
@@ -393,7 +394,7 @@ func TestExtractor_Streaming(t *testing.T) {
 			},
 		},
 		{
-			name:    "two dependencies on one line",
+			name:    "two_dependencies_on_one_line",
 			content: "[{<<\"a\">>,{pkg,<<\"a\">>,<<\"1.0.0\">>},0},{<<\"b\">>,{pkg,<<\"b\">>,<<\"2.0.0\">>},1}].\n",
 			wantPackages: []*extractor.Package{
 				{Name: "a", Version: "1.0.0", PURLType: purl.TypeHex, Location: extractor.LocationFromPathAndLine("rebar.lock", 1)},
@@ -401,8 +402,8 @@ func TestExtractor_Streaming(t *testing.T) {
 			},
 		},
 		{
-			name:    "line longer than the limit is an error",
-			content: strings.Repeat("x", 2*1024*1024),
+			name:    "line_longer_than_the_limit_is_an_error",
+			content: strings.Repeat("x", int(2*units.MiB)),
 			wantErr: true,
 		},
 	}
@@ -440,7 +441,7 @@ func TestExtractor_PURL(t *testing.T) {
 		want string
 	}{
 		{
-			name: "hex package",
+			name: "hex_package",
 			pkg: &extractor.Package{
 				Name:     "cowboy",
 				Version:  "2.9.0",
@@ -449,7 +450,7 @@ func TestExtractor_PURL(t *testing.T) {
 			want: "pkg:hex/cowboy@2.9.0",
 		},
 		{
-			name: "git pinned package",
+			name: "git_pinned_package",
 			pkg: &extractor.Package{
 				Name:     "fast_xml",
 				PURLType: purl.TypeGit,
