@@ -15,8 +15,15 @@
 package proto_test
 
 import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/binary/proto"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory"
 	"github.com/opencontainers/go-digest"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -104,4 +111,143 @@ var pkgWithLayerProto = &pb.Package{
 		LayerIndex:          0,
 		ContainerImageIndex: 0,
 	},
+}
+
+func TestContainerImageMetadataBaseImageChains(t *testing.T) {
+	t.Run("picks_first_non_empty_chain_id_and_skips_nil_entries", func(t *testing.T) {
+		inv := &inventory.Inventory{
+			ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+				{
+					Index: 0,
+					LayerMetadata: []*extractor.LayerMetadata{
+						{Index: 0, DiffID: d1, ChainID: d1, BaseImageIndex: 1},
+					},
+					BaseImages: [][]*extractor.BaseImageDetails{
+						{},
+						{
+							nil,
+							{Repository: "buildpacks-base", Registry: "gcr.io", Plugin: "buildpacks", ChainID: ""},
+							{Repository: "nginx", Registry: "docker.io", Plugin: "baseimage", ChainID: d1},
+						},
+					},
+				},
+			},
+		}
+
+		gotProto, err := proto.InventoryToProto(inv)
+		if err != nil {
+			t.Fatalf("InventoryToProto() unexpected error: %v", err)
+		}
+		wantChains := []*pb.BaseImageChain{
+			{},
+			{
+				ChainId: d1.String(),
+				BaseImages: []*pb.BaseImageDetails{
+					{Repository: "buildpacks-base", Registry: "gcr.io", Plugin: "buildpacks"},
+					{Repository: "nginx", Registry: "docker.io", Plugin: "baseimage"},
+				},
+			},
+		}
+		if diff := cmp.Diff(wantChains, gotProto.GetContainerImageMetadata()[0].GetBaseImageChains(), protocmp.Transform()); diff != "" {
+			t.Errorf("BaseImageChains diff (-want +got):\n%s", diff)
+		}
+
+		gotStruct := proto.InventoryToStruct(gotProto)
+		wantBaseImages := [][]*extractor.BaseImageDetails{
+			{},
+			{
+				{Repository: "buildpacks-base", Registry: "gcr.io", Plugin: "buildpacks", ChainID: d1},
+				{Repository: "nginx", Registry: "docker.io", Plugin: "baseimage", ChainID: d1},
+			},
+		}
+		if diff := cmp.Diff(wantBaseImages, gotStruct.ContainerImageMetadata[0].BaseImages); diff != "" {
+			t.Errorf("round-tripped BaseImages diff (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("empty_or_invalid_chain_id_does_not_drop_chains_or_shift_indices", func(t *testing.T) {
+		invProto := &pb.Inventory{
+			ContainerImageMetadata: []*pb.ContainerImageMetadata{
+				{
+					Index: 0,
+					LayerMetadata: []*pb.LayerMetadata{
+						{Index: 0, DiffId: d1.String(), ChainId: d1.String(), BaseImageIndex: 2},
+						{Index: 1, DiffId: d2.String(), ChainId: d2.String(), BaseImageIndex: 1},
+					},
+					BaseImageChains: []*pb.BaseImageChain{
+						{},
+						{
+							ChainId: "",
+							BaseImages: []*pb.BaseImageDetails{
+								{Repository: "offline-base", Registry: "gcr.io", Plugin: "buildpacks"},
+							},
+						},
+						{
+							ChainId: d1.String(),
+							BaseImages: []*pb.BaseImageDetails{
+								{Repository: "alpine", Registry: "docker.io", Plugin: "baseimage"},
+							},
+						},
+						{
+							ChainId: "not-a-valid-digest",
+							BaseImages: []*pb.BaseImageDetails{
+								nil,
+								{Repository: "invalid-digest-base", Registry: "gcr.io", Plugin: "other"},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		gotStruct := proto.InventoryToStruct(invProto)
+		cim := gotStruct.ContainerImageMetadata[0]
+		wantBaseImages := [][]*extractor.BaseImageDetails{
+			{},
+			{
+				{Repository: "offline-base", Registry: "gcr.io", Plugin: "buildpacks", ChainID: ""},
+			},
+			{
+				{Repository: "alpine", Registry: "docker.io", Plugin: "baseimage", ChainID: d1},
+			},
+			{
+				{Repository: "invalid-digest-base", Registry: "gcr.io", Plugin: "other", ChainID: ""},
+			},
+		}
+		if diff := cmp.Diff(wantBaseImages, cim.BaseImages, cmpopts.EquateEmpty()); diff != "" {
+			t.Errorf("InventoryToStruct() BaseImages diff (-want +got):\n%s", diff)
+		}
+		if cim.LayerMetadata[0].BaseImageIndex != 2 || cim.LayerMetadata[1].BaseImageIndex != 1 {
+			t.Errorf("LayerMetadata BaseImageIndex values = [%d, %d], want [2, 1]",
+				cim.LayerMetadata[0].BaseImageIndex, cim.LayerMetadata[1].BaseImageIndex)
+		}
+
+		// Re-serializing preserves chain indices even when BaseImages[1] has an empty ChainID.
+		reProto, err := proto.InventoryToProto(gotStruct)
+		if err != nil {
+			t.Fatalf("InventoryToProto() unexpected error: %v", err)
+		}
+		wantReProtoChains := []*pb.BaseImageChain{
+			{},
+			{
+				BaseImages: []*pb.BaseImageDetails{
+					{Repository: "offline-base", Registry: "gcr.io", Plugin: "buildpacks"},
+				},
+			},
+			{
+				ChainId: d1.String(),
+				BaseImages: []*pb.BaseImageDetails{
+					{Repository: "alpine", Registry: "docker.io", Plugin: "baseimage"},
+				},
+			},
+			{
+				BaseImages: []*pb.BaseImageDetails{
+					{Repository: "invalid-digest-base", Registry: "gcr.io", Plugin: "other"},
+				},
+			},
+		}
+		if diff := cmp.Diff(wantReProtoChains, reProto.GetContainerImageMetadata()[0].GetBaseImageChains(), protocmp.Transform()); diff != "" {
+			t.Errorf("round-tripped BaseImageChains diff (-want +got):\n%s", diff)
+		}
+	})
 }

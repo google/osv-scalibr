@@ -144,6 +144,185 @@ func TestEnrich(t *testing.T) {
 			`,
 			wantErr: clientErr,
 		},
+		{
+			name: "existing_base_images_same_boundary_merged",
+			input: `
+				layer alpine       depsdev=alpine
+				layer nginxnonedge
+				layer nginx        depsdev=nginx,nginx-mirror
+				=== base gcr.io/custom-nginx plugin=other ===
+				=== base docker.io/nginx plugin=other ===
+			`,
+			want: `
+				layer alpine
+				=== base docker.io/alpine ===
+				layer nginxnonedge
+				layer nginx
+				=== base gcr.io/custom-nginx plugin=other ===
+				=== base docker.io/nginx plugin=other ===
+				=== base docker.io/nginx ===
+				=== base docker.io/nginx-mirror ===
+			`,
+		},
+		{
+			name: "existing_base_images_on_inner_layer_and_depsdev_on_outer_layer",
+			input: `
+				layer alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				layer nginxnonedge
+				layer nginx        depsdev=nginx
+			`,
+			want: `
+				layer alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				layer nginxnonedge
+				layer nginx
+				=== base docker.io/nginx ===
+			`,
+		},
+		{
+			name: "existing_base_images_preserved_when_depsdev_returns_no_results",
+			input: `
+				layer alpine
+				layer nginxnonedge
+				=== base gcr.io/custom-nginx plugin=other ===
+				layer nginx
+			`,
+			want: `
+				layer alpine
+				layer nginxnonedge
+				=== base gcr.io/custom-nginx plugin=other ===
+				layer nginx
+			`,
+		},
+		{
+			name: "existing_base_images_preserved_on_client_error",
+			input: `
+				layer alpine       depsdev=alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				layer nginxnonedge
+				layer clienterror  depsdev=ERROR
+			`,
+			want: `
+				layer alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				layer nginxnonedge
+				layer clienterror
+			`,
+			wantErr: clientErr,
+		},
+		{
+			name: "cache_does_not_leak_existing_base_images_across_images",
+			input: `
+				image
+				layer alpine depsdev=alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+
+				image
+				layer alpine depsdev=CACHED
+			`,
+			want: `
+				image
+				layer alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				=== base docker.io/alpine ===
+
+				image
+				layer alpine
+				=== base docker.io/alpine ===
+			`,
+		},
+		{
+			name: "multiple_existing_base_image_runs_merged_with_depsdev",
+			input: `
+				layer alpine       depsdev=alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				layer nginxnonedge
+				layer nginx        depsdev=nginx
+				=== base gcr.io/custom-nginx plugin=other ===
+			`,
+			want: `
+				layer alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				=== base docker.io/alpine ===
+				layer nginxnonedge
+				layer nginx
+				=== base gcr.io/custom-nginx plugin=other ===
+				=== base docker.io/nginx ===
+			`,
+		},
+		{
+			name: "consecutive_layers_with_same_depsdev_result_and_existing_base_image",
+			input: `
+				layer alpine       depsdev=alpine
+				layer nginxnonedge depsdev=nginx
+				layer nginx        depsdev=nginx
+				=== base gcr.io/custom-nginx plugin=other ===
+			`,
+			want: `
+				layer alpine
+				=== base docker.io/alpine ===
+				layer nginxnonedge
+				layer nginx
+				=== base gcr.io/custom-nginx plugin=other ===
+				=== base docker.io/nginx ===
+			`,
+		},
+		{
+			name: "same_depsdev_result_across_existing_base_image_boundary",
+			input: `
+				layer alpine
+				layer nginxnonedge depsdev=nginx
+				=== base gcr.io/custom-nginx plugin=other ===
+				layer nginx        depsdev=nginx
+			`,
+			want: `
+				layer alpine
+				layer nginxnonedge
+				=== base gcr.io/custom-nginx plugin=other ===
+				layer nginx
+				=== base docker.io/nginx ===
+			`,
+		},
+		{
+			name: "existing_base_image_with_empty_or_mismatched_chain_id_normalized",
+			input: `
+				layer alpine
+				=== base gcr.io/custom-alpine plugin=other chain_id=wrong ===
+				empty-layer
+				layer nginxnonedge depsdev=nginx
+				=== base gcr.io/buildpacks-run plugin=buildpacks chain_id=none ===
+			`,
+			want: `
+				layer alpine
+				=== base gcr.io/custom-alpine plugin=other ===
+				empty-layer
+				layer nginxnonedge
+				=== base gcr.io/buildpacks-run plugin=buildpacks ===
+				=== base docker.io/nginx ===
+			`,
+		},
+		{
+			name: "order_independent_depsdev_set_collapsing_preserves_ranking_and_dedups",
+			input: `
+				layer alpine       depsdev=alpine
+				layer nginxnonedge depsdev=aaa-fork,zzz-official
+				layer nginx        depsdev=zzz-official,aaa-fork,zzz-official
+			`,
+			want: `
+				layer alpine
+				=== base docker.io/alpine ===
+				layer nginxnonedge
+				layer nginx
+				=== base docker.io/zzz-official ===
+				=== base docker.io/aaa-fork ===
+			`,
+		},
+		{
+			name:  "empty_layer_metadata_slice",
+			input: `image`,
+			want:  `image`,
+		},
 	}
 
 	for _, tc := range tests {
