@@ -22,9 +22,23 @@ import (
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
+func layerAttributeToProto(la *extractor.LayerAttribute) *spb.LayerAttribute {
+	if la == nil {
+		return nil
+	}
+	return &spb.LayerAttribute{
+		Value:  la.Value,
+		Plugin: la.Plugin,
+	}
+}
+
 func layerMetadataToProto(lm *extractor.LayerMetadata) *spb.LayerMetadata {
 	if lm == nil {
 		return nil
+	}
+	var attributes []*spb.LayerAttribute
+	for _, la := range lm.Attributes {
+		attributes = append(attributes, layerAttributeToProto(la))
 	}
 	return &spb.LayerMetadata{
 		Index:          int32(lm.Index),
@@ -33,6 +47,7 @@ func layerMetadataToProto(lm *extractor.LayerMetadata) *spb.LayerMetadata {
 		Command:        lm.Command,
 		IsEmpty:        lm.IsEmpty,
 		BaseImageIndex: int32(lm.BaseImageIndex),
+		Attributes:     attributes,
 	}
 }
 
@@ -88,6 +103,16 @@ func containerImageMetadataToProto(cim *extractor.ContainerImageMetadata) *spb.C
 	}
 }
 
+func layerAttributeToStruct(la *spb.LayerAttribute) *extractor.LayerAttribute {
+	if la == nil {
+		return nil
+	}
+	return &extractor.LayerAttribute{
+		Value:  la.GetValue(),
+		Plugin: la.GetPlugin(),
+	}
+}
+
 func layerMetadataToStruct(lm *spb.LayerMetadata) *extractor.LayerMetadata {
 	if lm == nil {
 		return nil
@@ -100,6 +125,10 @@ func layerMetadataToStruct(lm *spb.LayerMetadata) *extractor.LayerMetadata {
 	if err != nil {
 		log.Errorf("Failed to parse chain ID %q: %v", lm.GetChainId(), err)
 	}
+	var attributes []*extractor.LayerAttribute
+	for _, la := range lm.GetAttributes() {
+		attributes = append(attributes, layerAttributeToStruct(la))
+	}
 	return &extractor.LayerMetadata{
 		Index:          int(lm.GetIndex()),
 		DiffID:         diffID,
@@ -107,6 +136,7 @@ func layerMetadataToStruct(lm *spb.LayerMetadata) *extractor.LayerMetadata {
 		Command:        lm.GetCommand(),
 		IsEmpty:        lm.GetIsEmpty(),
 		BaseImageIndex: int(lm.GetBaseImageIndex()),
+		Attributes:     attributes,
 	}
 }
 

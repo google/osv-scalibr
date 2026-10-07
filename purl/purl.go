@@ -35,6 +35,8 @@ const (
 	TypeApk = "apk"
 	// TypeBitbucket is a pkg:bitbucket purl.
 	TypeBitbucket = "bitbucket"
+	// TypeBitnami is a pkg:bitnami purl.
+	TypeBitnami = "bitnami"
 	// TypeBrew is a pkg:brew purl.
 	TypeBrew = "brew"
 	// TypeCocoapods is a pkg:cocoapods purl.
@@ -73,8 +75,6 @@ const (
 	TypeGolang = "golang"
 	// TypeHackage is a pkg:hackage purl.
 	TypeHackage = "hackage"
-	// TypeHaskell is a pkg:haskell purl.
-	TypeHaskell = "haskell"
 	// TypeMacApps is a pkg:macapps purl.
 	TypeMacApps = "macapps"
 	// TypeHex is a pkg:hex purl.
@@ -133,6 +133,8 @@ const (
 	TypeCPAN = "cpan"
 	// TypeDHI is a pkg:dhi purl.
 	TypeDHI = "dhi"
+	// TypeZig is pkg:zig purl
+	TypeZig = "zig"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -202,6 +204,7 @@ func validType(t string) bool {
 		TypeAlpm:       true,
 		TypeApk:        true,
 		TypeBitbucket:  true,
+		TypeBitnami:    true,
 		TypeBrew:       true,
 		TypeCargo:      true,
 		TypeCocoapods:  true,
@@ -220,7 +223,6 @@ func validType(t string) bool {
 		TypeGithub:     true,
 		TypeGolang:     true,
 		TypeHackage:    true,
-		TypeHaskell:    true,
 		TypeNim:        true,
 		TypeLua:        true,
 		TypeHex:        true,
@@ -247,6 +249,7 @@ func validType(t string) bool {
 		TypeMise:       true,
 		TypeCPAN:       true,
 		TypeDHI:        true,
+		TypeZig:        true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

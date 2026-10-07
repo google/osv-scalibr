@@ -135,7 +135,7 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems)
 	case purl.TypeNuget:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemNuGet)
-	case purl.TypeHaskell:
+	case purl.TypeHackage:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemHackage)
 	case purl.TypeHex:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemHex)
@@ -149,6 +149,8 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPub)
 	case purl.TypeDHI:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages)
+	case purl.TypeBitnami:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemBitnami)
 	case purl.TypeGithub:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions)
 	case purl.TypeSwift:

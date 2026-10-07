@@ -58,7 +58,7 @@ func TestGetProject(t *testing.T) {
 
 func TestGetProjectSnapshot(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false, &http.Client{}, nil)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true}, "", false, false, &http.Client{}, nil)
 	srv.SetResponse(t, "org/example/x.y.z/3.3.1-SNAPSHOT/maven-metadata.xml", []byte(`
 	<metadata>
 	  <groupId>org.example</groupId>
@@ -255,7 +255,7 @@ func TestUpdateDefaultRegistry(t *testing.T) {
 func TestMavenLocalRegistry(t *testing.T) {
 	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
-	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false, &http.Client{}, nil)
+	client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true}, tempDir, false, false, &http.Client{}, nil)
 	path := "org/example/x.y.z/1.0.0/x.y.z-1.0.0.pom"
 	resp := []byte(`
 	<project>
@@ -265,13 +265,22 @@ func TestMavenLocalRegistry(t *testing.T) {
 	</project>`)
 	srv.SetResponse(t, path, resp)
 
+	// Seed a corrupt cache file to verify cache decoding errors are ignored
+	// and the client falls back to fetching from the upstream registry.
+	filePath := filepath.Join(tempDir, "maven", path)
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		t.Fatalf("failed to create cache dir: %v", err)
+	}
+	if err := os.WriteFile(filePath, []byte("invalid xml"), 0666); err != nil {
+		t.Fatalf("failed to write corrupt cache file: %v", err)
+	}
+
 	_, err := client.GetProject(t.Context(), "org.example", "x.y.z", "1.0.0")
 	if err != nil {
 		t.Fatalf("failed to get Maven project %s:%s verion %s: %v", "org.example", "x.y.z", "1.0.0", err)
 	}
 
-	// Check that the pom file is stored locally.
-	filePath := filepath.Join(tempDir, "maven", path)
+	// Check that the pom file is stored locally and overwritten with valid upstream response.
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
@@ -279,6 +288,84 @@ func TestMavenLocalRegistry(t *testing.T) {
 	if !bytes.Equal(content, resp) {
 		t.Errorf("unexpected file content: got %s, want %s", string(content), string(resp))
 	}
+}
+
+func TestMavenLocalRegistryEscape(t *testing.T) {
+	t.Run("path traversal", func(t *testing.T) {
+		tempDir := t.TempDir()
+		localRegistry := filepath.Join(tempDir, "cache")
+		outsidePath := filepath.Join(tempDir, "outside", "maven-metadata.xml")
+		if err := os.MkdirAll(filepath.Dir(outsidePath), 0755); err != nil {
+			t.Fatalf("failed to create outside directory: %v", err)
+		}
+
+		transport := &trackingTransport{}
+		client, err := datasource.NewMavenRegistryAPIClient(
+			t.Context(),
+			datasource.MavenRegistry{URL: "https://example.com", ReleasesEnabled: true},
+			localRegistry,
+			false,
+			false,
+			&http.Client{Transport: transport},
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+		}
+
+		if _, err := client.GetVersions(t.Context(), "g", filepath.Join("..", "..", "..", "outside")); err != nil {
+			t.Fatalf("GetVersions failed: %v", err)
+		}
+		if !transport.wasCalled() {
+			t.Fatal("registry was not queried")
+		}
+
+		if _, err := os.Stat(outsidePath); !os.IsNotExist(err) {
+			t.Errorf("outside file was created, os.Stat() returned %v", err)
+		}
+	})
+
+	t.Run("symlink", func(t *testing.T) {
+		tempDir := t.TempDir()
+		localRegistry := filepath.Join(tempDir, "cache")
+		cacheRoot := filepath.Join(localRegistry, "maven")
+		outsideDir := filepath.Join(tempDir, "outside")
+		if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+			t.Fatalf("failed to create cache directory: %v", err)
+		}
+		if err := os.MkdirAll(outsideDir, 0755); err != nil {
+			t.Fatalf("failed to create outside directory: %v", err)
+		}
+		if err := os.Symlink(outsideDir, filepath.Join(cacheRoot, "g")); err != nil {
+			t.Skipf("failed to create symlink: %v", err)
+		}
+
+		transport := &trackingTransport{}
+		client, err := datasource.NewMavenRegistryAPIClient(
+			t.Context(),
+			datasource.MavenRegistry{URL: "https://example.com", ReleasesEnabled: true},
+			localRegistry,
+			false,
+			false,
+			&http.Client{Transport: transport},
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+		}
+
+		if _, err := client.GetVersions(t.Context(), "g", "a"); err != nil {
+			t.Fatalf("GetVersions failed: %v", err)
+		}
+		if !transport.wasCalled() {
+			t.Fatal("registry was not queried")
+		}
+
+		outsidePath := filepath.Join(outsideDir, "a", "maven-metadata.xml")
+		if _, err := os.Stat(outsidePath); !os.IsNotExist(err) {
+			t.Errorf("outside file was created, os.Stat() returned %v", err)
+		}
+	})
 }
 
 type trackingTransport struct {
@@ -315,8 +402,9 @@ func TestDisableGoogleAuthRespected(t *testing.T) {
 	client, err := datasource.NewMavenRegistryAPIClient(
 		t.Context(),
 		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
-		"",   // localRegistry
-		true, // disableGoogleAuth
+		"",    // localRegistry
+		true,  // disableGoogleAuth
+		false, // enableCache
 		standardClient,
 		googleClient,
 	)
@@ -349,6 +437,7 @@ func TestDisableGoogleAuthMethodRespected(t *testing.T) {
 		datasource.MavenRegistry{URL: "artifactregistry://example.com", ReleasesEnabled: true},
 		"",    // localRegistry
 		false, // disableGoogleAuth
+		false, // enableCache
 		standardClient,
 		googleClient,
 	)
@@ -421,6 +510,7 @@ func TestMavenRegistryURLReplacementWithExplicitOrigins(t *testing.T) {
 		datasource.MavenRegistry{URL: flagVal, ReleasesEnabled: true},
 		"",
 		false,
+		false,
 		&http.Client{},
 		nil,
 	)
@@ -469,5 +559,134 @@ func TestMavenRegistryURLReplacementWithExplicitOrigins(t *testing.T) {
 	}
 	if len(client.GetRegistries()) != 2 {
 		t.Errorf("Expected 2 registries in total, got %d", len(client.GetRegistries()))
+	}
+}
+
+func TestGetProjectCache(t *testing.T) {
+	tempDir := t.TempDir()
+	srv := clienttest.NewMockHTTPServer(t)
+
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true},
+		tempDir,
+		false,
+		true,
+		&http.Client{},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient failed: %v", err)
+	}
+
+	pomPath := "org/example/cached/1.0.0/cached-1.0.0.pom"
+	srv.SetResponse(t, pomPath, []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>cached</artifactId>
+	  <version>1.0.0</version>
+	  <properties>
+	    <dep.version>2.0.0</dep.version>
+	  </properties>
+	  <dependencies>
+	    <dependency>
+	      <groupId>org.dep</groupId>
+	      <artifactId>lib</artifactId>
+	      <version>${dep.version}</version>
+	      <exclusions>
+	        <exclusion>
+	          <groupId>org.excl</groupId>
+	          <artifactId>excluded</artifactId>
+	        </exclusion>
+	      </exclusions>
+	    </dependency>
+	  </dependencies>
+	</project>`))
+
+	_, err = client.GetProject(t.Context(), "org.example", "cached", "1.0.0")
+	if err != nil {
+		t.Fatalf("first GetProject failed: %v", err)
+	}
+
+	// Corrupt the on-disk localRegistry file to verify subsequent GetProject calls hit the
+	// in-memory project cache rather than re-reading and re-decoding XML from disk.
+	diskPath := filepath.Join(tempDir, "maven", pomPath)
+	if err := os.WriteFile(diskPath, []byte("corrupted xml"), 0666); err != nil {
+		t.Fatalf("failed to overwrite disk cache file: %v", err)
+	}
+
+	// Verify WithoutRegistries() shares the in-memory project cache and returns the
+	// uncorrupted value from cache instead of disk.
+	clonedClient := client.WithoutRegistries()
+	proj2, err := clonedClient.GetProject(t.Context(), "org.example", "cached", "1.0.0")
+	if err != nil {
+		t.Fatalf("second GetProject via WithoutRegistries() failed: %v", err)
+	}
+	if got := proj2.Properties.Properties[0].Value; got != "2.0.0" {
+		t.Errorf("cached project property was mutated: got %q, want %q", got, "2.0.0")
+	}
+	if got := string(proj2.Dependencies[0].Version); got != "${dep.version}" {
+		t.Errorf("cached project dependency version was mutated: got %q, want %q", got, "${dep.version}")
+	}
+	if got := string(proj2.Dependencies[0].Exclusions[0].ArtifactID); got != "excluded" {
+		t.Errorf("cached project exclusion was mutated: got %q, want %q", got, "excluded")
+	}
+}
+
+func TestGetCachedDependencyManagement(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+
+	key := maven.ProjectKey{GroupID: "org.example", ArtifactID: "bom", Version: "1.0.0"}
+	calls := 0
+	loader := func() (maven.DependencyManagement, error) {
+		calls++
+		return maven.DependencyManagement{
+			Dependencies: []maven.Dependency{
+				{
+					GroupID:    "org.dep",
+					ArtifactID: "a",
+					Version:    "1.2.3",
+					Exclusions: []maven.Exclusion{{GroupID: "org.excl", ArtifactID: "b"}},
+				},
+			},
+		}, nil
+	}
+
+	// Construct client with cache enabled and verify subsequent lookups are cached and isolated.
+	client, err := datasource.NewMavenRegistryAPIClient(
+		t.Context(),
+		datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true},
+		"",
+		false,
+		true,
+		&http.Client{},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryAPIClient(enableCache=true) failed: %v", err)
+	}
+	calls = 0
+
+	_, err = client.GetDependencyManagement(key, loader)
+	if err != nil {
+		t.Fatalf("first GetDependencyManagement failed: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("loader calls = %d, want 1", calls)
+	}
+
+	// Call via WithoutRegistries() to verify cache sharing and isolation.
+	dm2, err := client.WithoutRegistries().GetDependencyManagement(key, loader)
+	if err != nil {
+		t.Fatalf("second GetDependencyManagement failed: %v", err)
+	}
+	if calls != 1 {
+		t.Errorf("loader calls after cached lookup = %d, want 1", calls)
+	}
+	if got := string(dm2.Dependencies[0].Version); got != "1.2.3" {
+		t.Errorf("cached DependencyManagement version was mutated: got %q, want %q", got, "1.2.3")
+	}
+	if got := string(dm2.Dependencies[0].Exclusions[0].ArtifactID); got != "b" {
+		t.Errorf("cached DependencyManagement exclusion was mutated: got %q, want %q", got, "b")
 	}
 }

@@ -113,7 +113,7 @@ type Config struct {
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
-	MaxFileSize int
+	MaxFileSize int64
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
 	PrintDurationAnalysis bool
 	// Optional: If true, fail the scan if any permission errors are encountered.
@@ -357,7 +357,7 @@ type walkContext struct {
 	useGitignore    bool
 	maxInodes       int
 	inodesVisited   int
-	maxFileSize     int // In bytes.
+	maxFileSize     int64 // In bytes.
 	dirsVisited     int
 	errorOnFSErrors bool
 
@@ -524,7 +524,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 				if err != nil {
 					return fmt.Errorf("failed to get file size for %q: %w", path, err)
 				}
-				if fSize > int64(wc.maxFileSize) {
+				if fSize > wc.maxFileSize {
 					log.Debugf("Skipping file %q because it has size %d bytes and the maximum is %d bytes", path, fSize, wc.maxFileSize)
 					return nil
 				}
