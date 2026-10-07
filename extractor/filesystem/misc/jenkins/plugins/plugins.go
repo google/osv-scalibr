@@ -50,6 +50,10 @@ const (
 	// io.ReaderAt, so the limit guards against pathological non-ZIP content, not
 	// memory usage from reading the full file.
 	defaultMaxFileSizeBytes = 300 * units.MiB
+
+	// defaultGroupID is the Maven groupId inherited from the Jenkins plugin-pom,
+	// used when the manifest does not specify one.
+	defaultGroupID = "org.jenkins-ci.plugins"
 )
 
 // Extractor extracts Jenkins plugin packages from .jpi and .hpi archive files.
@@ -73,16 +77,16 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if the file has a .jpi or .hpi extension.
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := filepath.ToSlash(api.Path())
 	ext := strings.ToLower(filepath.Ext(path))
 	if ext != ".jpi" && ext != ".hpi" {
@@ -106,7 +110,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return true
 }
 
-func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
+func (e *Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
 	if e.Stats == nil {
 		return
 	}
@@ -118,7 +122,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 }
 
 // Extract parses a Jenkins plugin archive and emits one inventory package.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	inv, err := e.extract(ctx, input)
 	if e.Stats != nil {
 		var fileSizeBytes int64
@@ -134,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inv, err
 }
 
-func (e Extractor) extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Obtain an io.ReaderAt; fall back to reading the whole file into memory
 	// (same pattern as java/archive).
 	r, ok := input.Reader.(io.ReaderAt)
@@ -169,26 +173,33 @@ func (e Extractor) extract(_ context.Context, input *filesystem.ScanInput) (inve
 		return inventory.Inventory{}, nil
 	}
 
-	pluginVersion := attrs.Get("Plugin-Version")
+	// Jenkins core falls back to Implementation-Version for plugins built before
+	// maven-hpi-plugin 1.3 (see hudson.PluginWrapper#getVersionOf).
+	pluginVersion := firstNonEmpty(attrs, "Plugin-Version", "Implementation-Version")
+	// maven-hpi-plugin appends a build description to snapshot versions,
+	// e.g. "1.0-SNAPSHOT (private-...)". Keep only the version itself.
+	pluginVersion = strings.Split(pluginVersion, " ")[0]
 	if pluginVersion == "" {
+		log.Debugf("jenkins/plugins: %q manifest missing Plugin-Version, skipping", input.Path)
 		return inventory.Inventory{}, nil
 	}
 
-	// Short-Name is written unconditionally by maven-hpi-plugin from the required
-	// Maven artifactId field. A missing Short-Name means the archive is malformed; skip it.
-	shortName := attrs.Get("Short-Name")
+	// Jenkins core falls back to Extension-Name when Short-Name is missing
+	// (see hudson.PluginWrapper#computeShortName).
+	shortName := strings.ToLower(firstNonEmpty(attrs, "Short-Name", "Extension-Name"))
 	if shortName == "" {
 		log.Debugf("jenkins/plugins: %q manifest missing Short-Name, skipping", input.Path)
 		return inventory.Inventory{}, nil
 	}
 
-	// Group-Id is a required manifest field written by maven-hpi-plugin from the
-	// Maven groupId. A missing Group-Id means the archive is malformed; skip it.
-	groupID := attrs.Get("Group-Id")
+	// Older plugins may not have Group-Id. Implementation-Vendor-Id is written by
+	// the Maven archiver from the project groupId; otherwise use the default group
+	// inherited from the Jenkins plugin-pom.
+	groupID := firstNonEmpty(attrs, "Group-Id", "Implementation-Vendor-Id")
 	if groupID == "" {
-		log.Debugf("jenkins/plugins: %q manifest missing Group-Id, skipping", input.Path)
-		return inventory.Inventory{}, nil
+		groupID = defaultGroupID
 	}
+	groupID = strings.ToLower(groupID)
 
 	pkg := &extractor.Package{
 		Name:     fmt.Sprintf("%s:%s", groupID, shortName),
@@ -217,9 +228,14 @@ func readManifest(zr *zip.Reader) (textproto.MIMEHeader, error) {
 		}
 		defer rc.Close()
 
+		b, err := io.ReadAll(rc)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read MANIFEST.MF: %w", err)
+		}
+
 		// textproto.ReadMIMEHeader requires a blank line at the end; Jenkins
 		// manifests may omit it, so we tolerate EOF.
-		rd := textproto.NewReader(bufio.NewReader(rc))
+		rd := textproto.NewReader(bufio.NewReader(bytes.NewReader(unfoldManifest(b))))
 		h, err := rd.ReadMIMEHeader()
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, fmt.Errorf("failed to parse MANIFEST.MF: %w", err)
@@ -227,4 +243,24 @@ func readManifest(zr *zip.Reader) (textproto.MIMEHeader, error) {
 		return h, nil
 	}
 	return nil, nil
+}
+
+// unfoldManifest joins MANIFEST.MF continuation lines. Manifest lines are wrapped
+// at 72 bytes and continued on the next line after a single leading space, which
+// must be removed without adding a separator. textproto would join them with a
+// space instead, e.g. "io.jenkins.pl ugins".
+func unfoldManifest(b []byte) []byte {
+	b = bytes.ReplaceAll(b, []byte("\r\n "), nil)
+	return bytes.ReplaceAll(b, []byte("\n "), nil)
+}
+
+// firstNonEmpty returns the value of the first manifest attribute in keys that is
+// set, or an empty string if none are.
+func firstNonEmpty(attrs textproto.MIMEHeader, keys ...string) string {
+	for _, k := range keys {
+		if v := strings.TrimSpace(attrs.Get(k)); v != "" {
+			return v
+		}
+	}
+	return ""
 }
