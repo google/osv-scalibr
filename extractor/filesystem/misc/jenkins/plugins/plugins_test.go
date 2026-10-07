@@ -138,6 +138,8 @@ func TestFileRequired(t *testing.T) {
 	}
 }
 
+const testPath = "var/lib/jenkins/plugins/plugin.jpi"
+
 // makeJPI builds an in-memory Jenkins plugin (ZIP) archive. If manifest is
 // non-empty it is stored as META-INF/MANIFEST.MF.
 func makeJPI(t *testing.T, manifest string) []byte {
@@ -159,7 +161,7 @@ func makeJPI(t *testing.T, manifest string) []byte {
 	return buf.Bytes()
 }
 
-func jenkinsPackage(path, groupID, artifactID, version string) *extractor.Package {
+func jenkinsPackage(groupID, artifactID, version string) *extractor.Package {
 	return &extractor.Package{
 		Name:     groupID + ":" + artifactID,
 		Version:  version,
@@ -168,13 +170,11 @@ func jenkinsPackage(path, groupID, artifactID, version string) *extractor.Packag
 			GroupID:    groupID,
 			ArtifactID: artifactID,
 		},
-		Location: extractor.LocationFromPath(path),
+		Location: extractor.LocationFromPath(testPath),
 	}
 }
 
 func TestExtract(t *testing.T) {
-	const path = "var/lib/jenkins/plugins/plugin.jpi"
-
 	tests := []struct {
 		name         string
 		data         []byte
@@ -189,7 +189,7 @@ func TestExtract(t *testing.T) {
 				"Group-Id: org.jenkins-ci.plugins\r\n"+
 				"Jenkins-Version: 2.387.3\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "org.jenkins-ci.plugins", "git", "5.2.1"),
+				jenkinsPackage("org.jenkins-ci.plugins", "git", "5.2.1"),
 			},
 		},
 		{
@@ -199,14 +199,14 @@ func TestExtract(t *testing.T) {
 				"Plugin-Version: 1385.vb_58b_86ea_fff1\r\n"+
 				"Group-Id: org.jenkins-ci.plugins.workflow\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "org.jenkins-ci.plugins.workflow", "workflow-job", "1385.vb_58b_86ea_fff1"),
+				jenkinsPackage("org.jenkins-ci.plugins.workflow", "workflow-job", "1385.vb_58b_86ea_fff1"),
 			},
 		},
 		{
 			name: "manifest_without_trailing_blank_line",
 			data: makeJPI(t, "Short-Name: git\nPlugin-Version: 5.2.1\nGroup-Id: org.jenkins-ci.plugins"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "org.jenkins-ci.plugins", "git", "5.2.1"),
+				jenkinsPackage("org.jenkins-ci.plugins", "git", "5.2.1"),
 			},
 		},
 		{
@@ -215,7 +215,7 @@ func TestExtract(t *testing.T) {
 				"Plugin-Version: 1.0-SNAPSHOT (private-10/06/2026 12:00-jenkins)\r\n"+
 				"Group-Id: io.jenkins.plugins\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "io.jenkins.plugins", "my-plugin", "1.0-SNAPSHOT"),
+				jenkinsPackage("io.jenkins.plugins", "my-plugin", "1.0-SNAPSHOT"),
 			},
 		},
 		{
@@ -226,7 +226,7 @@ func TestExtract(t *testing.T) {
 				"Group-Id: io.jenkins.pl\r\n"+
 				" ugins\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "io.jenkins.plugins", "some-very-long-plugin-name-that-needs-to-be-wrapped-at-seventy-two-bytes", "2.0"),
+				jenkinsPackage("io.jenkins.plugins", "some-very-long-plugin-name-that-needs-to-be-wrapped-at-seventy-two-bytes", "2.0"),
 			},
 		},
 		{
@@ -235,7 +235,7 @@ func TestExtract(t *testing.T) {
 				"Plugin-Version: 1.0\r\n"+
 				"Group-Id: IO.Jenkins.Plugins\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "io.jenkins.plugins", "my-plugin", "1.0"),
+				jenkinsPackage("io.jenkins.plugins", "my-plugin", "1.0"),
 			},
 		},
 		{
@@ -244,7 +244,7 @@ func TestExtract(t *testing.T) {
 				"Plugin-Version: 3.1.0\r\n"+
 				"Implementation-Vendor-Id: org.jvnet.hudson.plugins\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "org.jvnet.hudson.plugins", "legacy-plugin", "3.1.0"),
+				jenkinsPackage("org.jvnet.hudson.plugins", "legacy-plugin", "3.1.0"),
 			},
 		},
 		{
@@ -252,7 +252,7 @@ func TestExtract(t *testing.T) {
 			data: makeJPI(t, "Short-Name: legacy-plugin\r\n"+
 				"Plugin-Version: 3.1.0\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "org.jenkins-ci.plugins", "legacy-plugin", "3.1.0"),
+				jenkinsPackage("org.jenkins-ci.plugins", "legacy-plugin", "3.1.0"),
 			},
 		},
 		{
@@ -261,7 +261,7 @@ func TestExtract(t *testing.T) {
 				"Plugin-Version: 1.0.0\r\n"+
 				"Group-Id: org.jenkins-ci.plugins\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "org.jenkins-ci.plugins", "legacy-plugin", "1.0.0"),
+				jenkinsPackage("org.jenkins-ci.plugins", "legacy-plugin", "1.0.0"),
 			},
 		},
 		{
@@ -270,7 +270,7 @@ func TestExtract(t *testing.T) {
 				"Implementation-Version: 1.2\r\n"+
 				"Group-Id: org.jenkins-ci.plugins\r\n\r\n"),
 			wantPackages: []*extractor.Package{
-				jenkinsPackage(path, "org.jenkins-ci.plugins", "legacy-plugin", "1.2"),
+				jenkinsPackage("org.jenkins-ci.plugins", "legacy-plugin", "1.2"),
 			},
 		},
 		{
@@ -302,10 +302,10 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
-				Path:   path,
+				Path:   testPath,
 				Reader: bytes.NewReader(tt.data),
 				Info: fakefs.FakeFileInfo{
-					FileName: filepath.Base(path),
+					FileName: filepath.Base(testPath),
 					FileMode: fs.ModePerm,
 					FileSize: int64(len(tt.data)),
 				},
