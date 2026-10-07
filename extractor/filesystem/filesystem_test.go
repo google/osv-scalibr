@@ -879,7 +879,7 @@ func TestRunFS(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			fc := &fakeCollector{}
 			var skipDirRegex *regexp.Regexp
-			var skipDirGlob glob.Glob
+			var skipDirGlob *glob.Pattern
 			if tc.skipDirRegex != "" {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
 			}
