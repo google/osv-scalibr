@@ -16,9 +16,9 @@
 package setupcfg
 
 import (
-	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
+	"gopkg.in/ini.v1"
 )
 
 const (
@@ -79,8 +80,22 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-// parse reads a setup.cfg file and returns all discovered packages.
+// parse reads a setup.cfg file using gopkg.in/ini.v1 and returns all
+// discovered packages.
 func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	data, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := ini.LoadSources(ini.LoadOptions{
+		AllowPythonMultilineValues: true,
+		IgnoreInlineComment:        true,
+	}, data)
+	if err != nil {
+		return nil, err
+	}
+
 	// seen deduplicates by normalized name and merges DepGroupVals
 	// when a package appears in multiple extras groups.
 	seen := map[string]*extractor.Package{}
@@ -105,106 +120,25 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 		pkgs = append(pkgs, pkg)
 	}
 
-	// INI parsing state.
-	type section int
-	const (
-		sectionOther     section = iota
-		sectionOptions           // [options]
-		sectionExtrasReq         // [options.extras_require]
-	)
-
-	current := sectionOther
-	// currentKey is "install_requires" or an extras name inside extras_require.
-	currentKey := ""
-	// inValue is true when we are reading continuation lines of a multi-line value.
-	inValue := false
-	// extrasGroup is the current extras key (treated as dep group).
-	extrasGroup := ""
-
-	scanner := bufio.NewScanner(input.Reader)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		// Strip inline comments.
-		if idx := strings.Index(line, " #"); idx >= 0 {
-			line = line[:idx]
-		}
-		trimmed := strings.TrimSpace(line)
-
-		// Skip blank lines and full-line comments.
-		// Do NOT reset inValue here — blank lines and comments can appear
-		// between continuation lines in multi-line values.
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, ";") {
-			continue
-		}
-
-		// Detect section headers: lines like "[options]" or "[options.extras_require]".
-		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
-			sec := strings.ToLower(strings.TrimSpace(trimmed[1 : len(trimmed)-1]))
-			switch sec {
-			case "options":
-				current = sectionOptions
-			case "options.extras_require":
-				current = sectionExtrasReq
-			default:
-				current = sectionOther
+	// Parse [options] install_requires.
+	if sec, err := cfg.GetSection("options"); err == nil {
+		if key, err := sec.GetKey("install_requires"); err == nil {
+			for _, line := range strings.Split(key.String(), "\n") {
+				addDep(strings.TrimSpace(line), "")
 			}
-			inValue = false
-			currentKey = ""
-			extrasGroup = ""
-			continue
-		}
-
-		if current == sectionOther {
-			continue
-		}
-
-		// Detect new key = value assignment (not a continuation line).
-		// Continuation lines start with whitespace.
-		if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
-			inValue = false
-			currentKey = ""
-			extrasGroup = ""
-
-			if eqIdx := strings.Index(trimmed, "="); eqIdx > 0 {
-				key := strings.ToLower(strings.TrimSpace(trimmed[:eqIdx]))
-				val := strings.TrimSpace(trimmed[eqIdx+1:])
-
-				switch current {
-				case sectionOptions:
-					if key == "install_requires" {
-						currentKey = key
-						inValue = true
-						if val != "" {
-							addDep(val, "")
-						}
-					}
-				case sectionExtrasReq:
-					// Any key is an extras group name (e.g. "dev", "test").
-					extrasGroup = key
-					currentKey = key
-					inValue = true
-					if val != "" {
-						addDep(val, extrasGroup)
-					}
-				}
-			}
-			continue
-		}
-
-		// Continuation line — only process if we are inside a known value.
-		if inValue && currentKey != "" {
-			group := ""
-			if current == sectionExtrasReq {
-				group = extrasGroup
-			}
-			addDep(trimmed, group)
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, err
+	// Parse [options.extras_require] — each key is an extras group.
+	if sec, err := cfg.GetSection("options.extras_require"); err == nil {
+		for _, key := range sec.Keys() {
+			group := key.Name()
+			for _, line := range strings.Split(key.String(), "\n") {
+				addDep(strings.TrimSpace(line), group)
+			}
+		}
 	}
+
 	return pkgs, nil
 }
 
@@ -225,7 +159,7 @@ func parseDep(raw, group, path string) *extractor.Package {
 	// and validate it using the same regex as requirements.go.
 	// This rejects file:, attr:, VCS URLs, paths, editable installs, etc.
 	rawName := raw
-	if i := strings.IndexAny(raw, " \t[(;<=!~>"); i > 0 {
+	if i := strings.IndexAny(raw, " \t[(;<=>!~"); i > 0 {
 		rawName = raw[:i]
 	}
 	if !reValidPkg.MatchString(rawName) {
