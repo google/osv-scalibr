@@ -1247,7 +1247,9 @@ func (*PluginSpecificConfig_Buildzigzon) isPluginSpecificConfig_Config() {}
 
 type BazelAspectConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The Bazel target to evaluate. Defaults to //...
+	// Whitespace-separated Bazel target patterns to evaluate, e.g.
+	// "//... -//third_party/...". Defaults to //... Only applies to top-level
+	// workspaces: independent nested workspaces are evaluated with //...
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// If true, passes --keep_going to Bazel. Defaults to true.
 	KeepGoing     *bool `protobuf:"varint,2,opt,name=keep_going,json=keepGoing,proto3,oneof" json:"keep_going,omitempty"`
