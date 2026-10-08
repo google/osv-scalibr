@@ -103,7 +103,7 @@ type Config struct {
 	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the regex matches a glob, it will be skipped.
-	SkipDirGlob glob.Glob
+	SkipDirGlob *glob.Pattern
 	// Optional: Skip files declared in .gitignore files in source repos.
 	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
@@ -353,7 +353,7 @@ type walkContext struct {
 	ignoreSubDirs   bool
 	dirsToSkip      map[string]bool // Anything under these paths should be skipped.
 	skipDirRegex    *regexp.Regexp
-	skipDirGlob     glob.Glob
+	skipDirGlob     *glob.Pattern
 	useGitignore    bool
 	maxInodes       int
 	inodesVisited   int
