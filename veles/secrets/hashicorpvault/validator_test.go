@@ -15,7 +15,6 @@
 package hashicorpvault
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,7 +22,37 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptTokenValidator(t *testing.T) {
+	brokenValidator := NewTokenValidator("https://example.com")
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		NewTokenValidator("https://example.com"),
+		velestest.WithTrueNegatives(Token{Token: "token"}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[Token](),
+	)
+}
+
+func TestAcceptAppRoleValidator(t *testing.T) {
+	brokenValidator := NewAppRoleValidator("https://example.com")
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		NewAppRoleValidator("https://example.com"),
+		velestest.WithTrueNegatives(AppRoleCredentials{
+			RoleID:   "12345678-1234-1234-1234-123456789012",
+			SecretID: "87654321-4321-4321-4321-210987654321",
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithoutOnline[AppRoleCredentials](),
+	)
+}
 
 func TestTokenValidator_Validate(t *testing.T) {
 	tests := []struct {
@@ -220,31 +249,6 @@ func TestValidator_NetworkError(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("Expected network error, got nil")
-	}
-	if status != veles.ValidationFailed {
-		t.Errorf("Expected ValidationFailed status, got %v", status)
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// This handler will never respond, allowing us to test context cancellation
-		select {}
-	}))
-	defer server.Close()
-
-	serverURL := server.URL
-	validator := NewTokenValidator(serverURL)
-	validator.HTTPC = server.Client()
-
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel() // Cancel immediately
-
-	token := Token{Token: "hvs.test-token"}
-	status, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Fatal("Expected context cancellation error, got nil")
 	}
 	if status != veles.ValidationFailed {
 		t.Errorf("Expected ValidationFailed status, got %v", status)

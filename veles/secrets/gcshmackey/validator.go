@@ -74,6 +74,7 @@ func (v *Validator) Validate(ctx context.Context, key HMACKey) (veles.Validation
 		return veles.ValidationFailed, fmt.Errorf("building failed: %w", err)
 	}
 	req.Header.Set("User-Agent", "osv-scalibr")
+	req.Header.Set("Host", "storage.googleapis.com")
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	if err := v.signer.Sign(req, key.AccessID, key.Secret); err != nil {

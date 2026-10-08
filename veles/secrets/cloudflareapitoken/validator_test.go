@@ -15,7 +15,6 @@
 package cloudflareapitoken_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const validatorTestToken = "7awgM4jG5SQvxcvmNzhKj8PQjxo7awgM4jG5SQv"
@@ -66,6 +66,20 @@ func mockCloudflareServer(t *testing.T, expectedToken string) *httptest.Server {
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
+}
+
+func TestAcceptValidator(t *testing.T) {
+	brokenValidator := cloudflareapitoken.NewValidator()
+	brokenValidator.HTTPC = velestest.BrokenClient
+
+	velestest.AcceptValidator(
+		t,
+		cloudflareapitoken.NewValidator(),
+		velestest.WithTrueNegatives(cloudflareapitoken.CloudflareAPIToken{
+			Token: validatorTestToken,
+		}),
+		velestest.WithBrokenTransport(brokenValidator),
+	)
 }
 
 func TestValidator(t *testing.T) {
@@ -116,38 +130,6 @@ func TestValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := cloudflareapitoken.NewValidator()
-	validator.HTTPC = client
-
-	// Create a test token
-	token := cloudflareapitoken.CloudflareAPIToken{Token: validatorTestToken}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
 
