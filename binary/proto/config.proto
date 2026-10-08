@@ -253,6 +253,9 @@ message DpkgConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 2;
+  // Determines if packages should be extracted from nested root directories
+  // (e.g. chroot environments like `<prefix>/var/lib/dpkg/status`).
+  bool include_nested_roots = 3;
 }
 
 message RpmConfig {

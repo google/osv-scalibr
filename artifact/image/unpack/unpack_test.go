@@ -633,6 +633,12 @@ func filesInTmp(t *testing.T, tmpDir string) []string {
 			continue
 		}
 
+		// Skip temp files created by other test packages running in parallel
+		// (e.g. "image-blob-*" from artifact/image/layerscanning/image).
+		if strings.HasPrefix(f.Name(), "image-blob-") {
+			continue
+		}
+
 		filenames = append(filenames, f.Name())
 	}
 	return filenames
