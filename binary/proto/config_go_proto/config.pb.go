@@ -2026,8 +2026,11 @@ type DpkgConfig struct {
 	// If set, this overrides the global max_file_size_bytes configuration
 	// for this specific plugin.
 	MaxFileSizeBytes int64 `protobuf:"varint,2,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Determines if packages should be extracted from nested root directories
+	// (e.g. chroot environments like `<prefix>/var/lib/dpkg/status`).
+	IncludeNestedRoots bool `protobuf:"varint,3,opt,name=include_nested_roots,json=includeNestedRoots,proto3" json:"include_nested_roots,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *DpkgConfig) Reset() {
@@ -2072,6 +2075,13 @@ func (x *DpkgConfig) GetMaxFileSizeBytes() int64 {
 		return x.MaxFileSizeBytes
 	}
 	return 0
+}
+
+func (x *DpkgConfig) GetIncludeNestedRoots() bool {
+	if x != nil {
+		return x.IncludeNestedRoots
+	}
+	return false
 }
 
 type RpmConfig struct {
@@ -4742,11 +4752,12 @@ const file_proto_config_proto_rawDesc = "" +
 	"\fenable_cache\x18\x03 \x01(\bR\venableCache\"\x85\x01\n" +
 	"\"PythonRequirementsTransitiveConfig\x12+\n" +
 	"\x11upstream_registry\x18\x01 \x01(\tR\x10upstreamRegistry\x122\n" +
-	"\x15deps_dev_requirements\x18\x02 \x01(\bR\x13depsDevRequirements\"o\n" +
+	"\x15deps_dev_requirements\x18\x02 \x01(\bR\x13depsDevRequirements\"\xa1\x01\n" +
 	"\n" +
 	"DpkgConfig\x122\n" +
 	"\x15include_not_installed\x18\x01 \x01(\bR\x13includeNotInstalled\x12-\n" +
-	"\x13max_file_size_bytes\x18\x02 \x01(\x03R\x10maxFileSizeBytes\"c\n" +
+	"\x13max_file_size_bytes\x18\x02 \x01(\x03R\x10maxFileSizeBytes\x120\n" +
+	"\x14include_nested_roots\x18\x03 \x01(\bR\x12includeNestedRoots\"c\n" +
 	"\tRpmConfig\x12'\n" +
 	"\x0ftimeout_seconds\x18\x01 \x01(\x03R\x0etimeoutSeconds\x12-\n" +
 	"\x13max_file_size_bytes\x18\x02 \x01(\x03R\x10maxFileSizeBytes\":\n" +
