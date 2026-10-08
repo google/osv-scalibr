@@ -123,7 +123,7 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	// Parse [options] install_requires.
 	if sec, err := cfg.GetSection("options"); err == nil {
 		if key, err := sec.GetKey("install_requires"); err == nil {
-			for _, line := range strings.Split(key.String(), "\n") {
+			for line := range strings.SplitSeq(key.String(), "\n") {
 				addDep(strings.TrimSpace(line), "")
 			}
 		}
@@ -133,7 +133,7 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	if sec, err := cfg.GetSection("options.extras_require"); err == nil {
 		for _, key := range sec.Keys() {
 			group := key.Name()
-			for _, line := range strings.Split(key.String(), "\n") {
+			for line := range strings.SplitSeq(key.String(), "\n") {
 				addDep(strings.TrimSpace(line), group)
 			}
 		}
