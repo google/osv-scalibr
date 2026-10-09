@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -93,12 +94,23 @@ func normalizePath(p string) string {
 	return p
 }
 
-// filterEntriesFat32 removes ".", "..", "lost+found", and "/"-containing entries from FAT32 entries.
+// hasVolumeOrDrive checks whether a path begins with a volume name or Windows drive prefix (e.g. C:).
+func hasVolumeOrDrive(p string) bool {
+	if filepath.VolumeName(p) != "" {
+		return true
+	}
+	if len(p) >= 2 && ((p[0] >= 'a' && p[0] <= 'z') || (p[0] >= 'A' && p[0] <= 'Z')) && p[1] == ':' {
+		return true
+	}
+	return false
+}
+
+// filterEntriesFat32 removes ".", "..", "lost+found", and path separator containing entries from FAT32 entries.
 func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
 	var filtered []os.FileInfo
 	for _, e := range entries {
 		name := e.Name()
-		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") {
+		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") || strings.Contains(name, "\\") {
 			continue
 		}
 		filtered = append(filtered, e)
@@ -106,12 +118,12 @@ func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
 	return filtered
 }
 
-// filterEntriesExt removes ".", "..", "lost+found", and "/"-containing entries from ext4 entries.
+// filterEntriesExt removes ".", "..", "lost+found", and path separator containing entries from ext4 entries.
 func filterEntriesExt(entries []fs.DirEntry) []fs.DirEntry {
 	var filtered []fs.DirEntry
 	for _, e := range entries {
 		name := e.Name()
-		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") {
+		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") || strings.Contains(name, "\\") {
 			continue
 		}
 		filtered = append(filtered, e)
@@ -119,12 +131,12 @@ func filterEntriesExt(entries []fs.DirEntry) []fs.DirEntry {
 	return filtered
 }
 
-// filterEntriesNtfs removes ".", "..", "$"-prefixed, and "/"-containing entries from NTFS entries.
+// filterEntriesNtfs removes ".", "..", "$"-prefixed, and path separator containing entries from NTFS entries.
 func filterEntriesNtfs(entries []*parser.FileInfo) []*parser.FileInfo {
 	var filtered []*parser.FileInfo
 	for _, e := range entries {
 		name := e.Name
-		if name == "" || name == "." || name == ".." || strings.HasPrefix(name, "$") || strings.Contains(name, "/") {
+		if name == "" || name == "." || name == ".." || strings.HasPrefix(name, "$") || strings.Contains(name, "/") || strings.Contains(name, "\\") {
 			continue
 		}
 		filtered = append(filtered, e)
@@ -161,22 +173,25 @@ func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error
 				continue
 			}
 		} else {
-			file, err := fs.Open(srcFullPath)
-			if err != nil {
-				fmt.Printf("Warning: Failed to open file %s: %v\n", srcFullPath, err)
-				continue
-			}
-			defer file.Close()
+			if err := func() error {
+				file, err := fs.Open(srcFullPath)
+				if err != nil {
+					return fmt.Errorf("failed to open file %s: %w", srcFullPath, err)
+				}
+				defer file.Close()
 
-			destFile, err := os.Create(destFullPath)
-			if err != nil {
-				fmt.Printf("Warning: Failed to create file %s: %v\n", destFullPath, err)
-				continue
-			}
-			defer destFile.Close()
+				destFile, err := os.Create(destFullPath)
+				if err != nil {
+					return fmt.Errorf("failed to create file %s: %w", destFullPath, err)
+				}
+				defer destFile.Close()
 
-			if _, err := io.Copy(destFile, file); err != nil {
-				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, destFullPath, err)
+				if _, err := io.Copy(destFile, file); err != nil {
+					return fmt.Errorf("failed to copy file %s to %s: %w", srcFullPath, destFullPath, err)
+				}
+				return nil
+			}(); err != nil {
+				fmt.Printf("Warning: %v\n", err)
 				continue
 			}
 		}
@@ -216,22 +231,25 @@ func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) er
 				continue
 			}
 		} else {
-			file, err := fs.OpenFile(srcFullPath, os.O_RDONLY)
-			if err != nil {
-				fmt.Printf("Warning: Failed to open file %s: %v\n", srcFullPath, err)
-				continue
-			}
-			defer file.Close()
+			if err := func() error {
+				file, err := fs.OpenFile(srcFullPath, os.O_RDONLY)
+				if err != nil {
+					return fmt.Errorf("failed to open file %s: %w", srcFullPath, err)
+				}
+				defer file.Close()
 
-			destFile, err := os.Create(destFullPath)
-			if err != nil {
-				fmt.Printf("Warning: Failed to create file %s: %v\n", destFullPath, err)
-				continue
-			}
-			defer destFile.Close()
+				destFile, err := os.Create(destFullPath)
+				if err != nil {
+					return fmt.Errorf("failed to create file %s: %w", destFullPath, err)
+				}
+				defer destFile.Close()
 
-			if _, err := io.Copy(destFile, file); err != nil {
-				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, destFullPath, err)
+				if _, err := io.Copy(destFile, file); err != nil {
+					return fmt.Errorf("failed to copy file %s to %s: %w", srcFullPath, destFullPath, err)
+				}
+				return nil
+			}(); err != nil {
+				fmt.Printf("Warning: %v\n", err)
 				continue
 			}
 		}
@@ -292,15 +310,19 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 			// Convert io.ReaderAt to io.Reader using io.NewSectionReader
 			fileReader := io.NewSectionReader(fileReaderAt, 0, entryInfo.Size)
 
-			destFile, err := os.Create(destFullPath)
-			if err != nil {
-				fmt.Printf("Warning: Failed to create file %s: %v\n", destFullPath, err)
-				continue
-			}
-			defer destFile.Close()
+			if err := func() error {
+				destFile, err := os.Create(destFullPath)
+				if err != nil {
+					return fmt.Errorf("failed to create file %s: %w", destFullPath, err)
+				}
+				defer destFile.Close()
 
-			if _, err := io.Copy(destFile, fileReader); err != nil {
-				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, destFullPath, err)
+				if _, err := io.Copy(destFile, fileReader); err != nil {
+					return fmt.Errorf("failed to copy file %s to %s: %w", srcFullPath, destFullPath, err)
+				}
+				return nil
+			}(); err != nil {
+				fmt.Printf("Warning: %v\n", err)
 				continue
 			}
 		}
@@ -308,9 +330,9 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 	return nil
 }
 
-// isInvalidEntry checks for ".", "..", "$"-prefixed, and "/"-containing entries in ExFAT.
-func isInvalidEntry(entry string) bool {
-	if entry == "" || entry == "." || entry == ".." || strings.HasPrefix(entry, "$") || strings.Contains(entry, "/") {
+// isInvalidEntry checks for empty, ".", "..", "$"-prefixed, and path separator containing entries in ExFAT.
+func isInvalidEntry(name string) bool {
+	if name == "" || name == "." || name == ".." || strings.HasPrefix(name, "$") || strings.Contains(name, "/") || strings.Contains(name, "\\") {
 		return true
 	}
 	return false
@@ -335,10 +357,21 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 
 	for _, relPath := range files {
 		node := nodes[relPath]
-		resPath := strings.ReplaceAll(relPath, "\\", string(os.PathSeparator))
-		outPath := filepath.Join(dst, resPath)
+		slashRel := strings.ReplaceAll(relPath, "\\", "/")
+		if strings.HasPrefix(slashRel, "/") || hasVolumeOrDrive(slashRel) {
+			continue
+		}
+		cleanRel := filepath.Clean(filepath.FromSlash(slashRel))
+		if filepath.IsAbs(cleanRel) || hasVolumeOrDrive(cleanRel) {
+			continue
+		}
+		outPath := filepath.Join(dst, cleanRel)
+		rel, err := filepath.Rel(dst, outPath)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			continue
+		}
 
-		if isInvalidEntry(resPath) {
+		if slices.ContainsFunc(strings.Split(slashRel, "/"), isInvalidEntry) {
 			continue
 		}
 
@@ -354,26 +387,27 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 			return fmt.Errorf("failed to create parent directories for %s: %w", outPath, err)
 		}
 
-		outFile, err := os.Create(outPath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", outPath, err)
-		}
-
-		useFat := !sde.GeneralSecondaryFlags.NoFatChain()
-		if _, _, err := er.WriteFromClusterChain(sde.FirstCluster, sde.ValidDataLength, useFat, outFile); err != nil {
-			// Ignore this error because we're going to manually truncate the file at the end
-			if !strings.Contains(err.Error(), "written bytes do not equal data-size") {
-				return fmt.Errorf("failed to write cluster chain %s: %w", outPath, err)
+		if err := func() error {
+			outFile, err := os.Create(outPath)
+			if err != nil {
+				return fmt.Errorf("failed to create file %s: %w", outPath, err)
 			}
-		}
+			defer outFile.Close()
 
-		err = outFile.Truncate(int64(sde.ValidDataLength))
-		if err != nil {
-			continue
-		}
+			useFat := !sde.GeneralSecondaryFlags.NoFatChain()
+			if _, _, err := er.WriteFromClusterChain(sde.FirstCluster, sde.ValidDataLength, useFat, outFile); err != nil {
+				// Ignore this error because we're going to manually truncate the file at the end
+				if !strings.Contains(err.Error(), "written bytes do not equal data-size") {
+					return fmt.Errorf("failed to write cluster chain %s: %w", outPath, err)
+				}
+			}
 
-		if err := outFile.Close(); err != nil {
-			return fmt.Errorf("failed to close file %s: %w", outPath, err)
+			if err := outFile.Truncate(int64(sde.ValidDataLength)); err != nil {
+				return fmt.Errorf("failed to truncate file %s: %w", outPath, err)
+			}
+			return nil
+		}(); err != nil {
+			return err
 		}
 	}
 
@@ -691,7 +725,7 @@ func TARToTempDir(reader io.Reader, maxFreeSpaceUsageRatio float64) (string, err
 loop:
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -699,12 +733,24 @@ loop:
 			break
 		}
 
-		if symlink.TargetOutsideRoot("/", hdr.Name) {
+		slashName := strings.ReplaceAll(hdr.Name, "\\", "/")
+		if strings.HasPrefix(slashName, "/") || hasVolumeOrDrive(slashName) || symlink.TargetOutsideRoot("/", hdr.Name) {
 			extractErr = errors.New("tar contains invalid entries")
 			break
 		}
 
-		target := filepath.Join(tempDir, hdr.Name)
+		cleanName := filepath.Clean(filepath.FromSlash(slashName))
+		if filepath.IsAbs(cleanName) || hasVolumeOrDrive(cleanName) {
+			extractErr = errors.New("tar contains invalid entries")
+			break
+		}
+
+		target := filepath.Join(tempDir, cleanName)
+		rel, err := filepath.Rel(tempDir, target)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			extractErr = errors.New("tar contains invalid entries")
+			break
+		}
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0755); err != nil {
@@ -777,7 +823,7 @@ func sparseCopy(dst *os.File, src io.Reader, size int64) (int64, error) {
 				written += int64(n)
 			}
 		}
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
