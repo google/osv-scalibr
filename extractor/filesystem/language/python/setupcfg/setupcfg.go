@@ -91,6 +91,8 @@ func parse(input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	cfg, err := ini.LoadSources(ini.LoadOptions{
 		AllowPythonMultilineValues: true,
 		IgnoreInlineComment:        true,
+		InsensitiveSections:        true,
+		InsensitiveKeys:            true,
 	}, data)
 	if err != nil {
 		return nil, err
@@ -151,7 +153,7 @@ func parseDep(raw, group, path string) *extractor.Package {
 	}
 
 	// Skip URL requirements (e.g. "urllib3 @ https://...").
-	if strings.Contains(raw, " @ ") {
+	if strings.Contains(raw, "@") {
 		return nil
 	}
 
