@@ -17,7 +17,7 @@ package osvutil_test
 import (
 	"testing"
 
-	"github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
+	"github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	archivemetadata "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
@@ -77,7 +77,7 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
-			name: "Go stdlib patch",
+			name: "Go stdlib patch (2-component version)",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeGolang,
 				Name:     "go",
@@ -86,7 +86,20 @@ func TestParsePackage(t *testing.T) {
 			want: osvutil.NormalizedPackage{
 				Name:      "stdlib",
 				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
-				Version:   "1.20",
+				Version:   "1.20.99",
+			},
+		},
+		{
+			name: "Go stdlib patch (3-component version)",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeGolang,
+				Name:     "go",
+				Version:  "1.20.1",
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "stdlib",
+				Ecosystem: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+				Version:   "1.20.1",
 			},
 		},
 		{
@@ -208,6 +221,18 @@ func TestParsePackage(t *testing.T) {
 			},
 		},
 		{
+			name: "GIT ecosystem without repo",
+			pkg: &extractor.Package{
+				PURLType:   "git",
+				Name:       "openssl@3.5",
+				SourceCode: &extractor.SourceCodeIdentifier{Repo: ""},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "openssl@3.5",
+				Ecosystem: osvecosystem.MustParse("GIT"),
+			},
+		},
+		{
 			name: "RPM with epoch (Red Hat)",
 			pkg: &extractor.Package{
 				PURLType: purl.TypeRPM,
@@ -223,6 +248,41 @@ func TestParsePackage(t *testing.T) {
 				Name:      "bash",
 				Ecosystem: osvecosystem.Parsed{Ecosystem: "Red Hat", Suffix: "enterprise_linux:9::baseos"},
 				Version:   "1:5.1-6",
+			},
+		},
+		{
+			name: "RPM with epoch (AlmaLinux)",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeRPM,
+				Name:     "openssl",
+				Version:  "3.2.2-7.el9_6",
+				Metadata: &rpmmetadata.Metadata{
+					OSID:        "almalinux",
+					OSVersionID: "9.6",
+					Epoch:       1,
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "openssl",
+				Ecosystem: osvecosystem.Parsed{Ecosystem: "AlmaLinux", Suffix: "9"},
+				Version:   "1:3.2.2-7.el9_6",
+			},
+		},
+		{
+			name: "RPM with epoch (Rocky Linux)",
+			pkg: &extractor.Package{
+				PURLType: purl.TypeRPM,
+				Name:     "openssl",
+				Version:  "1.1.1k-4.el8",
+				Metadata: &rpmmetadata.Metadata{
+					OSID:  "rocky",
+					Epoch: 1,
+				},
+			},
+			want: osvutil.NormalizedPackage{
+				Name:      "openssl",
+				Ecosystem: osvecosystem.Parsed{Ecosystem: "Rocky Linux"},
+				Version:   "1:1.1.1k-4.el8",
 			},
 		},
 		{

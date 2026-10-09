@@ -16,6 +16,7 @@ package resolution
 
 import (
 	"context"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -32,8 +33,8 @@ type NPMRegistryClient struct {
 
 // NewNPMRegistryClient makes a new NPMRegistryClient.
 // projectDir is the directory (on disk) to read the project-level .npmrc config file from (for registries).
-func NewNPMRegistryClient(projectDir string) (*NPMRegistryClient, error) {
-	api, err := datasource.NewNPMRegistryAPIClient(projectDir)
+func NewNPMRegistryClient(projectDir string, httpClient *http.Client) (*NPMRegistryClient, error) {
+	api, err := datasource.NewNPMRegistryAPIClient(projectDir, httpClient)
 	if err != nil {
 		return nil, err
 	}
