@@ -131,7 +131,7 @@ func (c *CombinedNativeClient) clientForSystem(ctx context.Context, sys resolve.
 		return c.mavenRegistryClient, nil
 	case resolve.NPM:
 		if c.npmRegistryClient == nil {
-			c.npmRegistryClient, err = NewNPMRegistryClient(c.opts.ProjectDir)
+			c.npmRegistryClient, err = NewNPMRegistryClient(c.opts.ProjectDir, c.opts.HTTPClient)
 			if err != nil {
 				return nil, err
 			}

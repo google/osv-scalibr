@@ -31,7 +31,7 @@ import (
 func TestReadV1(t *testing.T) {
 	// This lockfile was generated using a private registry with https://verdaccio.org/
 	// Mock packages were published to it and installed with npm.
-	rw, err := npm.GetReadWriter()
+	rw, err := npm.GetReadWriter(nil)
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -74,7 +74,7 @@ r 1.0.0
 func TestReadV2(t *testing.T) {
 	// This lockfile was generated using a private registry with https://verdaccio.org/
 	// Mock packages were published to it and installed with npm.
-	rw, err := npm.GetReadWriter()
+	rw, err := npm.GetReadWriter(nil)
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestTypeOrdering(t *testing.T) {
 	// Empirically, devDependencies > optionalDependencies > dependencies > peerDependencies
 
 	// This lockfile was manually constructed.
-	rw, err := npm.GetReadWriter()
+	rw, err := npm.GetReadWriter(nil)
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestPeerMeta(t *testing.T) {
 	// Testing the behavior with peerDependencies and peerDependenciesMeta.
 
 	// This lockfile was manually constructed.
-	rw, err := npm.GetReadWriter()
+	rw, err := npm.GetReadWriter(nil)
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestWrite(t *testing.T) {
 	}
 
 	// Write the patched lockfile
-	rw, err := npm.GetReadWriter()
+	rw, err := npm.GetReadWriter(nil)
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
