@@ -118,6 +118,7 @@ message PluginSpecificConfig {
     DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
     RubyGemConfig ruby_gem = 82;
     ZigBuildZigZonConfig buildzigzon = 83;
+    UbuntuBinaryToSourceConfig ubuntu_binary_to_source = 84;
   }
 }
 
@@ -617,6 +618,15 @@ message OSVLocalConfig {
 message OSVDevConfig {
   // Timeout for the initial batch query to OSV.dev.
   int64 initial_query_timeout_seconds = 1;
+}
+
+message UbuntuBinaryToSourceConfig {
+  // The base URL of the OSV.dev API used to map Ubuntu binary package names to
+  // source package names. Defaults to https://api.osv.dev.
+  string base_url = 1;
+  // Timeout in seconds for querying the OSV.dev Ubuntu binary-to-source
+  // mapping API. Defaults to 300 (5 minutes).
+  int64 timeout_seconds = 2;
 }
 
 message CodeServerConfig {

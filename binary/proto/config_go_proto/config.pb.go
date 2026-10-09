@@ -194,6 +194,7 @@ type PluginSpecificConfig struct {
 	//	*PluginSpecificConfig_DotnetProjectAssetsJson
 	//	*PluginSpecificConfig_RubyGem
 	//	*PluginSpecificConfig_Buildzigzon
+	//	*PluginSpecificConfig_UbuntuBinaryToSource
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -839,6 +840,15 @@ func (x *PluginSpecificConfig) GetBuildzigzon() *ZigBuildZigZonConfig {
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetUbuntuBinaryToSource() *UbuntuBinaryToSourceConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_UbuntuBinaryToSource); ok {
+			return x.UbuntuBinaryToSource
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -1111,6 +1121,10 @@ type PluginSpecificConfig_Buildzigzon struct {
 	Buildzigzon *ZigBuildZigZonConfig `protobuf:"bytes,83,opt,name=buildzigzon,proto3,oneof"`
 }
 
+type PluginSpecificConfig_UbuntuBinaryToSource struct {
+	UbuntuBinaryToSource *UbuntuBinaryToSourceConfig `protobuf:"bytes,84,opt,name=ubuntu_binary_to_source,json=ubuntuBinaryToSource,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
@@ -1244,6 +1258,8 @@ func (*PluginSpecificConfig_DotnetProjectAssetsJson) isPluginSpecificConfig_Conf
 func (*PluginSpecificConfig_RubyGem) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Buildzigzon) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_UbuntuBinaryToSource) isPluginSpecificConfig_Config() {}
 
 type BazelAspectConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -4469,6 +4485,62 @@ func (x *OSVDevConfig) GetInitialQueryTimeoutSeconds() int64 {
 	return 0
 }
 
+type UbuntuBinaryToSourceConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The base URL of the OSV.dev API used to map Ubuntu binary package names to
+	// source package names. Defaults to https://api.osv.dev.
+	BaseUrl string `protobuf:"bytes,1,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
+	// Timeout in seconds for querying the OSV.dev Ubuntu binary-to-source
+	// mapping API. Defaults to 300 (5 minutes).
+	TimeoutSeconds int64 `protobuf:"varint,2,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *UbuntuBinaryToSourceConfig) Reset() {
+	*x = UbuntuBinaryToSourceConfig{}
+	mi := &file_proto_config_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UbuntuBinaryToSourceConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UbuntuBinaryToSourceConfig) ProtoMessage() {}
+
+func (x *UbuntuBinaryToSourceConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UbuntuBinaryToSourceConfig.ProtoReflect.Descriptor instead.
+func (*UbuntuBinaryToSourceConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *UbuntuBinaryToSourceConfig) GetBaseUrl() string {
+	if x != nil {
+		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *UbuntuBinaryToSourceConfig) GetTimeoutSeconds() int64 {
+	if x != nil {
+		return x.TimeoutSeconds
+	}
+	return 0
+}
+
 type CodeServerConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The URL of the Code-Server instance to check for authentication.
@@ -4481,7 +4553,7 @@ type CodeServerConfig struct {
 
 func (x *CodeServerConfig) Reset() {
 	*x = CodeServerConfig{}
-	mi := &file_proto_config_proto_msgTypes[66]
+	mi := &file_proto_config_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4493,7 +4565,7 @@ func (x *CodeServerConfig) String() string {
 func (*CodeServerConfig) ProtoMessage() {}
 
 func (x *CodeServerConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[66]
+	mi := &file_proto_config_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4506,7 +4578,7 @@ func (x *CodeServerConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CodeServerConfig.ProtoReflect.Descriptor instead.
 func (*CodeServerConfig) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{66}
+	return file_proto_config_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *CodeServerConfig) GetRemote() string {
@@ -4537,7 +4609,7 @@ type QCOW2Config struct {
 
 func (x *QCOW2Config) Reset() {
 	*x = QCOW2Config{}
-	mi := &file_proto_config_proto_msgTypes[67]
+	mi := &file_proto_config_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4549,7 +4621,7 @@ func (x *QCOW2Config) String() string {
 func (*QCOW2Config) ProtoMessage() {}
 
 func (x *QCOW2Config) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[67]
+	mi := &file_proto_config_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4562,7 +4634,7 @@ func (x *QCOW2Config) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QCOW2Config.ProtoReflect.Descriptor instead.
 func (*QCOW2Config) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{67}
+	return file_proto_config_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *QCOW2Config) GetMaxFileSizeBytes() int64 {
@@ -4589,7 +4661,7 @@ type ContainerdRuntimeConfig struct {
 
 func (x *ContainerdRuntimeConfig) Reset() {
 	*x = ContainerdRuntimeConfig{}
-	mi := &file_proto_config_proto_msgTypes[68]
+	mi := &file_proto_config_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4601,7 +4673,7 @@ func (x *ContainerdRuntimeConfig) String() string {
 func (*ContainerdRuntimeConfig) ProtoMessage() {}
 
 func (x *ContainerdRuntimeConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_config_proto_msgTypes[68]
+	mi := &file_proto_config_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4614,7 +4686,7 @@ func (x *ContainerdRuntimeConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerdRuntimeConfig.ProtoReflect.Descriptor instead.
 func (*ContainerdRuntimeConfig) Descriptor() ([]byte, []int) {
-	return file_proto_config_proto_rawDescGZIP(), []int{68}
+	return file_proto_config_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *ContainerdRuntimeConfig) GetSocketAddr() string {
@@ -4635,7 +4707,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xb1\"\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\x8f#\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -4710,7 +4782,8 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x12containerd_runtime\x18L \x01(\v2 .scalibr.ContainerdRuntimeConfigH\x00R\x11containerdRuntime\x12e\n" +
 	"\x1adotnet_project_assets_json\x18N \x01(\v2&.scalibr.DotnetProjectAssetsJsonConfigH\x00R\x17dotnetProjectAssetsJson\x123\n" +
 	"\bruby_gem\x18R \x01(\v2\x16.scalibr.RubyGemConfigH\x00R\arubyGem\x12A\n" +
-	"\vbuildzigzon\x18S \x01(\v2\x1d.scalibr.ZigBuildZigZonConfigH\x00R\vbuildzigzonB\b\n" +
+	"\vbuildzigzon\x18S \x01(\v2\x1d.scalibr.ZigBuildZigZonConfigH\x00R\vbuildzigzon\x12\\\n" +
+	"\x17ubuntu_binary_to_source\x18T \x01(\v2#.scalibr.UbuntuBinaryToSourceConfigH\x00R\x14ubuntuBinaryToSourceB\b\n" +
 	"\x06configJ\x04\b0\x109J\x04\b;\x10>J\x04\bB\x10DJ\x04\bO\x10Q\"^\n" +
 	"\x11BazelAspectConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\"\n" +
@@ -4876,7 +4949,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\vremote_host\x18\x03 \x01(\tR\n" +
 	"remoteHost\"Q\n" +
 	"\fOSVDevConfig\x12A\n" +
-	"\x1dinitial_query_timeout_seconds\x18\x01 \x01(\x03R\x1ainitialQueryTimeoutSeconds\"^\n" +
+	"\x1dinitial_query_timeout_seconds\x18\x01 \x01(\x03R\x1ainitialQueryTimeoutSeconds\"`\n" +
+	"\x1aUbuntuBinaryToSourceConfig\x12\x19\n" +
+	"\bbase_url\x18\x01 \x01(\tR\abaseUrl\x12'\n" +
+	"\x0ftimeout_seconds\x18\x02 \x01(\x03R\x0etimeoutSeconds\"^\n" +
 	"\x10CodeServerConfig\x12\x16\n" +
 	"\x06remote\x18\x01 \x01(\tR\x06remote\x122\n" +
 	"\x15client_timeout_millis\x18\x02 \x01(\x03R\x13clientTimeoutMillis\"X\n" +
@@ -4899,7 +4975,7 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 69)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_proto_config_proto_goTypes = []any{
 	(*PluginConfig)(nil),                       // 0: scalibr.PluginConfig
 	(*PluginSpecificConfig)(nil),               // 1: scalibr.PluginSpecificConfig
@@ -4967,9 +5043,10 @@ var file_proto_config_proto_goTypes = []any{
 	(*MariadbConfig)(nil),                      // 63: scalibr.MariadbConfig
 	(*OSVLocalConfig)(nil),                     // 64: scalibr.OSVLocalConfig
 	(*OSVDevConfig)(nil),                       // 65: scalibr.OSVDevConfig
-	(*CodeServerConfig)(nil),                   // 66: scalibr.CodeServerConfig
-	(*QCOW2Config)(nil),                        // 67: scalibr.QCOW2Config
-	(*ContainerdRuntimeConfig)(nil),            // 68: scalibr.ContainerdRuntimeConfig
+	(*UbuntuBinaryToSourceConfig)(nil),         // 66: scalibr.UbuntuBinaryToSourceConfig
+	(*CodeServerConfig)(nil),                   // 67: scalibr.CodeServerConfig
+	(*QCOW2Config)(nil),                        // 68: scalibr.QCOW2Config
+	(*ContainerdRuntimeConfig)(nil),            // 69: scalibr.ContainerdRuntimeConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1,  // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
@@ -5023,10 +5100,10 @@ var file_proto_config_proto_depIdxs = []int32{
 	63, // 48: scalibr.PluginSpecificConfig.mariadb:type_name -> scalibr.MariadbConfig
 	43, // 49: scalibr.PluginSpecificConfig.dotnet_paket:type_name -> scalibr.DotnetPaketConfig
 	64, // 50: scalibr.PluginSpecificConfig.osvlocal:type_name -> scalibr.OSVLocalConfig
-	66, // 51: scalibr.PluginSpecificConfig.code_server:type_name -> scalibr.CodeServerConfig
+	67, // 51: scalibr.PluginSpecificConfig.code_server:type_name -> scalibr.CodeServerConfig
 	6,  // 52: scalibr.PluginSpecificConfig.denojson:type_name -> scalibr.DenoJsonConfig
 	7,  // 53: scalibr.PluginSpecificConfig.denotssource:type_name -> scalibr.DenoTSSourceConfig
-	67, // 54: scalibr.PluginSpecificConfig.qcow2:type_name -> scalibr.QCOW2Config
+	68, // 54: scalibr.PluginSpecificConfig.qcow2:type_name -> scalibr.QCOW2Config
 	12, // 55: scalibr.PluginSpecificConfig.cpan:type_name -> scalibr.PerlCPANConfig
 	16, // 56: scalibr.PluginSpecificConfig.python_requirements_transitive:type_name -> scalibr.PythonRequirementsTransitiveConfig
 	27, // 57: scalibr.PluginSpecificConfig.spack:type_name -> scalibr.SpackConfig
@@ -5036,15 +5113,16 @@ var file_proto_config_proto_depIdxs = []int32{
 	39, // 61: scalibr.PluginSpecificConfig.hcp_identity:type_name -> scalibr.HCPIdentityConfig
 	38, // 62: scalibr.PluginSpecificConfig.heroku_expiration:type_name -> scalibr.HerokuExpirationConfig
 	37, // 63: scalibr.PluginSpecificConfig.huggingface_meta:type_name -> scalibr.HuggingfaceMetaConfig
-	68, // 64: scalibr.PluginSpecificConfig.containerd_runtime:type_name -> scalibr.ContainerdRuntimeConfig
+	69, // 64: scalibr.PluginSpecificConfig.containerd_runtime:type_name -> scalibr.ContainerdRuntimeConfig
 	44, // 65: scalibr.PluginSpecificConfig.dotnet_project_assets_json:type_name -> scalibr.DotnetProjectAssetsJsonConfig
 	46, // 66: scalibr.PluginSpecificConfig.ruby_gem:type_name -> scalibr.RubyGemConfig
 	47, // 67: scalibr.PluginSpecificConfig.buildzigzon:type_name -> scalibr.ZigBuildZigZonConfig
-	68, // [68:68] is the sub-list for method output_type
-	68, // [68:68] is the sub-list for method input_type
-	68, // [68:68] is the sub-list for extension type_name
-	68, // [68:68] is the sub-list for extension extendee
-	0,  // [0:68] is the sub-list for field type_name
+	66, // 68: scalibr.PluginSpecificConfig.ubuntu_binary_to_source:type_name -> scalibr.UbuntuBinaryToSourceConfig
+	69, // [69:69] is the sub-list for method output_type
+	69, // [69:69] is the sub-list for method input_type
+	69, // [69:69] is the sub-list for extension type_name
+	69, // [69:69] is the sub-list for extension extendee
+	0,  // [0:69] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -5120,6 +5198,7 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_DotnetProjectAssetsJson)(nil),
 		(*PluginSpecificConfig_RubyGem)(nil),
 		(*PluginSpecificConfig_Buildzigzon)(nil),
+		(*PluginSpecificConfig_UbuntuBinaryToSource)(nil),
 	}
 	file_proto_config_proto_msgTypes[2].OneofWrappers = []any{}
 	file_proto_config_proto_msgTypes[54].OneofWrappers = []any{}
@@ -5130,7 +5209,7 @@ func file_proto_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   69,
+			NumMessages:   70,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
