@@ -767,7 +767,7 @@ func TestDownloadDatabases(t *testing.T) {
 			},
 			wantErr:     cmpopts.AnyError,
 			wantOnDisk:  []osvconstants.Ecosystem{osvconstants.EcosystemGo, osvconstants.EcosystemNPM},
-			wantFetches: []string{"GET /PyPI/all.zip", "GET /Go/all.zip", "GET /Maven/all.zip", "GET /npm/all.zip"},
+			wantFetches: []string{"GET /Go/all.zip", "GET /Maven/all.zip", "GET /PyPI/all.zip", "GET /npm/all.zip"},
 		},
 		{
 			name:        "offline_without_cache",

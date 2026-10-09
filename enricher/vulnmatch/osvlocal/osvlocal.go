@@ -175,10 +175,10 @@ func (e *Enricher) DownloadDatabases(ctx context.Context, ecos []osvconstants.Ec
 
 	errs := []error{}
 
-	for _, eco := range ecos {
-		_, er := dbs.loadDBFromCache(ctx, eco, []*extractor.Package{})
-
-		errs = append(errs, er)
+	for _, eco := range slices.Compact(slices.Sorted(slices.Values(ecos))) {
+		if _, err := dbs.zipDBFor(eco).fetchZip(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("could not download db for %s ecosystem: %w", eco, err))
+		}
 	}
 
 	return errors.Join(errs...)
