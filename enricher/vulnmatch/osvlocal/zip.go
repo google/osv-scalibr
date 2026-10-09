@@ -90,7 +90,16 @@ func fetchLocalArchiveCRC32CHash(data []byte) uint32 {
 	return crc32.Checksum(data, crc32.MakeTable(crc32.Castagnoli))
 }
 
-func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
+func readZip(data []byte) (*zip.Reader, error) {
+	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("could not read OSV database archive: %w", err)
+	}
+
+	return zipReader, nil
+}
+
+func (db *zipDB) fetchZip(ctx context.Context) (*zip.Reader, error) {
 	cache, err := os.ReadFile(db.StoredAt)
 
 	if db.Offline {
@@ -98,7 +107,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 			return nil, errOfflineDatabaseNotFound
 		}
 
-		return cache, nil
+		return readZip(cache)
 	}
 
 	if err == nil {
@@ -109,7 +118,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		}
 
 		if fetchLocalArchiveCRC32CHash(cache) == remoteHash {
-			return cache, nil
+			return readZip(cache)
 		}
 	}
 
@@ -139,8 +148,10 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 	}
 
 	// make sure we've actually got a zip before caching it
-	if _, err := zip.NewReader(bytes.NewReader(body), int64(len(body))); err != nil {
-		return nil, fmt.Errorf("could not read OSV database archive: %w", err)
+	zipReader, err := readZip(body)
+
+	if err != nil {
+		return nil, err
 	}
 
 	err = os.MkdirAll(path.Dir(db.StoredAt), 0750)
@@ -150,7 +161,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		_ = os.WriteFile(db.StoredAt, body, 0644)
 	}
 
-	return body, nil
+	return zipReader, nil
 }
 
 func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
@@ -210,15 +221,10 @@ func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
 func (db *zipDB) load(ctx context.Context, names []string) error {
 	db.Vulnerabilities = []*osvpb.Vulnerability{}
 
-	body, err := db.fetchZip(ctx)
+	zipReader, err := db.fetchZip(ctx)
 
 	if err != nil {
 		return err
-	}
-
-	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
-	if err != nil {
-		return fmt.Errorf("could not read OSV database archive: %w", err)
 	}
 
 	// Read all the files from the zip archive
