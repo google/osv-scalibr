@@ -94,8 +94,11 @@ func normalizePath(p string) string {
 }
 
 // filterEntriesFat32 removes ".", "..", "lost+found", and "/"-containing entries from FAT32 entries.
-func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
-	var filtered []os.FileInfo
+func filterEntriesFat32[T interface {
+	Name() string
+	IsDir() bool
+}](entries []T) []T {
+	var filtered []T
 	for _, e := range entries {
 		name := e.Name()
 		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") {
@@ -186,11 +189,18 @@ func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error
 
 // ExtractAllRecursiveFat32 extracts all files from a FAT32 filesystem to a temporary directory recursively.
 func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) error {
-	if srcPath == "" || srcPath == "." {
-		srcPath = "/"
+	lookupPath := strings.TrimPrefix(srcPath, "/")
+	if lookupPath == "" {
+		lookupPath = "."
 	}
-	srcPath = normalizePath(srcPath)
-	entries, err := fs.ReadDir(srcPath)
+	entries, err := fs.ReadDir(lookupPath)
+	if err != nil {
+		if srcPath == "" || srcPath == "." {
+			srcPath = "/"
+		}
+		srcPath = normalizePath(srcPath)
+		entries, err = fs.ReadDir(srcPath)
+	}
 	if err != nil {
 		fmt.Printf("Warning: Failed to list directory %s: %v\n", srcPath, err)
 		return nil // Continue processing other entries
@@ -216,7 +226,11 @@ func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) er
 				continue
 			}
 		} else {
-			file, err := fs.OpenFile(srcFullPath, os.O_RDONLY)
+			filePath := strings.TrimPrefix(srcFullPath, "/")
+			file, err := fs.OpenFile(filePath, os.O_RDONLY)
+			if err != nil {
+				file, err = fs.OpenFile(srcFullPath, os.O_RDONLY)
+			}
 			if err != nil {
 				fmt.Printf("Warning: Failed to open file %s: %v\n", srcFullPath, err)
 				continue
