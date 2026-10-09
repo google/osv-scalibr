@@ -29,8 +29,8 @@ import (
 	"path"
 	"strings"
 
-	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/vulns"
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"

@@ -21,7 +21,7 @@ import (
 	"os"
 	"path"
 
-	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/log"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"

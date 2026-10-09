@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/enricher"
-	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
