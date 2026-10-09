@@ -15,6 +15,7 @@
 package osvlocal
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
 	"os"
@@ -162,6 +163,47 @@ func TestNewZippedDB_BadZip(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("expected an error but did not get one")
+	}
+
+	if _, err := os.Stat(determineStoredAtPath(testDir, "my-db")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("expected bad zip to not be cached, but got %v", err)
+	}
+}
+
+func TestNewZippedDB_Online_WithCacheAndBadZip(t *testing.T) {
+	testDir := createTestDir(t)
+
+	cache := fakeserver.ZipOSVs(t, map[string]*osvpb.Vulnerability{
+		"GHSA-1.json": {Id: "GHSA-1"},
+		"GHSA-2.json": {Id: "GHSA-2"},
+		"GHSA-3.json": {Id: "GHSA-3"},
+	})
+
+	ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		bad := []byte("this is not a zip")
+
+		w.Header().Add("X-Goog-Hash", "crc32c="+fakeserver.ComputeCRC32CHash(t, bad))
+
+		_, _ = w.Write(bad)
+	})
+
+	cacheWrite(t, determineStoredAtPath(testDir, "my-db"), cache)
+
+	_, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
+
+	if err == nil {
+		t.Errorf("expected an error but did not get one")
+	}
+
+	// the existing cache should not have been replaced by the bad zip
+	got, err := os.ReadFile(determineStoredAtPath(testDir, "my-db"))
+
+	if err != nil {
+		t.Fatalf("could not read cache: %v", err)
+	}
+
+	if !bytes.Equal(got, cache) {
+		t.Errorf("expected cache to be unchanged, but it was overwritten")
 	}
 }
 

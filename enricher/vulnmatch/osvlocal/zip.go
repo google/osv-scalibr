@@ -138,6 +138,11 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("could not read OSV database archive from response: %w", err)
 	}
 
+	// make sure we've actually got a zip before caching it
+	if _, err := zip.NewReader(bytes.NewReader(body), int64(len(body))); err != nil {
+		return nil, fmt.Errorf("could not read OSV database archive: %w", err)
+	}
+
 	err = os.MkdirAll(path.Dir(db.StoredAt), 0750)
 
 	if err == nil {
