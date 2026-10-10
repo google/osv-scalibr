@@ -85,6 +85,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/r/rpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
@@ -305,7 +306,10 @@ var (
 		cabal.Name:     {protoCfg(cabal.New)},
 	}
 	// RSource extractors for R source extractors
-	RSource = InitMap{renvlock.Name: {protoCfg(renvlock.New)}}
+	RSource = InitMap{
+		renvlock.Name: {protoCfg(renvlock.New)},
+		rpkg.Name:     {protoCfg(rpkg.New)},
+	}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {protoCfg(gemspec.New)},
