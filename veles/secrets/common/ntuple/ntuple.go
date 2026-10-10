@@ -134,6 +134,10 @@ func (d *Detector) collect(b []byte) ([]*Tuple, [][]Match) {
 		if len(found) == 0 && d.FromPartial == nil {
 			return nil, nil
 		}
+		// Set FinderIndex for each match so FromPartial can identify which finder produced it
+		for j := range found {
+			found[j].FinderIndex = i
+		}
 		all[i] = found
 		prev = append(prev, found...)
 	}
