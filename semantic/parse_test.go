@@ -34,6 +34,7 @@ var ecosystems = []string{
 	"crates.io",
 	"Debian",
 	"Docker Hardened Images",
+	"Echo",
 	"GHC",
 	"Go",
 	"Hex",
@@ -72,6 +73,9 @@ func TestParse_EcosystemWithSuffix(t *testing.T) {
 		"Alpine:v3.9",
 		"Red Hat:ansible_automation_platform:2.0::el8",
 		"Ubuntu:Pro:24.04:LTS",
+		"Echo:PyPI",
+		"Echo:Maven",
+		"Echo:npm",
 	}
 	for _, ecosystem := range ecosystems {
 		_, err := semantic.Parse("", ecosystem)

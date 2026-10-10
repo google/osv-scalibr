@@ -158,6 +158,21 @@ func TestMakeEcosystemDebian(t *testing.T) {
 			want: "Debian:12",
 		},
 		{
+			desc: "Echo",
+			metadata: &dpkgmeta.Metadata{
+				OSID: "echo",
+			},
+			want: "Echo",
+		},
+		{
+			desc: "Echo_version_not_used_as_suffix",
+			metadata: &dpkgmeta.Metadata{
+				OSID:        "echo",
+				OSVersionID: "2.0",
+			},
+			want: "Echo",
+		},
+		{
 			desc: "OS_ID_present_(OpenWrt),_not_valid_ecosystem,_so_ecosystem_should_be_empty",
 			metadata: &dpkgmeta.Metadata{
 				OSID: "openwrt",
