@@ -236,6 +236,12 @@ message POMXMLNetConfig {
   // If true, enable in-memory caching of decoded Maven projects, dependency
   // management, versions, and requirements during dependency resolution.
   bool enable_cache = 3;
+  // Directories, relative to the scan root, whose top-level POM files and
+  // their modules are local modules for resolution, such as a git submodule
+  // the build installs first. They are read even when skipped from
+  // extraction. A module of the scanned project with the same coordinates
+  // takes precedence.
+  repeated string local_module_dirs = 4;
 }
 
 message PythonRequirementsTransitiveConfig {
