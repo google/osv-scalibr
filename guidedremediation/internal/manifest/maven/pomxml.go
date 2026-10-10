@@ -74,6 +74,9 @@ type ManifestSpecific struct {
 	LocalRequirements      []DependencyWithOrigin       // Dependencies from the base project and any local parent projects
 	RequirementsForUpdates []resolve.RequirementVersion // Requirements that we only need for updates
 	Repositories           []maven.Repository
+	// MissingVersions describes dependencies of the base project left without a version, which
+	// Maven refuses to build. Resolution reports it; reading and updating the manifest do not.
+	MissingVersions error
 }
 
 // PropertyWithOrigin is a maven property with the origin where it comes from.
@@ -148,6 +151,7 @@ func (m *mavenManifest) Clone() manifest.Manifest {
 			LocalRequirements:      slices.Clone(m.specific.LocalRequirements),
 			RequirementsForUpdates: slices.Clone(m.specific.RequirementsForUpdates),
 			Repositories:           slices.Clone(m.specific.Repositories),
+			MissingVersions:        m.specific.MissingVersions,
 		},
 	}
 	clone.root.AttrSet = m.root.Clone()
@@ -326,9 +330,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 	//  - dedupe dependencies and dependency management
 	//  - import dependency management
 	//  - fill in missing dependency version requirement
-	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, r.MavenRegistryAPIClient, groupID, artifactID, version)
-	})
+	importErrs := mavenutil.ProcessDependencies(ctx, r.MavenRegistryAPIClient, &project)
 
 	groups := make(map[manifest.RequirementKey][]string)
 	requirements := addRequirements([]resolve.RequirementVersion{}, groups, project.Dependencies, "")
@@ -371,6 +373,7 @@ func (r readWriter) Read(path string, fsys scalibrfs.FS) (manifest.Manifest, err
 			LocalRequirements:      append(origRequirements, localDeps...),
 			RequirementsForUpdates: reqsForUpdates,
 			Repositories:           project.Repositories,
+			MissingVersions:        mavenutil.MissingVersionsError(project.Dependencies, importErrs),
 		},
 	}, nil
 }

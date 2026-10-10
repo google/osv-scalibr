@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -731,6 +732,90 @@ func TestReadFindsLocalParentFromGitRoot(t *testing.T) {
 	}
 	if err := parser.WriteManifestPatches(childPath, m, nil, rw, ""); err != nil {
 		t.Fatalf("WriteManifestPatches() failed to update manifests under the Git root: %v", err)
+	}
+}
+
+func TestReadUnversionedDependency(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponse(t, "org/example/bom/1.0.0/bom-1.0.0.pom", []byte(`<project>
+  <groupId>org.example</groupId>
+  <artifactId>bom</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>managed</artifactId>
+        <version>${undefined.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`))
+	dir := t.TempDir()
+	pom := `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>app</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>bom</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>missing-bom</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>managed</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>unmanaged</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+	path := filepath.Join(dir, "pom.xml")
+	if err := os.WriteFile(path, []byte(pom), 0644); err != nil {
+		t.Fatal(err)
+	}
+	client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rw, err := GetReadWriter(client, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Reading succeeds so that updates still work; resolution reports MissingVersions.
+	m, err := parser.ParseManifest(path, rw, "")
+	if err != nil {
+		t.Fatalf("ParseManifest() failed: %v", err)
+	}
+	missing := m.EcosystemSpecific().(ManifestSpecific).MissingVersions
+	if missing == nil {
+		t.Fatal("MissingVersions = nil, want an error for unversioned dependencies")
+	}
+	for _, want := range []string{
+		"no version for org.example:managed, org.example:unmanaged",
+		"failed to import BOM org.example:missing-bom:1.0.0",
+	} {
+		if !strings.Contains(missing.Error(), want) {
+			t.Errorf("MissingVersions = %q, want it to contain %q", missing, want)
+		}
 	}
 }
 
