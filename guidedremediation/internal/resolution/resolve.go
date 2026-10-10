@@ -131,7 +131,10 @@ func resolvePostProcess(ctx context.Context, cl resolve.Client, m manifest.Manif
 				// First assume it's a soft requirement.
 				vk := rv.VersionKey
 				vk.VersionType = resolve.Concrete
-				if _, err := cl.Version(ctx, vk); err != nil {
+				if v, err := cl.Version(ctx, vk); err == nil {
+					// The client may resolve the requested version, e.g. a metaversion, to another.
+					vk = v.VersionKey
+				} else {
 					// Not a soft requirement - try find a match.
 					vk.VersionType = resolve.Requirement
 					vks, err := cl.MatchingVersions(ctx, vk)
