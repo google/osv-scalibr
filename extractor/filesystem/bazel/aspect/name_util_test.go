@@ -63,6 +63,10 @@ func TestParseBzlmodName(t *testing.T) {
 		{"npm__lodash", "lodash", "npm"},
 		{"pip__requests", "requests", "pypi"},
 		{"crates__serde-1.0.0", "serde", "cargo"},
+		{"crates__proc-macro2-1.0.95", "proc-macro2", "cargo"},
+		{"crates_zenoh_c__oid-registry-0.8.1", "oid-registry", "cargo"},
+		{"crates__windows-sys-0.59.0-rc.1", "windows-sys", "cargo"},
+		{"crates__no-version", "no-version", "cargo"},
 		{"unknown__pkg", "unknown__pkg", "unknown"},
 		{"noparts", "noparts", "unknown"},
 	}
