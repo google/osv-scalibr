@@ -112,6 +112,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pyproject.toml                                    | `python/pyprojecttoml`               |
 |            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
 | R          | renv.lock                                         | `r/renvlock`                         |
+|            | Installed R packages                              | `r/rpkg`                             |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
 |            | Gem packages (.gem)                               | `ruby/gem`                           |

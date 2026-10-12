@@ -1,0 +1,10 @@
+Package: ggplot2
+Version: 3.4.4
+Title: Create Elegant Data Visualisations Using the Grammar of Graphics
+Author: Hadley Wickham [aut, cre]
+Maintainer: Hadley Wickham <hadley@rstudio.com>
+Description: A system for declaratively creating graphics,
+    based on "The Grammar of Graphics".
+License: MIT + file LICENSE
+URL: https://ggplot2.tidyverse.org
+BugReports: https://github.com/tidyverse/ggplot2/issues
