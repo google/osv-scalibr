@@ -28,9 +28,6 @@ import (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := gcshmackey.NewValidator()
-	brokenValidator.SetHTTPClient(velestest.BrokenClient)
-
 	velestest.AcceptValidator(
 		t,
 		gcshmackey.NewValidator(),
@@ -38,7 +35,9 @@ func TestAcceptValidator(t *testing.T) {
 			AccessID: "GOOG1OSVSCALIBR000000000000000000000000000000000000000000000",
 			Secret:   "osvscalibrfakefakefakefakefakefakefakefake",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *gcshmackey.Validator) {
+			v.SetHTTPClient(velestest.BrokenClient)
+		}),
 	)
 }
 

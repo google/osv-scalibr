@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/mistralapikey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -31,16 +32,15 @@ import (
 const validatorTestKey = "abcdefghij1234567890ABCDEFGHIJ12"
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := mistralapikey.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		mistralapikey.NewValidator(),
 		velestest.WithTrueNegatives(mistralapikey.MistralAPIKey{
 			Key: "osvscalibrinvalidmistralkey000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[mistralapikey.MistralAPIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

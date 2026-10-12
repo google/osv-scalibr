@@ -51,15 +51,12 @@ import (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := urlcreds.NewValidator().(*urlcreds.Validator)
-	brokenValidator.Client = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		urlcreds.NewValidator(),
 		velestest.WithMalformedSecrets(urlcreds.Credentials{FullURL: ":::not-a-valid-url"}),
 		velestest.WithTrueNegatives(urlcreds.Credentials{FullURL: "http://admin:pass@domain.com/resource"}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *urlcreds.Validator) { v.Client = velestest.BrokenClient }),
 		velestest.WithoutOnline[urlcreds.Credentials](),
 	)
 }

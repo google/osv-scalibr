@@ -15,21 +15,45 @@
 package velestest_test
 
 import (
+	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
+type swappableValidator struct {
+	client      *http.Client
+	brokenCalls int
+}
+
+func (v *swappableValidator) Validate(ctx context.Context, _ velestest.FakeStringSecret) (veles.ValidationStatus, error) {
+	if err := ctx.Err(); err != nil {
+		return veles.ValidationFailed, err
+	}
+	if v.client == velestest.BrokenClient {
+		v.brokenCalls++
+		return veles.ValidationFailed, errors.New("service unreachable")
+	}
+	return veles.ValidationInvalid, nil
+}
+
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := velestest.NewFakeValidator[velestest.FakeStringSecret](veles.ValidationFailed, errors.New("service unreachable"))
-	relaxedValidator := velestest.NewFakeValidator[velestest.FakeStringSecret](veles.ValidationInvalid, nil)
+	client := &http.Client{}
+	validator := &swappableValidator{client: client}
 
 	velestest.AcceptValidator(
 		t,
-		relaxedValidator,
-		velestest.WithBrokenTransport(brokenValidator),
+		validator,
 		velestest.WithTrueNegatives(velestest.FakeStringSecret{Value: "test-invalid"}),
+		velestest.WithBrokenTransport(func(v *swappableValidator) {
+			v.client = velestest.BrokenClient
+		}),
 	)
+
+	if validator.brokenCalls != 1 {
+		t.Errorf("unreachable-service called Validate %d times with the broken client, want 1", validator.brokenCalls)
+	}
 }

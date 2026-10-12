@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2client"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -35,9 +36,6 @@ const validatorTestURL = "yuvrajapp.my.salesforce.com"
 const validatorExpectedBase64Data = "M01WRzEyMzQ1Njc4OS5BQl9DREVGLkFCQzEyMzQ1Njc4OUFCQzEyMzQ1Njc4OUFCQzE6MTIzNDU2Nzg5QUJDREVGQUJDMTIzNDU2Nzg5NTEyMzQ1Njc4OUFCQ0RFRkFCQzEyMzQ1Njc4OTU="
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := salesforceoauth2client.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		salesforceoauth2client.NewValidator(),
@@ -47,7 +45,9 @@ func TestAcceptValidator(t *testing.T) {
 			URL:    validatorTestURL,
 		}),
 		velestest.WithoutOnline[salesforceoauth2client.Credentials](),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[salesforceoauth2client.Credentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

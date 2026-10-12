@@ -39,6 +39,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/telegrambotapitoken"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -48,16 +49,15 @@ const (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := telegrambotapitoken.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		telegrambotapitoken.NewValidator(),
 		velestest.WithTrueNegatives(telegrambotapitoken.TelegramBotAPIToken{
 			Token: "123456789:AAFAKE_osvscalibr_invalid_bot_token_not_real",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[telegrambotapitoken.TelegramBotAPIToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

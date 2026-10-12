@@ -62,9 +62,6 @@ tGOp/d/V3F66yalNSTXNbkA=
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := salesforceoauth2jwt.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		salesforceoauth2jwt.NewValidator(),
@@ -73,7 +70,9 @@ func TestAcceptValidator(t *testing.T) {
 			Username:   "invalid@example.com",
 			PrivateKey: testPrivateKeyPEM,
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *salesforceoauth2jwt.Validator) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 		velestest.WithoutOnline[salesforceoauth2jwt.Credentials](),
 	)
 }

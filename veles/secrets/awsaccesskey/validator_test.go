@@ -100,9 +100,6 @@ const (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := awsaccesskey.NewValidator()
-	brokenValidator.SetHTTPClient(velestest.BrokenClient)
-
 	velestest.AcceptValidator(
 		t,
 		awsaccesskey.NewValidator(),
@@ -110,7 +107,9 @@ func TestAcceptValidator(t *testing.T) {
 			AccessID: exampleAccessID,
 			Secret:   badSecret,
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *awsaccesskey.Validator) {
+			v.SetHTTPClient(velestest.BrokenClient)
+		}),
 	)
 }
 

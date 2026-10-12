@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -38,9 +39,6 @@ const (
 )
 
 func TestAcceptClientCredentialsValidator(t *testing.T) {
-	brokenValidator := hcp.NewClientCredentialsValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		hcp.NewClientCredentialsValidator(),
@@ -48,19 +46,20 @@ func TestAcceptClientCredentialsValidator(t *testing.T) {
 			ClientID:     validatorTestClientID,
 			ClientSecret: "wrong-secret",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[hcp.ClientCredentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 
 func TestAcceptAccessTokenValidator(t *testing.T) {
-	brokenValidator := hcp.NewAccessTokenValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		hcp.NewAccessTokenValidator(),
 		velestest.WithTrueNegatives(hcp.AccessToken{Token: "osvscalibr-not-a-real-hcp-access-token"}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[hcp.AccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

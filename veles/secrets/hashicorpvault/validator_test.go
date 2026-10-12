@@ -22,26 +22,23 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 func TestAcceptTokenValidator(t *testing.T) {
-	brokenValidator := NewTokenValidator("https://example.com")
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		NewTokenValidator("https://example.com"),
 		velestest.WithTrueNegatives(Token{Token: "token"}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[Token]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 		velestest.WithoutOnline[Token](),
 	)
 }
 
 func TestAcceptAppRoleValidator(t *testing.T) {
-	brokenValidator := NewAppRoleValidator("https://example.com")
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		NewAppRoleValidator("https://example.com"),
@@ -49,7 +46,9 @@ func TestAcceptAppRoleValidator(t *testing.T) {
 			RoleID:   "12345678-1234-1234-1234-123456789012",
 			SecretID: "87654321-4321-4321-4321-210987654321",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[AppRoleCredentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 		velestest.WithoutOnline[AppRoleCredentials](),
 	)
 }

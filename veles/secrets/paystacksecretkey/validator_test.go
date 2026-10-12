@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	paystacksecretkey "github.com/google/osv-scalibr/veles/secrets/paystacksecretkey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -33,16 +34,15 @@ const (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := paystacksecretkey.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		paystacksecretkey.NewValidator(),
 		velestest.WithTrueNegatives(paystacksecretkey.PaystackSecret{
 			Key: "sk_live_osvscalibr_invalid000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[paystacksecretkey.PaystackSecret]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

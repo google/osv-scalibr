@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/openrouter"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -32,16 +33,15 @@ import (
 const validatorTestKey = "sk-or-v1-abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr"
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := openrouter.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		openrouter.NewValidator(),
 		velestest.WithTrueNegatives(openrouter.APIKey{
 			Key: "sk-or-v1-osvscalibr-invalid000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[openrouter.APIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

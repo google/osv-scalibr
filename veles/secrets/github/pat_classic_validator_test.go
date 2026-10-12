@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
 	"github.com/google/osv-scalibr/veles/velestest"
@@ -33,16 +34,15 @@ const (
 )
 
 func TestAcceptClassicPATValidator(t *testing.T) {
-	brokenValidator := github.NewClassicPATValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		github.NewClassicPATValidator(),
 		velestest.WithTrueNegatives(github.ClassicPersonalAccessToken{
 			Token: `ghp_000000000000000000000000000000000000`,
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[github.ClassicPersonalAccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

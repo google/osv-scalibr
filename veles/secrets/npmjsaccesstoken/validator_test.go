@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/npmjsaccesstoken"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -29,16 +30,15 @@ import (
 const validatorTestKey = "npm_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8"
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := npmjsaccesstoken.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		npmjsaccesstoken.NewValidator(),
 		velestest.WithTrueNegatives(npmjsaccesstoken.NpmJsAccessToken{
 			Token: "npm_osvscalibrinvalid00000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[npmjsaccesstoken.NpmJsAccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

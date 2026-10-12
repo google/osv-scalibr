@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	herokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -31,16 +32,15 @@ const (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := herokuplatformkey.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		herokuplatformkey.NewValidator(),
 		velestest.WithTrueNegatives(herokuplatformkey.HerokuSecret{
 			Key: "HRKU-osvscalibr-invalid0000000000000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[herokuplatformkey.HerokuSecret]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

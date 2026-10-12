@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
 	"github.com/google/osv-scalibr/veles/velestest"
@@ -33,9 +34,6 @@ const (
 )
 
 func TestAcceptFineGrainedPATValidator(t *testing.T) {
-	brokenValidator := github.NewFineGrainedPATValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		github.NewFineGrainedPATValidator(),
@@ -43,7 +41,9 @@ func TestAcceptFineGrainedPATValidator(t *testing.T) {
 			// Matches fineGrainedPATPattern: github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}
 			Token: `github_pat_0000000000000000000000_00000000000000000000000000000000000000000000000000000000000`,
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[github.FineGrainedPersonalAccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/anthropicapikey"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
@@ -65,16 +66,15 @@ func mockAnthropicWorkspaceServer(t *testing.T, expectedKey string, statusCode i
 }
 
 func TestAcceptMWorkspaceValidator(t *testing.T) {
-	brokenValidator := anthropicapikey.NewWorkspaceValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		anthropicapikey.NewWorkspaceValidator(),
 		velestest.WithTrueNegatives(anthropicapikey.WorkspaceAPIKey{
 			Key: "sk-ant-admin01-osvscalibr-invalid0000000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[anthropicapikey.WorkspaceAPIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

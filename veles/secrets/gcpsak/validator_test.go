@@ -27,15 +27,15 @@ import (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := gcpsak.NewValidator(gcpsak.WithClient(velestest.BrokenClient))
-
 	velestest.AcceptValidator(
 		t,
 		gcpsak.NewValidator(),
 		velestest.WithTrueNegatives(gcpsak.GCPSAK{
 			ServiceAccount: "osvscalibr-fake@fake-project.iam.gserviceaccount.com",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *gcpsak.Validator) {
+			gcpsak.WithClient(velestest.BrokenClient)(v)
+		}),
 	)
 }
 

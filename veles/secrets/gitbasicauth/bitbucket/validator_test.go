@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
 	"github.com/google/osv-scalibr/veles/velestest"
@@ -37,14 +38,13 @@ var (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := bitbucket.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		bitbucket.NewValidator(),
 		velestest.WithTrueNegatives(bitbucket.Credentials{FullURL: validatorTokenURL}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[bitbucket.Credentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 		velestest.WithoutOnline[bitbucket.Credentials](),
 	)
 }

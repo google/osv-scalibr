@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -31,16 +32,15 @@ import (
 const validatorTestKey = "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"
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := huggingfaceapikey.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		huggingfaceapikey.NewValidator(),
 		velestest.WithTrueNegatives(huggingfaceapikey.HuggingfaceAPIKey{
 			Key: "hf_osvscalibr_invalid000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[huggingfaceapikey.HuggingfaceAPIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

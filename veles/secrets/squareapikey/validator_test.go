@@ -32,23 +32,19 @@ import (
 const validatorTestToken = "EAAAl-fFiBHM5-4l4faqdYXgciyn9_MoC3hzKh3UfR0WOmrr_o4BOiPK8ZPiUXVs"
 
 func TestAcceptPersonalAccessTokenValidator(t *testing.T) {
-	brokenValidator := squareapikey.NewPersonalAccessTokenValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		squareapikey.NewPersonalAccessTokenValidator(),
 		velestest.WithTrueNegatives(squareapikey.SquarePersonalAccessToken{
 			Key: "EAAAinvalidtokeninvalidtokeninvalidtokeninvalidtokeninvalid",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[squareapikey.SquarePersonalAccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 
 func TestAcceptOAuthApplicationSecretValidator(t *testing.T) {
-	brokenValidator := squareapikey.NewOAuthApplicationSecretValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		squareapikey.NewOAuthApplicationSecretValidator(),
@@ -56,7 +52,9 @@ func TestAcceptOAuthApplicationSecretValidator(t *testing.T) {
 			ID:  "sq0idp-wuPhZFY8etbvhybDEdHllQ",
 			Key: "sq0csp-INVALID_SECRET_INVALID_SECRET_INVALID",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[squareapikey.SquareOAuthApplicationSecret]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

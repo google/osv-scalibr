@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/digitaloceanapikey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -31,16 +32,15 @@ import (
 const validatorTestKey = "dop_v1_4c6aeb9deed0fb897e585f8ecafa555dd0a9b46087b1e354bcab59b0483edfaf"
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := digitaloceanapikey.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		digitaloceanapikey.NewValidator(),
 		velestest.WithTrueNegatives(digitaloceanapikey.DigitaloceanAPIToken{
 			Key: "dop_v1_osvscalibr_invalid000000000000000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[digitaloceanapikey.DigitaloceanAPIToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

@@ -22,21 +22,21 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/sendgrid"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := sendgrid.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		sendgrid.NewValidator(),
 		velestest.WithTrueNegatives(sendgrid.APIKey{
 			Key: "SG.osvscalibr-invalid0000000000000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[sendgrid.APIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

@@ -32,9 +32,6 @@ const validatorTestPat = "dckr_oat_7awgM4jG5SQvxcvmNzhKj8PQjxo"
 const validatorTestUsername = "User123"
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := dockerhubpat.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		dockerhubpat.NewValidator(),
@@ -42,7 +39,9 @@ func TestAcceptValidator(t *testing.T) {
 			Pat:      "dckr_pat_osvscalibr_invalid000000000000000000000000",
 			Username: validatorTestUsername,
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *dockerhubpat.Validator) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

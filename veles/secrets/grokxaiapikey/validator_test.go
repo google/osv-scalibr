@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	grokxaiapikey "github.com/google/osv-scalibr/veles/secrets/grokxaiapikey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -31,26 +32,24 @@ import (
 const validatorTestKey = "grokx-test12345678901234567890123456789012345678901234567890"
 
 func TestAcceptAPIValidator(t *testing.T) {
-	brokenValidator := grokxaiapikey.NewAPIValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		grokxaiapikey.NewAPIValidator(),
 		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIAPIKey{Key: validatorTestKey}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[grokxaiapikey.GrokXAIAPIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 
 func TestAcceptManagementAPIValidator(t *testing.T) {
-	brokenValidator := grokxaiapikey.NewManagementAPIValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		grokxaiapikey.NewManagementAPIValidator(),
 		velestest.WithTrueNegatives(grokxaiapikey.GrokXAIManagementKey{Key: validatorTestKey}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[grokxaiapikey.GrokXAIManagementKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

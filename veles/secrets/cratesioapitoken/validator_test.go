@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/cratesioapitoken"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -80,9 +81,6 @@ func mockCratesioServer(t *testing.T, expectedKey string) *httptest.Server {
 }
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := cratesioapitoken.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		cratesioapitoken.NewValidator(),
@@ -90,7 +88,9 @@ func TestAcceptValidator(t *testing.T) {
 			cratesioapitoken.CratesIOAPItoken{Token: "randomKey"},
 			cratesioapitoken.CratesIOAPItoken{Token: validatorValidTestKey},
 		),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[cratesioapitoken.CratesIOAPItoken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

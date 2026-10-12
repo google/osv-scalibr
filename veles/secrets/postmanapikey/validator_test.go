@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	postmanapikey "github.com/google/osv-scalibr/veles/secrets/postmanapikey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -34,30 +35,28 @@ const (
 )
 
 func TestAcceptAPIValidator(t *testing.T) {
-	brokenValidator := postmanapikey.NewAPIValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		postmanapikey.NewAPIValidator(),
 		velestest.WithTrueNegatives(postmanapikey.PostmanAPIKey{
 			Key: "PMAK-osvscalibr-invalid-000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[postmanapikey.PostmanAPIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 
 func TestAcceptCollectionValidator(t *testing.T) {
-	brokenValidator := postmanapikey.NewCollectionValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		postmanapikey.NewCollectionValidator(),
 		velestest.WithTrueNegatives(postmanapikey.PostmanCollectionToken{
 			Key: "PMAT-osvscalibr-invalid-000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[postmanapikey.PostmanCollectionToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

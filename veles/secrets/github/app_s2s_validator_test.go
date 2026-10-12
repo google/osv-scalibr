@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
 	"github.com/google/osv-scalibr/veles/velestest"
@@ -31,16 +32,15 @@ import (
 const s2sValidatorTestKey = `ghs_oJrI3NxJonXega4cd3v1XHDjjMk3jh2ENWzb`
 
 func TestAcceptAppS2STokenValidator(t *testing.T) {
-	brokenValidator := github.NewAppS2STokenValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		github.NewAppS2STokenValidator(),
 		velestest.WithTrueNegatives(github.AppServerToServerToken{
 			Token: `ghs_000000000000000000000000000000000000`,
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[github.AppServerToServerToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

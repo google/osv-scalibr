@@ -26,8 +26,8 @@ import (
 )
 
 type testConfig[S veles.Secret] struct {
-	v                    veles.Validator[S]
-	vWithBrokenTransport veles.Validator[S]
+	v                   veles.Validator[S]
+	withBrokenTransport func(veles.Validator[S]) bool
 
 	trueNegatives []S
 	malformed     []S
@@ -39,8 +39,8 @@ type testConfig[S veles.Secret] struct {
 type AcceptValidatorOption[S veles.Secret] func(*testConfig[S])
 
 // BrokenClient is an http.Client that simulates a network failure ("connection refused") on any dial attempt.
-// It is designed to be passed into the WithBrokenTransport option to verify that a Validator
-// implementation returns veles.ValidationFailed on network error.
+// Pass it to a WithBrokenTransport callback to verify that a Validator returns
+// veles.ValidationFailed on network error.
 var BrokenClient = newBrokenClient()
 
 func newBrokenClient() *http.Client {
@@ -59,10 +59,18 @@ func newBrokenClient() *http.Client {
 	}
 }
 
-// WithBrokenTransport is used to verify the validator functionality when there are network errors.
-func WithBrokenTransport[S veles.Secret](v veles.Validator[S]) AcceptValidatorOption[S] {
+// WithBrokenTransport configures the validator for the unreachable-service check.
+// The callback receives the same validator passed to AcceptValidator and runs after
+// the other checks, so it can replace the validator's client with BrokenClient.
+func WithBrokenTransport[S veles.Secret, V veles.Validator[S]](configure func(V)) AcceptValidatorOption[S] {
 	return func(cfg *testConfig[S]) {
-		cfg.vWithBrokenTransport = v
+		cfg.withBrokenTransport = func(v veles.Validator[S]) bool {
+			validator, ok := v.(V)
+			if ok {
+				configure(validator)
+			}
+			return ok
+		}
 	}
 }
 
@@ -107,6 +115,7 @@ func AcceptValidator[S veles.Secret](t *testing.T, v veles.Validator[S], opts ..
 	}
 	sampleSecret := cfg.trueNegatives[0]
 
+	// Test malformed secrets
 	t.Run("cancelled-ctx", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
@@ -119,20 +128,6 @@ func AcceptValidator[S veles.Secret](t *testing.T, v veles.Validator[S], opts ..
 		}
 		if !errors.Is(err, expected) {
 			t.Errorf("Validate() with cancelled context returned error: %v, want: %v", err, expected)
-		}
-	})
-
-	t.Run("unreachable-service", func(t *testing.T) {
-		if cfg.vWithBrokenTransport == nil {
-			t.Skip("No client with broken Transport provided")
-		}
-
-		status, err := cfg.vWithBrokenTransport.Validate(t.Context(), sampleSecret)
-		if status != veles.ValidationFailed {
-			t.Errorf("Validate() with unreachable service returned status %v, want %v", status, veles.ValidationFailed)
-		}
-		if err == nil {
-			t.Error("Validate() with unreachable service returned nil error, want non-nil error")
 		}
 	})
 
@@ -169,6 +164,23 @@ func AcceptValidator[S veles.Secret](t *testing.T, v veles.Validator[S], opts ..
 				if err != nil {
 					t.Errorf("Validate() with true-negative secret returned unexpected error: %v", err)
 				}
+			}
+		})
+	}
+
+	// Test the validator behaviour when a connection error happens
+	if cfg.withBrokenTransport != nil {
+		t.Run("unreachable-service", func(t *testing.T) {
+			if !cfg.withBrokenTransport(cfg.v) {
+				t.Fatal("WithBrokenTransport callback type does not match the validator")
+			}
+
+			status, err := cfg.v.Validate(t.Context(), sampleSecret)
+			if status != veles.ValidationFailed {
+				t.Errorf("Validate() with unreachable service returned status %v, want %v", status, veles.ValidationFailed)
+			}
+			if err == nil {
+				t.Error("Validate() with unreachable service returned nil error, want non-nil error")
 			}
 		})
 	}

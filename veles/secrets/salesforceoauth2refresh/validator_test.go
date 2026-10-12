@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2refresh"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -37,9 +38,6 @@ const (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := salesforceoauth2refresh.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		salesforceoauth2refresh.NewValidator(),
@@ -48,7 +46,9 @@ func TestAcceptValidator(t *testing.T) {
 			Secret:  validatorTestClientSecret,
 			Refresh: "refresh_token",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[salesforceoauth2refresh.Credentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

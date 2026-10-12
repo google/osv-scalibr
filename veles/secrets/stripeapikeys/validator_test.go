@@ -37,6 +37,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	stripeapikeys "github.com/google/osv-scalibr/veles/secrets/stripeapikeys"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -47,30 +48,28 @@ const (
 )
 
 func TestAcceptSecretKeyValidator(t *testing.T) {
-	brokenValidator := stripeapikeys.NewSecretKeyValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		stripeapikeys.NewSecretKeyValidator(),
 		velestest.WithTrueNegatives(stripeapikeys.StripeSecretKey{
 			Key: "sk_live_00000000000000000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[stripeapikeys.StripeSecretKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 
 func TestAcceptRestrictedKeyValidator(t *testing.T) {
-	brokenValidator := stripeapikeys.NewRestrictedKeyValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		stripeapikeys.NewRestrictedKeyValidator(),
 		velestest.WithTrueNegatives(stripeapikeys.StripeRestrictedKey{
 			Key: "rk_live_00000000000000000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[stripeapikeys.StripeRestrictedKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

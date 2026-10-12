@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
@@ -75,16 +76,15 @@ func mockCircleCIPATServer(t *testing.T, expectedToken string, serverResponseCod
 }
 
 func TestAcceptPersonalAccessTokenValidator(t *testing.T) {
-	brokenValidator := circleci.NewPersonalAccessTokenValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		circleci.NewPersonalAccessTokenValidator(),
 		velestest.WithTrueNegatives(circleci.PersonalAccessToken{
 			Token: "CCIPAT_invalid_token_1234567890_1234567890123456789012345678901234567890",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[circleci.PersonalAccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 
@@ -188,16 +188,15 @@ func mockCircleCIProjectServer(t *testing.T, expectedToken string, serverRespons
 }
 
 func TestAcceptProjectTokenValidator(t *testing.T) {
-	brokenValidator := circleci.NewProjectTokenValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		circleci.NewProjectTokenValidator(),
 		velestest.WithTrueNegatives(circleci.ProjectToken{
 			Token: "CCIPRJ_invalid_token_1234567890_1234567890123456789012345678901234567890",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[circleci.ProjectToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/elasticcloudapikey"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -31,16 +32,15 @@ import (
 const validatorTestKey = "essu_VWtSQlNXNWFjMEpWWVZsbFVUZDBORmRQTldJNmNuWnVYMU5yY1ZGdlJ6aHVlRE5rWmxGelIyUk9kdz09AAAAANx5Zs4="
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := elasticcloudapikey.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		elasticcloudapikey.NewValidator(),
 		velestest.WithTrueNegatives(elasticcloudapikey.ElasticCloudAPIKey{
 			Key: "essu_osvscalibr_invalid00000000000000000000000000000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[elasticcloudapikey.ElasticCloudAPIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

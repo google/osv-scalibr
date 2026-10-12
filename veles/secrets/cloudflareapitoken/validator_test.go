@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/cloudflareapitoken"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
@@ -69,16 +70,15 @@ func mockCloudflareServer(t *testing.T, expectedToken string) *httptest.Server {
 }
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := cloudflareapitoken.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		cloudflareapitoken.NewValidator(),
 		velestest.WithTrueNegatives(cloudflareapitoken.CloudflareAPIToken{
 			Token: validatorTestToken,
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[cloudflareapitoken.CloudflareAPIToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 

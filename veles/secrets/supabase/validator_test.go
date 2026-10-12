@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/supabase"
 	"github.com/google/osv-scalibr/veles/velestest"
 )
@@ -33,23 +34,19 @@ const (
 )
 
 func TestAcceptPATValidator(t *testing.T) {
-	brokenValidator := supabase.NewPATValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		supabase.NewPATValidator(),
 		velestest.WithTrueNegatives(supabase.PAT{
 			Token: "sbp_osvscalibr000000000000000000000000000000",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[supabase.PAT]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 	)
 }
 
 func TestAcceptProjectSecretKeyValidator(t *testing.T) {
-	brokenValidator := supabase.NewProjectSecretKeyValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		supabase.NewProjectSecretKeyValidator(),
@@ -61,15 +58,14 @@ func TestAcceptProjectSecretKeyValidator(t *testing.T) {
 			Key:        validatorTestSecretKey,
 			ProjectRef: "",
 		}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[supabase.ProjectSecretKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 		velestest.WithoutOnline[supabase.ProjectSecretKey](),
 	)
 }
 
 func TestAcceptServiceRoleJWTValidator(t *testing.T) {
-	brokenValidator := supabase.NewServiceRoleJWTValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		supabase.NewServiceRoleJWTValidator(),
@@ -77,7 +73,9 @@ func TestAcceptServiceRoleJWTValidator(t *testing.T) {
 			Token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwaHlmeW1hZXBrbHB1dmFlY3J5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTI2MTAzOSwiZXhwIjoyMDg0ODM3MDM5fQ.signature",
 		}),
 		velestest.WithMalformedSecrets(supabase.ServiceRoleJWT{Token: "not-a-jwt"}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[supabase.ServiceRoleJWT]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 		velestest.WithoutOnline[supabase.ServiceRoleJWT](),
 	)
 }

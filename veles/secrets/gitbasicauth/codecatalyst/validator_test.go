@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecatalyst"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
 	"github.com/google/osv-scalibr/veles/velestest"
@@ -36,15 +37,14 @@ var (
 )
 
 func TestAcceptValidator(t *testing.T) {
-	brokenValidator := codecatalyst.NewValidator()
-	brokenValidator.HTTPC = velestest.BrokenClient
-
 	velestest.AcceptValidator(
 		t,
 		codecatalyst.NewValidator(),
 		velestest.WithMalformedSecrets(codecatalyst.Credentials{FullURL: badHostURL}),
 		velestest.WithTrueNegatives(codecatalyst.Credentials{FullURL: validatorTestURL}),
-		velestest.WithBrokenTransport(brokenValidator),
+		velestest.WithBrokenTransport(func(v *sv.Validator[codecatalyst.Credentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
 		velestest.WithoutOnline[codecatalyst.Credentials](),
 	)
 }
