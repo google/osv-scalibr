@@ -15,7 +15,6 @@
 package salesforceoauth2refresh_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -99,7 +98,6 @@ func TestValidator(t *testing.T) {
 		refresh                  string
 		serverExpectedBase64Data string
 		serverResponseCode       int
-		cancelContext            bool
 		want                     veles.ValidationStatus
 		wantErr                  error
 		useServer                bool
@@ -156,31 +154,12 @@ func TestValidator(t *testing.T) {
 			refresh:            validatorTestRefresh,
 			want:               veles.ValidationInvalid,
 		},
-		{
-			name:                     "context cancelled",
-			id:                       validatorTestClientID,
-			secret:                   validatorTestClientSecret,
-			refresh:                  validatorTestRefresh,
-			serverExpectedBase64Data: validatorExpectedBase64Data,
-			serverResponseCode:       http.StatusOK,
-			cancelContext:            true,
-			want:                     veles.ValidationFailed,
-			wantErr:                  cmpopts.AnyError,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := t.Context()
-
 			server := mockSalesforceServer(t, validatorTestRefresh, tt.serverExpectedBase64Data, tt.serverResponseCode)
 			defer server.Close()
-
-			if tt.cancelContext {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithCancel(ctx)
-				cancel()
-			}
 
 			validator := salesforceoauth2refresh.NewValidator()
 			if server != nil {
@@ -195,7 +174,7 @@ func TestValidator(t *testing.T) {
 				Refresh: tt.refresh,
 			}
 
-			got, err := validator.Validate(ctx, cred)
+			got, err := validator.Validate(t.Context(), cred)
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)

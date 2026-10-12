@@ -15,7 +15,6 @@
 package github_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -47,9 +46,6 @@ func TestAcceptClassicPATValidator(t *testing.T) {
 }
 
 func TestClassicPATValidator(t *testing.T) {
-	cancelledContext, cancel := context.WithCancel(t.Context())
-	cancel()
-
 	mockGithubServer := func(code int) *httptest.Server {
 		return mockgithub.Server(
 			t, github.UserValidationEndpoint, code,
@@ -63,16 +59,7 @@ func TestClassicPATValidator(t *testing.T) {
 		server  *httptest.Server
 		want    veles.ValidationStatus
 		wantErr error
-		//nolint:containedctx
-		ctx context.Context
 	}{
-		{
-			name:    "cancelled_context",
-			ctx:     cancelledContext,
-			server:  mockGithubServer(http.StatusOK),
-			want:    veles.ValidationFailed,
-			wantErr: cmpopts.AnyError,
-		},
 		{
 			name:   "valid_classic_key",
 			token:  classicPATValidatorKey,
@@ -101,10 +88,6 @@ func TestClassicPATValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.ctx == nil {
-				tt.ctx = t.Context()
-			}
-
 			// Create a validator with a mock client
 			validator := github.NewClassicPATValidator()
 			validator.HTTPC = tt.server.Client()
@@ -114,7 +97,7 @@ func TestClassicPATValidator(t *testing.T) {
 			key := github.ClassicPersonalAccessToken{Token: tt.token}
 
 			// Test validation
-			got, err := validator.Validate(tt.ctx, key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)

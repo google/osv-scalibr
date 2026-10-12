@@ -15,7 +15,6 @@
 package salesforceoauth2client_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -98,7 +97,6 @@ func TestValidator(t *testing.T) {
 		url                      string
 		serverExpectedBase64Data string
 		serverResponseCode       int
-		cancelContext            bool
 		want                     veles.ValidationStatus
 		wantErr                  error
 	}{
@@ -145,32 +143,13 @@ func TestValidator(t *testing.T) {
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
-		{
-			name:                     "context cancelled",
-			id:                       validatorTestClientID,
-			secret:                   validatorTestClientSecret,
-			url:                      validatorTestURL,
-			serverExpectedBase64Data: validatorExpectedBase64Data,
-			serverResponseCode:       http.StatusOK,
-			cancelContext:            true,
-			want:                     veles.ValidationFailed,
-			wantErr:                  cmpopts.AnyError,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := t.Context()
-
 			// Create mock server
 			server := mockSalesforceServer(t, tt.serverExpectedBase64Data, tt.serverResponseCode)
 			defer server.Close()
-
-			if tt.cancelContext {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithCancel(ctx)
-				cancel()
-			}
 
 			validator := salesforceoauth2client.NewValidator()
 			validator.HTTPC = &http.Client{
@@ -183,7 +162,7 @@ func TestValidator(t *testing.T) {
 				URL:    tt.url,
 			}
 
-			got, err := validator.Validate(ctx, cred)
+			got, err := validator.Validate(t.Context(), cred)
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)

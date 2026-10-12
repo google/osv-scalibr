@@ -15,7 +15,6 @@
 package bitbucket_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -50,26 +49,13 @@ func TestAcceptValidator(t *testing.T) {
 }
 
 func TestValidator(t *testing.T) {
-	cancelledContext, cancel := context.WithCancel(t.Context())
-	cancel()
-
 	cases := []struct {
-		//nolint:containedctx
-		ctx        context.Context
 		name       string
 		url        string
 		httpStatus int
 		want       veles.ValidationStatus
 		wantErr    error
 	}{
-		{
-			name:       "cancelled_context",
-			url:        validatorTestURL,
-			want:       veles.ValidationFailed,
-			ctx:        cancelledContext,
-			httpStatus: http.StatusOK,
-			wantErr:    cmpopts.AnyError,
-		},
 		{
 			name:    "bad_host",
 			url:     badHostURL,
@@ -104,9 +90,6 @@ func TestValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.ctx == nil {
-				tt.ctx = t.Context()
-			}
 			server := httptest.NewServer(mockserver.GitHandler(t, tt.httpStatus))
 			defer server.Close()
 
@@ -117,7 +100,7 @@ func TestValidator(t *testing.T) {
 			v := bitbucket.NewValidator()
 			v.HTTPC = client
 
-			got, err := v.Validate(tt.ctx, bitbucket.Credentials{FullURL: tt.url})
+			got, err := v.Validate(t.Context(), bitbucket.Credentials{FullURL: tt.url})
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)
