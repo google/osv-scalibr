@@ -504,7 +504,6 @@ func TestNewZippedDB_GitRangeWithoutPackage(t *testing.T) {
 		testDir,
 		"my-db",
 		ts.URL,
-		userAgent,
 		false,
 		[]*extractor.Package{{Name: "github.com/example/my-repo"}},
 		http.DefaultClient,
