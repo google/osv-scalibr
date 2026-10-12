@@ -422,3 +422,193 @@ func TestExtractor_Extract_AlreadyProcessed(t *testing.T) {
 		t.Errorf("second Extract() expected empty packages, got %v", got.Packages)
 	}
 }
+
+func TestExtractor_Extract_MultipleTargets(t *testing.T) {
+	wsDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(wsDir, "MODULE.bazel"), []byte(""), 0644); err != nil {
+		t.Fatalf("failed to create MODULE.bazel: %v", err)
+	}
+
+	var capturedArgs []string
+	runner := &mockCommandRunner{
+		runFunc: func(ctx context.Context, dir string, name string, args ...string) error {
+			capturedArgs = args
+			for _, arg := range args {
+				if after, ok := strings.CutPrefix(arg, "--build_event_json_file="); ok {
+					return os.WriteFile(after, []byte(""), 0644)
+				}
+			}
+			return nil
+		},
+	}
+
+	cfg := &cpb.PluginConfig{
+		PluginSpecific: []*cpb.PluginSpecificConfig{
+			{
+				Config: &cpb.PluginSpecificConfig_BazelAspect{
+					BazelAspect: &cpb.BazelAspectConfig{
+						Target: "//pkg1/... //pkg2/... -//pkg3/...",
+					},
+				},
+			},
+		},
+	}
+
+	e, err := aspect.NewWithRunner(cfg, runner)
+	if err != nil {
+		t.Fatalf("aspect.NewWithRunner() error: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Root: wsDir,
+		Path: "MODULE.bazel",
+	}
+
+	if _, err := e.Extract(t.Context(), input); err != nil {
+		t.Fatalf("Extract() error = %v", err)
+	}
+
+	// Verify that "--", "//pkg1/...", "//pkg2/...", and "-//pkg3/..." were passed as separate arguments
+	dashIdx := -1
+	for i, arg := range capturedArgs {
+		if arg == "--" {
+			dashIdx = i
+			break
+		}
+	}
+	if dashIdx == -1 {
+		t.Fatalf("expected '--' separator in args: %v", capturedArgs)
+	}
+
+	gotTargets := capturedArgs[dashIdx+1:]
+	wantTargets := []string{"//pkg1/...", "//pkg2/...", "-//pkg3/..."}
+	if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
+		t.Errorf("targets mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestExtractor_Extract_LargeBEPLine(t *testing.T) {
+	wsDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(wsDir, "MODULE.bazel"), []byte(""), 0644); err != nil {
+		t.Fatalf("failed to create MODULE.bazel: %v", err)
+	}
+
+	runner := &mockCommandRunner{
+		runFunc: func(ctx context.Context, dir string, name string, args ...string) error {
+			var bepPath string
+			for _, arg := range args {
+				if after, ok := strings.CutPrefix(arg, "--build_event_json_file="); ok {
+					bepPath = after
+				}
+			}
+			if bepPath == "" {
+				t.Fatal("missing --build_event_json_file")
+			}
+
+			outDir := filepath.Dir(bepPath)
+			targetJSON := filepath.Join(outDir, "target.scalibr.json")
+			data := map[string]string{
+				"name":    "huge_dep",
+				"version": "1.0.0",
+			}
+			jsonData, err := json.Marshal(data)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(targetJSON, jsonData, 0644); err != nil {
+				return err
+			}
+
+			// Generate a line exceeding bufio.MaxScanTokenSize (64 KB), e.g. 100 KB line
+			padding := strings.Repeat("x", 100*1024)
+			largeLine := fmt.Sprintf(`{"id":{"namedSet":{"id":"0"}},"dummy":"%s","namedSetOfFiles":{"files":[{"uri":"file://%s"}]}}`, padding, targetJSON)
+
+			return os.WriteFile(bepPath, []byte(largeLine), 0644)
+		},
+	}
+
+	e, err := aspect.NewWithRunner(nil, runner)
+	if err != nil {
+		t.Fatalf("aspect.NewWithRunner() error: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Root: wsDir,
+		Path: "MODULE.bazel",
+	}
+
+	inv, err := e.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract() error = %v", err)
+	}
+
+	wantPkgs := []*extractor.Package{
+		{
+			Name:     "huge_dep",
+			Version:  "1.0.0",
+			PURLType: "generic",
+		},
+	}
+	if diff := cmp.Diff(wantPkgs, inv.Packages); diff != "" {
+		t.Errorf("inventory mismatch for large BEP line (-want +got):\n%s", diff)
+	}
+}
+
+func TestExtractor_Extract_NestedSubworkspaceSkipped(t *testing.T) {
+	wsDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(wsDir, "MODULE.bazel"), []byte(""), 0644); err != nil {
+		t.Fatalf("failed to create root MODULE.bazel: %v", err)
+	}
+
+	subDir := filepath.Join(wsDir, "submodule")
+	if err := os.MkdirAll(subDir, 0755); err != nil {
+		t.Fatalf("failed to create submodule dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(subDir, "MODULE.bazel"), []byte(""), 0644); err != nil {
+		t.Fatalf("failed to create submodule MODULE.bazel: %v", err)
+	}
+
+	var runDirs []string
+	runner := &mockCommandRunner{
+		runFunc: func(ctx context.Context, dir string, name string, args ...string) error {
+			runDirs = append(runDirs, dir)
+			for _, arg := range args {
+				if after, ok := strings.CutPrefix(arg, "--build_event_json_file="); ok {
+					return os.WriteFile(after, []byte(""), 0644)
+				}
+			}
+			return nil
+		},
+	}
+
+	e, err := aspect.NewWithRunner(nil, runner)
+	if err != nil {
+		t.Fatalf("aspect.NewWithRunner() error: %v", err)
+	}
+
+	// First scan input at root
+	rootInput := &filesystem.ScanInput{
+		Root: wsDir,
+		Path: "MODULE.bazel",
+	}
+	if _, err := e.Extract(t.Context(), rootInput); err != nil {
+		t.Fatalf("root Extract() error = %v", err)
+	}
+
+	// Second scan input at nested submodule
+	subInput := &filesystem.ScanInput{
+		Root: wsDir,
+		Path: "submodule/MODULE.bazel",
+	}
+	got, err := e.Extract(t.Context(), subInput)
+	if err != nil {
+		t.Fatalf("submodule Extract() error = %v", err)
+	}
+
+	if len(runDirs) != 1 {
+		t.Errorf("expected bazel to run 1 time, ran %d times in dirs: %v", len(runDirs), runDirs)
+	}
+	if len(got.Packages) != 0 {
+		t.Errorf("expected nested submodule to return empty packages, got %v", got.Packages)
+	}
+}
