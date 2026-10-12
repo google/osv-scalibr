@@ -16,8 +16,12 @@ package osvlocal
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"os"
+	"path"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,6 +37,7 @@ import (
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -692,6 +697,171 @@ func TestEnrich(t *testing.T) {
 
 			if diff != "" {
 				t.Errorf("Enrich(%v): unexpected diff (-want +got): %v", tt.packages, diff)
+			}
+		})
+	}
+}
+
+func TestDownloadDatabases(t *testing.T) {
+	cancelledContext, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	tests := []struct {
+		name string
+		ecos []osvconstants.Ecosystem
+		// offline sets the enricher to not download databases
+		offline bool
+		// cached are ecosystems to write to the local cache before running
+		cached []osvconstants.Ecosystem
+		//nolint:containedctx
+		ctx         context.Context
+		wantErr     error
+		wantOnDisk  []osvconstants.Ecosystem
+		wantFetches []string
+	}{
+		{
+			name:        "no_ecosystems",
+			ecos:        []osvconstants.Ecosystem{},
+			wantOnDisk:  []osvconstants.Ecosystem{},
+			wantFetches: []string{},
+		},
+		{
+			name:        "one_ecosystem",
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantOnDisk:  []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantFetches: []string{"GET /Go/all.zip"},
+		},
+		{
+			name:        "multiple_ecosystems",
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemGo, osvconstants.EcosystemNPM},
+			wantOnDisk:  []osvconstants.Ecosystem{osvconstants.EcosystemGo, osvconstants.EcosystemNPM},
+			wantFetches: []string{"GET /Go/all.zip", "GET /npm/all.zip"},
+		},
+		{
+			name:        "duplicate_ecosystems_are_only_fetched_once",
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemGo, osvconstants.EcosystemGo},
+			wantOnDisk:  []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantFetches: []string{"GET /Go/all.zip"},
+		},
+		{
+			name:        "already_cached_and_up_to_date",
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			cached:      []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantOnDisk:  []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantFetches: []string{"HEAD /Go/all.zip"},
+		},
+		{
+			name:        "one_ecosystem_fails",
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemPyPI},
+			wantErr:     cmpopts.AnyError,
+			wantOnDisk:  []osvconstants.Ecosystem{},
+			wantFetches: []string{"GET /PyPI/all.zip"},
+		},
+		{
+			name: "failures_do_not_stop_other_ecosystems",
+			ecos: []osvconstants.Ecosystem{
+				osvconstants.EcosystemPyPI,
+				osvconstants.EcosystemGo,
+				osvconstants.EcosystemMaven,
+				osvconstants.EcosystemNPM,
+			},
+			wantErr:     cmpopts.AnyError,
+			wantOnDisk:  []osvconstants.Ecosystem{osvconstants.EcosystemGo, osvconstants.EcosystemNPM},
+			wantFetches: []string{"GET /Go/all.zip", "GET /Maven/all.zip", "GET /PyPI/all.zip", "GET /npm/all.zip"},
+		},
+		{
+			name:        "offline_without_cache",
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			offline:     true,
+			wantErr:     errOfflineDatabaseNotFound,
+			wantOnDisk:  []osvconstants.Ecosystem{},
+			wantFetches: []string{},
+		},
+		{
+			name:        "offline_with_cache",
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			offline:     true,
+			cached:      []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantOnDisk:  []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantFetches: []string{},
+		},
+		{
+			name:        "ctx_cancelled",
+			ctx:         cancelledContext,
+			ecos:        []osvconstants.Ecosystem{osvconstants.EcosystemGo},
+			wantErr:     context.Canceled,
+			wantOnDisk:  []osvconstants.Ecosystem{},
+			wantFetches: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.ctx == nil {
+				tt.ctx = context.Background()
+			}
+
+			zipped := fakeserver.ZipOSVs(t, map[string]*osvpb.Vulnerability{
+				"GHSA-1.json": {Id: "GHSA-1"},
+			})
+
+			var mu sync.Mutex
+			fetches := []string{}
+
+			ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, r *http.Request) {
+				mu.Lock()
+				fetches = append(fetches, r.Method+" "+r.URL.Path)
+				mu.Unlock()
+
+				switch {
+				case strings.HasPrefix(r.URL.Path, "/PyPI/"):
+					w.WriteHeader(http.StatusInternalServerError)
+				case strings.HasPrefix(r.URL.Path, "/Maven/"):
+					_, _ = w.Write([]byte("this is not a zip"))
+				default:
+					w.Header().Add("X-Goog-Hash", "crc32c="+fakeserver.ComputeCRC32CHash(t, zipped))
+					_, _ = w.Write(zipped)
+				}
+			})
+
+			testDir := createTestDir(t)
+			dbBasePath := path.Join(testDir, "osv-scalibr")
+
+			for _, eco := range tt.cached {
+				cacheWrite(t, determineStoredAtPath(dbBasePath, string(eco)), zipped)
+			}
+
+			e := &Enricher{
+				zippedDBRemoteHost: ts.URL,
+				localPath:          testDir,
+				download:           !tt.offline,
+				httpClient:         http.DefaultClient,
+			}
+
+			err := e.DownloadDatabases(tt.ctx, tt.ecos)
+
+			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
+				t.Errorf("DownloadDatabases(%v) error: %v, want %v", tt.ecos, err, tt.wantErr)
+			}
+
+			if diff := cmp.Diff(tt.wantFetches, fetches); diff != "" {
+				t.Errorf("DownloadDatabases(%v): unexpected requests (-want +got): %s", tt.ecos, diff)
+			}
+
+			onDisk := []osvconstants.Ecosystem{}
+			entries, err := os.ReadDir(dbBasePath)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("could not read %s: %v", dbBasePath, err)
+			}
+
+			for _, entry := range entries {
+				if _, err := os.Stat(determineStoredAtPath(dbBasePath, entry.Name())); err == nil {
+					onDisk = append(onDisk, osvconstants.Ecosystem(entry.Name()))
+				}
+			}
+
+			if diff := cmp.Diff(tt.wantOnDisk, onDisk, cmpopts.SortSlices(func(a, b osvconstants.Ecosystem) bool { return a < b })); diff != "" {
+				t.Errorf("DownloadDatabases(%v): unexpected databases on disk (-want +got): %s", tt.ecos, diff)
 			}
 		})
 	}

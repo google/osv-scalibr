@@ -90,7 +90,16 @@ func fetchLocalArchiveCRC32CHash(data []byte) uint32 {
 	return crc32.Checksum(data, crc32.MakeTable(crc32.Castagnoli))
 }
 
-func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
+func readZip(data []byte) (*zip.Reader, error) {
+	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("could not read OSV database archive: %w", err)
+	}
+
+	return zipReader, nil
+}
+
+func (db *zipDB) fetchZip(ctx context.Context) (*zip.Reader, error) {
 	cache, err := os.ReadFile(db.StoredAt)
 
 	if db.Offline {
@@ -98,7 +107,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 			return nil, errOfflineDatabaseNotFound
 		}
 
-		return cache, nil
+		return readZip(cache)
 	}
 
 	if err == nil {
@@ -109,7 +118,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		}
 
 		if fetchLocalArchiveCRC32CHash(cache) == remoteHash {
-			return cache, nil
+			return readZip(cache)
 		}
 	}
 
@@ -138,6 +147,13 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("could not read OSV database archive from response: %w", err)
 	}
 
+	// make sure we've actually got a zip before caching it
+	zipReader, err := readZip(body)
+
+	if err != nil {
+		return nil, err
+	}
+
 	err = os.MkdirAll(path.Dir(db.StoredAt), 0750)
 
 	if err == nil {
@@ -145,7 +161,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		_ = os.WriteFile(db.StoredAt, body, 0644)
 	}
 
-	return body, nil
+	return zipReader, nil
 }
 
 func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
@@ -196,24 +212,27 @@ func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
 // load fetches a zip archive of the OSV database and loads known vulnerabilities
 // from it (which are assumed to be in json files following the OSV spec).
 //
-// If a list of package names is provided, then only advisories with at least
-// one affected entry for a listed package will be loaded.
+// If packages are provided, then only advisories with at least one affected
+// entry for one of those packages will be loaded.
 //
 // Internally, the archive is cached along with the date that it was fetched
 // so that a new version of the archive is only downloaded if it has been
 // modified, per HTTP caching standards.
-func (db *zipDB) load(ctx context.Context, names []string) error {
+func (db *zipDB) load(ctx context.Context, invs []*extractor.Package) error {
 	db.Vulnerabilities = []*osvpb.Vulnerability{}
 
-	body, err := db.fetchZip(ctx)
+	names := make([]string, 0, len(invs))
 
-	if err != nil {
-		return err
+	// map the packages to their names ahead of loading,
+	// to make things simpler and reduce double working
+	for _, inv := range invs {
+		names = append(names, osvutil.ParsePackage(inv).Name)
 	}
 
-	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	zipReader, err := db.fetchZip(ctx)
+
 	if err != nil {
-		return fmt.Errorf("could not read OSV database archive: %w", err)
+		return fmt.Errorf("unable to fetch OSV database: %w", err)
 	}
 
 	// Read all the files from the zip archive
@@ -228,27 +247,16 @@ func (db *zipDB) load(ctx context.Context, names []string) error {
 	return nil
 }
 
-func newZippedDB(ctx context.Context, dbBasePath, name, url string, offline bool, invs []*extractor.Package, httpClient *http.Client) (*zipDB, error) {
-	db := &zipDB{
+// newZippedDB returns a zipDB for the archive at the given url, without fetching
+// or loading anything
+func newZippedDB(dbBasePath, name, url string, offline bool, httpClient *http.Client) *zipDB {
+	return &zipDB{
 		Name:       name,
 		ArchiveURL: url,
 		Offline:    offline,
 		StoredAt:   path.Join(dbBasePath, name, "all.zip"),
 		httpClient: httpClient,
 	}
-	names := make([]string, 0, len(invs))
-
-	// map the packages to their names ahead of loading,
-	// to make things simpler and reduce double working
-	for _, inv := range invs {
-		names = append(names, osvutil.ParsePackage(inv).Name)
-	}
-
-	if err := db.load(ctx, names); err != nil {
-		return nil, fmt.Errorf("unable to fetch OSV database: %w", err)
-	}
-
-	return db, nil
 }
 
 // VulnerabilitiesAffectingPackage returns the vulnerabilities that affects the provided package
