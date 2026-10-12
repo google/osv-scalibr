@@ -286,6 +286,572 @@ func TestEnrich(t *testing.T) {
 			},
 			wantErr: clientErr,
 		},
+		{
+			name: "existing_base_images_same_boundary_merged",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req: &baseimage.Request{ChainID: lm123ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{
+						{"nginx"},
+						{"nginx-mirror"},
+					}},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm12ChainID},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 1},
+							{DiffID: lm3DiffID, BaseImageIndex: 1},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+								{
+									Repository: "nginx",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2Enriched, lm3Enriched},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+								{
+									Repository: "nginx",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+								{
+									Repository: "nginx",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "baseimage",
+								},
+								{
+									Repository: "nginx-mirror",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+							{
+								{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "existing_base_images_on_inner_layer_and_depsdev_on_outer_layer",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lm123ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm12ChainID},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm1ChainID},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 0},
+							{DiffID: lm3DiffID, BaseImageIndex: 0},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2Enriched, lm3Enriched},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "nginx",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "existing_base_images_preserved_when_depsdev_returns_no_results",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req: &baseimage.Request{ChainID: lm123ChainID},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm12ChainID},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm1ChainID},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 1},
+							{DiffID: lm3DiffID, BaseImageIndex: 0},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm12ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 1},
+							{DiffID: lm3DiffID, BaseImageIndex: 0},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm12ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "existing_base_images_preserved_on_client_error",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req: &baseimage.Request{ChainID: lm12ErrChainID},
+					err: clientErr,
+				},
+				{
+					req: &baseimage.Request{ChainID: lm12ChainID},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 0},
+							{DiffID: lmErrDiffID, BaseImageIndex: 0},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 0},
+							{DiffID: lmErrDiffID, BaseImageIndex: 0},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: clientErr,
+		},
+		{
+			name: "cache_does_not_leak_existing_base_images_across_images",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+								{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_existing_base_image_runs_merged_with_depsdev",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lm123ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm12ChainID},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 2},
+							{DiffID: lm2DiffID, BaseImageIndex: 1},
+							{DiffID: lm3DiffID, BaseImageIndex: 1},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+							},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2Enriched, lm3Enriched},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+								{
+									Repository: "nginx",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+							{
+								{
+									Repository: "custom-alpine",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "other",
+								},
+								{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "consecutive_layers_with_same_depsdev_result_and_existing_base_image",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lm123ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm12ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm1ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 1},
+							{DiffID: lm3DiffID, BaseImageIndex: 1},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2Enriched, lm3Enriched},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "other",
+								},
+								{
+									Repository: "nginx",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+							{
+								{
+									Repository: "alpine",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm1ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "same_depsdev_result_across_existing_base_image_boundary",
+			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
+				{
+					req:  &baseimage.Request{ChainID: lm123ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
+				},
+				{
+					req:  &baseimage.Request{ChainID: lm12ChainID},
+					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
+				},
+				{
+					req: &baseimage.Request{ChainID: lm1ChainID},
+				},
+			}}),
+			inv: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 1},
+							{DiffID: lm2DiffID, BaseImageIndex: 1},
+							{DiffID: lm3DiffID, BaseImageIndex: 0},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm12ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &inventory.Inventory{
+				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
+					{
+						LayerMetadata: []*extractor.LayerMetadata{
+							{DiffID: lm1DiffID, BaseImageIndex: 2},
+							{DiffID: lm2DiffID, BaseImageIndex: 2},
+							{DiffID: lm3DiffID, BaseImageIndex: 1},
+						},
+						BaseImages: [][]*extractor.BaseImageDetails{
+							{},
+							{
+								{
+									Repository: "nginx",
+									Registry:   "docker.io",
+									ChainID:    digest.Digest(lm123ChainID),
+									Plugin:     "baseimage",
+								},
+							},
+							{
+								{
+									Repository: "custom-nginx",
+									Registry:   "gcr.io",
+									ChainID:    digest.Digest(lm12ChainID),
+									Plugin:     "other",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
