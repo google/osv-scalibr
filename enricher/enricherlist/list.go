@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
+	"github.com/google/osv-scalibr/enricher/os/ubuntu/binarytosource"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
@@ -117,11 +118,18 @@ var (
 		license.Name: {license.New},
 	}
 
+	// OSPackageMetadata enrichers fill in missing OS package metadata.
+	OSPackageMetadata = InitMap{
+		binarytosource.Name: {binarytosource.New},
+	}
+
 	// VulnMatching enrichers.
-	VulnMatching = InitMap{
+	// Includes the OSPackageMetadata enrichers since they fill in the package
+	// fields (e.g. source package names) used for matching.
+	VulnMatching = concat(OSPackageMetadata, InitMap{
 		osvdev.Name:   {osvdev.New},
 		osvlocal.Name: {osvlocal.New},
-	}
+	})
 
 	// VEX related enrichers.
 	VEX = InitMap{
@@ -241,6 +249,7 @@ var (
 	// All enrichers.
 	All = concat(
 		LayerDetails,
+		OSPackageMetadata,
 		VulnMatching,
 		VEX,
 		SecretsValidate,
@@ -256,6 +265,7 @@ var (
 	enricherNames = concat(All, InitMap{
 		"license":              vals(License),
 		"vex":                  vals(VEX),
+		"ospackagemetadata":    vals(OSPackageMetadata),
 		"vulnmatch":            vals(VulnMatching),
 		"layerdetails":         vals(LayerDetails),
 		"secretsvalidate":      vals(SecretsValidate),

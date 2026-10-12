@@ -780,7 +780,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	}
 
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient)
+	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient, false)
 
 	// Prepare inventory:
 	// - module-a/pom.xml and pom.xml (parent) are both in starting packages (keeps original coverage of parent registration)

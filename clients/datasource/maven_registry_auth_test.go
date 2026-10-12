@@ -130,6 +130,7 @@ func TestReplacedOriginDoesNotSendAuthToUnauthenticatedMirror(t *testing.T) {
 		MavenRegistry{URL: flagVal, ReleasesEnabled: true},
 		"",
 		false,
+		false,
 		&http.Client{},
 		nil,
 	)

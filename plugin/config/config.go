@@ -27,6 +27,7 @@ import (
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/log"
+	scalibrversion "github.com/google/osv-scalibr/version"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -56,6 +57,9 @@ type DefaultClientFactories struct {
 
 // NewDefaultClientFactories returns a new DefaultClientFactories.
 func NewDefaultClientFactories(userAgent string) *DefaultClientFactories {
+	if userAgent == "" {
+		userAgent = "osv-scalibr/" + scalibrversion.ScannerVersion
+	}
 	return &DefaultClientFactories{
 		userAgent:         userAgent,
 		googleHTTPClients: make(map[string]*http.Client),

@@ -43,15 +43,31 @@ func (p Parsed) IsEmpty() bool {
 	return p.Ecosystem == ""
 }
 
+var ubuntuVariantReplacer = strings.NewReplacer(":Pro", "", ":LTS", "")
+
+func (p Parsed) normalizeSuffix() string {
+	if p.Ecosystem == osvconstants.EcosystemUbuntu && p.Suffix != "" {
+		return strings.TrimPrefix(ubuntuVariantReplacer.Replace(":"+p.Suffix), ":")
+	}
+	return p.Suffix
+}
+
 // Equal returns true if the two Parsed structs are equal.
 func (p Parsed) Equal(other Parsed) bool {
-	// only care about the minor version if both ecosystems have one
-	// otherwise we just assume that they're the same and move on
-	if p.Suffix != "" && other.Suffix != "" {
-		return p.Ecosystem == other.Ecosystem && p.Suffix == other.Suffix
+	if p.Ecosystem != other.Ecosystem {
+		return false
 	}
 
-	return p.Ecosystem == other.Ecosystem
+	pSuffix := p.normalizeSuffix()
+	otherSuffix := other.normalizeSuffix()
+
+	// only care about the minor version if both ecosystems have one
+	// otherwise we just assume that they're the same and move on
+	if pSuffix != "" && otherSuffix != "" {
+		return pSuffix == otherSuffix
+	}
+
+	return true
 }
 
 func (p Parsed) String() string {

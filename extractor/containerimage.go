@@ -43,6 +43,16 @@ type LayerMetadata struct {
 	IsEmpty bool
 	// Index of the base image match in the ParentContainer image. 0 means no match.
 	BaseImageIndex int
+	// Attributes stores attributes attached to this layer by plugins.
+	Attributes []*LayerAttribute
+}
+
+// LayerAttribute stores an attribute attached to a layer by a plugin.
+type LayerAttribute struct {
+	// Value is the value of the attribute, with a meaning defined by the plugin.
+	Value string
+	// Plugin is the name of the plugin that generated this attribute.
+	Plugin string
 }
 
 // BaseImageDetails stores details about a base image.

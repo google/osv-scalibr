@@ -112,6 +112,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pyproject.toml                                    | `python/pyprojecttoml`               |
 |            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
 | R          | renv.lock                                         | `r/renvlock`                         |
+|            | Installed R packages                              | `r/rpkg`                             |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
 |            | Gem packages (.gem)                               | `ruby/gem`                           |
@@ -122,6 +123,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
+| Zig        | Zig build.zig.zon packages                        | `zig/buildzigzon`                    |
 
 ### Language runtime managers
 
@@ -317,6 +319,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Performs reachability analysis for Rust code. (Linux-only) *               | `reachability/rust`                 |
 | Resolves transitive dependencies for Java pom.xml files. *                 | `transitivedependency/pomxml`       |
 | Resolves transitive dependencies for Python requirements.txt files.        | `transitivedependency/requirements` |
+| Maps Ubuntu binary package names from chisel manifests to source package names using the OSV.dev API. | `os/ubuntu/binarytosource`          |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |
 | Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |
