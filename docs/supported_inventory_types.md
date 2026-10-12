@@ -318,6 +318,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Performs reachability analysis for Rust code. (Linux-only) *               | `reachability/rust`                 |
 | Resolves transitive dependencies for Java pom.xml files. *                 | `transitivedependency/pomxml`       |
 | Resolves transitive dependencies for Python requirements.txt files.        | `transitivedependency/requirements` |
+| Maps Ubuntu binary package names from chisel manifests to source package names using the OSV.dev API. | `os/ubuntu/binarytosource`          |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |
 | Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |

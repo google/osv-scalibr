@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/log"
@@ -52,6 +53,7 @@ const (
 type Extractor struct {
 	Stats               stats.Collector
 	IncludeNotInstalled bool
+	IncludeNestedRoots  bool
 	maxFileSizeBytes    int64
 }
 
@@ -75,6 +77,7 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	e := &Extractor{
 		maxFileSizeBytes:    maxFileSizeBytes,
 		IncludeNotInstalled: specific.GetIncludeNotInstalled(),
+		IncludeNestedRoots:  specific.GetIncludeNestedRoots(),
 	}
 	return e, nil
 }
@@ -91,7 +94,7 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file matches dpkg status file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !fileRequired(path) {
+	if !fileRequired(path, e.IncludeNestedRoots) {
 		return false
 	}
 
@@ -108,16 +111,53 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return true
 }
 
-func fileRequired(path string) bool {
+// fileRequired reports whether path is a DPKG or OPKG status file. Status files
+// under a nested root (e.g. "chroot/var/lib/dpkg/status") only match when
+// includeNestedRoots is set.
+func fileRequired(path string, includeNestedRoots bool) bool {
 	normalized := filepath.ToSlash(path)
 
-	// Normal status file matching DPKG or OPKG format
+	// Normal status file matching DPKG or OPKG format.
 	if normalized == "var/lib/dpkg/status" || normalized == "usr/lib/opkg/status" {
 		return true
 	}
-
 	// Should only match status files in status.d directory.
-	return strings.HasPrefix(normalized, "var/lib/dpkg/status.d/") && !strings.HasSuffix(normalized, ".md5sums")
+	if strings.HasPrefix(normalized, "var/lib/dpkg/status.d/") {
+		return !strings.HasSuffix(normalized, ".md5sums")
+	}
+
+	if !includeNestedRoots {
+		return false
+	}
+	if strings.HasSuffix(normalized, "/var/lib/dpkg/status") || strings.HasSuffix(normalized, "/usr/lib/opkg/status") {
+		return true
+	}
+	if strings.Contains(normalized, "/var/lib/dpkg/status.d/") {
+		return !strings.HasSuffix(normalized, ".md5sums")
+	}
+	return false
+}
+
+// nestedRootPrefix returns the nested root directory a status file lives under
+// (e.g. "chroot" for "chroot/var/lib/dpkg/status"), or "" if the status file is
+// anchored at the scan root.
+func nestedRootPrefix(path string) string {
+	normalized := filepath.ToSlash(path)
+	for _, suffix := range []string{"/var/lib/dpkg/status", "/usr/lib/opkg/status"} {
+		if prefix, ok := strings.CutSuffix(normalized, suffix); ok {
+			return prefix
+		}
+	}
+	if prefix, _, ok := strings.Cut(normalized, "/var/lib/dpkg/status.d/"); ok {
+		return prefix
+	}
+	return ""
+}
+
+// isOPKG reports whether path is an OPKG (rather than DPKG) status file.
+func isOPKG(path string) bool {
+	normalized := filepath.ToSlash(path)
+	return normalized == "usr/lib/opkg/status" || strings.HasSuffix(normalized, "/usr/lib/opkg/status")
 }
 
 func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result stats.FileRequiredResult) {
@@ -149,9 +189,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	m, err := osrelease.GetOSRelease(input.FS)
+	m, err := getOSRelease(input.FS, nestedRootPrefix(input.Path))
 	if err != nil {
-		log.Errorf("osrelease.ParseOsRelease(): %v", err)
+		log.Errorf("getOSRelease(): %v", err)
 	}
 
 	rd := textproto.NewReader(bufio.NewReader(input.Reader))
@@ -220,7 +260,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		}
 
 		purlType := purl.TypeDebian
-		if input.Path == "usr/lib/opkg/status" {
+		if isOPKG(input.Path) {
 			purlType = purl.TypeOpkg
 		}
 
@@ -253,6 +293,20 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		pkgs = append(pkgs, p)
 	}
 	return pkgs, nil
+}
+
+// getOSRelease parses the os-release file of the root filesystem the status
+// file belongs to. For status files under a nested root (e.g. a chroot), the
+// nested root's os-release is preferred, falling back to the scan root's.
+func getOSRelease(fsys scalibrfs.FS, rootPrefix string) (map[string]string, error) {
+	if rootPrefix != "" {
+		m, err := osrelease.GetOSRelease(scalibrfs.Sub(fsys, rootPrefix))
+		if err == nil {
+			return m, nil
+		}
+		log.Warnf("osrelease.GetOSRelease() under nested root %q failed (%v); falling back to scan root", rootPrefix, err)
+	}
+	return osrelease.GetOSRelease(fsys)
 }
 
 func statusInstalled(status string) (bool, error) {

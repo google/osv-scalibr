@@ -47,10 +47,11 @@ type NormalizedPackage struct {
 // ParsePackage parses and normalizes package metadata for OSV.
 func ParsePackage(pkg *extractor.Package) NormalizedPackage {
 	eco := ecosystem(pkg)
+	name := name(pkg, eco)
 	return NormalizedPackage{
-		Name:      name(pkg, eco),
+		Name:      name,
 		Ecosystem: eco,
-		Version:   version(pkg, eco.String()),
+		Version:   version(pkg, name, eco),
 		Commit:    commit(pkg),
 	}
 }
@@ -180,25 +181,48 @@ func ecosystem(pkg *extractor.Package) osvecosystem.Parsed {
 	return eco
 }
 
+// rhelFamilyEpochEcosystems lists the RPM ecosystems whose OSV records encode
+// the package epoch (verified against api.osv.dev). Others (e.g. openEuler)
+// store epoch-less records, so prepending an epoch there would hide real
+// vulnerabilities; add entries only once epoch-encoding is confirmed.
 var rhelFamilyEpochEcosystems = map[string]bool{
 	"Red Hat":     true,
 	"AlmaLinux":   true,
 	"Rocky Linux": true,
 }
 
+// ecosystemEncodesEpoch reports whether the ecosystem's OSV records carry the
+// RPM epoch, so its version must be epoch-qualified to compare correctly.
 func ecosystemEncodesEpoch(ecosystem string) bool {
 	distro, _, _ := strings.Cut(ecosystem, ":")
 	return rhelFamilyEpochEcosystems[distro]
 }
 
-func version(pkg *extractor.Package, ecosystem string) string {
+func version(pkg *extractor.Package, name string, eco osvecosystem.Parsed) string {
+	// Assume Go stdlib patch version as the latest version
+	//
+	// This is done because go1.20 and earlier do not support patch
+	// version in go.mod file, and will fail to build.
+	// However, if we assume patch version as .0, this will cause a lot of
+	// false positives. This compromise still allows osv-scanner to pick up
+	// when the user is using a minor version that is out-of-support.
+	if eco.Ecosystem == osvconstants.EcosystemGo && name == "stdlib" {
+		components := strings.Split(pkg.Version, ".")
+		if len(components) == 2 {
+			return components[0] + "." + components[1] + ".99"
+		}
+	}
+
 	version := pkg.Version
-	if m, ok := pkg.Metadata.(*rpmmetadata.Metadata); ok && m.Epoch > 0 && ecosystemEncodesEpoch(ecosystem) {
+	// scalibr stores the RPM epoch separately from the version string. For
+	// ecosystems whose OSV records encode it, prepend the epoch when non-zero
+	// (e.g. "3.2.2-7.el9_6" -> "1:3.2.2-7.el9_6"); otherwise a missing epoch is
+	// read as 0 and already-fixed advisories are reported as unfixed.
+	if m, ok := pkg.Metadata.(*rpmmetadata.Metadata); ok && m.Epoch > 0 && ecosystemEncodesEpoch(eco.String()) {
 		return strconv.Itoa(m.Epoch) + ":" + version
 	}
 	return version
 }
-
 func commit(pkg *extractor.Package) string {
 	if pkg.SourceCode != nil {
 		return pkg.SourceCode.Commit
