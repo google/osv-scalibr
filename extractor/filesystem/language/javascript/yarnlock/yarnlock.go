@@ -66,15 +66,18 @@ func shouldSkipYarnLine(line string) bool {
 //	header2
 //	  prop3 value3
 type packageDescription struct {
-	header string
-	props  []string
+	header     string
+	props      []string
+	lineNumber int
 }
 
 func groupYarnPackageDescriptions(ctx context.Context, scanner *bufio.Scanner) ([]*packageDescription, error) {
 	var result []*packageDescription
 
 	var current *packageDescription
+	lineNumber := 0
 	for scanner.Scan() {
+		lineNumber++
 		if err := ctx.Err(); err != nil {
 			return result, err
 		}
@@ -94,7 +97,7 @@ func groupYarnPackageDescriptions(ctx context.Context, scanner *bufio.Scanner) (
 			if current != nil {
 				result = append(result, current)
 			}
-			current = &packageDescription{header: line}
+			current = &packageDescription{header: line, lineNumber: lineNumber}
 		} else if current == nil {
 			return nil, errors.New("malformed yarn.lock")
 		} else {
@@ -163,12 +166,21 @@ func parseYarnPackageGroup(desc *packageDescription) *extractor.Package {
 		log.Errorf("Failed to determine version of %s while parsing a yarn.lock", name)
 	}
 
+	purlType := purl.TypeNPM
+	commit := commitextractor.TryExtractCommit(resolution)
+	var repo string
+	if commit != "" {
+		purlType = purl.TypeGit
+		repo = commitextractor.TryExtractRepo(resolution)
+	}
+
 	return &extractor.Package{
 		Name:     name,
 		Version:  version,
-		PURLType: purl.TypeNPM,
+		PURLType: purlType,
 		SourceCode: &extractor.SourceCodeIdentifier{
-			Commit: commitextractor.TryExtractCommit(resolution),
+			Commit: commit,
+			Repo:   repo,
 		},
 	}
 }
@@ -224,7 +236,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 		pkg := parseYarnPackageGroup(group)
-		pkg.Location = extractor.LocationFromPath(input.Path)
+		pkg.Location = extractor.LocationFromPathAndLine(input.Path, group.lineNumber)
 		packages = append(packages, pkg)
 	}
 

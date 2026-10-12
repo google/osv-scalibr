@@ -170,11 +170,10 @@ extractor as an example for Filesystem Extractors.
     You can find more details on how to run scalibr in
     [README.md](/README.md#as-a-standalone-binary)
 
-1.  Submit your code for review. Once merged, the extractor is ready to use, but
-    not activated in any defaults yet.
+1.  Submit your code for review.
 
-To add your extractor to the list of default extractors, add it in
-[extractor/list/list.go](/extractor/filesystem/list/list.go).
-Please submit this code separately from the main extractor logic.
+Please register your extractor in
+[extractor/filesystem/list/list.go](/extractor/filesystem/list/list.go)
+in the same PR as the main extractor logic.
 
 In case you have any questions or feedback, feel free to open an issue.

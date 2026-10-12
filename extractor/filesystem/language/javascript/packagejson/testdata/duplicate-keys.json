@@ -1,0 +1,10 @@
+{
+  "name": "duplicate-keys",
+  "version": "1.0.0",
+  "devDependencies": {
+    "my-dep": "1.0.0"
+  },
+  "dependencies": {
+    "my-dep": "1.0.0"
+  }
+}

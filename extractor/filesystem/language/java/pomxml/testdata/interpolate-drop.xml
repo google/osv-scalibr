@@ -1,0 +1,17 @@
+<project>
+  <!-- This file tests that dependencies with empty groupID are dropped, and that interpolation works for artifactId. -->
+  <properties>
+    <foo>actual-artifact</foo>
+  </properties>
+  <dependencies>
+    <!-- Dropped dependency because empty groupID -->
+    <dependency>
+      <artifactId>drop-me</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>${foo}</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+</project>

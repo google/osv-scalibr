@@ -38,9 +38,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Chrome extensions |                                | `chrome/extensions`                          |
 | COS               | cos-package-info.json          | `os/cos`                                     |
 | DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
+| Chisel            |                                | `os/chisel`                                  |
 | Nix               |                                | `os/nix`                                     |
 | OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux | `os/rpm`                                     |
+| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
 | Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
 | Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
 | Kernel modules    | .ko                            | `os/kernel/module`                           |
@@ -64,21 +65,28 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | .NET       | packages.lock.json                                | `dotnet/packageslockjson`            |
 |            | packages.config                                   | `dotnet/packagesconfig`              |
 |            | deps.json                                         | `dotnet/depsjson`                    |
+|            | paket.dependencies                                | `dotnet/paketdependencies`           |
+|            | paket.lock                                        | `dotnet/paketlock`                   |
 |            | portable executables                              | `dotnet/pe`                          |
 |            | NuGet Central Package Management                  | `dotnet/nugetcpm`                    |
 |            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
+|            | project.assets.json                               | `dotnet/projectassetsjson`           |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
+| Dart       | package_config.json                               | `dart/packageconfig`                 |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
 | Elixir     | mix.lock                                          | `elixir/mixlock`                     |
+| Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
+|            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
 |            | verification-metadata.xml                         | `java/gradleverificationmetadataxml` |
+|            | libs.versions.toml (Gradle Version Catalog)       | `java/gradleversioncatalog`          |
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
 |            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
 |            | yarn.lock                                         | `javascript/yarnlock`                |
@@ -86,6 +94,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
 |            | deno TypeScript Source                            | `javascript/denotssource`            |
+|            | VS Code extension                                 | `javascript/vsix`                    |
+|            | Electron ASAR Archive                             | `javascript/electronasar`            |
 | Julia      | Julia package/project dependencies (Project.toml) | `julia/projecttoml`                  |
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
@@ -99,9 +109,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
 |            | uv.lock                                           | `python/uvlock`                      |
+|            | pyproject.toml                                    | `python/pyprojecttoml`               |
+|            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
 | R          | renv.lock                                         | `r/renvlock`                         |
+|            | Installed R packages                              | `r/rpkg`                             |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
+|            | Gem packages (.gem)                               | `ruby/gem`                           |
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
 |            | Cargo.toml                                        | `rust/cargotoml`                     |
 |            | Rust binaries                                     | `rust/cargoauditable`                |
@@ -109,6 +123,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
+| Zig        | Zig build.zig.zon packages                        | `zig/buildzigzon`                    |
 
 ### Language runtime managers
 
@@ -204,6 +219,18 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Generic URL with credentials                | `secrets/urlcreds`                     |
 | Heroku Platform API Key                     | `secrets/herokuplatformkey`            |
 | Discord Bot Token                           | `secrets/discordbottoken`              |
+| HTTP Basic Auth Header                      | `secrets/httpbasicauth`                |
+| HTTP Bearer                                 | `secrets/httpbearer`                   |
+| HTTP CSRF Token                             | `secrets/csrftoken`                    |
+| HTTP Cookie                                 | `secrets/httpcookie`                   |
+
+### Sensitive information
+| Type                                           | Extractor Plugin                       |
+| ---------------------------------------------- | -------------------------------------- |
+| International Bank Account Number              | `sensitiveinformation/iban`            |
+| US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
+| US Individual Taxpayer Identification Number   | `secrets/itin`                         |
+| US Social Security Number                      | `sensitiveinformation/ssn`             |
 
 ### Container inventory
 
@@ -221,6 +248,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | -------------------------- | ---------------- |
 | SPDX SBOM descriptors      | `sbom/spdx`      |
 | CycloneDX SBOM descriptors | `sbom/cdx`       |
+| Bitnami container SBOMs    | `sbom/spdx`      |
 
 ### Misc
 
@@ -230,7 +258,10 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | VSCode extensions                  | `vscode/extensions` |
 | Chrome extensions                  | `chrome/extensions` |
 | Maven entries in Bazel build files | `os/bazelmaven`     |
+| Bazel build graph targets          | `bazel/aspect` *    |
 | NetScaler installations            | `netscaler`         |
+| GitHub Actions workflow dependencies| `github/actions`    |
+| Git repositories (and submodules)   | `misc/gitrepo`      |
 
 ### EmbeddedFS
 
@@ -288,6 +319,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Performs reachability analysis for Rust code. (Linux-only) *               | `reachability/rust`                 |
 | Resolves transitive dependencies for Java pom.xml files. *                 | `transitivedependency/pomxml`       |
 | Resolves transitive dependencies for Python requirements.txt files.        | `transitivedependency/requirements` |
+| Maps Ubuntu binary package names from chisel manifests to source package names using the OSV.dev API. | `os/ubuntu/binarytosource`          |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |
 | Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |

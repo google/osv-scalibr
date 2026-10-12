@@ -34,6 +34,7 @@ type Inventory struct {
 	Secrets                []*Secret
 	ContainerImageMetadata []*extractor.ContainerImageMetadata
 	EmbeddedFSs            []*EmbeddedFS
+	SensitiveInformation   []*SensitiveInformation
 }
 
 // EmbeddedFS represents a mountable filesystem extracted from
@@ -68,6 +69,7 @@ func (i *Inventory) Append(other ...Inventory) {
 		i.Secrets = append(i.Secrets, o.Secrets...)
 		i.ContainerImageMetadata = append(i.ContainerImageMetadata, o.ContainerImageMetadata...)
 		i.EmbeddedFSs = append(i.EmbeddedFSs, o.EmbeddedFSs...)
+		i.SensitiveInformation = append(i.SensitiveInformation, o.SensitiveInformation...)
 	}
 }
 
@@ -89,6 +91,9 @@ func (i Inventory) IsEmpty() bool {
 		return false
 	}
 	if len(i.ContainerImageMetadata) != 0 {
+		return false
+	}
+	if len(i.SensitiveInformation) != 0 {
 		return false
 	}
 	return true
@@ -113,6 +118,10 @@ func (i Inventory) ExpandPathsToAbsolute() error {
 
 func expandPathToAbsolute(absRoot string, l *location.Location) {
 	if l == nil || l.File == nil {
+		return
+	}
+
+	if filepath.IsAbs(l.File.Path) {
 		return
 	}
 

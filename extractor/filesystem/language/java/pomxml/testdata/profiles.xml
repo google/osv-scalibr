@@ -1,0 +1,23 @@
+<project>
+  <!-- This file tests that dependencies declared within active profiles are correctly extracted. -->
+  <parent>
+    <groupId>org.parent</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <profiles>
+    <profile>
+      <id>my-profile</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.profile</groupId>
+          <artifactId>profile-dep</artifactId>
+          <version>1.2.3</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

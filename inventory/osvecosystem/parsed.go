@@ -43,15 +43,31 @@ func (p Parsed) IsEmpty() bool {
 	return p.Ecosystem == ""
 }
 
+var ubuntuVariantReplacer = strings.NewReplacer(":Pro", "", ":LTS", "")
+
+func (p Parsed) normalizeSuffix() string {
+	if p.Ecosystem == osvconstants.EcosystemUbuntu && p.Suffix != "" {
+		return strings.TrimPrefix(ubuntuVariantReplacer.Replace(":"+p.Suffix), ":")
+	}
+	return p.Suffix
+}
+
 // Equal returns true if the two Parsed structs are equal.
 func (p Parsed) Equal(other Parsed) bool {
-	// only care about the minor version if both ecosystems have one
-	// otherwise we just assume that they're the same and move on
-	if p.Suffix != "" && other.Suffix != "" {
-		return p.Ecosystem == other.Ecosystem && p.Suffix == other.Suffix
+	if p.Ecosystem != other.Ecosystem {
+		return false
 	}
 
-	return p.Ecosystem == other.Ecosystem
+	pSuffix := p.normalizeSuffix()
+	otherSuffix := other.normalizeSuffix()
+
+	// only care about the minor version if both ecosystems have one
+	// otherwise we just assume that they're the same and move on
+	if pSuffix != "" && otherSuffix != "" {
+		return pSuffix == otherSuffix
+	}
+
+	return true
 }
 
 func (p Parsed) String() string {
@@ -94,25 +110,31 @@ func (p Parsed) GetValidity() error {
 	}
 
 	// Missing ecosystems here would be caught by the "exhaustive" linter
+	//exhaustive:enforce
 	switch p.Ecosystem {
 	case osvconstants.EcosystemAlmaLinux,
 		osvconstants.EcosystemAlpaquita,
 		osvconstants.EcosystemAlpine,
 		osvconstants.EcosystemAndroid,
-		osvconstants.EcosystemCleanStart,
+		osvconstants.EcosystemAzureLinux,
 		osvconstants.EcosystemBellSoftHardenedContainers,
 		osvconstants.EcosystemBioconductor,
 		osvconstants.EcosystemBitnami,
 		osvconstants.EcosystemChainguard,
+		osvconstants.EcosystemCleanStart,
 		osvconstants.EcosystemConanCenter,
 		osvconstants.EcosystemCRAN,
 		osvconstants.EcosystemCratesIO,
 		osvconstants.EcosystemDebian,
+		osvconstants.EcosystemDockerHardenedImages,
+		osvconstants.EcosystemEcho,
+		osvconstants.EcosystemFreeBSD,
 		osvconstants.EcosystemGHC,
 		osvconstants.EcosystemGitHubActions,
 		osvconstants.EcosystemGo,
 		osvconstants.EcosystemHackage,
 		osvconstants.EcosystemHex,
+		osvconstants.EcosystemJulia,
 		osvconstants.EcosystemKubernetes,
 		osvconstants.EcosystemLinux,
 		osvconstants.EcosystemMageia,
@@ -130,12 +152,14 @@ func (p Parsed) GetValidity() error {
 		osvconstants.EcosystemPyPI,
 		osvconstants.EcosystemRedHat,
 		osvconstants.EcosystemRockyLinux,
+		osvconstants.EcosystemRoot,
 		osvconstants.EcosystemRubyGems,
 		osvconstants.EcosystemSUSE,
 		osvconstants.EcosystemSwiftURL,
+		osvconstants.EcosystemTuxCare,
 		osvconstants.EcosystemUbuntu,
+		osvconstants.EcosystemVSCode,
 		osvconstants.EcosystemWolfi,
-		osvconstants.EcosystemDockerHardenedImages,
 		// GIT is a pseudo ecosystem that can be used in queries, so should be considered valid.
 		"GIT":
 

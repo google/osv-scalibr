@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
+	"github.com/google/osv-scalibr/annotator"
 	"github.com/google/osv-scalibr/annotator/cachedir"
 	"github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakeimage"
@@ -749,6 +750,32 @@ func TestScanContainer(t *testing.T) {
 	}
 }
 
+func TestScanContainerVelesValidatorRequiresNetwork(t *testing.T) {
+	fakeChainLayers := fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(),
+		"testdata/populatelayers.yml")
+
+	scanConfig := scalibr.ScanConfig{
+		Plugins: []plugin.Plugin{
+			fakelayerbuilder.FakeTestLayersExtractor{},
+			fromVelesValidator(t, velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil), "secret-validator", 1),
+		},
+		Capabilities: &plugin.Capabilities{
+			Network: plugin.NetworkOffline,
+		},
+	}
+
+	got, err := scalibr.New().ScanContainer(t.Context(), fakeimage.New([]image.ChainLayer{fakeChainLayers[0]}, nil), &scanConfig)
+	if err != nil {
+		t.Fatalf("scalibr.New().ScanContainer() error: %v", err)
+	}
+	if got.Status.Status != plugin.ScanStatusFailed {
+		t.Fatalf("scalibr.New().ScanContainer() status: %v, want %v", got.Status.Status, plugin.ScanStatusFailed)
+	}
+	if got.Status.FailureReason == "" {
+		t.Fatal("scalibr.New().ScanContainer() failure reason is empty")
+	}
+}
+
 func TestScan_ExtractorOverride(t *testing.T) {
 	tmp := t.TempDir()
 	fs := scalibrfs.DirFS(tmp)
@@ -1056,6 +1083,18 @@ func TestValidatePluginRequirements(t *testing.T) {
 			wantErr: cmpopts.AnyError,
 		},
 		{
+			desc: "veles_validator_requires_network",
+			cfg: scalibr.ScanConfig{
+				Plugins: []plugin.Plugin{
+					fromVelesValidator(t, velestest.NewFakeStringSecretValidator(veles.ValidationValid, nil), "secret-validator", 1),
+				},
+				Capabilities: &plugin.Capabilities{
+					Network: plugin.NetworkOffline,
+				},
+			},
+			wantErr: cmpopts.AnyError,
+		},
+		{
 			desc: "both_plugin's_requirements_unsatisfied",
 			cfg: scalibr.ScanConfig{
 				Plugins: []plugin.Plugin{
@@ -1169,4 +1208,114 @@ func TestAnnotator(t *testing.T) {
 	if diff := cmp.Diff(wantPkgs, got.Inventory.Packages, fe.AllowUnexported); diff != "" {
 		t.Errorf("scalibr.New().Scan(%v): unexpected diff (-want +got):\n%s", cfg, diff)
 	}
+}
+
+func TestScanContainer_DeferredPlugins(t *testing.T) {
+	labels := map[string]string{"key": "val"}
+	image := fakeimage.New(populateChainLayers(t, "testdata/populatelayers.yml"), labels)
+
+	wantContainer := []*extractor.ContainerImageMetadata{{
+		LayerMetadata: []*extractor.LayerMetadata{{
+			Index:   0,
+			DiffID:  "sha256:diff-id-0",
+			ChainID: "sha256:chain-id-0",
+			Command: "command-0",
+		}, {
+			Index:   1,
+			DiffID:  "sha256:diff-id-1",
+			ChainID: "sha256:chain-id-1",
+			Command: "command-1",
+		}, {
+			Index:   2,
+			DiffID:  "sha256:diff-id-2",
+			ChainID: "sha256:chain-id-2",
+			Command: "command-2",
+		}, {
+			Index:   3,
+			DiffID:  "sha256:diff-id-3",
+			ChainID: "sha256:chain-id-3",
+			Command: "command-3",
+		}, {
+			Index:   4,
+			DiffID:  "sha256:diff-id-4",
+			ChainID: "sha256:chain-id-4",
+			Command: "command-4",
+		}},
+		Labels: labels,
+	}}
+
+	wantLayer := []*extractor.LayerMetadata{{
+		Index:   3,
+		DiffID:  "sha256:diff-id-3",
+		ChainID: "sha256:chain-id-3",
+		Command: "command-3",
+	}, {
+		Index:   2,
+		DiffID:  "sha256:diff-id-2",
+		ChainID: "sha256:chain-id-2",
+		Command: "command-2",
+	}, {
+		Index:   0,
+		DiffID:  "sha256:diff-id-0",
+		ChainID: "sha256:chain-id-0",
+		Command: "command-0",
+	}, {
+		Index:   4,
+		DiffID:  "sha256:diff-id-4",
+		ChainID: "sha256:chain-id-4",
+		Command: "command-4",
+	}}
+
+	deferredPlugin := &containerMetaRecorder{}
+
+	cfg := scalibr.ScanConfig{Plugins: []plugin.Plugin{
+		fakelayerbuilder.FakeTestLayersExtractor{},
+		deferredPlugin,
+	}}
+	got, err := scalibr.New().ScanContainer(t.Context(), image, &cfg)
+	if err != nil {
+		t.Fatalf("Scan failed, error: %v", err)
+	}
+	if got.Status.Status != plugin.ScanStatusSucceeded {
+		t.Fatalf("Scan completed but was not successful, status = %v", got.Status.Status)
+	}
+
+	ignoringParent := cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer")
+	if diff := cmp.Diff(wantContainer, deferredPlugin.GotContainer, ignoringParent); diff != "" {
+		t.Errorf("Deferred plugin received unexpected ContainerImageMetadata (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(wantLayer, deferredPlugin.GotLayer, ignoringParent); diff != "" {
+		t.Errorf("Deferred plugin received unexpected LayerMetadata (-want +got):\n%s", diff)
+	}
+}
+
+func populateChainLayers(t *testing.T, configPath string) []image.ChainLayer {
+	t.Helper()
+	var layers []image.ChainLayer
+	for _, layer := range fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(), configPath) {
+		layers = append(layers, layer)
+	}
+	return layers
+}
+
+// containerMetaRecorder is an plugin that captures the input container/layer metadata.
+type containerMetaRecorder struct {
+	GotContainer []*extractor.ContainerImageMetadata
+	GotLayer     []*extractor.LayerMetadata
+}
+
+func (a *containerMetaRecorder) Name() string { return "fake/containermetarecorder" }
+
+func (a *containerMetaRecorder) Version() int { return 0 }
+
+func (a *containerMetaRecorder) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{}
+}
+
+func (a *containerMetaRecorder) Annotate(_ context.Context, _ *annotator.ScanInput, results *inventory.Inventory) error {
+	a.GotContainer = results.ContainerImageMetadata
+	for _, pkg := range results.Packages {
+		a.GotLayer = append(a.GotLayer, pkg.LayerMetadata)
+	}
+	return nil
 }

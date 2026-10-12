@@ -16,6 +16,7 @@ package dpkg
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"errors"
 	"io"
@@ -24,7 +25,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/common/io/discard"
 	"github.com/google/osv-scalibr/fs"
 	"github.com/klauspost/compress/zstd"
 	"github.com/pierrec/lz4/v4"
@@ -41,8 +42,8 @@ type aptCache struct {
 }
 
 // isFromMainOSRepo returns true if a package found in main OS repo index
-func (a *aptCache) isFromMainOSRepo(pkg *extractor.Package) bool {
-	_, exists := a.value[pkg.Name]
+func (a *aptCache) isFromMainOSRepo(pkgName string) bool {
+	_, exists := a.value[pkgName]
 	return exists
 }
 
@@ -104,9 +105,12 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 	defer reader.Close()
 
 	scanner := bufio.NewScanner(reader)
+	scanner.Split(discard.LongLines(bufio.MaxScanTokenSize))
 	for scanner.Scan() {
-		if after, ok := strings.CutPrefix(scanner.Text(), "Package: "); ok {
-			cache.value[after] = struct{}{}
+		line := scanner.Bytes()
+		// Check if the start of this line contains a package name
+		if after, ok := bytes.CutPrefix(line, []byte("Package: ")); ok {
+			cache.value[string(after)] = struct{}{}
 		}
 	}
 

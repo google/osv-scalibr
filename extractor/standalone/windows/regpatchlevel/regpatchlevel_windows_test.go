@@ -130,8 +130,7 @@ func TestExtract(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := Configuration{mockregistry.NewOpener(tc.reg)}
-			e := New(cfg)
+			e := &Extractor{Opener: mockregistry.NewOpener(tc.reg)}
 			got, err := e.Extract(t.Context(), nil)
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("Extract() returned an unexpected error: %v", err)

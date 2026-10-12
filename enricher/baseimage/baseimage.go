@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
 	"github.com/google/osv-scalibr/enricher"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
@@ -31,7 +30,9 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	grpcpb "deps.dev/api/v3alpha"
+	"github.com/google/osv-scalibr/depsdev"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 const (
@@ -52,9 +53,16 @@ type Enricher struct {
 }
 
 // New returns a new base image enricher.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
-	grpcConfig := grpcclient.DefaultConfig()
-	return &Enricher{Client: NewClientGRPC(grpcConfig)}, nil
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+	conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to establish gRPC connection for %s: %w", Name, err)
+	}
+	client := grpcpb.NewInsightsClient(conn)
+	return &Enricher{Client: NewClientGRPC(client)}, nil
 }
 
 // Name of the base image enricher.
@@ -89,7 +97,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 
 		// Placeholder for the scanned image itself.
 		cim.BaseImages = [][]*extractor.BaseImageDetails{
-			[]*extractor.BaseImageDetails{},
+			{},
 		}
 
 		chainIDsByLayerIndex := make([]digest.Digest, len(cim.LayerMetadata))

@@ -73,6 +73,15 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 		secrets = append(secrets, p)
 	}
 
+	sensitiveInformation := make([]*spb.SensitiveInformation, 0, len(inv.SensitiveInformation))
+	for _, si := range inv.SensitiveInformation {
+		p, err := SensitiveInformationToProto(si)
+		if err != nil {
+			return nil, err
+		}
+		sensitiveInformation = append(sensitiveInformation, p)
+	}
+
 	var containerImageMetadata []*spb.ContainerImageMetadata
 	for _, cim := range inv.ContainerImageMetadata {
 		containerImageMetadata = append(containerImageMetadata, containerImageMetadataToProto(cim))
@@ -84,6 +93,7 @@ func InventoryToProto(inv *inventory.Inventory) (*spb.Inventory, error) {
 		GenericFindings:        genericFindings,
 		Secrets:                secrets,
 		ContainerImageMetadata: containerImageMetadata,
+		SensitiveInformation:   sensitiveInformation,
 	}, nil
 }
 
@@ -141,6 +151,16 @@ func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
 		secrets = append(secrets, s)
 	}
 
+	var sensitiveInformation []*inventory.SensitiveInformation
+	for _, siProto := range invProto.GetSensitiveInformation() {
+		si, err := SensitiveInformationToStruct(siProto)
+		if err != nil {
+			log.Errorf("Failed to convert SensitiveInformation to struct: %v", err)
+			continue
+		}
+		sensitiveInformation = append(sensitiveInformation, si)
+	}
+
 	var containerImageMetadata []*extractor.ContainerImageMetadata
 	for _, cimProto := range invProto.GetContainerImageMetadata() {
 		cim := containerImageMetadataToStruct(cimProto)
@@ -169,5 +189,6 @@ func InventoryToStruct(invProto *spb.Inventory) *inventory.Inventory {
 		GenericFindings:        genericFindings,
 		Secrets:                secrets,
 		ContainerImageMetadata: containerImageMetadata,
+		SensitiveInformation:   sensitiveInformation,
 	}
 }

@@ -51,6 +51,20 @@ func (failingAnnotator) Annotate(ctx context.Context, input *annotator.ScanInput
 	return errors.New("some error")
 }
 
+type recordingAnnotator struct {
+	seenPackages []*extractor.Package
+}
+
+func (r *recordingAnnotator) Name() string { return "recording-annotator" }
+func (r *recordingAnnotator) Version() int { return 1 }
+func (r *recordingAnnotator) Requirements() *plugin.Capabilities {
+	return &plugin.Capabilities{RunningSystem: true}
+}
+func (r *recordingAnnotator) Annotate(ctx context.Context, input *annotator.ScanInput, inv *inventory.Inventory) error {
+	r.seenPackages = inv.Packages
+	return nil
+}
+
 func TestRun(t *testing.T) {
 	inv := &inventory.Inventory{
 		Packages: []*extractor.Package{
@@ -75,6 +89,7 @@ func TestRun(t *testing.T) {
 		want    []*plugin.Status
 		wantErr error
 		wantInv *inventory.Inventory // Inventory after annotation.
+		rec     *recordingAnnotator
 	}{
 		{
 			desc: "no_annotators",
@@ -124,12 +139,69 @@ func TestRun(t *testing.T) {
 				{Name: "failing-annotator", Version: 2, Status: &plugin.ScanStatus{Status: plugin.ScanStatusFailed, FailureReason: "some error"}},
 			},
 		},
+		{
+			desc: "filters_embedded_fs_packages_for_running_system_annotator",
+			rec:  &recordingAnnotator{},
+			cfg:  nil,
+			inv: &inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "host-package",
+						Version:  "1.0",
+						Location: extractor.LocationFromPath("file.txt"),
+					},
+					{
+						Name:     "embedded-package-unix",
+						Version:  "2.0",
+						Location: extractor.LocationFromPath("file.vmdk:1:file.txt"),
+					},
+					{
+						Name:     "embedded-package-windows",
+						Version:  "3.0",
+						Location: extractor.LocationFromPath("C:\\file.vmdk:1:file.txt"),
+					},
+				},
+			},
+			want: []*plugin.Status{
+				{
+					Name:    "recording-annotator",
+					Version: 1,
+					Status:  &plugin.ScanStatus{Status: plugin.ScanStatusSucceeded},
+				},
+			},
+			wantInv: &inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "host-package",
+						Version:  "1.0",
+						Location: extractor.LocationFromPath("file.txt"),
+					},
+					{
+						Name:     "embedded-package-unix",
+						Version:  "2.0",
+						Location: extractor.LocationFromPath("file.vmdk:1:file.txt"),
+					},
+					{
+						Name:     "embedded-package-windows",
+						Version:  "3.0",
+						Location: extractor.LocationFromPath("C:\\file.vmdk:1:file.txt"),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
 			// Deep copy the inventory to avoid modifying the original inventory that is used in other tests.
 			inv := copier.Copy(tc.inv).(*inventory.Inventory)
+
+			if tc.rec != nil && tc.cfg == nil {
+				tc.cfg = &annotator.Config{
+					Annotators: []annotator.Annotator{tc.rec},
+				}
+			}
+
 			got, err := annotator.Run(t.Context(), tc.cfg, inv)
 			if !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
 				t.Errorf("Run(%+v) error: got %v, want %v\n", tc.cfg, err, tc.wantErr)
@@ -139,6 +211,12 @@ func TestRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.wantInv, inv); diff != "" {
 				t.Errorf("Run(%+v) returned an unexpected diff of mutated inventory (-want +got): %v", tc.cfg, diff)
+			}
+			// Verify filtering behavior
+			if tc.rec != nil {
+				if len(tc.rec.seenPackages) != 1 || tc.rec.seenPackages[0].Name != "host-package" {
+					t.Errorf("expected only host package, got %+v", tc.rec.seenPackages)
+				}
 			}
 		})
 	}

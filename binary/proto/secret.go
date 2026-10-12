@@ -55,6 +55,7 @@ import (
 	veleshashicorpvault "github.com/google/osv-scalibr/veles/secrets/hashicorpvault"
 	veleshashicorpcloudplatform "github.com/google/osv-scalibr/veles/secrets/hcp"
 	velesherokuplatformkey "github.com/google/osv-scalibr/veles/secrets/herokuplatformkey"
+	veleshttp "github.com/google/osv-scalibr/veles/secrets/http"
 	"github.com/google/osv-scalibr/veles/secrets/huggingfaceapikey"
 	"github.com/google/osv-scalibr/veles/secrets/jwt"
 	velesmistralapikey "github.com/google/osv-scalibr/veles/secrets/mistralapikey"
@@ -142,6 +143,7 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 		Secret: sec,
 		Status: res,
 		// TODO(b/400910349) Remove once integrators no longer read this field.
+		//nolint:staticcheck // nolint:SA1019
 		Locations: []*spb.LocationLegacy{locationToLegacyProto(&s.Location)},
 		Location:  LocationToProto(&s.Location),
 	}, nil
@@ -327,8 +329,57 @@ func velesSecretToProto(s veles.Secret) (*spb.SecretData, error) {
 		return squareOAuthApplicationSecretToProto(t), nil
 	case velesdiscordbottoken.DiscordBotToken:
 		return discordBotTokenToProto(t), nil
+	case veleshttp.BasicAuthCredentials:
+		return httpBasicAuthToProto(t), nil
+	case veleshttp.BearerToken:
+		return httpBearerToProto(t), nil
+	case veleshttp.CSRFToken:
+		return httpCSRFToProto(t), nil
+	case veleshttp.Cookie:
+		return httpCookieToProto(t), nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s)
+	}
+}
+
+func httpBasicAuthToProto(s veleshttp.BasicAuthCredentials) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HttpBasicAuth{
+			HttpBasicAuth: &spb.SecretData_HTTPBasicAuth{
+				Username: s.Username,
+				Password: s.Password,
+			},
+		},
+	}
+}
+
+func httpBearerToProto(s veleshttp.BearerToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HttpBearer{
+			HttpBearer: &spb.SecretData_HTTPBearer{
+				Value: s.Value,
+			},
+		},
+	}
+}
+
+func httpCSRFToProto(s veleshttp.CSRFToken) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HttpCsrfToken{
+			HttpCsrfToken: &spb.SecretData_HTTPCSRFToken{
+				Value: s.Value,
+			},
+		},
+	}
+}
+
+func httpCookieToProto(s veleshttp.Cookie) *spb.SecretData {
+	return &spb.SecretData{
+		Secret: &spb.SecretData_HttpCookie{
+			HttpCookie: &spb.SecretData_HTTPCookie{
+				Values: s.Values,
+			},
+		},
 	}
 }
 
@@ -1487,6 +1538,24 @@ func velesSecretToStruct(s *spb.SecretData) (veles.Secret, error) {
 	case *spb.SecretData_SquareOauthApplicationSecret:
 		return velessquareapikey.SquareOAuthApplicationSecret{
 			Key: s.GetSquareOauthApplicationSecret().GetKey(),
+		}, nil
+	case *spb.SecretData_HttpBasicAuth:
+		creds := s.GetHttpBasicAuth()
+		return veleshttp.BasicAuthCredentials{
+			Username: creds.GetUsername(),
+			Password: creds.GetPassword(),
+		}, nil
+	case *spb.SecretData_HttpBearer:
+		return veleshttp.BearerToken{
+			Value: s.GetHttpBearer().GetValue(),
+		}, nil
+	case *spb.SecretData_HttpCsrfToken:
+		return veleshttp.CSRFToken{
+			Value: s.GetHttpCsrfToken().GetValue(),
+		}, nil
+	case *spb.SecretData_HttpCookie:
+		return veleshttp.Cookie{
+			Values: s.GetHttpCookie().GetValues(),
 		}, nil
 	default:
 		return nil, fmt.Errorf("%w: %T", ErrUnsupportedSecretType, s.GetSecret())

@@ -123,13 +123,19 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-var packageVersionRe = regexp.MustCompile(`['"]\W?(\w+)\W?(==|>=|<=)\W?([\w.]*)`)
+// packageVersionRe matches a Python distribution name and version specifier inside
+// a quoted string (e.g. "Flask-Security-Too==3.4.3"). The name group permits the
+// characters allowed by PEP 508 distribution names: letters, digits, ".", "-", "_",
+// with the first and last characters constrained to be alphanumeric.
+var packageVersionRe = regexp.MustCompile(`['"]\s*([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)\s*(==|>=|<=)\s*([\w.]+)`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	s := bufio.NewScanner(input.Reader)
 	packages := []*extractor.Package{}
+	lineNumber := 0
 
 	for s.Scan() {
+		lineNumber++
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
 			return packages, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
@@ -161,7 +167,7 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 				Name:     pkgName,
 				Version:  pkgVersion,
 				PURLType: purl.TypePyPi,
-				Location: extractor.LocationFromPath(input.Path),
+				Location: extractor.LocationFromPathAndLine(input.Path, lineNumber),
 				Metadata: &Metadata{VersionComparator: comp},
 			}
 

@@ -1,0 +1,19 @@
+<!--
+  This tests an edge case where multiple dependency declarations share the same groupId and
+  artifactId, but different versions. SCALIBR will only parse the first dependency because
+  ProcessDependencies() will de-dupe groupId/artifactId pairs with the same version.
+-->
+<project>
+  <dependencies>
+    <dependency>
+      <artifactId>example.com</artifactId>
+      <groupId>abc</groupId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <artifactId>example.com</artifactId>
+      <groupId>abc</groupId>
+      <version>1.1.1</version>
+    </dependency>
+  </dependencies>
+</project>

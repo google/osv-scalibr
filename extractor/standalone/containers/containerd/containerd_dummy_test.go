@@ -23,7 +23,7 @@ import (
 )
 
 func TestDummyExtract(t *testing.T) {
-	dummyExtractor := plugin.New(plugin.Config{})
+	dummyExtractor, _ := plugin.New(nil)
 	_, err := dummyExtractor.Extract(t.Context(), nil)
 	// Always expect an error on non-Linux.
 	if err == nil {

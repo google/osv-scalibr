@@ -16,12 +16,15 @@
 package condameta
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -139,8 +142,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	contentBytes, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read input: %w", err)
+	}
+
 	// Parse the metadata and get a package
-	pkg, err := parse(input.Reader)
+	pkg, err := parse(bytes.NewReader(contentBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +158,28 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		return nil, errors.New("package name or version is empty")
 	}
 
+	lineNum := findNameLine(bytes.NewReader(contentBytes))
+
 	return []*extractor.Package{&extractor.Package{
 		Name:     pkg.Name,
 		Version:  pkg.Version,
 		PURLType: purl.TypePyPi,
-		Location: extractor.LocationFromPath(input.Path),
+		Location: extractor.LocationFromPathAndLine(input.Path, lineNum),
 	}}, nil
+}
+
+var nameRegex = regexp.MustCompile(`^\s*"name"\s*:`)
+
+func findNameLine(r io.Reader) int {
+	scanner := bufio.NewScanner(r)
+	lineNum := 1
+	for scanner.Scan() {
+		if nameRegex.Match(scanner.Bytes()) {
+			return lineNum
+		}
+		lineNum++
+	}
+	return 0
 }
 
 // parse reads a Conda metadata JSON file and extracts a package.

@@ -12,23 +12,25 @@ linters:
     - dupl             # Some interfaces end up having several lines of similar code as others
     - err113           #
     - exhaustruct      #
-    - exhaustive       # TODO(#1225): work on enabling this
+    - exhaustruct_v5   #
     - forcetypeassert  #
     - funcorder        #
     - funlen           #
     - gochecknoglobals #
+    - gochecknoinits   # We are now using inits for metadata
     - gocognit         #
     - goconst          #
     - gocyclo          #
     - godot            #
     - godox            #
+    - gomodguard       #
     - gosec            # TODO(#274): work on enabling this
     - ireturn          #
     - lll              #
     - maintidx         #
     - mnd              # Not every number is magic
+    - modernize        #
     - nestif           #
-    - nilnesserr       # TODO(#274): work on enabling this
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
     - noinlineerr      #
@@ -44,7 +46,6 @@ linters:
     - wrapcheck        #
     - wsl              #
     - wsl_v5           #
-    - gochecknoinits   # We are now using inits for metadata
   settings:
     forbidigo:
       forbid:
@@ -108,9 +109,10 @@ linters:
     staticcheck:
       checks:
         - all
-        - -SA5011 # seems prone to false positives in tests
         - -QF1001 # apply De Morgan's law
         - -QF1003 # use tagged switch on prefix
+    exhaustive:
+      explicit-exhaustive-switch: true
   exclusions:
     generated: lax
     presets:
@@ -124,6 +126,9 @@ linters:
       - path: velestest/
         linters:
           - forbidigo  # Parallel tests are fine and in some places needed for Veles.
+      - path: inventory/osvecosystem/parsed.go
+        linters:
+          - exhaustive
     paths:
       - third_party$
       - builtin$
