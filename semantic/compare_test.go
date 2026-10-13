@@ -255,6 +255,26 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 			file: "debian-versions.txt",
 		},
 		{
+			name: "Echo",
+			file: "debian-versions.txt",
+		},
+		{
+			name: "Echo:PyPI",
+			file: "pypi-versions.txt",
+		},
+		{
+			name: "Echo:Maven",
+			file: "maven-versions.txt",
+		},
+		{
+			name: "Echo:npm",
+			file: "semver-versions.txt",
+		},
+		{
+			name: "Echo:npm",
+			file: "echo-npm-versions.txt",
+		},
+		{
 			name: "Debian",
 			file: "debian-versions-generated.txt",
 		},
