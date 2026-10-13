@@ -1923,9 +1923,15 @@ type POMXMLNetConfig struct {
 	DepsDevRequirements bool `protobuf:"varint,2,opt,name=deps_dev_requirements,json=depsDevRequirements,proto3" json:"deps_dev_requirements,omitempty"`
 	// If true, enable in-memory caching of decoded Maven projects, dependency
 	// management, versions, and requirements during dependency resolution.
-	EnableCache   bool `protobuf:"varint,3,opt,name=enable_cache,json=enableCache,proto3" json:"enable_cache,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	EnableCache bool `protobuf:"varint,3,opt,name=enable_cache,json=enableCache,proto3" json:"enable_cache,omitempty"`
+	// Directories, relative to the scan root, whose top-level POM files and
+	// their modules are local modules for resolution, such as a git submodule
+	// the build installs first. They are read even when skipped from
+	// extraction. A module of the scanned project with the same coordinates
+	// takes precedence.
+	LocalModuleDirs []string `protobuf:"bytes,4,rep,name=local_module_dirs,json=localModuleDirs,proto3" json:"local_module_dirs,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *POMXMLNetConfig) Reset() {
@@ -1977,6 +1983,13 @@ func (x *POMXMLNetConfig) GetEnableCache() bool {
 		return x.EnableCache
 	}
 	return false
+}
+
+func (x *POMXMLNetConfig) GetLocalModuleDirs() []string {
+	if x != nil {
+		return x.LocalModuleDirs
+	}
+	return nil
 }
 
 type PythonRequirementsTransitiveConfig struct {
@@ -4818,11 +4831,12 @@ const file_proto_config_proto_rawDesc = "" +
 	"\tvault_url\x18\x01 \x01(\tR\bvaultUrl\"1\n" +
 	"\x10SDPInspectConfig\x12\x1d\n" +
 	"\n" +
-	"project_id\x18\x01 \x01(\tR\tprojectId\"\x95\x01\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\"\xc1\x01\n" +
 	"\x0fPOMXMLNetConfig\x12+\n" +
 	"\x11upstream_registry\x18\x01 \x01(\tR\x10upstreamRegistry\x122\n" +
 	"\x15deps_dev_requirements\x18\x02 \x01(\bR\x13depsDevRequirements\x12!\n" +
-	"\fenable_cache\x18\x03 \x01(\bR\venableCache\"\x85\x01\n" +
+	"\fenable_cache\x18\x03 \x01(\bR\venableCache\x12*\n" +
+	"\x11local_module_dirs\x18\x04 \x03(\tR\x0flocalModuleDirs\"\x85\x01\n" +
 	"\"PythonRequirementsTransitiveConfig\x12+\n" +
 	"\x11upstream_registry\x18\x01 \x01(\tR\x10upstreamRegistry\x122\n" +
 	"\x15deps_dev_requirements\x18\x02 \x01(\bR\x13depsDevRequirements\"\xa1\x01\n" +

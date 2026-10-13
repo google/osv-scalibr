@@ -233,3 +233,84 @@ func TestDiscoverModules(t *testing.T) {
 		})
 	}
 }
+
+func TestDiscoverModulesInterpolatesCIFriendlyVersions(t *testing.T) {
+	txt := `
+-- pom.xml --
+<project>
+  <groupId>org.example</groupId>
+  <artifactId>root</artifactId>
+  <version>${revision}${changelist}</version>
+  <packaging>pom</packaging>
+  <properties>
+    <revision>1.2.3</revision>
+    <changelist></changelist>
+  </properties>
+  <modules>
+    <module>child</module>
+  </modules>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>
+-- child/pom.xml --
+<project>
+  <parent>
+    <groupId>org.example</groupId>
+    <artifactId>root</artifactId>
+    <version>${revision}${changelist}</version>
+  </parent>
+  <artifactId>child</artifactId>
+</project>
+-- unresolved/pom.xml --
+<project>
+  <groupId>org.example</groupId>
+  <artifactId>unresolved</artifactId>
+  <version>${undefined}</version>
+</project>
+`
+	fsys, err := fakefs.PrepareFS(txt)
+	if err != nil {
+		t.Fatalf("failed to prepare fake fs: %v", err)
+	}
+	client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+	if err != nil {
+		t.Fatalf("failed to create maven registry client: %v", err)
+	}
+
+	// The child is visited first, so its version must come from its parent rather than from the
+	// aggregator that lists it.
+	DiscoverModules(&scalibrfs.ScanRoot{FS: fsys, Path: ""}, []string{"child/pom.xml", "pom.xml", "unresolved/pom.xml"}, client)
+
+	for _, a := range []string{"root", "child"} {
+		proj, err := client.GetProject(t.Context(), "org.example", a, "1.2.3")
+		if err != nil {
+			t.Errorf("GetProject(org.example:%s:1.2.3) error: %v", a, err)
+			continue
+		}
+		if got := ProjectKey(proj).Version; got != "1.2.3" {
+			t.Errorf("org.example:%s version = %q, want the interpolated 1.2.3", a, got)
+		}
+	}
+	// The literal coordinates still resolve, for children that declare their parent with them.
+	if _, err := client.GetProject(t.Context(), "org.example", "root", "${revision}${changelist}"); err != nil {
+		t.Errorf("GetProject(literal root) error: %v", err)
+	}
+	// The interpolated parent works as a BOM, which checks the parent's identity.
+	dm, err := GetDependencyManagement(t.Context(), client, "org.example", "root", "1.2.3")
+	if err != nil {
+		t.Fatalf("GetDependencyManagement(root:1.2.3) error: %v", err)
+	}
+	if len(dm.Dependencies) != 1 || dm.Dependencies[0].Version != "4.12" {
+		t.Errorf("GetDependencyManagement(root:1.2.3) = %v, want junit 4.12", dm.Dependencies)
+	}
+	if _, err := client.GetProject(t.Context(), "org.example", "unresolved", "${undefined}"); err != nil {
+		t.Errorf("GetProject(literal unresolved) error: %v", err)
+	}
+}
