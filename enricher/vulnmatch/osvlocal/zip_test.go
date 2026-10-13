@@ -25,7 +25,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
-	scalibrversion "github.com/google/osv-scalibr/version"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -49,8 +48,6 @@ func createTestDir(t *testing.T) string {
 
 	return p
 }
-
-const userAgent = "osv-scalibr_test/" + scalibrversion.ScannerVersion
 
 func expectDBToHaveOSVs(
 	t *testing.T,
@@ -115,7 +112,7 @@ func TestNewZippedDB_Offline_WithoutCache(t *testing.T) {
 		t.Errorf("a server request was made when running offline")
 	})
 
-	_, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, true, nil, http.DefaultClient)
+	_, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, true, nil, http.DefaultClient)
 
 	if !errors.Is(err, errOfflineDatabaseNotFound) {
 		t.Errorf("expected \"%v\" error but got \"%v\"", errOfflineDatabaseNotFound, err)
@@ -145,7 +142,7 @@ func TestNewZippedDB_Offline_WithCache(t *testing.T) {
 		"GHSA-5.json": {Id: "GHSA-5"},
 	}))
 
-	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, true, nil, http.DefaultClient)
+	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, true, nil, http.DefaultClient)
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
@@ -161,7 +158,7 @@ func TestNewZippedDB_BadZip(t *testing.T) {
 		_, _ = w.Write([]byte("this is not a zip"))
 	})
 
-	_, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	_, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err == nil {
 		t.Errorf("expected an error but did not get one")
@@ -171,7 +168,7 @@ func TestNewZippedDB_BadZip(t *testing.T) {
 func TestNewZippedDB_UnsupportedProtocol(t *testing.T) {
 	testDir := createTestDir(t)
 
-	_, err := newZippedDB(t.Context(), testDir, "my-db", "file://hello-world", userAgent, false, nil, http.DefaultClient)
+	_, err := newZippedDB(t.Context(), testDir, "my-db", "file://hello-world", false, nil, http.DefaultClient)
 
 	if err == nil {
 		t.Errorf("expected an error but did not get one")
@@ -199,7 +196,7 @@ func TestNewZippedDB_Online_WithoutCache(t *testing.T) {
 		})
 	})
 
-	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
@@ -229,7 +226,7 @@ func TestNewZippedDB_Online_WithoutCacheAndNoHashHeader(t *testing.T) {
 		}))
 	})
 
-	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
@@ -265,7 +262,7 @@ func TestNewZippedDB_Online_WithSameCache(t *testing.T) {
 
 	cacheWrite(t, determineStoredAtPath(testDir, "my-db"), cache)
 
-	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
@@ -301,7 +298,7 @@ func TestNewZippedDB_Online_WithDifferentCache(t *testing.T) {
 		"GHSA-3.json": {Id: "GHSA-3"},
 	}))
 
-	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
@@ -329,7 +326,7 @@ func TestNewZippedDB_Online_WithCacheButNoHashHeader(t *testing.T) {
 		"GHSA-3.json": {Id: "GHSA-3"},
 	}))
 
-	_, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	_, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err == nil {
 		t.Errorf("expected an error but did not get one")
@@ -355,7 +352,7 @@ func TestNewZippedDB_Online_WithBadCache(t *testing.T) {
 
 	cacheWriteBad(t, determineStoredAtPath(testDir, "my-db"), "this is not json!")
 
-	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
@@ -379,7 +376,7 @@ func TestNewZippedDB_FileChecks(t *testing.T) {
 		})
 	})
 
-	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, userAgent, false, nil, http.DefaultClient)
+	db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
 
 	if err != nil {
 		t.Fatalf("unexpected error \"%v\"", err)
@@ -434,7 +431,6 @@ func TestNewZippedDB_WithSpecificPackages(t *testing.T) {
 		testDir,
 		"my-db",
 		ts.URL,
-		userAgent,
 		false,
 		[]*extractor.Package{{Name: "pkg-1"}, {Name: "pkg-3"}},
 		http.DefaultClient,

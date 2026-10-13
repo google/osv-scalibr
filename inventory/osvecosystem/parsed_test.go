@@ -273,3 +273,29 @@ func TestParse(t *testing.T) {
 		})
 	}
 }
+
+func TestParsed_Equal(t *testing.T) {
+	tests := []struct {
+		a    string
+		b    string
+		want bool
+	}{
+		{"Ubuntu:24.04", "Ubuntu:24.04", true},
+		{"Ubuntu:24.04", "Ubuntu:24.04:LTS", true},
+		{"Ubuntu:24.04", "Ubuntu:Pro:24.04:LTS", true},
+		{"Ubuntu:24.04:LTS", "Ubuntu:Pro:24.04:LTS", true},
+		{"Ubuntu:24.04", "Ubuntu:Pro", true},
+		{"Ubuntu:24.04", "Ubuntu", true},
+		{"Ubuntu:24.04:LTS", "Ubuntu:22.04:LTS", false},
+		{"Ubuntu:24.04", "Debian:12", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.a+"=="+tt.b, func(t *testing.T) {
+			a := osvecosystem.MustParse(tt.a)
+			b := osvecosystem.MustParse(tt.b)
+			if got := a.Equal(b); got != tt.want {
+				t.Errorf("MustParse(%q).Equal(MustParse(%q)) = %v, want %v", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
+}

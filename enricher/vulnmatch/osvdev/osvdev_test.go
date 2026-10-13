@@ -476,7 +476,7 @@ func TestEnrich(t *testing.T) {
 		fmt.Sprintf("%s:%s:", goPkg.Name, goPkg.Version): {&goVuln1, &goVuln2, &goVuln3},
 		fmt.Sprintf("%s:%s:", jsPkg.Name, jsPkg.Version): {&jsVuln1, &jsVuln2},
 		fmt.Sprintf("%s:%s:", pyPkg.Name, pyPkg.Version): {&pyPkgSameVulnAsFzf},
-		"stdlib:1.18:":                               {&goStdlibVuln},
+		"stdlib:1.18.99:":                            {&goStdlibVuln},
 		"github.com/some/repo:1.0.0:":                {&gitVuln},
 		"::68593b1bb80b302c2e552685dc8a029797ec832e": {&gitCommitVuln},
 		"bash-source:5.1-6:":                         {&dpkgSrcVuln},
