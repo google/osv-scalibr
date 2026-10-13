@@ -253,7 +253,7 @@ func findTokenizedRequirement(requirements []TokenizedRequirements, name string,
 // It reads the original manifest from inputPath, processes the required changes from patches,
 // and delegates the content modification to the provided update function. The resulting
 // patched content is then written to outputPath.
-func write(fsys scalibrfs.FS, inputPath, outputPath string, patches []result.Patch, update func(reader io.Reader, requirements []TokenizedRequirements) (string, error)) error {
+func write(fsys scalibrfs.FS, inputPath string, outputRoot *os.Root, outputPath string, patches []result.Patch, update func(reader io.Reader, requirements []TokenizedRequirements) (string, error)) error {
 	f, err := fsys.Open(inputPath)
 	if err != nil {
 		return err
@@ -277,10 +277,10 @@ func write(fsys scalibrfs.FS, inputPath, outputPath string, patches []result.Pat
 	}
 
 	// Write the patched manifest to the output path.
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+	if err := outputRoot.MkdirAll(filepath.ToSlash(filepath.Dir(outputPath)), 0755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(outputPath, []byte(output), 0644); err != nil {
+	if err := outputRoot.WriteFile(filepath.ToSlash(outputPath), []byte(output), 0644); err != nil {
 		return err
 	}
 

@@ -148,8 +148,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 func (e Extractor) parseDependenciesFile(reader io.Reader, path string) ([]*extractor.Package, error) {
 	var packages []*extractor.Package
 	scanner := bufio.NewScanner(reader)
+	lineNumber := 0
 
 	for scanner.Scan() {
+		lineNumber++
 		line := strings.TrimSpace(scanner.Text())
 
 		// Skip empty lines and comments
@@ -184,7 +186,7 @@ func (e Extractor) parseDependenciesFile(reader io.Reader, path string) ([]*extr
 				Name:     pkgName,
 				Version:  version,
 				PURLType: purl.TypeNuget,
-				Location: extractor.LocationFromPath(path),
+				Location: extractor.LocationFromPathAndLine(path, lineNumber),
 			}
 			packages = append(packages, pkg)
 			continue
@@ -250,7 +252,7 @@ func (e Extractor) parseDependenciesFile(reader io.Reader, path string) ([]*extr
 				Name:       repo,
 				Version:    version,
 				PURLType:   purl.TypeGithub,
-				Location:   extractor.LocationFromPath(path),
+				Location:   extractor.LocationFromPathAndLine(path, lineNumber),
 				SourceCode: sourceCode,
 			}
 			packages = append(packages, pkg)

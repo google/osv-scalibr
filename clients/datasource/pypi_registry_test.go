@@ -15,6 +15,7 @@
 package datasource_test
 
 import (
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -135,7 +136,10 @@ const jsonResp = `{
 
 func TestGetVersions(t *testing.T) {
 	srv := clienttest.NewMockHTTPServer(t)
-	client := datasource.NewPyPIRegistryAPIClient(srv.URL, "")
+	client, err := datasource.NewPyPIRegistryAPIClient(srv.URL, "", &http.Client{})
+	if err != nil {
+		t.Fatalf("Failed to create PyPI client: %v", err)
+	}
 	srv.SetResponse(t, "/beautifulsoup4/", []byte(jsonResp))
 
 	got, err := client.GetIndex(t.Context(), "beautifulsoup4")
@@ -190,10 +194,13 @@ func TestGetVersions(t *testing.T) {
 func TestPyPILocalRegistry(t *testing.T) {
 	tempDir := t.TempDir()
 	srv := clienttest.NewMockHTTPServer(t)
-	client := datasource.NewPyPIRegistryAPIClient(srv.URL, tempDir)
+	client, err := datasource.NewPyPIRegistryAPIClient(srv.URL, tempDir, &http.Client{})
+	if err != nil {
+		t.Fatalf("Failed to create PyPI client: %v", err)
+	}
 	srv.SetResponse(t, "/beautifulsoup4/", []byte(jsonResp))
 
-	_, err := client.GetIndex(t.Context(), "beautifulsoup4")
+	_, err = client.GetIndex(t.Context(), "beautifulsoup4")
 	if err != nil {
 		t.Fatalf("failed to get versions of PyPI project %s: %v", "beautifulsoup4", err)
 	}

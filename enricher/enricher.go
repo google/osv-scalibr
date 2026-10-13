@@ -40,8 +40,14 @@ var (
 		// because they add new packages to the inventory.
 		"transitivedependency/pomxml",
 		"transitivedependency/requirements",
+		"transitivedependency/javaarchive",
+		"transitivedependency/nodemodules",
 		"reachability/java",
+		// OS package metadata enrichers need to run before vulnmatch because they
+		// fill in the package fields (e.g. source package names) used for matching.
+		"os/ubuntu/binarytosource",
 		"vulnmatch/osvdev",
+		"vulnmatch/osvlocal",
 		// Reachability enrichers need to run after vulnmatch enrichers (in certain configurations).
 		"reachability/go/source",
 		"reachability/rust",

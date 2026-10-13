@@ -15,7 +15,6 @@
 package requirements_test
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,10 +28,13 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestEnricher_Enrich(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
@@ -98,12 +100,12 @@ func TestEnricher_Enrich(t *testing.T) {
 	}
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe.yaml")
-	enricher, err := requirements.New(&cpb.PluginConfig{})
+	enricher, err := requirements.New(configtest.NewFakePluginConfig())
 	if err != nil {
 		log.Errorf("requirements.New(): %v", err)
 	}
 	enricher.(*requirements.Enricher).Client = resolutionClient
-	enricher.(*requirements.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
+
 	err = enricher.Enrich(t.Context(), &input, &inv)
 	if err != nil {
 		t.Fatalf("failed to enrich: %v", err)
@@ -209,9 +211,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 		},
 	}
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
+
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enricher.Name(), diff)
 	}
@@ -258,7 +258,9 @@ func TestNewEnricher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := requirements.New(tt.cfg)
+			pluginCfg := configtest.NewFakePluginConfig()
+			pluginCfg.ProtoConfig = tt.cfg
+			got, err := requirements.New(pluginCfg)
 			if err != nil {
 				t.Fatalf("New(%v) error = %v", tt.cfg, err)
 			}

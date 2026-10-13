@@ -44,12 +44,18 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *apkmeta.Metadata:
 		// Check for specific distros that use APK but map to different ecosystems.
 		// These checks must come before the version == "" guard because rolling
-		// distros (Wolfi, Chainguard) may not set VERSION_ID in os-release.
+		// distros (Wolfi, Chainguard, MinimOS) may not set VERSION_ID in os-release.
 		if m.OSID == "wolfi" {
 			return osvecosystem.FromEcosystem(osvconstants.EcosystemWolfi)
 		}
 		if m.OSID == "chainguard" {
 			return osvecosystem.FromEcosystem(osvconstants.EcosystemChainguard)
+		}
+		// MinimOS advisories are published under a single unversioned ecosystem on
+		// OSV.dev, so the VERSION_ID (a rolling build date, e.g. 20241031) is not
+		// used as a suffix.
+		if m.OSID == "minimos" {
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemMinimOS)
 		}
 		version := m.ToDistro()
 		if version == "" {
@@ -84,7 +90,30 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemOpenEuler, Suffix: m.OpenEulerEcosystemSuffix()}
 		}
 		if m.OSID == "almalinux" {
-			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlmaLinux, Suffix: m.OSVersionID}
+			// OSV.dev keys ALSA advisories by major version only (e.g. "AlmaLinux:9").
+			// VERSION_ID in /etc/os-release is a full point release (e.g. "9.0" or "9.8"),
+			// so trim to the major version only. A bare major such as "9" is returned
+			// unchanged by strings.Cut (found=false, before=full string).
+			majorVersion, _, _ := strings.Cut(m.OSVersionID, ".")
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlmaLinux, Suffix: majorVersion}
+		}
+		if m.OSID == "mageia" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemMageia, Suffix: m.OSVersionID}
+		}
+		if m.OSID == "sles" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemSUSE, Suffix: m.OSVersionID}
+		}
+		if m.OSID == "azurelinux" || m.OSID == "mariner" {
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAzureLinux, Suffix: m.OSVersionID}
+		}
+		if m.OSID == "opensuse-leap" {
+			// OSV.dev openSUSE advisories use the suffix "Leap X.Y"
+			// (e.g. "openSUSE:Leap 15.5"), confirmed via OSV.dev API.
+			// Using VERSION_ID alone ("15.5") would not match any advisory.
+			if m.OSVersionID == "" {
+				return osvecosystem.FromEcosystem(osvconstants.EcosystemOpenSUSE)
+			}
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemOpenSUSE, Suffix: "Leap " + m.OSVersionID}
 		}
 
 	case *snapmeta.Metadata:

@@ -166,89 +166,45 @@ func TestCSRFTokenDetector_trueNegatives(t *testing.T) {
 			name:  "variable_assignment",
 			input: `csrf_header_name = "Custom-XSRF-Header-a1b2c3d4"`,
 		},
-		// These testcases are real pieces of code found in the wild used to improve the
-		// false positive rate of the detector
+		// These testcases are inspired by real-world code patterns
 		{
-			name: "aspnet_example",
-			input: `|| string.Equals(requestPath, "/index.html", StringComparison.OrdinalIgnoreCase))
-	    {
-	        var tokenSet = antiforgery.GetAndStoreTokens(context);
-	        context.Response.Cookies.Append("XSRF-TOKEN", tokenSet.RequestToken!,
-	            new CookieOptions { HttpOnly = false });
-	    }`,
+			// Token name passed as a positional argument to a cookie-setter call; the actual
+			// value is a variable reference, not a quoted literal
+			name: "token_name_as_positional_argument",
+			input: `public IActionResult IssueToken()
+{
+    var tokenSet = _antiforgery.GetAndStoreTokens(HttpContext);
+    Response.Cookies.Append("XSRF-TOKEN", tokenSet.RequestToken, new CookieOptions { HttpOnly = false });
+    return Ok();
+}`,
 		},
 		{
-			name: "angular_src_code",
-			input: `
-   *  - If XSRF prefix is detected, strip it
-   * - **"defaults.xsrfCookieName"** - {string} - Name of cookie containing the XSRF token.
-   * Defaults value is "'XSRF-TOKEN'".
-   * - **"defaults.xsrfHeaderName"** - {string} - Name of HTTP header to populate with the
-   * XSRF token. Defaults value is "'X-XSRF-TOKEN'".
-    xsrfCookieName: 'XSRF-TOKEN',
-    xsrfHeaderName: 'X-XSRF-TOKEN',
-   * @name $httpProvider#xsrfTrustedOrigins
-   * Array containing URLs whose origins are trusted to receive the XSRF token. See the
-   * XSRF.
-   *   "https://foo.com/"" will include the XSRF token.
-   *   module('xsrfTrustedOriginsExample', []).
-   *     $httpProvider.xsrfTrustedOrigins.push('https://api.example.com');
-   *     // The XSRF token will be sent.
-   *     // The XSRF token will NOT be sent.
-  var xsrfTrustedOrigins = this.xsrfTrustedOrigins = [];
-   * @name $httpProvider#xsrfWhitelistedOrigins
-   * This property is deprecated. Use {@link $httpProvider#xsrfTrustedOrigins xsrfTrustedOrigins}
-  Object.defineProperty(this, 'xsrfWhitelistedOrigins', {
-      return this.xsrfTrustedOrigins;
-      this.xsrfTrustedOrigins = origins;
-    var urlIsAllowedOrigin = urlIsAllowedOriginFactory(xsrfTrustedOrigins);
-     *  - If XSRF prefix is detected, strip it (see Security Considerations section below).
-     * - [XSRF](http://en.wikipedia.org/wiki/Cross-site_request_forgery)
-     * ### Cross Site Request Forgery (XSRF) Protection
-     * [XSRF](http://en.wikipedia.org/wiki/Cross-site_request_forgery) is an attack technique by
-     * website. AngularJS provides a mechanism to counter XSRF. When performing XHR requests, the
-     * $http service reads a token from a cookie (by default, "XSRF-TOKEN") and sets it as an HTTP
-     * header (by default "X-XSRF-TOKEN"). Since only JavaScript that runs on your domain could read
-     * cookie called "XSRF-TOKEN" on the first HTTP GET request. On subsequent XHR requests the
-     * server can verify that the cookie matches the "X-XSRF-TOKEN" HTTP header, and therefore be
-     * access to your users' XSRF tokens and exposing them to Cross Site Request Forgery. If you
-     * want to, you can trust additional origins to also receive the XSRF token, by adding them
-     * to {@link ng.$httpProvider#xsrfTrustedOrigins xsrfTrustedOrigins}. This might be
-     * See {@link ng.$httpProvider#xsrfTrustedOrigins $httpProvider.xsrfTrustedOrigins} for
-     * The name of the cookie and the header can be specified using the "xsrfCookieName" and
-     * "xsrfHeaderName" properties of either "$httpProvider.defaults" at config-time,
-     *    - **xsrfHeaderName** – "{string}"" – Name of HTTP header to populate with the XSRF token.
-     *    - **xsrfCookieName** – "{string}"" – Name of cookie containing the XSRF token.
-      // if we won't have the response in cache, set the xsrf headers and
-        var xsrfValue = urlIsAllowedOrigin(config.url)
-            ? $$cookieReader()[config.xsrfCookieName || defaults.xsrfCookieName]
-        if (xsrfValue) {
-          reqHeaders[(config.xsrfHeaderName || defaults.xsrfHeaderName)] = xsrfValue;
-
-			`,
+			// Property names like xsrfCookieName/xsrfHeaderName carry a suffix the keyword
+			// regex doesn't allow directly after xsrf/csrf
+			name: "xsrf_config_property_name_suffix",
+			input: `const httpDefaults = {
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+  xsrfCookieName: 'XSRF-TOKEN',
+};`,
 		},
 		{
-			name: "politeiagui_test",
-			input: `
-			const mockCsrfToken = "fake_csrf";
-    it("should update api state and csrf token", async () => {
-        csrf: mockCsrfToken,
-      expect(state.csrf).toEqual(mockCsrfToken);
-      expect(state.csrf).toEqual("");`,
+			// Value is a variable reference on an indented line, not a quoted literal at line start
+			name: "token_value_is_variable_reference",
+			input: `function buildAuthState(mockCsrfToken) {
+  return {
+    csrf: mockCsrfToken,
+    isAuthenticated: true,
+  };
+}`,
 		},
 		{
-			// src: https://github.com/freeCodeCamp/freeCodeCamp/blob/main/client/src/utils/ajax.ts
-			name: "freeCodeCamp_utils",
-			input: `async function get<T>(
-  path: string,
-  signal?: AbortSignal
-): Promise<ResponseWithData<T>> {
-  const response = await fetch(` + "`" + `${base}${path}` + "`" + `, {
-    ...defaultOptions,
-    headers: { 'CSRF-Token': getCSRFToken() },
-    signal
+			// Header value comes from a function call, not a quoted literal
+			name: "token_value_from_function_call",
+			input: `async function fetchWithCsrf<T>(path: string): Promise<T> {
+  const response = await fetch(path, {
+    headers: { 'CSRF-Token': getCsrfToken() },
   });
-  return combineDataWithResponse(response);
+  return response.json();
 }`,
 		},
 	}

@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/clients/resolution"
@@ -33,10 +32,13 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/javalockfile"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
 )
 
 func TestEnricher_Enrich(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
@@ -147,7 +149,7 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 
-	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	enrichy, err := pomxml.New(configtest.NewFakePluginConfig())
 
 	if err != nil {
 		t.Fatalf("failed to create enricher: %v", err)
@@ -155,7 +157,6 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -291,9 +292,7 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 		},
 	}
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
+
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}
@@ -309,6 +308,8 @@ func TestEnricher_Enrich(t *testing.T) {
 //   - no <type> (defaults to jar) → kept
 //   - <type>jar</type> explicit → kept
 func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
@@ -357,7 +358,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 
 	resolutionClient := clienttest.NewMockResolutionClient(t, "testdata/universe/basic-universe.yaml")
 
-	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	enrichy, err := pomxml.New(configtest.NewFakePluginConfig())
 
 	if err != nil {
 		t.Fatalf("failed to create enricher: %v", err)
@@ -365,7 +366,6 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -466,15 +466,15 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 			// not in dependencies, so it won't appear unless something in the tree depends on it.
 		},
 	}
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
+
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}
 }
 
 func TestEnricher_Enrich_LocalModules(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	tempDir := t.TempDir()
 
 	// Create root parent pom.xml, defining modules a and b
@@ -774,14 +774,13 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	enrichy, err := pomxml.New(&cpb.PluginConfig{})
+	enrichy, err := pomxml.New(configtest.NewFakePluginConfig())
 	if err != nil {
 		t.Fatalf("failed to create enricher: %v", err)
 	}
 
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient)
+	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient, false)
 
 	// Prepare inventory:
 	// - module-a/pom.xml and pom.xml (parent) are both in starting packages (keeps original coverage of parent registration)
@@ -963,7 +962,6 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	sort.Slice(wantInventory.Packages, func(i, j int) bool {
 		return wantInventory.Packages[i].Name < wantInventory.Packages[j].Name
 	})
-
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}

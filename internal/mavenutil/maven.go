@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -218,21 +219,24 @@ func ParentPOMPath(input *filesystem.ScanInput, currentPath, relativePath string
 
 // GetDependencyManagement returns managed dependencies in the specified Maven project by fetching remote pom.xml.
 func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegistryAPIClient, groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-	root := maven.Parent{ProjectKey: maven.ProjectKey{GroupID: groupID, ArtifactID: artifactID, Version: version}}
-	var result maven.Project
-	// To get dependency management from another project, we need the
-	// project with parents merged, so we call MergeParents by passing
-	// an empty project.
-	if err := MergeParents(ctx, root, &result, Options{
-		Client:             client,
-		AddRegistry:        false,
-		AllowLocal:         false,
-		InitialParentIndex: 0,
-	}); err != nil {
-		return maven.DependencyManagement{}, err
-	}
+	key := maven.ProjectKey{GroupID: groupID, ArtifactID: artifactID, Version: version}
+	return client.GetDependencyManagement(key, func() (maven.DependencyManagement, error) {
+		root := maven.Parent{ProjectKey: key}
+		var result maven.Project
+		// To get dependency management from another project, we need the
+		// project with parents merged, so we call MergeParents by passing
+		// an empty project.
+		if err := MergeParents(ctx, root, &result, Options{
+			Client:             client,
+			AddRegistry:        false,
+			AllowLocal:         false,
+			InitialParentIndex: 0,
+		}); err != nil {
+			return maven.DependencyManagement{}, err
+		}
 
-	return result.DependencyManagement, nil
+		return result.DependencyManagement, nil
+	})
 }
 
 // CompareVersions compares two Maven semver versions with special behaviour for specific packages,
@@ -354,8 +358,12 @@ func DiscoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string, client
 		// Add modules to queue
 		dir := filepath.Dir(path)
 		for _, m := range project.Modules {
-			modulePath := filepath.Join(dir, string(m), "pom.xml")
-			queue = append(queue, filepath.ToSlash(modulePath))
+			modulePath := filepath.ToSlash(filepath.Join(dir, string(m)))
+			if info, err := fs.Stat(scanRoot.FS, modulePath); err == nil && !info.IsDir() {
+				queue = append(queue, modulePath)
+			} else {
+				queue = append(queue, filepath.ToSlash(filepath.Join(modulePath, "pom.xml")))
+			}
 		}
 
 		// Add parent to queue if it exists locally

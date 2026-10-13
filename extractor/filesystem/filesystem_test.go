@@ -427,7 +427,7 @@ func TestRunFS(t *testing.T) {
 		skipDirGlob      string
 		skipDirRegex     string
 		maxInodes        int
-		maxFileSizeBytes int
+		maxFileSizeBytes int64
 		wantErr          error
 		wantPkg          inventory.Inventory
 		wantStatus       []*plugin.Status

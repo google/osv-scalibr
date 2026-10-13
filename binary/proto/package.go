@@ -65,7 +65,7 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		}
 	}
 
-	id, err := pkg.GetIDOrGenerate(&extractor.RandomIDGenerator{})
+	id, err := pkg.GetIDOrGenerate()
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +85,7 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		Purl:       purlproto.ToProto(p),
 		Ecosystem:  pkg.Ecosystem().String(),
 		// TODO(b/400910349): Remove once integrators no longer read this field.
+		//nolint:staticcheck // nolint:SA1019
 		Locations:                     packageLocationToLegacyProto(pkg.Location),
 		Location:                      packageLocationToProto(pkg.Location),
 		Plugins:                       pkg.Plugins,

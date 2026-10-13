@@ -17,10 +17,12 @@ package scanrunner
 
 import (
 	"context"
+	"io"
 
 	scalibr "github.com/google/osv-scalibr"
 	scalibrlayerimage "github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/binary/cli"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/version"
@@ -38,10 +40,23 @@ func RunScan(flags *cli.Flags) int {
 		log.SetLogger(&log.DefaultLogger{Verbose: true})
 	}
 
+	if flags.DeterministicIDs {
+		extractor.SetIDGenerator(&extractor.SequentialIDGenerator{})
+	}
+
 	cfg, err := flags.GetScanConfig()
 	if err != nil {
 		log.Errorf("%v.GetScanConfig(): %v", flags, err)
 		return 1
+	}
+	if cfg.RequiredPluginConfig != nil && cfg.RequiredPluginConfig.ClientFactories != nil {
+		if closer, ok := cfg.RequiredPluginConfig.ClientFactories.(io.Closer); ok {
+			defer func() {
+				if err := closer.Close(); err != nil {
+					log.Warnf("failed to close client factories: %v", err)
+				}
+			}()
+		}
 	}
 
 	log.Infof("Running scan with %d plugins", len(cfg.Plugins))
@@ -51,7 +66,7 @@ func RunScan(flags *cli.Flags) int {
 
 	var result *scalibr.ScanResult
 	if flags.ImageTarball != "" {
-		layerCfg := scalibrlayerimage.DefaultConfig()
+		layerCfg := newLayerConfig(flags)
 		log.Infof("Scanning image tarball: %s", flags.ImageTarball)
 		img, err := scalibrlayerimage.FromTarball(flags.ImageTarball, layerCfg)
 		if err != nil {
@@ -75,7 +90,7 @@ func RunScan(flags *cli.Flags) int {
 			return 1
 		}
 	} else if flags.ImageLocal != "" { // We will scan an image in the local hard disk
-		layerCfg := scalibrlayerimage.DefaultConfig()
+		layerCfg := newLayerConfig(flags)
 		log.Infof("Scanning local image: %s", flags.ImageLocal)
 		img, err := scalibrlayerimage.FromLocalDockerImage(flags.ImageLocal, layerCfg)
 		if err != nil {
@@ -120,4 +135,14 @@ func RunScan(flags *cli.Flags) int {
 	}
 
 	return 0
+}
+
+func newLayerConfig(flags *cli.Flags) *scalibrlayerimage.Config {
+	config := scalibrlayerimage.DefaultConfig()
+	if flags.MaxFileSize > 0 {
+		config.MaxFileBytes = flags.MaxFileSize
+	} else {
+		log.Infof("Max file size not specified, defaulting to %d bytes", config.MaxFileBytes)
+	}
+	return config
 }

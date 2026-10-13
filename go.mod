@@ -1,12 +1,12 @@
 module github.com/google/osv-scalibr
 
-go 1.26.3
+go 1.27.1
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.14
 	deps.dev/api/v3 v3.0.0-20260422013440-90c27f84dd6f
 	deps.dev/api/v3alpha v0.0.0-20260422013440-90c27f84dd6f
-	deps.dev/util/maven v0.0.0-20260528042559-b92437de09fd
+	deps.dev/util/maven v0.0.0-20260928000106-0e158e8db197
 	deps.dev/util/pypi v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/resolve v0.0.0-20260422013440-90c27f84dd6f
 	deps.dev/util/semver v0.0.0-20260529052642-cf1e78d92744
@@ -24,9 +24,8 @@ require (
 	github.com/containerd/containerd/v2 v2.1.3
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/diskfs/go-diskfs v1.7.0
-	github.com/docker/docker v28.2.2+incompatible
 	github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589
-	github.com/erikvarga/go-rpmdb v0.0.0-20250523120114-a15a62cd4593
+	github.com/erikvarga/go-rpmdb v0.0.0-20261001143808-1a11b79cbdd3
 	github.com/go-git/go-git/v5 v5.19.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gohugoio/hashstructure v0.6.0
@@ -41,13 +40,15 @@ require (
 	github.com/michaelkedar/xml v0.0.0-20250626233154-4ec9e090d1cd
 	github.com/micromdm/plist v0.2.2
 	github.com/moby/buildkit v0.23.2
+	github.com/moby/moby/api v1.55.0
+	github.com/moby/moby/client v0.5.0
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/muesli/reflow v0.3.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/opencontainers/runtime-spec v1.2.1
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260424063704-83285ce2a866
-	github.com/package-url/packageurl-go v0.1.5
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260902031056-b388a18021a3
+	github.com/package-url/packageurl-go v0.1.6
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/pierrec/lz4/v4 v4.1.26
 	github.com/rust-secure-code/go-rustaudit v0.0.0-20250226111315-e20ec32e963c
@@ -61,22 +62,22 @@ require (
 	github.com/tink-crypto/tink-go/v2 v2.6.0
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.51.0
-	golang.org/x/mod v0.36.0
-	golang.org/x/net v0.54.0
+	golang.org/x/crypto v0.55.0
+	golang.org/x/mod v0.38.0
+	golang.org/x/net v0.58.0
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/sync v0.20.0
-	golang.org/x/sys v0.44.0
-	golang.org/x/term v0.43.0
-	golang.org/x/text v0.37.0
-	golang.org/x/tools v0.45.0
+	golang.org/x/sync v0.23.0
+	golang.org/x/sys v0.47.0
+	golang.org/x/term v0.45.0
+	golang.org/x/text v0.41.0
+	golang.org/x/tools v0.48.0
 	golang.org/x/vuln v1.3.0
-	google.golang.org/grpc v1.81.0
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/grpc v1.83.2
+	google.golang.org/protobuf v1.36.12
 	gopkg.in/ini.v1 v1.67.2
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.50.1
-	osv.dev/bindings/go v0.0.0-20260512064147-daa692bbd4ed
+	osv.dev/bindings/go v0.0.0-20261007022941-648e046ef8ee
 	www.velocidex.com/golang/go-ntfs v0.2.0
 	www.velocidex.com/golang/regparser v0.0.0-20250203141505-31e704a67ef7
 )
@@ -120,7 +121,7 @@ require (
 	github.com/docker/cli v28.2.2+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
+	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -156,7 +157,6 @@ require (
 	github.com/moby/sys/signal v0.7.1 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
-	github.com/moby/term v0.5.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
@@ -188,17 +188,17 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
-	go.opentelemetry.io/otel v1.43.0 // indirect
-	go.opentelemetry.io/otel/metric v1.43.0 // indirect
-	go.opentelemetry.io/otel/trace v1.43.0 // indirect
+	go.opentelemetry.io/otel v1.44.0 // indirect
+	go.opentelemetry.io/otel/metric v1.44.0 // indirect
+	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a // indirect
-	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
+	golang.org/x/telemetry v0.0.0-20260708182218-49f421fb7959 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260511170946-3700d4141b60 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260511170946-3700d4141b60 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260706201446-f0a921348800 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

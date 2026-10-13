@@ -119,18 +119,18 @@ func LocationFromPathAndLine(path string, line int) PackageLocation {
 }
 
 // RequireID generates an ID for the package if it is empty and returns the ID.
-func (p *Package) RequireID(idGenerator IDGenerator) (string, error) {
-	id, err := p.GetIDOrGenerate(idGenerator)
+func (p *Package) RequireID() (string, error) {
+	id, err := p.GetIDOrGenerate()
 	p.ID = id
 	return p.ID, err
 }
 
 // GetIDOrGenerate returns the ID of the package or a generated ID if it is empty.
-func (p *Package) GetIDOrGenerate(idGenerator IDGenerator) (string, error) {
+func (p *Package) GetIDOrGenerate() (string, error) {
 	if p.ID != "" {
 		return p.ID, nil
 	}
-	id, err := idGenerator.GenerateID(p.Name)
+	id, err := GetIDGenerator().GenerateID(p.Name)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate UUID for %q package %q version %q: %w", p.Ecosystem().String(), p.Name, p.Version, err)
 	}
