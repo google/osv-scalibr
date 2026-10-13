@@ -978,17 +978,19 @@ func TestRunFSGitignore(t *testing.T) {
 			mapFS: mapFS{
 				".":               nil,
 				"dir1":            nil,
+				"dir1/.git":       nil,
 				"dir1/file1.txt":  []byte("Content 1"),
 				"dir1/.gitignore": []byte("file1.txt"),
 			},
 			pathToExtract:  "dir1",
 			wantPkg1:       false,
-			wantInodeCount: 3,
+			wantInodeCount: 4,
 		},
 		{
 			desc: "Skip_dir",
 			mapFS: mapFS{
 				".":                  nil,
+				".git":               nil,
 				"dir2":               nil,
 				"dir2/sub":           nil,
 				"dir2/sub/file2.txt": []byte("Content 2"),
@@ -996,7 +998,7 @@ func TestRunFSGitignore(t *testing.T) {
 			},
 			pathToExtract:  "",
 			wantPkg2:       false,
-			wantInodeCount: 4,
+			wantInodeCount: 5,
 		},
 		{
 			desc: "Dont_skip_if_no_match",
@@ -1016,6 +1018,7 @@ func TestRunFSGitignore(t *testing.T) {
 			mapFS: mapFS{
 				".":                  nil,
 				"dir2":               nil,
+				"dir2/.git":          nil,
 				"dir2/sub":           nil,
 				"dir2/sub/file2.txt": []byte("Content 1"),
 				"dir2/.gitignore":    []byte("file2.txt"),
@@ -1028,6 +1031,7 @@ func TestRunFSGitignore(t *testing.T) {
 			desc: "Skip_based_on_child_gitignore",
 			mapFS: mapFS{
 				".":               nil,
+				".git":            nil,
 				"dir1":            nil,
 				"dir2":            nil,
 				"dir2/sub":        nil,
@@ -1039,7 +1043,44 @@ func TestRunFSGitignore(t *testing.T) {
 			pathToExtract:  "",
 			wantPkg1:       false,
 			wantPkg2:       true,
-			wantInodeCount: 7,
+			wantInodeCount: 8,
+		},
+		{
+			// google/osv-scalibr#902: .gitignore files outside of git
+			// repositories must not be applied. This fixture is identical to
+			// "Skip_file" above, except there is no ".git" anywhere, so
+			// file1.txt must NOT be skipped.
+			desc: "No_git_repo_gitignore_does_not_apply",
+			mapFS: mapFS{
+				".":               nil,
+				"dir1":            nil,
+				"dir1/file1.txt":  []byte("Content 1"),
+				"dir1/.gitignore": []byte("file1.txt"),
+			},
+			pathToExtract:  "dir1",
+			wantPkg1:       true,
+			wantInodeCount: 3,
+		},
+		{
+			// google/osv-scalibr#902: .gitignore files from the parent
+			// repository must not be applied to files in a nested git
+			// subrepository (e.g. a submodule). Same fixture as
+			// "Skip_based_on_parent_gitignore" above (dir2/.gitignore ignores
+			// file2.txt in its dir2/sub descendants), except dir2/sub is now
+			// itself a repository root (".git" present) and must therefore
+			// NOT inherit dir2's rule.
+			desc: "Nested_repo_does_not_inherit_parent_gitignore",
+			mapFS: mapFS{
+				".":                  nil,
+				"dir2":               nil,
+				"dir2/sub":           nil,
+				"dir2/sub/.git":      nil,
+				"dir2/sub/file2.txt": []byte("Content 1"),
+				"dir2/.gitignore":    []byte("file2.txt"),
+			},
+			pathToExtract:  "dir2/sub",
+			wantPkg2:       true,
+			wantInodeCount: 3,
 		},
 		{
 			desc: "ignore_sub_dirs",
