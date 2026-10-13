@@ -19,7 +19,8 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"sort"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -58,12 +59,8 @@ func expectDBToHaveOSVs(
 
 	vulns := db.Vulnerabilities
 
-	sort.Slice(vulns, func(i, j int) bool {
-		return vulns[i].GetId() < vulns[j].GetId()
-	})
-	sort.Slice(expect, func(i, j int) bool {
-		return expect[i].GetId() < expect[j].GetId()
-	})
+	slices.SortFunc(vulns, func(a, b *osvpb.Vulnerability) int { return strings.Compare(a.GetId(), b.GetId()) })
+	slices.SortFunc(expect, func(a, b *osvpb.Vulnerability) int { return strings.Compare(a.GetId(), b.GetId()) })
 
 	if diff := cmp.Diff(expect, vulns, protocmp.Transform()); diff != "" {
 		t.Errorf("db is missing some vulnerabilities (-want +got):\n%s", diff)

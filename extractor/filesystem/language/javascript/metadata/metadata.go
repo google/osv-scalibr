@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/binary/proto/metadata"
@@ -168,8 +168,8 @@ func ToProto(m *JavascriptPackageMetadata) *pb.JavascriptPackageJSONMetadata {
 			VersionRequired: version,
 		})
 	}
-	sort.Slice(dependencies, func(i, j int) bool {
-		return dependencies[i].GetName() < dependencies[j].GetName()
+	slices.SortFunc(dependencies, func(a, b *pb.JavascriptPackageJSONMetadata_Dependency) int {
+		return strings.Compare(a.GetName(), b.GetName())
 	})
 
 	return &pb.JavascriptPackageJSONMetadata{

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/detector"
@@ -122,7 +122,7 @@ func (d Detector) Scan(ctx context.Context, scanRoot *scalibrfs.ScanRoot, px *pa
 	}
 
 	// Sort users to avoid non-determinism in the processing order from users map.
-	sort.Strings(problemUsers)
+	slices.Sort(problemUsers)
 	buf := new(strings.Builder)
 	_, _ = fmt.Fprintln(buf, "The following users have weak passwords:")
 	for _, u := range problemUsers {

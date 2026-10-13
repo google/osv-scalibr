@@ -16,7 +16,7 @@ package proto
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	"github.com/google/osv-scalibr/converter"
@@ -74,7 +74,7 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 	for parent := range pkg.ParentIDs {
 		parentIDs = append(parentIDs, parent)
 	}
-	sort.Strings(parentIDs)
+	slices.Sort(parentIDs)
 
 	packageProto := &spb.Package{
 		Id:         id,
