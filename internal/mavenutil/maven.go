@@ -239,6 +239,45 @@ func GetDependencyManagement(ctx context.Context, client *datasource.MavenRegist
 	})
 }
 
+// ProcessDependencies dedupes the project's dependencies, imports dependency management from
+// remote BOMs and fills in missing versions. It returns the imports that failed to load.
+func ProcessDependencies(ctx context.Context, client *datasource.MavenRegistryAPIClient, project *maven.Project) []error {
+	var importErrs []error
+	project.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
+		dm, err := GetDependencyManagement(ctx, client, groupID, artifactID, version)
+		if err != nil {
+			importErrs = append(importErrs, fmt.Errorf("failed to import BOM %s:%s:%s: %w", groupID, artifactID, version, err))
+		}
+		return dm, err
+	})
+	return importErrs
+}
+
+// MissingVersionsError returns an error naming the dependencies that have no version after
+// parents and imported dependency management are applied, together with the BOM imports that
+// failed, which commonly cause them. It returns nil if every dependency has a version.
+func MissingVersionsError(deps []maven.Dependency, importErrs []error) error {
+	var names []string
+	for _, d := range deps {
+		if d.Version == "" {
+			names = append(names, d.Name())
+		}
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	msg := fmt.Sprintf("no version for %s: not managed by the project, its parents or imported BOMs, "+
+		"or managed with an undefined property", strings.Join(names, ", "))
+	if len(importErrs) > 0 {
+		failed := make([]string, len(importErrs))
+		for i, err := range importErrs {
+			failed[i] = err.Error()
+		}
+		msg += "; " + strings.Join(failed, "; ")
+	}
+	return errors.New(msg)
+}
+
 // CompareVersions compares two Maven semver versions with special behaviour for specific packages,
 // producing more desirable ordering using non-standard comparison.
 func CompareVersions(vk resolve.VersionKey, a *semver.Version, b *semver.Version) int {

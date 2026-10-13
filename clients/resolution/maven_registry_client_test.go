@@ -17,10 +17,12 @@ package resolution_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
+	mavenresolve "deps.dev/util/resolve/maven"
 	"deps.dev/util/resolve/version"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
@@ -166,5 +168,118 @@ func TestMavenRegistryClientCache(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantReqs, reqs2); diff != "" {
 		t.Errorf("cached Requirements() diff (-want +got):\n%s", diff)
+	}
+}
+
+func TestMavenRegistryClientUnversionedDependency(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponse(t, "org/example/app/1.0.0/app-1.0.0.pom", []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>app</artifactId>
+	  <version>1.0.0</version>
+	  <dependencies>
+	    <dependency>
+	      <groupId>org.example</groupId>
+	      <artifactId>lib</artifactId>
+	      <version>1.0.0</version>
+	    </dependency>
+	  </dependencies>
+	</project>`))
+	srv.SetResponse(t, "org/example/lib/1.0.0/lib-1.0.0.pom", []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>lib</artifactId>
+	  <version>1.0.0</version>
+	  <dependencies>
+	    <dependency>
+	      <groupId>org.dep</groupId>
+	      <artifactId>versioned</artifactId>
+	      <version>1.2.3</version>
+	    </dependency>
+	    <dependency>
+	      <groupId>org.dep</groupId>
+	      <artifactId>unversioned</artifactId>
+	    </dependency>
+	  </dependencies>
+	</project>`))
+	srv.SetResponse(t, "org/dep/versioned/1.2.3/versioned-1.2.3.pom", []byte(`
+	<project>
+	  <groupId>org.dep</groupId>
+	  <artifactId>versioned</artifactId>
+	  <version>1.2.3</version>
+	</project>`))
+
+	client, err := resolution.NewMavenRegistryClient(t.Context(), srv.URL, "", false, false, srv.Client(), nil)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryClient failed: %v", err)
+	}
+	root := resolve.VersionKey{
+		PackageKey:  resolve.PackageKey{System: resolve.Maven, Name: "org.example:app"},
+		VersionType: resolve.Concrete,
+		Version:     "1.0.0",
+	}
+
+	graph, err := mavenresolve.NewResolver(client).Resolve(t.Context(), root)
+	if err != nil {
+		t.Fatalf("Resolve() failed: %v", err)
+	}
+	if graph.Error != "" {
+		t.Fatalf("Resolve() graph error: %s", graph.Error)
+	}
+	var got []string
+	for _, n := range graph.Nodes {
+		got = append(got, n.Version.Name+"@"+n.Version.Version)
+	}
+	want := []string{"org.example:app@1.0.0", "org.example:lib@1.0.0", "org.dep:versioned@1.2.3"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("Resolve() nodes diff (-want +got):\n%s", diff)
+	}
+}
+
+func TestMavenRegistryClientUnversionedDependencyFailedImport(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponse(t, "org/example/lib/1.0.0/lib-1.0.0.pom", []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>lib</artifactId>
+	  <version>1.0.0</version>
+	  <dependencyManagement>
+	    <dependencies>
+	      <dependency>
+	        <groupId>org.example</groupId>
+	        <artifactId>missing-bom</artifactId>
+	        <version>1.0.0</version>
+	        <type>pom</type>
+	        <scope>import</scope>
+	      </dependency>
+	    </dependencies>
+	  </dependencyManagement>
+	  <dependencies>
+	    <dependency>
+	      <groupId>org.dep</groupId>
+	      <artifactId>unversioned</artifactId>
+	    </dependency>
+	  </dependencies>
+	</project>`))
+
+	client, err := resolution.NewMavenRegistryClient(t.Context(), srv.URL, "", false, false, srv.Client(), nil)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryClient failed: %v", err)
+	}
+	vk := resolve.VersionKey{
+		PackageKey:  resolve.PackageKey{System: resolve.Maven, Name: "org.example:lib"},
+		VersionType: resolve.Concrete,
+		Version:     "1.0.0",
+	}
+
+	_, err = client.Requirements(t.Context(), vk)
+	if err == nil {
+		t.Fatal("Requirements() succeeded, want an error naming the failed BOM import")
+	}
+	for _, want := range []string{"no version for org.dep:unversioned", "failed to import BOM org.example:missing-bom:1.0.0"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("Requirements() error = %q, want it to contain %q", err, want)
+		}
 	}
 }
