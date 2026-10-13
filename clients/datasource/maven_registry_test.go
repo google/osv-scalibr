@@ -690,3 +690,93 @@ func TestGetCachedDependencyManagement(t *testing.T) {
 		t.Errorf("cached DependencyManagement exclusion was mutated: got %q, want %q", got, "b")
 	}
 }
+
+func TestResolveMetaversion(t *testing.T) {
+	dft := clienttest.NewMockHTTPServer(t)
+	dft.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
+	<metadata>
+	  <versioning>
+	    <latest>3.0.0-SNAPSHOT</latest>
+	    <release>2.0.0</release>
+	    <versions>
+	      <version>1.0.0</version>
+	      <version>2.0.0</version>
+	      <version>3.0.0-SNAPSHOT</version>
+	    </versions>
+	  </versioning>
+	</metadata>`))
+	// Metadata without release or latest elements falls back to the listed versions.
+	dft.SetResponse(t, "org/example/no-release/maven-metadata.xml", []byte(`
+	<metadata>
+	  <versioning>
+	    <versions>
+	      <version>1.0.0</version>
+	      <version>1.10.0</version>
+	      <version>1.9.0</version>
+	      <version>2.0.0-SNAPSHOT</version>
+	    </versions>
+	  </versioning>
+	</metadata>`))
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
+	<metadata>
+	  <versioning>
+	    <release>2.5.0</release>
+	    <versions>
+	      <version>2.5.0</version>
+	    </versions>
+	  </versioning>
+	</metadata>`))
+	snapshots := clienttest.NewMockHTTPServer(t)
+	snapshots.SetResponse(t, "org/example/x.y.z/maven-metadata.xml", []byte(`
+	<metadata>
+	  <versioning>
+	    <latest>2.6.0-SNAPSHOT</latest>
+	    <versions>
+	      <version>2.6.0-SNAPSHOT</version>
+	    </versions>
+	  </versioning>
+	</metadata>`))
+
+	// The default registry serves releases only.
+	releasesOnly, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), dft.URL)
+	if err := releasesOnly.AddRegistry(t.Context(), datasource.MavenRegistry{URL: srv.URL, ID: "srv", ReleasesEnabled: true}); err != nil {
+		t.Fatalf("failed to add registry %s: %v", srv.URL, err)
+	}
+	withSnapshots, _ := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), dft.URL)
+	if err := withSnapshots.AddRegistry(t.Context(), datasource.MavenRegistry{URL: snapshots.URL, ID: "snapshots", SnapshotsEnabled: true}); err != nil {
+		t.Fatalf("failed to add registry %s: %v", snapshots.URL, err)
+	}
+
+	tests := []struct {
+		name        string
+		client      *datasource.MavenRegistryAPIClient
+		artifactID  string
+		metaversion string
+		want        string
+	}{
+		{name: "highest release across registries", client: releasesOnly, artifactID: "x.y.z", metaversion: "RELEASE", want: "2.5.0"},
+		{name: "latest skips snapshots from registries without snapshots", client: releasesOnly, artifactID: "x.y.z", metaversion: "LATEST", want: "2.5.0"},
+		{name: "latest takes snapshots from registries with snapshots", client: withSnapshots, artifactID: "x.y.z", metaversion: "LATEST", want: "2.6.0-SNAPSHOT"},
+		{name: "release ignores registries without releases", client: withSnapshots, artifactID: "x.y.z", metaversion: "RELEASE", want: "2.0.0"},
+		{name: "release falls back to listed versions", client: releasesOnly, artifactID: "no-release", metaversion: "RELEASE", want: "1.10.0"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := tc.client.ResolveMetaversion(t.Context(), "org.example", tc.artifactID, tc.metaversion)
+			if err != nil {
+				t.Fatalf("ResolveMetaversion(%q, %q) failed: %v", tc.artifactID, tc.metaversion, err)
+			}
+			if got != tc.want {
+				t.Errorf("ResolveMetaversion(%q, %q) = %q, want %q", tc.artifactID, tc.metaversion, got, tc.want)
+			}
+		})
+	}
+
+	if _, err := releasesOnly.ResolveMetaversion(t.Context(), "org.example", "missing", "RELEASE"); err == nil {
+		t.Error("ResolveMetaversion() for a missing package succeeded, want an error")
+	}
+	if _, err := releasesOnly.ResolveMetaversion(t.Context(), "org.example", "x.y.z", "1.0.0"); err == nil {
+		t.Error("ResolveMetaversion() for a concrete version succeeded, want an error")
+	}
+}
