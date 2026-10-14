@@ -62,6 +62,7 @@ func TestDetectorsFromName(t *testing.T) {
 			wantDets: []string{
 				"cronjobprivesc",
 				"dockersocket",
+				"misc/ldsopreload",
 				"misc/pammisconfig",
 			},
 		},
