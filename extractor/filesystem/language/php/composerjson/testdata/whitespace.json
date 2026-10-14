@@ -1,0 +1,15 @@
+{
+  "name": "vendor/project",
+  "require": {
+    "vendor/gte": ">= 1.0",
+    "vendor/gt": "> 1.2.3",
+    "vendor/eq": "= 1.2.3",
+    "vendor/lt": "< 2.0",
+    "vendor/not-eq": ">= 1.0, != 1.0",
+    "vendor/range": ">=  1.0  <  2.0",
+    "vendor/or": ">= 1.0 < 2.0 || >= 3.0"
+  },
+  "require-dev": {
+    "vendor/dev-gte": ">= 5.6"
+  }
+}
