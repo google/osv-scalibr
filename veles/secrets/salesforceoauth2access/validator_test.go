@@ -15,7 +15,6 @@
 package salesforceoauth2access_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,12 +24,28 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2access"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestToken = "00D123456789!AB_CDEF.ABC123456789ABC123456789ABC12ABC123456789ABC123456789ABC12"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		salesforceoauth2access.NewValidator(),
+		velestest.WithTrueNegatives(
+			salesforceoauth2access.Token{Token: validatorTestToken},
+			salesforceoauth2access.Token{Token: "randomKey"},
+		),
+		velestest.WithBrokenTransport(func(v *sv.Validator[salesforceoauth2access.Token]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
 
 // mockTransport redirects requests to the test server
 type mockTransport struct {
@@ -71,11 +86,10 @@ func mockPaystackServer(t *testing.T, expectedToken string, statusCode int) *htt
 
 func TestValidator(t *testing.T) {
 	cases := []struct {
-		name          string
-		statusCode    int
-		cancelContext bool
-		want          veles.ValidationStatus
-		wantErr       error
+		name       string
+		statusCode int
+		want       veles.ValidationStatus
+		wantErr    error
 	}{
 		{
 			name:       "valid_token",
@@ -99,28 +113,13 @@ func TestValidator(t *testing.T) {
 			want:       veles.ValidationFailed,
 			wantErr:    cmpopts.AnyError,
 		},
-		{
-			name:          "context cancelled",
-			statusCode:    http.StatusInternalServerError,
-			cancelContext: true,
-			want:          veles.ValidationFailed,
-			wantErr:       cmpopts.AnyError,
-		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := t.Context()
-
 			// Create mock server
 			server := mockPaystackServer(t, validatorTestToken, tt.statusCode)
 			defer server.Close()
-
-			if tt.cancelContext {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithCancel(ctx)
-				cancel()
-			}
 
 			validator := salesforceoauth2access.NewValidator()
 			if server != nil {
@@ -133,7 +132,7 @@ func TestValidator(t *testing.T) {
 			token := salesforceoauth2access.Token{Token: validatorTestToken}
 
 			// Test validation
-			got, err := validator.Validate(ctx, token)
+			got, err := validator.Validate(t.Context(), token)
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)
