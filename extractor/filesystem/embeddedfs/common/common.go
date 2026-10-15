@@ -36,7 +36,6 @@ import (
 	"github.com/diskfs/go-diskfs/filesystem/fat32"
 	"github.com/diskfs/go-diskfs/partition/part"
 	"github.com/dsoprea/go-exfat"
-	"github.com/google/osv-scalibr/artifact/image/symlink"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/masahiro331/go-ext4-filesystem/ext4"
 	"www.velocidex.com/golang/go-ntfs/parser"
@@ -699,7 +698,10 @@ loop:
 			break
 		}
 
-		if symlink.TargetOutsideRoot("/", hdr.Name) {
+		// Validate using the same OS path semantics as filepath.Join below.
+		// On Windows, this also rejects backslash traversal, volume prefixes,
+		// and reserved device names.
+		if !filepath.IsLocal(hdr.Name) {
 			extractErr = errors.New("tar contains invalid entries")
 			break
 		}
