@@ -51,6 +51,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/vendormodules"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stack"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
@@ -306,6 +307,10 @@ var (
 	HaskellSource = InitMap{
 		stacklock.Name: {protoCfg(stacklock.New)},
 		cabal.Name:     {protoCfg(cabal.New)},
+	}
+	// HaskellArtifact extractors for Haskell.
+	HaskellArtifact = InitMap{
+		stack.Name: {protoCfg(stack.New)},
 	}
 	// RSource extractors for R source extractors
 	RSource = InitMap{
@@ -606,6 +611,7 @@ var (
 		FFA,
 		JuliaArtifact,
 		RubyArtifact,
+		HaskellArtifact,
 		ZigArtifact,
 	)
 
@@ -639,7 +645,7 @@ var (
 		"nim":        vals(NimSource),
 		"ocaml":      vals(OcamlSource),
 		"elixir":     vals(ElixirSource),
-		"haskell":    vals(HaskellSource),
+		"haskell":    vals(concat(HaskellSource, HaskellArtifact)),
 		"r":          vals(RSource),
 		"ruby":       vals(concat(RubySource, RubyArtifact)),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),

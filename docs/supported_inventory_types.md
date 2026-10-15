@@ -81,6 +81,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | go.mod (OSV)                                      | `go/gomod`                           |
 |            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
+|            | Installed stack packages                          | `haskell/stack`                      |
 |            | cabal.project.freeze                              | `haskell/cabal`                      |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
