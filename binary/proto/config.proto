@@ -119,6 +119,7 @@ message PluginSpecificConfig {
     RubyGemConfig ruby_gem = 82;
     ZigBuildZigZonConfig buildzigzon = 83;
     UbuntuBinaryToSourceConfig ubuntu_binary_to_source = 84;
+    HaskellCabalProjectFreezeConfig haskell_cabal_project_freeze = 85;
   }
 }
 
@@ -509,6 +510,13 @@ message HaskellStacklockConfig {
 }
 
 message HaskellCabalConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message HaskellCabalProjectFreezeConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.

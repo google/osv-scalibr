@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cabal extracts cabal.project.freeze files from haskell projects.
+// Package cabal extracts packages installed through cabal package manager.
 package cabal
 
 import (
 	"bufio"
 	"context"
 	"fmt"
-	"path/filepath"
-	"regexp"
+	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -43,7 +42,7 @@ const (
 	defaultMaxFileSizeBytes = 30 * units.MiB
 )
 
-// Extractor extracts cabal package info from cabal.project.freeze files.
+// Extractor extracts cabal package info from cabal installed packages.
 type Extractor struct {
 	Stats            stats.Collector
 	maxFileSizeBytes int64
@@ -73,11 +72,21 @@ func (e Extractor) Version() int { return 0 }
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
-// FileRequired return true if the specified file matched the cabal.project.freeze file pattern.
+// FileRequired returns true if the specified file is a cabal store package database conf file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	path := api.Path()
+	filePath := api.Path()
 
-	if filepath.Base(path) != "cabal.project.freeze" {
+	if path.Ext(filePath) != ".conf" {
+		return false
+	}
+
+	// The path Cabal package database entries are stored under includes "cabal/store".
+	if !strings.Contains(filePath, "cabal/store") {
+		return false
+	}
+
+	// Cabal package database entries are stored directly under a package.db directory.
+	if path.Base(path.Dir(filePath)) != "package.db" {
 		return false
 	}
 
@@ -86,11 +95,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		e.reportFileRequired(filePath, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
 
-	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	e.reportFileRequired(filePath, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
 }
 
@@ -105,7 +114,7 @@ func (e Extractor) reportFileRequired(path string, fileSizeBytes int64, result s
 	})
 }
 
-// Extract extracts packages from the cabal.project.freeze file.
+// Extract extracts package from the cabal store conf file.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	pkgs, err := e.extractFromInput(ctx, input)
 
@@ -123,11 +132,12 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-var versionConstraintRe = regexp.MustCompile(`any\.(\S+) ==(\S+)`)
-
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	s := bufio.NewScanner(input.Reader)
 	packages := []*extractor.Package{}
+
+	var pkgName string
+	var pkgVersion string
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
@@ -135,32 +145,49 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			return packages, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
-		line := s.Text()
+		// Stop scanning once both the package name and version have been found.
+		if pkgName != "" && pkgVersion != "" {
+			break
+		}
 
-		if strings.HasPrefix(line, "--") || strings.TrimSpace(line) == "" {
+		line := s.Text()
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "" || strings.HasPrefix(trimmed, "--") {
 			continue
 		}
 
-		matches := versionConstraintRe.FindStringSubmatch(line)
+		// Cabal fields at the top level are not indented.
+		isIndented := len(line) > 0 && (line[0] == ' ' || line[0] == '\t')
 
-		if len(matches) == 3 {
-			pkgName := matches[1]
-			pkgVersion := strings.TrimSuffix(matches[2], ",")
+		if strings.HasPrefix(trimmed, "name:") && !isIndented {
+			pkgName = strings.TrimSpace(strings.TrimPrefix(trimmed, "name:"))
+			continue
+		}
 
-			p := &extractor.Package{
-				Name:     pkgName,
-				Version:  pkgVersion,
-				PURLType: purl.TypeHackage,
-				Location: extractor.LocationFromPath(input.Path),
-			}
-
-			packages = append(packages, p)
+		if strings.HasPrefix(trimmed, "version:") && !isIndented {
+			pkgVersion = strings.TrimSpace(strings.TrimPrefix(trimmed, "version:"))
+			continue
 		}
 	}
 
 	if err := s.Err(); err != nil {
-		return packages, fmt.Errorf("error while scanning cabal.project.freeze file: %w", err)
+		return packages, fmt.Errorf("error while scanning cabal store conf file: %w", err)
 	}
+
+	if pkgName == "" || pkgVersion == "" {
+		return packages, fmt.Errorf("missing package name or version in cabal store conf file: %s", input.Path)
+	}
+
+	location := extractor.LocationFromPath(input.Path)
+
+	// Package represented by this .conf file.
+	packages = append(packages, &extractor.Package{
+		Name:     pkgName,
+		Version:  pkgVersion,
+		PURLType: purl.TypeHackage,
+		Location: location,
+	})
 
 	return packages, nil
 }
