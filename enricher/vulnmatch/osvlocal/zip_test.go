@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
@@ -459,4 +460,79 @@ func TestNewZippedDB_WithSpecificPackages(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestNewZippedDB_GitRangeWithoutPackage(t *testing.T) {
+	testDir := createTestDir(t)
+
+	ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+			"GHSA-git.json": {
+				Id: "GHSA-git",
+				Affected: []*osvpb.Affected{
+					{
+						Ranges: []*osvpb.Range{
+							{
+								Type: osvpb.Range_GIT,
+								Repo: "https://github.com/example/my-repo.git",
+							},
+						},
+					},
+				},
+			},
+			"GHSA-other.json": {
+				Id: "GHSA-other",
+				Affected: []*osvpb.Affected{
+					{
+						Ranges: []*osvpb.Range{
+							{
+								Type: osvpb.Range_GIT,
+								Repo: "https://github.com/example/other-repo.git",
+							},
+						},
+					},
+				},
+			},
+		})
+	})
+
+	db, err := newZippedDB(
+		t.Context(),
+		testDir,
+		"my-db",
+		ts.URL,
+		false,
+		[]*extractor.Package{{Name: "github.com/example/my-repo"}},
+		http.DefaultClient,
+	)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectDBToHaveOSVs(t, db, []*osvpb.Vulnerability{
+		{
+			Id: "GHSA-git",
+			Affected: []*osvpb.Affected{
+				{
+					Ranges: []*osvpb.Range{
+						{
+							Type: osvpb.Range_GIT,
+							Repo: "https://github.com/example/my-repo.git",
+						},
+					},
+				},
+			},
+		},
+	})
+}
+
+func BenchmarkProtoUnmarshal_Baseline(b *testing.B) {
+	jsonBytes := []byte(`{"id":"GHSA-1234","summary":"vulnerability in other package","affected":[{"package":{"name":"other-pkg","ecosystem":"PyPI"}}]}`)
+
+	b.ReportAllocs()
+	for b.Loop() {
+		v := &osvpb.Vulnerability{}
+		_ = protojson.Unmarshal(jsonBytes, v)
+	}
 }
