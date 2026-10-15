@@ -141,6 +141,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("could not extract %w", err)
 	}
 
+	if parsedLockfile == nil {
+		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
+	}
+
 	finder := linefinder.NewJSONLineFinder(b)
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
 
