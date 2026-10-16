@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strings"
 	"sync"
@@ -186,6 +187,20 @@ func convertVDIToRaw(in io.Reader, out sparseWriter) error {
 	if hdr.Signature != Signature {
 		return errors.New("not a valid VDI file (bad signature)")
 	}
+	if hdr.DiskSize > math.MaxInt64 {
+		return fmt.Errorf("VDI disk size %d exceeds the maximum supported size", hdr.DiskSize)
+	}
+	if hdr.ImageType == 1 {
+		if hdr.BlockSize == 0 {
+			return errors.New("invalid VDI block size 0")
+		}
+		// The map must cover the disk; QEMU enforces the same minimum:
+		// https://github.com/qemu/qemu/blob/a19f59a72d96056d9a8f48cf6c77f5787491e414/block/vdi.c#L454-L464
+		if uint64(hdr.BlocksInImage)*uint64(hdr.BlockSize) < hdr.DiskSize {
+			return fmt.Errorf("VDI block count %d cannot cover disk size %d with block size %d",
+				hdr.BlocksInImage, hdr.DiskSize, hdr.BlockSize)
+		}
+	}
 
 	curPos := int64(binary.Size(hdr))
 
@@ -201,25 +216,28 @@ func convertVDIToRaw(in io.Reader, out sparseWriter) error {
 			curPos = int64(hdr.OffsetBmap)
 		}
 
-		indices := make([]uint32, hdr.BlocksInImage)
-		if err := binary.Read(in, binary.LittleEndian, &indices); err != nil {
+		mapSize := int64(hdr.BlocksInImage) * 4
+		blockMap, err := io.ReadAll(io.LimitReader(in, mapSize))
+		if err != nil {
 			return fmt.Errorf("failed to read block map: %w", err)
 		}
-		curPos += int64(4 * len(indices))
+		if int64(len(blockMap)) != mapSize {
+			return fmt.Errorf("failed to read block map: %w", io.ErrUnexpectedEOF)
+		}
+		curPos += mapSize
 
 		stride := uint64(hdr.BlockSize) + uint64(hdr.BlockExtra)
-		for i := range indices {
+		for i := uint32(0); i < hdr.BlocksInImage; i++ {
 			virtOffset := uint64(i) * uint64(hdr.BlockSize)
-			writeSize := uint64(hdr.BlockSize)
-			if virtOffset+writeSize > hdr.DiskSize {
-				writeSize = hdr.DiskSize - virtOffset
+			if virtOffset >= hdr.DiskSize {
+				break
 			}
+			writeSize := min(uint64(hdr.BlockSize), hdr.DiskSize-virtOffset)
 
-			idx := indices[i]
+			idx := binary.LittleEndian.Uint32(blockMap[4*uint64(i):])
 			// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L125-L131
 			if idx == 0xFFFFFFFF || idx == 0xFFFFFFFE {
-				// Unallocated/discarded blocks read as zeros. Seek over them so the
-				// raw output remains sparse instead of physically writing zeros.
+				// Keep unallocated blocks sparse in the raw output.
 				if _, err := out.Seek(int64(writeSize), io.SeekCurrent); err != nil {
 					return fmt.Errorf("failed to create sparse hole at guest offset %d: %w", virtOffset, err)
 				}
