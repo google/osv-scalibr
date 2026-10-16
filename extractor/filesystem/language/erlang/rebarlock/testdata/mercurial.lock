@@ -1,0 +1,6 @@
+{"1.2.0",
+[{<<"hg_dep">>,
+  {hg,"https://hg.example.com/hg_dep",
+      {ref,"fc94cce7830fa4dc455024bc2a83720afe244531"}},
+  0},
+ {<<"cowlib">>,{pkg,<<"cowlib">>,<<"2.11.0">>},0}]}.
