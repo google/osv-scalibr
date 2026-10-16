@@ -344,7 +344,12 @@ func readRefcountBlock(rtEntry uint64, header *header, reader io.ReaderAt) ([]ui
 	return refcountBlock, nil
 }
 
-func writeRawImage(header *header, l1Table []uint64, reader io.ReaderAt, writer io.Writer, crypto cryptoConfig, fileSize uint64) error {
+type sparseWriter interface {
+	io.Writer
+	io.Seeker
+}
+
+func writeRawImage(header *header, l1Table []uint64, reader io.ReaderAt, writer sparseWriter, crypto cryptoConfig, fileSize uint64) error {
 	clusterSize := uint64(1) << header.ClusterBits
 	entriesPerL2 := clusterSize / 8
 	for guestOffset := uint64(0); guestOffset < header.Size; guestOffset += clusterSize {
@@ -357,12 +362,18 @@ func writeRawImage(header *header, l1Table []uint64, reader io.ReaderAt, writer 
 			return fmt.Errorf("failed to read L2 table at guest offset 0x%x: %w", guestOffset, err)
 		}
 		if l2Table == nil {
-			if _, err := writer.Write(bytes.Repeat([]byte{0}, int(clusterSize))); err != nil {
-				return fmt.Errorf("failed to write zeros at guest offset 0x%x: %w", guestOffset, err)
+			if _, err := writer.Seek(int64(clusterSize), io.SeekCurrent); err != nil {
+				return fmt.Errorf("failed to create sparse hole at guest offset 0x%x: %w", guestOffset, err)
 			}
 			continue
 		}
 		l2Index := (guestOffset / clusterSize) % entriesPerL2
+		if l2Table[l2Index] == 0 {
+			if _, err := writer.Seek(int64(clusterSize), io.SeekCurrent); err != nil {
+				return fmt.Errorf("failed to create sparse hole at guest offset 0x%x: %w", guestOffset, err)
+			}
+			continue
+		}
 		cluster, err := readCluster(l2Table[l2Index], header, reader, crypto, fileSize, guestOffset)
 		if err != nil {
 			return fmt.Errorf("failed to read cluster at guest offset 0x%x: %w", guestOffset, err)
