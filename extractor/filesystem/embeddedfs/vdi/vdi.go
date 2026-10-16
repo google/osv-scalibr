@@ -168,8 +168,15 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 
 // VDI conversion functions
 
-// convertVDIToRaw converts a VDI image to a raw image using streaming I/O only (no Seek).
-func convertVDIToRaw(in io.Reader, out io.Writer) error {
+type sparseWriter interface {
+	io.Writer
+	io.Seeker
+	Truncate(size int64) error
+}
+
+// convertVDIToRaw converts a VDI image to a raw image. Unallocated dynamic VDI
+// blocks are represented as sparse holes in the output file.
+func convertVDIToRaw(in io.Reader, out sparseWriter) error {
 	var hdr header
 	if err := binary.Read(in, binary.LittleEndian, &hdr); err != nil {
 		return fmt.Errorf("failed to read VDI header: %w", err)
@@ -211,9 +218,10 @@ func convertVDIToRaw(in io.Reader, out io.Writer) error {
 			idx := indices[i]
 			// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L125-L131
 			if idx == 0xFFFFFFFF || idx == 0xFFFFFFFE {
-				// unallocated/discarded: write zeros
-				if err := writeZeros(out, int64(writeSize)); err != nil {
-					return err
+				// Unallocated/discarded blocks read as zeros. Seek over them so the
+				// raw output remains sparse instead of physically writing zeros.
+				if _, err := out.Seek(int64(writeSize), io.SeekCurrent); err != nil {
+					return fmt.Errorf("failed to create sparse hole at guest offset %d: %w", virtOffset, err)
 				}
 				continue
 			}
@@ -232,6 +240,9 @@ func convertVDIToRaw(in io.Reader, out io.Writer) error {
 			if err != nil {
 				return fmt.Errorf("failed to read data block: %w", err)
 			}
+		}
+		if err := out.Truncate(int64(hdr.DiskSize)); err != nil {
+			return fmt.Errorf("failed to set raw image size: %w", err)
 		}
 		return nil
 
@@ -252,18 +263,6 @@ func convertVDIToRaw(in io.Reader, out io.Writer) error {
 	default:
 		return fmt.Errorf("unsupported VDI type %d", hdr.ImageType)
 	}
-}
-
-func writeZeros(w io.Writer, n int64) error {
-	buf := make([]byte, 64*1024)
-	for n > 0 {
-		chunk := min(int64(len(buf)), n)
-		if _, err := w.Write(buf[:chunk]); err != nil {
-			return err
-		}
-		n -= chunk
-	}
-	return nil
 }
 
 func skipBytes(r io.Reader, n int64) error {
