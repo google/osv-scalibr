@@ -25,6 +25,7 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/osv-scalibr/clients/datasource"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/helper"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/tidwall/gjson"
@@ -85,7 +86,7 @@ func nodesFromDependencies(lockJSON packagelockjson.LockFile, packageJSON io.Rea
 
 func computeDependenciesRecursive(g *resolve.Graph, parent *nodeModule, deps map[string]packagelockjson.Dependency) error {
 	for name, d := range deps {
-		actualName, version := npm.SplitNPMAlias(d.Version)
+		actualName, version := helper.SplitNPMAlias(d.Version)
 		nID := g.AddNode(resolve.VersionKey{
 			PackageKey: resolve.PackageKey{
 				System: resolve.NPM,
@@ -144,7 +145,7 @@ func writeDependenciesRecursive(lockf []byte, patchMap map[string]map[string]str
 			}
 		}
 		isAlias := false
-		realPkg, version := npm.SplitNPMAlias(data.Get("version").String())
+		realPkg, version := helper.SplitNPMAlias(data.Get("version").String())
 		if realPkg != "" {
 			isAlias = true
 			pkg = realPkg
