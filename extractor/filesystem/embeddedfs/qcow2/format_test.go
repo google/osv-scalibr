@@ -17,10 +17,37 @@ package qcow2
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+type countingReaderAt struct {
+	io.ReaderAt
+	reads int
+}
+
+func (r *countingReaderAt) ReadAt(p []byte, off int64) (int, error) {
+	r.reads++
+	return r.ReaderAt.ReadAt(p, off)
+}
+
+func TestCheckImageIntegrityDoesNotScanRefcountBlocks(t *testing.T) {
+	const clusterSize = 512
+	table := make([]byte, clusterSize)
+	for i := 0; i < len(table); i += 8 {
+		binary.BigEndian.PutUint64(table[i:], clusterSize)
+	}
+	reader := &countingReaderAt{ReaderAt: bytes.NewReader(append(table, make([]byte, clusterSize)...))}
+	h := &header{ClusterBits: 9, RefcountTableClusters: 1}
+	if err := checkImageIntegrity(h, reader); err != nil {
+		t.Fatal(err)
+	}
+	if reader.reads != 1 {
+		t.Errorf("refcount reads = %d, want one table read", reader.reads)
+	}
+}
 
 func TestParseHeaderValidMinimal(t *testing.T) {
 	buf := new(bytes.Buffer)
@@ -54,6 +81,49 @@ func TestParseHeaderValidMinimal(t *testing.T) {
 	}
 	if len(exts) != 0 {
 		t.Fatalf("expected no extensions")
+	}
+}
+
+func TestParseHeaderRejectsOversizedExtension(t *testing.T) {
+	var buf bytes.Buffer
+	h := header{Magic: qcow2Magic, Version: 3, ClusterBits: 9}
+	if err := binary.Write(&buf, binary.BigEndian, &h); err != nil {
+		t.Fatal(err)
+	}
+	if err := binary.Write(&buf, binary.BigEndian, [2]uint32{1, ^uint32(0)}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := parseHeader(bytes.NewReader(buf.Bytes())); err == nil {
+		t.Fatal("parseHeader accepted an extension larger than a cluster")
+	}
+}
+
+func TestConvertQCOW2ToRawRejectsTruncatedTables(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		hdr  header
+	}{
+		{"L1", header{Size: 512, L1Size: 1, L1TableOffset: 512}},
+		{"refcount", header{RefcountTableOffset: 512, RefcountTableClusters: 1}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := tc.hdr
+			h.Magic, h.Version, h.ClusterBits = qcow2Magic, 3, 9
+			var buf bytes.Buffer
+			if err := binary.Write(&buf, binary.BigEndian, &h); err != nil {
+				t.Fatal(err)
+			}
+			if err := binary.Write(&buf, binary.BigEndian, uint32(0)); err != nil {
+				t.Fatal(err)
+			}
+			in := filepath.Join(t.TempDir(), "truncated.qcow2")
+			if err := os.WriteFile(in, buf.Bytes(), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := convertQCOW2ToRaw(in, filepath.Join(t.TempDir(), "out.raw"), ""); err == nil {
+				t.Fatal("convertQCOW2ToRaw accepted a table beyond the input file")
+			}
+		})
 	}
 }
 
