@@ -111,9 +111,11 @@ func (p *PyPIRegistryAPIClient) get(ctx context.Context, url string, queryIndex 
 	urlPath := urlToPath(url)
 	if urlPath != "" && p.localRegistry != "" {
 		file = filepath.Join(p.localRegistry, urlPath)
-		if content, err := os.ReadFile(file); err == nil {
-			// We can still fetch the file from upstream if error is not nil.
-			return content, nil
+		if root, err := os.OpenRoot(p.localRegistry); err == nil {
+			defer root.Close()
+			if content, err := root.ReadFile(urlPath); err == nil {
+				return content, nil
+			}
 		}
 	}
 
