@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"io"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -100,8 +100,8 @@ func TestConffilePathIterator(t *testing.T) {
 				got = append(got, path)
 			}
 
-			sort.Strings(got)
-			sort.Strings(tt.want)
+			slices.Sort(got)
+			slices.Sort(tt.want)
 
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("ConffilePathIterator returned diff (-want +got):\n%s", diff)
@@ -216,8 +216,8 @@ func TestListFilePathIterator(t *testing.T) {
 				got = append(got, path)
 			}
 
-			sort.Strings(got)
-			sort.Strings(tt.want)
+			slices.Sort(got)
+			slices.Sort(tt.want)
 
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("FileIterator returned diff (-want +got):\n%s", diff)
