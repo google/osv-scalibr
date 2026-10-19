@@ -106,7 +106,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, fmt.Errorf("could not read file: %w", err)
 	}
 
-	var parsedLockfile *poetryLockFile
+	var parsedLockfile poetryLockFile
 	if err := toml.Unmarshal(content, &parsedLockfile); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}

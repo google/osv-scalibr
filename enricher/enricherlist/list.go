@@ -27,12 +27,15 @@ import (
 	"github.com/google/osv-scalibr/enricher/herokuexpiration"
 	"github.com/google/osv-scalibr/enricher/huggingfacemeta"
 	"github.com/google/osv-scalibr/enricher/license"
+	"github.com/google/osv-scalibr/enricher/os/ubuntu/binarytosource"
 	"github.com/google/osv-scalibr/enricher/packagedeprecation"
 	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/enricher/reachability/java"
 	"github.com/google/osv-scalibr/enricher/reachability/rust"
 	"github.com/google/osv-scalibr/enricher/secrets/convert"
 	"github.com/google/osv-scalibr/enricher/secrets/hashicorp"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/javaarchive"
+	"github.com/google/osv-scalibr/enricher/transitivedependency/nodemodules"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/pomxml"
 	"github.com/google/osv-scalibr/enricher/transitivedependency/requirements"
 	"github.com/google/osv-scalibr/enricher/vex/filter"
@@ -85,10 +88,20 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
+	"github.com/google/osv-scalibr/plugin/config"
 )
 
 // InitFn is the enricher initializer function.
-type InitFn func(cfg *cpb.PluginConfig) (enricher.Enricher, error)
+type InitFn func(cfg *config.PluginConfig) (enricher.Enricher, error)
+
+func protoCfg(f func(cfg *cpb.PluginConfig) (enricher.Enricher, error)) InitFn {
+	return func(cfg *config.PluginConfig) (enricher.Enricher, error) {
+		if cfg == nil || cfg.ProtoConfig == nil {
+			return f(&cpb.PluginConfig{})
+		}
+		return f(cfg.ProtoConfig)
+	}
+}
 
 // InitMap is a map of names to enricher initializer functions.
 type InitMap map[string][]InitFn
@@ -105,15 +118,22 @@ var (
 		license.Name: {license.New},
 	}
 
+	// OSPackageMetadata enrichers fill in missing OS package metadata.
+	OSPackageMetadata = InitMap{
+		binarytosource.Name: {binarytosource.New},
+	}
+
 	// VulnMatching enrichers.
-	VulnMatching = InitMap{
+	// Includes the OSPackageMetadata enrichers since they fill in the package
+	// fields (e.g. source package names) used for matching.
+	VulnMatching = concat(OSPackageMetadata, InitMap{
 		osvdev.Name:   {osvdev.New},
 		osvlocal.Name: {osvlocal.New},
-	}
+	})
 
 	// VEX related enrichers.
 	VEX = InitMap{
-		filter.Name: {filter.New},
+		filter.Name: {protoCfg(filter.New)},
 	}
 
 	// SecretsValidate lists secret validators.
@@ -200,12 +220,14 @@ var (
 	// Reachability enrichers.
 	Reachability = InitMap{
 		java.Name:       {java.New},
-		govcsource.Name: {govcsource.New},
-		rust.Name:       {rust.New},
+		govcsource.Name: {protoCfg(govcsource.New)},
+		rust.Name:       {protoCfg(rust.New)},
 	}
 
 	// TransitiveDependency enrichers.
 	TransitiveDependency = InitMap{
+		javaarchive.Name:  {javaarchive.New},
+		nodemodules.Name:  {nodemodules.New},
 		requirements.Name: {requirements.New},
 		pomxml.Name:       {pomxml.New},
 	}
@@ -218,7 +240,7 @@ var (
 	// FFA enrichers.
 	FFA = InitMap{
 		baseimage.Name:     {baseimage.New},
-		baseimageattr.Name: {baseimageattr.New},
+		baseimageattr.Name: {protoCfg(baseimageattr.New)},
 	}
 
 	// Default enrichers.
@@ -227,6 +249,7 @@ var (
 	// All enrichers.
 	All = concat(
 		LayerDetails,
+		OSPackageMetadata,
 		VulnMatching,
 		VEX,
 		SecretsValidate,
@@ -242,6 +265,7 @@ var (
 	enricherNames = concat(All, InitMap{
 		"license":              vals(License),
 		"vex":                  vals(VEX),
+		"ospackagemetadata":    vals(OSPackageMetadata),
 		"vulnmatch":            vals(VulnMatching),
 		"layerdetails":         vals(LayerDetails),
 		"secretsvalidate":      vals(SecretsValidate),
@@ -271,7 +295,7 @@ func vals(initMap InitMap) []InitFn {
 }
 
 // EnricherFromName returns a single enricher based on its exact name.
-func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func EnricherFromName(name string, cfg *config.PluginConfig) (enricher.Enricher, error) {
 	initers, ok := enricherNames[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown enricher %q", name)
@@ -290,7 +314,7 @@ func EnricherFromName(name string, cfg *cpb.PluginConfig) (enricher.Enricher, er
 }
 
 // EnrichersFromName returns a list of enrichers from a name.
-func EnrichersFromName(name string, cfg *cpb.PluginConfig) ([]enricher.Enricher, error) {
+func EnrichersFromName(name string, cfg *config.PluginConfig) ([]enricher.Enricher, error) {
 	if initers, ok := enricherNames[name]; ok {
 		var result []enricher.Enricher
 		for _, initer := range initers {
@@ -312,14 +336,14 @@ type velesPlugin struct {
 
 func fromVeles[S veles.Secret](validator veles.Validator[S], name string, version int) velesPlugin {
 	return velesPlugin{
-		initFunc: convert.FromVelesValidator(validator, name, version),
+		initFunc: protoCfg(convert.FromVelesValidator(validator, name, version)),
 		name:     name,
 	}
 }
 
-func fromVelesWithCfg(initFunc InitFn, name string) velesPlugin {
+func fromVelesWithCfg(initFunc func(cfg *cpb.PluginConfig) (enricher.Enricher, error), name string) velesPlugin {
 	return velesPlugin{
-		initFunc: initFunc,
+		initFunc: protoCfg(initFunc),
 		name:     name,
 	}
 }

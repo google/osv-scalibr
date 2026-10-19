@@ -18,6 +18,8 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,8 +36,17 @@ func (f fakeFS) Open(name string) (fs.File, error) {
 func (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	return nil, errors.New("not implemented")
 }
-func (fakeFS) Stat(name string) (fs.FileInfo, error) {
-	return nil, errors.New("not implemented")
+func (f fakeFS) Stat(name string) (fs.FileInfo, error) {
+	for path := range f {
+		if path == name {
+			return os.Stat(f[path])
+		}
+		rel, err := filepath.Rel(name, path)
+		if err == nil && !strings.HasPrefix(rel, "..") {
+			return os.Stat("testdata")
+		}
+	}
+	return nil, os.ErrNotExist
 }
 
 func TestEOLLinuxDistro(t *testing.T) {
@@ -110,6 +121,13 @@ func TestEOLLinuxDistro(t *testing.T) {
 			fsys: fakeFS{
 				"etc/os-release": "testdata/ubuntu_22.04_os_release",
 				"/etc/apt/sources.list.d/ubuntu-esm-infra.sources": "testdata/ubuntu-esm-infra.sources",
+			},
+		},
+		{
+			name: "not-an-os",
+			now:  "2026-01-01",
+			fsys: fakeFS{
+				"go.mod": "testdata/not-used",
 			},
 		},
 	}

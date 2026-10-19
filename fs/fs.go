@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -70,6 +71,35 @@ func (r *ScanRoot) WithAbsolutePath() (*ScanRoot, error) {
 // DirFS returns an FS implementation that accesses the real filesystem at the given root.
 func DirFS(root string) FS {
 	return os.DirFS(root).(FS)
+}
+
+// Sub returns an FS corresponding to the subtree rooted at dir within fsys.
+// This is analogous to io/fs.Sub but preserves the scalibr FS interface
+// (ReadDir and Stat). dir must be a slash-separated, relative path. The
+// returned FS performs no validation of the names it is given, so it should
+// only be used with trusted paths.
+func Sub(fsys FS, dir string) FS {
+	if dir == "" || dir == "." {
+		return fsys
+	}
+	return &subFS{fsys: fsys, dir: dir}
+}
+
+type subFS struct {
+	fsys FS
+	dir  string
+}
+
+func (s *subFS) Open(name string) (fs.File, error) {
+	return s.fsys.Open(path.Join(s.dir, name))
+}
+
+func (s *subFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	return s.fsys.ReadDir(path.Join(s.dir, name))
+}
+
+func (s *subFS) Stat(name string) (fs.FileInfo, error) {
+	return s.fsys.Stat(path.Join(s.dir, name))
 }
 
 // RealFSScanRoots returns a one-element ScanRoot array representing the given

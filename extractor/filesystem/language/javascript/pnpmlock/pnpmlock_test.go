@@ -116,6 +116,29 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			// Regression test: a malformed scoped dependency path such as
+			// "/@x" (which splits into ["", "@x"]) previously caused a
+			// slice-bounds panic when joining the scope and name. It should
+			// now be handled gracefully and simply skipped (no version).
+			Name: "scoped dep path without version does not panic",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/scoped-path-no-version.yaml",
+			},
+			WantErr: nil,
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "acorn",
+					Version:    "8.7.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-path-no-version.yaml", 11),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "invalid dep paths (first error)",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid-paths.yaml",
@@ -855,10 +878,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "my-bitbucket-package",
 					Version:  "1.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "6104ae42cd32c3d724036d3964678f197b2c9cdb",
+						Repo:   "https://bitbucket.org/my-org/my-bitbucket-project",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -867,10 +891,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "@my-scope/my-package",
 					Version:  "1.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 20),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "267087851ad5fac92a184749c27cd539e2fc862e",
+						Repo:   "https://github.com/my-org/my-package",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -879,10 +904,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "@my-scope/my-other-package",
 					Version:  "1.0.0",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 28),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "fbfc962ab51eb1d754749b68c064460221fbd689",
+						Repo:   "https://github.com/my-org/my-other-package",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -891,10 +917,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "faker-parser",
 					Version:  "0.0.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 34),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "d2dc42a9351d4d89ec48c525e34f612b6d77993f",
+						Repo:   "https://github.com/my-org/faker-parser",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},
@@ -903,10 +930,11 @@ func TestExtractor_Extract(t *testing.T) {
 				{
 					Name:     "mocks",
 					Version:  "20.0.1",
-					PURLType: purl.TypeNPM,
+					PURLType: purl.TypeGit,
 					Location: extractor.LocationFromPathAndLine("testdata/commits.yaml", 42),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Commit: "590f321b4eb3f692bb211bd74e22947639a6f79d",
+						Repo:   "https://github.com/my-org/mocks",
 					},
 					Metadata: &osv.DepGroupMetadata{
 						DepGroupVals: []string{},

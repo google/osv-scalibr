@@ -21,7 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"net/netip"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	scalibr "github.com/google/osv-scalibr"
@@ -64,6 +65,7 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcpsak"
+	"github.com/moby/moby/api/types/container"
 	protobuf "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -92,6 +94,7 @@ func PurlDPKGAnnotationPackage() *extractor.Package {
 			Justification:   vex.ComponentNotPresent,
 			MatchesAllVulns: true,
 		}},
+		ParentIDs: map[string]bool{},
 	}
 }
 
@@ -113,6 +116,7 @@ func PurlDPKGAnnotationPackageProto(t *testing.T) *spb.Package {
 			},
 		},
 		Ecosystem: "Debian",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       "software",
@@ -237,6 +241,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "NuGet",
 		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"dotnet/depsjson"},
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_DepsjsonMetadata{
 			DepsjsonMetadata: &spb.DEPSJSONMetadata{
 				PackageName:    "software",
@@ -273,6 +278,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "Debian",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_DpkgMetadata{
 			DpkgMetadata: &spb.DPKGPackageMetadata{
 				PackageName:       "software",
@@ -298,6 +304,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "PyPI",
 		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"python/wheelegg"},
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_PythonMetadata{
 			PythonMetadata: &spb.PythonPackageMetadata{
 				Author:      "author",
@@ -317,6 +324,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "PyPI",
 		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"python/requirements"},
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_PythonRequirementsMetadata{
 			PythonRequirementsMetadata: &spb.PythonRequirementsMetadata{
 				HashCheckingModeValues: []string{"sha256:123"},
@@ -337,6 +345,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Ecosystem: "npm",
 		Location:  pkgLocProtoFromPath("/file1"),
 		Plugins:   []string{"javascript/packagejson"},
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_JavascriptMetadata{
 			JavascriptMetadata: &spb.JavascriptPackageJSONMetadata{
 				Source: spb.PackageSource_UNKNOWN,
@@ -371,6 +380,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "openssl",
 			Version: "1.1.1",
 		},
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_CdxMetadata{
 			CdxMetadata: &spb.CDXPackageMetadata{
 				Purl: &spb.Purl{
@@ -421,6 +431,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Licenses:  []string{"BSD"},
 		Ecosystem: "Red Hat",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_RpmMetadata{
 			RpmMetadata: &spb.RPMPackageMetadata{
 				PackageName:  "openssh-clients",
@@ -464,6 +475,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_PacmanMetadata{
 			PacmanMetadata: &spb.PACMANPackageMetadata{
 				PackageName:    "zstd",
@@ -502,6 +514,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_PortageMetadata{
 			PortageMetadata: &spb.PortagePackageMetadata{
 				PackageName:    "Capture-Tiny",
@@ -540,6 +553,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			},
 		},
 		Ecosystem: "",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_NixMetadata{
 			NixMetadata: &spb.NixPackageMetadata{
 				PackageName:       "attr",
@@ -560,8 +574,9 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Plugins:  []string{homebrew.Name},
 	}
 	purlHomebrewPackageProto := &spb.Package{
-		Name:    "rclone",
-		Version: "1.67.0",
+		Name:      "rclone",
+		Version:   "1.67.0",
+		Ecosystem: "GIT",
 		Purl: &spb.Purl{
 			Purl:    "pkg:brew/rclone@1.67.0",
 			Type:    purl.TypeBrew,
@@ -596,6 +611,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			Name:    "Git.Git",
 			Version: "2.50.1",
 		},
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_WingetMetadata{
 			WingetMetadata: &spb.WingetPackageMetadata{
 				Name:     "Git",
@@ -632,6 +648,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Ecosystem: "",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_ContainerdContainerMetadata{
 			ContainerdContainerMetadata: &spb.ContainerdContainerMetadata{
 				NamespaceName: "default",
@@ -668,6 +685,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:      "gcr.io/google-samples/hello-app:1.0",
 		Version:   "sha256:b1455e1c4fcc5ea1023c9e3b584cd84b64eb920e332feff690a2829696e379e7",
 		Ecosystem: "",
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_ContainerdRuntimeContainerMetadata{
 			ContainerdRuntimeContainerMetadata: &spb.ContainerdRuntimeContainerMetadata{
 				NamespaceName: "default",
@@ -686,6 +704,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:     "windows_server_2019",
 		Version:  "10.0.17763.3406",
 		Location: pkgLocProtoFromPath("/file1"),
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_WindowsOsVersionMetadata{
 			WindowsOsVersionMetadata: &spb.WindowsOSVersion{
 				Product:     "windows_server_2019",
@@ -732,6 +751,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		},
 		Location: pkgLocProtoFromPath("/pom.xml"),
 		Plugins:  []string{pomxml.Name, transitivedependencypomxml.Name},
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_JavaLockfileMetadata{
 			JavaLockfileMetadata: &spb.JavaLockfileMetadata{
 				ArtifactId:   "xyz",
@@ -761,6 +781,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:     "docker.io/redis",
 		Version:  "a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 		Location: pkgLocProtoFromPath("/file1"),
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_PodmanMetadata{
 			PodmanMetadata: &spb.PodmanMetadata{
 				ExposedPorts:  map[uint32]*spb.Protocol{6379: {Names: []string{"tcp"}}},
@@ -869,7 +890,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			ImageName:   "redis",
 			ImageDigest: "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 			ID:          "3ea6adad2e94daf386e1d6c5960807b41f19da2333e8a6261065c1cb8e85ac81",
-			Ports:       []container.Port{{IP: "127.0.0.1", PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
+			Ports:       []container.PortSummary{{IP: netip.MustParseAddr("127.0.0.1"), PrivatePort: 6379, PublicPort: 1112, Type: "tcp"}},
 		},
 		Plugins: []string{docker.Name},
 	}
@@ -878,6 +899,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 		Name:     "redis",
 		Version:  "sha256:a8036f14f15ead9517115576fb4462894a000620c2be556410f6c24afb8a482b",
 		Location: pkgLocProtoFromPath("/file1"),
+		//nolint:staticcheck // nolint:SA1019
 		Metadata: &spb.Package_DockerContainersMetadata{
 			DockerContainersMetadata: &spb.DockerContainersMetadata{
 				ImageName:   "redis",
@@ -1630,6 +1652,7 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			opts := append([]cmp.Option{
 				protocmp.Transform(),
 				cmpopts.EquateEmpty(),
+				cmpopts.EquateComparable(netip.Addr{}),
 				// Ignore legacy location fields.
 				// TODO(b/400910349): Remove once these fields are no longer set.
 				protocmp.IgnoreFields(&spb.Secret{}, "locations"),
@@ -1660,8 +1683,10 @@ func TestScanResultToProtoAndBack(t *testing.T) {
 			tc.res.Inventory.Secrets = nil
 
 			opts = []cmp.Option{
+				cmpopts.IgnoreFields(extractor.Package{}, "ID"),
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
 				cmpopts.EquateEmpty(),
+				cmpopts.EquateComparable(netip.Addr{}),
 				// Ignore legacy location fields.
 				// TODO(b/400910349): Remove once these fields are no longer set.
 				protocmp.IgnoreFields(&spb.Secret{}, "locations"),

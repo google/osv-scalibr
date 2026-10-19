@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"deps.dev/util/maven"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
@@ -179,16 +180,17 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name             string
-		description      string
-		maxOpenedBytes   int64
-		extractFilename  bool
-		hashJars         bool
-		path             string
-		contentPath      string
-		want             []*extractor.Package
-		wantErr          error
-		wantResultMetric stats.FileExtractedResult
+		name              string
+		description       string
+		maxOpenedBytes    int64
+		extractFilename   bool
+		extractFromPomXML bool
+		hashJars          bool
+		path              string
+		contentPath       string
+		want              []*extractor.Package
+		wantErr           error
+		wantResultMetric  stats.FileExtractedResult
 	}{
 		{
 			name: "Empty_jar_file_should_not_return_anything",
@@ -434,9 +436,10 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultErrorMemoryLimitExceeded,
 		},
 		{
-			name:     "Realistic_jar_file_with_pom.properties",
-			path:     filepath.FromSlash("testdata/guava-31.1-jre.jar"),
-			hashJars: true,
+			name:              "Realistic_jar_file_with_pom.properties",
+			path:              filepath.FromSlash("testdata/guava-31.1-jre.jar"),
+			extractFromPomXML: true,
+			hashJars:          true,
 			want: []*extractor.Package{
 				{
 					Name:     "com.google.guava:guava",
@@ -447,13 +450,52 @@ func TestExtract(t *testing.T) {
 						GroupID:    "com.google.guava",
 						// openssl sha1 -binary third_party/scalibr/extractor/filesystem/language/java/archive/testdata/guava-31.1-jre.jar | base64
 						SHA1: "YEWPh30FXQyRFNnhou+3N7S8KCw=",
+						Dependencies: []maven.Dependency{
+							{
+								GroupID:    "com.google.guava",
+								ArtifactID: "failureaccess",
+								Version:    "1.0.1",
+								Type:       "jar",
+							},
+							{
+								GroupID:    "com.google.guava",
+								ArtifactID: "listenablefuture",
+								Version:    "9999.0-empty-to-avoid-conflict-with-guava",
+								Type:       "jar",
+							},
+							{
+								GroupID:    "com.google.code.findbugs",
+								ArtifactID: "jsr305",
+								Type:       "jar",
+							},
+							{
+								GroupID:    "org.checkerframework",
+								ArtifactID: "checker-qual",
+								Type:       "jar",
+							},
+							{
+								GroupID:    "com.google.errorprone",
+								ArtifactID: "error_prone_annotations",
+								Type:       "jar",
+							},
+							{
+								GroupID:    "com.google.j2objc",
+								ArtifactID: "j2objc-annotations",
+								Type:       "jar",
+							},
+						},
+						Parent: &maven.ProjectKey{
+							GroupID:    "com.google.guava",
+							ArtifactID: "guava-parent",
+							Version:    "31.1-jre",
+						},
 					},
 					Location: extractor.PackageLocation{
 						Descriptor: &location.Location{File: &location.File{
 							Path: filepath.FromSlash("testdata/guava-31.1-jre.jar"),
 						}},
 						Related: []location.Location{
-							location.FromPath(filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.properties")),
+							location.FromPath(filepath.FromSlash("testdata/guava-31.1-jre.jar/META-INF/maven/com.google.guava/guava/pom.xml")),
 						},
 					},
 				},
@@ -624,6 +666,7 @@ func TestExtract(t *testing.T) {
 						JavaArchive: &cpb.JavaArchiveConfig{
 							MaxOpenedBytes:      tt.maxOpenedBytes,
 							ExtractFromFilename: &tt.extractFilename,
+							ExtractFromPomXml:   &tt.extractFromPomXML,
 							HashJars:            &tt.hashJars,
 						},
 					}},

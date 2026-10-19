@@ -25,7 +25,6 @@ type ContainerImageMetadata struct {
 	// Labels stores labels of this image.
 	Labels map[string]string
 	// LayerMetadata stores metadata about the layers in the container image.
-	// Currently this does not store any empty layers.
 	LayerMetadata []*LayerMetadata
 	// BaseImages stores metadata about the base images that the container image is based on.
 	// The first element is always empty.
@@ -44,6 +43,16 @@ type LayerMetadata struct {
 	IsEmpty bool
 	// Index of the base image match in the ParentContainer image. 0 means no match.
 	BaseImageIndex int
+	// Attributes stores attributes attached to this layer by plugins.
+	Attributes []*LayerAttribute
+}
+
+// LayerAttribute stores an attribute attached to a layer by a plugin.
+type LayerAttribute struct {
+	// Value is the value of the attribute, with a meaning defined by the plugin.
+	Value string
+	// Plugin is the name of the plugin that generated this attribute.
+	Plugin string
 }
 
 // BaseImageDetails stores details about a base image.

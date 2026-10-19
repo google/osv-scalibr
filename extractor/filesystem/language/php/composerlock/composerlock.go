@@ -20,11 +20,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -73,7 +75,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return filepath.Base(api.Path()) == "composer.lock"
 }
 
-func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []string) *extractor.Package {
+func buildPackage(input *filesystem.ScanInput, pkg composerPackage, lineNum int, groups []string) *extractor.Package {
 	commit := pkg.Dist.Reference
 
 	// a dot means the reference is likely a tag, rather than a commit
@@ -85,7 +87,7 @@ func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []str
 		Name:     pkg.Name,
 		Version:  pkg.Version,
 		PURLType: purl.TypeComposer,
-		Location: extractor.LocationFromPath(input.Path),
+		Location: extractor.LocationFromPathAndLine(input.Path, lineNum),
 		SourceCode: &extractor.SourceCodeIdentifier{
 			Commit: commit,
 		},
@@ -97,17 +99,21 @@ func buildPackage(input *filesystem.ScanInput, pkg composerPackage, groups []str
 
 // Extract extracts packages from a composer.lock file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	var parsedLockfile *composerLock
-
-	err := json.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
+
+	var parsedLockfile *composerLock
+	if err := json.Unmarshal(b, &parsedLockfile); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
 	if parsedLockfile == nil {
 		return inventory.Inventory{}, errors.New("could not extract: decoded null JSON value")
 	}
+
+	finder := linefinder.NewJSONLineFinder(b)
 
 	packages := make(
 		[]*extractor.Package,
@@ -116,12 +122,20 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		uint64(len(parsedLockfile.Packages))+uint64(len(parsedLockfile.PackagesDev)),
 	)
 
-	for _, pkg := range parsedLockfile.Packages {
-		packages = append(packages, buildPackage(input, pkg, []string{}))
+	for i, pkg := range parsedLockfile.Packages {
+		// Locate the "name" property of the package at its specific index in the "packages" array.
+		// This correctly distinguishes duplicate package declarations.
+		gjsonPath := fmt.Sprintf("packages.%d.name", i)
+		lineNum := finder.LineOf(gjsonPath)
+		packages = append(packages, buildPackage(input, pkg, lineNum, []string{}))
 	}
 
-	for _, pkg := range parsedLockfile.PackagesDev {
-		packages = append(packages, buildPackage(input, pkg, []string{"dev"}))
+	for i, pkg := range parsedLockfile.PackagesDev {
+		// Locate the "name" property of the package at its specific index in the "packages-dev" array.
+		// This correctly distinguishes duplicate package declarations.
+		gjsonPath := fmt.Sprintf("packages-dev.%d.name", i)
+		lineNum := finder.LineOf(gjsonPath)
+		packages = append(packages, buildPackage(input, pkg, lineNum, []string{"dev"}))
 	}
 
 	return inventory.Inventory{Packages: packages}, nil

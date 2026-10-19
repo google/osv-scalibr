@@ -17,7 +17,7 @@ package semantic
 import (
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -231,7 +231,7 @@ func mavenFindTransitions(token string) (ints []int) {
 		ints = append(ints, span[0]+1)
 	}
 
-	sort.Ints(ints)
+	slices.Sort(ints)
 
 	return ints
 }

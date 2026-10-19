@@ -672,15 +672,21 @@ func (fi *fileInfo) Sys() any {
 
 // TARToTempDir extracts a tar file into a temporary directory
 // that can be used to traverse its contents recursively.
-func TARToTempDir(reader io.Reader) (string, error) {
+// If maxFreeSpaceUsageRatio is valid, extraction aborts if total physical bytes
+// exceed this fraction of available free storage in the temp directory on Linux.
+// Note that maxFreeSpaceUsageRatio has no effect on non-linux based platforms.
+func TARToTempDir(reader io.Reader, maxFreeSpaceUsageRatio float64) (string, error) {
 	// Create a temporary directory for extracted files
 	tempDir, err := os.MkdirTemp("", "scalibr-archive-")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
+	maxAllowedBytes := calcMaxAllowedBytes(freeSpaceBytes(tempDir), maxFreeSpaceUsageRatio)
+
 	// Extract the tar archive
 	var extractErr error
+	var totalExtractedSize int64
 	tr := tar.NewReader(reader)
 loop:
 	for {
@@ -702,10 +708,12 @@ loop:
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0755); err != nil {
-				extractErr = fmt.Errorf("failed to create directory %s: %w", target, err)
+				extractErr = fmt.Errorf(
+					"failed to create directory %s: %w", target, err,
+				)
 				break loop
 			}
-		case tar.TypeReg:
+		case tar.TypeReg, tar.TypeGNUSparse:
 			dir := filepath.Dir(target)
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				extractErr = fmt.Errorf("failed to create directory %s: %w", dir, err)
@@ -716,21 +724,84 @@ loop:
 				extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
 				break loop
 			}
-			if _, err := io.Copy(outFile, tr); err != nil {
+			// TypeGNUSparse entries are always sparse, but TypeReg entries may or
+			// may not be sparse. For non-sparse data, sparseCopy falls back to
+			// dst.Write(), matching io.Copy performance.
+			written, err := sparseCopy(outFile, tr, hdr.Size)
+			if err != nil {
 				outFile.Close()
 				extractErr = fmt.Errorf("failed to copy file %s: %w", target, err)
 				break loop
 			}
 			outFile.Close()
+			totalExtractedSize += written
+			if maxAllowedBytes > 0 && totalExtractedSize > maxAllowedBytes {
+				extractErr = fmt.Errorf(
+					"total extracted size (%d bytes) exceeds allowed temp storage (%d bytes)",
+					totalExtractedSize, maxAllowedBytes,
+				)
+				break loop
+			}
 		default:
 			// Skip other types (symlinks, etc.) for now
 		}
 	}
 
 	if extractErr != nil {
-		os.Remove(tempDir)
+		os.RemoveAll(tempDir)
 		return "", extractErr
 	}
 
 	return tempDir, nil
+}
+
+// sparseCopy copies src to dst by seeking over zero-filled blocks. The primary
+// purpose is to prevent RAM/storage exhaustion (OOMs on tmpfs) by ensuring
+// sparse files do not expand zero-filled holes into physical disk/RAM
+// allocations (e.g. untarring a 60 GB sparse file won't consume 60 GB RAM).
+// This also saves significant processing time by skipping zero writes.
+func sparseCopy(dst *os.File, src io.Reader, size int64) (int64, error) {
+	buf := make([]byte, 32*1024)
+	var written int64
+	for {
+		n, err := src.Read(buf)
+		if n > 0 {
+			if isZero(buf[:n]) {
+				if _, err := dst.Seek(int64(n), io.SeekCurrent); err != nil {
+					return written, fmt.Errorf("dst.Seek: %w", err)
+				}
+			} else {
+				if _, err := dst.Write(buf[:n]); err != nil {
+					return written, fmt.Errorf("dst.Write: %w", err)
+				}
+				written += int64(n)
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return written, fmt.Errorf("src.Read: %w", err)
+		}
+	}
+	if err := dst.Truncate(size); err != nil {
+		return written, fmt.Errorf("dst.Truncate: %w", err)
+	}
+	return written, nil
+}
+
+func isZero(buf []byte) bool {
+	for _, b := range buf {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func calcMaxAllowedBytes(freeBytes int64, ratio float64) int64 {
+	if ratio <= 0.0 || ratio > 1.0 || freeBytes <= 0 {
+		return 0
+	}
+	return int64(float64(freeBytes) * ratio)
 }

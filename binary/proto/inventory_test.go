@@ -116,6 +116,8 @@ func TestInventoryToProto(t *testing.T) {
 			opts = []cmp.Option{
 				protocmp.Transform(),
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ParentIDs"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ID"),
 			}
 			if diff := cmp.Diff(tc.inv, gotInv, opts...); diff != "" {
 				t.Errorf("InventoryToStruct(%v) returned diff (-want +got):\n%s", gotInv, diff)
@@ -253,6 +255,8 @@ func TestInventoryToStruct(t *testing.T) {
 			opts := []cmp.Option{
 				protocmp.Transform(),
 				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ParentIDs"),
+				cmpopts.IgnoreFields(extractor.Package{}, "ID"),
 				cmpopts.EquateEmpty(),
 			}
 			if diff := cmp.Diff(tc.want, got, opts...); diff != "" {
@@ -304,8 +308,10 @@ func TestInventoryToStructInvalidPkgVuln(t *testing.T) {
 				PackageVulns: []*pb.PackageVuln{{PackageId: "pkg"}},
 			},
 			want: &inventory.Inventory{
-				Packages:     []*extractor.Package{{Name: "pkg1"}, {Name: "pkg2"}},
-				PackageVulns: []*inventory.PackageVuln{{Package: &extractor.Package{Name: "pkg1"}}},
+				Packages: []*extractor.Package{
+					{Name: "pkg1", ID: "pkg"},
+					{Name: "pkg2", ID: "pkg"}},
+				PackageVulns: []*inventory.PackageVuln{{Package: &extractor.Package{Name: "pkg1", ID: "pkg"}}},
 			},
 		},
 		{
@@ -320,7 +326,7 @@ func TestInventoryToStructInvalidPkgVuln(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := proto.InventoryToStruct(tc.inv)
-			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"), protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"), cmpopts.IgnoreFields(extractor.Package{}, "ParentIDs"), protocmp.Transform()); diff != "" {
 				t.Fatalf("InventoryToStruct(%v) returned diff (-want +got):\n%s", tc.inv, diff)
 			}
 		})

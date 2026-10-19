@@ -16,6 +16,7 @@
 package requirements
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -35,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
+	"github.com/google/osv-scalibr/plugin/config"
 	"github.com/google/osv-scalibr/purl"
 )
 
@@ -71,10 +73,20 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 // New creates a new Enricher.
-func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
+func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
+	if cfg == nil || cfg.ClientFactories == nil {
+		return nil, fmt.Errorf("client factories not configured for %s", Name)
+	}
+
 	upstreamRegistry := ""
 	depsDevRequirements := false
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsTransitiveConfig {
+	var protoCfg *cpb.PluginConfig
+	localRegistry := ""
+	if cfg.ProtoConfig != nil {
+		protoCfg = cfg.ProtoConfig
+		localRegistry = cfg.ProtoConfig.LocalRegistry
+	}
+	specific := plugin.FindConfig(protoCfg, func(c *cpb.PluginSpecificConfig) *cpb.PythonRequirementsTransitiveConfig {
 		return c.GetPythonRequirementsTransitive()
 	})
 	if specific != nil {
@@ -85,12 +97,16 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 	var depClient resolve.Client
 	var err error
 	if depsDevRequirements {
-		depClient, err = resolution.NewDepsDevClient(depsdev.DepsdevAPI, cfg.UserAgent)
+		conn, err := cfg.ClientFactories.GRPCClientConn(depsdev.DepsdevAPI)
 		if err != nil {
-			return nil, fmt.Errorf("failed to make a new depsdev resolution client: %w", err)
+			return nil, err
 		}
+		depClient = resolution.NewDepsDevClientWithConn(conn)
 	} else {
-		depClient = resolution.NewPyPIRegistryClient(upstreamRegistry, cfg.LocalRegistry)
+		depClient, err = resolution.NewPyPIRegistryClient(upstreamRegistry, localRegistry, cfg.ClientFactories.HTTPClient())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Enricher{
@@ -101,9 +117,15 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 // Enrich enriches the inventory in requirements.txt with transitive dependencies.
 func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgGroups := internal.GroupPackagesFromPlugin(inv.Packages, requirements.Name)
+	paths := make([]string, 0, len(pkgGroups))
+	for p := range pkgGroups {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
 
 	var errs error
-	for path, pkgMap := range pkgGroups {
+	for _, path := range paths {
+		pkgMap := pkgGroups[path]
 		packages := make([]internal.PackageWithIndex, 0, len(pkgMap))
 		for _, indexPkg := range pkgMap {
 			packages = append(packages, indexPkg)
@@ -134,6 +156,13 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 
 		internal.Add(pkgs, inv, Name, pkgMap)
 	}
+
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
+	})
 	return errs
 }
 
@@ -191,17 +220,30 @@ func (e Enricher) resolve(ctx context.Context, path string, list []*extractor.Pa
 		return nil, errors.New(g.Error)
 	}
 
+	nameToID, err := internal.GetNameToIDMapping(g, list)
+	if err != nil {
+		return nil, err
+	}
+
 	pkgs := make([]*extractor.Package, len(g.Nodes)-1)
 	for i := 1; i < len(g.Nodes); i++ {
 		// Ignore the first node which is the root.
 		node := g.Nodes[i]
+
+		parents, err := internal.GetParentIDs(g, nameToID, resolve.NodeID(i))
+		if err != nil {
+			return nil, err
+		}
+
 		pkgs[i-1] = &extractor.Package{
-			Name:     node.Version.Name,
-			Version:  node.Version.Version,
-			PURLType: purl.TypePyPi,
-			ScanRoot: scanRoot,
-			Location: extractor.LocationFromPath(path),
-			Plugins:  []string{Name},
+			ID:        nameToID[node.Version.Name],
+			Name:      node.Version.Name,
+			ParentIDs: parents,
+			Version:   node.Version.Version,
+			PURLType:  purl.TypePyPi,
+			ScanRoot:  scanRoot,
+			Location:  extractor.LocationFromPath(path),
+			Plugins:   []string{Name},
 		}
 	}
 	return pkgs, nil

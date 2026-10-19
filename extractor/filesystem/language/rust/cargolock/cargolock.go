@@ -16,9 +16,13 @@
 package cargolock
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
@@ -71,24 +75,94 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var parsedLockfile *cargoLockFile
 
-	_, err := toml.NewDecoder(input.Reader).Decode(&parsedLockfile)
-
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
 	}
 
-	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
+	if _, err := toml.NewDecoder(bytes.NewReader(b)).Decode(&parsedLockfile); err != nil {
+		return inventory.Inventory{}, fmt.Errorf("could not extract: %w", err)
+	}
 
-	for _, lockPackage := range parsedLockfile.Packages {
+	packageNames := make([]string, 0, len(parsedLockfile.Packages))
+	for _, p := range parsedLockfile.Packages {
+		packageNames = append(packageNames, p.Name)
+	}
+	lineNums := findLineNumbers(b, packageNames)
+
+	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
+	for i, lockPackage := range parsedLockfile.Packages {
+		var loc extractor.PackageLocation
+		if line := lineNums[i]; line > 0 {
+			loc = extractor.LocationFromPathAndLine(input.Path, line)
+		} else {
+			// If no line number found, just record the file path.
+			loc = extractor.LocationFromPath(input.Path)
+		}
+
 		packages = append(packages, &extractor.Package{
 			Name:     lockPackage.Name,
 			Version:  lockPackage.Version,
 			PURLType: purl.TypeCargo,
-			Location: extractor.LocationFromPath(input.Path),
+			Location: loc,
 		})
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+// findLineNumbers returns the line numbers of the specified package names.
+//
+// This function relies on packageNames being in the same order as they appear in the Cargo.lock
+// file. This should be the case for Cargo.lock files parsed with burntsushi/toml.
+//
+// If a package's line number is not found, the value will be 0.
+func findLineNumbers(content []byte, packageNames []string) []int {
+	lineNums := make([]int, len(packageNames))
+	if len(packageNames) == 0 {
+		return lineNums
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	pkgIdx := 0
+	inPackageBlock := false
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// If the line is a block header, check if it starts a [[package]] block.
+		if strings.HasPrefix(line, "[") {
+			inPackageBlock = line == "[[package]]"
+			continue
+		}
+		if !inPackageBlock {
+			continue
+		}
+
+		// Parse the package name.
+		k, v, ok := strings.Cut(line, "=")
+		if !ok || strings.TrimSpace(k) != "name" {
+			continue
+		}
+		name := strings.Trim(v, ` "'`)
+
+		// Record the line number if it matches the expected package.
+		if name == packageNames[pkgIdx] {
+			lineNums[pkgIdx] = lineNum
+			pkgIdx++
+			inPackageBlock = false // Skip remaining lines in this [[package]] block.
+			if pkgIdx == len(packageNames) {
+				break
+			}
+		}
+	}
+
+	return lineNums
 }
 
 var _ filesystem.Extractor = Extractor{}

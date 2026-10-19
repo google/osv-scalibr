@@ -72,8 +72,9 @@ func (v *validatorWrapper) Version() int {
 
 // Requirements of the enricher.
 func (v *validatorWrapper) Requirements() *plugin.Capabilities {
-	// Veles plugins don't have any special requirements.
-	return &plugin.Capabilities{}
+	// Veles validators are materialized into the central secrets/velesvalidate
+	// enricher, which performs live validation requests.
+	return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }
 
 // RequiredPlugins returns an empty list - While it works on the results of the

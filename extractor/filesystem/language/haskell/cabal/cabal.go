@@ -150,16 +150,16 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 			p := &extractor.Package{
 				Name:     pkgName,
 				Version:  pkgVersion,
-				PURLType: purl.TypeHaskell,
+				PURLType: purl.TypeHackage,
 				Location: extractor.LocationFromPath(input.Path),
 			}
 
 			packages = append(packages, p)
 		}
+	}
 
-		if s.Err() != nil {
-			return packages, fmt.Errorf("error while scanning cabal.project.freeze file: %w", s.Err())
-		}
+	if err := s.Err(); err != nil {
+		return packages, fmt.Errorf("error while scanning cabal.project.freeze file: %w", err)
 	}
 
 	return packages, nil

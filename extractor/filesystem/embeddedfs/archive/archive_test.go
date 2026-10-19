@@ -193,3 +193,60 @@ func TestExtract(t *testing.T) {
 		})
 	}
 }
+
+func TestNew(t *testing.T) {
+	tests := []struct {
+		name      string
+		pluginCfg *cpb.PluginConfig
+		wantRatio float64
+	}{
+		{
+			name:      "not_set",
+			pluginCfg: &cpb.PluginConfig{},
+			wantRatio: 0.0,
+		},
+		{
+			name: "set_to_valid_value",
+			pluginCfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Archive{Archive: &cpb.ArchiveConfig{MaxFreeSpaceUsageRatio: 0.8}}},
+				},
+			},
+			wantRatio: 0.8,
+		},
+		{
+			name: "set_to_negative_value",
+			pluginCfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Archive{Archive: &cpb.ArchiveConfig{MaxFreeSpaceUsageRatio: -2.0}}},
+				},
+			},
+			wantRatio: -2.0,
+		},
+		{
+			name: "set_to_value_above_one",
+			pluginCfg: &cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{
+					{Config: &cpb.PluginSpecificConfig_Archive{Archive: &cpb.ArchiveConfig{MaxFreeSpaceUsageRatio: 1.5}}},
+				},
+			},
+			wantRatio: 1.5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := archive.New(tt.pluginCfg)
+			if err != nil {
+				t.Fatalf("archive.New() error = %v", err)
+			}
+			e, ok := got.(*archive.Extractor)
+			if !ok {
+				t.Fatalf("got %T, want *archive.Extractor", got)
+			}
+			if gotRatio := e.MaxFreeSpaceUsageRatio(); gotRatio != tt.wantRatio {
+				t.Errorf("e.MaxFreeSpaceUsageRatio() = %v, want %v", gotRatio, tt.wantRatio)
+			}
+		})
+	}
+}

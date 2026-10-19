@@ -17,10 +17,10 @@ package docker
 import (
 	"context"
 
-	"github.com/docker/docker/api/types/container"
+	dockerclient "github.com/moby/moby/client"
 )
 
 // Client is an interface that provides an abstraction on top of the docker client.
 type Client interface {
-	ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error)
+	ContainerList(ctx context.Context, options dockerclient.ContainerListOptions) (dockerclient.ContainerListResult, error)
 }

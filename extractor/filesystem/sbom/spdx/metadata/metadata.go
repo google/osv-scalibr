@@ -27,17 +27,38 @@ func init() {
 	metadata.Register(ToStruct, ToProto)
 }
 
+// ExternalReference represents an external reference in an SPDX package.
+type ExternalReference struct {
+	Category string
+	RefType  string
+	Locator  string
+	Comment  string
+}
+
 // Metadata holds parsing information for packages extracted from SPDX files.
 type Metadata struct {
-	PURL *purl.PackageURL
-	CPEs []string
+	PURL               *purl.PackageURL
+	CPEs               []string
+	ExternalReferences []ExternalReference
+	SPDXID             string
 }
 
 // ToProto converts the SPDX metadata struct to the SPDXPackageMetadata proto.
 func ToProto(m *Metadata) *pb.SPDXPackageMetadata {
+	var extRefs []*pb.SPDXExternalReference
+	for _, ref := range m.ExternalReferences {
+		extRefs = append(extRefs, &pb.SPDXExternalReference{
+			Category: ref.Category,
+			RefType:  ref.RefType,
+			Locator:  ref.Locator,
+			Comment:  ref.Comment,
+		})
+	}
 	return &pb.SPDXPackageMetadata{
-		Purl: purlproto.ToProto(m.PURL),
-		Cpes: m.CPEs,
+		Purl:               purlproto.ToProto(m.PURL),
+		Cpes:               m.CPEs,
+		ExternalReferences: extRefs,
+		SpdxId:             m.SPDXID,
 	}
 }
 
@@ -46,8 +67,19 @@ func (m *Metadata) IsProtoable() {}
 
 // ToStruct converts the SPDX metadata proto to the Metadata struct.
 func ToStruct(m *pb.SPDXPackageMetadata) *Metadata {
+	var extRefs []ExternalReference
+	for _, ref := range m.GetExternalReferences() {
+		extRefs = append(extRefs, ExternalReference{
+			Category: ref.GetCategory(),
+			RefType:  ref.GetRefType(),
+			Locator:  ref.GetLocator(),
+			Comment:  ref.GetComment(),
+		})
+	}
 	return &Metadata{
-		PURL: purlproto.FromProto(m.GetPurl()),
-		CPEs: m.GetCpes(),
+		PURL:               purlproto.FromProto(m.GetPurl()),
+		CPEs:               m.GetCpes(),
+		ExternalReferences: extRefs,
+		SPDXID:             m.GetSpdxId(),
 	}
 }
