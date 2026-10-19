@@ -142,7 +142,7 @@ func TestExtractor_Extract(t *testing.T) {
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/notexistmanifest.xpi",
 			},
-			WantErr: extracttest.ContainsErrStr{Str: "manifest.json not found in xpi"},
+			WantErr: extracttest.ContainsErrStr{Str: "file does not exist"},
 		},
 		{
 			Name: "no locale specified for Chrome",

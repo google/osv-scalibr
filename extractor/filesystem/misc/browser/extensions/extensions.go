@@ -53,10 +53,8 @@ var (
 
 	linuxChromeExtensionsPattern   = regexp.MustCompile(`(?m)\/google-chrome(?:-beta|-unstable|-for-testing|)\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
 	linuxChromiumExtensionsPattern = regexp.MustCompile(`(?m)\/chromium\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-	linuxFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)(?:snap\/firefox\/common\/|\.var\/app\/org\.mozilla\.firefox\/|)\.mozilla\/firefox\/[^\/]+\/extensions\/[^\/]+\.xpi$`)
+	linuxFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)\/(?:snap\/firefox\/common\/|\.var\/app\/org\.mozilla\.firefox\/|)\.mozilla\/firefox\/[^\/]+\/extensions\/[^\/]+\.xpi$`)
 	linuxEdgeExtensionsPattern     = regexp.MustCompile(`(?m)\/\.config\/microsoft-edge(-beta|-dev|)\/[^\/]+\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-
-	xpiContent []byte // Need to read twice for extracting locale case
 )
 
 type manifest struct {
@@ -159,13 +157,18 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 // Extract extracts browser extensions
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	var ioReader io.Reader
+	var xpiReader *zip.Reader
 	var err error
 	if strings.HasSuffix(input.Path, "xpi") {
-		xpiContent, err = io.ReadAll(input.Reader)
+		xpiContent, err := io.ReadAll(input.Reader)
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("could not read XPI file: %w", err)
 		}
-		manifestContent, err := extractFileFromXPI("manifest.json")
+		xpiReader, err = zip.NewReader(bytes.NewReader(xpiContent), int64(len(xpiContent)))
+		if err != nil {
+			return inventory.Inventory{}, fmt.Errorf("could not open XPI as zip: %w", err)
+		}
+		manifestContent, err := extractFileFromXPI(xpiReader, "manifest.json")
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("could not extract manifest: %w", err)
 		}
@@ -190,7 +193,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	// if default locale is specified some fields of the manifest may be
 	// written inside the ./_locales/LOCALE_CODE/messages.json file
 	if m.DefaultLocale != "" {
-		if err := extractLocaleInfo(&m, input); err != nil {
+		if err := extractLocaleInfo(&m, input, xpiReader); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("could not extract locale info: %w", err)
 		}
 	}
@@ -238,12 +241,11 @@ func extractExtensionsIDFromPath(input *filesystem.ScanInput) (string, error) {
 
 // extractLocaleInfo extract locale information from the _locales/LOCALE_CODE/messages.json
 // following manifest.json v3 specification
-func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
+func extractLocaleInfo(m *manifest, input *filesystem.ScanInput, xpiReader *zip.Reader) error {
 	var f io.Reader
-	var err error
 	if strings.HasSuffix(input.Path, "xpi") {
 		messagePath := fmt.Sprintf("_locales/%s/messages.json", m.DefaultLocale)
-		fileContent, err := extractFileFromXPI(messagePath)
+		fileContent, err := extractFileFromXPI(xpiReader, messagePath)
 		if err != nil {
 			return err
 		}
@@ -252,10 +254,12 @@ func extractLocaleInfo(m *manifest, input *filesystem.ScanInput) error {
 		messagePath := filepath.Join(filepath.Dir(input.Path), "_locales", m.DefaultLocale, "messages.json")
 		messagePath = filepath.ToSlash(messagePath)
 
-		f, err = input.FS.Open(messagePath)
+		file, err := input.FS.Open(messagePath)
 		if err != nil {
 			return err
 		}
+		defer file.Close()
+		f = file
 	}
 
 	// using a map to decode since the keys are determined by the values
@@ -305,32 +309,18 @@ func cutPrefixSuffix(s string, prefix string, suffix string) (string, bool) {
 }
 
 // extractFileFromXPI extracts any file content from an XPI archieve in memory
-func extractFileFromXPI(fileName string) ([]byte, error) {
-	// Open as ZIP directly from the in-memory byte slice
-	zipReader, err := zip.NewReader(bytes.NewReader(xpiContent), int64(len(xpiContent)))
+func extractFileFromXPI(xpiReader *zip.Reader, fileName string) ([]byte, error) {
+	/// Find manifest.json inside the archive
+	rc, err := xpiReader.Open(fileName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open xpi as zip: %w", err)
+		return nil, fmt.Errorf("failed to open %s: %w", fileName, err)
+	}
+	defer rc.Close()
+
+	manifestData, err := io.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", fileName, err)
 	}
 
-	// Find manifest.json inside the archive
-	for _, f := range zipReader.File {
-		if f.Name != fileName {
-			continue
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return nil, fmt.Errorf("failed to open %s: %w", fileName, err)
-		}
-		defer rc.Close()
-
-		manifestData, err := io.ReadAll(rc)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read %s: %w", fileName, err)
-		}
-
-		return manifestData, nil
-	}
-
-	return nil, fmt.Errorf("%s not found in xpi", fileName)
+	return manifestData, nil
 }
