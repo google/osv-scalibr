@@ -29,6 +29,7 @@ import (
 	"testing"
 
 	"github.com/google/osv-scalibr/plugin/config"
+	scalibrversion "github.com/google/osv-scalibr/version"
 )
 
 func TestDefaultClientFactories_HTTPClient_Caching(t *testing.T) {
@@ -160,31 +161,51 @@ func TestDefaultClientFactories_GoogleHTTPClient_Caching(t *testing.T) {
 }
 
 func TestDefaultClientFactories_UserAgent(t *testing.T) {
-	const ua = "test-user-agent"
-	cf := config.NewDefaultClientFactories(ua)
-	defer cf.Close()
-
-	var capturedUA string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedUA = r.Header.Get("User-Agent")
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	httpClient := cf.HTTPClient()
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
-	if err != nil {
-		t.Fatalf("failed to create request: %v", err)
+	tests := []struct {
+		name      string
+		userAgent string
+		wantUA    string
+	}{
+		{
+			name:      "default_user_agent",
+			userAgent: "",
+			wantUA:    "osv-scalibr/" + scalibrversion.ScannerVersion,
+		},
+		{
+			name:      "custom_user_agent",
+			userAgent: "test-user-agent",
+			wantUA:    "test-user-agent",
+		},
 	}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		t.Fatalf("failed to make request: %v", err)
-	}
-	resp.Body.Close()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cf := config.NewDefaultClientFactories(tc.userAgent)
+			defer cf.Close()
 
-	if capturedUA != ua {
-		t.Errorf("expected User-Agent %q, got %q", ua, capturedUA)
+			var capturedUA string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				capturedUA = r.Header.Get("User-Agent")
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer server.Close()
+
+			httpClient := cf.HTTPClient()
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				t.Fatalf("failed to make request: %v", err)
+			}
+			resp.Body.Close()
+
+			if capturedUA != tc.wantUA {
+				t.Errorf("expected User-Agent %q, got %q", tc.wantUA, capturedUA)
+			}
+		})
 	}
 }
 

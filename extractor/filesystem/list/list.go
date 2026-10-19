@@ -82,9 +82,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setupcfg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/r/rpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
@@ -93,6 +95,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/zig/buildzigzon"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
 	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
@@ -268,6 +271,7 @@ var (
 		ipythoninstall.Name: {protoCfg(ipythoninstall.New)},
 		uvlock.Name:         {protoCfg(uvlock.New)},
 		pyprojecttoml.Name:  {protoCfg(pyprojecttoml.New)},
+		setupcfg.Name:       {protoCfg(setupcfg.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
@@ -305,7 +309,10 @@ var (
 		cabal.Name:     {protoCfg(cabal.New)},
 	}
 	// RSource extractors for R source extractors
-	RSource = InitMap{renvlock.Name: {protoCfg(renvlock.New)}}
+	RSource = InitMap{
+		renvlock.Name: {protoCfg(renvlock.New)},
+		rpkg.Name:     {protoCfg(rpkg.New)},
+	}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {protoCfg(gemspec.New)},
@@ -362,6 +369,11 @@ var (
 		packageresolved.Name: {protoCfg(packageresolved.New)},
 		podfilelock.Name:     {protoCfg(podfilelock.New)},
 	}
+
+	// ZigSource extractors for Zig Package Source extractors.
+	ZigSource = InitMap{buildzigzon.Name: {protoCfg(buildzigzon.NewWithDeps)}}
+	// ZigArtifact extractors for Zig Package Artifacts
+	ZigArtifact = InitMap{buildzigzon.Name: {protoCfg(buildzigzon.New)}}
 
 	// Containers extractors.
 	Containers = InitMap{
@@ -575,6 +587,7 @@ var (
 		MiscSource,
 		CPANSource,
 		Bazel,
+		ZigSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -595,6 +608,7 @@ var (
 		FFA,
 		JuliaArtifact,
 		RubyArtifact,
+		ZigArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -637,6 +651,7 @@ var (
 		"swift":      vals(SwiftSource),
 		"perl":       vals(CPANSource),
 		"bazel":      vals(Bazel),
+		"zig":        vals(ZigSource),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),

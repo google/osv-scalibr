@@ -133,6 +133,8 @@ const (
 	TypeCPAN = "cpan"
 	// TypeDHI is a pkg:dhi purl.
 	TypeDHI = "dhi"
+	// TypeZig is pkg:zig purl
+	TypeZig = "zig"
 	// TypeFreeBSD is pkg:freebsd purl.
 	TypeFreeBSD = "freebsd"
 )
@@ -249,6 +251,7 @@ func validType(t string) bool {
 		TypeMise:       true,
 		TypeCPAN:       true,
 		TypeDHI:        true,
+		TypeZig:        true,
 		TypeFreeBSD:    true,
 	}
 

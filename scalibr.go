@@ -96,7 +96,7 @@ type ScanConfig struct {
 	// Optional: If the glob matches a directory, it will be skipped.
 	SkipDirGlob glob.Glob
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
-	MaxFileSize int
+	MaxFileSize int64
 	// Optional: Skip files declared in .gitignore files in source repos.
 	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
@@ -385,18 +385,22 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	// (always '/' as we only support linux containers)
 	cfg.StoreAbsolutePath = false
 
-	// Suppress running enrichers until after layer details are populated.
+	// Suppress running annotators and enrichers until after layer details are populated.
+	var annotators []annotator.Annotator
 	var enrichers []enricher.Enricher
-	var nonEnricherPlugins []plugin.Plugin
+	var nonDeferredPlugins []plugin.Plugin
 
 	for _, p := range cfg.Plugins {
-		if e, ok := p.(enricher.Enricher); ok {
-			enrichers = append(enrichers, e)
-		} else {
-			nonEnricherPlugins = append(nonEnricherPlugins, p)
+		switch plugin := p.(type) {
+		case annotator.Annotator:
+			annotators = append(annotators, plugin)
+		case enricher.Enricher:
+			enrichers = append(enrichers, plugin)
+		default:
+			nonDeferredPlugins = append(nonDeferredPlugins, plugin)
 		}
 	}
-	cfg.Plugins = nonEnricherPlugins
+	cfg.Plugins = nonDeferredPlugins
 
 	chainLayers, err := img.ChainLayers()
 	if err != nil {
@@ -433,6 +437,20 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	// TODO(b/500769263): Harmonize with trace.PopulateLayerDetails() by using same cim in both.
 	if cims := scanResult.Inventory.ContainerImageMetadata; len(cims) > 0 {
 		cims[len(cims)-1].Labels = img.Labels()
+	}
+
+	// Run annotators with the updated inventory.
+	annotatorCfg := &annotator.Config{
+		Annotators: annotators,
+		ScanRoot: &scalibrfs.ScanRoot{
+			FS: imagefs,
+		},
+	}
+	annotatorStatus, err := annotator.Run(ctx, annotatorCfg, &scanResult.Inventory)
+	scanResult.PluginStatus = append(scanResult.PluginStatus, annotatorStatus...)
+	if err != nil {
+		scanResult.Status.Status = plugin.ScanStatusFailed
+		scanResult.Status.FailureReason = err.Error()
 	}
 
 	// Run enrichers with the updated inventory.
