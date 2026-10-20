@@ -49,6 +49,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
 | SNAP              |                                | `os/snap`                                    |
 | Spack             |                                | `os/spack`                                   |
+| FreeBSD pkg       | FreeBSD and derivatives        | `os/freebsd`                                 |
 | Flatpak           |                                | `os/flatpak`                                 |
 | Homebrew          | OS X                           | `os/homebrew`                                |
 | MacPorts          | OS X                           | `os/macports`                                |

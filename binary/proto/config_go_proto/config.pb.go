@@ -195,6 +195,7 @@ type PluginSpecificConfig struct {
 	//	*PluginSpecificConfig_RubyGem
 	//	*PluginSpecificConfig_Buildzigzon
 	//	*PluginSpecificConfig_UbuntuBinaryToSource
+	//	*PluginSpecificConfig_Freebsd
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -849,6 +850,15 @@ func (x *PluginSpecificConfig) GetUbuntuBinaryToSource() *UbuntuBinaryToSourceCo
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetFreebsd() *FreeBSDConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_Freebsd); ok {
+			return x.Freebsd
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -1125,6 +1135,10 @@ type PluginSpecificConfig_UbuntuBinaryToSource struct {
 	UbuntuBinaryToSource *UbuntuBinaryToSourceConfig `protobuf:"bytes,84,opt,name=ubuntu_binary_to_source,json=ubuntuBinaryToSource,proto3,oneof"`
 }
 
+type PluginSpecificConfig_Freebsd struct {
+	Freebsd *FreeBSDConfig `protobuf:"bytes,85,opt,name=freebsd,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
@@ -1260,6 +1274,8 @@ func (*PluginSpecificConfig_RubyGem) isPluginSpecificConfig_Config() {}
 func (*PluginSpecificConfig_Buildzigzon) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_UbuntuBinaryToSource) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_Freebsd) isPluginSpecificConfig_Config() {}
 
 type BazelAspectConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -4696,6 +4712,53 @@ func (x *ContainerdRuntimeConfig) GetSocketAddr() string {
 	return ""
 }
 
+type FreeBSDConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The maximum file size the plugin will process.
+	// If set, this overrides the global max_file_size_bytes configuration
+	// for this specific plugin.
+	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *FreeBSDConfig) Reset() {
+	*x = FreeBSDConfig{}
+	mi := &file_proto_config_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FreeBSDConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FreeBSDConfig) ProtoMessage() {}
+
+func (x *FreeBSDConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FreeBSDConfig.ProtoReflect.Descriptor instead.
+func (*FreeBSDConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *FreeBSDConfig) GetMaxFileSizeBytes() int64 {
+	if x != nil {
+		return x.MaxFileSizeBytes
+	}
+	return 0
+}
+
 var File_proto_config_proto protoreflect.FileDescriptor
 
 const file_proto_config_proto_rawDesc = "" +
@@ -4707,7 +4770,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\x8f#\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xc3#\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -4783,7 +4846,8 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x1adotnet_project_assets_json\x18N \x01(\v2&.scalibr.DotnetProjectAssetsJsonConfigH\x00R\x17dotnetProjectAssetsJson\x123\n" +
 	"\bruby_gem\x18R \x01(\v2\x16.scalibr.RubyGemConfigH\x00R\arubyGem\x12A\n" +
 	"\vbuildzigzon\x18S \x01(\v2\x1d.scalibr.ZigBuildZigZonConfigH\x00R\vbuildzigzon\x12\\\n" +
-	"\x17ubuntu_binary_to_source\x18T \x01(\v2#.scalibr.UbuntuBinaryToSourceConfigH\x00R\x14ubuntuBinaryToSourceB\b\n" +
+	"\x17ubuntu_binary_to_source\x18T \x01(\v2#.scalibr.UbuntuBinaryToSourceConfigH\x00R\x14ubuntuBinaryToSource\x122\n" +
+	"\afreebsd\x18U \x01(\v2\x16.scalibr.FreeBSDConfigH\x00R\afreebsdB\b\n" +
 	"\x06configJ\x04\b0\x109J\x04\b;\x10>J\x04\bB\x10DJ\x04\bO\x10Q\"^\n" +
 	"\x11BazelAspectConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\"\n" +
@@ -4961,7 +5025,9 @@ const file_proto_config_proto_rawDesc = "" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\":\n" +
 	"\x17ContainerdRuntimeConfig\x12\x1f\n" +
 	"\vsocket_addr\x18\x01 \x01(\tR\n" +
-	"socketAddrBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
+	"socketAddr\">\n" +
+	"\rFreeBSDConfig\x12-\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
@@ -4975,7 +5041,7 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 71)
 var file_proto_config_proto_goTypes = []any{
 	(*PluginConfig)(nil),                       // 0: scalibr.PluginConfig
 	(*PluginSpecificConfig)(nil),               // 1: scalibr.PluginSpecificConfig
@@ -5047,6 +5113,7 @@ var file_proto_config_proto_goTypes = []any{
 	(*CodeServerConfig)(nil),                   // 67: scalibr.CodeServerConfig
 	(*QCOW2Config)(nil),                        // 68: scalibr.QCOW2Config
 	(*ContainerdRuntimeConfig)(nil),            // 69: scalibr.ContainerdRuntimeConfig
+	(*FreeBSDConfig)(nil),                      // 70: scalibr.FreeBSDConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1,  // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
@@ -5118,11 +5185,12 @@ var file_proto_config_proto_depIdxs = []int32{
 	46, // 66: scalibr.PluginSpecificConfig.ruby_gem:type_name -> scalibr.RubyGemConfig
 	47, // 67: scalibr.PluginSpecificConfig.buildzigzon:type_name -> scalibr.ZigBuildZigZonConfig
 	66, // 68: scalibr.PluginSpecificConfig.ubuntu_binary_to_source:type_name -> scalibr.UbuntuBinaryToSourceConfig
-	69, // [69:69] is the sub-list for method output_type
-	69, // [69:69] is the sub-list for method input_type
-	69, // [69:69] is the sub-list for extension type_name
-	69, // [69:69] is the sub-list for extension extendee
-	0,  // [0:69] is the sub-list for field type_name
+	70, // 69: scalibr.PluginSpecificConfig.freebsd:type_name -> scalibr.FreeBSDConfig
+	70, // [70:70] is the sub-list for method output_type
+	70, // [70:70] is the sub-list for method input_type
+	70, // [70:70] is the sub-list for extension type_name
+	70, // [70:70] is the sub-list for extension extendee
+	0,  // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -5199,6 +5267,7 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_RubyGem)(nil),
 		(*PluginSpecificConfig_Buildzigzon)(nil),
 		(*PluginSpecificConfig_UbuntuBinaryToSource)(nil),
+		(*PluginSpecificConfig_Freebsd)(nil),
 	}
 	file_proto_config_proto_msgTypes[2].OneofWrappers = []any{}
 	file_proto_config_proto_msgTypes[54].OneofWrappers = []any{}
@@ -5209,7 +5278,7 @@ func file_proto_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   70,
+			NumMessages:   71,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

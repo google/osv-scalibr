@@ -119,6 +119,7 @@ message PluginSpecificConfig {
     RubyGemConfig ruby_gem = 82;
     ZigBuildZigZonConfig buildzigzon = 83;
     UbuntuBinaryToSourceConfig ubuntu_binary_to_source = 84;
+    FreeBSDConfig freebsd = 85;
   }
 }
 
@@ -648,4 +649,10 @@ message QCOW2Config {
 message ContainerdRuntimeConfig {
   // The local path to the containerd socket.
   string socket_addr = 1;
+}
+message FreeBSDConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
 }
