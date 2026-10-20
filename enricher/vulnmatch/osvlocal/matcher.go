@@ -99,17 +99,9 @@ func (matcher *localMatcher) loadDBFromCache(ctx context.Context, eco osvconstan
 		return nil, matcher.failedDBs[eco]
 	}
 
-	db, err := newZippedDB(
-		ctx,
-		matcher.dbBasePath,
-		string(eco),
-		fmt.Sprintf("%s/%s/all.zip", matcher.zippedDBRemoteHost, eco),
-		!matcher.downloadDB,
-		invs,
-		matcher.httpClient,
-	)
+	db := matcher.zipDBFor(eco)
 
-	if err != nil {
+	if err := db.load(ctx, invs); err != nil {
 		matcher.failedDBs[eco] = err
 		log.Errorf("could not load db for %s ecosystem: %v", eco, err)
 
@@ -121,6 +113,17 @@ func (matcher *localMatcher) loadDBFromCache(ctx context.Context, eco osvconstan
 	matcher.dbs[eco] = db
 
 	return db, nil
+}
+
+// zipDBFor returns the zipDB for the given ecosystem, without fetching or loading anything
+func (matcher *localMatcher) zipDBFor(eco osvconstants.Ecosystem) *zipDB {
+	return newZippedDB(
+		matcher.dbBasePath,
+		string(eco),
+		fmt.Sprintf("%s/%s/all.zip", matcher.zippedDBRemoteHost, eco),
+		!matcher.downloadDB,
+		matcher.httpClient,
+	)
 }
 
 // setupLocalDBDirectory attempts to set up the directory the scanner should
