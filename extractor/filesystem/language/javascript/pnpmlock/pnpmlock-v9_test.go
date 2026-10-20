@@ -451,6 +451,37 @@ func TestExtractor_Extract_v9(t *testing.T) {
 			},
 		},
 		{
+			Name: "aliased prod dependency also used by dev",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/aliased-prod-and-dev.v9.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					// ansi-regex is a direct production dependency under the
+					// alias "ar", so the importer records its version as
+					// "ansi-regex@5.0.1" rather than "5.0.1".
+					Name:       "ansi-regex",
+					Version:    "5.0.1",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/aliased-prod-and-dev.v9.yaml", 21),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "strip-ansi",
+					Version:    "6.0.1",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/aliased-prod-and-dev.v9.yaml", 25),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{"dev"},
+					},
+				},
+			},
+		},
+		{
 			Name: "multi document",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/multi-document.v9.yaml",

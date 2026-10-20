@@ -214,6 +214,11 @@ var snapshotPeerSuffix = regexp.MustCompile(`\(.*$`)
 // dependency edge (as found in an importer's dependency maps, or in another
 // snapshot's own dependency map) resolves to.
 func snapshotKeyFor(name, version string) string {
+	// aliased dependencies ("npm:other@1.0.0") record the real "other@1.0.0"
+	// as the version, which is already the snapshot key
+	if bare, _, _ := strings.Cut(version, "("); strings.Contains(bare, "@") {
+		return version
+	}
 	return name + "@" + version
 }
 
