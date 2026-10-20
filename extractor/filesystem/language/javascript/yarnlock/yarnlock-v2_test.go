@@ -383,6 +383,32 @@ func TestExtractor_Extract_v2(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "patched packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/patched.v2.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "left-pad",
+					Version:  "1.3.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/patched.v2.lock", 8),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+				{
+					Name:     "typescript",
+					Version:  "5.6.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/patched.v2.lock", 22),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
