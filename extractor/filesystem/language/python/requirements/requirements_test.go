@@ -161,6 +161,34 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name: "multiline_continuation",
+			path: "testdata/multiline_continuation.txt",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "pkgA",
+					Version:  "1.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/multiline_continuation.txt", 1),
+					Metadata: &requirements.Metadata{VersionComparator: "==", HashCheckingModeValues: []string{"sha256:aaa", "sha256:bbb"}, Requirement: "pkgA==1.0"},
+				},
+				{
+					Name:     "pkgB",
+					Version:  "2.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/multiline_continuation.txt", 4),
+					Metadata: &requirements.Metadata{VersionComparator: "==", Requirement: "pkgB==2.0"},
+				},
+				{
+					Name:     "pkgC",
+					Version:  "3.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/multiline_continuation.txt", 5),
+					Metadata: &requirements.Metadata{VersionComparator: "==", Requirement: "pkgC==3.0"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
 			name: "no_version",
 			path: "testdata/no_version.txt",
 			wantPackages: []*extractor.Package{
