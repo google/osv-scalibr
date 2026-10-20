@@ -50,18 +50,41 @@ const (
 )
 
 type packageJSON struct {
-	Version      string             `json:"version"`
-	Name         string             `json:"name"`
-	Engines      any                `json:"engines"`
-	Author       *metadata.Person   `json:"author"`
-	Maintainers  []*metadata.Person `json:"maintainers"`
-	Contributors []*metadata.Person `json:"contributors"`
+	Version      string           `json:"version"`
+	Name         string           `json:"name"`
+	Engines      any              `json:"engines"`
+	Author       *metadata.Person `json:"author"`
+	Maintainers  people           `json:"maintainers"`
+	Contributors people           `json:"contributors"`
 	// Not an NPM field but present for VSCode Extension Manifest files.
 	Contributes *struct {
 	} `json:"contributes"`
 	// Not an NPM field but present for Unity package files.
 	Unity        string            `json:"unity"`
 	Dependencies map[string]string `json:"dependencies"`
+}
+
+// people accepts the usual array of package.json people and the string form
+// used by some published packages. Other top-level JSON types remain errors.
+type people []*metadata.Person
+
+func (p *people) UnmarshalJSON(b []byte) error {
+	var person string
+	if err := json.Unmarshal(b, &person); err == nil {
+		var parsed metadata.Person
+		if err := json.Unmarshal(b, &parsed); err != nil {
+			return err
+		}
+		*p = people{&parsed}
+		return nil
+	}
+
+	var parsed []*metadata.Person
+	if err := json.Unmarshal(b, &parsed); err != nil {
+		return err
+	}
+	*p = parsed
+	return nil
 }
 
 // Extractor extracts javascript packages from package.json files.
@@ -286,7 +309,7 @@ func (p packageJSON) isUnityPackage() bool {
 func removeEmptyPersons(persons []*metadata.Person) []*metadata.Person {
 	var result []*metadata.Person
 	for _, p := range persons {
-		if p.Name != "" {
+		if p != nil && p.Name != "" {
 			result = append(result, p)
 		}
 	}
