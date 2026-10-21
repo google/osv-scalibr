@@ -47,6 +47,9 @@ var (
 	ErrClassNotFound = errors.New("class not found")
 	// ErrArtifactNotFound is returned when an artifact is not found.
 	ErrArtifactNotFound = errors.New("artifact not found")
+	// ErrNoMainClass is returned when a JAR's MANIFEST.MF has no Main-Class or
+	// Start-Class entry, so it cannot be a root for reachability analysis.
+	ErrNoMainClass = errors.New("no main class")
 )
 
 // MavenPackageFinder is an interface for finding Maven packages that contain a
@@ -282,5 +285,5 @@ func GetMainClasses(manifest io.Reader) ([]string, error) {
 		return classes, nil
 	}
 
-	return nil, errors.New("no main class")
+	return nil, ErrNoMainClass
 }
