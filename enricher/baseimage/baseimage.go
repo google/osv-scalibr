@@ -96,8 +96,10 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		}
 
 		// Placeholder for the scanned image itself.
-		cim.BaseImages = [][]*extractor.BaseImageDetails{
-			{},
+		if len(cim.BaseImages) == 0 {
+			cim.BaseImages = [][]*extractor.BaseImageDetails{
+				{},
+			}
 		}
 
 		chainIDsByLayerIndex := make([]digest.Digest, len(cim.LayerMetadata))
@@ -161,7 +163,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 					}
 				}
 
-				// Cache and also save to layer map.
+				// Save to layer map.
 				baseImagesByLayerIndex[i] = baseImages
 
 				return nil
@@ -174,40 +176,77 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 			continue
 		}
 
-		// Loop backwards through the layers, from the newest to the oldest layer.
-		// This is because base images are identified by the chain ID of the newest layer in the image,
-		// so all older layer must belong to that base image.
-		for i, lm := range slices.Backward(cim.LayerMetadata) {
+		// Cache deps.dev results before merging with existing base images from other plugins.
+		for i, chainID := range chainIDsByLayerIndex {
+			chainIDToBaseImage[chainID.String()] = baseImagesByLayerIndex[i]
+		}
+
+		// Pass 1: Build the base image stack from deps.dev results, walking from the newest
+		// layer to the oldest layer. This is because base images are identified by the chain ID
+		// of the newest layer in the image, so all older layers must belong to that base image
+		// until an older base image is encountered.
+		depsDevBaseImages := [][]*extractor.BaseImageDetails{{}}
+		depsDevBaseImageIndices := make([]int, len(cim.LayerMetadata))
+		for i := range slices.Backward(cim.LayerMetadata) {
 			baseImages := baseImagesByLayerIndex[i]
-			lm.BaseImageIndex = len(cim.BaseImages) - 1
-			chainIDToBaseImage[chainIDsByLayerIndex[i].String()] = baseImages
+			depsDevBaseImageIndices[i] = len(depsDevBaseImages) - 1
 
 			if len(baseImages) == 0 {
 				continue
 			}
 
-			// Is the current set of baseImages the same as the previous?
-			isSame := false
-			lastBaseImages := cim.BaseImages[len(cim.BaseImages)-1]
-			if len(baseImages) == len(lastBaseImages) {
-				isSame = true
-				for j := range baseImages {
-					if baseImages[j].Repository != lastBaseImages[j].Repository ||
-						baseImages[j].Registry != lastBaseImages[j].Registry {
-						isSame = false
-						break
-					}
-				}
-			}
-
-			if !isSame {
-				// Only if it's not the same base image, update
-				cim.BaseImages = append(cim.BaseImages, baseImages)
+			// Only append if the current set of baseImages differs from the previous set.
+			lastBaseImages := depsDevBaseImages[len(depsDevBaseImages)-1]
+			if !slices.EqualFunc(baseImages, lastBaseImages, sameBaseImage) {
+				depsDevBaseImages = append(depsDevBaseImages, baseImages)
 				// And if we do update, also change the base image index to new last index.
-				lm.BaseImageIndex++
+				depsDevBaseImageIndices[i]++
 			}
+		}
+
+		// Pass 2: Merge the pre-existing base image stack (from earlier plugins) with the
+		// deps.dev base image stack. In both stacks, a base image is introduced at the topmost
+		// (newest) layer where its index (> 0) first appears when walking backwards.
+		// Note that cim.BaseImages (BaseImageChains in proto) is an ordered hierarchy from
+		// largest to smallest base image (e.g. [empty, nginx, alpine]) where each entry is
+		// keyed by the ChainID of its topmost layer; if one stack identifies a smaller inner
+		// base image on an older layer within the other stack's run, that older layer points
+		// to the smaller inner base image entry while the larger outer base image remains at
+		// its own topmost layer.
+		existingBaseImages := cim.BaseImages
+		// Placeholder for the scanned image itself.
+		cim.BaseImages = [][]*extractor.BaseImageDetails{
+			{},
+		}
+		prevExistingIdx := 0
+		prevDepsDevIdx := 0
+		for i, lm := range slices.Backward(cim.LayerMetadata) {
+			existingIdx := lm.BaseImageIndex
+			depsDevIdx := depsDevBaseImageIndices[i]
+
+			var merged []*extractor.BaseImageDetails
+			if existingIdx > 0 && existingIdx < len(existingBaseImages) && existingIdx != prevExistingIdx {
+				merged = append(merged, existingBaseImages[existingIdx]...)
+			}
+			if depsDevIdx > 0 && depsDevIdx < len(depsDevBaseImages) && depsDevIdx != prevDepsDevIdx {
+				merged = append(merged, depsDevBaseImages[depsDevIdx]...)
+			}
+			prevExistingIdx = existingIdx
+			prevDepsDevIdx = depsDevIdx
+
+			if len(merged) > 0 {
+				cim.BaseImages = append(cim.BaseImages, merged)
+			}
+			lm.BaseImageIndex = len(cim.BaseImages) - 1
 		}
 	}
 
 	return enrichErr
+}
+
+func sameBaseImage(a, b *extractor.BaseImageDetails) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Repository == b.Repository && a.Registry == b.Registry
 }
