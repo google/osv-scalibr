@@ -23,6 +23,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -125,10 +127,24 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract returns an Inventory with embedded filesystems which contains mount functions for each filesystem in the .vdi file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	// Check wether input.Reader is nil or not.
-	if input.Reader == nil {
-		return inventory.Inventory{}, errors.New("input.Reader is nil")
+	vdiPath, err := input.GetRealPath()
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to get real path for %s: %w", input.Path, err)
 	}
+	if input.Root == "" {
+		defer func() {
+			dir := filepath.Dir(vdiPath)
+			if err := os.RemoveAll(dir); err != nil {
+				log.Errorf("os.RemoveAll(%q): %v", dir, err)
+			}
+		}()
+	}
+
+	vdiFile, err := os.Open(vdiPath)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to open VDI image %s: %w", vdiPath, err)
+	}
+	defer vdiFile.Close()
 
 	// Create a temporary file for the raw disk image
 	tmpRaw, err := os.CreateTemp("", "scalibr-vdi-raw-*.raw")
@@ -138,7 +154,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	tmpRawPath := tmpRaw.Name()
 
 	// Convert VDI to raw
-	if err := convertVDIToRaw(input.Reader, tmpRaw); err != nil {
+	if err := convertVDIToRaw(vdiFile, tmpRaw); err != nil {
 		os.Remove(tmpRawPath)
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", input.Path, err)
 	}
@@ -177,9 +193,11 @@ type sparseWriter interface {
 
 // convertVDIToRaw converts a VDI image to a raw image. Unallocated dynamic VDI
 // blocks are represented as sparse holes in the output file.
-func convertVDIToRaw(in io.Reader, out sparseWriter) error {
+func convertVDIToRaw(in io.ReaderAt, out sparseWriter) error {
 	var hdr header
-	if err := binary.Read(in, binary.LittleEndian, &hdr); err != nil {
+	headerSize := int64(binary.Size(hdr))
+
+	if err := binary.Read(io.NewSectionReader(in, 0, headerSize), binary.LittleEndian, &hdr); err != nil {
 		return fmt.Errorf("failed to read VDI header: %w", err)
 	}
 
@@ -202,39 +220,34 @@ func convertVDIToRaw(in io.Reader, out sparseWriter) error {
 		}
 	}
 
-	curPos := int64(binary.Size(hdr))
-
 	switch hdr.ImageType {
 	// dynamic / sparse
 	// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L114
 	case 1:
-		// Skip to block map
-		if int64(hdr.OffsetBmap) > curPos {
-			if err := skipBytes(in, int64(hdr.OffsetBmap)-curPos); err != nil {
-				return fmt.Errorf("failed to skip to block map: %w", err)
-			}
-			curPos = int64(hdr.OffsetBmap)
-		}
-
+		mapOffset := max(headerSize, int64(hdr.OffsetBmap))
 		mapSize := int64(hdr.BlocksInImage) * 4
-		blockMap, err := io.ReadAll(io.LimitReader(in, mapSize))
-		if err != nil {
-			return fmt.Errorf("failed to read block map: %w", err)
-		}
-		if int64(len(blockMap)) != mapSize {
-			return fmt.Errorf("failed to read block map: %w", io.ErrUnexpectedEOF)
-		}
-		curPos += mapSize
 
+		// Check the last byte to verify the whole map exists without loading it into memory.
+		if mapSize > 0 {
+			var last [1]byte
+			if _, err := io.ReadFull(io.NewSectionReader(in, mapOffset+mapSize-1, 1), last[:]); err != nil {
+				return fmt.Errorf("failed to read block map: %w", err)
+			}
+		}
+
+		mapReader := io.NewSectionReader(in, mapOffset, mapSize)
 		stride := uint64(hdr.BlockSize) + uint64(hdr.BlockExtra)
+		var mapEntry [4]byte
 		for i := uint32(0); i < hdr.BlocksInImage; i++ {
 			virtOffset := uint64(i) * uint64(hdr.BlockSize)
 			if virtOffset >= hdr.DiskSize {
 				break
 			}
 			writeSize := min(uint64(hdr.BlockSize), hdr.DiskSize-virtOffset)
-
-			idx := binary.LittleEndian.Uint32(blockMap[4*uint64(i):])
+			if _, err := io.ReadFull(mapReader, mapEntry[:]); err != nil {
+				return fmt.Errorf("failed to read block map entry %d: %w", i, err)
+			}
+			idx := binary.LittleEndian.Uint32(mapEntry[:])
 			// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L125-L131
 			if idx == 0xFFFFFFFF || idx == 0xFFFFFFFE {
 				// Keep unallocated blocks sparse in the raw output.
@@ -246,15 +259,7 @@ func convertVDIToRaw(in io.Reader, out sparseWriter) error {
 
 			// Physical location of block
 			phys := int64(hdr.OffsetData) + int64(uint64(idx)*stride) + int64(hdr.BlockExtra)
-			if phys > curPos {
-				if err := skipBytes(in, phys-curPos); err != nil {
-					return fmt.Errorf("failed to skip to data block: %w", err)
-				}
-				curPos = phys
-			}
-
-			n, err := io.CopyN(out, in, int64(writeSize))
-			curPos += n
+			_, err := io.CopyN(out, io.NewSectionReader(in, phys, int64(writeSize)), int64(writeSize))
 			if err != nil {
 				return fmt.Errorf("failed to read data block: %w", err)
 			}
@@ -267,12 +272,8 @@ func convertVDIToRaw(in io.Reader, out sparseWriter) error {
 	// static / fixed
 	// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L115
 	case 2:
-		if int64(hdr.OffsetData) > curPos {
-			if err := skipBytes(in, int64(hdr.OffsetData)-curPos); err != nil {
-				return err
-			}
-		}
-		_, err := io.CopyN(out, in, int64(hdr.DiskSize))
+		dataOffset := max(headerSize, int64(hdr.OffsetData))
+		_, err := io.CopyN(out, io.NewSectionReader(in, dataOffset, int64(hdr.DiskSize)), int64(hdr.DiskSize))
 		if err != nil && !errors.Is(err, io.EOF) {
 			return err
 		}
@@ -281,17 +282,4 @@ func convertVDIToRaw(in io.Reader, out sparseWriter) error {
 	default:
 		return fmt.Errorf("unsupported VDI type %d", hdr.ImageType)
 	}
-}
-
-func skipBytes(r io.Reader, n int64) error {
-	buf := make([]byte, 64*1024)
-	for n > 0 {
-		chunk := min(int64(len(buf)), n)
-		_, err := io.CopyN(io.Discard, r, chunk)
-		if err != nil {
-			return err
-		}
-		n -= chunk
-	}
-	return nil
 }

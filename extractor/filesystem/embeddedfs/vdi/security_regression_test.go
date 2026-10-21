@@ -79,7 +79,7 @@ func TestConvertVDIToRawDoesNotWriteUnallocatedBlocks(t *testing.T) {
 	}
 
 	out := &recordingSparseWriter{}
-	if err := convertVDIToRaw(&input, out); err != nil {
+	if err := convertVDIToRaw(bytes.NewReader(input.Bytes()), out); err != nil {
 		t.Fatalf("convertVDIToRaw() failed: %v", err)
 	}
 	if out.written != 0 {
