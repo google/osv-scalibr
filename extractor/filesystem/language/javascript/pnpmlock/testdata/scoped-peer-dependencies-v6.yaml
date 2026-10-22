@@ -1,0 +1,19 @@
+lockfileVersion: '6.0'
+
+packages:
+
+  /lodash@4.17.20:
+    resolution: {integrity: sha512-placeholder}
+    dev: false
+
+  /next@13.3.2-canary.13(react@18.2.0):
+    resolution: {integrity: sha512-placeholder}
+    dev: false
+
+  /next@13.4.0(@babel/core@7.21.0)(react@18.2.0):
+    resolution: {integrity: sha512-placeholder}
+    dev: false
+
+  /@scope/pkg@1.0.0(@other/peer@2.0.0):
+    resolution: {integrity: sha512-placeholder}
+    dev: false
