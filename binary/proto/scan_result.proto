@@ -134,7 +134,7 @@ message Package {
     FlatpakPackageMetadata flatpak_metadata = 24;
     MacAppsMetadata mac_apps_metadata = 34;
     ContainerdRuntimeContainerMetadata containerd_runtime_container_metadata =
-      25;
+        25;
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
@@ -154,6 +154,7 @@ message Package {
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
     SpackPackageMetadata spack_metadata = 67;
+    FreeBSDPackageMetadata freebsd_metadata = 75;
   }
 
   // Signals to indicate that specific vulnerabilities are not applicable to
@@ -555,6 +556,16 @@ message SpackPackageMetadata {
   string hash = 4;
 }
 
+// The additional data found in FreeBSD pkg packages.
+message FreeBSDPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string origin = 3;
+  string arch = 4;
+  string os_id = 5;
+  string os_version_id = 6;
+}
+
 // The additional data found in MODULE packages.
 message KernelModuleMetadata {
   string package_name = 1;
@@ -728,8 +739,8 @@ message HomebrewPackageMetadata {
   repeated string mirrors = 3;
 }
 
-// The additional data found in Chrome extensions.
-message BrowserExtensionsMetadata  {
+// The additional data found in Browser extensions.
+message BrowserExtensionsMetadata {
   string name = 1;
   string description = 2;
   string author_email = 3;
@@ -881,7 +892,7 @@ message SecretData {
     GithubAppServerToServerToken github_app_server_to_server_token = 27;
     GithubClassicPersonalAccessToken github_classic_personal_access_token = 28;
     GithubFineGrainedPersonalAccessToken
-      github_fine_grained_personal_access_token = 29;
+        github_fine_grained_personal_access_token = 29;
     GithubAppUserToServerToken github_app_user_to_server_token = 30;
     GithubOAuthToken github_oauth_token = 31;
     OpenRouterAPIKey openrouter_api_key = 32;
@@ -918,7 +929,7 @@ message SecretData {
     SalesforceOAuth2ClientCredentials salesforce_oauth2_client_credentials = 63;
     SalesforceOAuth2AccessToken salesforce_oauth2_access_token = 64;
     SalesforceOAuth2RefreshCredentials salesforce_oauth2_refresh_credentials =
-      65;
+        65;
     MistralAPIKey mistral_api_key = 66;
     CircleCIPersonalAccessToken circleci_personal_access_token = 67;
     CircleCIProjectToken circleci_project_token = 68;
@@ -1251,7 +1262,7 @@ message SecretData {
   message PackagistAPISecret {
     string secret = 1;
     string key =
-      2;  // Optional: populated when both key and secret are found together
+        2;  // Optional: populated when both key and secret are found together
   }
 
   message PackagistOrgReadToken {
