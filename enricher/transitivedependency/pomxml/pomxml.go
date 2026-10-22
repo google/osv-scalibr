@@ -55,6 +55,8 @@ const (
 type Enricher struct {
 	DepClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
+	// Directories, relative to the scan root, whose POMs are local modules for resolution.
+	LocalModuleDirs []string
 }
 
 // Name returns the name of the enricher.
@@ -101,6 +103,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	enableCache := false
 	localRegistry := ""
 	disableGoogleAuth := false
+	var localModuleDirs []string
 	if cfg.ProtoConfig != nil {
 		localRegistry = cfg.ProtoConfig.LocalRegistry
 		disableGoogleAuth = cfg.ProtoConfig.DisableGoogleAuth
@@ -110,6 +113,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 		upstreamRegistry = specific.UpstreamRegistry
 		depsdevRequirements = specific.DepsDevRequirements
 		enableCache = specific.EnableCache
+		localModuleDirs = specific.LocalModuleDirs
 	}
 
 	httpClient := cfg.ClientFactories.HTTPClient()
@@ -150,8 +154,9 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	}
 
 	return &Enricher{
-		DepClient:   depClient,
-		MavenClient: mavenClient,
+		DepClient:       depClient,
+		MavenClient:     mavenClient,
+		LocalModuleDirs: localModuleDirs,
 	}, nil
 }
 
@@ -163,6 +168,8 @@ func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *in
 		paths = append(paths, p)
 	}
 	slices.Sort(paths)
+	// The project's own modules come second, so that they replace any with the same coordinates.
+	mavenutil.DiscoverModules(input.ScanRoot, mavenutil.LocalModuleDirPOMs(input.ScanRoot.FS, e.LocalModuleDirs), e.MavenClient)
 	mavenutil.DiscoverModules(input.ScanRoot, paths, e.MavenClient)
 	if len(pkgGroups) > 0 {
 		log.Warn("Warning: enricher transitivedependency/pomxml may be risky when run on untrusted artifacts. Please ensure you trust the source code and artifacts.")
