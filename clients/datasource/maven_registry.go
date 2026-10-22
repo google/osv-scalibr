@@ -40,6 +40,12 @@ import (
 // mavenCentral holds the URL of Maven Central Repository.
 const mavenCentral = "https://repo.maven.apache.org/maven2"
 
+// Maven metaversions, which are resolved from artifact level maven-metadata.xml.
+const (
+	MavenRelease = "RELEASE"
+	MavenLatest  = "LATEST"
+)
+
 // artifactRegistryScheme defines the scheme for Google Artifact Registry.
 const artifactRegistryScheme = "artifactregistry"
 
@@ -385,6 +391,65 @@ func (m *MavenRegistryAPIClient) fetchProject(ctx context.Context, key maven.Pro
 	}
 
 	return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s:\n%w", groupID, artifactID, version, errors.Join(errs...))
+}
+
+// ResolveMetaversion resolves the RELEASE or LATEST metaversion of a Maven package to a concrete
+// version from the release or latest element of each registry's artifact level
+// maven-metadata.xml, taking the highest across registries. Only versions a registry is
+// allowed to serve count: snapshots need snapshots enabled and only LATEST considers them, and
+// releases need releases enabled. When a registry's element is missing or not allowed, its
+// highest allowed listed version is used instead.
+func (m *MavenRegistryAPIClient) ResolveMetaversion(ctx context.Context, groupID, artifactID, metaversion string) (string, error) {
+	if metaversion != MavenRelease && metaversion != MavenLatest {
+		return "", fmt.Errorf("unsupported Maven metaversion %q", metaversion)
+	}
+	resolved := ""
+	var errs []error
+	for _, registry := range append(m.registries, m.defaultRegistry) {
+		if !registry.ReleasesEnabled && !registry.SnapshotsEnabled {
+			continue
+		}
+		metadata, err := m.getArtifactMetadata(ctx, registry, groupID, artifactID)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		allowed := func(v string) bool {
+			if strings.HasSuffix(v, "-SNAPSHOT") {
+				return metaversion == MavenLatest && registry.SnapshotsEnabled
+			}
+			return registry.ReleasesEnabled
+		}
+		preferred := []maven.String{metadata.Versioning.Release}
+		if metaversion == MavenLatest {
+			preferred = []maven.String{metadata.Versioning.Latest, metadata.Versioning.Release}
+		}
+		candidate := ""
+		for _, v := range preferred {
+			if v != "" && allowed(string(v)) {
+				candidate = string(v)
+				break
+			}
+		}
+		if candidate == "" {
+			for _, v := range metadata.Versioning.Versions {
+				if allowed(string(v)) && (candidate == "" || semver.Maven.Compare(string(v), candidate) > 0) {
+					candidate = string(v)
+				}
+			}
+		}
+		if candidate != "" && (resolved == "" || semver.Maven.Compare(candidate, resolved) > 0) {
+			resolved = candidate
+		}
+	}
+	if resolved == "" {
+		if len(errs) == 0 {
+			errs = append(errs, errors.New("no allowed version in registry metadata"))
+		}
+		return "", fmt.Errorf("failed to resolve %s version of Maven package %s:%s:\n%w", metaversion, groupID, artifactID, errors.Join(errs...))
+	}
+
+	return resolved, nil
 }
 
 // GetVersions returns the list of available versions of a Maven package specified by groupID and artifactID.

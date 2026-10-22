@@ -168,3 +168,49 @@ func TestMavenRegistryClientCache(t *testing.T) {
 		t.Errorf("cached Requirements() diff (-want +got):\n%s", diff)
 	}
 }
+
+func TestMavenRegistryClientMetaversion(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	srv.SetResponse(t, "org/example/lib/maven-metadata.xml", []byte(`
+	<metadata>
+	  <groupId>org.example</groupId>
+	  <artifactId>lib</artifactId>
+	  <versioning>
+	    <latest>2.1.0-SNAPSHOT</latest>
+	    <release>2.0.0</release>
+	    <versions>
+	      <version>1.0.0</version>
+	      <version>2.0.0</version>
+	      <version>2.1.0-SNAPSHOT</version>
+	    </versions>
+	  </versioning>
+	</metadata>`))
+	srv.SetResponse(t, "org/example/lib/2.0.0/lib-2.0.0.pom", []byte(`
+	<project>
+	  <groupId>org.example</groupId>
+	  <artifactId>lib</artifactId>
+	  <version>2.0.0</version>
+	</project>`))
+
+	client, err := resolution.NewMavenRegistryClient(t.Context(), srv.URL, "", false, false, srv.Client(), nil)
+	if err != nil {
+		t.Fatalf("NewMavenRegistryClient failed: %v", err)
+	}
+	// LATEST is a snapshot the releases-only registry cannot serve, so it also resolves to the release.
+	for _, metaversion := range []string{"RELEASE", "LATEST"} {
+		vk := resolve.VersionKey{
+			PackageKey:  resolve.PackageKey{System: resolve.Maven, Name: "org.example:lib"},
+			VersionType: resolve.Concrete,
+			Version:     metaversion,
+		}
+		got, err := client.Version(t.Context(), vk)
+		if err != nil {
+			t.Fatalf("Version(%q) failed: %v", metaversion, err)
+		}
+		want := vk
+		want.Version = "2.0.0"
+		if diff := cmp.Diff(resolve.Version{VersionKey: want}, got); diff != "" {
+			t.Errorf("Version(%q) diff (-want +got):\n%s", metaversion, diff)
+		}
+	}
+}

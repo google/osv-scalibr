@@ -15,6 +15,7 @@
 package resolution_test
 
 import (
+	"context"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -274,6 +275,72 @@ test:test 1.0.0
 	Selector | group:pkg1@1.0 1.0
 		Selector | group:pkg2@2.0 2.0
 	MavenDependencyOrigin management | group:pkg3@3.0 3.0
+`, resolve.Maven)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = want.Canon()
+	want.Duration = 0
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("Resolve() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// metaversionClient resolves the RELEASE metaversion to a fixed version, as a registry client would.
+type metaversionClient struct {
+	resolve.Client
+
+	release string
+}
+
+func (c metaversionClient) Version(ctx context.Context, vk resolve.VersionKey) (resolve.Version, error) {
+	if vk.Version == "RELEASE" {
+		vk.Version = c.release
+	}
+	return c.Client.Version(ctx, vk)
+}
+
+func TestResolveMavenManagementMetaversion(t *testing.T) {
+	var managementType dep.Type
+	managementType.AddAttr(dep.MavenDependencyOrigin, "management")
+	m := mockManifest{
+		name:    "test:test",
+		version: "1.0.0",
+		system:  resolve.Maven,
+		requirements: []mockManifestRequirements{
+			{
+				// Dependency from dependencyManagement (unused) with a metaversion
+				name:    "group:pkg3",
+				version: "RELEASE",
+				typ:     managementType.Clone(),
+			},
+		},
+		ecosystemSpecific: mavenmanifest.ManifestSpecific{
+			OriginalRequirements: []mavenmanifest.DependencyWithOrigin{
+				{
+					Dependency: maven.Dependency{
+						GroupID:    "group",
+						ArtifactID: "pkg3",
+						Version:    "RELEASE",
+					},
+					Origin: "management",
+				},
+			},
+		},
+	}
+	cl := metaversionClient{Client: clienttest.NewMockResolutionClient(t, "testdata/universe/maven.yaml"), release: "3.0"}
+
+	got, err := resolution.Resolve(t.Context(), cl, m, options.ResolutionOptions{MavenManagement: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = got.Canon()
+	got.Duration = 0
+
+	want, err := schema.ParseResolve(`
+test:test 1.0.0
+	MavenDependencyOrigin management | group:pkg3@RELEASE 3.0
 `, resolve.Maven)
 	if err != nil {
 		t.Fatal(err)
