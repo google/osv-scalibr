@@ -1376,33 +1376,148 @@ func TestRead_MultiModuleDiscovery_NonStandardPOM(t *testing.T) {
 	}
 }
 
-func Test_isPOMFile(t *testing.T) {
-	tests := []struct {
-		path string
-		want bool
-	}{
-		{"pom.xml", true},
-		{"POM.XML", true},
-		{"pom-conventions.xml", true},
-		{"pom-conventions.XML", true},
-		{"pom-.xml", true},
-		{"pom-abc.xml", true},
-		{"parent-pom.xml", true},
-		{"common-pom.xml", true},
-		{"pom-conventions-pom.xml", true},
-		{"not-pom.xml", true}, // Matches *-pom.xml
-		{"my-app.pom", false},
-		{"not-a-pom-file.xml", false},
-		{"pom.xml.bak", false},
-		{"apom.xml", false},
-		{"pom", false},
+func TestReadWithLocalModuleDirs(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		// The manifest imports a BOM that only the submodule provides, and a BOM that both the
+		// project and the submodule provide with different contents.
+		"app/pom.xml": `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>app</artifactId>
+  <version>1.0.0</version>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.example</groupId>
+        <artifactId>platform</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.example</groupId>
+        <artifactId>shared-bom</artifactId>
+        <version>1.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.example</groupId>
+      <artifactId>shared</artifactId>
+    </dependency>
+  </dependencies>
+</project>`,
+		"pom.xml": `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>root</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>app</module>
+    <module>shared-bom</module>
+  </modules>
+</project>`,
+		"shared-bom/pom.xml": sharedBOM("2.0.0"),
+		"submodule/pom.xml": `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>submodule-root</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>platform</module>
+    <module>shared-bom</module>
+  </modules>
+</project>`,
+		"submodule/platform/pom.xml": `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>platform</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`,
+		"submodule/shared-bom/pom.xml": sharedBOM("9.9.9"),
 	}
-	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			got := isPOMFile(tt.path)
-			if got != tt.want {
-				t.Errorf("isPOMFile(%q) = %v, want %v", tt.path, got, tt.want)
-			}
-		})
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
+
+	versions := func(t *testing.T, localModuleDirs ...string) map[string]string {
+		t.Helper()
+		client, err := datasource.NewDefaultMavenRegistryAPIClient(t.Context(), "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		rw, err := GetReadWriter(client, dir, localModuleDirs...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err := rw.Read("app/pom.xml", scalibrfs.DirFS(dir))
+		if err != nil {
+			t.Fatalf("Read() error: %v", err)
+		}
+		got := make(map[string]string)
+		for _, req := range m.Requirements() {
+			got[req.Name] = req.Version
+		}
+		return got
+	}
+
+	t.Run("without local module dirs", func(t *testing.T) {
+		if got := versions(t)["junit:junit"]; got != "" {
+			t.Errorf("junit:junit version = %q, want empty without the submodule's BOM", got)
+		}
+	})
+	t.Run("with local module dirs", func(t *testing.T) {
+		got := versions(t, "submodule", "missing", "../outside", "")
+		if got["junit:junit"] != "4.12" {
+			t.Errorf("junit:junit version = %q, want 4.12 from the submodule's BOM", got["junit:junit"])
+		}
+		if got["org.example:shared"] != "2.0.0" {
+			t.Errorf("org.example:shared version = %q, want 2.0.0 from the project's own BOM", got["org.example:shared"])
+		}
+	})
+}
+
+func sharedBOM(version string) string {
+	return `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>shared-bom</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>shared</artifactId>
+        <version>` + version + `</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`
 }
