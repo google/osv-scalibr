@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -90,5 +92,87 @@ func TestConvertVDIToRawDoesNotWriteUnallocatedBlocks(t *testing.T) {
 	}
 	if out.truncated != logicalSize {
 		t.Errorf("convertVDIToRaw() output size = %d, want %d", out.truncated, logicalSize)
+	}
+}
+
+func TestConvertVDIToRawRejectsDuplicateBlockIndex(t *testing.T) {
+	hdr := header{
+		Signature:       Signature,
+		Version:         0x00010001,
+		ImageType:       1,
+		SectorSize:      512,
+		DiskSize:        8,
+		BlockSize:       4,
+		BlocksInImage:   2,
+		BlocksAllocated: 1,
+	}
+	hdr.OffsetBmap = uint32(binary.Size(hdr))
+	hdr.OffsetData = hdr.OffsetBmap + 8
+
+	var input bytes.Buffer
+	if err := binary.Write(&input, binary.LittleEndian, &hdr); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if err := binary.Write(&input, binary.LittleEndian, uint32(0)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := input.Write([]byte("data")); err != nil {
+		t.Fatal(err)
+	}
+
+	out := &recordingSparseWriter{}
+	err := convertVDIToRaw(bytes.NewReader(input.Bytes()), out)
+	if err == nil || !strings.Contains(err.Error(), "duplicate VDI block index 0") {
+		t.Fatalf("convertVDIToRaw() error = %v, want duplicate block index", err)
+	}
+	if out.written != 4 || out.truncated != 0 {
+		t.Errorf("convertVDIToRaw() output after duplicate block = %+v, want one block written without truncation", out)
+	}
+}
+
+func TestConvertVDIToRawHandlesOutOfOrderBlocks(t *testing.T) {
+	hdr := header{
+		Signature:       Signature,
+		ImageType:       1,
+		DiskSize:        8,
+		BlockSize:       4,
+		BlocksInImage:   2,
+		BlocksAllocated: 2,
+	}
+	hdr.OffsetBmap = uint32(binary.Size(hdr))
+	hdr.OffsetData = hdr.OffsetBmap + 8
+
+	var input bytes.Buffer
+	if err := binary.Write(&input, binary.LittleEndian, &hdr); err != nil {
+		t.Fatal(err)
+	}
+	for _, idx := range []uint32{1, 0} {
+		if err := binary.Write(&input, binary.LittleEndian, idx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := input.WriteString("ABCDWXYZ"); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := os.CreateTemp(t.TempDir(), "raw-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Close()
+	if err := convertVDIToRaw(bytes.NewReader(input.Bytes()), out); err != nil {
+		t.Fatalf("convertVDIToRaw() failed: %v", err)
+	}
+	if _, err := out.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	got, err := io.ReadAll(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "WXYZABCD" {
+		t.Errorf("raw image = %q, want %q", got, "WXYZABCD")
 	}
 }
