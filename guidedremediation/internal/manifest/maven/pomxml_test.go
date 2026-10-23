@@ -1247,6 +1247,67 @@ func Test_buildPatches(t *testing.T) {
 	}
 }
 
+func TestBuildPatchesPropertyBackedCoordinates(t *testing.T) {
+	project := maven.Project{
+		Properties: maven.Properties{Properties: []maven.Property{
+			{Name: "group", Value: "com.xyz"},
+			{Name: "artifact", Value: "foo"},
+			{Name: "artifact.alias", Value: "${artifact.both}"},
+			{Name: "artifact.both", Value: "both"},
+		}},
+		Dependencies: []maven.Dependency{
+			{GroupID: "com.xyz", ArtifactID: "${artifact}", Version: "1.0.0"},
+			{GroupID: "${group}", ArtifactID: "bar", Version: "1.0.0"},
+			{GroupID: "${group}", ArtifactID: "${artifact.alias}", Version: "1.0.0"},
+			{GroupID: "com.xyz", ArtifactID: "literal", Version: "1.0.0"},
+		},
+		DependencyManagement: maven.DependencyManagement{Dependencies: []maven.Dependency{
+			{GroupID: "${group}", ArtifactID: "managed", Version: "1.0.0"},
+		}},
+	}
+	patches := []result.Patch{{PackageUpdates: []result.PackageUpdate{
+		{Name: "com.xyz:foo", VersionTo: "2.0.0"},
+		{Name: "com.xyz:bar", VersionTo: "2.0.0"},
+		{Name: "com.xyz:both", VersionTo: "2.0.0"},
+		{Name: "com.xyz:literal", VersionTo: "2.0.0"},
+		{Name: "com.xyz:managed", VersionTo: "2.0.0"},
+		{Name: "com.xyz:missing", VersionTo: "2.0.0"},
+	}}}
+
+	got, err := buildPatches(patches, ManifestSpecific{
+		LocalRequirements: buildOriginalRequirements(project, ""),
+	})
+	if err != nil {
+		t.Fatalf("buildPatches() error = %v", err)
+	}
+
+	for _, tc := range []struct {
+		artifactID maven.String
+		origin     string
+		update     bool
+	}{
+		{artifactID: "foo", update: true},
+		{artifactID: "bar", update: true},
+		{artifactID: "both", update: true},
+		{artifactID: "literal", update: true},
+		{artifactID: "managed", origin: "management", update: true},
+		{artifactID: "missing", origin: "management", update: false},
+	} {
+		patch := Patch{
+			DependencyKey: maven.DependencyKey{GroupID: "com.xyz", ArtifactID: tc.artifactID, Type: "jar"},
+			NewRequire:    "2.0.0",
+		}
+		if updateOriginal, ok := got[""].DependencyPatches[tc.origin][patch]; !ok || updateOriginal != tc.update {
+			t.Errorf("patch for com.xyz:%s = (%t, %t), want (%t, true)", tc.artifactID, updateOriginal, ok, tc.update)
+		}
+		if tc.origin == "" {
+			if _, ok := got[""].DependencyPatches["management"][patch]; ok {
+				t.Errorf("patch for com.xyz:%s added to dependency management", tc.artifactID)
+			}
+		}
+	}
+}
+
 func Test_generatePropertyPatches(t *testing.T) {
 	tests := []struct {
 		s1       string
