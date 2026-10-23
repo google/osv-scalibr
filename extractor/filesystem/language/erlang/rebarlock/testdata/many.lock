@@ -1,0 +1,24 @@
+{"1.2.0",
+[{<<"cache_tab">>,{pkg,<<"cache_tab">>,<<"1.0.34">>},0},
+ {<<"eimp">>,{pkg,<<"eimp">>,<<"1.0.27">>},0},
+ {<<"fast_tls">>,{pkg,<<"fast_tls">>,<<"1.1.26">>},0},
+ {<<"fast_xml">>,
+  {git,"https://github.com/processone/fast_xml",
+       {ref,"ee0e6569f44659327a022c0d23d193d1c3e72288"}},
+  0},
+ {<<"idna">>,{pkg,<<"idna">>,<<"7.1.0">>},0},
+ {<<"jose">>,{pkg,<<"jose">>,<<"1.11.12">>},0},
+ {<<"p1_utils">>,{pkg,<<"p1_utils">>,<<"1.0.29">>},1},
+ {<<"xmpp">>,
+  {git,"https://github.com/processone/xmpp",
+       {ref,"02893ce01f4d761659988edd85de99d24ccd6bdf"}},
+  0}]}.
+[
+{pkg_hash,[
+ {<<"cache_tab">>, <<"935902AC8300D30F17C24F4D4056175F053CCC0572ACAB5FB4D1CE503831BEE1">>},
+ {<<"eimp">>, <<"14BF9E6FAC791D0C098708CBC5A0928746ED575869F4CE42A266643947790A3A">>},
+ {<<"fast_tls">>, <<"5E46246020F9338C0661254EEE0FF98E8B253A2331B3B51AFB4EB8B0B3CF41FF">>},
+ {<<"idna">>, <<"1067A13043538129602D2F2CE6899D8713125C7D19734AA557CE2E3EA55BD4F1">>},
+ {<<"jose">>, <<"06E62B467B61D3726CBC19E9B5489F7549C37993DE846DFB3EE8259F9ED208B3">>},
+ {<<"p1_utils">>, <<"CE4C5D1E5D1D3D8A1F1C4E1A0C4F4B1E1E5E9A3C1D2B3A4E5F6A7B8C9D0E1F2A">>}]}
+].
