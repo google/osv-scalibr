@@ -248,7 +248,7 @@ func convertDynamicVDIToRaw(in io.ReaderAt, out sparseWriter, hdr *header) error
 	stride := uint64(hdr.BlockSize) + uint64(hdr.BlockExtra)
 	seenBlocks := make(map[uint32]struct{})
 	var mapEntry [4]byte
-	for i := uint32(0); i < hdr.BlocksInImage; i++ {
+	for i := range hdr.BlocksInImage {
 		virtOffset := uint64(i) * uint64(hdr.BlockSize)
 		if virtOffset >= hdr.DiskSize {
 			break

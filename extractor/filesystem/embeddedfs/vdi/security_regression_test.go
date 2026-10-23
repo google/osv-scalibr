@@ -118,7 +118,7 @@ func TestConvertVDIToRawRejectsDuplicateBlockIndex(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := input.Write([]byte("data")); err != nil {
+	if _, err := input.WriteString("data"); err != nil {
 		t.Fatal(err)
 	}
 
