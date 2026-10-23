@@ -25,6 +25,7 @@ import (
 
 type countingReaderAt struct {
 	io.ReaderAt
+
 	reads int
 }
 
@@ -35,11 +36,11 @@ func (r *countingReaderAt) ReadAt(p []byte, off int64) (int, error) {
 
 func TestCheckImageIntegrityDoesNotScanRefcountBlocks(t *testing.T) {
 	const clusterSize = 512
-	table := make([]byte, clusterSize)
-	for i := 0; i < len(table); i += 8 {
-		binary.BigEndian.PutUint64(table[i:], clusterSize)
+	data := make([]byte, 2*clusterSize)
+	for i := 0; i < clusterSize; i += 8 {
+		binary.BigEndian.PutUint64(data[i:], clusterSize)
 	}
-	reader := &countingReaderAt{ReaderAt: bytes.NewReader(append(table, make([]byte, clusterSize)...))}
+	reader := &countingReaderAt{ReaderAt: bytes.NewReader(data)}
 	h := &header{ClusterBits: 9, RefcountTableClusters: 1}
 	if err := checkImageIntegrity(h, reader); err != nil {
 		t.Fatal(err)
