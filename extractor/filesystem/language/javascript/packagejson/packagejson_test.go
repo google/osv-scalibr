@@ -142,6 +142,7 @@ func TestExtract(t *testing.T) {
 	tests := []struct {
 		name             string
 		path             string
+		content          string
 		includeDeps      bool
 		wantPackages     []*extractor.Package
 		wantErr          error
@@ -162,6 +163,7 @@ func TestExtract(t *testing.T) {
 							Email: "dev@corp.com",
 							URL:   "http://blog.dev.com",
 						},
+						Source: metadata.Local,
 						Dependencies: map[string]string{
 							"cookie-parser": "~1.4.4",
 							"debug":         "~2.6.9",
@@ -169,6 +171,22 @@ func TestExtract(t *testing.T) {
 							"http-errors":   "~1.6.3",
 							"morgan":        "~1.9.1",
 						},
+					},
+				},
+			},
+		},
+		{
+			name:    "private_bundled_vscode_package.json",
+			path:    "usr/lib/code-server/lib/vscode/package.json",
+			content: "{\n  \"name\": \"code-oss-dev\",\n  \"version\": \"1.100.3\",\n  \"private\": true\n}\n",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "code-oss-dev",
+					Version:  "1.100.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("usr/lib/code-server/lib/vscode/package.json", 2),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Source: metadata.Local,
 					},
 				},
 			},
@@ -426,7 +444,20 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			r, err := os.Open(tt.path)
+			openPath := tt.path
+			fsRoot := "."
+			if tt.content != "" {
+				fsRoot = t.TempDir()
+				openPath = filepath.Join(fsRoot, tt.path)
+				if err := os.MkdirAll(filepath.Dir(openPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(openPath, []byte(tt.content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			r, err := os.Open(openPath)
 			defer func() {
 				if err = r.Close(); err != nil {
 					t.Errorf("Close(): %v", err)
@@ -436,7 +467,7 @@ func TestExtract(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			info, err := os.Stat(tt.path)
+			info, err := os.Stat(openPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -444,7 +475,7 @@ func TestExtract(t *testing.T) {
 			collector := testcollector.New()
 
 			input := &filesystem.ScanInput{
-				FS:     scalibrfs.DirFS("."),
+				FS:     scalibrfs.DirFS(fsRoot),
 				Path:   tt.path,
 				Reader: r,
 				Info:   info,

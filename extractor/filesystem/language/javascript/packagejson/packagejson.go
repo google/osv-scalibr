@@ -52,6 +52,7 @@ const (
 type packageJSON struct {
 	Version      string             `json:"version"`
 	Name         string             `json:"name"`
+	Private      bool               `json:"private"`
 	Engines      any                `json:"engines"`
 	Author       *metadata.Person   `json:"author"`
 	Maintainers  []*metadata.Person `json:"maintainers"`
@@ -206,6 +207,11 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 	rootLoc := extractor.LocationFromPath(path)
 	rootLoc.Descriptor.File.LineNumber = nameLine
 
+	var source metadata.NPMPackageSource
+	if p.Private {
+		source = metadata.Local
+	}
+
 	pkgs = append(pkgs, &extractor.Package{
 		Name:     p.Name,
 		Version:  p.Version,
@@ -215,6 +221,7 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
 			Contributors: removeEmptyPersons(p.Contributors),
+			Source:       source,
 			Dependencies: p.Dependencies,
 		},
 	})
