@@ -31,7 +31,7 @@ var (
 	// It is a UUID-like string (mentioned in official documentation) which is exactly either 32 or 36 symbols long.
 	// Reference:
 	// https://developer.concur.com/api-reference/authentication/apidoc.html#refresh_token
-	concurClientSecretRe = regexp.MustCompile(`(?i)\bclient[_-]?secret\b\s*[:=]?\s*([a-zA-Z0-9-]{32,36})\b`)
+	concurClientSecretRe = regexp.MustCompile(`(?i)"?\bclient[_-]?secret\b"?\s*[:=]?\s*"?([a-zA-Z0-9-]{32,36})"?\b`)
 
 	// concurRefreshTokenRe is a regular expression that matches SAP Concur Refresh Tokens.
 	// It is a UUID-like string (mentioned in official documentation) which is exactly either 32 or 36 symbols long.
@@ -47,7 +47,7 @@ var (
 	//
 	// Reference:
 	// https://developer.concur.com/api-reference/authentication/apidoc.html#refresh_token
-	concurRefreshTokenRe = regexp.MustCompile(`(?i)\brefresh[_-]?token\b\s*[:=]?\s*([a-zA-Z0-9-]{32,36})\b`)
+	concurRefreshTokenRe = regexp.MustCompile(`(?i)"?\brefresh[_-]?token\b"?\s*[:=]?\s*"?([a-zA-Z0-9-]{32,36})"?\b`)
 )
 
 // NewSAPConcurRefreshTokenDetector returns a detector that matches SAP Concur Refresh Token.

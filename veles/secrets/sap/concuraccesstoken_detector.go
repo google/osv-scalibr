@@ -24,7 +24,7 @@ import (
 // NewSAPConcurAccessTokenDetector returns a detector that matches SAP Concur Access Token.
 func NewSAPConcurAccessTokenDetector() veles.Detector {
 	return &ntuple.Detector{
-		MaxElementLen: max(maxAccessTokenLength, maxURLLength),
+		MaxElementLen: maxAccessTokenLength,
 		MaxDistance:   maxDistance,
 		Finders: []ntuple.Finder{
 			findValidSAPConcurTokens(),

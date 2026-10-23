@@ -1214,6 +1214,7 @@ func sapAccessTokenToProto(s sap.AccessToken) *spb.SecretData {
 		Secret: &spb.SecretData_SapAccessToken{
 			SapAccessToken: &spb.SecretData_SAPAccessToken{
 				Token: s.Token,
+				Url:   s.URL,
 			},
 		},
 	}
