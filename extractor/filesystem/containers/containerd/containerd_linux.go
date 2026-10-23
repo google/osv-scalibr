@@ -278,10 +278,17 @@ func digestSnapshotInfoMapping(snapshotsMetadata []SnapshotMetadata) map[string]
 	for _, snapshotMetadata := range snapshotsMetadata {
 		// The snapshotMetadata.Digest is in the format of ".*/<digest>".
 		// The snapshotKey in the metadata.db file is the "<digest>" part.
-		// If the snapshotMetadata.Digest does not have the "/" or "/" is the last character, then it's
-		// not a valid snapshot digest.
+		// The gcfs (GKE Image Streaming) snapshotter stores remote (streamed) layer snapshots
+		// under the bare chain ID ("sha256:<chain_id>"), without the "<namespace>/<id>/" prefix,
+		// and the "parent" of the snapshot above it refers to that bare key. Such a key is the
+		// "<digest>" itself.
+		// Otherwise, if the snapshotMetadata.Digest does not have the "/" or "/" is the last
+		// character, then it's not a valid snapshot digest.
 		digestSplitterIndex := strings.LastIndex(snapshotMetadata.Digest, "/")
-		if digestSplitterIndex == -1 || digestSplitterIndex == len(snapshotMetadata.Digest)-1 {
+		if digestSplitterIndex == len(snapshotMetadata.Digest)-1 {
+			continue
+		}
+		if digestSplitterIndex == -1 && !strings.HasPrefix(snapshotMetadata.Digest, "sha256:") {
 			continue
 		}
 		shorterDigest := snapshotMetadata.Digest[digestSplitterIndex+1:]
