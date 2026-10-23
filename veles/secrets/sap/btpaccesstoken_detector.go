@@ -44,13 +44,13 @@ const (
 )
 
 var (
-	accessTokenRe = regexp.MustCompile(`(?i)\baccess[_-]?token\b\s*[:=]?\s*(eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b`)
+	accessTokenRe = regexp.MustCompile(`(?i)"?\baccess[_-]?token\b"?\s*[:=]?\s*"?(eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)"?`)
 	// urlRe is a regular expression that matches SAP BTP URL.
 	// For reference:
 	// http://developer.ibm.com/developer/default/tutorials/integrate-sap-business-technology-platform-audit-logs-with-ibm-security-qradar/images/figure2.png
 	// https://help.figaf.com/portal/en/kb/articles/create-service-keys-for-sap-cpi-cloud-foundry#To_create_a_service_key_for_running_test_follow_the_procedure1__Goto_SAP_BTP_Cockpit_and_open_subaccount_for_your_development2_Click_Instances_and_Subscription3_Create4_Fill_in_the_following_information_Plan_should_be_integration_flow_and_the_space_your_current_space5_On_the_roles_page_select_the_roles_AuthGroup_AdministratorAuthGroup_BusinessExpertAuthGroup_IntegrationDeveloperAccessAllAccessPoliciesArtifacts6_Select_next_and_create7_Once_it_is_created_select_the_item_and_in_the_details_select_Create_Service_Key8_Give_it_a_name_and_select_create9_Once_it_is_created_you_can_view_the_JSON_data_use_this_when_you_are_creating_the_account
 	// https://www.youtube.com/watch?t=416&si=G51ZmarBpVx4wiCZ&v=LAUNofd2v-k&feature=youtu.be
-	urlRe = regexp.MustCompile(`(?i)\burl\b\s*[:=]?\s*([a-zA-Z0-9.-]+\.cfapps\.[a-zA-Z0-9-]+\.hana\.ondemand\.com)\b`)
+	urlRe = regexp.MustCompile(`(?i)"?\burl\b"?\s*[:=]?\s*"?([a-zA-Z0-9.-]+\.cfapps\.[a-zA-Z0-9-]+\.hana\.ondemand\.com)"?`)
 )
 
 // NewBTPAccessTokenDetector returns a detector that matches SAP BTP Credentials.

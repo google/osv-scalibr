@@ -311,3 +311,33 @@ client_secret: ` + validBTPClientSecret + `
 		})
 	}
 }
+
+func TestBTPOAuth2ClientCredentialsDetectors_DetectTogether(t *testing.T) {
+	engine, err := veles.NewDetectionEngine([]veles.Detector{
+		sap.NewBTPOAuth2ClientCredentialsDetector(),
+		sap.NewBTPXSUAAOAuth2ClientCredentialsDetector(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	input := validBTPClientID + "\nclient_secret: " +
+		validBTPClientSecret + "\n" + validBTPTokenURL
+
+	got, err := engine.Detect(t.Context(), strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Detect() error: %v", err)
+	}
+
+	want := []veles.Secret{
+		sap.BTPOAuth2ClientCredentials{
+			ID:       validBTPClientID,
+			Secret:   validBTPClientSecret,
+			TokenURL: validBTPTokenURL,
+		},
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("Detect() diff (-want +got):\n%s", diff)
+	}
+}

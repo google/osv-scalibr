@@ -11,12 +11,17 @@ import (
 	"github.com/google/osv-scalibr/veles/velestest"
 )
 
+const (
+	testSAPSuccessFactorsAccessToken     = "access_token: eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJzYXBzZi5jb20iLCJjaWQiOiJ0ZXN0LWNsaWVudC0xMjMiLCJzdWIiOiJ0ZXN0LXVzZXIifQ.signature"
+	expectedSAPSuccessFactorsAccessToken = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJzYXBzZi5jb20iLCJjaWQiOiJ0ZXN0LWNsaWVudC0xMjMiLCJzdWIiOiJ0ZXN0LXVzZXIifQ.signature"
+)
+
 func TestSAPSuccessFactorsAccessTokenDetectorAcceptance(t *testing.T) {
 	velestest.AcceptDetector(
 		t,
 		sap.NewSAPSuccessFactorsAccessTokenDetector(),
-		testSAPAccessToken,
-		sap.SuccessFactorsAccessToken{Token: expectedSAPAccessToken},
+		testSAPSuccessFactorsAccessToken,
+		sap.SuccessFactorsAccessToken{Token: expectedSAPSuccessFactorsAccessToken},
 	)
 }
 
@@ -33,40 +38,40 @@ func TestSuccessFactorsAccessTokenDetector_truePositives(t *testing.T) {
 	}{
 		{
 			name:  "valid SAP credentials",
-			input: testSAPAccessToken + "\n" + testSAPURL,
+			input: testSAPSuccessFactorsAccessToken + "\n" + testSAPURL,
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
-					Token: expectedSAPAccessToken,
+					Token: expectedSAPSuccessFactorsAccessToken,
 				},
 			},
 		},
 		{
 			name:  "Credentials in middle of text",
-			input: "prefix " + testSAPAccessToken + "\n" + testSAPURL + " suffix",
+			input: "prefix " + testSAPSuccessFactorsAccessToken + "\n" + testSAPURL + " suffix",
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
-					Token: expectedSAPAccessToken,
+					Token: expectedSAPSuccessFactorsAccessToken,
 				},
 			},
 		},
 		{
 			name:  "multiple tokens",
-			input: testSAPAccessToken + "\n" + testSAPAccessToken,
+			input: testSAPSuccessFactorsAccessToken + "\n" + testSAPSuccessFactorsAccessToken,
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
-					Token: expectedSAPAccessToken,
+					Token: expectedSAPSuccessFactorsAccessToken,
 				},
 				sap.SuccessFactorsAccessToken{
-					Token: expectedSAPAccessToken,
+					Token: expectedSAPSuccessFactorsAccessToken,
 				},
 			},
 		},
 		{
 			name:  "Token in long buffer",
-			input: strings.Repeat("a", 64*veles.KiB) + " " + testSAPAccessToken,
+			input: strings.Repeat("a", 64*veles.KiB) + " " + testSAPSuccessFactorsAccessToken,
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
-					Token: expectedSAPAccessToken,
+					Token: expectedSAPSuccessFactorsAccessToken,
 				},
 			},
 		},

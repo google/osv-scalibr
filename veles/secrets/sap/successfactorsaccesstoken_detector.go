@@ -15,6 +15,8 @@
 package sap
 
 import (
+	"strings"
+
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/common/ntuple"
 )
@@ -25,10 +27,57 @@ func NewSAPSuccessFactorsAccessTokenDetector() veles.Detector {
 		MaxElementLen: maxAccessTokenLength,
 		MaxDistance:   maxDistance,
 		Finders: []ntuple.Finder{
-			ntuple.FindAllMatchesGroup(accessTokenRe),
+			findValidSAPSuccessFactorsTokens(),
 		},
 		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
 			return SuccessFactorsAccessToken{Token: string(ms[0].Value)}, true
 		},
 	}
+}
+
+func findValidSAPSuccessFactorsTokens() ntuple.Finder {
+	return func(data []byte) []ntuple.Match {
+		matches := accessTokenRe.FindAllSubmatchIndex(data, -1)
+		results := make([]ntuple.Match, 0, len(matches))
+
+		for _, idx := range matches {
+			// idx layout:
+			// [fullStart, fullEnd, g1Start, g1End]
+
+			if len(idx) < 4 || idx[2] < 0 || idx[3] < 0 {
+				continue
+			}
+
+			fullStart := idx[0]
+			fullEnd := idx[1]
+			jwtBytes := data[idx[2]:idx[3]]
+
+			if len(jwtBytes) > maxJWTLength {
+				continue
+			}
+
+			payload, ok := parseJWTPayload(jwtBytes)
+			if !ok {
+				continue
+			}
+
+			iss, ok := payload[payloadIssuerKey].(string)
+			if !ok || !isValidSAPSuccessFactorsIssuer(iss) {
+				continue
+			}
+
+			results = append(results, ntuple.Match{
+				Start: fullStart,
+				End:   fullEnd,
+				Value: jwtBytes,
+			})
+		}
+
+		return results
+	}
+}
+
+// isValidSAPSuccessFactorsIssuer checks if issuer contains SAP Success Factors related string
+func isValidSAPSuccessFactorsIssuer(iss string) bool {
+	return strings.Contains(iss, "sapsf") || strings.Contains(iss, "successfactors") || strings.Contains(iss, "cloud.sap")
 }
