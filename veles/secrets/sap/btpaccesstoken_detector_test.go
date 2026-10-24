@@ -57,7 +57,7 @@ func TestDetector_truePositives(t *testing.T) {
 				want  []veles.Secret
 			}{
 				{
-					name:  "valid SAP credentials",
+					name:  "valid_SAP_credentials",
 					input: testSAPAccessToken + "\n" + testSAPURL,
 					want: []veles.Secret{
 						sap.AccessToken{
@@ -67,7 +67,7 @@ func TestDetector_truePositives(t *testing.T) {
 					},
 				},
 				{
-					name:  "Credentials in middle of text",
+					name:  "Credentials_in_middle_of_text",
 					input: "prefix " + testSAPAccessToken + "\n" + testSAPURL + " suffix",
 					want: []veles.Secret{
 						sap.AccessToken{
@@ -77,7 +77,7 @@ func TestDetector_truePositives(t *testing.T) {
 					},
 				},
 				{
-					name:  "multiple tokens",
+					name:  "multiple_tokens",
 					input: testSAPAccessToken + "\n" + testSAPURL + "\n" + testSAPAccessToken + "\n" + testSAPURL,
 					want: []veles.Secret{
 						sap.AccessToken{
@@ -91,7 +91,7 @@ func TestDetector_truePositives(t *testing.T) {
 					},
 				},
 				{
-					name:  "Credentials in long buffer",
+					name:  "Credentials_in_long_buffer",
 					input: strings.Repeat("a", 64*veles.KiB) + " " + testSAPAccessToken + "\n" + testSAPURL,
 					want: []veles.Secret{
 						sap.AccessToken{
@@ -132,35 +132,35 @@ func TestDetector_trueNegatives(t *testing.T) {
 				want  []veles.Secret
 			}{
 				{
-					name:  "empty input",
+					name:  "empty_input",
 					input: "",
 				},
 				{
-					name:  "invalid JWT header only",
+					name:  "invalid_JWT_header_only",
 					input: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9" + "\n" + testSAPURL,
 				},
 				{
-					name:  "malformed payload",
+					name:  "malformed_payload",
 					input: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.invalid-payload.signature" + "\n" + testSAPURL,
 				},
 				{
-					name:  "malformed url",
+					name:  "malformed_url",
 					input: testSAPAccessToken + "\n" + "cfapp.hana.ondemanded.com",
 				},
 				{
-					name:  "missing issuer",
+					name:  "missing_issuer",
 					input: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaWQiOiJzYi1jZmZjNDE5Ny1lMmJiLTRhODItYTEyNy04ZjIwMmEzYmI0NWMhYjE1Nzk3OHxpdCFiMTE3OTEyIn0.signature" + "\n" + testSAPURL,
 				},
 				{
-					name:  "missing cid",
+					name:  "missing_cid",
 					input: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmaWdhZnBhcnRuZXItMS5pdC1jcGkwMTguY2ZhcHBzLmV1MTAtMDAzLmhhbmEub25kZW1hbmQuY29tIn0.signature" + "\n" + testSAPURL,
 				},
 				{
-					name:  "missing url",
+					name:  "missing_url",
 					input: testSAPAccessToken,
 				},
 				{
-					name:  "not a jwt",
+					name:  "not_a_jwt",
 					input: "not.a.jwt",
 				},
 				{

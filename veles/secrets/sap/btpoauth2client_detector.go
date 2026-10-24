@@ -59,12 +59,12 @@ var (
 	// https://help.figaf.com/portal/en/kb/articles/create-service-keys-for-sap-cpi-cloud-foundry#To_create_a_service_key_for_running_test_follow_the_procedure1__Goto_SAP_BTP_Cockpit_and_open_subaccount_for_your_development2_Click_Instances_and_Subscription3_Create4_Fill_in_the_following_information_Plan_should_be_integration_flow_and_the_space_your_current_space5_On_the_roles_page_select_the_roles_AuthGroup_AdministratorAuthGroup_BusinessExpertAuthGroup_IntegrationDeveloperAccessAllAccessPoliciesArtifacts6_Select_next_and_create7_Once_it_is_created_select_the_item_and_in_the_details_select_Create_Service_Key8_Give_it_a_name_and_select_create9_Once_it_is_created_you_can_view_the_JSON_data_use_this_when_you_are_creating_the_account
 	// https://www.youtube.com/watch?t=416&si=G51ZmarBpVx4wiCZ&v=LAUNofd2v-k&feature=youtu.be// SAP client ID format:
 	// sb-<UUID 32-36 chars>!<segment1>|<segment2>!<segment3>
-	clientIDRe = regexp.MustCompile(`(?i)"?\bsb-[a-zA-Z0-9-]{32,36}![a-zA-Z0-9-]+\|[a-zA-Z0-9-]+![a-zA-Z0-9-]+"?`)
+	clientIDRe = regexp.MustCompile(`(?i)"?(\bsb-[a-zA-Z0-9-]{32,36}![a-zA-Z0-9-]+\|[a-zA-Z0-9-]+![a-zA-Z0-9-]+)"?`)
 
 	// xsuaaClientIDRe is a regular expression that matches SAP BTP XSUAA OAuth2 Client IDs.
 	// SAP BTP XSUAA Client ID format:
 	// sb-<xsappname>!<index>
-	xsuaaClientIDRe = regexp.MustCompile(`(?i)"?\bsb-[a-zA-Z0-9-]+![a-zA-Z0-9-]+"?`)
+	xsuaaClientIDRe = regexp.MustCompile(`(?i)"?(\bsb-[a-zA-Z0-9-]+![a-zA-Z0-9-]+)"?`)
 
 	// clientSecretRe is a regular expression that matches SAP OAuth2 Client Secrets.
 	// Articles from websites and real world demonstrations from youtube videos suggest that it's an UUID-like string.
@@ -78,7 +78,7 @@ var (
 	// References:
 	// https://help.figaf.com/portal/en/kb/articles/create-service-keys-for-sap-cpi-cloud-foundry#To_create_a_service_key_for_running_test_follow_the_procedure1__Goto_SAP_BTP_Cockpit_and_open_subaccount_for_your_development2_Click_Instances_and_Subscription3_Create4_Fill_in_the_following_information_Plan_should_be_integration_flow_and_the_space_your_current_space5_On_the_roles_page_select_the_roles_AuthGroup_AdministratorAuthGroup_BusinessExpertAuthGroup_IntegrationDeveloperAccessAllAccessPoliciesArtifacts6_Select_next_and_create7_Once_it_is_created_select_the_item_and_in_the_details_select_Create_Service_Key8_Give_it_a_name_and_select_create9_Once_it_is_created_you_can_view_the_JSON_data_use_this_when_you_are_creating_the_account
 	// https://www.youtube.com/watch?t=416&si=G51ZmarBpVx4wiCZ&v=LAUNofd2v-k&feature=youtu.be
-	tokenURLRe = regexp.MustCompile(`"?\b[a-zA-Z0-9.-]+\.authentication\.[a-zA-Z0-9]+\.hana\.ondemand\.com(?:/oauth/token)?\b"?`)
+	tokenURLRe = regexp.MustCompile(`"?(\b[a-zA-Z0-9.-]+\.authentication\.[a-zA-Z0-9]+\.hana\.ondemand\.com(?:/oauth/token)?)\b"?`)
 )
 
 // NewBTPOAuth2ClientCredentialsDetector returns a detector that matches SAP BTP or S/4HANA OAuth2 Client Credentials.
@@ -89,7 +89,7 @@ func NewBTPOAuth2ClientCredentialsDetector() veles.Detector {
 		Finders: []ntuple.Finder{
 			ntuple.FindAllMatchesGroup(clientIDRe),
 			ntuple.FindAllMatchesGroup(clientSecretRe),
-			ntuple.FindAllMatches(tokenURLRe),
+			ntuple.FindAllMatchesGroup(tokenURLRe),
 		},
 		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
 			return BTPOAuth2ClientCredentials{ID: string(ms[0].Value), Secret: string(ms[1].Value), TokenURL: string(ms[2].Value)}, true
@@ -105,7 +105,7 @@ func NewBTPXSUAAOAuth2ClientCredentialsDetector() veles.Detector {
 		Finders: []ntuple.Finder{
 			findValidXSUAAClientIDs(xsuaaClientIDRe),
 			ntuple.FindAllMatchesGroup(clientSecretRe),
-			ntuple.FindAllMatches(tokenURLRe),
+			ntuple.FindAllMatchesGroup(tokenURLRe),
 		},
 		FromTuple: func(ms []ntuple.Match) (veles.Secret, bool) {
 			return BTPOAuth2ClientCredentials{ID: string(ms[0].Value), Secret: string(ms[1].Value), TokenURL: string(ms[2].Value)}, true
@@ -115,16 +115,12 @@ func NewBTPXSUAAOAuth2ClientCredentialsDetector() veles.Detector {
 
 func findValidXSUAAClientIDs(re *regexp.Regexp) ntuple.Finder {
 	return func(data []byte) []ntuple.Match {
-		matches := re.FindAllIndex(data, -1)
+		matches := re.FindAllSubmatchIndex(data, -1)
 		results := make([]ntuple.Match, 0, len(matches))
 
 		for _, idx := range matches {
-			end := idx[1]
-
-			// Skip an optional closing quote when checking the next character.
-			if end < len(data) && data[end-1] == '"' {
-				// The regex match already includes the closing quote.
-			}
+			// idx[0:2] is the full match; idx[2:4] is capture group 1.
+			start, end := idx[2], idx[3]
 
 			// A full BTP client ID continues with |<segment>!<segment>.
 			if end < len(data) && data[end] == '|' {
@@ -133,8 +129,8 @@ func findValidXSUAAClientIDs(re *regexp.Regexp) ntuple.Finder {
 
 			results = append(results, ntuple.Match{
 				Start: idx[0],
-				End:   idx[1],
-				Value: data[idx[0]:idx[1]],
+				End:   idx[2],
+				Value: data[start:end],
 			})
 		}
 

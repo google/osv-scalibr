@@ -42,11 +42,11 @@ var (
 	// Client ID is an UUID-like string.
 	// References:
 	// https://help.sap.com/docs/ariba-apis/help-for-sap-ariba-developer-portal/initial-access-token-requests
-	aribaClientIDRe = regexp.MustCompile(`(?i)"?\bclient[_-]?id\b"?\s*[:=]?\s*"?([a-zA-Z0-9-]{32,36})"?`)
+	aribaClientIDRe = regexp.MustCompile(`(?i)"?\bclient[_-]?id\b"?\s*[:=]?\s*"?([a-zA-Z0-9-]{32,36})(?:"|[\s,;}\]]|$)`)
 
 	// aribaClientSecretRe is a regular expression that matches SAP Ariba OAuth2 Client Secrets.
 	// Verification by free trial confirms it is a random string which is exactly 32 symbols long.
-	aribaClientSecretRe = regexp.MustCompile(`(?i)"?\bclient[_-]?secret\b"?\s*[:=]?\s*"?([a-zA-Z0-9]{32})"?`)
+	aribaClientSecretRe = regexp.MustCompile(`(?i)"?\bclient[_-]?secret\b"?\s*[:=]?\s*"?([a-zA-Z0-9]{32})\b"?`)
 )
 
 // NewSAPAribaOAuth2ClientCredentialsDetector returns a detector that matches SAP Ariba OAuth2 Client Credentials.

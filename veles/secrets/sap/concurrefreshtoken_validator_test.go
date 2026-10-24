@@ -92,7 +92,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 		useServer          bool
 	}{
 		{
-			name:               "valid creds",
+			name:               "valid_creds",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "client_secret: " + validSAPConcurClientSecret,
 			token:              "refresh_token: " + validSAPConcurRefreshToken,
@@ -100,7 +100,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 			want:               veles.ValidationValid,
 		},
 		{
-			name:               "invalid creds - Client ID",
+			name:               "invalid_creds_Client_ID",
 			id:                 "YUVRAJ SAXENA",
 			secret:             "client_secret: " + validSAPConcurClientSecret,
 			token:              "refresh_token: " + validSAPConcurRefreshToken,
@@ -108,7 +108,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "invalid creds - Client Secret",
+			name:               "invalid_creds_Client_Secret",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "YUVRAJ SAXENA",
 			token:              "refresh_token: " + validSAPConcurRefreshToken,
@@ -116,7 +116,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "invalid creds - Refresh Token",
+			name:               "invalid_creds_Refresh_Token",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "YUVRAJ SAXENA",
 			token:              "refresh_token: A-B",
@@ -124,7 +124,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty Client ID",
+			name:               "empty_Client_ID",
 			id:                 "",
 			secret:             "client_secret: " + validSAPConcurClientSecret,
 			token:              "refresh_token: " + validSAPConcurRefreshToken,
@@ -132,7 +132,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty Client Secret",
+			name:               "empty_Client_Secret",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "",
 			token:              "refresh_token: " + validSAPConcurRefreshToken,
@@ -140,7 +140,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty Refresh Token",
+			name:               "empty_Refresh_Token",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             validSAPConcurClientSecret,
 			token:              "",
@@ -148,7 +148,7 @@ func TestSAPConcurRefreshTokenValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "context cancelled",
+			name:               "context_cancelled",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "client_secret: " + validSAPConcurClientSecret,
 			serverResponseCode: http.StatusOK,

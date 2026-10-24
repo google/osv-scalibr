@@ -37,7 +37,7 @@ func TestSuccessFactorsAccessTokenDetector_truePositives(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name:  "valid SAP credentials",
+			name:  "valid_SAP_credentials",
 			input: testSAPSuccessFactorsAccessToken + "\n" + testSAPURL,
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
@@ -46,7 +46,7 @@ func TestSuccessFactorsAccessTokenDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name:  "Credentials in middle of text",
+			name:  "Credentials_in_middle_of_text",
 			input: "prefix " + testSAPSuccessFactorsAccessToken + "\n" + testSAPURL + " suffix",
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
@@ -55,7 +55,7 @@ func TestSuccessFactorsAccessTokenDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name:  "multiple tokens",
+			name:  "multiple_tokens",
 			input: testSAPSuccessFactorsAccessToken + "\n" + testSAPSuccessFactorsAccessToken,
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
@@ -67,7 +67,7 @@ func TestSuccessFactorsAccessTokenDetector_truePositives(t *testing.T) {
 			},
 		},
 		{
-			name:  "Token in long buffer",
+			name:  "Token_in_long_buffer",
 			input: strings.Repeat("a", 64*veles.KiB) + " " + testSAPSuccessFactorsAccessToken,
 			want: []veles.Secret{
 				sap.SuccessFactorsAccessToken{
@@ -103,31 +103,31 @@ func TestSuccessFactorsAccessTokenDetector_trueNegatives(t *testing.T) {
 		want  []veles.Secret
 	}{
 		{
-			name:  "empty input",
+			name:  "empty_input",
 			input: "",
 		},
 		{
-			name:  "invalid JWT header only",
+			name:  "invalid_JWT_header_only",
 			input: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9",
 		},
 		{
-			name:  "malformed payload",
+			name:  "malformed_payload",
 			input: "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.invalid-payload.signature",
 		},
 		{
-			name:  "missing issuer",
+			name:  "missing_issuer",
 			input: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaWQiOiJzYi1jZmZjNDE5Ny1lMmJiLTRhODItYTEyNy04ZjIwMmEzYmI0NWMhYjE1Nzk3OHxpdCFiMTE3OTEyIn0.signature",
 		},
 		{
-			name:  "missing cid",
+			name:  "missing_cid",
 			input: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmaWdhZnBhcnRuZXItMS5pdC1jcGkwMTguY2ZhcHBzLmV1MTAtMDAzLmhhbmEub25kZW1hbmQuY29tIn0.signature",
 		},
 		{
-			name:  "not a jwt",
+			name:  "not_a_jwt",
 			input: "not.a.jwt",
 		},
 		{
-			name:  "token exceeding max length",
+			name:  "token_exceeding_max_length",
 			input: strings.Repeat("a", 8193),
 		},
 	}

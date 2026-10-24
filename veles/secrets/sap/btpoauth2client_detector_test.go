@@ -63,43 +63,43 @@ func TestBTPOAuth2ClientCredentialsDetector_Detect(t *testing.T) {
 	}{
 		// --- Empty or invalid input ---
 		{
-			name:  "empty input",
+			name:  "empty_input",
 			input: "",
 			want:  nil,
 		},
 		{
-			name:  "non-credential input",
+			name:  "non-credential_input",
 			input: "Some random text",
 			want:  nil,
 		},
 		{
-			name:  "invalid Client ID format - too short",
+			name:  "invalid_Client_ID_format_too_short",
 			input: "sb-abc",
 			want:  nil,
 		},
 		{
-			name:  "invalid Client Secret format - too short",
+			name:  "invalid_Client_Secret_format_too_short",
 			input: "client_secret: abc-bcd-ef",
 			want:  nil,
 		},
 		{
-			name:  "invalid token url format",
+			name:  "invalid_token_url_format",
 			input: validBTPClientID + "\nclient_secret:" + validBTPClientSecret + "\nhttps://example.com/token",
 			want:  nil,
 		},
 		// --- One of Client ID or Client Secret or URL or Token URL ---
 		{
-			name:  "missing client id",
+			name:  "missing_client_id",
 			input: "client_secret:" + validBTPClientSecret + "\n" + validBTPTokenURL,
 			want:  nil,
 		},
 		{
-			name:  "missing client secret",
+			name:  "missing_client_secret",
 			input: validBTPClientID + "\n" + validBTPTokenURL,
 			want:  nil,
 		},
 		{
-			name:  "missing token url",
+			name:  "missing_token_url",
 			input: validBTPClientID + "\n" + "client_secret:" + validBTPClientSecret,
 			want:  nil,
 		},
@@ -194,43 +194,43 @@ func TestBTPXSUAAClientCredentialsDetector_Detect(t *testing.T) {
 	}{
 		// --- Empty or invalid input ---
 		{
-			name:  "empty input",
+			name:  "empty_input",
 			input: "",
 			want:  nil,
 		},
 		{
-			name:  "non-credential input",
+			name:  "non-credential_input",
 			input: "Some random text",
 			want:  nil,
 		},
 		{
-			name:  "invalid Client ID format - too short",
+			name:  "invalid_Client_ID_format_too_short",
 			input: "sb-abc",
 			want:  nil,
 		},
 		{
-			name:  "invalid Client Secret format - too short",
+			name:  "invalid_Client_Secret_format_too_short",
 			input: "client_secret: abc-bcd-ef",
 			want:  nil,
 		},
 		{
-			name:  "invalid token url format",
+			name:  "invalid_token_url_format",
 			input: validBTPXSUAAClientID + "\nclient_secret:" + validBTPClientSecret + "\nhttps://example.com/token",
 			want:  nil,
 		},
 		// --- One of Client ID or Client Secret or URL or Token URL ---
 		{
-			name:  "missing client id",
+			name:  "missing_client_id",
 			input: "client_secret:" + validBTPClientSecret + "\n" + validBTPTokenURL,
 			want:  nil,
 		},
 		{
-			name:  "missing client secret",
+			name:  "missing_client_secret",
 			input: validBTPXSUAAClientID + "\n" + validBTPTokenURL,
 			want:  nil,
 		},
 		{
-			name:  "missing token url",
+			name:  "missing_token_url",
 			input: validBTPXSUAAClientID + "\n" + "client_secret:" + validBTPClientSecret,
 			want:  nil,
 		},
@@ -340,4 +340,38 @@ func TestBTPOAuth2ClientCredentialsDetectors_DetectTogether(t *testing.T) {
 	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("Detect() diff (-want +got):\n%s", diff)
 	}
+}
+
+func TestBTPOAuth2ClientCredentialsDetectorQuotedJSON(t *testing.T) {
+	input := `"` + validBTPClientID + `",
+        "clientsecret": "` + validBTPClientSecret + `",
+        "tokenurl": "` + validBTPTokenURL + `"`
+
+	velestest.AcceptDetector(
+		t,
+		sap.NewBTPOAuth2ClientCredentialsDetector(),
+		input,
+		sap.BTPOAuth2ClientCredentials{
+			ID:       validBTPClientID,
+			Secret:   validBTPClientSecret,
+			TokenURL: validBTPTokenURL,
+		},
+	)
+}
+
+func TestBTPXSUAAOAuth2ClientCredentialsDetectorQuotedJSON(t *testing.T) {
+	input := `"` + validBTPXSUAAClientID + `",
+        "clientsecret": "` + validBTPClientSecret + `",
+        "tokenurl": "` + validBTPTokenURL + `"`
+
+	velestest.AcceptDetector(
+		t,
+		sap.NewBTPXSUAAOAuth2ClientCredentialsDetector(),
+		input,
+		sap.BTPOAuth2ClientCredentials{
+			ID:       validBTPXSUAAClientID,
+			Secret:   validBTPClientSecret,
+			TokenURL: validBTPTokenURL,
+		},
+	)
 }

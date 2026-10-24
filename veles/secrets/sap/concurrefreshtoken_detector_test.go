@@ -52,28 +52,28 @@ func TestSAPConcurRefreshTokenDetector_Detect(t *testing.T) {
 	}{
 		// --- Empty or invalid input ---
 		{
-			name:  "empty input",
+			name:  "empty_input",
 			input: "",
 			want:  nil,
 		},
 		{
-			name:  "non-credential input",
+			name:  "non-credential_input",
 			input: "Some random text",
 			want:  nil,
 		},
 		// --- One of Client ID or Client Secret or URL or Token URL ---
 		{
-			name:  "missing client id",
+			name:  "missing_client_id",
 			input: "client_secret:" + validSAPConcurClientSecret + "\nrefresh_token: " + validSAPConcurRefreshToken,
 			want:  nil,
 		},
 		{
-			name:  "missing client secret",
+			name:  "missing_client_secret",
 			input: "client_id: " + validSAPAribaClientID + "\nrefresh_token: " + validSAPConcurRefreshToken,
 			want:  nil,
 		},
 		{
-			name:  "missing refresh token",
+			name:  "missing_refresh_token",
 			input: "client_id: " + validSAPAribaClientID + "\nclient_secret:" + validSAPConcurClientSecret,
 			want:  nil,
 		},
