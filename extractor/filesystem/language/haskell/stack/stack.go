@@ -40,12 +40,22 @@ const (
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
 	defaultMaxFileSizeBytes = 30 * units.MiB
+
+	// Stack package manager allows to configure custom stack root using
+	// STACK_ROOT environment variable or --stack-root command-line flag.
+	// We use "stack" here bcause it's the default place stack packages are stored in.
+	// However, we also allow users to provide custom stack root. In such case, the supplied
+	// stack root will override the default one.
+	//
+	// Reference: https://docs.haskellstack.org/en/stable/topics/stack_root/#location
+	defaultStackRootString = "stack"
 )
 
 // Extractor extracts stack package info from stack installed packages.
 type Extractor struct {
 	Stats            stats.Collector
 	maxFileSizeBytes int64
+	stackRoot        string
 }
 
 // New returns a haskell stack extractor.
@@ -60,7 +70,12 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
 
-	return &Extractor{maxFileSizeBytes: maxFileSizeBytes}, nil
+	stackRoot := defaultStackRootString
+	if specific.GetStackRoot() != "" {
+		stackRoot = specific.GetStackRoot()
+	}
+
+	return &Extractor{maxFileSizeBytes: maxFileSizeBytes, stackRoot: stackRoot}, nil
 }
 
 // Name of the extractor
@@ -80,8 +95,13 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 
-	// The path stack package database entries are stored under includes "stack".
-	if !strings.Contains(filePath, "stack") {
+	stackRoot := e.stackRoot
+	// Strip leading "~" from "~/"
+	if strings.HasPrefix(stackRoot, "~/") {
+		stackRoot = filePath[1:]
+	}
+
+	if !strings.Contains(filePath, stackRoot) {
 		return false
 	}
 
@@ -138,16 +158,12 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	var pkgName string
 	var pkgVersion string
+	var seenPackageNameField bool
 
 	for s.Scan() {
 		// Return if canceled or exceeding deadline.
 		if err := ctx.Err(); err != nil {
 			return packages, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
-		}
-
-		// Stop scanning once both the package name and version have been found.
-		if pkgName != "" && pkgVersion != "" {
-			break
 		}
 
 		line := s.Text()
@@ -160,7 +176,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 		// stack fields at the top level are not indented.
 		isIndented := len(line) > 0 && (line[0] == ' ' || line[0] == '\t')
 
-		if strings.HasPrefix(trimmed, "name:") && !isIndented {
+		if strings.HasPrefix(trimmed, "package-name:") && !isIndented {
+			pkgName = strings.TrimSpace(strings.TrimPrefix(trimmed, "package-name:"))
+			seenPackageNameField = true
+			continue
+		}
+
+		if !seenPackageNameField && strings.HasPrefix(trimmed, "name:") && !isIndented {
 			pkgName = strings.TrimSpace(strings.TrimPrefix(trimmed, "name:"))
 			continue
 		}

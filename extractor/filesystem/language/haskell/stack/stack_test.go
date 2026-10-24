@@ -48,35 +48,20 @@ func TestFileRequired(t *testing.T) {
 		wantResultMetric stats.FileRequiredResult
 	}{
 		{
-			name:             "stack package database conf file 1",
+			name:             "conf_file_1",
 			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:             "stack package database conf file 2",
+			name:             "conf_file_2",
 			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/package.conf.d/colour-2.3.7-6jrGRZcUxApK69XoLH4IlN.conf",
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
+
 		{
-			name:             "stack package database conf file required if file size < max file size",
-			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
-			fileSizeBytes:    100 * units.KiB,
-			maxFileSizeBytes: 1000 * units.KiB,
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
-		},
-		{
-			name:             "stack package database conf file required if file size == max file size",
-			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
-			fileSizeBytes:    1000 * units.KiB,
-			maxFileSizeBytes: 1000 * units.KiB,
-			wantRequired:     true,
-			wantResultMetric: stats.FileRequiredResultOK,
-		},
-		{
-			name:             "stack package database conf file not required if file size > max file size",
+			name:             "conf_file_size_above_size_limit",
 			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			fileSizeBytes:    1000 * units.KiB,
 			maxFileSizeBytes: 100 * units.KiB,
@@ -84,7 +69,23 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultSizeLimitExceeded,
 		},
 		{
-			name:             "stack package database conf file required if max file size is zero",
+			name:             "conf_file_size_below_size_limit",
+			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
+			fileSizeBytes:    100 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "conf_file_size_equal_size_limit",
+			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
+			fileSizeBytes:    1000 * units.KiB,
+			maxFileSizeBytes: 1000 * units.KiB,
+			wantRequired:     true,
+			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		{
+			name:             "conf_file_size_zero_size_limit",
 			path:             "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			fileSizeBytes:    100 * units.KiB,
 			maxFileSizeBytes: 0,
@@ -92,32 +93,32 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
-			name:         "conf file outside pkgdb",
+			name:         "conf_file_outside_pkgdb",
 			path:         "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			wantRequired: false,
 		},
 		{
-			name:         "conf file outside package.conf.d",
+			name:         "conf_file_outside_package.conf.d",
 			path:         "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			wantRequired: false,
 		},
 		{
-			name:         "conf file outside stack store",
+			name:         "conf_file_outside_stack_store",
 			path:         "home/yuvraj/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			wantRequired: false,
 		},
 		{
-			name:         "non-conf file",
+			name:         "non-conf_file",
 			path:         "home/yuvraj/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.txt",
 			wantRequired: false,
 		},
 		{
-			name:         "directory 1",
+			name:         "directory-1",
 			path:         "home/yuvraj/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb",
 			wantRequired: false,
 		},
 		{
-			name:         "directory 2",
+			name:         "directory-2",
 			path:         "home/yuvraj/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/package.conf.d",
 			wantRequired: false,
 		},
@@ -165,7 +166,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "ansi terminal package",
+			Name: "ansi-terminal_package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			},
@@ -179,7 +180,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			Name: "colour package",
+			Name: "colour_package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/colour-2.3.7-6jrGRZcUxApK69XoLH4IlN.conf",
 			},
@@ -193,7 +194,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			Name: "abx2xml-go package",
+			Name: "abx2xml-go_package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf",
 			},

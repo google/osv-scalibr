@@ -521,6 +521,7 @@ message HaskellStackConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+  string stack_root = 2;
 }
 
 message JavaArchiveConfig {

@@ -3853,7 +3853,8 @@ type HaskellStackConfig struct {
 	// The maximum file size the plugin will process.
 	// If set, this overrides the global max_file_size_bytes configuration
 	// for this specific plugin.
-	MaxFileSizeBytes int64 `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	MaxFileSizeBytes int64  `protobuf:"varint,1,opt,name=max_file_size_bytes,json=maxFileSizeBytes,proto3" json:"max_file_size_bytes,omitempty"`
+	StackRoot        string `protobuf:"bytes,2,opt,name=stack_root,json=stackRoot,proto3" json:"stack_root,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3893,6 +3894,13 @@ func (x *HaskellStackConfig) GetMaxFileSizeBytes() int64 {
 		return x.MaxFileSizeBytes
 	}
 	return 0
+}
+
+func (x *HaskellStackConfig) GetStackRoot() string {
+	if x != nil {
+		return x.StackRoot
+	}
+	return ""
 }
 
 type JavaArchiveConfig struct {
@@ -4972,9 +4980,11 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x16HaskellStacklockConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"C\n" +
 	"\x12HaskellCabalConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"C\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"b\n" +
 	"\x12HaskellStackConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"\x86\x03\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12\x1d\n" +
+	"\n" +
+	"stack_root\x18\x02 \x01(\tR\tstackRoot\"\x86\x03\n" +
 	"\x11JavaArchiveConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\x12\"\n" +
 	"\rmax_zip_depth\x18\x02 \x01(\x05R\vmaxZipDepth\x12(\n" +
