@@ -277,6 +277,14 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 		cleanPath := path.Clean(header.Name)
 		fullPath := path.Join(dir, cleanPath)
 
+		// Skip entries whose names escape the extraction root. The content
+		// writes are confined by os.Root, but os.MkdirAll and os.Symlink below
+		// operate on the joined path directly and are not root-confined.
+		if fullPath != dir && !strings.HasPrefix(fullPath, dir+string(os.PathSeparator)) {
+			log.Warnf("skipping %q: path escapes the extraction root", header.Name)
+			continue
+		}
+
 		// Skip files already unpacked.
 		// Lstat is used instead of Stat to avoid following symlinks, because their targets may not exist yet.
 		if _, err = root.Lstat(fullPath); err == nil {
