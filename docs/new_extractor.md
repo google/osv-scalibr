@@ -93,8 +93,8 @@ entries in case there are multiple in one file.
 ## Code location
 
 Extractors should be in a sub-folder of
-[/extractor/filesystem](/extractor/) or
-[/extractor/standalone](/standalone/)
+[/extractor/filesystem](/extractor/filesystem/) or
+[/extractor/standalone](/extractor/standalone/)
 depending on the Extractor type. Take a look at existing folders and pick
 whichever is the most appropriate location for your Extractor, or create a new
 folder if none of the existing ones apply. Feel free to ask SCALIBR devs for
@@ -107,7 +107,7 @@ extractor as an example for Filesystem Extractors.
 
 1.  Add a `New()` function that returns an Extractor from the specified plugin config.
   1.  If you'd like to add new plugin-specific config settings for your Extractor,
-    1. Add them as a new message to [config.proto](third_party/scalibr/binary/proto/config.proto).
+    1. Add them as a new message to [config.proto](/binary/proto/config.proto).
     1. Re-generate the go_proto:
 
         ```
@@ -134,7 +134,7 @@ extractor as an example for Filesystem Extractors.
 1.  Implement `Extract` to extract inventory inside the current file
     (or from elsewhere on the filesystem).
 1.  If you introduced any new metadata type, be sure to:
-    1. Add them to the [scan_result.proto](third_party/scalibr/binary/proto/scan_result.proto).
+    1. Add them to the [scan_result.proto](/binary/proto/scan_result.proto).
     1. Re-generate the go_proto:
 
         ```
