@@ -27,7 +27,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/hcp"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -35,6 +37,31 @@ const (
 	validatorTestClientSecret = "x2Nyv_C0NiJLEheDO5LuAmJj7v_SrY5cpWWCi38WCcmohTFzAl48zoiEFivQBU2n"
 	validatorTestAccessToken  = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2F1dGguaWRwLmhhc2hpY29ycC5jb20vIiwiYXVkIjpbImh0dHBzOi8vYXBpLmhhc2hpY29ycC5jbG91ZCJdLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJodHRwczovL2Nsb3VkLmhhc2hpY29ycC5jb20vcHJpbmNpcGFsLXR5cGUiOiJzZXJ2aWNlIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 )
+
+func TestAcceptClientCredentialsValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		hcp.NewClientCredentialsValidator(),
+		velestest.WithTrueNegatives(hcp.ClientCredentials{
+			ClientID:     validatorTestClientID,
+			ClientSecret: "wrong-secret",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[hcp.ClientCredentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
+
+func TestAcceptAccessTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		hcp.NewAccessTokenValidator(),
+		velestest.WithTrueNegatives(hcp.AccessToken{Token: "osvscalibr-not-a-real-hcp-access-token"}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[hcp.AccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
 
 // mockTokenServer returns a server that emulates the HCP token endpoint behavior.
 func mockTokenServer(t *testing.T, expectID, expectSecret string, success bool) *httptest.Server {

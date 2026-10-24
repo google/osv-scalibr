@@ -15,7 +15,6 @@
 package salesforceoauth2jwt_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/salesforceoauth2jwt"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -59,6 +59,22 @@ Twanj5YBWrq2yV2fqWgvyz3LIqlhmDNW89ThWmk7XYtD0em9dnEXlpH0JTxdQpCF
 tGOp/d/V3F66yalNSTXNbkA=
 -----END PRIVATE KEY-----`
 )
+
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		salesforceoauth2jwt.NewValidator(),
+		velestest.WithTrueNegatives(salesforceoauth2jwt.Credentials{
+			ID:         testClientID,
+			Username:   "invalid@example.com",
+			PrivateKey: testPrivateKeyPEM,
+		}),
+		velestest.WithBrokenTransport(func(v *salesforceoauth2jwt.Validator) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[salesforceoauth2jwt.Credentials](),
+	)
+}
 
 // mockTransport redirects login.salesforce.com to mock server
 type mockTransport struct {
@@ -112,7 +128,6 @@ func TestValidator(t *testing.T) {
 		username       string
 		privateKey     string
 		serverStatus   int
-		cancelContext  bool
 		expectedResult veles.ValidationStatus
 		wantErr        error
 		useServer      bool
@@ -139,15 +154,6 @@ func TestValidator(t *testing.T) {
 			wantErr:        cmpopts.AnyError,
 		},
 		{
-			name:           "ContextCancelled",
-			username:       testUsername,
-			privateKey:     testPrivateKeyPEM,
-			serverStatus:   http.StatusOK,
-			cancelContext:  true,
-			expectedResult: veles.ValidationFailed,
-			wantErr:        cmpopts.AnyError,
-		},
-		{
 			name:           "ServerError",
 			username:       testUsername,
 			privateKey:     testPrivateKeyPEM,
@@ -159,16 +165,8 @@ func TestValidator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := t.Context()
-
 			server := mockSalesforceServer(t, tt.serverStatus)
 			defer server.Close()
-
-			if tt.cancelContext {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithCancel(ctx)
-				cancel()
-			}
 
 			validator := salesforceoauth2jwt.NewValidator()
 			validator.HTTPC = &http.Client{
@@ -181,7 +179,7 @@ func TestValidator(t *testing.T) {
 				PrivateKey: tt.privateKey,
 			}
 
-			got, err := validator.Validate(ctx, creds)
+			got, err := validator.Validate(t.Context(), creds)
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Validate() error mismatch (-want +got):\n%s", diff)

@@ -22,13 +22,28 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/cursorapikey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	validatorTestKey = "key_abcdef0123456789abcdef0123456789" +
 		"abcdef0123456789abcdef0123456789"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		cursorapikey.NewValidator(),
+		velestest.WithTrueNegatives(cursorapikey.APIKey{
+			Key: "key_osvscalibr_invalid0000000000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[cursorapikey.APIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
 
 // mockCursorServer creates a mock Cursor API server for testing.
 func mockCursorServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {
