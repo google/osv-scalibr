@@ -14,8 +14,8 @@ Plugins are grouped into the following categories:
 
 > [!TIP]
 > Learn how to contribute new plugins by reading the documentation
-> for [new extractors](/docs/new_extractor.md.md),
-> [new detectors](/docs/new_detector),
+> for [new extractors](/docs/new_extractor.md),
+> [new detectors](/docs/new_detector.md),
 > and [new enrichers](/docs/new_enricher.md).
 
 The following sections list all available plugins.

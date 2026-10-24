@@ -17,7 +17,7 @@ as an example.
 1.  Add a `New()` function that returns your detector struct from the specified
     plugin config.
 1.  If you'd like to add new plugin-specific config settings for your Detector,
-    1. Add them as a new message to [config.proto](third_party/scalibr/binary/proto/config.proto).
+    1. Add them as a new message to [config.proto](/binary/proto/config.proto).
     1. Re-generate the go_proto:
 
         ```
