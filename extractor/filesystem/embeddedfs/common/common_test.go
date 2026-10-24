@@ -17,6 +17,7 @@ package common
 import (
 	"archive/tar"
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -112,6 +113,69 @@ func TestTARToTempDir(t *testing.T) {
 
 			if alloc, err := fileAllocatedBytes(fi); err != nil || (alloc >= 0 && alloc > realDataSize*12/10) {
 				t.Errorf("allocated disk bytes = %d (err = %v), want <= %d", alloc, err, realDataSize*12/10)
+			}
+		})
+	}
+}
+
+// createTARWithEntry builds a single-entry tar archive with the given entry name.
+func createTARWithEntry(t *testing.T, entryName string) io.Reader {
+	t.Helper()
+
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	body := []byte("content\n")
+	if err := tw.WriteHeader(&tar.Header{
+		Typeflag: tar.TypeReg,
+		Name:     entryName,
+		Mode:     0644,
+		Size:     int64(len(body)),
+	}); err != nil {
+		t.Fatalf("tar.WriteHeader(%q): %v", entryName, err)
+	}
+	if _, err := tw.Write(body); err != nil {
+		t.Fatalf("tar.Write(%q): %v", entryName, err)
+	}
+	if err := tw.Close(); err != nil {
+		t.Fatalf("tar.Close(): %v", err)
+	}
+	return bytes.NewReader(buf.Bytes())
+}
+
+func TestTARToTempDirRejectsEscapingEntries(t *testing.T) {
+	// Backslashes are separators on Windows, so an entry like `..\x` escapes the
+	// extraction directory there while being an ordinary filename elsewhere. The
+	// validation must reject it on every platform so the check does not depend on
+	// which separator the host happens to use.
+	tests := []struct {
+		name      string
+		entryName string
+	}{
+		{name: "forward slash", entryName: "../escaped.txt"},
+		{name: "backslash", entryName: `..\escaped.txt`},
+		{name: "backslash nested", entryName: `a\..\..\escaped.txt`},
+		{name: "mixed separators", entryName: `..\../escaped.txt`},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir, err := TARToTempDir(createTARWithEntry(t, tc.entryName), 0)
+			if tempDir != "" {
+				defer os.RemoveAll(tempDir)
+			}
+			if err == nil {
+				t.Fatalf("TARToTempDir(%q) = nil error, want the entry to be rejected", tc.entryName)
+			}
+			if !strings.Contains(err.Error(), "invalid entries") {
+				t.Fatalf("TARToTempDir(%q) error = %v, want error containing %q",
+					tc.entryName, err, "invalid entries")
+			}
+
+			// Nothing may be created next to the extraction directory either.
+			escaped := filepath.Join(filepath.Dir(tempDir), "escaped.txt")
+			if _, err := os.Lstat(escaped); err == nil {
+				os.Remove(escaped)
+				t.Fatalf("entry %q created %q outside the extraction directory", tc.entryName, escaped)
 			}
 		})
 	}
