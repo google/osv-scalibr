@@ -1,0 +1,7 @@
+pkgA==1.0 \
+    --hash=sha256:aaa \
+    --hash=sha256:bbb
+pkgB==2.0
+pkgC\
+==\
+3.0
