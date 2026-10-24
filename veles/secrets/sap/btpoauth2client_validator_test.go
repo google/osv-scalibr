@@ -85,7 +85,7 @@ func TestSAPBTPValidator(t *testing.T) {
 		useServer          bool
 	}{
 		{
-			name:               "valid creds",
+			name:               "valid_creds",
 			id:                 validBTPClientID,
 			secret:             "client_secret: " + validBTPClientSecret,
 			tokenURL:           validBTPTokenURL,
@@ -93,7 +93,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			want:               veles.ValidationValid,
 		},
 		{
-			name:               "valid creds - BTP XSUAA",
+			name:               "valid_creds_BTP_XSUAA",
 			id:                 validBTPXSUAAClientID,
 			secret:             "client_secret: " + validBTPClientSecret,
 			tokenURL:           validBTPTokenURL,
@@ -101,7 +101,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			want:               veles.ValidationValid,
 		},
 		{
-			name:               "invalid creds - Client ID",
+			name:               "invalid_creds_Client_ID",
 			id:                 "YUVRAJ SAXENA",
 			secret:             "client_secret: " + validBTPClientSecret,
 			tokenURL:           validBTPTokenURL,
@@ -109,7 +109,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "invalid creds - Client Secret",
+			name:               "invalid_creds_Client_Secret",
 			id:                 validBTPClientID,
 			secret:             "YUVRAJ SAXENA",
 			tokenURL:           validBTPTokenURL,
@@ -117,7 +117,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "invalid creds - Token URL",
+			name:               "invalid_creds_Token_URL",
 			id:                 validBTPClientID,
 			secret:             "client_secret: " + validBTPClientSecret,
 			tokenURL:           "YUVRAJ SAXENA",
@@ -126,7 +126,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			wantErr:            cmpopts.AnyError,
 		},
 		{
-			name:               "empty Client ID",
+			name:               "empty_Client_ID",
 			id:                 "",
 			secret:             "client_secret: " + validBTPClientSecret,
 			tokenURL:           validBTPTokenURL,
@@ -134,7 +134,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty Client Secret",
+			name:               "empty_Client_Secret",
 			id:                 validBTPClientID,
 			secret:             "",
 			tokenURL:           validBTPTokenURL,
@@ -142,7 +142,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty Token URL",
+			name:               "empty_Token_URL",
 			id:                 validBTPClientID,
 			secret:             "client_secret: " + validBTPClientSecret,
 			tokenURL:           "",
@@ -151,7 +151,7 @@ func TestSAPBTPValidator(t *testing.T) {
 			wantErr:            cmpopts.AnyError,
 		},
 		{
-			name:               "context cancelled",
+			name:               "context_cancelled",
 			id:                 validBTPClientID,
 			secret:             "client_secret: " + validBTPClientSecret,
 			tokenURL:           validBTPTokenURL,

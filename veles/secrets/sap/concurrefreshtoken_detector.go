@@ -47,7 +47,7 @@ var (
 	//
 	// Reference:
 	// https://developer.concur.com/api-reference/authentication/apidoc.html#refresh_token
-	concurRefreshTokenRe = regexp.MustCompile(`(?i)"?\brefresh[_-]?token\b"?\s*[:=]?\s*"?([a-zA-Z0-9-]{32,36})"?\b`)
+	concurRefreshTokenRe = regexp.MustCompile(`(?i)"?\brefresh[_-]?token\b"?\s*[:=]?\s*"?([a-zA-Z0-9-]+)"?\b`)
 )
 
 // NewSAPConcurRefreshTokenDetector returns a detector that matches SAP Concur Refresh Token.

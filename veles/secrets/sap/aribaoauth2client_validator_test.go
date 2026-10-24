@@ -83,42 +83,42 @@ func TestSAPAribaOAuth2ClientCredentialsValidator(t *testing.T) {
 		useServer          bool
 	}{
 		{
-			name:               "valid creds",
+			name:               "valid_creds",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "client_secret: " + validSAPAribaClientSecret,
 			serverResponseCode: http.StatusOK,
 			want:               veles.ValidationValid,
 		},
 		{
-			name:               "invalid creds - Client ID",
+			name:               "invalid_creds_Client_ID",
 			id:                 "YUVRAJ SAXENA",
 			secret:             "client_secret: " + validSAPAribaClientSecret,
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "invalid creds - Client Secret",
+			name:               "invalid_creds_Client_Secret",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "YUVRAJ SAXENA",
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty Client ID",
+			name:               "empty_Client_ID",
 			id:                 "",
 			secret:             "client_secret: " + validSAPAribaClientSecret,
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "empty Client Secret",
+			name:               "empty_Client_Secret",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "",
 			serverResponseCode: http.StatusUnauthorized,
 			want:               veles.ValidationInvalid,
 		},
 		{
-			name:               "context cancelled",
+			name:               "context_cancelled",
 			id:                 "client_id: " + validSAPAribaClientID,
 			secret:             "client_secret: " + validSAPAribaClientSecret,
 			serverResponseCode: http.StatusOK,

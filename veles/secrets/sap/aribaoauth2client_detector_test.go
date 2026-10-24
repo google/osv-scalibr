@@ -52,23 +52,23 @@ func TestSAPAribaClientCredentialsDetector_Detect(t *testing.T) {
 	}{
 		// --- Empty or invalid input ---
 		{
-			name:  "empty input",
+			name:  "empty_input",
 			input: "",
 			want:  nil,
 		},
 		{
-			name:  "non-credential input",
+			name:  "non_credential_input",
 			input: "Some random text",
 			want:  nil,
 		},
 		// --- One of Client ID or Client Secret or URL or Token URL ---
 		{
-			name:  "missing client id",
+			name:  "missing_client_id",
 			input: "client_secret:" + validSAPAribaClientSecret,
 			want:  nil,
 		},
 		{
-			name:  "missing client secret",
+			name:  "missing_client_secret",
 			input: "client_id: " + validSAPAribaClientID,
 			want:  nil,
 		}, // --- Happy path ---
@@ -99,6 +99,42 @@ client_secret: ` + validSAPAribaClientSecret,
 					Secret: validSAPAribaClientSecret,
 				},
 			},
+		},
+		// --- valid quoted ---
+		{
+			name: "valid_quoted",
+			input: `
+"client_id": "` + validSAPAribaClientID + `"
+"client_secret": "` + validSAPAribaClientSecret + `"`,
+			want: []veles.Secret{
+				sap.AribaOAuth2ClientCredentials{
+					ID:     validSAPAribaClientID,
+					Secret: validSAPAribaClientSecret,
+				},
+			},
+		},
+		// --- overlong client ID and Secret ---
+		{
+			name: "invalid_overlong_client_id",
+			input: `
+"client_id": s7bafaef-016a-4426-8d05-8228fcf4ddc9000000000"` + `
+"client_secret": "` + validSAPAribaClientSecret + `"`,
+			want: nil,
+		},
+		{
+			name: "invalid_overlong_client_secret",
+			input: `
+"client_id": "` + validSAPAribaClientID + `"
+"client_secret": "Gl9E5ssf2LV5ANUY3K2Y7goquSsP2y8FYUV"`,
+			want: nil,
+		},
+		// --- Hypenated client ID ---
+		{
+			name: "invalid_hypenated_client_id",
+			input: `
+"client_id": "` + validSAPAribaClientID + `-"
+"client_secret": "` + validSAPAribaClientSecret + `"`,
+			want: nil,
 		},
 	}
 

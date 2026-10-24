@@ -84,7 +84,7 @@ func TestSAPSuccessFactorsAccessTokenValidator(t *testing.T) {
 			want:               veles.ValidationValid,
 		},
 		{
-			name:               "context cancelled",
+			name:               "context_cancelled",
 			token:              testSAPAccessToken,
 			serverResponseCode: http.StatusOK,
 			cancelContext:      true,
