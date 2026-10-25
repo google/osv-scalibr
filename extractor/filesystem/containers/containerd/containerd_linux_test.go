@@ -221,6 +221,77 @@ func TestCollectGcfsDirsFallsBackToSnapshotsWhenLayersAbsent(t *testing.T) {
 	}
 }
 
+// The gcfs snapshotter stores remote (streamed) snapshots under the bare chain ID, so the
+// parent chain from the container's snapshot goes through a key without a "/" before it
+// reaches locally unpacked layers.
+func TestCollectGcfsDirsFallsBackThroughBareKeyRemoteSnapshot(t *testing.T) {
+	d := t.TempDir()
+	snapshotKey := "container-snapshot-key"
+	manifestDigest := "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+
+	// Two layers, bottom-up: a locally unpacked base layer and a streamed top layer.
+	configJSON := `{"rootfs": {"diff_ids": ["sha256:aaaaaaaaaaaaaaaa", "sha256:bbbbbbbbbbbbbbbb"]}}`
+	manifestJSON := `{"config": {"digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"}}`
+
+	blobDir := filepath.Join(d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256")
+	if err := os.MkdirAll(blobDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "1111111111111111111111111111111111111111111111111111111111111111"), []byte(manifestJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "2222222222222222222222222222222222222222222222222222222222222222"), []byte(configJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	// The streamed top layer is in layers/; the base layer is only unpacked in snapshots/5/fs.
+	layerDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=bbbbbbbbbbbbbbbb")
+	if err := os.MkdirAll(layerDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	snapshotsDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots")
+	if err := os.MkdirAll(filepath.Join(snapshotsDir, "5/fs"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+
+	snapshotsMetadata := []SnapshotMetadata{
+		{
+			ID:             10,
+			Digest:         "k8s.io/12/container-snapshot-key",
+			Parent:         "sha256:top-chain-id",
+			FilesystemType: "gcfs",
+		},
+		{
+			// Remote (streamed) snapshot, stored under the bare chain ID.
+			ID:             7,
+			Digest:         "sha256:top-chain-id",
+			Parent:         "k8s.io/3/sha256:base-chain-id",
+			FilesystemType: "gcfs",
+		},
+		{
+			ID:             5,
+			Digest:         "k8s.io/3/sha256:base-chain-id",
+			FilesystemType: "gcfs",
+		},
+	}
+
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	if err != nil {
+		t.Fatalf("collectGcfsDirs failed: %v", err)
+	}
+
+	wantLower := layerDir + ":" + filepath.Join(snapshotsDir, "5/fs")
+	if lowerDir != wantLower {
+		t.Errorf("lowerDir = %v, want %v", lowerDir, wantLower)
+	}
+	if wantUpper := filepath.Join(snapshotsDir, "10/fs"); upperDir != wantUpper {
+		t.Errorf("upperDir = %v, want %v", upperDir, wantUpper)
+	}
+	if wantWork := filepath.Join(snapshotsDir, "10/work"); workDir != wantWork {
+		t.Errorf("workDir = %v, want %v", workDir, wantWork)
+	}
+}
+
 func TestCollectGcfsDirsReturnsEmptyWhenLayerIncomplete(t *testing.T) {
 	d := t.TempDir()
 	snapshotKey := "container-snapshot-key"
@@ -400,12 +471,20 @@ func TestDigestSnapshotInfoMapping(t *testing.T) {
 			Digest:         "sha256:67890/digest2",
 			FilesystemType: "gcfs",
 		},
+		{
+			// Remote (streamed) gcfs snapshots are stored under the bare chain ID.
+			Digest:         "sha256:remote-chain-id",
+			FilesystemType: "gcfs",
+		},
 	}
 	resultGcfs := digestSnapshotInfoMapping(snapshotsMetadataGcfs)
-	if len(resultGcfs) != 1 {
-		t.Errorf("Expected 1 result for gcfs, got %d", len(resultGcfs))
+	if len(resultGcfs) != 2 {
+		t.Errorf("Expected 2 results for gcfs, got %d", len(resultGcfs))
 	}
 	if _, ok := resultGcfs["digest2"]; !ok {
 		t.Errorf("Expected result to contain 'digest2'")
+	}
+	if _, ok := resultGcfs["sha256:remote-chain-id"]; !ok {
+		t.Errorf("Expected result to contain 'sha256:remote-chain-id'")
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
@@ -367,6 +368,21 @@ func TestToEcosystem(t *testing.T) {
 				PURLType: purl.TypeGithub,
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions),
+		},
+		{
+			name: "freebsd_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "curl",
+				Version:  "8.4.0",
+				PURLType: purl.TypeFreeBSD,
+				Metadata: &freebsdmeta.Metadata{
+					OSVersionID: "14.0",
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemFreeBSD,
+				Suffix:    "14.0",
+			},
 		},
 		{
 			name: "spdx_alpine_ecosystem",

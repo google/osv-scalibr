@@ -29,6 +29,7 @@ linters:
     - lll              #
     - maintidx         #
     - mnd              # Not every number is magic
+    - modernize        #
     - nestif           #
     - nilnil           # We consider this a valid pattern to use sometimes
     - nlreturn         # Not feasible until it's supported by the internal linter
@@ -97,6 +98,8 @@ linters:
           disabled: false
         - name: use-any
           disabled: false
+        - name: use-slices-sort
+          disabled: false
         - name: var-declaration
           disabled: false
         - name: var-naming
@@ -125,6 +128,9 @@ linters:
       - path: velestest/
         linters:
           - forbidigo  # Parallel tests are fine and in some places needed for Veles.
+      - path: inventory/osvecosystem/parsed.go
+        linters:
+          - exhaustive
     paths:
       - third_party$
       - builtin$

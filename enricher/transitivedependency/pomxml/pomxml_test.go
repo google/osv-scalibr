@@ -17,7 +17,7 @@ package pomxml_test
 import (
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -956,12 +956,8 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		},
 	}
 
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
-	sort.Slice(wantInventory.Packages, func(i, j int) bool {
-		return wantInventory.Packages[i].Name < wantInventory.Packages[j].Name
-	})
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
+	slices.SortFunc(wantInventory.Packages, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}

@@ -82,9 +82,11 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setupcfg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/r/rpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
@@ -95,7 +97,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/zig/buildzigzon"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
-	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	browserextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/browser/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/gitrepo"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
@@ -107,6 +109,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/freebsd"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
@@ -269,6 +272,7 @@ var (
 		ipythoninstall.Name: {protoCfg(ipythoninstall.New)},
 		uvlock.Name:         {protoCfg(uvlock.New)},
 		pyprojecttoml.Name:  {protoCfg(pyprojecttoml.New)},
+		setupcfg.Name:       {protoCfg(setupcfg.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
@@ -306,7 +310,10 @@ var (
 		cabal.Name:     {protoCfg(cabal.New)},
 	}
 	// RSource extractors for R source extractors
-	RSource = InitMap{renvlock.Name: {protoCfg(renvlock.New)}}
+	RSource = InitMap{
+		renvlock.Name: {protoCfg(renvlock.New)},
+		rpkg.Name:     {protoCfg(rpkg.New)},
+	}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {protoCfg(gemspec.New)},
@@ -396,6 +403,7 @@ var (
 		portage.Name:    {protoCfg(portage.New)},
 		flatpak.Name:    {protoCfg(flatpak.New)},
 		spack.Name:      {protoCfg(spack.New)},
+		freebsd.Name:    {protoCfg(freebsd.New)},
 		homebrew.Name:   {protoCfg(homebrew.New)},
 		macapps.Name:    {protoCfg(macapps.New)},
 		macports.Name:   {protoCfg(macports.New)},
@@ -521,10 +529,10 @@ var (
 
 	// Misc artifact extractors.
 	Misc = InitMap{
-		vscodeextensions.Name: {protoCfg(vscodeextensions.New)},
-		wordpressplugins.Name: {protoCfg(wordpressplugins.New)},
-		chromeextensions.Name: {protoCfg(chromeextensions.New)},
-		netscaler.Name:        {protoCfg(netscaler.New)},
+		vscodeextensions.Name:  {protoCfg(vscodeextensions.New)},
+		wordpressplugins.Name:  {protoCfg(wordpressplugins.New)},
+		browserextensions.Name: {protoCfg(browserextensions.New)},
+		netscaler.Name:         {protoCfg(netscaler.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.

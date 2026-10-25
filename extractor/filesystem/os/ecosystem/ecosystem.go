@@ -20,6 +20,7 @@ import (
 
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
@@ -138,6 +139,9 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *modulemeta.Metadata:
 		namespace = m.ToNamespace()
 		osVersionID = m.OSVersionID
+
+	case *freebsdmeta.Metadata:
+		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemFreeBSD, Suffix: m.OSVersionID}
 
 	case *spdxmeta.Metadata:
 		// TODO(#2213): This is temporary while we work on a more unified solution.

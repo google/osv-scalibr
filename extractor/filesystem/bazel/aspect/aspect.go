@@ -18,6 +18,7 @@ package aspect
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -25,7 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	_ "embed"
@@ -341,11 +342,11 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		pkgs = append(pkgs, pkg)
 	}
 
-	sort.Slice(pkgs, func(i, j int) bool {
-		if pkgs[i].Name != pkgs[j].Name {
-			return pkgs[i].Name < pkgs[j].Name
-		}
-		return pkgs[i].Version < pkgs[j].Version
+	slices.SortFunc(pkgs, func(a, b *extractor.Package) int {
+		return cmp.Or(
+			cmp.Compare(a.Name, b.Name),
+			cmp.Compare(a.Version, b.Version),
+		)
 	})
 
 	return inventory.Inventory{Packages: pkgs}, nil

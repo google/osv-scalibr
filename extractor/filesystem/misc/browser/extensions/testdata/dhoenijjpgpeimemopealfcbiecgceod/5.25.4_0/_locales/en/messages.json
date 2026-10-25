@@ -1,0 +1,14 @@
+{
+   "appDesc": {
+      "message": "ChatGPT, DeepSeek, Gemini, Claude, Grok all in one AI sidebar, for AI search, read, and write."
+   },
+   "appDescEdge": {
+      "message": "AI sidebar support chat with all AI models (DeepSeek, Gemini, Claude, etc.) for advanced AI search, read, and write."
+   },
+   "appName": {
+      "message": "Sider: Chat with all AI: GPT-5, Claude, DeepSeek, Gemini, Grok"
+   },
+   "appNameEdge": {
+      "message": "Sider: AI sidebar with all models"
+   }
+}
