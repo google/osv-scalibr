@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"deps.dev/util/maven"
@@ -352,6 +353,11 @@ func DiscoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string, client
 			log.Debugf("Discovered local module %s:%s:%s at %s", g, a, v, path)
 			if client != nil {
 				client.AddLocalProject(g, a, v, content)
+				// Dependents refer to CI-friendly coordinates such as ${revision} by their values.
+				if ik, ok := interpolatedProjectKey(scanRoot, path, project); ok && ik != pk {
+					log.Debugf("Discovered local module %s at %s", ik.Name()+":"+string(ik.Version), path)
+					client.AddLocalProject(string(ik.GroupID), string(ik.ArtifactID), string(ik.Version), content)
+				}
 			}
 		}
 
@@ -374,4 +380,58 @@ func DiscoverModules(scanRoot *scalibrfs.ScanRoot, initialPaths []string, client
 			}
 		}
 	}
+}
+
+// maxLocalParentDepth bounds the walk up a POM's local parents.
+const maxLocalParentDepth = 20
+
+// interpolatedProjectKey returns the project's coordinates with properties resolved from the POM
+// and its local parents, which is where Maven reads CI-friendly versions such as ${revision} from.
+// It returns false if a coordinate has a property that cannot be resolved.
+func interpolatedProjectKey(scanRoot *scalibrfs.ScanRoot, path string, project maven.Project) (maven.ProjectKey, bool) {
+	pk := ProjectKey(project)
+	if !strings.Contains(string(pk.GroupID+pk.ArtifactID+pk.Version), "${") {
+		return pk, true
+	}
+	chain := []maven.Project{project}
+	current, currentPath := project, path
+	for range maxLocalParentDepth {
+		if current.Parent.ArtifactID == "" {
+			break
+		}
+		parentPath := ParentPOMPath(&filesystem.ScanInput{FS: scanRoot.FS}, currentPath, string(current.Parent.RelativePath))
+		if parentPath == "" {
+			break
+		}
+		f, err := scanRoot.FS.Open(parentPath)
+		if err != nil {
+			break
+		}
+		var parent maven.Project
+		err = datasource.NewMavenDecoder(f).Decode(&parent)
+		f.Close()
+		if err != nil {
+			break
+		}
+		chain = append(chain, parent)
+		current, currentPath = parent, parentPath
+	}
+	// Later properties replace earlier ones, so the POM's own come last.
+	var properties []maven.Property
+	for _, p := range slices.Backward(chain) {
+		properties = append(properties, p.Properties.Properties...)
+	}
+	// Interpolate the coordinates as a dependency, which resolves project.* properties too.
+	coordinates := maven.Project{
+		ProjectKey:   pk,
+		Parent:       project.Parent,
+		Properties:   maven.Properties{Properties: properties},
+		Dependencies: []maven.Dependency{{GroupID: pk.GroupID, ArtifactID: pk.ArtifactID, Version: pk.Version}},
+	}
+	if err := coordinates.InterpolateDependencies(); err != nil {
+		return pk, false
+	}
+	d := coordinates.Dependencies[0]
+	key := maven.ProjectKey{GroupID: d.GroupID, ArtifactID: d.ArtifactID, Version: d.Version}
+	return key, !strings.Contains(string(key.GroupID+key.ArtifactID+key.Version), "${")
 }
