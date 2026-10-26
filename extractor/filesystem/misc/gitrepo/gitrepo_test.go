@@ -22,9 +22,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -548,5 +551,32 @@ func TestInferRepoName(t *testing.T) {
 				t.Errorf("inferRepoName(%q, %q) got = %q, want = %q", tt.remoteURL, tt.dotGitDir, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestExtract_SymlinkEscapeRejected(t *testing.T) {
+	configContent := []byte("[remote \"origin\"]\n\turl = https://github.com/google/secret-repo.git\n")
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, ".git/config")
+	if err := os.WriteFile(outsidePath, configContent, 0600); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot: %v", err)
+	}
+	defer root.Close()
+
+	extr, err := New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:   root.FS().(scalibrfs.FS),
+		Path: ".git",
+		Root: scanRoot,
+	}
+	if _, err := extr.Extract(t.Context(), input); err == nil {
+		t.Fatal("Extract() succeeded on symlinked .git/config escaping scan root, want error")
 	}
 }

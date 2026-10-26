@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/extracttest"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -243,5 +244,35 @@ func TestExtractor_Extract(t *testing.T) {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.Path, diff)
 			}
 		})
+	}
+}
+
+func TestExtract_SymlinkEscapeRejected(t *testing.T) {
+	data, err := os.ReadFile("testdata/bolt_state.db")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, "bolt_state.db")
+	if err := os.WriteFile(outsidePath, data, 0600); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot: %v", err)
+	}
+	defer root.Close()
+
+	extr, err := podman.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("podman.New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:   root.FS().(scalibrfs.FS),
+		Path: "bolt_state.db",
+		Root: scanRoot,
+	}
+	if _, err := extr.Extract(t.Context(), input); err == nil {
+		t.Fatal("Extract() succeeded on symlink escaping scan root, want error")
 	}
 }
