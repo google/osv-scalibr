@@ -28,7 +28,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	scalibr "github.com/google/osv-scalibr"
-	scalibrimage "github.com/google/osv-scalibr/artifact/image"
 	"github.com/google/osv-scalibr/binary/cdx"
 	"github.com/google/osv-scalibr/binary/platform"
 	"github.com/google/osv-scalibr/binary/proto"
@@ -612,14 +611,10 @@ func multiStringToList(arg []string) []string {
 }
 
 func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
+	// If RemoteImage is set, do not set the root.
+	// It is computed later on by ScanContainer(...) when the image is pulled.
 	if f.RemoteImage != "" {
-		imageOptions := f.scanRemoteImageOptions()
-		fs, err := scalibrimage.NewFromRemoteName(f.RemoteImage, *imageOptions...)
-		if err != nil {
-			return nil, err
-		}
-		// We're scanning a virtual filesystem that describes the remote container.
-		return []*scalibrfs.ScanRoot{{FS: fs, Path: ""}}, nil
+		return nil, nil
 	}
 
 	if len(f.Root) != 0 {
@@ -650,7 +645,9 @@ func (f *Flags) scanRoots() ([]*scalibrfs.ScanRoot, error) {
 	return scanRoots, nil
 }
 
-func (f *Flags) scanRemoteImageOptions() *[]remote.Option {
+// RemoteImageOptions returns the options used to pull the image specified by
+// the RemoteImage flag.
+func (f *Flags) RemoteImageOptions() []remote.Option {
 	imageOptions := []remote.Option{
 		remote.WithAuthFromKeychain(authn.DefaultKeychain),
 	}
@@ -663,7 +660,7 @@ func (f *Flags) scanRemoteImageOptions() *[]remote.Option {
 			},
 		))
 	}
-	return &imageOptions
+	return imageOptions
 }
 
 // All capabilities are enabled when running SCALIBR as a binary.
