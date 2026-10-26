@@ -19,6 +19,7 @@ import (
 	"context"
 	"debug/dwarf"
 	"debug/elf"
+	"debug/macho"
 	"errors"
 	"fmt"
 	"io"
@@ -96,6 +97,7 @@ func (*realClient) ExtractRlibArchive(rlibPath string) (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open .rlib file '%s': %w", rlibPath, err)
 	}
+	defer rlibFile.Close()
 
 	reader, err := ar.NewReader(rlibFile)
 	if err != nil {
@@ -136,14 +138,45 @@ func (*realClient) ExtractRlibArchive(rlibPath string) (*bytes.Buffer, error) {
 // FunctionsFromDWARF extracts function symbols from file provided
 func (*realClient) FunctionsFromDWARF(readAt io.ReaderAt) (map[string]struct{}, error) {
 	output := map[string]struct{}{}
-	file, err := elf.NewFile(readAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read binary: %w", err)
+	var dwarfData *dwarf.Data
+
+	// 1. Try ELF (Linux)
+	if elfFile, err := elf.NewFile(readAt); err == nil {
+		dwarfData, err = elfFile.DWARF()
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract debug symbols from elf binary: %w", err)
+		}
+	} else {
+		// 2. Try Mach-O Thin (macOS)
+		if machoFile, err := macho.NewFile(readAt); err == nil {
+			dwarfData, err = machoFile.DWARF()
+			if err != nil {
+				return nil, fmt.Errorf("failed to extract debug symbols from macho binary: %w", err)
+			}
+		} else {
+			// 3. Try Mach-O Fat (macOS Universal)
+			if fatFile, err := macho.NewFatFile(readAt); err == nil {
+				// Iterate through architectures to find one with DWARF data
+				found := false
+				for _, arch := range fatFile.Arches {
+					if arch.File != nil {
+						if d, err := arch.File.DWARF(); err == nil {
+							dwarfData = d
+							found = true
+							break
+						}
+					}
+				}
+				if !found {
+					return nil, errors.New("failed to extract debug symbols from fat macho binary (no valid arch found)")
+				}
+			} else {
+				// 4. Unknown format
+				return nil, errors.New("failed to read binary: unsupported format (not ELF, Mach-O thin or fat)")
+			}
+		}
 	}
-	dwarfData, err := file.DWARF()
-	if err != nil {
-		return nil, fmt.Errorf("failed to extract debug symbols from binary: %w", err)
-	}
+
 	entryReader := dwarfData.Reader()
 
 	for {
@@ -167,7 +200,12 @@ func (*realClient) FunctionsFromDWARF(readAt io.ReaderAt) (map[string]struct{}, 
 				continue
 			}
 
-			val, err := demangle.ToString(field.Val.(string), demangle.NoClones)
+			valStr, ok := field.Val.(string)
+			if !ok {
+				continue
+			}
+
+			val, err := demangle.ToString(valStr, demangle.NoClones)
 			if err != nil {
 				// most likely not a rust function, so just ignore it
 				continue
