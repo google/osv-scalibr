@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cabal extracts cabal.project.freeze files from haskell projects.
-package cabal
+// Package cabalprojectfreeze extracts cabal.project.freeze files from haskell projects.
+package cabalprojectfreeze
 
 import (
 	"bufio"
 	"context"
 	"fmt"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strings"
 
@@ -36,7 +36,7 @@ import (
 
 const (
 	// Name is the unique name of this extractor.
-	Name = "haskell/cabal"
+	Name = "haskell/cabalprojectfreeze"
 
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
 	// If Extract gets a bigger file, it will return an error.
@@ -49,14 +49,16 @@ type Extractor struct {
 	maxFileSizeBytes int64
 }
 
-// New returns a haskell cabal extractor.
+// New returns a haskell cabalprojectfreeze extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	maxFileSizeBytes := defaultMaxFileSizeBytes
 	if cfg.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = cfg.GetMaxFileSizeBytes()
 	}
 
-	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.HaskellCabalConfig { return c.GetHaskellCabal() })
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.HaskellCabalProjectFreezeConfig {
+		return c.GetHaskellCabalProjectFreeze()
+	})
 	if specific.GetMaxFileSizeBytes() > 0 {
 		maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 	}
@@ -75,9 +77,9 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired return true if the specified file matched the cabal.project.freeze file pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	path := api.Path()
+	filepath := api.Path()
 
-	if filepath.Base(path) != "cabal.project.freeze" {
+	if path.Base(filepath) != "cabal.project.freeze" {
 		return false
 	}
 
@@ -86,11 +88,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 		return false
 	}
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		e.reportFileRequired(filepath, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
 
-	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	e.reportFileRequired(filepath, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
 }
 
