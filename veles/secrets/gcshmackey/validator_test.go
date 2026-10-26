@@ -24,7 +24,22 @@ import (
 
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/gcshmackey"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		gcshmackey.NewValidator(),
+		velestest.WithTrueNegatives(gcshmackey.HMACKey{
+			AccessID: "GOOG1OSVSCALIBR000000000000000000000000000000000000000000000",
+			Secret:   "osvscalibrfakefakefakefakefakefakefakefake",
+		}),
+		velestest.WithBrokenTransport(func(v *gcshmackey.Validator) {
+			v.SetHTTPClient(velestest.BrokenClient)
+		}),
+	)
+}
 
 type fakeSigner struct{}
 

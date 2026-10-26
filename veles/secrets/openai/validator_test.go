@@ -22,13 +22,28 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/openai"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	projectValidatorTestKey = "sk-proj-12345678901234567890T3BlbkFJ" +
 		"12345678901234567890123456"
 )
+
+func TestAcceptProjectValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		openai.NewProjectValidator(),
+		velestest.WithTrueNegatives(openai.APIKey{
+			Key: "sk-proj-osvscalibr-invalid0000000000000000000000000000000000000000000000",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[openai.APIKey]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
 
 // mockOpenAIServer creates a mock OpenAI API server for testing project keys
 func mockOpenAIServer(t *testing.T, expectedKey string, statusCode int) *httptest.Server {

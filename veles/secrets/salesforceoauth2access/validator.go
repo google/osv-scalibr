@@ -35,6 +35,6 @@ func NewValidator() *sv.Validator[Token] {
 			}
 		},
 		ValidResponseCodes:   []int{http.StatusOK},
-		InvalidResponseCodes: []int{http.StatusUnauthorized},
+		InvalidResponseCodes: []int{http.StatusUnauthorized, http.StatusForbidden},
 	}
 }
