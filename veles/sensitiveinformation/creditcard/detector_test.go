@@ -270,6 +270,47 @@ func TestDetect_published_test_cards(t *testing.T) {
 	}
 }
 
+func TestValidCreditCardNumber(t *testing.T) {
+	// Synthetic fixtures exercise Luhn independently of issuer ranges and the
+	// published-test-card filter. The penultimate digit is always doubled:
+	// 4 becomes 8, 5 becomes 1, and 9 becomes 9 after reduction.
+	cases := []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{name: "minimum_12_digits", in: "700000000047", want: true},
+		{name: "even_length_doubled_4", in: "7000000000000047", want: true},
+		{name: "even_length_doubled_5", in: "7000000000000054", want: true},
+		{name: "even_length_doubled_9", in: "7000000000000096", want: true},
+		{name: "odd_length_doubled_4", in: "7000000000000000045", want: true},
+		{name: "odd_length_doubled_5", in: "7000000000000000052", want: true},
+		{name: "odd_length_doubled_9", in: "7000000000000000094", want: true},
+		{name: "even_length_bad_checksum", in: "7000000000000048"},
+		{name: "odd_length_bad_checksum", in: "7000000000000000046"},
+		{name: "spaced", in: "7000 0000 0000 0047", want: true},
+		{name: "hyphenated", in: "7000-0000-0000-0047", want: true},
+		{name: "empty"},
+		// These fail length validation despite passing Luhn.
+		{name: "too_short", in: "70000000003"},
+		{name: "too_long", in: "70000000000000000005"},
+		{name: "letter", in: "7000000000000047a"},
+		{name: "unsupported_punctuation", in: "7000/0000/0000/0047"},
+		{name: "all_zeroes", in: "0000000000000000"},
+		{name: "all_sixes", in: "6666666666666666"},
+		{name: "published_test_card", in: "4242424242424242"},
+		{name: "published_test_card_spaced", in: "4242 4242 4242 4242"},
+		{name: "published_test_card_hyphenated", in: "4242-4242-4242-4242"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := validCreditCardNumber([]byte(tc.in)); got != tc.want {
+				t.Errorf("validCreditCardNumber(%q) = %t, want %t", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestDetectorMaxSecretLen(t *testing.T) {
 	if got, want := NewDetector().MaxSecretLen(), uint32(len("5100 0000 0000 0000 008")+(2*contextWindowSize)); got != want {
 		t.Errorf("MaxSecretLen() = %d, want %d", got, want)

@@ -265,6 +265,8 @@ func validCreditCardNumber(b []byte) bool {
 	// Luhn check
 	// https://en.wikipedia.org/wiki/Luhn_algorithm#Pseudocode_implementation
 	sum := 0
+	// Iterate from the rightmost check digit, which is never doubled, so the
+	// initial value does not depend on whether the number has odd or even length.
 	double := false
 	for i := len(digits) - 1; i >= 0; i-- {
 		n := int(digits[i] - '0')
