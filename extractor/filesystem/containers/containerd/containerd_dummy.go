@@ -14,7 +14,6 @@
 
 //go:build !linux
 
-// Package containerd extracts container inventory from containerd metadb database.
 package containerd
 
 import (

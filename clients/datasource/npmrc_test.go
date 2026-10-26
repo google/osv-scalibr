@@ -25,8 +25,8 @@ import (
 	"github.com/google/osv-scalibr/clients/datasource"
 )
 
-// These tests rely on using 'globalconfig' and 'userconfig' in the package .npmrc to override their default locations.
-// It's also possible for environment variables or the builtin npmrc to mess with these tests.
+// These tests rely on NPM_CONFIG_GLOBALCONFIG and NPM_CONFIG_USERCONFIG environment variables to override their default locations.
+// It's also possible for other environment variables or the builtin npmrc to mess with these tests.
 
 func createTempNpmrc(t *testing.T, filename string) string {
 	t.Helper()
@@ -67,7 +67,8 @@ func makeBlankNpmrcFiles(t *testing.T) testNpmrcFiles {
 	files.global = createTempNpmrc(t, "npmrc")
 	files.user = createTempNpmrc(t, ".npmrc")
 	files.project = createTempNpmrc(t, ".npmrc")
-	writeToNpmrc(t, files.project, "globalconfig="+files.global, "userconfig="+files.user)
+	t.Setenv("NPM_CONFIG_GLOBALCONFIG", files.global)
+	t.Setenv("NPM_CONFIG_USERCONFIG", files.user)
 
 	return files
 }
@@ -333,5 +334,76 @@ func TestNPMRegistryAuths(t *testing.T) {
 				t.Errorf("authorization header got = \"%s\", want \"%s\"", got, tt.wantAuth)
 			}
 		})
+	}
+}
+
+func TestLoadNPMRegistryConfig_IgnoresProjectUserAndGlobalConfig(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", t.TempDir())
+	t.Setenv("PREFIX", t.TempDir())
+
+	evilUser := createTempNpmrc(t, ".npmrc")
+	writeToNpmrc(t, evilUser, "@evil:registry=https://evil-user.registry.com")
+	evilGlobal := createTempNpmrc(t, "npmrc")
+	writeToNpmrc(t, evilGlobal, "@evil:registry=https://evil-global.registry.com")
+
+	evilPrefix := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(evilPrefix, "etc"), 0755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	evilPrefixNpmrc := filepath.Join(evilPrefix, "etc", "npmrc")
+	if err := os.WriteFile(evilPrefixNpmrc, []byte("@evil-prefix:registry=https://evil-prefix.registry.com\n"), 0600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	projectNpmrc := createTempNpmrc(t, ".npmrc")
+	writeToNpmrc(t, projectNpmrc,
+		"userconfig="+evilUser,
+		"globalconfig="+evilGlobal,
+		"prefix="+evilPrefix,
+	)
+
+	config, err := datasource.LoadNPMRegistryConfig(filepath.Dir(projectNpmrc))
+	if err != nil {
+		t.Fatalf("LoadNPMRegistryConfig: %v", err)
+	}
+	if got := config.ScopeURLs["@evil"]; got != "" {
+		t.Errorf("ScopeURLs[@evil] = %q, want empty (project .npmrc must not redirect userconfig/globalconfig)", got)
+	}
+	if got := config.ScopeURLs["@evil-prefix"]; got != "" {
+		t.Errorf("ScopeURLs[@evil-prefix] = %q, want empty (project .npmrc must not redirect prefix)", got)
+	}
+}
+
+func TestLoadNPMRegistryConfig_IgnoresSymlinkEscape(t *testing.T) {
+	makeBlankNpmrcFiles(t)
+	outsideFile := createTempNpmrc(t, ".npmrc")
+	writeToNpmrc(t, outsideFile, "registry=https://escaped.registry.com")
+
+	projectDir := t.TempDir()
+	if err := os.Symlink(outsideFile, filepath.Join(projectDir, ".npmrc")); err != nil {
+		t.Skipf("os.Symlink not supported: %v", err)
+	}
+
+	config, err := datasource.LoadNPMRegistryConfig(projectDir)
+	if err != nil {
+		t.Fatalf("LoadNPMRegistryConfig: %v", err)
+	}
+	if got := config.ScopeURLs[""]; got != "https://registry.npmjs.org/" {
+		t.Errorf("ScopeURLs[\"\"] = %q, want default registry (symlinked .npmrc escaping projectDir must be ignored)", got)
+	}
+}
+
+func TestParseNPMRegistryInfo_DoesNotExpandEnv(t *testing.T) {
+	t.Setenv("SCALIBR_TEST_SECRET_TOKEN", "super-secret-value")
+	cfg := datasource.ParseNPMRegistryInfo(datasource.NpmrcConfig{
+		"//registry.npmjs.org/:_authToken": "${SCALIBR_TEST_SECRET_TOKEN}",
+	})
+	auth := cfg.Auths.GetAuth("https://registry.npmjs.org/pkg")
+	if auth == nil {
+		t.Fatal("GetAuth returned nil")
+	}
+	if got, want := auth.BearerToken, "${SCALIBR_TEST_SECRET_TOKEN}"; got != want {
+		t.Errorf("ParseNPMRegistryInfo() BearerToken = %q, want %q", got, want)
 	}
 }
