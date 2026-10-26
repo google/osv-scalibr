@@ -107,6 +107,24 @@ func RunScan(flags *cli.Flags) int {
 			log.Errorf("Failed to scan container: %v", err)
 			return 1
 		}
+	} else if flags.RemoteImage != "" { // We will pull and scan a remote image
+		layerCfg := newLayerConfig(flags)
+		log.Infof("Scanning remote image: %s", flags.RemoteImage)
+		img, err := scalibrlayerimage.FromRemoteName(flags.RemoteImage, layerCfg, flags.RemoteImageOptions()...)
+		if err != nil {
+			log.Errorf("Failed to pull remote image: %v", err)
+			return 1
+		}
+		defer func() {
+			if tmpErr := img.CleanUp(); tmpErr != nil {
+				log.Errorf("Failed to clean up image: %v", tmpErr)
+			}
+		}()
+		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+		if err != nil {
+			log.Errorf("Failed to scan remote image: %v", err)
+			return 1
+		}
 	} else {
 		log.Infof("Scan roots: %v", cfg.ScanRoots)
 		result = scalibr.New().Scan(context.Background(), cfg)

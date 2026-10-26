@@ -32,6 +32,7 @@ import (
 
 	"archive/tar"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -185,9 +186,40 @@ func (img *Image) Size() int64 {
 	return img.size
 }
 
+// V1ImageFromRemoteName creates a v1.Image from a remote container image name.
+func V1ImageFromRemoteName(imageName string, imageOptions ...remote.Option) (v1.Image, error) {
+	imageName = strings.TrimPrefix(imageName, "https://")
+	if strings.Contains(imageName, "@") {
+		// Pull from a digest name.
+		ref, err := name.NewDigest(imageName)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse digest: %w", err)
+		}
+		descriptor, err := remote.Get(ref, imageOptions...)
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t pull remote image %s: %w", ref, err)
+		}
+		image, err := descriptor.Image()
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t parse image manifest %s: %w", ref, err)
+		}
+		return image, nil
+	}
+	// Pull from a tag.
+	tag, err := name.NewTag(imageName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse image reference: %w", err)
+	}
+	image, err := remote.Image(tag, imageOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("couldn’t pull remote image %s: %w", tag, err)
+	}
+	return image, nil
+}
+
 // FromRemoteName creates an Image from a remote container image name.
 func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Option) (*Image, error) {
-	v1Image, err := scalibrimage.V1ImageFromRemoteName(imageName, imageOptions...)
+	v1Image, err := V1ImageFromRemoteName(imageName, imageOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
 	}
