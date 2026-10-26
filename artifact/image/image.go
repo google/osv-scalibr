@@ -14,18 +14,12 @@
 
 // Package image provides functionality to scan a container image by layers for software
 // inventory.
+//
+// It defines the interfaces implemented by container image backends. See
+// layerscanning/image for the implementation used to load and scan images.
 package image
 
 import (
-	"fmt"
-	"os"
-	"strings"
-
-	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/osv-scalibr/artifact/image/require"
-	"github.com/google/osv-scalibr/artifact/image/unpack"
 	"github.com/opencontainers/go-digest"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -76,71 +70,4 @@ type Image interface {
 	ChainLayers() ([]ChainLayer, error)
 	// FS returns a SCALIBR compliant filesystem that represents the image.
 	FS() scalibrfs.FS
-}
-
-// V1ImageFromRemoteName creates a v1.Image from a remote container image name.
-func V1ImageFromRemoteName(imageName string, imageOptions ...remote.Option) (v1.Image, error) {
-	imageName = strings.TrimPrefix(imageName, "https://")
-	var image v1.Image
-	if strings.Contains(imageName, "@") {
-		// Pull from a digest name.
-		ref, err := name.NewDigest(strings.TrimPrefix(imageName, "https://"))
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse digest: %w", err)
-		}
-		descriptor, err := remote.Get(ref, imageOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("couldn’t pull remote image %s: %w", ref, err)
-		}
-		image, err = descriptor.Image()
-		if err != nil {
-			return nil, fmt.Errorf("couldn’t parse image manifest %s: %w", ref, err)
-		}
-	} else {
-		// Pull from a tag.
-		tag, err := name.NewTag(strings.TrimPrefix(imageName, "https://"))
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse image reference: %w", err)
-		}
-		image, err = remote.Image(tag, imageOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("couldn’t pull remote image %s: %w", tag, err)
-		}
-	}
-	return image, nil
-}
-
-// NewFromRemoteName pulls a remote container and creates a
-// SCALIBR filesystem for scanning it.
-func NewFromRemoteName(imageName string, imageOptions ...remote.Option) (scalibrfs.FS, error) {
-	image, err := V1ImageFromRemoteName(imageName, imageOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
-	}
-	return NewFromImage(image)
-}
-
-// NewFromImage creates a SCALIBR filesystem for scanning a container
-// from its image descriptor.
-func NewFromImage(image v1.Image) (scalibrfs.FS, error) {
-	outDir, err := os.MkdirTemp(os.TempDir(), "scalibr-container-")
-	if err != nil {
-		return nil, fmt.Errorf("couldn’t create tmp dir for image: %w", err)
-	}
-	// Squash the image's final layer into a directory.
-	cfg := &unpack.UnpackerConfig{
-		SymlinkResolution:  unpack.SymlinkRetain,
-		SymlinkErrStrategy: unpack.SymlinkErrLog,
-		MaxPass:            unpack.DefaultMaxPass,
-		MaxFileBytes:       unpack.DefaultMaxFileBytes,
-		Requirer:           &require.FileRequirerAll{},
-	}
-	unpacker, err := unpack.NewUnpacker(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create image unpacker: %w", err)
-	}
-	if err = unpacker.UnpackSquashed(outDir, image); err != nil {
-		return nil, fmt.Errorf("failed to unpack image into directory %q: %w", outDir, err)
-	}
-	return scalibrfs.DirFS(outDir), nil
 }
