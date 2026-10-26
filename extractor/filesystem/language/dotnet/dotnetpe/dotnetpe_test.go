@@ -15,13 +15,17 @@
 package dotnetpe_test
 
 import (
+	"bytes"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/dotnetpe"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
@@ -204,5 +208,47 @@ func TestExtract(t *testing.T) {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})
+	}
+}
+
+func TestExtract_VirtualFSCleansUpTempDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, env := range []string{"TMPDIR", "TMP", "TEMP"} {
+		t.Setenv(env, tmpDir)
+	}
+
+	data, err := os.ReadFile("testdata/HelloWorldApp.exe")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+
+	extr, err := dotnetpe.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("dotnetpe.New: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Path:   "HelloWorldApp.exe",
+		Root:   "",
+		Info:   fakefs.FakeFileInfo{FileName: "HelloWorldApp.exe", FileMode: fs.ModePerm, FileSize: int64(len(data))},
+		Reader: bytes.NewReader(data),
+	}
+
+	got, err := extr.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+	if len(got.Packages) == 0 {
+		t.Fatalf("Extract returned 0 packages, want >= 1")
+	}
+
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("os.ReadDir(%q): %v", tmpDir, err)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), "scalibr-tmp") {
+			t.Errorf("leaked temporary directory %q in %q after Extract", entry.Name(), tmpDir)
+		}
 	}
 }
