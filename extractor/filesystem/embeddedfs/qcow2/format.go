@@ -96,6 +96,15 @@ func convertQCOW2ToRaw(inputPath string, outputPath string, password string) err
 	if err != nil {
 		return fmt.Errorf("failed to parse QCOW2 header: %w", err)
 	}
+	clusterSize := uint64(1) << header.ClusterBits
+	l1Bytes := uint64(header.L1Size) * 8
+	if l1Bytes > 0 && (header.L1TableOffset > fileSize || l1Bytes > fileSize-header.L1TableOffset) {
+		return errors.New("QCOW2 L1 table exceeds input file size")
+	}
+	refcountBytes := uint64(header.RefcountTableClusters) * clusterSize
+	if refcountBytes > 0 && (header.RefcountTableOffset > fileSize || refcountBytes > fileSize-header.RefcountTableOffset) {
+		return errors.New("QCOW2 refcount table exceeds input file size")
+	}
 
 	var crypto cryptoConfig
 	if header.CryptMethod != 0 {
@@ -161,19 +170,18 @@ func parseHeader(reader io.Reader) (*header, []headerExtension, error) {
 	if h.ClusterBits < 9 || h.ClusterBits > 21 {
 		return nil, nil, fmt.Errorf("ClusterBits %d out of valid range [9, 21]", h.ClusterBits)
 	}
-	// Cap L1Size: prevents make([]uint64, L1Size) OOM with large values.
-	// A 2M-entry L1 table covers ≥64 TiB even at the minimum cluster size.
-	const maxL1Size = 2 << 20 // 2,097,152
+	// Match QEMU's 32 MiB L1 table limit:
+	// https://github.com/qemu/qemu/blob/a19f59a72d96056d9a8f48cf6c77f5787491e414/block/qcow2.h#L59
+	const maxL1Size = 32 << 20 / 8
 	if h.L1Size > maxL1Size {
 		return nil, nil, fmt.Errorf("L1Size %d exceeds safety limit %d", h.L1Size, maxL1Size)
 	}
-	// Cap RefcountTableClusters: readRefcountTable computes
-	// header.RefcountTableClusters*uint32(clusterSize) in uint32, so large
-	// values can produce near-4 GB allocations even with valid ClusterBits.
-	// 64 clusters is generous for any real image (typical images use 1–3).
-	const maxRefcountTableClusters = 64
-	if h.RefcountTableClusters > maxRefcountTableClusters {
-		return nil, nil, fmt.Errorf("RefcountTableClusters %d exceeds safety limit %d", h.RefcountTableClusters, maxRefcountTableClusters)
+	clusterSize := uint64(1) << h.ClusterBits
+	// QEMU limits the refcount table to 8 MiB:
+	// https://github.com/qemu/qemu/blob/a19f59a72d96056d9a8f48cf6c77f5787491e414/block/qcow2.h#L55
+	const maxRefcountTableBytes = 8 << 20
+	if uint64(h.RefcountTableClusters)*clusterSize > maxRefcountTableBytes {
+		return nil, nil, fmt.Errorf("RefcountTableClusters %d exceeds the 8 MiB table limit", h.RefcountTableClusters)
 	}
 
 	if h.Version >= 3 && h.HeaderLength > 112 {
@@ -193,6 +201,9 @@ func parseHeader(reader io.Reader) (*header, []headerExtension, error) {
 		}
 		if err := binary.Read(reader, binary.BigEndian, &ext.Length); err != nil {
 			return nil, nil, fmt.Errorf("failed to read extension length: %w", err)
+		}
+		if uint64(ext.Length) > clusterSize {
+			return nil, nil, fmt.Errorf("QCOW2 header extension length %d exceeds cluster size", ext.Length)
 		}
 		ext.Data = make([]byte, ext.Length)
 		if _, err := io.ReadFull(reader, ext.Data); err != nil {
@@ -302,18 +313,8 @@ func checkImageIntegrity(header *header, reader io.ReaderAt) error {
 	if header.RefcountTableOffset%clusterSize != 0 {
 		return errors.New("refcount table offset not cluster-aligned")
 	}
-	refcountTable, err := readRefcountTable(header, reader)
-	if err != nil {
+	if _, err := readRefcountTable(header, reader); err != nil {
 		return fmt.Errorf("failed to read refcount table: %w", err)
-	}
-	for _, rtEntry := range refcountTable {
-		if rtEntry == 0 {
-			continue
-		}
-		_, err := readRefcountBlock(rtEntry, header, reader)
-		if err != nil {
-			continue
-		}
 	}
 	return nil
 }
@@ -331,38 +332,42 @@ func readRefcountTable(header *header, reader io.ReaderAt) ([]uint64, error) {
 	return refcountTable, nil
 }
 
-func readRefcountBlock(rtEntry uint64, header *header, reader io.ReaderAt) ([]uint16, error) {
-	clusterSize := uint64(1) << header.ClusterBits
-	buf := make([]byte, clusterSize)
-	if _, err := reader.ReadAt(buf, int64(rtEntry)); err != nil {
-		return nil, fmt.Errorf("failed to read refcount block: %w", err)
-	}
-	refcountBlock := make([]uint16, clusterSize/2)
-	if err := binary.Read(bytes.NewReader(buf), binary.BigEndian, refcountBlock); err != nil {
-		return nil, fmt.Errorf("failed to parse refcount block: %w", err)
-	}
-	return refcountBlock, nil
+type sparseWriter interface {
+	io.Writer
+	io.Seeker
 }
 
-func writeRawImage(header *header, l1Table []uint64, reader io.ReaderAt, writer io.Writer, crypto cryptoConfig, fileSize uint64) error {
+func writeRawImage(header *header, l1Table []uint64, reader io.ReaderAt, writer sparseWriter, crypto cryptoConfig, fileSize uint64) error {
 	clusterSize := uint64(1) << header.ClusterBits
 	entriesPerL2 := clusterSize / 8
+	var l2Table []uint64
+	cachedL1Index := ^uint64(0)
 	for guestOffset := uint64(0); guestOffset < header.Size; guestOffset += clusterSize {
 		l1Index := guestOffset / (clusterSize * entriesPerL2)
 		if l1Index >= uint64(len(l1Table)) {
 			return fmt.Errorf("L1 index %d out of bounds", l1Index)
 		}
-		l2Table, err := readL2Table(l1Table[l1Index], header, reader)
-		if err != nil {
-			return fmt.Errorf("failed to read L2 table at guest offset 0x%x: %w", guestOffset, err)
+		if l1Index != cachedL1Index {
+			var err error
+			l2Table, err = readL2Table(l1Table[l1Index], header, reader)
+			if err != nil {
+				return fmt.Errorf("failed to read L2 table at guest offset 0x%x: %w", guestOffset, err)
+			}
+			cachedL1Index = l1Index
 		}
 		if l2Table == nil {
-			if _, err := writer.Write(bytes.Repeat([]byte{0}, int(clusterSize))); err != nil {
-				return fmt.Errorf("failed to write zeros at guest offset 0x%x: %w", guestOffset, err)
+			if _, err := writer.Seek(int64(clusterSize), io.SeekCurrent); err != nil {
+				return fmt.Errorf("failed to create sparse hole at guest offset 0x%x: %w", guestOffset, err)
 			}
 			continue
 		}
 		l2Index := (guestOffset / clusterSize) % entriesPerL2
+		if l2Table[l2Index] == 0 {
+			if _, err := writer.Seek(int64(clusterSize), io.SeekCurrent); err != nil {
+				return fmt.Errorf("failed to create sparse hole at guest offset 0x%x: %w", guestOffset, err)
+			}
+			continue
+		}
 		cluster, err := readCluster(l2Table[l2Index], header, reader, crypto, fileSize, guestOffset)
 		if err != nil {
 			return fmt.Errorf("failed to read cluster at guest offset 0x%x: %w", guestOffset, err)
