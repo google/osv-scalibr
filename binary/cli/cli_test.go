@@ -314,6 +314,19 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 				"windows": nil,
 			},
 		},
+		{
+			desc: "Scan root is null if remote image is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {RemoteImage: "nginx:latest"},
+				"linux":   {RemoteImage: "nginx:latest"},
+				"windows": {RemoteImage: "nginx:latest"},
+			},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			wantScanRoots, ok := tc.wantScanRoots[runtime.GOOS]
