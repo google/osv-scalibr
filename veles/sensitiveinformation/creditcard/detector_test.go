@@ -245,6 +245,31 @@ func TestDetect_trueNegatives(t *testing.T) {
 	}
 }
 
+func TestDetect_published_test_cards(t *testing.T) {
+	e, err := veles.NewDetectionEngine([]veles.Detector{NewDetector()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for number := range commonExamples {
+		t.Run(number, func(t *testing.T) {
+			for _, separator := range []string{"", " ", "-"} {
+				var groups []string
+				for i := 0; i < len(number); i += 4 {
+					groups = append(groups, number[i:min(i+4, len(number))])
+				}
+				input := "credit card: " + strings.Join(groups, separator)
+				got, err := e.Detect(t.Context(), strings.NewReader(input))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(got) != 0 {
+					t.Errorf("Detect(%q) returned %d findings, want none", input, len(got))
+				}
+			}
+		})
+	}
+}
+
 func TestDetectorMaxSecretLen(t *testing.T) {
 	if got, want := NewDetector().MaxSecretLen(), uint32(len("5100 0000 0000 0000 008")+(2*contextWindowSize)); got != want {
 		t.Errorf("MaxSecretLen() = %d, want %d", got, want)
