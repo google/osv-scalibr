@@ -80,9 +80,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
+|            | go.work / go.work.sum                             | `go/gowork`                          |
 |            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
-|            | cabal.project.freeze                              | `haskell/cabal`                      |
+|            | cabal Installed packages                          | `haskell/cabalconf`                  |
+|            | cabal.project.freeze                              | `haskell/cabalprojectfreeze`         |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
