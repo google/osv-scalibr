@@ -74,8 +74,7 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 
 	case *dpkgmeta.Metadata:
 		// Echo advisories are published under a single unversioned ecosystem on
-		// OSV.dev, whose suffix denotes the upstream ecosystem of Echo's secured
-		// builds (e.g. "Echo:PyPI"), so the VERSION_ID is not used as a suffix.
+		// OSV.dev, so the VERSION_ID is not used as a suffix.
 		if m.OSID == "echo" {
 			return osvecosystem.FromEcosystem(osvconstants.EcosystemEcho)
 		}
