@@ -29,8 +29,8 @@ import (
 	"path"
 	"strings"
 
-	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/vulns"
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -47,9 +47,7 @@ type zipDB struct {
 	StoredAt string
 	// the vulnerabilities that are loaded into this database
 	Vulnerabilities []*osvpb.Vulnerability
-	// User agent to query with
-	UserAgent  string
-	httpClient *http.Client
+	httpClient      *http.Client
 }
 
 var errOfflineDatabaseNotFound = errors.New("no offline version of the OSV database is available")
@@ -119,10 +117,6 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve OSV database archive: %w", err)
-	}
-
-	if db.UserAgent != "" {
-		req.Header.Set("User-Agent", db.UserAgent)
 	}
 
 	resp, err := db.httpClient.Do(req)
@@ -234,13 +228,12 @@ func (db *zipDB) load(ctx context.Context, names []string) error {
 	return nil
 }
 
-func newZippedDB(ctx context.Context, dbBasePath, name, url, userAgent string, offline bool, invs []*extractor.Package, httpClient *http.Client) (*zipDB, error) {
+func newZippedDB(ctx context.Context, dbBasePath, name, url string, offline bool, invs []*extractor.Package, httpClient *http.Client) (*zipDB, error) {
 	db := &zipDB{
 		Name:       name,
 		ArchiveURL: url,
 		Offline:    offline,
 		StoredAt:   path.Join(dbBasePath, name, "all.zip"),
-		UserAgent:  userAgent,
 		httpClient: httpClient,
 	}
 	names := make([]string, 0, len(invs))

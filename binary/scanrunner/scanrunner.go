@@ -66,7 +66,7 @@ func RunScan(flags *cli.Flags) int {
 
 	var result *scalibr.ScanResult
 	if flags.ImageTarball != "" {
-		layerCfg := scalibrlayerimage.DefaultConfig()
+		layerCfg := newLayerConfig(flags)
 		log.Infof("Scanning image tarball: %s", flags.ImageTarball)
 		img, err := scalibrlayerimage.FromTarball(flags.ImageTarball, layerCfg)
 		if err != nil {
@@ -90,7 +90,7 @@ func RunScan(flags *cli.Flags) int {
 			return 1
 		}
 	} else if flags.ImageLocal != "" { // We will scan an image in the local hard disk
-		layerCfg := scalibrlayerimage.DefaultConfig()
+		layerCfg := newLayerConfig(flags)
 		log.Infof("Scanning local image: %s", flags.ImageLocal)
 		img, err := scalibrlayerimage.FromLocalDockerImage(flags.ImageLocal, layerCfg)
 		if err != nil {
@@ -135,4 +135,14 @@ func RunScan(flags *cli.Flags) int {
 	}
 
 	return 0
+}
+
+func newLayerConfig(flags *cli.Flags) *scalibrlayerimage.Config {
+	config := scalibrlayerimage.DefaultConfig()
+	if flags.MaxFileSize > 0 {
+		config.MaxFileBytes = flags.MaxFileSize
+	} else {
+		log.Infof("Max file size not specified, defaulting to %d bytes", config.MaxFileBytes)
+	}
+	return config
 }

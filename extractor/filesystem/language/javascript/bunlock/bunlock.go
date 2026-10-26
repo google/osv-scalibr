@@ -99,8 +99,14 @@ func structurePackageDetails(pkgs []any) (string, string, string, string, error)
 		name = "@" + name
 	}
 
-	// url dependencies do not have a semantic version recorded
-	if strings.HasPrefix(version, "http://") || strings.HasPrefix(version, "https://") {
+	// file dependencies do not have any semantic version recorded
+	if strings.HasPrefix(version, "file:") ||
+		strings.HasPrefix(version, "/") ||
+		strings.HasPrefix(version, "../") ||
+		strings.HasPrefix(version, "./") ||
+		// url dependencies do not have a semantic version recorded
+		strings.HasPrefix(version, "http://") ||
+		strings.HasPrefix(version, "https://") {
 		return name, "", "", "", nil
 	}
 
@@ -115,11 +121,6 @@ func structurePackageDetails(pkgs []any) (string, string, string, string, error)
 	// so if we have a commit then we don't have a version
 	if commit != "" {
 		repo = commitextractor.NormalizeRepo(version)
-		version = ""
-	}
-
-	// file dependencies do not have a semantic version recorded
-	if strings.HasPrefix(version, "file:") {
 		version = ""
 	}
 
@@ -145,7 +146,14 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	var errs []error
 
-	for key, pkg := range parsedLockfile.Packages {
+	keys := make([]string, 0, len(parsedLockfile.Packages))
+	for key := range parsedLockfile.Packages {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+
+	for _, key := range keys {
+		pkg := parsedLockfile.Packages[key]
 		name, version, commit, repo, err := structurePackageDetails(pkg)
 
 		if err != nil {

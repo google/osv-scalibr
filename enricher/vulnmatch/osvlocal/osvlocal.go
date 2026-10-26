@@ -29,7 +29,6 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/plugin/config"
-	scalibrversion "github.com/google/osv-scalibr/version"
 )
 
 const (
@@ -44,7 +43,6 @@ var _ enricher.Enricher = &Enricher{}
 type Enricher struct {
 	zippedDBRemoteHost string
 
-	userAgent  string
 	localPath  string
 	download   bool
 	httpClient *http.Client
@@ -60,14 +58,9 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
 	}
 
-	userAgent := "osv-scalibr/" + scalibrversion.ScannerVersion
 	remoteHost := "https://osv-vulnerabilities.storage.googleapis.com"
 	localPath := ""
 	download := true
-
-	if cfg.ProtoConfig != nil && cfg.ProtoConfig.UserAgent != "" {
-		userAgent = cfg.ProtoConfig.UserAgent
-	}
 
 	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.OSVLocalConfig { return c.GetOsvlocal() })
 	if specific != nil {
@@ -78,7 +71,6 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 
 	return &Enricher{
 		zippedDBRemoteHost: remoteHost,
-		userAgent:          userAgent,
 		localPath:          localPath,
 		download:           download,
 		httpClient:         httpClient,
@@ -88,7 +80,6 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 func newForTesting(zippedDBRemoteHost string) enricher.Enricher {
 	return &Enricher{
 		zippedDBRemoteHost: zippedDBRemoteHost,
-		userAgent:          "",
 		localPath:          "",
 		download:           true,
 		httpClient:         http.DefaultClient,
@@ -134,7 +125,6 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 	dbs, err := newlocalMatcher(
 		e.localPath,
-		e.userAgent,
 		e.download,
 		e.zippedDBRemoteHost,
 		e.httpClient,

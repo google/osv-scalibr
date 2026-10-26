@@ -291,7 +291,7 @@ func (e Extractor) extractWithMax(ctx context.Context, input *filesystem.ScanInp
 		case e.extractFromPomXML && filepath.Base(file.Name) == "pom.xml":
 			log.Debugf("Parsing pom.xml file %q", path)
 
-			project, err := parsePomXML(file)
+			project, err := ParsePomXML(file)
 			if err != nil {
 				log.Errorf("%s failed to parse pom.xml at %q: %v", e.Name(), path, err)
 				errs = append(errs, err)

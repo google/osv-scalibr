@@ -27,7 +27,17 @@ var d2 = digest.FromString("d2")
 var cimProtoForTest = &pb.ContainerImageMetadata{
 	Index: 0,
 	LayerMetadata: []*pb.LayerMetadata{
-		{Index: 0, DiffId: d1.String(), ChainId: d1.String(), Command: "cmd1", IsEmpty: false, BaseImageIndex: 1},
+		{
+			Index:          0,
+			DiffId:         d1.String(),
+			ChainId:        d1.String(),
+			Command:        "cmd1",
+			IsEmpty:        false,
+			BaseImageIndex: 1,
+			Attributes: []*pb.LayerAttribute{
+				{Value: "nice-layer", Plugin: "fake/layermetadataextractor"},
+			},
+		},
 		{Index: 1, DiffId: d2.String(), ChainId: d2.String(), Command: "cmd2", IsEmpty: true, BaseImageIndex: 0},
 	},
 	BaseImageChains: []*pb.BaseImageChain{
@@ -49,7 +59,17 @@ var cimStructForTest = func() *extractor.ContainerImageMetadata {
 	c := &extractor.ContainerImageMetadata{
 		Index: 0,
 		LayerMetadata: []*extractor.LayerMetadata{
-			{Index: 0, DiffID: d1, ChainID: d1, Command: "cmd1", IsEmpty: false, BaseImageIndex: 1},
+			{
+				Index:          0,
+				DiffID:         d1,
+				ChainID:        d1,
+				Command:        "cmd1",
+				IsEmpty:        false,
+				BaseImageIndex: 1,
+				Attributes: []*extractor.LayerAttribute{
+					{Value: "nice-layer", Plugin: "fake/layermetadataextractor"},
+				},
+			},
 			{Index: 1, DiffID: d2, ChainID: d2, Command: "cmd2", IsEmpty: true, BaseImageIndex: 0},
 		},
 		BaseImages: [][]*extractor.BaseImageDetails{

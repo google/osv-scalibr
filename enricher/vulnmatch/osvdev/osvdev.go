@@ -24,12 +24,11 @@ import (
 	"time"
 
 	"github.com/google/osv-scalibr/enricher"
-	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
-	scalibrversion "github.com/google/osv-scalibr/version"
 	"golang.org/x/sync/errgroup"
 	"osv.dev/bindings/go/osvdev"
 	"osv.dev/bindings/go/osvdevexperimental"
@@ -73,7 +72,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 
 	client := osvdev.DefaultClient()
 	client.HTTPClient = httpClient
-	client.Config.UserAgent = "osv-scalibr/" + scalibrversion.ScannerVersion
+	client.Config.UserAgent = ""
 
 	initialQueryTimeout := 5 * time.Minute
 	if cfg.ProtoConfig != nil {

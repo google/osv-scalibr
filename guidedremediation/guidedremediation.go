@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	golog "log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -84,7 +85,7 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	}
 	if hasLockfile {
 		var err error
-		lockfileRW, err = readWriterForLockfile(opts.Lockfile)
+		lockfileRW, err = readWriterForLockfile(opts.Lockfile, opts.HTTPClient)
 		if err != nil {
 			return result.Result{}, err
 		}
@@ -147,7 +148,7 @@ func FixVulnsInteractive(opts options.FixVulnsOptions, detailsRenderer VulnDetai
 	}
 	if opts.Lockfile != "" {
 		var err error
-		lockfileRW, err = readWriterForLockfile(opts.Lockfile)
+		lockfileRW, err = readWriterForLockfile(opts.Lockfile, opts.HTTPClient)
 		if err != nil {
 			return err
 		}
@@ -526,7 +527,7 @@ func computeResolveErrors(g *resolve.Graph) []result.ResolveError {
 // Vulns present in the lockfile only are added to the result's vulns,
 // and a patch upgraded packages is added to the result's patches.
 func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif *remediation.ResolvedManifest, opts options.FixVulnsOptions) error {
-	lockfileRW, err := readWriterForLockfile(opts.Lockfile)
+	lockfileRW, err := readWriterForLockfile(opts.Lockfile, opts.HTTPClient)
 	if err != nil {
 		return err
 	}
@@ -662,11 +663,11 @@ func readWriterForManifest(manifestPath string, mavenClient *datasource.MavenReg
 }
 
 // readWriterForLockfile returns the lockfile read/write interface for the given lockfile path.
-func readWriterForLockfile(lockfilePath string) (lockfile.ReadWriter, error) {
+func readWriterForLockfile(lockfilePath string, httpClient *http.Client) (lockfile.ReadWriter, error) {
 	baseName := filepath.Base(lockfilePath)
 	switch strings.ToLower(baseName) {
 	case "package-lock.json":
-		return npmlock.GetReadWriter()
+		return npmlock.GetReadWriter(httpClient)
 	case "requirements.txt":
 		return pythonlock.GetReadWriter()
 	}
