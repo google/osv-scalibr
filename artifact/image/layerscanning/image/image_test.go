@@ -1506,3 +1506,11 @@ func constructImageWithTarEntries(t *testing.T, tarEntries []*tarEntry) v1.Image
 
 	return image
 }
+
+func TestFromRemoteNameInvalidRef(t *testing.T) {
+	for _, ref := range []string{"https://invalid@@digest", "invalid::tag"} {
+		if _, err := FromRemoteName(ref, DefaultConfig()); err == nil {
+			t.Errorf("FromRemoteName(%q) succeeded, want error", ref)
+		}
+	}
+}
