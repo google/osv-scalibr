@@ -42,8 +42,9 @@ type issuerRange struct {
 	lengths []int
 }
 
+// Maximum matched length: 19 digits plus 4 spaces or hyphens.
 // https://en.wikipedia.org/wiki/Payment_card_number
-const maxSecretLength = 19
+const maxSecretLength = 23
 const contextWindowSize = 32
 
 var creditCardRe = regexp.MustCompile(`\b(?:\d{12,19}|\d{4}(?:[ -]\d{4}){2,3}(?:[ -]\d{1,3})?|\d{4}[ -]\d{6}[ -]\d{5})\b`)
@@ -265,8 +266,6 @@ func validCreditCardNumber(b []byte) bool {
 	// Luhn check
 	// https://en.wikipedia.org/wiki/Luhn_algorithm#Pseudocode_implementation
 	sum := 0
-	// Iterate from the rightmost check digit, which is never doubled, so the
-	// initial value does not depend on whether the number has odd or even length.
 	double := false
 	for i := len(digits) - 1; i >= 0; i-- {
 		n := int(digits[i] - '0')
