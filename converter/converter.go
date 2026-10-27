@@ -32,6 +32,8 @@ import (
 )
 
 // ToPURL converts a SCALIBR package structure into a package URL.
+//
+// Deprecated: use p.PURL() directly
 func ToPURL(p *extractor.Package) *purl.PackageURL {
 	return p.PURL()
 }
@@ -93,7 +95,7 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 			Name:    pkg.Name,
 			Version: pkg.Version,
 		}
-		if p := ToPURL(pkg); p != nil {
+		if p := pkg.PURL(); p != nil {
 			comp.PackageURL = p.String()
 		}
 		if cpes := extractCPEs(pkg); len(cpes) > 0 {

@@ -21,7 +21,7 @@ import (
 	"os"
 	"path"
 
-	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/internal/osvutil"
+	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/log"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
@@ -39,13 +39,11 @@ type localMatcher struct {
 	dbs        map[osvconstants.Ecosystem]*zipDB
 	downloadDB bool
 	// failedDBs keeps track of the errors when getting databases for each ecosystem
-	failedDBs map[osvconstants.Ecosystem]error
-	// userAgent sets the user agent requests for db zips are made with
-	userAgent  string
+	failedDBs  map[osvconstants.Ecosystem]error
 	httpClient *http.Client
 }
 
-func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zippedDBRemoteHost string, httpClient *http.Client) (*localMatcher, error) {
+func newlocalMatcher(localDBPath string, downloadDB bool, zippedDBRemoteHost string, httpClient *http.Client) (*localMatcher, error) {
 	dbBasePath, err := setupLocalDBDirectory(localDBPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not create %s: %w", dbBasePath, err)
@@ -57,7 +55,6 @@ func newlocalMatcher(localDBPath string, userAgent string, downloadDB bool, zipp
 		dbBasePath: dbBasePath,
 		dbs:        make(map[osvconstants.Ecosystem]*zipDB),
 		downloadDB: downloadDB,
-		userAgent:  userAgent,
 		failedDBs:  make(map[osvconstants.Ecosystem]error),
 		httpClient: httpClient,
 	}, nil
@@ -68,16 +65,19 @@ func (matcher *localMatcher) MatchVulnerabilities(ctx context.Context, pkg *extr
 		return nil, ctx.Err()
 	}
 
+	if osvutil.IsLocal(pkg) {
+		return nil, nil
+	}
+
 	np := osvutil.ParsePackage(pkg)
 	eco := np.Ecosystem.Ecosystem
 
-	if np.Ecosystem.IsEmpty() {
-		// matching ecosystem-less versions can only be attempted if we have a version
-		if np.Version == "" {
-			// Is a commit based query, skip local scanning
-			return nil, nil
-		}
+	if (np.Ecosystem.String() == "GIT" || np.Ecosystem.IsEmpty()) && np.Version == "" {
+		// Commit-only query with no version tag; commit graph reachability requires online OSV API.
+		return nil, nil
+	}
 
+	if np.Ecosystem.IsEmpty() {
 		eco = "GIT"
 	}
 
@@ -104,7 +104,6 @@ func (matcher *localMatcher) loadDBFromCache(ctx context.Context, eco osvconstan
 		matcher.dbBasePath,
 		string(eco),
 		fmt.Sprintf("%s/%s/all.zip", matcher.zippedDBRemoteHost, eco),
-		matcher.userAgent,
 		!matcher.downloadDB,
 		invs,
 		matcher.httpClient,

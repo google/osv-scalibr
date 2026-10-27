@@ -94,6 +94,14 @@ func TestFromString(t *testing.T) {
 				Version: "1.2.3",
 			},
 		}, {
+			name: "hackage",
+			purl: "pkg:hackage/Agda@2.6.4.3",
+			want: purl.PackageURL{
+				Type:    "hackage",
+				Name:    "Agda",
+				Version: "2.6.4.3",
+			},
+		}, {
 			name: "maven",
 			purl: "pkg:maven/org.apache.xmlgraphics/batik-anim@1.9.1?classifier=dist&type=zip",
 			want: purl.PackageURL{

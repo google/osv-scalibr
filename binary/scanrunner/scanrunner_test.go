@@ -192,6 +192,19 @@ func TestRunScan(t *testing.T) {
 			wantFindingCount:  0,
 		},
 		{
+			desc:      "Image extractor run skips file exceeding MaxFileSize",
+			setupFunc: createImageTarball,
+			flags: &cli.Flags{
+				ImageTarball:    "image.tar",
+				ExtractorsToRun: []string{"go/gomod"},
+				MaxFileSize:     10,
+			},
+			wantScanStatus:    spb.ScanStatus_SUCCEEDED,
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
+			wantPackagesCount: 0,
+			wantFindingCount:  0,
+		},
+		{
 			desc:      "Failure to read image tarball",
 			setupFunc: createBadImageTarball,
 			flags: &cli.Flags{

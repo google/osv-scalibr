@@ -23,7 +23,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/compose-spec/compose-go/v2/dotenv"
@@ -221,7 +221,7 @@ func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([
 	for img := range uniq {
 		out = append(out, img)
 	}
-	sort.Strings(out)
+	slices.Sort(out)
 	return out, nil
 }
 

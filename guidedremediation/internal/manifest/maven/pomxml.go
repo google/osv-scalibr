@@ -195,15 +195,7 @@ type readWriter struct {
 // projectRoot is the directory path to scan for local Maven modules.
 func GetReadWriter(client *datasource.MavenRegistryAPIClient, projectRoot string) (manifest.ReadWriter, error) {
 	if projectRoot != "" {
-		absProjectRoot, err := filepath.Abs(projectRoot)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get absolute path for project root %q: %w", projectRoot, err)
-		}
-		vol := filepath.VolumeName(absProjectRoot) + "/"
-		projectRoot, err = filepath.Rel(vol, absProjectRoot)
-		if err != nil {
-			return nil, fmt.Errorf("failed to make project root %q relative to volume %q: %w", absProjectRoot, vol, err)
-		}
+		projectRoot = "."
 	}
 	return readWriter{MavenRegistryAPIClient: client, projectRoot: projectRoot}, nil
 }
@@ -562,7 +554,7 @@ func getLocalDepsAndProps(fsys scalibrfs.FS, path string, parent maven.Parent) (
 // outputPath is the path on disk (*not* in fsys) to write the entire patched manifest to (this can overwrite the original manifest).
 //
 // If the original manifest referenced local parent POMs, they will be written alongside the patched manifest, maintaining the relative path structure as it existed in the original location.
-func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputPath string) error {
+func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error {
 	specific, ok := original.EcosystemSpecific().(ManifestSpecific)
 	if !ok {
 		return errors.New("invalid maven ManifestSpecific data")
@@ -592,16 +584,16 @@ func (r readWriter) Write(original manifest.Manifest, fsys scalibrfs.FS, patches
 		if err := write(in.String(), out, patches); err != nil {
 			return err
 		}
-		// Write the patched parent relative to the new outputPath
-		relativePatch, err := filepath.Rel(original.FilePath(), patchPath)
-		if err != nil {
+		// Parent paths are project-relative identities, so write them back to the
+		// same confined location. The primary manifest uses outputPath.
+		if patchPath == original.FilePath() {
+			patchPath = outputPath
+		}
+		patchPath = filepath.ToSlash(patchPath)
+		if err := outputRoot.MkdirAll(filepath.ToSlash(filepath.Dir(patchPath)), 0755); err != nil {
 			return err
 		}
-		patchPath = filepath.Join(outputPath, relativePatch)
-		if err := os.MkdirAll(filepath.Dir(patchPath), 0755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(patchPath, out.Bytes(), 0644); err != nil {
+		if err := outputRoot.WriteFile(patchPath, out.Bytes(), 0644); err != nil {
 			return err
 		}
 	}

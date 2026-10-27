@@ -78,7 +78,7 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 	case purl.TypeGithub:
 		return githubPURL(p.Name, p.Version)
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeFlatpak, purl.TypeApk, purl.TypeCOS, purl.TypeRPM,
-		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix:
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix, purl.TypeFreeBSD:
 		return ospurl.MakePackageURL(p.Name, p.Version, p.PURLType, p.Metadata)
 	case "windows":
 		return winpurl.MakePackageURL(p.Name, p.Version, p.Metadata)
@@ -111,8 +111,7 @@ func githubPURL(name, version string) *purl.PackageURL {
 func toEcosystem(p *Package) osvecosystem.Parsed {
 	switch p.PURLType {
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeApk, purl.TypeRPM,
-		purl.TypeSnap, purl.TypePacman, purl.TypePortage:
-
+		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeFreeBSD:
 		return osecosystem.MakeEcosystem(p.Metadata)
 	case purl.TypePyPi:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPyPI)
@@ -135,7 +134,7 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemRubyGems)
 	case purl.TypeNuget:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemNuGet)
-	case purl.TypeHaskell:
+	case purl.TypeHackage:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemHackage)
 	case purl.TypeHex:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemHex)
@@ -149,13 +148,15 @@ func toEcosystem(p *Package) osvecosystem.Parsed {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemPub)
 	case purl.TypeDHI:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages)
+	case purl.TypeBitnami:
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemBitnami)
 	case purl.TypeGithub:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions)
 	case purl.TypeSwift:
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemSwiftURL)
 	case purl.TypeBrew:
 		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
-	case "git":
+	case purl.TypeGit:
 		return osvecosystem.FromEcosystem(osvconstants.Ecosystem("GIT"))
 	}
 

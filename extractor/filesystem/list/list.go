@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/cpp/conanlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/packageconfig"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dart/pubspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/csproj"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/dotnet/depsjson"
@@ -48,8 +49,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gowork"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/vendormodules"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabalconf"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabalprojectfreeze"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
@@ -73,6 +76,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/ipythoninstall"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pipfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/poetrylock"
@@ -80,9 +84,12 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pyprojecttoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setup"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/setupcfg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/uvlock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/wheelegg"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/r/renvlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/r/rpkg"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ruby/gemspec"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargoauditable"
@@ -90,8 +97,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/rust/cargotoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/packageresolved"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/zig/buildzigzon"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
-	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	browserextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/browser/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/gitrepo"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
@@ -103,6 +111,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/freebsd"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
@@ -254,15 +263,17 @@ var (
 	// PythonSource extractors for Python.
 	PythonSource = InitMap{
 		// requirements extraction for environments with and without network access.
-		requirements.Name:  {protoCfg(requirements.New)},
-		setup.Name:         {protoCfg(setup.New)},
-		pipfilelock.Name:   {protoCfg(pipfilelock.New)},
-		pdmlock.Name:       {protoCfg(pdmlock.New)},
-		poetrylock.Name:    {protoCfg(poetrylock.New)},
-		pylock.Name:        {protoCfg(pylock.New)},
-		condameta.Name:     {protoCfg(condameta.New)},
-		uvlock.Name:        {protoCfg(uvlock.New)},
-		pyprojecttoml.Name: {protoCfg(pyprojecttoml.New)},
+		requirements.Name:   {protoCfg(requirements.New)},
+		setup.Name:          {protoCfg(setup.New)},
+		pipfilelock.Name:    {protoCfg(pipfilelock.New)},
+		pdmlock.Name:        {protoCfg(pdmlock.New)},
+		poetrylock.Name:     {protoCfg(poetrylock.New)},
+		pylock.Name:         {protoCfg(pylock.New)},
+		condameta.Name:      {protoCfg(condameta.New)},
+		ipythoninstall.Name: {protoCfg(ipythoninstall.New)},
+		uvlock.Name:         {protoCfg(uvlock.New)},
+		pyprojecttoml.Name:  {protoCfg(pyprojecttoml.New)},
+		setupcfg.Name:       {protoCfg(setupcfg.New)},
 	}
 	// PythonArtifact extractors for Python.
 	PythonArtifact = InitMap{
@@ -271,6 +282,7 @@ var (
 	// GoSource extractors for Go.
 	GoSource = InitMap{
 		gomod.Name:         {protoCfg(gomod.New)},
+		gowork.Name:        {protoCfg(gowork.New)},
 		vendormodules.Name: {protoCfg(vendormodules.New)},
 	}
 	// GoArtifact extractors for Go.
@@ -278,7 +290,10 @@ var (
 		gobinary.Name: {protoCfg(gobinary.New)},
 	}
 	// DartSource extractors for Dart.
-	DartSource = InitMap{pubspec.Name: {protoCfg(pubspec.New)}}
+	DartSource = InitMap{
+		packageconfig.Name: {protoCfg(packageconfig.New)},
+		pubspec.Name:       {protoCfg(pubspec.New)},
+	}
 	// ErlangSource extractors for Erlang.
 	ErlangSource = InitMap{mixlock.Name: {protoCfg(mixlock.New)}}
 	// GleamSource extractors for Gleam.
@@ -293,15 +308,26 @@ var (
 	ElixirSource = InitMap{elixir.Name: {protoCfg(elixir.New)}}
 	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
-		stacklock.Name: {protoCfg(stacklock.New)},
-		cabal.Name:     {protoCfg(cabal.New)},
+		stacklock.Name:          {protoCfg(stacklock.New)},
+		cabalprojectfreeze.Name: {protoCfg(cabalprojectfreeze.New)},
+	}
+	// HaskellArtifact extractors for Haskell.
+	HaskellArtifact = InitMap{
+		cabalconf.Name: {protoCfg(cabalconf.New)},
 	}
 	// RSource extractors for R source extractors
-	RSource = InitMap{renvlock.Name: {protoCfg(renvlock.New)}}
+	RSource = InitMap{
+		renvlock.Name: {protoCfg(renvlock.New)},
+		rpkg.Name:     {protoCfg(rpkg.New)},
+	}
 	// RubySource extractors for Ruby.
 	RubySource = InitMap{
 		gemspec.Name:     {protoCfg(gemspec.New)},
 		gemfilelock.Name: {protoCfg(gemfilelock.New)},
+	}
+	// RubyArtifact extractors for Ruby.
+	RubyArtifact = InitMap{
+		gem.Name: {protoCfg(gem.New)},
 	}
 	// RustSource extractors for Rust.
 	RustSource = InitMap{
@@ -351,6 +377,11 @@ var (
 		podfilelock.Name:     {protoCfg(podfilelock.New)},
 	}
 
+	// ZigSource extractors for Zig Package Source extractors.
+	ZigSource = InitMap{buildzigzon.Name: {protoCfg(buildzigzon.NewWithDeps)}}
+	// ZigArtifact extractors for Zig Package Artifacts
+	ZigArtifact = InitMap{buildzigzon.Name: {protoCfg(buildzigzon.New)}}
+
 	// Containers extractors.
 	Containers = InitMap{
 		k8simage.Name:           {protoCfg(k8simage.New)},
@@ -378,6 +409,7 @@ var (
 		portage.Name:    {protoCfg(portage.New)},
 		flatpak.Name:    {protoCfg(flatpak.New)},
 		spack.Name:      {protoCfg(spack.New)},
+		freebsd.Name:    {protoCfg(freebsd.New)},
 		homebrew.Name:   {protoCfg(homebrew.New)},
 		macapps.Name:    {protoCfg(macapps.New)},
 		macports.Name:   {protoCfg(macports.New)},
@@ -502,10 +534,10 @@ var (
 
 	// Misc artifact extractors.
 	Misc = InitMap{
-		vscodeextensions.Name: {protoCfg(vscodeextensions.New)},
-		wordpressplugins.Name: {protoCfg(wordpressplugins.New)},
-		chromeextensions.Name: {protoCfg(chromeextensions.New)},
-		netscaler.Name:        {protoCfg(netscaler.New)},
+		vscodeextensions.Name:  {protoCfg(vscodeextensions.New)},
+		wordpressplugins.Name:  {protoCfg(wordpressplugins.New)},
+		browserextensions.Name: {protoCfg(browserextensions.New)},
+		netscaler.Name:         {protoCfg(netscaler.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
@@ -562,6 +594,7 @@ var (
 		MiscSource,
 		CPANSource,
 		Bazel,
+		ZigSource,
 	)
 
 	// Artifact extractors find packages on built systems (e.g. parsing
@@ -581,6 +614,9 @@ var (
 		Secrets,
 		FFA,
 		JuliaArtifact,
+		RubyArtifact,
+		HaskellArtifact,
+		ZigArtifact,
 	)
 
 	// Default extractors that are recommended to be enabled.
@@ -613,9 +649,9 @@ var (
 		"nim":        vals(NimSource),
 		"ocaml":      vals(OcamlSource),
 		"elixir":     vals(ElixirSource),
-		"haskell":    vals(HaskellSource),
+		"haskell":    vals(concat(HaskellSource, HaskellArtifact)),
 		"r":          vals(RSource),
-		"ruby":       vals(RubySource),
+		"ruby":       vals(concat(RubySource, RubyArtifact)),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),
 		"php":        vals(PHPSource),
 		"rust":       vals(concat(RustSource, RustArtifact)),
@@ -623,6 +659,7 @@ var (
 		"swift":      vals(SwiftSource),
 		"perl":       vals(CPANSource),
 		"bazel":      vals(Bazel),
+		"zig":        vals(ZigSource),
 
 		"sbom":       vals(SBOM),
 		"os":         vals(OS),
