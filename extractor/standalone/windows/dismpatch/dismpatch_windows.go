@@ -53,7 +53,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract retrieves the patch level from the DISM command line tool.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	opener := registry.NewLiveOpener()
 	reg, err := opener.Open()
 	if err != nil {

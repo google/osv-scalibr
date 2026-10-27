@@ -83,7 +83,7 @@ func DepGroupToProto(dgm *DepGroupMetadata) *pb.DepGroupMetadata {
 }
 
 // IsProtoable marks the struct as a metadata type.
-func (dgm *DepGroupMetadata) IsProtoable() {}
+func (dgm DepGroupMetadata) IsProtoable() {}
 
 // DepGroupToStruct converts the DepGroupMetadata proto to a DepGroupMetadata struct.
 func DepGroupToStruct(m *pb.DepGroupMetadata) *DepGroupMetadata {

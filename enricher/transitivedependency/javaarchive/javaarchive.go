@@ -39,7 +39,7 @@ type Enricher struct {
 }
 
 // Name returns the name of the enricher.
-func (e *Enricher) Name() string {
+func (e Enricher) Name() string {
 	return Name
 }
 

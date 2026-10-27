@@ -58,7 +58,7 @@ var (
 )
 
 // Annotate adds annotations to language packages that have already been found in RPM OS packages.
-func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	locationToPKGs := osduplicate.BuildLocationToPKGsMap(results, input.ScanRoot)
 
 	mainPackages, err := extractMainPackages(ctx, input.ScanRoot)
@@ -90,7 +90,7 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 	return errors.Join(errs...)
 }
 
-func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs.ScanRoot, dbPath string, mainPackages *mainOSPackages, locationToPKGs map[string][]*extractor.Package) error {
+func (a Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs.ScanRoot, dbPath string, mainPackages *mainOSPackages, locationToPKGs map[string][]*extractor.Package) error {
 	realDBPath, err := scalibrfs.GetRealPath(root, dbPath, nil)
 	if err != nil {
 		return fmt.Errorf("GetRealPath(%v, %v): %w", root, dbPath, err)

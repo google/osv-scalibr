@@ -43,23 +43,23 @@ func New(_ *cpb.PluginConfig) (enricher.Enricher, error) {
 }
 
 // Name of the base image attribution enricher.
-func (*Enricher) Name() string { return Name }
+func (Enricher) Name() string { return Name }
 
 // Version of the base image attribution enricher.
-func (*Enricher) Version() int { return 0 }
+func (Enricher) Version() int { return 0 }
 
 // Requirements of the base image attribution enricher.
-func (*Enricher) Requirements() *plugin.Capabilities {
+func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }
 
 // RequiredPlugins returns a list of Plugins that need to be enabled for this Enricher to work.
-func (*Enricher) RequiredPlugins() []string {
+func (Enricher) RequiredPlugins() []string {
 	return []string{unknownbinariesextr.Name, baseimage.Name}
 }
 
 // Enrich filters packages from unknown binaries extractor that can be attributed to a base image.
-func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	for _, pkg := range inv.Packages {
 		// Packages that are not extracted by unknown binaries extractor should be excluded
 		if !slices.Contains(pkg.Plugins, unknownbinariesextr.Name) {

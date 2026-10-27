@@ -87,7 +87,7 @@ func (Enricher) Requirements() *plugin.Capabilities {
 func (Enricher) RequiredPlugins() []string { return []string{} }
 
 // Enrich augments Heroku Platform Keys with expiration metadata obtained from the API.
-func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	for _, s := range inv.Secrets {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -119,7 +119,7 @@ type accessTokenResponse struct {
 	Token     string `json:"token"`
 }
 
-func (e *Enricher) fetchExpiration(ctx context.Context, bearer string) (*herokuplatformkey.Metadata, error) {
+func (e Enricher) fetchExpiration(ctx context.Context, bearer string) (*herokuplatformkey.Metadata, error) {
 	url := e.baseURL + "/oauth/authorizations"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

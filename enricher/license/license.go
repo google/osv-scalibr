@@ -94,7 +94,7 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 // Enrich adds license data to all the packages using deps.dev
-func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	queries := make([]*depsdevpb.GetVersionRequest, len(inv.Packages))
 	for i, pkg := range inv.Packages {
 		if err := ctx.Err(); err != nil {
@@ -136,7 +136,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 // query. It makes these requests concurrently, sharing the single HTTP/2
 // connection. The order in which the requests are specified should correspond
 // to the order of licenses returned by this function.
-func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.GetVersionRequest) ([][]string, error) {
+func (e Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.GetVersionRequest) ([][]string, error) {
 	licenses := make([][]string, len(queries))
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(maxConcurrentRequests)

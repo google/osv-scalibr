@@ -119,7 +119,7 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 // Enrich checks for vulnerabilities in the inventory packages using zip files exported by osv.dev
-func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	if e.httpClient == nil {
 		return fmt.Errorf("client not configured for %s", Name)
 	}

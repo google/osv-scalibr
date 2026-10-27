@@ -61,7 +61,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract the DISM patch level on Windows.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	reg, err := e.Opener.Open()
 	if err != nil {
 		return inventory.Inventory{}, err

@@ -124,7 +124,7 @@ func (Enricher) RequiredPlugins() []string {
 }
 
 // Enrich queries the OSV.dev API to find vulnerabilities in the inventory packages
-func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	pkgs := make([]*extractor.Package, 0, len(inv.Packages))
 	queries := make([]*osvapipb.Query, 0, len(inv.Packages))
 	for _, pkg := range inv.Packages {
@@ -213,7 +213,7 @@ func dedupPackageVulns(vulns []*inventory.PackageVuln) []*inventory.PackageVuln 
 	return slices.Collect(maps.Values(dedupVulns))
 }
 
-func (e *Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []string) ([]*osvpb.Vulnerability, error) {
+func (e Enricher) makeVulnerabilitiesRequest(ctx context.Context, vulnIDs []string) ([]*osvpb.Vulnerability, error) {
 	vulnerabilities := make([]*osvpb.Vulnerability, len(vulnIDs))
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(maxConcurrentRequests)

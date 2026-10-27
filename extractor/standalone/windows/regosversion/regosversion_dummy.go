@@ -49,6 +49,6 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract is a no-op for non-Windows platforms.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	return inventory.Inventory{}, errors.New("only supported on Windows")
 }
