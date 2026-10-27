@@ -61,13 +61,13 @@ type Enricher struct {
 }
 
 // Name of the enricher.
-func (*Enricher) Name() string { return Name }
+func (Enricher) Name() string { return Name }
 
 // Version of enricher.
-func (*Enricher) Version() int { return 0 }
+func (Enricher) Version() int { return 0 }
 
 // Requirements of rust reachability enricher.
-func (*Enricher) Requirements() *plugin.Capabilities {
+func (Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		DirectFS:      true,
 		Network:       plugin.NetworkOnline,
@@ -81,7 +81,7 @@ func (*Enricher) Requirements() *plugin.Capabilities {
 }
 
 // RequiredPlugins returns a list of Plugins that need to be enabled for this Enricher to work.
-func (*Enricher) RequiredPlugins() []string {
+func (Enricher) RequiredPlugins() []string {
 	return []string{osvdev.Name}
 }
 
@@ -96,7 +96,7 @@ func NewWithClient(c Client) enricher.Enricher {
 }
 
 // Enrich enriches the inventory with reachability information.
-func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	if !e.client.RustToolchainAvailable(ctx) {
 		return ErrNoRustToolchain
 	}

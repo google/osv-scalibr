@@ -49,17 +49,17 @@ type Enricher struct {
 }
 
 // Name returns the name of the enricher.
-func (e *Enricher) Name() string {
+func (e Enricher) Name() string {
 	return Name
 }
 
 // Version returns the version of the enricher.
-func (e *Enricher) Version() int {
+func (e Enricher) Version() int {
 	return 0
 }
 
 // Requirements returns the requirements of the enricher.
-func (e *Enricher) Requirements() *plugin.Capabilities {
+func (e Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network:       plugin.NetworkAny,
 		DirectFS:      true,
@@ -68,12 +68,12 @@ func (e *Enricher) Requirements() *plugin.Capabilities {
 }
 
 // RequiredPlugins returns the names of the plugins required by this enricher.
-func (e *Enricher) RequiredPlugins() []string {
+func (e Enricher) RequiredPlugins() []string {
 	return []string{gomod.Name}
 }
 
 // Enrich runs govulncheck on the Go modules in the inventory.
-func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	if !e.client.GoToolchainAvailable(ctx) {
 		return ErrNoGoToolchain
 	}
@@ -121,7 +121,7 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 	return nil
 }
 
-func (e *Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string][]*internal.Finding) {
+func (e Enricher) addSignals(inv *inventory.Inventory, idToFindings map[string][]*internal.Finding) {
 	for _, pv := range inv.PackageVulns {
 		findings, exist := idToFindings[pv.Vulnerability.Id]
 

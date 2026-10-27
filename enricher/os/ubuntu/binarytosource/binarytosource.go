@@ -142,7 +142,7 @@ func (Enricher) RequiredPlugins() []string {
 // them, or if the request for their ecosystem fails. If multiple source package
 // names are returned for a binary package, additional package entries are
 // added to the inventory for each extra source package.
-func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	// Ecosystem -> binary package name -> packages to update.
 	toEnrich := make(map[string]map[string][]*extractor.Package)
 	for _, pkg := range inv.Packages {
@@ -189,7 +189,7 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	return errors.Join(append(errs, context.Cause(queryCtx))...)
 }
 
-func (e *Enricher) enrichEcosystem(ctx context.Context, ecosystem string, binaryToPackages map[string][]*extractor.Package, inv *inventory.Inventory) error {
+func (e Enricher) enrichEcosystem(ctx context.Context, ecosystem string, binaryToPackages map[string][]*extractor.Package, inv *inventory.Inventory) error {
 	binaryNames := slices.Sorted(maps.Keys(binaryToPackages))
 	resp, err := e.client.ExperimentalQueryUbuntuPackageMapping(ctx, &osvapipb.UbuntuPackageMappingParameters{
 		Ecosystem:   ecosystem,

@@ -98,7 +98,7 @@ func (DefaultLogger) Infof(format string, args ...any) {
 }
 
 // Debugf is the formatted debug logging function.
-func (l *DefaultLogger) Debugf(format string, args ...any) {
+func (l DefaultLogger) Debugf(format string, args ...any) {
 	if l.Verbose {
 		log.Printf(format, args...)
 	}
@@ -120,7 +120,7 @@ func (DefaultLogger) Info(args ...any) {
 }
 
 // Debug is the debug logging function.
-func (l *DefaultLogger) Debug(args ...any) {
+func (l DefaultLogger) Debug(args ...any) {
 	if l.Verbose {
 		log.Println(args...)
 	}

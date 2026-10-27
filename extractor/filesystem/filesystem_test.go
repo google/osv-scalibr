@@ -1164,9 +1164,9 @@ type fakeDir struct {
 	dirs []fs.DirEntry
 }
 
-func (fakeDir) Stat() (fs.FileInfo, error) { return &fakeFileInfo{dir: true}, nil }
-func (fakeDir) Read([]byte) (int, error)   { return 0, errors.New("failed to read") }
-func (fakeDir) Close() error               { return nil }
+func (*fakeDir) Stat() (fs.FileInfo, error) { return &fakeFileInfo{dir: true}, nil }
+func (*fakeDir) Read([]byte) (int, error)   { return 0, errors.New("failed to read") }
+func (*fakeDir) Close() error               { return nil }
 func (f *fakeDir) ReadDir(n int) ([]fs.DirEntry, error) {
 	if n <= 0 {
 		t := f.dirs
@@ -1186,14 +1186,14 @@ type fakeFileInfo struct{ dir bool }
 
 func (fakeFileInfo) Name() string { return "/" }
 func (fakeFileInfo) Size() int64  { return 1 }
-func (i *fakeFileInfo) Mode() fs.FileMode {
+func (i fakeFileInfo) Mode() fs.FileMode {
 	if i.dir {
 		return fs.ModeDir + 0777
 	}
 	return 0777
 }
 func (fakeFileInfo) ModTime() time.Time { return time.Now() }
-func (i *fakeFileInfo) IsDir() bool     { return i.dir }
+func (i fakeFileInfo) IsDir() bool      { return i.dir }
 func (fakeFileInfo) Sys() any           { return nil }
 
 type fakeDirEntry struct{}

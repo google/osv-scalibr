@@ -59,7 +59,7 @@ func (Annotator) Requirements() *plugin.Capabilities {
 }
 
 // Annotate adds annotations for DPKG packages that don't contain any executables.
-func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	errs := []error{}
 
 	// early exit if the dpkgInfoDirPath does not exists
