@@ -517,15 +517,11 @@ message JavascriptPackageJsonConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
-  // If set, extract additional packages for each declared dependency.
-  bool include_dependencies = 2;
-  reserved 3;
-  // Specifies whether to extract devDependencies.
-  bool include_dev_dependencies = 4;
-  // Specifies whether to extract optionalDependencies.
-  bool include_optional_dependencies = 5;
-  // Specifies whether to extract peerDependencies.
-  bool include_peer_dependencies = 6;
+  reserved 2, 3;
+  reserved "include_dependencies";
+  // If set, also extract devDependencies, optionalDependencies, and peerDependencies.
+  // Dependencies declared in dependencies are always extracted.
+  bool include_non_default_dependencies = 4;
 }
 
 message JavascriptPackageLockJsonConfig {

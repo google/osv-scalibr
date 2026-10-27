@@ -641,16 +641,13 @@ func TestGetScanConfig_PluginConfig(t *testing.T) {
 		{
 			desc: "javascript_package_json_dependency_config",
 			cfgFlags: []string{
-				"javascript_package_json:{include_dependencies:true include_dev_dependencies:true include_optional_dependencies:true include_peer_dependencies:true}",
+				"javascript_package_json:{include_non_default_dependencies:true}",
 			},
 			wantCFG: &config.PluginConfig{
 				ProtoConfig: &cpb.PluginConfig{
 					PluginSpecific: []*cpb.PluginSpecificConfig{
 						{Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
-							IncludeDependencies:         true,
-							IncludeDevDependencies:      true,
-							IncludeOptionalDependencies: true,
-							IncludePeerDependencies:     true,
+							IncludeNonDefaultDependencies: true,
 						}}},
 					},
 				},

@@ -141,15 +141,12 @@ func TestFileRequired(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	tests := []struct {
-		name             string
-		path             string
-		includeDeps      bool
-		includeDevDeps   bool
-		includeOptDeps   bool
-		includePeerDeps  bool
-		wantPackages     []*extractor.Package
-		wantErr          error
-		wantResultMetric stats.FileExtractedResult
+		name                  string
+		path                  string
+		includeNonDefaultDeps bool
+		wantPackages          []*extractor.Package
+		wantErr               error
+		wantResultMetric      stats.FileExtractedResult
 	}{
 		{
 			name: "top_level_package.json",
@@ -175,6 +172,11 @@ func TestExtract(t *testing.T) {
 						},
 					},
 				},
+				dependencyPackage("cookie-parser", "1.4.4", "testdata/package.json", 14),
+				dependencyPackage("debug", "2.6.9", "testdata/package.json", 15),
+				dependencyPackage("express", "4.16.1", "testdata/package.json", 16),
+				dependencyPackage("http-errors", "1.6.3", "testdata/package.json", 17),
+				dependencyPackage("morgan", "1.9.1", "testdata/package.json", 18),
 			},
 		},
 		{
@@ -204,6 +206,8 @@ func TestExtract(t *testing.T) {
 						},
 					},
 				},
+				dependencyPackage("mime-types", "2.1.34", "testdata/deps/accepts/package.json", 12),
+				dependencyPackage("negotiator", "0.6.3", "testdata/deps/accepts/package.json", 13),
 			},
 		},
 		{
@@ -229,6 +233,8 @@ func TestExtract(t *testing.T) {
 						},
 					},
 				},
+				dependencyPackage("mime-types", "2.1.34", "testdata/deps/no-person-name/package.json", 12),
+				dependencyPackage("negotiator", "0.6.3", "testdata/deps/no-person-name/package.json", 13),
 			},
 		},
 		{
@@ -311,6 +317,7 @@ func TestExtract(t *testing.T) {
 						},
 					},
 				},
+				dependencyPackage("@fastify/busboy", "2.0.0", "testdata/undici-package.json", 145),
 			},
 		},
 		{
@@ -332,28 +339,8 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name: "package_with_dependencies_disabled_by_default",
+			name: "package_with_dependencies_enabled_by_default",
 			path: "testdata/package-with-deps.json",
-			wantPackages: []*extractor.Package{{
-				Name:     "package-with-deps",
-				Version:  "1.2.3",
-				PURLType: purl.TypeNPM,
-				Location: extractor.LocationFromPathAndLine("testdata/package-with-deps.json", 2),
-				Metadata: &metadata.JavascriptPackageJSONMetadata{Dependencies: map[string]string{
-					"dep1": "1.0.0",
-					"dep2": ">2.0.0",
-					"dep3": "~3.1.0",
-					"dep4": "^0.4.2",
-					"dep5": "5.x",
-					"dep6": "invalid",
-					"dep7": ">=1.0.0 <2.0.0",
-				}},
-			}},
-		},
-		{
-			name:        "package_with_dependencies",
-			path:        "testdata/package-with-deps.json",
-			includeDeps: true,
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "package-with-deps",
@@ -418,12 +405,9 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name:            "package_with_all_dependency_groups",
-			path:            "testdata/package-with-all-deps.json",
-			includeDeps:     true,
-			includeDevDeps:  true,
-			includeOptDeps:  true,
-			includePeerDeps: true,
+			name:                  "package_with_all_dependency_groups",
+			path:                  "testdata/package-with-all-deps.json",
+			includeNonDefaultDeps: true,
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "package-with-all-deps",
@@ -479,9 +463,8 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			name:           "package_with_dev_dependencies_only",
-			path:           "testdata/package-with-all-deps.json",
-			includeDevDeps: true,
+			name: "package_with_non_default_dependencies_disabled_by_default",
+			path: "testdata/package-with-all-deps.json",
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "package-with-all-deps",
@@ -493,25 +476,18 @@ func TestExtract(t *testing.T) {
 					},
 				},
 				{
-					Name:     "dev-only",
-					Version:  "3.1.0",
+					Name:     "prod-only",
+					Version:  "2.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 9),
-					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 6),
+					Metadata: &osv.DepGroupMetadata{},
 				},
 				{
 					Name:     "prod-shared",
 					Version:  "1.0.0",
 					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 11),
-					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
-				},
-				{
-					Name:     "shared-non-prod",
-					Version:  "4.0.0",
-					PURLType: purl.TypeNPM,
-					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 10),
-					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
+					Location: extractor.LocationFromPathAndLine("testdata/package-with-all-deps.json", 5),
+					Metadata: &osv.DepGroupMetadata{},
 				},
 			},
 		},
@@ -519,9 +495,8 @@ func TestExtract(t *testing.T) {
 			// Verifies that when a dependency name also exists in devDependencies,
 			// the line finder correctly resolves the line number of the dependency (line 8)
 			// under the "dependencies" block, rather than the one under "devDependencies" (line 5).
-			name:        "duplicate_keys_in_dev_deps",
-			path:        "testdata/duplicate-keys.json",
-			includeDeps: true,
+			name: "duplicate_keys_in_dev_deps",
+			path: "testdata/duplicate-keys.json",
 			wantPackages: []*extractor.Package{
 				{
 					Name:     "duplicate-keys",
@@ -581,10 +556,7 @@ func TestExtract(t *testing.T) {
 				PluginSpecific: []*cpb.PluginSpecificConfig{
 					{Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{
 						JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
-							IncludeDependencies:         tt.includeDeps,
-							IncludeDevDependencies:      tt.includeDevDeps,
-							IncludeOptionalDependencies: tt.includeOptDeps,
-							IncludePeerDependencies:     tt.includePeerDeps,
+							IncludeNonDefaultDependencies: tt.includeNonDefaultDeps,
 						},
 					}},
 				},
@@ -622,5 +594,15 @@ func TestExtract(t *testing.T) {
 				t.Errorf("Extract(%s) recorded file size %v, want file size %v", tt.path, gotFileSizeMetric, info.Size())
 			}
 		})
+	}
+}
+
+func dependencyPackage(name, version, path string, line int) *extractor.Package {
+	return &extractor.Package{
+		Name:     name,
+		Version:  version,
+		PURLType: purl.TypeNPM,
+		Location: extractor.LocationFromPathAndLine(path, line),
+		Metadata: &osv.DepGroupMetadata{},
 	}
 }

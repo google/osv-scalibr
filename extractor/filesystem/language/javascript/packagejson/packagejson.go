@@ -75,9 +75,9 @@ type dependencyDetails struct {
 
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	Stats            stats.Collector
-	maxFileSizeBytes int64
-	config           *cpb.JavascriptPackageJsonConfig
+	Stats                         stats.Collector
+	maxFileSizeBytes              int64
+	includeNonDefaultDependencies bool
 }
 
 // New returns a package.json extractor.
@@ -97,8 +97,8 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	}
 
 	return &Extractor{
-		maxFileSizeBytes: maxFileSizeBytes,
-		config:           specific,
+		maxFileSizeBytes:              maxFileSizeBytes,
+		includeNonDefaultDependencies: specific.GetIncludeNonDefaultDependencies(),
 	}, nil
 }
 
@@ -227,16 +227,10 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 	})
 
 	depPkgs := map[string]dependencyDetails{}
-	if e.config.GetIncludeDependencies() {
-		addDependencyPackages(depPkgs, path, finder, "dependencies", p.Dependencies, nil)
-	}
-	if e.config.GetIncludeDevDependencies() {
+	addDependencyPackages(depPkgs, path, finder, "dependencies", p.Dependencies, nil)
+	if e.includeNonDefaultDependencies {
 		addDependencyPackages(depPkgs, path, finder, "devDependencies", p.DevDependencies, []string{"dev"})
-	}
-	if e.config.GetIncludeOptionalDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "optionalDependencies", p.OptionalDependencies, []string{"optional"})
-	}
-	if e.config.GetIncludePeerDependencies() {
 		addDependencyPackages(depPkgs, path, finder, "peerDependencies", p.PeerDependencies, []string{"peer"})
 	}
 
