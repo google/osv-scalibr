@@ -16,6 +16,7 @@
 package packagejson
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -69,22 +70,16 @@ type packageJSON struct {
 type people []*metadata.Person
 
 func (p *people) UnmarshalJSON(b []byte) error {
-	var person string
-	if err := json.Unmarshal(b, &person); err == nil {
+	b = bytes.TrimSpace(b)
+	if len(b) > 0 && b[0] == '"' {
 		var parsed metadata.Person
-		if err := json.Unmarshal(b, &parsed); err != nil {
+		if err := parsed.UnmarshalJSON(b); err != nil {
 			return err
 		}
 		*p = people{&parsed}
 		return nil
 	}
-
-	var parsed []*metadata.Person
-	if err := json.Unmarshal(b, &parsed); err != nil {
-		return err
-	}
-	*p = parsed
-	return nil
+	return json.Unmarshal(b, (*[]*metadata.Person)(p))
 }
 
 // Extractor extracts javascript packages from package.json files.
