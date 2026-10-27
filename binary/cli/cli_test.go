@@ -314,6 +314,19 @@ func TestGetScanConfig_ScanRoots(t *testing.T) {
 				"windows": nil,
 			},
 		},
+		{
+			desc: "Scan root is null if remote image is provided",
+			flags: map[string]*cli.Flags{
+				"darwin":  {RemoteImage: "nginx:latest"},
+				"linux":   {RemoteImage: "nginx:latest"},
+				"windows": {RemoteImage: "nginx:latest"},
+			},
+			wantScanRoots: map[string][]string{
+				"darwin":  nil,
+				"linux":   nil,
+				"windows": nil,
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			wantScanRoots, ok := tc.wantScanRoots[runtime.GOOS]
@@ -1078,6 +1091,32 @@ func TestGetScanConfig_ExtractorOverride(t *testing.T) {
 				if tt.wantNumExtractors == 1 && extractors[0].Name() != tt.wantExtractorName {
 					t.Errorf("ExtractorOverride() returned extractor %q, want %q", extractors[0].Name(), tt.wantExtractorName)
 				}
+			}
+		})
+	}
+}
+
+func TestRemoteImageOptions(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		flags   *cli.Flags
+		wantLen int
+	}{
+		{
+			name:    "default_keychain_only",
+			flags:   &cli.Flags{RemoteImage: "alpine:latest"},
+			wantLen: 1,
+		},
+		{
+			name:    "with_image_platform",
+			flags:   &cli.Flags{RemoteImage: "alpine:latest", ImagePlatform: "linux/amd64"},
+			wantLen: 2,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := tc.flags.RemoteImageOptions()
+			if len(opts) != tc.wantLen {
+				t.Errorf("RemoteImageOptions() returned %d options, want %d", len(opts), tc.wantLen)
 			}
 		})
 	}

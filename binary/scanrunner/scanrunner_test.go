@@ -218,6 +218,22 @@ func TestRunScan(t *testing.T) {
 			wantFindingCount:  0,
 		},
 		{
+			desc: "Failure to pull remote image",
+			setupFunc: func(t *testing.T) string {
+				t.Helper()
+				return t.TempDir()
+			},
+			flags: &cli.Flags{
+				RemoteImage:     "https://invalid@@digest",
+				ExtractorsToRun: []string{"go/gomod"},
+			},
+			wantExit:          1,
+			wantScanStatus:    spb.ScanStatus_FAILED,
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
+			wantPackagesCount: 0,
+			wantFindingCount:  0,
+		},
+		{
 			desc:              "Unsuccessful plugin run",
 			setupFunc:         createFailingDetectorTestFiles,
 			flags:             &cli.Flags{DetectorsToRun: []string{"cis"}},
@@ -243,7 +259,7 @@ func TestRunScan(t *testing.T) {
 
 			if tc.flags.ImageTarball != "" {
 				tc.flags.ImageTarball = filepath.Join(dir, tc.flags.ImageTarball)
-			} else {
+			} else if tc.flags.RemoteImage == "" {
 				tc.flags.Root = dir
 			}
 
