@@ -61,11 +61,21 @@ type packageJSON struct {
 	Contributes *struct {
 	} `json:"contributes"`
 	// Not an NPM field but present for Unity package files.
-	Unity                string            `json:"unity"`
-	Dependencies         map[string]string `json:"dependencies"`
-	DevDependencies      map[string]string `json:"devDependencies"`
-	OptionalDependencies map[string]string `json:"optionalDependencies"`
-	PeerDependencies     map[string]string `json:"peerDependencies"`
+	Unity        string            `json:"unity"`
+	Dependencies []dependencyGroup `json:"-"`
+}
+
+type dependencyGroup struct {
+	// Name is empty for the default (production) group.
+	Name         string
+	Requirements map[string]string
+}
+
+func (g dependencyGroup) jsonField() string {
+	if g.Name == "" {
+		return "dependencies"
+	}
+	return g.Name + "Dependencies"
 }
 
 type dependencyDetails struct {
@@ -212,6 +222,13 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 
 	rootLoc := extractor.LocationFromPath(path)
 	rootLoc.Descriptor.File.LineNumber = nameLine
+	var productionRequirements map[string]string
+	for _, group := range p.Dependencies {
+		if group.Name == "" {
+			productionRequirements = group.Requirements
+			break
+		}
+	}
 
 	pkgs = append(pkgs, &extractor.Package{
 		Name:     p.Name,
@@ -222,16 +239,16 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 			Author:       p.Author,
 			Maintainers:  removeEmptyPersons(p.Maintainers),
 			Contributors: removeEmptyPersons(p.Contributors),
-			Dependencies: p.Dependencies,
+			Dependencies: productionRequirements,
 		},
 	})
 
 	depPkgs := map[string]dependencyDetails{}
-	addDependencyPackages(depPkgs, path, finder, "dependencies", p.Dependencies, nil)
-	if e.includeNonDefaultDependencies {
-		addDependencyPackages(depPkgs, path, finder, "devDependencies", p.DevDependencies, []string{"dev"})
-		addDependencyPackages(depPkgs, path, finder, "optionalDependencies", p.OptionalDependencies, []string{"optional"})
-		addDependencyPackages(depPkgs, path, finder, "peerDependencies", p.PeerDependencies, []string{"peer"})
+	for _, group := range p.Dependencies {
+		if group.Name != "" && !e.includeNonDefaultDependencies {
+			continue
+		}
+		addDependencyPackages(depPkgs, path, finder, group)
 	}
 
 	for _, dep := range depPkgs {
@@ -242,15 +259,44 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 	return pkgs, nil
 }
 
+// UnmarshalJSON normalizes npm dependency sections into dependency groups.
+func (p *packageJSON) UnmarshalJSON(data []byte) error {
+	// Avoid recursively calling UnmarshalJSON when decoding the other fields.
+	type plainPackageJSON packageJSON
+	var decoded plainPackageJSON
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	for _, name := range []string{"", "dev", "optional", "peer"} {
+		group := dependencyGroup{Name: name}
+		raw, ok := fields[group.jsonField()]
+		if !ok {
+			continue
+		}
+		if err := json.Unmarshal(raw, &group.Requirements); err != nil {
+			return fmt.Errorf("invalid dependency section %q: %w", group.jsonField(), err)
+		}
+		decoded.Dependencies = append(decoded.Dependencies, group)
+	}
+	*p = packageJSON(decoded)
+	return nil
+}
+
 // addDependencyPackages parses dependency entries and adds them to pkgs.
 // pkgs accumulates packages keyed by "name@version" so duplicate entries across
 // dependency sections can be merged. path is the package.json path used for logs
-// and locations. finder maps JSON fields back to line numbers. field is the JSON
-// dependency section, such as "dependencies" or "devDependencies". deps maps
-// package names to version constraints from that section. depGroups is the OSV
-// dependency-group metadata to apply, with nil/empty meaning production.
-func addDependencyPackages(pkgs map[string]dependencyDetails, path string, finder *linefinder.JSONLineFinder, field string, deps map[string]string, depGroups []string) {
-	for name, constraint := range deps {
+// and locations. finder maps JSON fields back to line numbers. group contains
+// the requirements and dependency-group metadata for one dependency section.
+func addDependencyPackages(pkgs map[string]dependencyDetails, path string, finder *linefinder.JSONLineFinder, group dependencyGroup) {
+	var depGroups []string
+	if group.Name != "" {
+		depGroups = []string{group.Name}
+	}
+	for name, constraint := range group.Requirements {
 		c, err := semver.NPM.ParseConstraint(constraint)
 		if err != nil {
 			log.Debugf("failed to parse NPM version constraint %s for dependency %s in %s: %v", constraint, name, path, err)
@@ -262,7 +308,7 @@ func addDependencyPackages(pkgs map[string]dependencyDetails, path string, finde
 			continue
 		}
 
-		lineNum := finder.LineOf(field + "." + gjson.Escape(name))
+		lineNum := finder.LineOf(group.jsonField() + "." + gjson.Escape(name))
 		// Need to use Canon() to rebuild the string with the changes from CalculateMinVersion.
 		// Ignoring the build value, which isn't relevant for version comparison.
 		// TODO(b/444684673): Include the build value in the version string. Currently deps.dev

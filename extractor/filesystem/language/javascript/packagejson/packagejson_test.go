@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -604,5 +605,89 @@ func dependencyPackage(name, version, path string, line int) *extractor.Package 
 		PURLType: purl.TypeNPM,
 		Location: extractor.LocationFromPathAndLine(path, line),
 		Metadata: &osv.DepGroupMetadata{},
+	}
+}
+
+func TestExtractDependencyGroups(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		input        string
+		requirements map[string]string
+		dependencies []*extractor.Package
+		wantErr      bool
+	}{
+		{
+			name:         "all_groups",
+			input:        `{"name":"example","version":"1.0.0","peerDependencies":{"peer-pkg":"4.0.0"},"optionalDependencies":{"optional-pkg":"3.0.0"},"devDependencies":{"dev-pkg":"2.0.0"},"dependencies":{"prod-pkg":"1.0.0"}}`,
+			requirements: map[string]string{"prod-pkg": "1.0.0"},
+			dependencies: []*extractor.Package{
+				dependencyPackage("prod-pkg", "1.0.0", "package.json", 1),
+				{
+					Name: "dev-pkg", Version: "2.0.0", PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("package.json", 1),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"dev"}},
+				},
+				{
+					Name: "optional-pkg", Version: "3.0.0", PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("package.json", 1),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"optional"}},
+				},
+				{
+					Name: "peer-pkg", Version: "4.0.0", PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("package.json", 1),
+					Metadata: &osv.DepGroupMetadata{DepGroupVals: []string{"peer"}},
+				},
+			},
+		},
+		{
+			name:  "missing_groups",
+			input: `{"name":"example","version":"1.0.0"}`,
+		},
+		{
+			name:  "null_group",
+			input: `{"name":"example","version":"1.0.0","dependencies":null}`,
+		},
+		{
+			name:    "invalid_section",
+			input:   `{"devDependencies":[]}`,
+			wantErr: true,
+		},
+		{
+			name:    "invalid_requirement",
+			input:   `{"dependencies":{"pkg":123}}`,
+			wantErr: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, err := packagejson.New(&cpb.PluginConfig{
+				PluginSpecific: []*cpb.PluginSpecificConfig{{
+					Config: &cpb.PluginSpecificConfig_JavascriptPackageJson{
+						JavascriptPackageJson: &cpb.JavascriptPackageJsonConfig{
+							IncludeNonDefaultDependencies: true,
+						},
+					},
+				}},
+			})
+			if err != nil {
+				t.Fatalf("packagejson.New: %v", err)
+			}
+			got, err := e.Extract(t.Context(), &filesystem.ScanInput{
+				Path: "package.json", Reader: strings.NewReader(tc.input),
+			})
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("Extract() error = %v, want error: %v", err, tc.wantErr)
+			}
+			if tc.wantErr {
+				return
+			}
+			want := inventory.Inventory{Packages: append([]*extractor.Package{{
+				Name: "example", Version: "1.0.0", PURLType: purl.TypeNPM,
+				Location: extractor.LocationFromPathAndLine("package.json", 1),
+				Metadata: &metadata.JavascriptPackageJSONMetadata{Dependencies: tc.requirements},
+			}}, tc.dependencies...)}
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(extracttest.PackageCmpLess), cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Extract() (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
