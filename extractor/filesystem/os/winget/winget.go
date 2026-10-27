@@ -93,7 +93,7 @@ type Package struct {
 }
 
 // Extract extracts packages from a Winget database file.
-func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	absPath, err := input.GetRealPath()
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
@@ -149,7 +149,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	return inventory.Inventory{Packages: extPackages}, nil
 }
 
-func (e *Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
+func (e Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
 	var tableName string
 	err := db.QueryRowContext(ctx, "SELECT name FROM sqlite_master WHERE type='table' AND name='manifest'").Scan(&tableName)
 	if err != nil {
@@ -161,7 +161,7 @@ func (e *Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package, error) {
+func (e Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package, error) {
 	query := `
 	SELECT
 		i.id as package_id,

@@ -111,19 +111,19 @@ func MustNew(t *testing.T, cfg *Config) *Enricher {
 }
 
 // Name returns the enricher's name.
-func (e *Enricher) Name() string { return e.name }
+func (e Enricher) Name() string { return e.name }
 
 // Version returns the enricher's version.
-func (e *Enricher) Version() int { return e.version }
+func (e Enricher) Version() int { return e.version }
 
 // Requirements about the scanning environment, e.g. "needs to have network access".
-func (e *Enricher) Requirements() *plugin.Capabilities { return e.capabilities }
+func (e Enricher) Requirements() *plugin.Capabilities { return e.capabilities }
 
 // RequiredPlugins returns a list of Plugins that need to be enabled for this Enricher to run.
-func (e *Enricher) RequiredPlugins() []string { return e.requiredPlugins }
+func (e Enricher) RequiredPlugins() []string { return e.requiredPlugins }
 
 // Enrich enriches the scan results with additional information.
-func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *inventory.Inventory) error {
 	key, err := Hash(input, inv)
 	if err != nil {
 		return err

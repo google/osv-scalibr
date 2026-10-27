@@ -49,22 +49,22 @@ type Token struct {
 }
 
 // Header returns a copy of the JWT header claims.
-func (t *Token) Header() map[string]any {
+func (t Token) Header() map[string]any {
 	return maps.Clone(t.header)
 }
 
 // Payload returns a copy of the JWT payload claims.
-func (t *Token) Payload() map[string]any {
+func (t Token) Payload() map[string]any {
 	return maps.Clone(t.payload)
 }
 
 // Signature returns the JWT signature.
-func (t *Token) Signature() string {
+func (t Token) Signature() string {
 	return t.signature
 }
 
 // Raw returns the JWT string.
-func (t *Token) Raw() string {
+func (t Token) Raw() string {
 	return t.raw
 }
 

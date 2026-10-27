@@ -67,7 +67,7 @@ func (e Extractor) Requirements() *plugin.Capabilities {
 }
 
 // Extract retrieves the patch level from the Windows registry.
-func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	reg, err := e.Opener.Open()
 	if err != nil {
 		return inventory.Inventory{}, err
@@ -103,7 +103,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 	return inventory.Inventory{Packages: pkgs}, nil
 }
 
-func (e *Extractor) handleKey(reg registry.Registry, registryPath, keyName string) (*extractor.Package, error) {
+func (e Extractor) handleKey(reg registry.Registry, registryPath, keyName string) (*extractor.Package, error) {
 	keyPath := fmt.Sprintf("%s\\%s", registryPath, keyName)
 	key, err := reg.OpenKey("HKLM", keyPath)
 	if err != nil {

@@ -113,7 +113,7 @@ type huggingfaceResponse struct {
 // Enrich validates all the Secrets from the Inventory using a Veles
 // ValidationEngine.
 // Each individual Secret maintains its own error in case the validation failed.
-func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	for _, s := range inv.Secrets {
 		if err := ctx.Err(); err != nil {
 			return err

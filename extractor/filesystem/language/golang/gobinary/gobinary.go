@@ -164,17 +164,17 @@ func (e Extractor) reportFileExtracted(path string, fileinfo fs.FileInfo, err er
 }
 
 // MaxFileSizeBytes returns the maximum size of a file that can be extracted.
-func (e *Extractor) MaxFileSizeBytes() int64 {
+func (e Extractor) MaxFileSizeBytes() int64 {
 	return e.maxFileSizeBytes
 }
 
 // VersionFromContent returns whether module version extraction
 // from binary content is enabled.
-func (e *Extractor) VersionFromContent() bool {
+func (e Extractor) VersionFromContent() bool {
 	return e.versionFromContent
 }
 
-func (e *Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) []*extractor.Package {
+func (e Extractor) extractPackagesFromBuildInfo(binfo *buildinfo.BuildInfo, filename string) []*extractor.Package {
 	res := []*extractor.Package{}
 
 	validatedGoVers, err := validateGoVersion(binfo.GoVersion)

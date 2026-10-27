@@ -77,7 +77,7 @@ func (Annotator) Requirements() *plugin.Capabilities {
 }
 
 // Annotate adds annotations to NPM packages from /node_modules/../package.json that are installed from the NPM repositories.
-func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	rootDirToPackages := MapNPMProjectRootsToPackages(results.Packages)
 	var errs []error
 	for rootDir, pkgs := range rootDirToPackages {
