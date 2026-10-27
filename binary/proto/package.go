@@ -16,10 +16,9 @@ package proto
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/google/osv-scalibr/binary/proto/metadata"
-	"github.com/google/osv-scalibr/converter"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/inventory/vex"
@@ -43,8 +42,6 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 	if pkg == nil {
 		return nil, nil
 	}
-
-	p := converter.ToPURL(pkg)
 
 	var exps []*spb.PackageExploitabilitySignal
 	for _, exp := range pkg.ExploitabilitySignals {
@@ -74,7 +71,7 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 	for parent := range pkg.ParentIDs {
 		parentIDs = append(parentIDs, parent)
 	}
-	sort.Strings(parentIDs)
+	slices.Sort(parentIDs)
 
 	packageProto := &spb.Package{
 		Id:         id,
@@ -82,9 +79,10 @@ func PackageToProto(pkg *extractor.Package) (*spb.Package, error) {
 		Name:       pkg.Name,
 		Version:    pkg.Version,
 		SourceCode: sourceCodeIdentifierToProto(pkg.SourceCode),
-		Purl:       purlproto.ToProto(p),
+		Purl:       purlproto.ToProto(pkg.PURL()),
 		Ecosystem:  pkg.Ecosystem().String(),
 		// TODO(b/400910349): Remove once integrators no longer read this field.
+		//nolint:staticcheck // nolint:SA1019
 		Locations:                     packageLocationToLegacyProto(pkg.Location),
 		Location:                      packageLocationToProto(pkg.Location),
 		Plugins:                       pkg.Plugins,

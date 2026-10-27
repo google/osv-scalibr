@@ -73,6 +73,11 @@ func TestCollectGcfsDirs(t *testing.T) {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
+	layerDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=1234567890abcdef")
+	if err := os.MkdirAll(layerDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+
 	snapshotsMetadata := []SnapshotMetadata{
 		{
 			ID:     2,
@@ -80,7 +85,10 @@ func TestCollectGcfsDirs(t *testing.T) {
 		},
 	}
 
-	lowerDir, upperDir, workDir := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	if err != nil {
+		t.Fatalf("collectGcfsDirs failed: %v", err)
+	}
 
 	wantLower := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=1234567890abcdef")
 	if lowerDir != wantLower {
@@ -95,6 +103,292 @@ func TestCollectGcfsDirs(t *testing.T) {
 	wantWork := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/2/work")
 	if workDir != wantWork {
 		t.Errorf("workDir = %v, want %v", workDir, wantWork)
+	}
+}
+
+func TestCollectGcfsDirsDoesNotTraverseSnapshotsWhenAllLayersPresent(t *testing.T) {
+	d := t.TempDir()
+	snapshotKey := "container-snapshot-key"
+	manifestDigest := "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+
+	configJSON := `{"rootfs": {"diff_ids": ["sha256:layer1", "sha256:layer2"]}}`
+	manifestJSON := `{"config": {"digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"}}`
+
+	blobDir := filepath.Join(d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256")
+	if err := os.MkdirAll(blobDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "1111111111111111111111111111111111111111111111111111111111111111"), []byte(manifestJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "2222222222222222222222222222222222222222222222222222222222222222"), []byte(configJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	// Create both layers on disk
+	layersDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers")
+	if err := os.MkdirAll(filepath.Join(layersDir, "sha256=layer1"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(layersDir, "sha256=layer2"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+
+	// snapshotsMetadata contains NO parent snapshots - only the container's snapshot key
+	snapshotsMetadata := []SnapshotMetadata{
+		{
+			ID:     42,
+			Digest: "container-snapshot-key",
+		},
+	}
+
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	if err != nil {
+		t.Fatalf("collectGcfsDirs failed: %v", err)
+	}
+
+	wantLower := fmt.Sprintf("%s:%s",
+		filepath.Join(layersDir, "sha256=layer2"),
+		filepath.Join(layersDir, "sha256=layer1"),
+	)
+	if lowerDir != wantLower {
+		t.Errorf("lowerDir = %v, want %v", lowerDir, wantLower)
+	}
+	if upperDir != filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/42/fs") {
+		t.Errorf("unexpected upperDir: %v", upperDir)
+	}
+	if workDir != filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/42/work") {
+		t.Errorf("unexpected workDir: %v", workDir)
+	}
+}
+
+func TestCollectGcfsDirsFallsBackToSnapshotsWhenLayersAbsent(t *testing.T) {
+	d := t.TempDir()
+	snapshotKey := "container-snapshot-key"
+	manifestDigest := "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+
+	// Write mock config blob so getImageDiffIDs succeeds
+	configJSON := `{"rootfs": {"diff_ids": ["sha256:1234567890abcdef"]}}`
+	manifestJSON := `{"config": {"digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"}}`
+
+	blobDir := filepath.Join(d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256")
+	if err := os.MkdirAll(blobDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "1111111111111111111111111111111111111111111111111111111111111111"), []byte(manifestJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "2222222222222222222222222222222222222222222222222222222222222222"), []byte(configJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	// Create snapshots directory with real fs directory for parent snapshot 5, but do NOT create layers directory.
+	snapshotsDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots")
+	if err := os.MkdirAll(filepath.Join(snapshotsDir, "5/fs"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+
+	snapshotsMetadata := []SnapshotMetadata{
+		{
+			ID:     10,
+			Digest: "k8s.io/container-snapshot-key",
+			Parent: "k8s.io/sha256:parent-snapshot-key",
+		},
+		{
+			ID:     5,
+			Digest: "k8s.io/sha256:parent-snapshot-key",
+		},
+	}
+
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	if err != nil {
+		t.Fatalf("collectGcfsDirs failed: %v", err)
+	}
+
+	wantLower := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/5/fs")
+	if lowerDir != wantLower {
+		t.Errorf("lowerDir = %v, want %v", lowerDir, wantLower)
+	}
+
+	wantUpper := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/10/fs")
+	if upperDir != wantUpper {
+		t.Errorf("upperDir = %v, want %v", upperDir, wantUpper)
+	}
+
+	wantWork := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots/10/work")
+	if workDir != wantWork {
+		t.Errorf("workDir = %v, want %v", workDir, wantWork)
+	}
+}
+
+// The gcfs snapshotter stores remote (streamed) snapshots under the bare chain ID, so the
+// parent chain from the container's snapshot goes through a key without a "/" before it
+// reaches locally unpacked layers.
+func TestCollectGcfsDirsFallsBackThroughBareKeyRemoteSnapshot(t *testing.T) {
+	d := t.TempDir()
+	snapshotKey := "container-snapshot-key"
+	manifestDigest := "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+
+	// Two layers, bottom-up: a locally unpacked base layer and a streamed top layer.
+	configJSON := `{"rootfs": {"diff_ids": ["sha256:aaaaaaaaaaaaaaaa", "sha256:bbbbbbbbbbbbbbbb"]}}`
+	manifestJSON := `{"config": {"digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"}}`
+
+	blobDir := filepath.Join(d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256")
+	if err := os.MkdirAll(blobDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "1111111111111111111111111111111111111111111111111111111111111111"), []byte(manifestJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "2222222222222222222222222222222222222222222222222222222222222222"), []byte(configJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	// The streamed top layer is in layers/; the base layer is only unpacked in snapshots/5/fs.
+	layerDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers/sha256=bbbbbbbbbbbbbbbb")
+	if err := os.MkdirAll(layerDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	snapshotsDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots")
+	if err := os.MkdirAll(filepath.Join(snapshotsDir, "5/fs"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+
+	snapshotsMetadata := []SnapshotMetadata{
+		{
+			ID:             10,
+			Digest:         "k8s.io/12/container-snapshot-key",
+			Parent:         "sha256:top-chain-id",
+			FilesystemType: "gcfs",
+		},
+		{
+			// Remote (streamed) snapshot, stored under the bare chain ID.
+			ID:             7,
+			Digest:         "sha256:top-chain-id",
+			Parent:         "k8s.io/3/sha256:base-chain-id",
+			FilesystemType: "gcfs",
+		},
+		{
+			ID:             5,
+			Digest:         "k8s.io/3/sha256:base-chain-id",
+			FilesystemType: "gcfs",
+		},
+	}
+
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	if err != nil {
+		t.Fatalf("collectGcfsDirs failed: %v", err)
+	}
+
+	wantLower := layerDir + ":" + filepath.Join(snapshotsDir, "5/fs")
+	if lowerDir != wantLower {
+		t.Errorf("lowerDir = %v, want %v", lowerDir, wantLower)
+	}
+	if wantUpper := filepath.Join(snapshotsDir, "10/fs"); upperDir != wantUpper {
+		t.Errorf("upperDir = %v, want %v", upperDir, wantUpper)
+	}
+	if wantWork := filepath.Join(snapshotsDir, "10/work"); workDir != wantWork {
+		t.Errorf("workDir = %v, want %v", workDir, wantWork)
+	}
+}
+
+func TestCollectGcfsDirsReturnsEmptyWhenLayerIncomplete(t *testing.T) {
+	d := t.TempDir()
+	snapshotKey := "container-snapshot-key"
+	manifestDigest := "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+
+	configJSON := `{"rootfs": {"diff_ids": ["sha256:1234567890abcdef"]}}`
+	manifestJSON := `{"config": {"digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"}}`
+
+	blobDir := filepath.Join(d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256")
+	if err := os.MkdirAll(blobDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "1111111111111111111111111111111111111111111111111111111111111111"), []byte(manifestJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "2222222222222222222222222222222222222222222222222222222222222222"), []byte(configJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	// Create snapshots directory with a SYMLINK for 5/fs (simulating incomplete image streaming layer download).
+	snapshotsDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/snapshots")
+	if err := os.MkdirAll(filepath.Join(snapshotsDir, "5"), 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.Symlink("/run/gcfsd/mnt/layers/sha256=1234567890abcdef", filepath.Join(snapshotsDir, "5/fs")); err != nil {
+		t.Fatalf("Symlink failed: %v", err)
+	}
+
+	snapshotsMetadata := []SnapshotMetadata{
+		{
+			ID:     10,
+			Digest: "k8s.io/container-snapshot-key",
+			Parent: "k8s.io/sha256:parent-snapshot-key",
+		},
+		{
+			ID:     5,
+			Digest: "k8s.io/sha256:parent-snapshot-key",
+		},
+	}
+
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	if err == nil {
+		t.Errorf("collectGcfsDirs expected error when layer download incomplete, got nil")
+	}
+	if lowerDir != "" || upperDir != "" || workDir != "" {
+		t.Errorf("collectGcfsDirs returned (%q, %q, %q), want empty strings when layer download is incomplete", lowerDir, upperDir, workDir)
+	}
+}
+
+func TestCollectGcfsDirsRejectsSymlinkInLayersDir(t *testing.T) {
+	d := t.TempDir()
+	snapshotKey := "container-snapshot-key"
+	manifestDigest := "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+
+	configJSON := `{"rootfs": {"diff_ids": ["sha256:1234567890abcdef"]}}`
+	manifestJSON := `{"config": {"digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"}}`
+
+	blobDir := filepath.Join(d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256")
+	if err := os.MkdirAll(blobDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "1111111111111111111111111111111111111111111111111111111111111111"), []byte(manifestJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blobDir, "2222222222222222222222222222222222222222222222222222222222222222"), []byte(configJSON), 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	// Create a real target directory elsewhere (simulating active FUSE mount target)
+	targetDir := filepath.Join(d, "fuse/mount/layer")
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+
+	// Create layers directory where the layer is a SYMLINK to targetDir
+	layersDir := filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers")
+	if err := os.MkdirAll(layersDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	if err := os.Symlink(targetDir, filepath.Join(layersDir, "sha256=1234567890abcdef")); err != nil {
+		t.Fatalf("Symlink failed: %v", err)
+	}
+
+	// snapshots directory does not exist or has no valid directories
+	snapshotsMetadata := []SnapshotMetadata{
+		{
+			ID:     10,
+			Digest: "container-snapshot-key",
+		},
+	}
+
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	if err == nil {
+		t.Errorf("collectGcfsDirs expected error when layer is a symlink, got nil")
+	}
+	if lowerDir != "" || upperDir != "" || workDir != "" {
+		t.Errorf("collectGcfsDirs returned (%q, %q, %q), want empty strings when layer is a symlink", lowerDir, upperDir, workDir)
 	}
 }
 
@@ -177,12 +471,20 @@ func TestDigestSnapshotInfoMapping(t *testing.T) {
 			Digest:         "sha256:67890/digest2",
 			FilesystemType: "gcfs",
 		},
+		{
+			// Remote (streamed) gcfs snapshots are stored under the bare chain ID.
+			Digest:         "sha256:remote-chain-id",
+			FilesystemType: "gcfs",
+		},
 	}
 	resultGcfs := digestSnapshotInfoMapping(snapshotsMetadataGcfs)
-	if len(resultGcfs) != 1 {
-		t.Errorf("Expected 1 result for gcfs, got %d", len(resultGcfs))
+	if len(resultGcfs) != 2 {
+		t.Errorf("Expected 2 results for gcfs, got %d", len(resultGcfs))
 	}
 	if _, ok := resultGcfs["digest2"]; !ok {
 		t.Errorf("Expected result to contain 'digest2'")
+	}
+	if _, ok := resultGcfs["sha256:remote-chain-id"]; !ok {
+		t.Errorf("Expected result to contain 'sha256:remote-chain-id'")
 	}
 }

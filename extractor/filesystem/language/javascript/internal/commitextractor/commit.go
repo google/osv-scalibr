@@ -32,7 +32,8 @@ var (
 		regexp.MustCompile(`(?:^|.+@)https://.+\.git#(\w+)$`),
 		regexp.MustCompile(`https://codeload\.github\.com(?:/[\w-.]+)+/tar\.gz/(\w+)`),
 		regexp.MustCompile(`https://gitlab\.com(?:/[\w-.]+)+/-/archive/(\w+)`),
-		regexp.MustCompile(`.+[#&]commit[:=](\w+)$`),
+		regexp.MustCompile(`(?:^|.+@)(?:(?:git(?:\+(?:ssh|https|http))?|ssh)://.+|https?://.+\.git)[#&]commit[:=](\w+)$`),
+		regexp.MustCompile(`(?:^|.+@)https?://(?:[^/@]+@)?(?:github\.com|gitlab\.com|bitbucket\.org)/.+[#&]commit[:=](\w+)$`),
 		regexp.MustCompile(`^(?:github|gitlab|bitbucket):.+#(\w+)$`),
 	}
 )

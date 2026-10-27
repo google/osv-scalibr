@@ -88,7 +88,7 @@ message PluginSpecificConfig {
     SwiftPodfileLockConfig swift_podfile_lock = 34;
     ElixirMixLockConfig elixir_mix_lock = 35;
     HaskellStacklockConfig haskell_stacklock = 36;
-    HaskellCabalConfig haskell_cabal = 37;
+    HaskellCabalConfig haskell_cabal = 37 [deprecated = true];
     JavaArchiveConfig java_archive = 38;
     JavascriptPackageJsonConfig javascript_package_json = 39;
     JavascriptPackageLockJsonConfig javascript_package_lock_json = 40;
@@ -116,6 +116,12 @@ message PluginSpecificConfig {
     HuggingfaceMetaConfig huggingface_meta = 75;
     ContainerdRuntimeConfig containerd_runtime = 76;
     DotnetProjectAssetsJsonConfig dotnet_project_assets_json = 78;
+    RubyGemConfig ruby_gem = 82;
+    ZigBuildZigZonConfig buildzigzon = 83;
+    UbuntuBinaryToSourceConfig ubuntu_binary_to_source = 84;
+    FreeBSDConfig freebsd = 85;
+    HaskellCabalProjectFreezeConfig haskell_cabal_project_freeze = 86;
+    HaskellCabalConfConfig haskell_cabal_conf = 87;
   }
 }
 
@@ -230,6 +236,9 @@ message POMXMLNetConfig {
   string upstream_registry = 1;
   // If true, use deps.dev requirements API for dependency resolution.
   bool deps_dev_requirements = 2;
+  // If true, enable in-memory caching of decoded Maven projects, dependency
+  // management, versions, and requirements during dependency resolution.
+  bool enable_cache = 3;
 }
 
 message PythonRequirementsTransitiveConfig {
@@ -247,6 +256,9 @@ message DpkgConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 2;
+  // Determines if packages should be extracted from nested root directories
+  // (e.g. chroot environments like `<prefix>/var/lib/dpkg/status`).
+  bool include_nested_roots = 3;
 }
 
 message RpmConfig {
@@ -445,6 +457,23 @@ message GemspecConfig {
   int64 max_file_size_bytes = 1;
 }
 
+message RubyGemConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  // If set, extract additional packages for each declared runtime dependency.
+  bool include_dependencies = 2;
+}
+
+message ZigBuildZigZonConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+  bool scan_dependencies = 2;
+}
+
 message CargoAuditableConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
@@ -483,6 +512,22 @@ message HaskellStacklockConfig {
 }
 
 message HaskellCabalConfig {
+  option deprecated = true;
+
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message HaskellCabalProjectFreezeConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
+}
+
+message HaskellCabalConfConfig {
   // The maximum file size the plugin will process.
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
@@ -594,6 +639,15 @@ message OSVDevConfig {
   int64 initial_query_timeout_seconds = 1;
 }
 
+message UbuntuBinaryToSourceConfig {
+  // The base URL of the OSV.dev API used to map Ubuntu binary package names to
+  // source package names. Defaults to https://api.osv.dev.
+  string base_url = 1;
+  // Timeout in seconds for querying the OSV.dev Ubuntu binary-to-source
+  // mapping API. Defaults to 300 (5 minutes).
+  int64 timeout_seconds = 2;
+}
+
 message CodeServerConfig {
   // The URL of the Code-Server instance to check for authentication.
   string remote = 1;
@@ -613,4 +667,10 @@ message QCOW2Config {
 message ContainerdRuntimeConfig {
   // The local path to the containerd socket.
   string socket_addr = 1;
+}
+message FreeBSDConfig {
+  // The maximum file size the plugin will process.
+  // If set, this overrides the global max_file_size_bytes configuration
+  // for this specific plugin.
+  int64 max_file_size_bytes = 1;
 }

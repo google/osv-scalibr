@@ -32,31 +32,32 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### OS packages
 
-| Inventory Type    | Details                        | Extractor Plugin                             |
-|-------------------| ------------------------------ |----------------------------------------------|
-| Alpine            | APK                            | `os/apk`                                     |
-| Chrome extensions |                                | `chrome/extensions`                          |
-| COS               | cos-package-info.json          | `os/cos`                                     |
-| DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
-| Chisel            |                                | `os/chisel`                                  |
-| Nix               |                                | `os/nix`                                     |
-| OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
-| Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
-| Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
-| Kernel modules    | .ko                            | `os/kernel/module`                           |
-| Kernel archives   | vmlinuz                        | `os/kernel/vmlinuz`                          |
-| Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
-| SNAP              |                                | `os/snap`                                    |
-| Spack             |                                | `os/spack`                                   |
-| Flatpak           |                                | `os/flatpak`                                 |
-| Homebrew          | OS X                           | `os/homebrew`                                |
-| MacPorts          | OS X                           | `os/macports`                                |
-| OS X Applications | OS X                           | `os/macapps`                                 |
-| Chocolatey        | Windows software               | `os/chocolatey`                              |
-| Windows           | Build number                   | `windows/regosversion`                       |
-| Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
-| Windows           | Installed software             | `windows/ospackages`                         |
+| Inventory Type     | Details                        | Extractor Plugin                             |
+|--------------------| ------------------------------ |----------------------------------------------|
+| Alpine             | APK                            | `os/apk`                                     |
+| Browser extensions |                                | `browser/extensions`                         |
+| COS                | cos-package-info.json          | `os/cos`                                     |
+| DPKG               | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
+| Chisel             |                                | `os/chisel`                                  |
+| Nix                |                                | `os/nix`                                     |
+| OPKG               | e.g. OpenWrt                   | `os/dpkg`                                    |
+| RPM                | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
+| Zypper             | e.g. openSUSE                  | `os/rpm`                                     |
+| Pacman             | e.g. Arch Linux                | `os/pacman`                                  |
+| Kernel modules     | .ko                            | `os/kernel/module`                           |
+| Kernel archives    | vmlinuz                        | `os/kernel/vmlinuz`                          |
+| Portage            | e.g. Gentoo Linux              | `os/portage`                                 |
+| SNAP               |                                | `os/snap`                                    |
+| Spack              |                                | `os/spack`                                   |
+| FreeBSD pkg        | FreeBSD and derivatives        | `os/freebsd`                                 |
+| Flatpak            |                                | `os/flatpak`                                 |
+| Homebrew           | OS X                           | `os/homebrew`                                |
+| MacPorts           | OS X                           | `os/macports`                                |
+| OS X Applications  | OS X                           | `os/macapps`                                 |
+| Chocolatey         | Windows software               | `os/chocolatey`                              |
+| Windows            | Build number                   | `windows/regosversion`                       |
+| Windows            | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
+| Windows            | Installed software             | `windows/ospackages`                         |
 
 ### Language packages
 
@@ -72,15 +73,18 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Microsoft Build Engine (MSBuild) project files    | `dotnet/csproj`                      |
 |            | project.assets.json                               | `dotnet/projectassetsjson`           |
 | C++        | Conan packages                                    | `cpp/conanlock`                      |
+| Dart       | package_config.json                               | `dart/packageconfig`                 |
 | Dart       | pubspec.lock                                      | `dart/pubspec`                       |
 | Erlang     | mix.lock                                          | `erlang/mixlock`                     |
 | Elixir     | mix.lock                                          | `elixir/mixlock`                     |
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
+|            | go.work / go.work.sum                             | `go/gowork`                          |
 |            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
-|            | cabal.project.freeze                              | `haskell/cabal`                      |
+|            | cabal Installed packages                          | `haskell/cabalconf`                  |
+|            | cabal.project.freeze                              | `haskell/cabalprojectfreeze`         |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
@@ -107,12 +111,15 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pdm.lock                                          | `python/pdmlock`                     |
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
+|            | setup.cfg                                         | `python/setupcfg`                    |
 |            | uv.lock                                           | `python/uvlock`                      |
 |            | pyproject.toml                                    | `python/pyprojecttoml`               |
 |            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
 | R          | renv.lock                                         | `r/renvlock`                         |
+|            | Installed R packages                              | `r/rpkg`                             |
 | Ruby       | Installed Gem packages                            | `ruby/gemspec`                       |
 |            | Gemfile.lock, gems.locked                         | `ruby/gemfilelock`                   |
+|            | Gem packages (.gem)                               | `ruby/gem`                           |
 | Rust       | Cargo.lock                                        | `rust/cargolock`                     |
 |            | Cargo.toml                                        | `rust/cargotoml`                     |
 |            | Rust binaries                                     | `rust/cargoauditable`                |
@@ -120,6 +127,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Package.resolved                                  | `swift/packageresolved`              |
 | Nim        | Nimble packages                                   | `nim/nimble`                         |
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
+| Zig        | Zig build.zig.zon packages                        | `zig/buildzigzon`                    |
 
 ### Language runtime managers
 
@@ -244,19 +252,20 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | -------------------------- | ---------------- |
 | SPDX SBOM descriptors      | `sbom/spdx`      |
 | CycloneDX SBOM descriptors | `sbom/cdx`       |
+| Bitnami container SBOMs    | `sbom/spdx`      |
 
 ### Misc
 
-| Type                               | Extractor Plugin    |
-|------------------------------------| ------------------- |
-| Wordpress plugins                  | `wordpress/plugins` |
-| VSCode extensions                  | `vscode/extensions` |
-| Chrome extensions                  | `chrome/extensions` |
-| Maven entries in Bazel build files | `os/bazelmaven`     |
-| Bazel build graph targets          | `bazel/aspect` *    |
-| NetScaler installations            | `netscaler`         |
-| GitHub Actions workflow dependencies| `github/actions`    |
-| Git repositories (and submodules)   | `misc/gitrepo`      |
+| Type                                 | Extractor Plugin     |
+|--------------------------------------|----------------------|
+| Wordpress plugins                    | `wordpress/plugins`  |
+| VSCode extensions                    | `vscode/extensions`  |
+| Browser extensions                   | `browser/extensions` |
+| Maven entries in Bazel build files   | `os/bazelmaven`      |
+| Bazel build graph targets            | `bazel/aspect` *     |
+| NetScaler installations              | `netscaler`          |
+| GitHub Actions workflow dependencies | `github/actions`     |
+| Git repositories (and submodules)    | `misc/gitrepo`       |
 
 ### EmbeddedFS
 
@@ -314,6 +323,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Performs reachability analysis for Rust code. (Linux-only) *               | `reachability/rust`                 |
 | Resolves transitive dependencies for Java pom.xml files. *                 | `transitivedependency/pomxml`       |
 | Resolves transitive dependencies for Python requirements.txt files.        | `transitivedependency/requirements` |
+| Maps Ubuntu binary package names from chisel manifests to source package names using the OSV.dev API. | `os/ubuntu/binarytosource`          |
 | Queries the OSV.dev API to find vulnerabilities in the inventory packages. | `vulnmatch/osvdev`                  |
 | Adds license data to software packages                                     | `license/depsdev`                   |
 | Checks if package versions are deprecated (e.g. yanked, unpublished).      | `packagedeprecation/depsdev`        |

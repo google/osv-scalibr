@@ -442,7 +442,7 @@ func goPackage(name, version string) *extractor.Package {
 func createPackagesWithMain(pkgs []*extractor.Package, location string) []*extractor.Package {
 	res := createPackages(pkgs, location)
 	// Main package
-	mainName := strings.Split(strings.TrimPrefix(location, "testdata/"), "-")[0]
+	mainName, _, _ := strings.Cut(strings.TrimPrefix(location, "testdata/"), "-")
 	res = append(res, &extractor.Package{
 		Name: mainName, Version: "(devel)", Location: extractor.LocationFromPath(location),
 		PURLType: purl.TypeGolang,

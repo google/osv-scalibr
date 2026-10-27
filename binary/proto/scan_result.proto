@@ -110,6 +110,7 @@ message Package {
   oneof metadata {
     PythonPackageMetadata python_metadata = 5;
     PyprojectMetadata pyproject_metadata = 73;
+    RubyGemMetadata ruby_gem_metadata = 74;
     JavascriptPackageJSONMetadata javascript_metadata = 6;
     APKPackageMetadata apk_metadata = 7;
     DPKGPackageMetadata dpkg_metadata = 8;
@@ -137,7 +138,7 @@ message Package {
     CDXPackageMetadata cdx_metadata = 30;
     WindowsOSVersion windows_os_version_metadata = 33;
     HomebrewPackageMetadata homebrew_metadata = 42;
-    ChromeExtensionsMetadata chrome_extensions_metadata = 47;
+    BrowserExtensionsMetadata browser_extensions_metadata = 47;
     VSCodeExtensionsMetadata vscode_extensions_metadata = 46;
     PodmanMetadata podman_metadata = 50;
     DockerContainersMetadata docker_containers_metadata = 48;
@@ -153,6 +154,7 @@ message Package {
     BazelMavenMetadata bazel_maven_metadata = 65;
     JavascriptDenoMetadata deno_metadata = 66;
     SpackPackageMetadata spack_metadata = 67;
+    FreeBSDPackageMetadata freebsd_metadata = 75;
   }
 
   // Signals to indicate that specific vulnerabilities are not applicable to
@@ -362,6 +364,29 @@ message PyprojectMetadata {
   repeated DependencyGroup optional_dependencies = 3;
 }
 
+// The additional data found in Ruby Gem packages.
+message RubyGemMetadata {
+  message Dependency {
+    message RequirementConstraint {
+      string operator = 1;
+      string version = 2;
+    }
+
+    string name = 1;
+    string type = 2;
+    repeated RequirementConstraint requirements = 3;
+    bool prerelease = 4;
+  }
+
+  repeated string authors = 1;
+  string description = 2;
+  string homepage = 3;
+  repeated string licenses = 4;
+  repeated Dependency dependencies = 5;
+  string platform = 6;
+  string summary = 7;
+}
+
 // The additional data found in npm packages.
 message JavascriptPackageJSONMetadata {
   message Dependency {
@@ -376,6 +401,7 @@ message JavascriptPackageJSONMetadata {
   repeated string contributors = 3;
   PackageSource source = 5;
   repeated Dependency dependencies = 6;
+  repeated string dep_groups = 7;
 }
 
 // The source of the package.
@@ -383,7 +409,7 @@ enum PackageSource {
   UNKNOWN = 0;
   // PUBLIC_REGISTRY is the public NPM registry.
   PUBLIC_REGISTRY = 1;
-  // OTHER is any other remote or private source (e.g. Github).
+  // OTHER is any other remote or private source (e.g. GitHub).
   // This is used for packages that are not found in the public NPM registry.
   OTHER = 2;
   // LOCAL is the local filesystem that stores the package versions.
@@ -528,6 +554,16 @@ message SpackPackageMetadata {
   string platform_os = 2;
   string platform_architecture = 3;
   string hash = 4;
+}
+
+// The additional data found in FreeBSD pkg packages.
+message FreeBSDPackageMetadata {
+  string package_name = 1;
+  string package_version = 2;
+  string origin = 3;
+  string arch = 4;
+  string os_id = 5;
+  string os_version_id = 6;
 }
 
 // The additional data found in MODULE packages.
@@ -703,8 +739,8 @@ message HomebrewPackageMetadata {
   repeated string mirrors = 3;
 }
 
-// The additional data found in Chrome extensions.
-message ChromeExtensionsMetadata {
+// The additional data found in Browser extensions.
+message BrowserExtensionsMetadata {
   string name = 1;
   string description = 2;
   string author_email = 3;
@@ -713,6 +749,7 @@ message ChromeExtensionsMetadata {
   string minimum_chrome_version = 6;
   repeated string permissions = 7;
   string update_url = 8;
+  string author = 9;
 }
 
 // The additional data found in VSCode extensions.
@@ -1509,6 +1546,16 @@ message LayerMetadata {
   // The index of the base image match within the
   // ContainerImageMetadata.base_image_chains field.
   int32 base_image_index = 6;
+  // Attributes attached to this layer by plugins.
+  repeated LayerAttribute attributes = 7;
+}
+
+// An attribute attached to a layer by a plugin.
+message LayerAttribute {
+  // The value of the attribute, with a meaning defined by the plugin.
+  string value = 1;
+  // The name of the plugin that generated this attribute.
+  string plugin = 2;
 }
 
 message InfoType {

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -78,8 +79,9 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 
 // FileRequired returns true if the specified file matches the /wp-content/plugins/ pattern.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
-	path := api.Path()
-	if !strings.HasSuffix(path, ".php") || !strings.Contains(path, "wp-content/plugins/") {
+	fpath := api.Path()
+
+	if !strings.HasSuffix(fpath, ".php") || !strings.HasSuffix(path.Dir(path.Dir(fpath)), "wp-content/plugins") {
 		return false
 	}
 
@@ -89,11 +91,11 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	}
 
 	if e.maxFileSizeBytes > 0 && fileinfo.Size() > e.maxFileSizeBytes {
-		e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
+		e.reportFileRequired(fpath, fileinfo.Size(), stats.FileRequiredResultSizeLimitExceeded)
 		return false
 	}
 
-	e.reportFileRequired(path, fileinfo.Size(), stats.FileRequiredResultOK)
+	e.reportFileRequired(fpath, fileinfo.Size(), stats.FileRequiredResultOK)
 	return true
 }
 
@@ -120,7 +122,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
-		Name:     pkg.Name,
+		Name:     path.Base(path.Dir(input.Path)),
 		Version:  pkg.Version,
 		PURLType: purl.TypeWordpress,
 		Location: extractor.LocationFromPath(input.Path),
@@ -128,7 +130,6 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 type wpPackage struct {
-	Name    string
 	Version string
 }
 
@@ -156,9 +157,10 @@ func parsePHPFile(r io.Reader) (*wpPackage, error) {
 		return nil, fmt.Errorf("failed to read PHP file: %w", err)
 	}
 
+	// we assume PHP files without both these fields are not WordPress plugins
 	if name == "" || version == "" {
 		return nil, nil
 	}
 
-	return &wpPackage{Name: name, Version: version}, nil
+	return &wpPackage{Version: version}, nil
 }

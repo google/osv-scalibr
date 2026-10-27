@@ -27,6 +27,7 @@ import (
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/log"
+	scalibrversion "github.com/google/osv-scalibr/version"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -56,6 +57,9 @@ type DefaultClientFactories struct {
 
 // NewDefaultClientFactories returns a new DefaultClientFactories.
 func NewDefaultClientFactories(userAgent string) *DefaultClientFactories {
+	if userAgent == "" {
+		userAgent = "osv-scalibr/" + scalibrversion.ScannerVersion
+	}
 	return &DefaultClientFactories{
 		userAgent:         userAgent,
 		googleHTTPClients: make(map[string]*http.Client),
@@ -104,6 +108,21 @@ func (c *DefaultClientFactories) HTTPClient() *http.Client {
 	return c.httpClient
 }
 
+// defaultGRPCServiceConfig defines the default gRPC service config enabling retries
+// with exponential backoff for transient server and network errors.
+const defaultGRPCServiceConfig = `{
+	"methodConfig": [{
+		"name": [{}],
+		"retryPolicy": {
+			"maxAttempts": 4,
+			"initialBackoff": "0.1s",
+			"maxBackoff": "1s",
+			"backoffMultiplier": 2.0,
+			"retryableStatusCodes": ["UNAVAILABLE", "RESOURCE_EXHAUSTED"]
+		}
+	}]
+}`
+
 // GRPCClientConn returns a shared gRPC connection.
 func (c *DefaultClientFactories) GRPCClientConn(url string, dialOpts ...grpc.DialOption) (grpc.ClientConnInterface, error) {
 	c.mu.Lock()
@@ -123,7 +142,10 @@ func (c *DefaultClientFactories) GRPCClientConn(url string, dialOpts ...grpc.Dia
 		return nil, err
 	}
 	creds := credentials.NewClientTLSFromCert(certPool, "")
-	ourDialOpts := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
+	ourDialOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultServiceConfig(defaultGRPCServiceConfig),
+	}
 	if c.userAgent != "" {
 		ourDialOpts = append(ourDialOpts, grpc.WithUserAgent(c.userAgent))
 	}

@@ -325,7 +325,8 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 
 			err = safeWriteFile(root, cleanPath, content, modeWithOwnerReadWrite)
 			if err != nil {
-				// TODO(b/412437775): The error handling below is not ideal. It will become a mess if other
+				// TODO(b/578074888): Remove this package in favor of layerscanning/image.
+				// The error handling below is not ideal. It will become a mess if other
 				// exceptions are added. Unfortunately, the os package does not export the underlying
 				// error, so we have to do string matching for now.
 				if strings.Contains(err.Error(), "path escapes from parent") {
@@ -369,7 +370,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			}
 
 			if symlinkResolution == SymlinkRetain {
-				// TODO(b/412444199): Use the os.Root API to create symlinks when root.Symlink is available.
+				// TODO(b/578074888): Remove this package in favor of layerscanning/image.
 				if err := os.Symlink(targetPath, fullPath); err != nil {
 					log.Errorf("failed to symlink %q to %q: %v", fullPath, targetPath, err)
 					if symlinkErrStrategy == SymlinkErrReturn {

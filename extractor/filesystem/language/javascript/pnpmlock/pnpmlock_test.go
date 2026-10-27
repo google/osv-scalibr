@@ -116,6 +116,29 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			// Regression test: a malformed scoped dependency path such as
+			// "/@x" (which splits into ["", "@x"]) previously caused a
+			// slice-bounds panic when joining the scope and name. It should
+			// now be handled gracefully and simply skipped (no version).
+			Name: "scoped dep path without version does not panic",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/scoped-path-no-version.yaml",
+			},
+			WantErr: nil,
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "acorn",
+					Version:    "8.7.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-path-no-version.yaml", 11),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "invalid dep paths (first error)",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/invalid-paths.yaml",
