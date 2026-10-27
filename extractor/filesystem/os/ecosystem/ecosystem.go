@@ -74,6 +74,11 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpine, Suffix: m.TrimDistroVersion(version)}
 
 	case *dpkgmeta.Metadata:
+		// Echo advisories are published under a single unversioned ecosystem on
+		// OSV.dev, so the VERSION_ID is not used as a suffix.
+		if m.OSID == "echo" {
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemEcho)
+		}
 		namespace = m.ToNamespace()
 		osVersionID = m.OSVersionID
 
