@@ -40,7 +40,7 @@ type Metadata struct {
 }
 
 // ToNamespace extracts the PURL namespace from the metadata.
-func (m Metadata) ToNamespace() string {
+func (m *Metadata) ToNamespace() string {
 	if m.OSID != "" {
 		return m.OSID
 	}
@@ -49,7 +49,7 @@ func (m Metadata) ToNamespace() string {
 }
 
 // ToDistro extracts the OS distro from the metadata.
-func (m Metadata) ToDistro() string {
+func (m *Metadata) ToDistro() string {
 	// e.g. 3.18.0
 	if m.OSVersionID != "" {
 		return m.OSVersionID
@@ -62,7 +62,7 @@ func (m Metadata) ToDistro() string {
 // The Alpine OS info might include minor versions such as 3.12.1 while advisories are
 // only published against the minor and major versions, i.e. v3.12. Therefore we trim
 // any minor versions before putting the value into the Ecosystem.
-func (Metadata) TrimDistroVersion(distro string) string {
+func (*Metadata) TrimDistroVersion(distro string) string {
 	parts := strings.Split(distro, ".")
 	if len(parts) < 2 {
 		return "v" + distro
@@ -83,7 +83,7 @@ func ToProto(m *Metadata) *pb.APKPackageMetadata {
 }
 
 // IsProtoable marks the struct as a metadata type.
-func (m Metadata) IsProtoable() {}
+func (m *Metadata) IsProtoable() {}
 
 // ToStruct converts the APKPackageMetadata proto to a Metadata struct.
 func ToStruct(m *pb.APKPackageMetadata) *Metadata {
