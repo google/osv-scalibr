@@ -36,7 +36,7 @@ type Metadata struct {
 }
 
 // DepGroups returns the dependency groups for the package.
-func (m Metadata) DepGroups() []string {
+func (m *Metadata) DepGroups() []string {
 	return m.DepGroupVals
 }
 
@@ -51,7 +51,7 @@ func ToProto(m *Metadata) *pb.JavaLockfileMetadata {
 }
 
 // IsProtoable marks the struct as a metadata type.
-func (m Metadata) IsProtoable() {}
+func (m *Metadata) IsProtoable() {}
 
 // ToStruct converts the JavaLockfileMetadata proto to a Metadata struct.
 func ToStruct(m *pb.JavaLockfileMetadata) *Metadata {
