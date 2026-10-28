@@ -19,6 +19,8 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -1505,4 +1507,156 @@ func constructImageWithTarEntries(t *testing.T, tarEntries []*tarEntry) v1.Image
 	}
 
 	return image
+}
+
+func serveTestImage(t *testing.T, v1Image v1.Image) (string, string) {
+	t.Helper()
+
+	rawManifest, err := v1Image.RawManifest()
+	if err != nil {
+		t.Fatalf("RawManifest() error: %v", err)
+	}
+	mediaType, err := v1Image.MediaType()
+	if err != nil {
+		t.Fatalf("MediaType() error: %v", err)
+	}
+	manifestDigest, err := v1Image.Digest()
+	if err != nil {
+		t.Fatalf("Digest() error: %v", err)
+	}
+	cfgName, err := v1Image.ConfigName()
+	if err != nil {
+		t.Fatalf("ConfigName() error: %v", err)
+	}
+	rawCfg, err := v1Image.RawConfigFile()
+	if err != nil {
+		t.Fatalf("RawConfigFile() error: %v", err)
+	}
+
+	blobs := map[string][]byte{
+		cfgName.String(): rawCfg,
+	}
+	layers, err := v1Image.Layers()
+	if err != nil {
+		t.Fatalf("Layers() error: %v", err)
+	}
+	for _, layer := range layers {
+		d, err := layer.Digest()
+		if err != nil {
+			t.Fatalf("layer.Digest() error: %v", err)
+		}
+		rc, err := layer.Compressed()
+		if err != nil {
+			t.Fatalf("layer.Compressed() error: %v", err)
+		}
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			t.Fatalf("io.ReadAll(layer) error: %v", err)
+		}
+		blobs[d.String()] = data
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v2/":
+			w.WriteHeader(http.StatusOK)
+		case r.URL.Path == "/v2/test/image/manifests/latest" || r.URL.Path == "/v2/test/image/manifests/"+manifestDigest.String():
+			w.Header().Set("Content-Type", string(mediaType))
+			w.Header().Set("Docker-Content-Digest", manifestDigest.String())
+			_, _ = w.Write(rawManifest)
+		case strings.HasPrefix(r.URL.Path, "/v2/test/image/blobs/"):
+			blobDigest := strings.TrimPrefix(r.URL.Path, "/v2/test/image/blobs/")
+			data, ok := blobs[blobDigest]
+			if !ok {
+				http.NotFound(w, r)
+				return
+			}
+			_, _ = w.Write(data)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	return strings.TrimPrefix(srv.URL, "http://"), manifestDigest.String()
+}
+
+func TestFromRemoteName(t *testing.T) {
+	v1Img := constructImageWithTarEntries(t, []*tarEntry{
+		{
+			Header: &tar.Header{
+				Name: "etc/os-release",
+				Mode: 0777,
+				Size: int64(len(osContents)),
+			},
+			Data: bytes.NewBufferString(osContents),
+		},
+	})
+	host, imgDigest := serveTestImage(t, v1Img)
+
+	tests := []struct {
+		name    string
+		ref     string
+		wantErr bool
+	}{
+		{
+			name: "by_tag",
+			ref:  host + "/test/image:latest",
+		},
+		{
+			name: "by_digest_with_https_prefix",
+			ref:  "https://" + host + "/test/image@" + imgDigest,
+		},
+		{
+			name:    "invalid_digest",
+			ref:     "https://invalid@@digest",
+			wantErr: true,
+		},
+		{
+			name:    "invalid_tag",
+			ref:     "invalid::tag",
+			wantErr: true,
+		},
+		{
+			name:    "missing_tag",
+			ref:     host + "/test/missing:latest",
+			wantErr: true,
+		},
+		{
+			name:    "missing_digest",
+			ref:     host + "/test/missing@" + imgDigest,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotImg, err := FromRemoteName(tc.ref, DefaultConfig())
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("FromRemoteName(%q) error = %v, wantErr %v", tc.ref, err, tc.wantErr)
+			}
+			if tc.wantErr {
+				return
+			}
+			t.Cleanup(func() {
+				_ = gotImg.CleanUp()
+			})
+			chainLayers, err := gotImg.ChainLayers()
+			if err != nil {
+				t.Fatalf("ChainLayers() error: %v", err)
+			}
+			if len(chainLayers) != 1 {
+				t.Fatalf("ChainLayers() returned %d layers, want 1", len(chainLayers))
+			}
+			compareChainLayerEntries(t, chainLayers[0], chainLayerEntries{
+				filepathContentPairs: []filepathContentPair{
+					{
+						filepath: "/etc/os-release",
+						content:  osContents,
+					},
+				},
+			}, nil)
+		})
+	}
 }
