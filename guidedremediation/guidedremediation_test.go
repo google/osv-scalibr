@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package guidedremediation_test
+package guidedremediation
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
-	"github.com/google/osv-scalibr/guidedremediation"
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -119,7 +120,7 @@ func TestFixOverride(t *testing.T) {
 				NoMavenNewDepMgmt:  tt.noMavenNewDepMgmt,
 			}
 
-			gotRes, err := guidedremediation.FixVulns(opts)
+			gotRes, err := FixVulns(opts)
 			if err != nil {
 				t.Fatalf("error fixing vulns: %v", err)
 			}
@@ -243,7 +244,7 @@ func TestFixRelax(t *testing.T) {
 				NoIntroduce:        tt.noIntroduce,
 			}
 
-			gotRes, err := guidedremediation.FixVulns(opts)
+			gotRes, err := FixVulns(opts)
 			if err != nil {
 				t.Fatalf("error fixing vulns: %v", err)
 			}
@@ -349,7 +350,7 @@ func TestFixInPlace(t *testing.T) {
 				NoIntroduce:        tt.noIntroduce,
 			}
 
-			gotRes, err := guidedremediation.FixVulns(opts)
+			gotRes, err := FixVulns(opts)
 			if err != nil {
 				t.Fatalf("error fixing vulns: %v", err)
 			}
@@ -458,7 +459,7 @@ func TestUpdate(t *testing.T) {
 				IgnoreDev:     tt.ignoreDev,
 			}
 
-			gotRes, err := guidedremediation.Update(opts)
+			gotRes, err := Update(opts)
 			if err != nil {
 				t.Fatalf("failed to update: %v", err)
 			}
@@ -497,4 +498,180 @@ func TestUpdate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCheckUnsafeLockfileGenerationEnabled(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		opts     options.FixVulnsOptions
+		wantDeny bool
+	}{
+		{"pip_denied", options.FixVulnsOptions{Manifest: "requirements.in", Lockfile: "requirements.txt"}, true},
+		{"poetry_denied", options.FixVulnsOptions{Manifest: "pyproject.toml", Lockfile: "poetry.lock"}, true},
+		{"pipenv_denied", options.FixVulnsOptions{Manifest: "Pipfile", Lockfile: "Pipfile.lock"}, true},
+		{"pip_allowed", options.FixVulnsOptions{Manifest: "requirements.in", Lockfile: "requirements.txt", AllowUnsafeExecution: true}, false},
+		{"manifest_only", options.FixVulnsOptions{Manifest: "requirements.in"}, false},
+		{"lockfile_only", options.FixVulnsOptions{Lockfile: "requirements.txt"}, false},
+		{"mismatched_pair", options.FixVulnsOptions{Manifest: "requirements.in", Lockfile: "other.txt"}, false},
+		{"npm", options.FixVulnsOptions{Manifest: "package.json", Lockfile: "package-lock.json"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkUnsafeLockfileGenerationEnabled(tc.opts)
+			if tc.wantDeny {
+				if err == nil || !strings.Contains(err.Error(), "set AllowUnsafeExecution to true") {
+					t.Fatalf("checkUnsafeLockfileGenerationEnabled() = %v, want unsafe execution error", err)
+				}
+			} else if err != nil {
+				t.Fatalf("checkUnsafeLockfileGenerationEnabled() = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func TestFixVulnsRejectsUnsafePythonBeforeWrites(t *testing.T) {
+	enricher := vulnenrichertest.NewMockVulnerabilityEnricher(t, "testdata/python/vulnerabilities.json")
+	for _, tc := range []struct{ manifest, lockfile string }{
+		{"requirements.in", "requirements.txt"},
+		{"pyproject.toml", "poetry.lock"},
+		{"Pipfile", "Pipfile.lock"},
+	} {
+		t.Run(tc.manifest, func(t *testing.T) {
+			dir := t.TempDir()
+			manifest := filepath.Join(dir, tc.manifest)
+			lockfile := filepath.Join(dir, tc.lockfile)
+			for _, path := range []string{manifest, lockfile} {
+				if err := os.WriteFile(path, []byte("unchanged"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			// Nil resolution clients and invalid file contents also ensure that
+			// permission is checked before parsing or dependency resolution.
+			_, err := FixVulns(options.FixVulnsOptions{
+				Manifest: manifest, Lockfile: lockfile, VulnEnricher: enricher,
+			})
+			if err == nil || !strings.Contains(err.Error(), "set AllowUnsafeExecution to true") {
+				t.Fatalf("FixVulns() = %v, want unsafe execution error", err)
+			}
+			for _, path := range []string{manifest, lockfile} {
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(data) != "unchanged" {
+					t.Errorf("file %q modified: %q", path, data)
+				}
+			}
+		})
+	}
+}
+
+func TestPythonLockfileCommands(t *testing.T) {
+	for _, tc := range []struct{ manifest, executable, args string }{
+		{"requirements.in", "pip-compile", "--generate-hashes\nrequirements.in\n"},
+		{"pyproject.toml", "poetry", "lock\n"},
+		{"Pipfile", "pipenv", "lock\n"},
+	} {
+		t.Run(tc.executable, func(t *testing.T) {
+			dir, record := fakeLockfileTool(t, tc.executable, false)
+			if err := writeLockfileFromManifest(context.Background(), filepath.Join(dir, tc.manifest)); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got, want := string(data), dir+"\n"+tc.args; got != want {
+				t.Errorf("tool invocation = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestFixVulnsPythonUnsafeOptIn(t *testing.T) {
+	dir, record := fakeLockfileTool(t, "pip-compile", false)
+	manifest := filepath.Join(dir, "requirements.in")
+	data, err := os.ReadFile("testdata/python/relax/requirements/requirements.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manifest, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	lockfile := filepath.Join(dir, "requirements.txt")
+	if err := os.WriteFile(lockfile, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	_, err = FixVulns(options.FixVulnsOptions{
+		Manifest:             manifest,
+		Lockfile:             lockfile,
+		AllowUnsafeExecution: true,
+		ResolveClient:        clienttest.NewMockResolutionClient(t, "testdata/python/universe.yaml"),
+		VulnEnricher:         vulnenrichertest.NewMockVulnerabilityEnricher(t, "testdata/python/vulnerabilities.json"),
+		RemediationOptions:   options.DefaultRemediationOptions(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = os.ReadFile(record)
+	if err != nil {
+		t.Fatalf("pip-compile was not invoked: %v", err)
+	}
+	if want := dir + "\n--generate-hashes\nrequirements.in\n"; string(data) != want {
+		t.Errorf("pip-compile invocation = %q, want %q", data, want)
+	}
+}
+
+func TestNpmLockfileDisablesScripts(t *testing.T) {
+	for _, retry := range []bool{false, true} {
+		name := "first_attempt"
+		if retry {
+			name = "retry"
+		}
+		t.Run(name, func(t *testing.T) {
+			dir, record := fakeLockfileTool(t, "npm", retry)
+			if err := writeLockfileFromManifest(context.Background(), filepath.Join(dir, "package.json")); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := dir + "\ninstall\n--package-lock-only\n--ignore-scripts\n"
+			if retry {
+				want += dir + "\ninstall\n--package-lock-only\n--legacy-peer-deps\n--ignore-scripts\n"
+			}
+			if string(data) != want {
+				t.Errorf("npm invocation = %q, want %q", data, want)
+			}
+		})
+	}
+}
+
+// fakeLockfileTool records invocations without accessing dependencies or registries.
+func fakeLockfileTool(t *testing.T, executable string, failFirst bool) (string, string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("fake package manager requires a POSIX shell")
+	}
+	dir := t.TempDir()
+	bin := t.TempDir()
+	record := filepath.Join(t.TempDir(), "invocations")
+	script := "#!/bin/sh\n"
+	if failFirst {
+		script += "if [ ! -f \"$SCALIBR_TEST_RECORD\" ]; then\n" +
+			"  printf '%s\\n' \"$PWD\" \"$@\" >> \"$SCALIBR_TEST_RECORD\"\n  exit 1\nfi\n"
+	}
+	script += "printf '%s\\n' \"$PWD\" \"$@\" >> \"$SCALIBR_TEST_RECORD\"\n"
+	if err := os.WriteFile(filepath.Join(bin, executable), []byte(script), 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+	t.Setenv("SCALIBR_TEST_RECORD", record)
+	// Resolve symlinks so that the shell's physical working directory agrees
+	// with expectations on platforms where the temporary directory is a link.
+	dir, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir, record
 }
