@@ -26,6 +26,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/lockfile/npm"
 	"github.com/google/osv-scalibr/guidedremediation/result"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestReadV1(t *testing.T) {
@@ -35,7 +36,7 @@ func TestReadV1(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS("./testdata/v1")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/v1"))
 	got, err := rw.Read("package-lock.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading lockfile: %v", err)
@@ -78,7 +79,7 @@ func TestReadV2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS("./testdata/v2")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/v2"))
 	got, err := rw.Read("package-lock.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading lockfile: %v", err)
@@ -127,7 +128,7 @@ func TestTypeOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS("./testdata/type_order")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/type_order"))
 	got, err := rw.Read("package-lock.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading lockfile: %v", err)
@@ -165,7 +166,7 @@ func TestPeerMeta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS("./testdata/peer_meta")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/peer_meta"))
 	got, err := rw.Read("package-lock.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading lockfile: %v", err)
@@ -241,7 +242,7 @@ func TestWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer outFS.Close()
-	if err := rw.Write("write/package-lock.json", scalibrfs.DirFS("testdata"), patches, outFS, "package-lock.json"); err != nil {
+	if err := rw.Write("write/package-lock.json", scalibrfs.DirFS(fakefs.CopyTestData(t, "testdata")), patches, outFS, "package-lock.json"); err != nil {
 		t.Fatalf("error writing lockfile: %v", err)
 	}
 	got, err := os.ReadFile(gotPath)

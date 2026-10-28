@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/result"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func aliasType(t *testing.T, aliasedName string) dep.Type {
@@ -108,7 +109,7 @@ func TestRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS("./testdata")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
 	got, err := rw.Read("package.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -167,7 +168,7 @@ func TestReadWithWorkspaces(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS("./testdata/workspaces")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/workspaces"))
 	got, err := rw.Read("package.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -293,7 +294,7 @@ func TestWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS("./testdata")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
 	manif, err := rw.Read("package.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
