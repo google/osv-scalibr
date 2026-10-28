@@ -163,15 +163,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	if err != nil {
 		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
 	}
-	if input.Root == "" {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Dir(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
+	// The file got copied to a temporary dir, remove it at the end.
+	defer func() {
+		dir := filepath.Dir(absPath)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		}
+	}()
 	rpmPkgs, err := e.parseRPMDB(ctx, absPath)
 	if err != nil {
 		return nil, fmt.Errorf("ParseRPMDB(%s): %w", absPath, err)

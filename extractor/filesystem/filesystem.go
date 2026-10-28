@@ -222,6 +222,16 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		// Run extractors on the mounted filesystem using Run
 		mountedInv, mountedStatus, err := Run(ctx, &recConfig)
+		// Collect temporary directories and raw files after traversal for removal,
+		// and close the mounted filesystem so open directory handles are released.
+		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
+			embeddedFS.TempPaths = c.TempPaths()
+		}
+		if c, ok := mountedFS.(io.Closer); ok {
+			if closeErr := c.Close(); closeErr != nil {
+				log.Warnf("Failed to close mounted filesystem %s: %v", embeddedFS.Path, closeErr)
+			}
+		}
 		if err != nil {
 			status = append(status, &plugin.Status{
 				Name:    "EmbeddedFS",
@@ -244,11 +254,6 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		additionalInv.Append(mountedInv)
 		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
-
-		// Collect temporary directories and raw files after traversal for removal.
-		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			embeddedFS.TempPaths = c.TempPaths()
-		}
 	}
 
 	// Combine inventories
@@ -702,6 +707,9 @@ func stripFromAtLeastOnePrefix(path string, scanRoots []*scalibrfs.ScanRoot) (st
 		if err != nil {
 			return "", err
 		}
+		if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			continue
+		}
 
 		return rel, nil
 	}
@@ -761,10 +769,9 @@ func (wc *walkContext) printStatus() {
 	wc.lastExtracts = wc.extractCalls
 }
 
-// GetRealPath returns the real absolute path of the file on the scanning host's filesystem.
-// If the file is on a virtual filesystem (e.g. a remote container), it is first copied into a
-// temporary directory on the scanning host's filesystem. It's up to the caller to delete the
-// directory once they're done using it.
+// GetRealPath copies the file into an isolated temporary directory on the scanning host's
+// filesystem and returns its absolute path. It is up to the caller to delete the temporary
+// directory (filepath.Dir(realPath)) once they are done using it.
 func (i *ScanInput) GetRealPath() (string, error) {
 	return scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }

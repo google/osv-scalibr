@@ -134,22 +134,20 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (inventory.Inve
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
-
-	if input.Root == "" {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Base(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
+	// The file got copied to a temporary dir, remove it at the end.
+	defer func() {
+		dir := filepath.Dir(absPath)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		}
+	}()
 
 	// Open the PE file
 	f, err := pe.New(absPath, &pe.Options{})
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
+	defer f.Close()
 
 	// Parse the PE file
 	if err := f.Parse(); err != nil {
