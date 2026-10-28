@@ -83,44 +83,44 @@ type DefaultLogger struct {
 }
 
 // Errorf is the formatted error logging function.
-func (DefaultLogger) Errorf(format string, args ...any) {
+func (*DefaultLogger) Errorf(format string, args ...any) {
 	log.Printf(format, args...)
 }
 
 // Warnf is the formatted warning logging function.
-func (DefaultLogger) Warnf(format string, args ...any) {
+func (*DefaultLogger) Warnf(format string, args ...any) {
 	log.Printf(format, args...)
 }
 
 // Infof is the formatted info logging function.
-func (DefaultLogger) Infof(format string, args ...any) {
+func (*DefaultLogger) Infof(format string, args ...any) {
 	log.Printf(format, args...)
 }
 
 // Debugf is the formatted debug logging function.
-func (l DefaultLogger) Debugf(format string, args ...any) {
+func (l *DefaultLogger) Debugf(format string, args ...any) {
 	if l.Verbose {
 		log.Printf(format, args...)
 	}
 }
 
 // Error is the error logging function.
-func (DefaultLogger) Error(args ...any) {
+func (*DefaultLogger) Error(args ...any) {
 	log.Println(args...)
 }
 
 // Warn is the warning logging function.
-func (DefaultLogger) Warn(args ...any) {
+func (*DefaultLogger) Warn(args ...any) {
 	log.Println(args...)
 }
 
 // Info is the info logging function.
-func (DefaultLogger) Info(args ...any) {
+func (*DefaultLogger) Info(args ...any) {
 	log.Println(args...)
 }
 
 // Debug is the debug logging function.
-func (l DefaultLogger) Debug(args ...any) {
+func (l *DefaultLogger) Debug(args ...any) {
 	if l.Verbose {
 		log.Println(args...)
 	}

@@ -68,10 +68,10 @@ type DepGroupMetadata struct {
 	DepGroupVals []string
 }
 
-var _ DepGroups = DepGroupMetadata{}
+var _ DepGroups = &DepGroupMetadata{}
 
 // DepGroups return the dependency groups property in the metadata
-func (dgm DepGroupMetadata) DepGroups() []string {
+func (dgm *DepGroupMetadata) DepGroups() []string {
 	return dgm.DepGroupVals
 }
 
@@ -83,7 +83,7 @@ func DepGroupToProto(dgm *DepGroupMetadata) *pb.DepGroupMetadata {
 }
 
 // IsProtoable marks the struct as a metadata type.
-func (dgm DepGroupMetadata) IsProtoable() {}
+func (dgm *DepGroupMetadata) IsProtoable() {}
 
 // DepGroupToStruct converts the DepGroupMetadata proto to a DepGroupMetadata struct.
 func DepGroupToStruct(m *pb.DepGroupMetadata) *DepGroupMetadata {
