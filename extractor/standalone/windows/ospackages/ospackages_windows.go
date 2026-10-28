@@ -56,18 +56,18 @@ func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows, RunningSystem: true}
 }
 
 // Extract retrieves the patch level from the Windows registry.
-func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (inventory.Inventory, error) {
 	reg, err := e.Opener.Open()
 	if err != nil {
 		return inventory.Inventory{}, err
@@ -95,7 +95,7 @@ func (e Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (in
 
 // allSoftwaresInfo builds the package of name/version for installed software from the given registry
 // keys. This function cannot return an error.
-func (e Extractor) allSoftwaresInfo(reg registry.Registry, hive string, paths []string) []*extractor.Package {
+func (e *Extractor) allSoftwaresInfo(reg registry.Registry, hive string, paths []string) []*extractor.Package {
 	var pkgs []*extractor.Package
 
 	for _, p := range paths {
@@ -109,7 +109,7 @@ func (e Extractor) allSoftwaresInfo(reg registry.Registry, hive string, paths []
 	return pkgs
 }
 
-func (e Extractor) softwareInfo(reg registry.Registry, hive string, path string) (*extractor.Package, error) {
+func (e *Extractor) softwareInfo(reg registry.Registry, hive string, path string) (*extractor.Package, error) {
 	key, err := reg.OpenKey(hive, path)
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func (e Extractor) softwareInfo(reg registry.Registry, hive string, path string)
 	}, nil
 }
 
-func (e Extractor) installedSystemSoftware(reg registry.Registry) ([]string, error) {
+func (e *Extractor) installedSystemSoftware(reg registry.Registry) ([]string, error) {
 	keys, err := e.enumerateSubkeys(reg, "HKLM", regUninstallRootDefault)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (e Extractor) installedSystemSoftware(reg registry.Registry) ([]string, err
 	return append(keys, k...), nil
 }
 
-func (e Extractor) installedUserSoftware(reg registry.Registry) ([]string, error) {
+func (e *Extractor) installedUserSoftware(reg registry.Registry) ([]string, error) {
 	var keys []string
 
 	userHives, err := e.enumerateSubkeys(reg, "HKU", "")
@@ -173,7 +173,7 @@ func (e Extractor) installedUserSoftware(reg registry.Registry) ([]string, error
 	return keys, nil
 }
 
-func (e Extractor) enumerateSubkeys(reg registry.Registry, hive string, path string) ([]string, error) {
+func (e *Extractor) enumerateSubkeys(reg registry.Registry, hive string, path string) ([]string, error) {
 	key, err := reg.OpenKey(hive, path)
 	if err != nil {
 		return nil, err

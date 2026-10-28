@@ -49,18 +49,18 @@ func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name returns the unique identifier for this extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version returns the version of this extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements returns the system requirements for this extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows}
 }
 
 // FileRequired determines if the given file should be processed by this extractor.
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	normalized := filepath.ToSlash(path)
 
@@ -92,7 +92,7 @@ type Package struct {
 }
 
 // Extract extracts packages from a Winget database file.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	absPath, err := input.GetRealPath()
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
@@ -151,7 +151,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: extPackages}, nil
 }
 
-func (e Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
+func (e *Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
 	var tableName string
 	err := db.QueryRowContext(ctx, "SELECT name FROM sqlite_master WHERE type='table' AND name='manifest'").Scan(&tableName)
 	if err != nil {
@@ -163,7 +163,7 @@ func (e Extractor) validateDatabase(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (e Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package, error) {
+func (e *Extractor) extractPackages(ctx context.Context, db *sql.DB) ([]*Package, error) {
 	query := `
 	SELECT
 		i.id as package_id,

@@ -50,22 +50,22 @@ func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name returns the extractor name.
-func (e Extractor) Name() string {
+func (e *Extractor) Name() string {
 	return Name
 }
 
 // Version returns the extractor version.
-func (e Extractor) Version() int {
+func (e *Extractor) Version() int {
 	return 0
 }
 
 // Requirements returns the extractor requirements.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
 // FileRequired determines whether a file should be scanned.
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	base := path.Base(api.Path())
 	return base == "auth.json"
 }
@@ -79,7 +79,7 @@ type authJSON struct {
 }
 
 // Extract extracts Composer Packagist credentials from auth.json.
-func (e Extractor) Extract(ctx context.Context,
+func (e *Extractor) Extract(ctx context.Context,
 	input *filesystem.ScanInput,
 ) (inventory.Inventory, error) {
 	var data authJSON

@@ -69,18 +69,18 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 }
 
 // Name of the Enricher.
-func (Enricher) Name() string {
+func (*Enricher) Name() string {
 	return Name
 }
 
 // Version of the Enricher.
-func (Enricher) Version() int {
+func (*Enricher) Version() int {
 	return version
 }
 
 // Requirements of the Enricher.
 // Needs network access so it can validate Secrets.
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network: plugin.NetworkOnline,
 	}
@@ -89,12 +89,12 @@ func (Enricher) Requirements() *plugin.Capabilities {
 // RequiredPlugins returns the plugins that are required to be enabled for this
 // Enricher to run. While it works on the results of other extractors,
 // the Enricher itself can run independently.
-func (Enricher) RequiredPlugins() []string {
+func (*Enricher) RequiredPlugins() []string {
 	return []string{}
 }
 
 // Enrich adds license data to all the packages using deps.dev
-func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	queries := make([]*depsdevpb.GetVersionRequest, len(inv.Packages))
 	for i, pkg := range inv.Packages {
 		if err := ctx.Err(); err != nil {
@@ -136,7 +136,7 @@ func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *invent
 // query. It makes these requests concurrently, sharing the single HTTP/2
 // connection. The order in which the requests are specified should correspond
 // to the order of licenses returned by this function.
-func (e Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.GetVersionRequest) ([][]string, error) {
+func (e *Enricher) makeVersionRequest(ctx context.Context, queries []*depsdevpb.GetVersionRequest) ([][]string, error) {
 	licenses := make([][]string, len(queries))
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(maxConcurrentRequests)

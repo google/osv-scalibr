@@ -66,18 +66,18 @@ type Annotator struct{}
 func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
-func (Annotator) Name() string { return "misc/npm-source" }
+func (*Annotator) Name() string { return "misc/npm-source" }
 
 // Version of the annotator.
-func (Annotator) Version() int { return 1 }
+func (*Annotator) Version() int { return 1 }
 
 // Requirements of the annotator.
-func (Annotator) Requirements() *plugin.Capabilities {
+func (*Annotator) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
 // Annotate adds annotations to NPM packages from /node_modules/../package.json that are installed from the NPM repositories.
-func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	rootDirToPackages := MapNPMProjectRootsToPackages(results.Packages)
 	var errs []error
 	for rootDir, pkgs := range rootDirToPackages {

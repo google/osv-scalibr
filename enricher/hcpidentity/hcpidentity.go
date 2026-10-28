@@ -73,21 +73,21 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 }
 
 // Name of the Enricher.
-func (Enricher) Name() string { return Name }
+func (*Enricher) Name() string { return Name }
 
 // Version of the Enricher.
-func (Enricher) Version() int { return version }
+func (*Enricher) Version() int { return version }
 
 // Requirements of the Enricher (needs network access).
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }
 
 // RequiredPlugins returns the plugins that are required to be enabled for this Enricher to run.
-func (Enricher) RequiredPlugins() []string { return []string{} }
+func (*Enricher) RequiredPlugins() []string { return []string{} }
 
 // Enrich augments HCP access tokens with identity metadata obtained from the API.
-func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	for _, s := range inv.Secrets {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -144,7 +144,7 @@ type identity struct {
 	UserID         string
 }
 
-func (e Enricher) fetchCallerIdentity(ctx context.Context, bearer string) (identity, error) {
+func (e *Enricher) fetchCallerIdentity(ctx context.Context, bearer string) (identity, error) {
 	url := e.baseURL + "/iam/2019-12-10/caller-identity"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

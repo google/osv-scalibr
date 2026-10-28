@@ -87,19 +87,19 @@ func newForTesting(zippedDBRemoteHost string) enricher.Enricher {
 }
 
 // Name of the Enricher.
-func (Enricher) Name() string {
+func (*Enricher) Name() string {
 	return Name
 }
 
 // Version of the Enricher.
-func (Enricher) Version() int {
+func (*Enricher) Version() int {
 	return version
 }
 
 // Requirements of the Enricher.
 // Needs network access if database downloading is enabled.
 // Otherwise, defaults to NetworkAny because this enricher does not require the whole scan to be offline.
-func (e Enricher) Requirements() *plugin.Capabilities {
+func (e *Enricher) Requirements() *plugin.Capabilities {
 	network := plugin.NetworkAny
 
 	if e.download {
@@ -114,12 +114,12 @@ func (e Enricher) Requirements() *plugin.Capabilities {
 // RequiredPlugins returns the plugins that are required to be enabled for this
 // Enricher to run. While it works on the results of other extractors,
 // the Enricher itself can run independently.
-func (Enricher) RequiredPlugins() []string {
+func (*Enricher) RequiredPlugins() []string {
 	return []string{}
 }
 
 // Enrich checks for vulnerabilities in the inventory packages using zip files exported by osv.dev
-func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	if e.httpClient == nil {
 		return fmt.Errorf("client not configured for %s", Name)
 	}

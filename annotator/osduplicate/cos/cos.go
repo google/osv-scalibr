@@ -52,18 +52,18 @@ type Annotator struct{}
 func New(_ *cpb.PluginConfig) (annotator.Annotator, error) { return &Annotator{}, nil }
 
 // Name of the annotator.
-func (Annotator) Name() string { return Name }
+func (*Annotator) Name() string { return Name }
 
 // Version of the annotator.
-func (Annotator) Version() int { return 0 }
+func (*Annotator) Version() int { return 0 }
 
 // Requirements of the annotator.
-func (Annotator) Requirements() *plugin.Capabilities {
+func (*Annotator) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSLinux}
 }
 
 // Annotate adds annotations to language packages that have already been found in COS OS packages.
-func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	if input == nil || input.ScanRoot == nil || input.ScanRoot.FS == nil {
 		return errors.New("input is nil")
 	}

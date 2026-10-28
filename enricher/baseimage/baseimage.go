@@ -66,23 +66,23 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 }
 
 // Name of the base image enricher.
-func (Enricher) Name() string { return Name }
+func (*Enricher) Name() string { return Name }
 
 // Version of the base image enricher.
-func (Enricher) Version() int { return Version }
+func (*Enricher) Version() int { return Version }
 
 // Requirements of the base image enricher.
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }
 
 // RequiredPlugins returns a list of Plugins that need to be enabled for this Enricher to work.
-func (Enricher) RequiredPlugins() []string {
+func (*Enricher) RequiredPlugins() []string {
 	return []string{}
 }
 
 // Enrich enriches the inventory with base image information from deps.dev.
-func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	if inv.ContainerImageMetadata == nil {
 		return nil
 	}
