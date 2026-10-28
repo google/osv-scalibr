@@ -20,16 +20,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/imagedsl"
 	"github.com/google/osv-scalibr/enricher/baseimage"
-	"github.com/google/osv-scalibr/extractor"
-	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	"github.com/mohae/deepcopy"
-	"github.com/opencontainers/go-digest"
-	"github.com/opencontainers/image-spec/identity"
-	"google.golang.org/protobuf/testing/protocmp"
-
 	"github.com/google/osv-scalibr/plugin/config/configtest"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestVersion(t *testing.T) {
@@ -43,10 +38,7 @@ func TestRequirements(t *testing.T) {
 	e := &baseimage.Enricher{}
 	got := e.Requirements()
 	want := &plugin.Capabilities{Network: plugin.NetworkOnline}
-	opts := []cmp.Option{
-		protocmp.Transform(),
-	}
-	if diff := cmp.Diff(want, got, opts...); diff != "" {
+	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
 		t.Errorf("Requirements() returned diff (-want +got):\n%s", diff)
 	}
 }
@@ -55,257 +47,130 @@ func TestRequiredPlugins(t *testing.T) {
 	e := &baseimage.Enricher{}
 	got := e.RequiredPlugins()
 	want := []string{}
-	opts := []cmp.Option{
-		protocmp.Transform(),
-	}
-	if diff := cmp.Diff(want, got, opts...); diff != "" {
+	if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
 		t.Errorf("RequiredPlugins() returned diff (-want +got):\n%s", diff)
 	}
 }
 
 func TestEnrich(t *testing.T) {
-	// Test layer metadata.
-	// lm1: in base image alpine.
-	// lm2: in base image nginx, but not an edge layer of the base image.
-	// lm3: in base image nginx.
-	lm1DiffID := digest.FromString("alpine")
-	lm2DiffID := digest.FromString("nginxnonedge")
-	lm3DiffID := digest.FromString("nginx")
-
-	lm1ChainID := lm1DiffID.String()
-	lm12ChainID := identity.ChainID([]digest.Digest{lm1DiffID, lm2DiffID}).String()
-	lm123ChainID := identity.ChainID([]digest.Digest{lm1DiffID, lm2DiffID, lm3DiffID}).String()
-
-	lm1 := &extractor.LayerMetadata{
-		DiffID: lm1DiffID,
-	}
-	lm1Enriched := &extractor.LayerMetadata{
-		DiffID:         lm1DiffID,
-		BaseImageIndex: 2,
-	}
-	lm1EnrichedNoOtherBaseImages := &extractor.LayerMetadata{
-		DiffID:         lm1DiffID,
-		BaseImageIndex: 1,
-	}
-	lm2 := &extractor.LayerMetadata{
-		DiffID: lm2DiffID,
-	}
-	lm2Enriched := &extractor.LayerMetadata{
-		DiffID:         lm2DiffID,
-		BaseImageIndex: 1,
-	}
-	lm3 := &extractor.LayerMetadata{
-		DiffID: lm3DiffID,
-	}
-	lm3Enriched := &extractor.LayerMetadata{
-		DiffID:         lm3DiffID,
-		BaseImageIndex: 1,
-	}
 	clientErr := errors.New("client error")
-	lmErrDiffID := digest.FromString("clienterror")
-	lmErr := &extractor.LayerMetadata{
-		DiffID: lmErrDiffID,
-	}
-
-	lm12ErrChainID := identity.ChainID([]digest.Digest{lm1DiffID, lm2DiffID, lmErrDiffID}).String()
-	lmErr2ChainID := identity.ChainID([]digest.Digest{lmErrDiffID, lm2DiffID}).String()
-	lmErr23ChainID := identity.ChainID([]digest.Digest{lmErrDiffID, lm2DiffID, lm3DiffID}).String()
 
 	tests := []struct {
 		name    string
-		client  baseimage.Client
-		inv     *inventory.Inventory
-		want    *inventory.Inventory
+		input   string
+		want    string
 		wantErr error
 	}{
 		{
-			name:   "no_image_metadata_to_enrich",
-			client: mustNewClientFake(t, &config{}),
-			inv:    &inventory.Inventory{},
-			want:   &inventory.Inventory{},
+			name:  "no_image_metadata_to_enrich",
+			input: ``,
+			want:  ``,
 		},
 		{
 			name: "enrich_layers",
-			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-				{
-					req:  &baseimage.Request{ChainID: lm123ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
-				},
-				{
-					req: &baseimage.Request{ChainID: lm12ChainID},
-				},
-				{
-					req:  &baseimage.Request{ChainID: lm1ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
-				},
-			}}),
-			inv: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lm3}},
-				},
-			},
-			want: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{
-						LayerMetadata: []*extractor.LayerMetadata{lm1Enriched, lm2Enriched, lm3Enriched},
-						BaseImages: [][]*extractor.BaseImageDetails{
-							{},
-							{
-								{
-									Repository: "nginx",
-									Registry:   "docker.io",
-									ChainID:    digest.Digest(lm123ChainID),
-									Plugin:     "baseimage",
-								},
-							},
-							{
-								{
-									Repository: "alpine",
-									Registry:   "docker.io",
-									ChainID:    digest.Digest(lm1ChainID),
-									Plugin:     "baseimage",
-								},
-							},
-						},
-					},
-				},
-			},
+			input: `
+				layer alpine       depsdev=alpine
+				layer nginxnonedge
+				layer nginx        depsdev=nginx
+			`,
+			want: `
+				layer alpine
+				=== base docker.io/alpine ===
+				layer nginxnonedge
+				layer nginx
+				=== base docker.io/nginx ===
+			`,
 		},
 		{
-			name: "same_layer_chainID_in_different_images,_should_use_cache",
-			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-				{
-					req:  &baseimage.Request{ChainID: lm1ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
-				},
-			}}),
-			inv: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{LayerMetadata: []*extractor.LayerMetadata{lm1}},
-					{LayerMetadata: []*extractor.LayerMetadata{lm1}},
-				},
-			},
-			want: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{
-						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
-						BaseImages: [][]*extractor.BaseImageDetails{
-							{},
-							{
-								{
-									Repository: "alpine",
-									Registry:   "docker.io",
-									ChainID:    digest.Digest(lm1ChainID),
-									Plugin:     "baseimage",
-								},
-							},
-						},
-					},
-					{
-						LayerMetadata: []*extractor.LayerMetadata{lm1EnrichedNoOtherBaseImages},
-						BaseImages: [][]*extractor.BaseImageDetails{
-							{},
-							{
-								{
-									Repository: "alpine",
-									Registry:   "docker.io",
-									ChainID:    digest.Digest(lm1ChainID),
-									Plugin:     "baseimage",
-								},
-							},
-						},
-					},
-				},
-			},
+			name: "enrich_with_empty_layer_and_multiple_repos",
+			input: `
+				layer alpine
+				empty-layer depsdev=alpine,alpine-mirror
+				layer app
+			`,
+			want: `
+				layer alpine
+				empty-layer
+				=== base docker.io/alpine ===
+				=== base docker.io/alpine-mirror ===
+				layer app
+			`,
+		},
+		{
+			name: "same_layer_chainID_in_different_images_should_use_cache",
+			input: `
+				image
+				layer alpine depsdev=alpine
+
+				image
+				layer alpine depsdev=CACHED
+			`,
+			want: `
+				image
+				layer alpine
+				=== base docker.io/alpine ===
+
+				image
+				layer alpine
+				=== base docker.io/alpine ===
+			`,
 		},
 		{
 			name: "client_error_on_last_layer",
-			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-				{
-					req: &baseimage.Request{ChainID: lm12ErrChainID},
-					err: clientErr,
-				},
-				{
-					req: &baseimage.Request{ChainID: lm12ChainID},
-				},
-				{
-					req:  &baseimage.Request{ChainID: lm1ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{{"alpine"}}},
-				},
-			}}),
-			inv: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lmErr}},
-				},
-			},
-			want: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{
-						// lm1 is enriched with the base image alpine.
-						// lm2 is not enriched because the layer above it lmErr does not get enriched.
-						// lmErr is not enriched because the client returns an error.
-						LayerMetadata: []*extractor.LayerMetadata{lm1, lm2, lmErr},
-						BaseImages: [][]*extractor.BaseImageDetails{
-							{},
-						},
-					},
-				},
-			},
+			input: `
+				layer alpine       depsdev=alpine
+				layer nginxnonedge
+				layer clienterror  depsdev=ERROR
+			`,
+			// When a query fails, none of the image's layers are enriched.
+			want: `
+				layer alpine
+				layer nginxnonedge
+				layer clienterror
+			`,
 			wantErr: clientErr,
 		},
 		{
 			name: "client_error_on_first_layer",
-			client: mustNewClientFake(t, &config{ReqRespErrs: []reqRespErr{
-				{
-					req:  &baseimage.Request{ChainID: lmErr23ChainID},
-					resp: &baseimage.Response{Results: []*baseimage.Result{{"nginx"}}},
-				},
-				{
-					req: &baseimage.Request{ChainID: lmErr2ChainID},
-				},
-				{
-					req: &baseimage.Request{ChainID: lmErrDiffID.String()},
-					err: clientErr,
-				},
-			}}),
-			inv: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{LayerMetadata: []*extractor.LayerMetadata{lmErr, lm2, lm3}},
-				},
-			},
-			want: &inventory.Inventory{
-				ContainerImageMetadata: []*extractor.ContainerImageMetadata{
-					{
-						// Nothing is enriched because one of the layer requests failed, everything is cancelled
-						LayerMetadata: []*extractor.LayerMetadata{lmErr, lm2, lm3},
-						BaseImages: [][]*extractor.BaseImageDetails{
-							{},
-						},
-					},
-				},
-			},
+			input: `
+				layer clienterror  depsdev=ERROR
+				layer nginxnonedge
+				layer nginx        depsdev=nginx
+			`,
+			want: `
+				layer clienterror
+				layer nginxnonedge
+				layer nginx
+			`,
 			wantErr: clientErr,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			inputSpec := imagedsl.MustParse(t, tc.input)
+			wantSpec := imagedsl.MustParse(t, tc.want)
+
 			enr, err := baseimage.New(configtest.NewFakePluginConfig())
 			if err != nil {
 				t.Fatalf("New: %v", err)
 			}
 			e := enr.(*baseimage.Enricher)
-			e.Client = tc.client
-			inv := deepcopy.Copy(tc.inv).(*inventory.Inventory)
-			if err := e.Enrich(t.Context(), nil, inv); !cmp.Equal(err, tc.wantErr, cmpopts.EquateErrors()) {
-				t.Errorf("Enrich(%v) returned error: %v, want error: %v\n", tc.inv, err, tc.wantErr)
+			fakeClient := mustClientFromSpec(t, inputSpec, clientErr)
+			e.Client = fakeClient
+
+			inv := inputSpec.ToInventory()
+			wantInv := wantSpec.ToEnrichedInventory()
+
+			gotErr := e.Enrich(t.Context(), nil, inv)
+			if !cmp.Equal(gotErr, tc.wantErr, cmpopts.EquateErrors()) {
+				t.Errorf("Enrich() error = %v, want %v", gotErr, tc.wantErr)
 			}
-			opts := []cmp.Option{
-				protocmp.Transform(),
-				cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer"),
-			}
-			if diff := cmp.Diff(tc.want, inv, opts...); diff != "" {
-				t.Errorf("Enrich(%v) returned diff (-want +got):\n%s\n", tc.inv, diff)
+			fakeClient.AssertExpectations(t, tc.wantErr != nil)
+
+			opts := append([]cmp.Option{protocmp.Transform()}, imagedsl.DiffOptions()...)
+			if diff := cmp.Diff(wantInv, inv, opts...); diff != "" {
+				t.Errorf("Enrich() returned diff (-want +got):\n%s", diff)
 			}
 		})
 	}

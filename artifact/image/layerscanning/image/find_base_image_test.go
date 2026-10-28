@@ -18,191 +18,97 @@ import (
 	"errors"
 	"testing"
 
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/imagedsl"
 )
 
 func TestFindBaseImageIndex(t *testing.T) {
 	tests := []struct {
 		name      string
-		histories []v1.History
-		wantIndex int
+		history   string
 		wantError error
 	}{
 		{
-			name:      "empty history",
-			histories: []v1.History{},
+			name:      "empty_history",
+			history:   ``,
 			wantError: ErrBaseImageNotFound,
 		},
 		{
-			name: "single_empty_history",
-			histories: []v1.History{
-				{
-					CreatedBy:  "Empty Layer",
-					EmptyLayer: true,
-				},
-			},
+			name:      "single_empty_history",
+			history:   `empty-layer Empty Layer`,
 			wantError: ErrBaseImageNotFound,
 		},
 		{
-			name: "single_non_empty_history",
-			histories: []v1.History{
-				{
-					CreatedBy:  "Non Empty Layer",
-					EmptyLayer: false,
-				},
-			},
+			name:      "single_non_empty_history",
+			history:   `layer Non Empty Layer`,
 			wantError: ErrBaseImageNotFound,
 		},
 		{
 			name: "single_CMD_command_in_history",
-			histories: []v1.History{
-				{
-					CreatedBy:  "Non Empty Layer",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "CMD[\"somecmd\"]",
-					EmptyLayer: true,
-				},
-			},
+			history: `
+				layer       Non Empty Layer
+				empty-layer CMD["somecmd"]
+			`,
 			wantError: ErrBaseImageNotFound,
 		},
 		{
 			name: "two_CMD_commands_in_history",
-			histories: []v1.History{
-				{
-					CreatedBy:  "ADD file:123 in /",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "CMD[\"/bin/sh\"]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "RUN apt-get update",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "COPY dir /dir",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "ENTRYPOINT [\"entrypoint.sh\"]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "CMD [\"buildcmd\"]",
-					EmptyLayer: true,
-				},
-			},
-			wantIndex: 1,
+			history: `
+				layer       ADD file:123 in /
+				empty-layer CMD["/bin/sh"]             <-- want
+				layer       RUN apt-get update
+				layer       COPY dir /dir
+				empty-layer ENTRYPOINT ["entrypoint.sh"]
+				empty-layer CMD ["buildcmd"]
+			`,
 		},
 		{
 			name: "nginx_image_with_multiple_base_images_in_history",
-			histories: []v1.History{
-				{
-					CreatedBy:  "ADD rootfs.tar.xz /",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "CMD[\"bash\"]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "ENV NGINX_VERSION=1.27.2",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "RUN /bin/sh -c set -x",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "COPY file1 /file1",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "Entrypoint [\"/docker-entrypoint.sh\"]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "EXPOSE map[80/tcp:{}]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "STOPSIGNAL SIGQUIT",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "CMD [\"nginx\" \"-g\" \"daemon off;\"]",
-					EmptyLayer: true,
-				},
-			},
-			// Want to return the index of the following command: CMD ["bash"]
-			wantIndex: 1,
+			history: `
+				layer       ADD rootfs.tar.xz /
+				empty-layer CMD["bash"]                         <-- want
+				empty-layer ENV NGINX_VERSION=1.27.2
+				layer       RUN /bin/sh -c set -x
+				layer       COPY file1 /file1
+				empty-layer Entrypoint ["/docker-entrypoint.sh"]
+				empty-layer EXPOSE map[80/tcp:{}]
+				empty-layer STOPSIGNAL SIGQUIT
+				empty-layer CMD ["nginx" "-g" "daemon off;"]
+			`,
 		},
 		{
 			name: "custom_nginx_image_with_multiple_base_images_in_history",
-			histories: []v1.History{
-				{
-					CreatedBy:  "ADD rootfs.tar.xz /",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "CMD[\"bash\"]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "ENV NGINX_VERSION=1.27.2",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "RUN /bin/sh -c set -x",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "COPY file1 /file1",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "Entrypoint [\"/docker-entrypoint.sh\"]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "EXPOSE map[80/tcp:{}]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "STOPSIGNAL SIGQUIT",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "CMD [\"nginx\" \"-g\" \"daemon off;\"]",
-					EmptyLayer: true,
-				},
-				{
-					CreatedBy:  "/bin/sh -c #(nop) COPY custom-binary /custom-binary",
-					EmptyLayer: false,
-				},
-				{
-					CreatedBy:  "/bin/sh -c #(nop)  CMD [\"buildcmd\"]",
-					EmptyLayer: true,
-				},
-			},
-			// Want to return the index of the following command: CMD ["nginx" "-g" "daemon off;"]
-			wantIndex: 8,
+			history: `
+				layer       ADD rootfs.tar.xz /
+				empty-layer CMD["bash"]
+				empty-layer ENV NGINX_VERSION=1.27.2
+				layer       RUN /bin/sh -c set -x
+				layer       COPY file1 /file1
+				empty-layer Entrypoint ["/docker-entrypoint.sh"]
+				empty-layer EXPOSE map[80/tcp:{}]
+				empty-layer STOPSIGNAL SIGQUIT
+				empty-layer CMD ["nginx" "-g" "daemon off;"]    <-- want
+				layer       /bin/sh -c #(nop) COPY custom-binary /custom-binary
+				empty-layer /bin/sh -c #(nop)  CMD ["buildcmd"]
+			`,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gotIndex, gotErr := findBaseImageIndex(test.histories)
-			if !errors.Is(gotErr, test.wantError) {
-				t.Errorf("findBaseImageIndex(%v) returned error: %v, want error: %v", test.histories, gotErr, test.wantError)
-				return
+			histories, wantIndex, hasWant := imagedsl.MustParseHistory(t, test.history)
+			if test.wantError == nil && !hasWant {
+				t.Fatalf("test case %q must mark expected base image layer with `<-- want`", test.name)
+			}
+			if test.wantError != nil && hasWant {
+				t.Fatalf("test case %q expects error %v and must not set `<-- want`", test.name, test.wantError)
 			}
 
-			if gotIndex != test.wantIndex {
-				t.Errorf("guessBaseImageIndex(%v) = %v, want: %v", test.histories, gotIndex, test.wantIndex)
+			gotIndex, gotErr := findBaseImageIndex(histories)
+			if !errors.Is(gotErr, test.wantError) {
+				t.Fatalf("findBaseImageIndex() error = %v, want %v", gotErr, test.wantError)
+			}
+			if gotIndex != wantIndex {
+				t.Errorf("findBaseImageIndex() = %d, want %d", gotIndex, wantIndex)
 			}
 		})
 	}
