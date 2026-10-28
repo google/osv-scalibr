@@ -25,6 +25,6 @@ import (
 )
 
 // Annotate is a dummy function for non-Linux builds.
-func (a Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
+func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, results *inventory.Inventory) error {
 	return errors.New("not implemented outside of Linux")
 }

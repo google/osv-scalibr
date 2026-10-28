@@ -111,18 +111,18 @@ func NewWithClient(c Client, timeout time.Duration) enricher.Enricher {
 }
 
 // Name of the Enricher.
-func (Enricher) Name() string {
+func (*Enricher) Name() string {
 	return Name
 }
 
 // Version of the Enricher.
-func (Enricher) Version() int {
+func (*Enricher) Version() int {
 	return version
 }
 
 // Requirements of the Enricher.
 // Needs network access so it can query the OSV.dev API.
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network: plugin.NetworkOnline,
 	}
@@ -131,7 +131,7 @@ func (Enricher) Requirements() *plugin.Capabilities {
 // RequiredPlugins returns the plugins that are required to be enabled for this
 // Enricher to run. While it works on the results of the chisel Extractor, the
 // Enricher itself can run independently.
-func (Enricher) RequiredPlugins() []string {
+func (*Enricher) RequiredPlugins() []string {
 	return []string{}
 }
 
@@ -142,7 +142,7 @@ func (Enricher) RequiredPlugins() []string {
 // them, or if the request for their ecosystem fails. If multiple source package
 // names are returned for a binary package, additional package entries are
 // added to the inventory for each extra source package.
-func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	// Ecosystem -> binary package name -> packages to update.
 	toEnrich := make(map[string]map[string][]*extractor.Package)
 	for _, pkg := range inv.Packages {
@@ -189,7 +189,7 @@ func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *invent
 	return errors.Join(append(errs, context.Cause(queryCtx))...)
 }
 
-func (e Enricher) enrichEcosystem(ctx context.Context, ecosystem string, binaryToPackages map[string][]*extractor.Package, inv *inventory.Inventory) error {
+func (e *Enricher) enrichEcosystem(ctx context.Context, ecosystem string, binaryToPackages map[string][]*extractor.Package, inv *inventory.Inventory) error {
 	binaryNames := slices.Sorted(maps.Keys(binaryToPackages))
 	resp, err := e.client.ExperimentalQueryUbuntuPackageMapping(ctx, &osvapipb.UbuntuPackageMappingParameters{
 		Ecosystem:   ecosystem,

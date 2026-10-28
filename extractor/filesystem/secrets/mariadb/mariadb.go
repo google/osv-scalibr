@@ -65,25 +65,25 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
 // FileRequired returns true if the file contains mariadb config information
 // ref: https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	return strings.HasSuffix(path, "my.cnf") || strings.HasSuffix(path, "my.ini")
 }
 
 // Extract returns a list of secret mariadb credentials
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	i := inventory.Inventory{}
 	secrets, err := e.includeFile(ctx, input, input.Path)
 	if err != nil {
@@ -94,7 +94,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 // include call includeDir or includeFile depending on the prefix
-func (e Extractor) include(ctx context.Context, input *filesystem.ScanInput, line string) ([]*inventory.Secret, error) {
+func (e *Extractor) include(ctx context.Context, input *filesystem.ScanInput, line string) ([]*inventory.Secret, error) {
 	after, isDir, err := cutIncludePrefix(line)
 	if err != nil {
 		return nil, fmt.Errorf("error in line %q: %w", line, err)
@@ -127,7 +127,7 @@ func cutIncludePrefix(s string) (after string, dir bool, err error) {
 }
 
 // includeFile recursively extract secrets from a config file
-func (e Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput, path string) ([]*inventory.Secret, error) {
+func (e *Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput, path string) ([]*inventory.Secret, error) {
 	// Prevent circular includes.
 	if _, seen := e.visited[path]; seen {
 		return nil, nil
@@ -213,7 +213,7 @@ func (e Extractor) includeFile(ctx context.Context, input *filesystem.ScanInput,
 }
 
 // includeDir recursively loads .cnf and .ini files from a specified directory.
-func (e Extractor) includeDir(ctx context.Context, input *filesystem.ScanInput, dir string) ([]*inventory.Secret, error) {
+func (e *Extractor) includeDir(ctx context.Context, input *filesystem.ScanInput, dir string) ([]*inventory.Secret, error) {
 	entries, err := fs.ReadDir(input.FS, dir)
 	if err != nil {
 		return nil, fmt.Errorf("could not read folder %s: %w", dir, err)
