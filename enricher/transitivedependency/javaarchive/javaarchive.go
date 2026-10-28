@@ -39,22 +39,22 @@ type Enricher struct {
 }
 
 // Name returns the name of the enricher.
-func (e Enricher) Name() string {
+func (e *Enricher) Name() string {
 	return Name
 }
 
 // Version returns the version of the enricher.
-func (Enricher) Version() int {
+func (*Enricher) Version() int {
 	return 0
 }
 
 // Requirements returns the capability requirements of the enricher.
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{}
 }
 
 // RequiredPlugins returns the names of the plugins required by the enricher.
-func (Enricher) RequiredPlugins() []string {
+func (*Enricher) RequiredPlugins() []string {
 	return []string{archive.Name}
 }
 

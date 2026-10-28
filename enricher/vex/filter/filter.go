@@ -42,19 +42,19 @@ func New(cfg *cpb.PluginConfig) (enricher.Enricher, error) {
 type Enricher struct{}
 
 // Name of the enricher.
-func (Enricher) Name() string { return Name }
+func (*Enricher) Name() string { return Name }
 
 // Version of the enricher.
-func (Enricher) Version() int { return Version }
+func (*Enricher) Version() int { return Version }
 
 // Requirements of the enricher.
-func (Enricher) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (*Enricher) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // RequiredPlugins returns a list of Plugins that need to be enabled for this Enricher to work.
-func (Enricher) RequiredPlugins() []string { return nil }
+func (*Enricher) RequiredPlugins() []string { return nil }
 
 // Enrich removes vulnerabilities that have VEX signals associated.
-func (e Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
+func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {
 	inv.PackageVulns = slices.DeleteFunc(inv.PackageVulns, func(f *inventory.PackageVuln) bool {
 		return len(f.ExploitabilitySignals) > 0
 	})

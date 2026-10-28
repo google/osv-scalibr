@@ -78,7 +78,7 @@ this, Enrichers must explicitly convey this in their `Requirements`:
 
 ```
 // Requirements of the my enricher.
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
     return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }
 ```
