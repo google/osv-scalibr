@@ -18,15 +18,19 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
 
 	"archive/tar"
 
 	"github.com/google/go-cmp/cmp"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -83,7 +87,7 @@ func createFailingDetectorTestFiles(t *testing.T) string {
 	return dir
 }
 
-func createImageTarball(t *testing.T) string {
+func buildTestImage(t *testing.T) v1.Image {
 	t.Helper()
 
 	var buf bytes.Buffer
@@ -126,7 +130,13 @@ require (
 	if err != nil {
 		t.Fatalf("unable to create image: %v", err)
 	}
+	return image
+}
 
+func createImageTarball(t *testing.T) string {
+	t.Helper()
+
+	image := buildTestImage(t)
 	dir := t.TempDir()
 	tarPath := filepath.Join(dir, "image.tar")
 	if err := tarball.WriteToFile(tarPath, nil, image); err != nil {
@@ -134,6 +144,80 @@ require (
 	}
 
 	return dir
+}
+
+func serveRemoteTestImage(t *testing.T) (string, string) {
+	t.Helper()
+
+	v1Image := buildTestImage(t)
+	rawManifest, err := v1Image.RawManifest()
+	if err != nil {
+		t.Fatalf("RawManifest() error: %v", err)
+	}
+	mediaType, err := v1Image.MediaType()
+	if err != nil {
+		t.Fatalf("MediaType() error: %v", err)
+	}
+	manifestDigest, err := v1Image.Digest()
+	if err != nil {
+		t.Fatalf("Digest() error: %v", err)
+	}
+	cfgName, err := v1Image.ConfigName()
+	if err != nil {
+		t.Fatalf("ConfigName() error: %v", err)
+	}
+	rawCfg, err := v1Image.RawConfigFile()
+	if err != nil {
+		t.Fatalf("RawConfigFile() error: %v", err)
+	}
+
+	blobs := map[string][]byte{
+		cfgName.String(): rawCfg,
+	}
+	layers, err := v1Image.Layers()
+	if err != nil {
+		t.Fatalf("Layers() error: %v", err)
+	}
+	for _, layer := range layers {
+		d, err := layer.Digest()
+		if err != nil {
+			t.Fatalf("layer.Digest() error: %v", err)
+		}
+		rc, err := layer.Compressed()
+		if err != nil {
+			t.Fatalf("layer.Compressed() error: %v", err)
+		}
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			t.Fatalf("io.ReadAll(layer) error: %v", err)
+		}
+		blobs[d.String()] = data
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v2/":
+			w.WriteHeader(http.StatusOK)
+		case r.URL.Path == "/v2/test/image/manifests/latest" || r.URL.Path == "/v2/test/image/manifests/"+manifestDigest.String():
+			w.Header().Set("Content-Type", string(mediaType))
+			w.Header().Set("Docker-Content-Digest", manifestDigest.String())
+			_, _ = w.Write(rawManifest)
+		case strings.HasPrefix(r.URL.Path, "/v2/test/image/blobs/"):
+			blobDigest := strings.TrimPrefix(r.URL.Path, "/v2/test/image/blobs/")
+			data, ok := blobs[blobDigest]
+			if !ok {
+				http.NotFound(w, r)
+				return
+			}
+			_, _ = w.Write(data)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	return strings.TrimPrefix(srv.URL, "http://"), manifestDigest.String()
 }
 
 func createBadImageTarball(t *testing.T) string {
@@ -148,6 +232,7 @@ func createBadImageTarball(t *testing.T) string {
 }
 
 func TestRunScan(t *testing.T) {
+	remoteHost, remoteDigest := serveRemoteTestImage(t)
 	testCases := []struct {
 		desc              string
 		setupFunc         func(t *testing.T) string
@@ -192,6 +277,37 @@ func TestRunScan(t *testing.T) {
 			wantFindingCount:  0,
 		},
 		{
+			desc: "Successful remote image extractor run",
+			setupFunc: func(t *testing.T) string {
+				t.Helper()
+				return t.TempDir()
+			},
+			flags: &cli.Flags{
+				RemoteImage:     remoteHost + "/test/image:latest",
+				ImagePlatform:   "linux/amd64",
+				ExtractorsToRun: []string{"go/gomod"},
+			},
+			wantScanStatus:    spb.ScanStatus_SUCCEEDED,
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
+			wantPackagesCount: 2,
+			wantFindingCount:  0,
+		},
+		{
+			desc: "Successful remote image extractor run by digest",
+			setupFunc: func(t *testing.T) string {
+				t.Helper()
+				return t.TempDir()
+			},
+			flags: &cli.Flags{
+				RemoteImage:     "https://" + remoteHost + "/test/image@" + remoteDigest,
+				ExtractorsToRun: []string{"go/gomod"},
+			},
+			wantScanStatus:    spb.ScanStatus_SUCCEEDED,
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_SUCCEEDED},
+			wantPackagesCount: 2,
+			wantFindingCount:  0,
+		},
+		{
 			desc:      "Image extractor run skips file exceeding MaxFileSize",
 			setupFunc: createImageTarball,
 			flags: &cli.Flags{
@@ -209,6 +325,22 @@ func TestRunScan(t *testing.T) {
 			setupFunc: createBadImageTarball,
 			flags: &cli.Flags{
 				ImageTarball:    "image.tar",
+				ExtractorsToRun: []string{"go/gomod"},
+			},
+			wantExit:          1,
+			wantScanStatus:    spb.ScanStatus_FAILED,
+			wantPluginStatus:  []spb.ScanStatus_ScanStatusEnum{spb.ScanStatus_FAILED},
+			wantPackagesCount: 0,
+			wantFindingCount:  0,
+		},
+		{
+			desc: "Failure to pull remote image",
+			setupFunc: func(t *testing.T) string {
+				t.Helper()
+				return t.TempDir()
+			},
+			flags: &cli.Flags{
+				RemoteImage:     "https://invalid@@digest",
 				ExtractorsToRun: []string{"go/gomod"},
 			},
 			wantExit:          1,
@@ -243,7 +375,7 @@ func TestRunScan(t *testing.T) {
 
 			if tc.flags.ImageTarball != "" {
 				tc.flags.ImageTarball = filepath.Join(dir, tc.flags.ImageTarball)
-			} else {
+			} else if tc.flags.RemoteImage == "" {
 				tc.flags.Root = dir
 			}
 
