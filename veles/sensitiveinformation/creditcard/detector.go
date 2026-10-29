@@ -109,14 +109,24 @@ var commonExamples = map[string]struct{}{
 //
 // Networks that no longer issue cards (Bankcard, Diners Club enRoute, Laser,
 // NPS Pridnestrovie, Solo, Switch, Visa Electron) are intentionally omitted.
+//
+// Overlapping ranges are intentional: a card can match both a broad network
+// range and a narrower bank or co-branded range. We only need any matching
+// prefix and length, not the most specific issuer. Broad Visa, Mastercard, and
+// UnionPay ranges are checked first to allow early returns before narrower ranges.
 var issuerRanges = []issuerRange{
+	// Visa
+	{lowIIN: "4", highIIN: "4", lengths: []int{13, 16, 19}},
+	// Mastercard
+	{lowIIN: "51", highIIN: "55", lengths: []int{16}},
+	{lowIIN: "2221", highIIN: "2720", lengths: []int{16}},
+	// China UnionPay
+	{lowIIN: "62", highIIN: "62", lengths: lengthRange(16, 19)},
 	// American Express
 	{lowIIN: "34", highIIN: "34", lengths: []int{15}},
 	{lowIIN: "37", highIIN: "37", lengths: []int{15}},
 	// China T-Union
 	{lowIIN: "31", highIIN: "31", lengths: []int{19}},
-	// China UnionPay
-	{lowIIN: "62", highIIN: "62", lengths: lengthRange(16, 19)},
 	// Diners Club International
 	{lowIIN: "30", highIIN: "30", lengths: lengthRange(14, 19)},
 	{lowIIN: "36", highIIN: "36", lengths: lengthRange(14, 19)},
@@ -164,14 +174,9 @@ var issuerRanges = []issuerRange{
 	{lowIIN: "2200", highIIN: "2204", lengths: lengthRange(16, 19)},
 	// BORICA
 	{lowIIN: "2205", highIIN: "2205", lengths: []int{16}},
-	// Mastercard
-	{lowIIN: "51", highIIN: "55", lengths: []int{16}},
-	{lowIIN: "2221", highIIN: "2720", lengths: []int{16}},
 	// Troy
 	{lowIIN: "65", highIIN: "65", lengths: []int{16}}, // Discover co-branded
 	{lowIIN: "9792", highIIN: "9792", lengths: []int{16}},
-	// Visa
-	{lowIIN: "4", highIIN: "4", lengths: []int{13, 16, 19}},
 	// UATP
 	{lowIIN: "1", highIIN: "1", lengths: []int{15}},
 	// Verve
