@@ -35,6 +35,7 @@ import (
 	"net"
 	"net/textproto"
 	"net/url"
+	"strings"
 
 	"github.com/google/osv-scalibr/veles"
 )
@@ -44,6 +45,14 @@ type FTPValidator struct{}
 
 // Validate attempts to connect and authenticate to the FTP server.
 func (f *FTPValidator) Validate(ctx context.Context, u *url.URL) (veles.ValidationStatus, error) {
+	user := u.User.Username()
+	pass, _ := u.User.Password()
+	// URL decoding can introduce line breaks that inject FTP commands.
+	// Reject both fields before making any network connection.
+	if strings.ContainsAny(user, "\r\n") || strings.ContainsAny(pass, "\r\n") {
+		return veles.ValidationFailed, errors.New("FTP credentials contain line breaks")
+	}
+
 	// Establish the connection.
 	conn, err := ftpDial(ctx, u.Host)
 	if err != nil {
@@ -52,8 +61,7 @@ func (f *FTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validati
 	defer conn.Close()
 
 	// Attempt authentication.
-	pass, _ := u.User.Password()
-	if err := ftpLogin(conn, u.User.Username(), pass); err != nil {
+	if err := ftpLogin(conn, user, pass); err != nil {
 		// If login fails (but connection worked), it's Invalid credentials, not a Failed connection.
 		return veles.ValidationInvalid, nil
 	}
