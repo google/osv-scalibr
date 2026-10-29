@@ -572,9 +572,9 @@ func checkUnsafeLockfileGenerationEnabled(opts options.FixVulnsOptions) error {
 	if opts.Manifest == "" || opts.Lockfile == "" || !isLockfileForManifest(opts.Manifest, opts.Lockfile) {
 		return nil
 	}
-	switch filepath.Base(opts.Manifest) {
-	case "requirements.in", "pyproject.toml", "Pipfile":
-		if !opts.AllowUnsafeExecution {
+	if !opts.AllowUnsafeExecution {
+		switch filepath.Base(opts.Manifest) {
+		case "requirements.in", "pyproject.toml", "Pipfile":
 			return errors.New("regenerating Python lockfiles may execute arbitrary dependency or package-manager code; set AllowUnsafeExecution to true only for trusted projects and dependencies or in an appropriately isolated environment")
 		}
 	}
