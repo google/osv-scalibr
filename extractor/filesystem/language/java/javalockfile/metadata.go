@@ -36,7 +36,7 @@ type Metadata struct {
 }
 
 // DepGroups returns the dependency groups for the package.
-func (m Metadata) DepGroups() []string {
+func (m *Metadata) DepGroups() []string {
 	return m.DepGroupVals
 }
 

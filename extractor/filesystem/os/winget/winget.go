@@ -49,18 +49,18 @@ func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name returns the unique identifier for this extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version returns the version of this extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements returns the system requirements for this extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows}
 }
 
 // FileRequired determines if the given file should be processed by this extractor.
-func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
+func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
 	normalized := filepath.ToSlash(path)
 

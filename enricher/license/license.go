@@ -69,18 +69,18 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 }
 
 // Name of the Enricher.
-func (Enricher) Name() string {
+func (*Enricher) Name() string {
 	return Name
 }
 
 // Version of the Enricher.
-func (Enricher) Version() int {
+func (*Enricher) Version() int {
 	return version
 }
 
 // Requirements of the Enricher.
 // Needs network access so it can validate Secrets.
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{
 		Network: plugin.NetworkOnline,
 	}
@@ -89,7 +89,7 @@ func (Enricher) Requirements() *plugin.Capabilities {
 // RequiredPlugins returns the plugins that are required to be enabled for this
 // Enricher to run. While it works on the results of other extractors,
 // the Enricher itself can run independently.
-func (Enricher) RequiredPlugins() []string {
+func (*Enricher) RequiredPlugins() []string {
 	return []string{}
 }
 

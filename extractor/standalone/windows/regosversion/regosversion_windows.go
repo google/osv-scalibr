@@ -50,13 +50,13 @@ func New(cfg *cpb.PluginConfig) (standalone.Extractor, error) {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities {
+func (e *Extractor) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{OS: plugin.OSWindows, RunningSystem: true}
 }
 
@@ -107,7 +107,7 @@ func (e *Extractor) Extract(ctx context.Context, input *standalone.ScanInput) (i
 }
 
 // windowsVersion extracts the version of Windows (major and minor, e.g. 6.3 or 10.0)
-func (e Extractor) windowsVersion(key registry.Key) (string, error) {
+func (e *Extractor) windowsVersion(key registry.Key) (string, error) {
 	// recent version of Windows
 	majorVersion, majorErr := key.ValueString("CurrentMajorVersionNumber")
 	minorVersion, minorErr := key.ValueString("CurrentMinorVersionNumber")
@@ -121,7 +121,7 @@ func (e Extractor) windowsVersion(key registry.Key) (string, error) {
 }
 
 // windowsRevision extracts the revision within the current build.
-func (e Extractor) windowsRevision(key registry.Key) (string, error) {
+func (e *Extractor) windowsRevision(key registry.Key) (string, error) {
 	// recent version of Windows
 	if revision, err := key.ValueString("UBR"); err == nil {
 		return revision, nil

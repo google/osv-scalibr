@@ -73,18 +73,18 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 }
 
 // Name of the Enricher.
-func (Enricher) Name() string { return Name }
+func (*Enricher) Name() string { return Name }
 
 // Version of the Enricher.
-func (Enricher) Version() int { return version }
+func (*Enricher) Version() int { return version }
 
 // Requirements of the Enricher (needs network access).
-func (Enricher) Requirements() *plugin.Capabilities {
+func (*Enricher) Requirements() *plugin.Capabilities {
 	return &plugin.Capabilities{Network: plugin.NetworkOnline}
 }
 
 // RequiredPlugins returns the plugins that are required to be enabled for this Enricher to run.
-func (Enricher) RequiredPlugins() []string { return []string{} }
+func (*Enricher) RequiredPlugins() []string { return []string{} }
 
 // Enrich augments Heroku Platform Keys with expiration metadata obtained from the API.
 func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inventory.Inventory) error {

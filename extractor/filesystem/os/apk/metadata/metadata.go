@@ -62,7 +62,7 @@ func (m *Metadata) ToDistro() string {
 // The Alpine OS info might include minor versions such as 3.12.1 while advisories are
 // only published against the minor and major versions, i.e. v3.12. Therefore we trim
 // any minor versions before putting the value into the Ecosystem.
-func (Metadata) TrimDistroVersion(distro string) string {
+func (*Metadata) TrimDistroVersion(distro string) string {
 	parts := strings.Split(distro, ".")
 	if len(parts) < 2 {
 		return "v" + distro

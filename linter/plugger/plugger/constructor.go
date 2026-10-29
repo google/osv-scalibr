@@ -36,7 +36,7 @@ func (f Function) String() string {
 }
 
 // Returns returns true if the function returns the given type
-func (f *Function) Returns(t *types.Named) bool {
+func (f Function) Returns(t *types.Named) bool {
 	for _, r := range f.ReturnTypes {
 		// direct or pointer match
 		if types.Identical(r, t) || types.Identical(r, types.NewPointer(t)) {
