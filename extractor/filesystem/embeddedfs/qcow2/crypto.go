@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/aead/serpent"
@@ -359,7 +358,7 @@ func (c *legacyAESConfig) IsEncryptedOffset(offset uint64) bool {
 }
 
 // setupEncryption configures LUKS encryption
-func setupEncryption(header *header, extensions []headerExtension, password string, reader io.Reader) (cryptoConfig, error) {
+func setupEncryption(header *header, extensions []headerExtension, password string, reader io.ReadSeeker) (cryptoConfig, error) {
 	if header.CryptMethod == 0 {
 		return nil, nil
 	}
@@ -395,7 +394,7 @@ func setupEncryption(header *header, extensions []headerExtension, password stri
 	if err := binary.Read(bytes.NewReader(cryptoExt.Data), binary.BigEndian, &extData); err != nil {
 		return nil, fmt.Errorf("failed to parse crypto extension: %w", err)
 	}
-	if _, err := reader.(*os.File).Seek(int64(extData.Offset), io.SeekStart); err != nil {
+	if _, err := reader.Seek(int64(extData.Offset), io.SeekStart); err != nil {
 		return nil, fmt.Errorf("failed to seek to LUKS header at 0x%x: %w", extData.Offset, err)
 	}
 
@@ -444,7 +443,7 @@ func setupEncryption(header *header, extensions []headerExtension, password stri
 			continue
 		}
 		keyMaterialOffset := int64(extData.Offset) + int64(slot.KeyMaterialOffset)*sectorSize
-		if _, err := reader.(*os.File).Seek(keyMaterialOffset, io.SeekStart); err != nil {
+		if _, err := reader.Seek(keyMaterialOffset, io.SeekStart); err != nil {
 			continue
 		}
 		keyMaterial := make([]byte, keyMaterialSize)

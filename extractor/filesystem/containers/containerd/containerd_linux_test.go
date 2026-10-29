@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 func TestGetImageDiffIDs(t *testing.T) {
@@ -45,7 +47,7 @@ func TestGetImageDiffIDs(t *testing.T) {
 	}
 
 	// Test: Fallback triggers and then errors on bad JSON
-	_, err := getImageDiffIDs(d, indexDigest)
+	_, err := getImageDiffIDs(scalibrfs.DirFS(d), indexDigest)
 	if err == nil {
 		t.Errorf("getImageDiffIDs() expected error on invalid json, got nil")
 	} else if fmt.Sprintf("%v", err) != "could not parse inner manifest blob: invalid character 'b' looking for beginning of object key string" && fmt.Sprintf("%v", err) != "could not parse inner manifest blob: unexpected end of JSON input" {
@@ -85,7 +87,7 @@ func TestCollectGcfsDirs(t *testing.T) {
 		},
 	}
 
-	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(scalibrfs.DirFS(d), d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
 	if err != nil {
 		t.Fatalf("collectGcfsDirs failed: %v", err)
 	}
@@ -142,7 +144,7 @@ func TestCollectGcfsDirsDoesNotTraverseSnapshotsWhenAllLayersPresent(t *testing.
 		},
 	}
 
-	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(scalibrfs.DirFS(d), d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
 	if err != nil {
 		t.Fatalf("collectGcfsDirs failed: %v", err)
 	}
@@ -200,7 +202,7 @@ func TestCollectGcfsDirsFallsBackToSnapshotsWhenLayersAbsent(t *testing.T) {
 		},
 	}
 
-	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(scalibrfs.DirFS(d), d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
 	if err != nil {
 		t.Fatalf("collectGcfsDirs failed: %v", err)
 	}
@@ -275,7 +277,7 @@ func TestCollectGcfsDirsFallsBackThroughBareKeyRemoteSnapshot(t *testing.T) {
 		},
 	}
 
-	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(scalibrfs.DirFS(d), d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
 	if err != nil {
 		t.Fatalf("collectGcfsDirs failed: %v", err)
 	}
@@ -332,7 +334,7 @@ func TestCollectGcfsDirsReturnsEmptyWhenLayerIncomplete(t *testing.T) {
 		},
 	}
 
-	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(scalibrfs.DirFS(d), d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
 	if err == nil {
 		t.Errorf("collectGcfsDirs expected error when layer download incomplete, got nil")
 	}
@@ -383,7 +385,7 @@ func TestCollectGcfsDirsRejectsSymlinkInLayersDir(t *testing.T) {
 		},
 	}
 
-	lowerDir, upperDir, workDir, err := collectGcfsDirs(d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
+	lowerDir, upperDir, workDir, err := collectGcfsDirs(scalibrfs.DirFS(d), d, snapshotsMetadata, snapshotKey, manifestDigest, "test-container-id")
 	if err == nil {
 		t.Errorf("collectGcfsDirs expected error when layer is a symlink, got nil")
 	}
@@ -411,7 +413,7 @@ func TestGetImageDiffIDsAmd64Fallback(t *testing.T) {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	_, err := getImageDiffIDs(d, indexDigest)
+	_, err := getImageDiffIDs(scalibrfs.DirFS(d), indexDigest)
 	if err == nil {
 		t.Errorf("getImageDiffIDs() expected error on invalid json, got nil")
 	} else if fmt.Sprintf("%v", err) != "could not parse inner manifest blob: invalid character 'b' looking for beginning of object key string" && fmt.Sprintf("%v", err) != "could not parse inner manifest blob: unexpected end of JSON input" {
@@ -432,7 +434,7 @@ func TestGetImageDiffIDsUnmarshalError(t *testing.T) {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	_, err := getImageDiffIDs(d, indexDigest)
+	_, err := getImageDiffIDs(scalibrfs.DirFS(d), indexDigest)
 	if err == nil {
 		t.Errorf("expected error on invalid json blob, got nil")
 	} else if !strings.Contains(err.Error(), "could not parse blob as either index or manifest") {
