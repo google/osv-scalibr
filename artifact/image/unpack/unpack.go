@@ -219,6 +219,34 @@ func (u *Unpacker) UnpackSquashedFromTarball(dir string, tarPath string) error {
 	return nil
 }
 
+// safeMkdirAll is a helper function that uses os.Root to create a directory and any necessary
+// parents with fs.ModePerm permissions.
+func safeMkdirAll(root *os.Root, dirPath string) error {
+	dirPath = filepath.FromSlash(strings.TrimPrefix(dirPath, "/"))
+	if dirPath == "" || dirPath == "." {
+		return nil
+	}
+	return root.MkdirAll(dirPath, fs.ModePerm)
+}
+
+// isRootEscapeError logs and returns true if err indicates that an os.Root operation
+// escaped the root directory or encountered too many levels of symbolic links.
+func isRootEscapeError(fullPath string, err error) bool {
+	// TODO(b/578074888): Remove this package in favor of layerscanning/image.
+	// The error handling below is not ideal. It will become a mess if other
+	// exceptions are added. Unfortunately, the os package does not export the underlying
+	// error, so we have to do string matching for now.
+	if strings.Contains(err.Error(), "path escapes from parent") {
+		log.Warnf("path escapes from parent, potential path traversal attack detected: %q: %v", fullPath, err)
+		return true
+	}
+	if strings.Contains(err.Error(), "too many levels of symbolic links") {
+		log.Warnf("too many levels of symbolic links found: %q: %v", fullPath, err)
+		return true
+	}
+	return false
+}
+
 // safeWriteFile is a helper function that uses os.Root to write to a file with the specified
 // permissions.
 func safeWriteFile(root *os.Root, path string, content []byte, perm os.FileMode) error {
@@ -314,8 +342,11 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 
 			content := buf.Bytes()
 
-			parent := filepath.Dir(fullPath)
-			if err := os.MkdirAll(parent, fs.ModePerm); err != nil {
+			parent := path.Dir(cleanPath)
+			if err := safeMkdirAll(root, parent); err != nil {
+				if isRootEscapeError(fullPath, err) {
+					continue
+				}
 				log.Errorf("failed to create directory %q for file %q: %v", parent, fullPath, err)
 				return nil, fmt.Errorf("failed to create directory %q for file %q: %w", parent, fullPath, err)
 			}
@@ -325,16 +356,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 
 			err = safeWriteFile(root, cleanPath, content, modeWithOwnerReadWrite)
 			if err != nil {
-				// TODO(b/578074888): Remove this package in favor of layerscanning/image.
-				// The error handling below is not ideal. It will become a mess if other
-				// exceptions are added. Unfortunately, the os package does not export the underlying
-				// error, so we have to do string matching for now.
-				if strings.Contains(err.Error(), "path escapes from parent") {
-					log.Warnf("path escapes from parent, potential path traversal attack detected: %q: %v", fullPath, err)
-					continue
-				}
-				if strings.Contains(err.Error(), "too many levels of symbolic links") {
-					log.Warnf("too many levels of symbolic links found: %q: %v", fullPath, err)
+				if isRootEscapeError(fullPath, err) {
 					continue
 				}
 				return nil, err
@@ -343,19 +365,23 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			// TODO(b/406760694): Remove this once the bug is fixed.
 
 		case tar.TypeLink, tar.TypeSymlink:
-			parent := filepath.Dir(fullPath)
-			if err := os.MkdirAll(parent, fs.ModePerm); err != nil {
-				log.Errorf("failed to create directory %q: %v", parent, err)
-				if symlinkErrStrategy == SymlinkErrReturn {
-					return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
-				}
-			}
-
 			target := header.Linkname
 			targetPath := target
 
 			if symlink.TargetOutsideRoot(cleanPath, target) {
 				log.Warnf("Found symlink that points outside the root, skipping: %q -> %q", cleanPath, target)
+				continue
+			}
+
+			parent := path.Dir(cleanPath)
+			if err := safeMkdirAll(root, parent); err != nil {
+				if isRootEscapeError(fullPath, err) {
+					continue
+				}
+				log.Errorf("failed to create directory %q: %v", parent, err)
+				if symlinkErrStrategy == SymlinkErrReturn {
+					return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
+				}
 				continue
 			}
 

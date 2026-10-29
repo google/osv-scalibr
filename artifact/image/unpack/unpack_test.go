@@ -447,6 +447,93 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			// directory.
 			want: map[string]contentAndMode{},
 		},
+		{
+			name: "os.Root_prevents_creating_directories_outside_base_directory",
+			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
+				"/usr/share/doc/a/copyright",
+				"/usr/share/doc/b/copyright",
+				"/usr/share/doc/c/copyright",
+				"/usr/share/doc/d/copyright",
+				"../escaped-rel-dir/poc.txt",
+			})),
+			dir: t.TempDir(),
+			tarEntries: []tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "../escaped-rel-dir/poc.txt",
+						Mode: 0o777,
+						Size: int64(len("👻")),
+					},
+					Data: bytes.NewBufferString("👻"),
+				},
+				{
+					Header: &tar.Header{
+						Name: "/escape/escaped-file-dir/poc.txt",
+						Mode: 0o777,
+						Size: int64(len("👻")),
+					},
+					Data: bytes.NewBufferString("👻"),
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/escape/escaped-symlink-dir/link",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/usr/share/doc/a/copyright",
+						Mode:     0o777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/a/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/trampoline",
+						Mode:     0o777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/trampoline/",
+						Typeflag: tar.TypeSymlink,
+						Linkname: ".",
+						Mode:     0o777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/b/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape",
+						Mode:     0o777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/escape",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "trampoline/..",
+						Mode:     0o777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/c/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape/escaped-file-dir/poc.txt",
+						Mode:     0o777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name:     "/usr/share/doc/d/copyright",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/escape/escaped-symlink-dir/link",
+						Mode:     0o777,
+					},
+				},
+			},
+			// No files or directories should be created outside the unpack directory.
+			want: map[string]contentAndMode{},
+		},
 	}
 
 	for _, tc := range tests {
@@ -477,6 +564,16 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			got := mustReadDir(t, tc.dir)
 			if diff := cmp.Diff(tc.want, got, cmp.AllowUnexported(contentAndMode{})); diff != "" {
 				t.Fatalf("Unpacker{%+v}.UnpackSquashed(%q, %q) returned unexpected diff (-want +got):\n%s", tc.cfg, unpackDir, tarPath, diff)
+			}
+
+			entries, err := os.ReadDir(tc.dir)
+			if err != nil {
+				t.Fatalf("os.ReadDir(%q) failed: %v", tc.dir, err)
+			}
+			for _, entry := range entries {
+				if entry.Name() != "unpack" {
+					t.Errorf("unexpected file or directory created outside unpack dir %q: %q", unpackDir, entry.Name())
+				}
 			}
 
 			tmpFilesGot := filesInTmp(t, os.TempDir())
