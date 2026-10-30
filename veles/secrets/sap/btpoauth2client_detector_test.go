@@ -68,7 +68,7 @@ func TestBTPOAuth2ClientCredentialsDetector_Detect(t *testing.T) {
 			want:  nil,
 		},
 		{
-			name:  "non-credential_input",
+			name:  "non_credential_input",
 			input: "Some random text",
 			want:  nil,
 		},

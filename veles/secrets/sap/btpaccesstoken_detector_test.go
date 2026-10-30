@@ -164,7 +164,7 @@ func TestDetector_trueNegatives(t *testing.T) {
 					input: "not.a.jwt",
 				},
 				{
-					name:  "token exceeding max length",
+					name:  "token_exceeding_max_length",
 					input: strings.Repeat("a", 8193),
 				},
 			}
