@@ -129,7 +129,7 @@ func findValidXSUAAClientIDs(re *regexp.Regexp) ntuple.Finder {
 
 			results = append(results, ntuple.Match{
 				Start: idx[0],
-				End:   idx[2],
+				End:   idx[1],
 				Value: data[start:end],
 			})
 		}
