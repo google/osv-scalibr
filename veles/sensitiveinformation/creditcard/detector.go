@@ -268,8 +268,12 @@ func validCreditCardNumber(b []byte) bool {
 		return false
 	}
 
-	// Luhn check
-	// https://en.wikipedia.org/wiki/Luhn_algorithm#Pseudocode_implementation
+	return luhnCheck(digits)
+}
+
+// Luhn check
+// https://en.wikipedia.org/wiki/Luhn_algorithm#Pseudocode_implementation
+func luhnCheck(digits string) bool {
 	sum := 0
 	double := false
 	for i := len(digits) - 1; i >= 0; i-- {
