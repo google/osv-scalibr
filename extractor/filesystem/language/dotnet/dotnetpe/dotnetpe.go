@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -138,7 +139,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (inventory.Inve
 	if input.Root == "" {
 		// The file got copied to a temporary dir, remove it at the end.
 		defer func() {
-			dir := filepath.Base(absPath)
+			dir := filepath.Dir(absPath)
 			if err := os.RemoveAll(dir); err != nil {
 				log.Errorf("os.RemoveAll(%q): %v", dir, err)
 			}
@@ -150,6 +151,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (inventory.Inve
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
+	defer f.Close()
 
 	// Parse the PE file
 	if err := f.Parse(); err != nil {
@@ -225,7 +227,11 @@ func hasPEMagicBytes(input *filesystem.ScanInput) (bool, error) {
 	}
 
 	var magic uint16
-	if err := binary.Read(input.Reader, binary.LittleEndian, &magic); err != nil {
+	r := input.Reader
+	if ra, ok := input.Reader.(io.ReaderAt); ok {
+		r = io.NewSectionReader(ra, 0, 2)
+	}
+	if err := binary.Read(r, binary.LittleEndian, &magic); err != nil {
 		return false, err
 	}
 

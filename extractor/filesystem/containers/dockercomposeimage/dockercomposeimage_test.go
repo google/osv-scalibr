@@ -15,22 +15,29 @@
 package dockercomposeimage_test
 
 import (
+	"bytes"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/dockercomposeimage"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestFileRequired(t *testing.T) {
-	extr, err := dockercomposeimage.New(&cpb.PluginConfig{})
+	extr, err := dockercomposeimage.New(&cpb.PluginConfig{MaxFileSizeBytes: 1024})
 	if err != nil {
 		t.Fatalf("dockercomposeimage.New failed: %v", err)
 	}
@@ -38,33 +45,56 @@ func TestFileRequired(t *testing.T) {
 	tests := []struct {
 		name string
 		path string
+		info fs.FileInfo
 		want bool
 	}{
 		{
 			name: "compose.yaml",
 			path: "testdata/compose.yaml",
+			info: fakefs.FakeFileInfo{FileName: "compose.yaml", FileMode: fs.ModePerm, FileSize: 100},
 			want: true,
 		},
 		{
 			name: "docker_compose_file_with_yml_extension",
 			path: "testdata/docker-compose-1.yml",
+			info: fakefs.FakeFileInfo{FileName: "docker-compose-1.yml", FileMode: fs.ModePerm, FileSize: 100},
 			want: true,
 		},
 		{
 			name: "docker_compose_file_with_yaml_extension",
 			path: "testdata/docker-compose-extending.yaml",
+			info: fakefs.FakeFileInfo{FileName: "docker-compose-extending.yaml", FileMode: fs.ModePerm, FileSize: 100},
 			want: true,
+		},
+		{
+			name: "virtual_path_not_on_host",
+			path: "nonexistent/virtual/compose.yaml",
+			info: fakefs.FakeFileInfo{FileName: "compose.yaml", FileMode: fs.ModePerm, FileSize: 100},
+			want: true,
+		},
+		{
+			name: "directory_ignored",
+			path: "compose.yaml",
+			info: fakefs.FakeFileInfo{FileName: "compose.yaml", FileMode: fs.ModeDir | fs.ModePerm, FileSize: 100},
+			want: false,
+		},
+		{
+			name: "oversized_file_ignored",
+			path: "compose.yaml",
+			info: fakefs.FakeFileInfo{FileName: "compose.yaml", FileMode: fs.ModePerm, FileSize: 2048},
+			want: false,
 		},
 		{
 			name: "not_a_docker_compose_file",
 			path: "testdata/docker.conf",
+			info: fakefs.FakeFileInfo{FileName: "docker.conf", FileMode: fs.ModePerm, FileSize: 100},
 			want: false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			isRequired := extr.FileRequired(simplefileapi.New(tc.path, nil))
+			isRequired := extr.FileRequired(simplefileapi.New(tc.path, tc.info))
 			if isRequired != tc.want {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tc.path, isRequired, tc.want)
 			}
@@ -180,5 +210,42 @@ func TestExtract_failures(t *testing.T) {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tc.path, diff)
 			}
 		})
+	}
+}
+
+func TestExtract_SymlinkEscapeIgnored(t *testing.T) {
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, ".env")
+	if err := os.WriteFile(outsidePath, []byte("TAG=leaked-from-outside\n"), 0600); err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", outsidePath, err)
+	}
+	composeContent := []byte("name: test\nservices:\n  app:\n    image: myapp:${TAG}\n")
+	if err := os.WriteFile(filepath.Join(scanRoot, "compose.yaml"), composeContent, 0600); err != nil {
+		t.Fatalf("os.WriteFile(compose.yaml): %v", err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot(%q): %v", scanRoot, err)
+	}
+	defer root.Close()
+
+	extr, err := dockercomposeimage.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("dockercomposeimage.New failed: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		FS:     root.FS().(scalibrfs.FS),
+		Path:   "compose.yaml",
+		Root:   scanRoot,
+		Info:   fakefs.FakeFileInfo{FileName: "compose.yaml", FileMode: fs.ModePerm, FileSize: int64(len(composeContent))},
+		Reader: bytes.NewReader(composeContent),
+	}
+	got, err := extr.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+	if len(got.Packages) != 0 {
+		t.Errorf("Extract returned packages %v from escaped .env symlink, want empty", got.Packages)
 	}
 }

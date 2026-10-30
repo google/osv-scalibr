@@ -18,10 +18,9 @@ package dockercomposeimage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
+	"io/fs"
 	"maps"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -93,20 +92,28 @@ func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabili
 // FileRequired returns true if the specified file could be a Docker Compose file.
 func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	// Skip directories and oversized files
-	fi, err := os.Stat(path)
-	if err != nil || fi.IsDir() {
-		return false
-	}
-	if e.maxFileSizeBytes > 0 && fi.Size() > e.maxFileSizeBytes {
-		return false
-	}
 	filename := filepath.Base(path)
 	if filepath.Ext(filename) != ".yml" && filepath.Ext(filename) != ".yaml" {
 		return false
 	}
-	return strings.HasPrefix(filename, "compose") ||
-		strings.HasPrefix(filename, "docker-compose")
+	if !strings.HasPrefix(filename, "compose") &&
+		!strings.HasPrefix(filename, "docker-compose") {
+		return false
+	}
+	// Skip directories and oversized files
+	fi, err := api.Stat()
+	if err != nil {
+		return false
+	}
+	if fi != nil {
+		if fi.IsDir() {
+			return false
+		}
+		if e.maxFileSizeBytes > 0 && fi.Size() > e.maxFileSizeBytes {
+			return false
+		}
+	}
+	return true
 }
 
 // Extract extracts image URLs from a Docker Compose file.
@@ -131,7 +138,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, nil
 	}
 
-	images, err := uniqueImagesFromReader(ctx, input)
+	images, err := uniqueImagesFromReader(ctx, input, data)
 	if err != nil {
 		log.Warnf("Parsing docker-compose file %q failed: %v", input.Path, err)
 		return inventory.Inventory{}, nil
@@ -152,37 +159,28 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 // uniqueImagesFromReader extracts unique image names from a Docker Compose file.
 // It handles environment variable interpolation and returns a sorted list of unique images.
-func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput) ([]string, error) {
-	absPath, err := input.GetRealPath()
-	if err != nil {
-		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
-	}
-	if input.Root == "" {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Dir(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
-
+func uniqueImagesFromReader(ctx context.Context, input *filesystem.ScanInput, data []byte) ([]string, error) {
 	// Load environment variables from a sibling .env file if it exists
 	workingDir := filepath.Dir(input.Path)
 	envPath := filepath.ToSlash(filepath.Join(workingDir, ".env"))
 	environment := types.Mapping{}
-	if f, err := input.FS.Open(envPath); err == nil {
-		defer f.Close()
-		if envVars, err := dotenv.Parse(f); err != nil {
-			log.Warnf("dotenv.Parse(%q): %v", envPath, err)
-		} else {
-			maps.Copy(environment, envVars)
+	if input.FS != nil {
+		if f, err := input.FS.Open(envPath); err == nil {
+			defer f.Close()
+			if envVars, err := dotenv.Parse(f); err != nil {
+				log.Warnf("dotenv.Parse(%q): %v", envPath, err)
+			} else {
+				maps.Copy(environment, envVars)
+			}
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			log.Warnf("input.FS.Open(%q): %v", envPath, err)
 		}
-	} else if !errors.Is(err, os.ErrNotExist) {
-		log.Warnf("input.FS.Open(%q): %v", envPath, err)
 	}
 	configFiles := []types.ConfigFile{
-		{Filename: absPath},
+		{
+			Filename: input.Path,
+			Content:  data,
+		},
 	}
 	details := types.ConfigDetails{
 		WorkingDir:  workingDir,
