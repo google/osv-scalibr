@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	"github.com/google/osv-scalibr/plugin/config"
 )
@@ -59,7 +60,7 @@ func TestScan(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: jar,
-			FS:   scalibrfs.DirFS("."),
+			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
