@@ -1,0 +1,92 @@
+{
+   "action": {
+      "default_icon": "src/icon/toolbar/icon32.png",
+      "default_popup": "src/popup.html",
+      "default_title": "Grammarly"
+   },
+   "background": {
+      "service_worker": "sw.js"
+   },
+   "content_scripts": [ {
+      "all_frames": true,
+      "css": [ "src/css/Grammarly-fonts.styles.css" ],
+      "exclude_globs": [ "*docs.google.com*" ],
+      "exclude_matches": [ "*://outlook.live.com/*", "*://*.outlook.live.com/*", "*://outlook.office.com/*", "*://*.outlook.office.com/*", "*://*.atlassian.net/*", "*://mail.google.com/*", "*://*.mail.google.com/*", "*://quora.com/*", "*://*.quora.com/*", "*://*.slack.com/*", "*://*.blackboard.com/*", "*://*.blogger.com/*", "*://publish.buffer.com/*", "*://*.publish.buffer.com/*", "*://facebook.com/*", "*://*.facebook.com/*", "*://calendar.google.com/*", "*://*.calendar.google.com/*", "*://keep.google.com/*", "*://*.keep.google.com/*", "*://intercom.io/*", "*://*.intercom.io/*", "*://linkedin.com/*", "*://*.linkedin.com/*", "*://medium.com/*", "*://*.medium.com/*", "*://messenger.com/*", "*://*.messenger.com/*", "*://teams.microsoft.com/*", "*://*.teams.microsoft.com/*", "*://translate.google.com/*", "*://*.translate.google.com/*", "*://reddit.com/*", "*://*.reddit.com/*", "*://youtube.com/*", "*://*.youtube.com/*", "*://twitter.com/*", "*://*.twitter.com/*", "*://x.com/*", "*://*.x.com/*", "*://*.lightning.force.com/*", "*://trello.com/*", "*://*.trello.com/*", "*://upwork.com/*", "*://*.upwork.com/*", "*://web.whatsapp.com/*", "*://*.web.whatsapp.com/*", "*://wix.com/*", "*://*.wix.com/*", "*://wordpress.com/*", "*://*.wordpress.com/*", "*://*.zendesk.com/*", "*://wattpad.com/*", "*://*.wattpad.com/*", "*://onlinechatdashboard.com/*", "*://*.onlinechatdashboard.com/*", "*://wordcounter.net/*", "*://*.wordcounter.net/*", "*://fiverr.com/*", "*://*.fiverr.com/*", "*://educationperfect.com/*", "*://*.educationperfect.com/*", "*://apclassroom.collegeboard.org/*", "*://*.apclassroom.collegeboard.org/*", "*://studio.youtube.com/*", "*://*.studio.youtube.com/*", "*://chat.google.com/*", "*://*.chat.google.com/*", "*://twitch.tv/*", "*://*.twitch.tv/*", "*://papago.naver.com/*", "*://*.papago.naver.com/*", "*://readworks.org/*", "*://*.readworks.org/*", "*://app.nearpod.com/*", "*://*.app.nearpod.com/*", "*://mail.aol.com/*", "*://*.mail.aol.com/*", "*://github.com/*", "*://*.github.com/*", "*://coursera.org/*", "*://*.coursera.org/*", "*://commonlit.org/*", "*://*.commonlit.org/*", "*://classroom.google.com/*", "*://*.classroom.google.com/*", "*://app.seesaw.me/*", "*://*.app.seesaw.me/*", "*://forms.office.com/*", "*://*.forms.office.com/*", "*://docs.google.com/document/*" ],
+      "js": [ "src/js/Grammarly-check.styles.js", "src/js/Grammarly-check.js" ],
+      "match_about_blank": true,
+      "matches": [ "\u003Call_urls>" ],
+      "run_at": "document_idle"
+   }, {
+      "all_frames": true,
+      "css": [ "src/css/Grammarly-fonts.styles.css" ],
+      "exclude_globs": [ "*docs.google.com*" ],
+      "js": [ "src/js/Grammarly.styles.js", "src/js/Grammarly.js" ],
+      "match_about_blank": true,
+      "matches": [ "*://*.atlassian.net/*", "*://mail.google.com/*", "*://*.mail.google.com/*", "*://quora.com/*", "*://*.quora.com/*", "*://*.slack.com/*", "*://*.blackboard.com/*", "*://*.blogger.com/*", "*://publish.buffer.com/*", "*://*.publish.buffer.com/*", "*://facebook.com/*", "*://*.facebook.com/*", "*://calendar.google.com/*", "*://*.calendar.google.com/*", "*://keep.google.com/*", "*://*.keep.google.com/*", "*://intercom.io/*", "*://*.intercom.io/*", "*://linkedin.com/*", "*://*.linkedin.com/*", "*://medium.com/*", "*://*.medium.com/*", "*://messenger.com/*", "*://*.messenger.com/*", "*://teams.microsoft.com/*", "*://*.teams.microsoft.com/*", "*://translate.google.com/*", "*://*.translate.google.com/*", "*://reddit.com/*", "*://*.reddit.com/*", "*://youtube.com/*", "*://*.youtube.com/*", "*://twitter.com/*", "*://*.twitter.com/*", "*://x.com/*", "*://*.x.com/*", "*://*.lightning.force.com/*", "*://trello.com/*", "*://*.trello.com/*", "*://upwork.com/*", "*://*.upwork.com/*", "*://web.whatsapp.com/*", "*://*.web.whatsapp.com/*", "*://wix.com/*", "*://*.wix.com/*", "*://wordpress.com/*", "*://*.wordpress.com/*", "*://*.zendesk.com/*", "*://wattpad.com/*", "*://*.wattpad.com/*", "*://onlinechatdashboard.com/*", "*://*.onlinechatdashboard.com/*", "*://wordcounter.net/*", "*://*.wordcounter.net/*", "*://fiverr.com/*", "*://*.fiverr.com/*", "*://educationperfect.com/*", "*://*.educationperfect.com/*", "*://apclassroom.collegeboard.org/*", "*://*.apclassroom.collegeboard.org/*", "*://studio.youtube.com/*", "*://*.studio.youtube.com/*", "*://chat.google.com/*", "*://*.chat.google.com/*", "*://twitch.tv/*", "*://*.twitch.tv/*", "*://papago.naver.com/*", "*://*.papago.naver.com/*", "*://readworks.org/*", "*://*.readworks.org/*", "*://app.nearpod.com/*", "*://*.app.nearpod.com/*", "*://mail.aol.com/*", "*://*.mail.aol.com/*", "*://github.com/*", "*://*.github.com/*", "*://coursera.org/*", "*://*.coursera.org/*", "*://commonlit.org/*", "*://*.commonlit.org/*", "*://classroom.google.com/*", "*://*.classroom.google.com/*", "*://app.seesaw.me/*", "*://*.app.seesaw.me/*", "*://forms.office.com/*", "*://*.forms.office.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "all_frames": true,
+      "css": [ "src/css/Grammarly-fonts.styles.css" ],
+      "exclude_globs": [ "*docs.google.com*" ],
+      "js": [ "src/js/Grammarly.styles.js", "src/js/Grammarly.js" ],
+      "match_about_blank": false,
+      "matches": [ "*://outlook.live.com/*", "*://*.outlook.live.com/*", "*://outlook.office.com/*", "*://*.outlook.office.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "all_frames": false,
+      "css": [ "src/css/Grammarly-fonts.styles.css" ],
+      "js": [ "src/js/Grammarly-gDocs.styles.js", "src/js/Grammarly-gDocs.js" ],
+      "matches": [ "*://docs.google.com/document/*" ],
+      "run_at": "document_idle"
+   }, {
+      "all_frames": false,
+      "js": [ "src/js/Grammarly-gDocsEarlyInjector.js" ],
+      "matches": [ "*://docs.google.com/document/*" ],
+      "run_at": "document_start"
+   }, {
+      "all_frames": true,
+      "exclude_matches": [ "*://docs.google.com/document/*" ],
+      "js": [ "src/js/Grammarly-gDocsIframeCs.js" ],
+      "match_about_blank": true,
+      "matches": [ "*://docs.google.com/*" ],
+      "run_at": "document_idle"
+   }, {
+      "all_frames": false,
+      "js": [ "src/js/Grammarly-overleafStartContentScript.js" ],
+      "matches": [ "https://*.overleaf.com/*" ],
+      "run_at": "document_start"
+   } ],
+   "content_security_policy": {
+      "extension_pages": "default-src 'none'; font-src 'self' data:; img-src * data: blob:; media-src https://assets.extension.grammarly.com; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://d3ttvzt45fz9bg.cloudfront.net https://coda.io https://docs.superhuman.com; connect-src https://auth.grammarly.com https://assets.grammarly.com/ https://data.grammarly.com https://capi.grammarly.com https://dox.grammarly.com https://institution.grammarly.com wss://capi.grammarly.com https://gnar.grammarly.com https://in.grammarly.com https://f-log.grammarly.io https://f-log-extension.grammarly.io https://f-log-editor.grammarly.io https://f-log-inkwell.grammarly.io https://config.extension.grammarly.com https://chipmunk.grammarly.com https://treatment.grammarly.com https://gates.grammarly.com https://goldengate.grammarly.com https://femetrics.grammarly.io https://extension.femetrics.grammarly.io https://inkwell.femetrics.grammarly.io https://rwsgfy.grammarly.com https://assets.extension.grammarly.com https://api.iterable.com https://skills.grammarly.com https://skills-proxy.grammarly.com https://gateway.grammarly.com https://coda.grammarly.com https://coda.io https://codahosted.io https://gr-core-prod-assistant-file.s3.amazonaws.com https://gr-core-prod-assistant-file.s3.us-east-1.amazonaws.com https://gr-core-prod-go-chat-attachment.s3.amazonaws.com https://gr-core-prod-go-chat-attachment.s3.us-east-1.amazonaws.com https://gr-preprod-core-assistant-file.s3.amazonaws.com https://gr-preprod-core-assistant-file.s3.us-east-1.amazonaws.com https://gr-preprod-core-go-chat-attachment.s3.amazonaws.com https://gr-preprod-core-go-chat-attachment.s3.us-east-1.amazonaws.com https://gr-qa-core-assistant-file.s3.amazonaws.com https://gr-qa-core-assistant-file.s3.us-east-1.amazonaws.com https://gr-qa-core-go-chat-attachment.s3.amazonaws.com https://gr-qa-core-go-chat-attachment.s3.us-east-1.amazonaws.com https://subscription.grammarly.com https://id.superhuman.com https://gnar.superhuman.com https://capi.superhuman.com https://data.superhuman.com https://gateway.superhuman.com https://dox.superhuman.com https://institution.superhuman.com https://in.superhuman.com https://f-log-extension.superhuman.io https://f-log-editor.superhuman.io https://f-log-inkwell.superhuman.io https://config.extension.superhuman.com https://chipmunk.superhuman.com https://treatment.superhuman.com https://gates.superhuman.com https://subscription.superhuman.com ;  report-uri https://f-log-extension.grammarly.io/logv2; "
+   },
+   "description": "Grammarly for Edge helps you write with confidence. Get AI support for grammar, clarity, and tone, from first draft to final edit.",
+   "externally_connectable": {
+      "matches": [ "https://*.grammarly.com/*" ]
+   },
+   "host_permissions": [ "http://*/*", "https://*/*" ],
+   "icons": {
+      "128": "src/icon/app/icon-128.png",
+      "16": "src/icon/sidepanel/icon16.png",
+      "32": "src/icon/sidepanel/icon32.png",
+      "48": "src/icon/app/icon-48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7qxHBdy17inyypagVy4qvbPuYrEMVd/P4e+dRAceSjpetXLLXUXRq0SpW65Q7KOkUwqGMQCTL6iQLCaV1g7IPy4nT7DfMI4HXrWsuVaN8qKmexwYGwwQC2K0UguVb8T3tzEgIGfRRkhfMQXYXXzIe8VW2XA8aRBCNWIPXxM7F/lCEi0CoRxpFhFs448SNea05eEoT/RthitHORYleZf8cE5BDk0B1wh23ScmeixIN1Jd3Oriqz+0oVcrMaBatF30H23S2NtZh2z2wBVetpXMoAwoWKm3gLvH1M6k/WrOC9RHLMZFRrTqCjl8SGmvaqdT+/6IX/5OdUBFAGlI0HiKbQIDAQAB",
+   "manifest_version": 3,
+   "minimum_chrome_version": "88",
+   "name": "Grammarly: AI Writing and Grammar Checker App",
+   "optional_permissions": [ "clipboardRead" ],
+   "permissions": [ "scripting", "sidePanel", "tabs", "notifications", "cookies", "identity", "storage" ],
+   "short_name": "Superhuman Go (Beta)",
+   "side_panel": {
+      "default_path": "src/sidePanel.html"
+   },
+   "storage": {
+      "managed_schema": "src/schema.json"
+   },
+   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
+   "version": "14.1138.0",
+   "web_accessible_resources": [ {
+      "matches": [ "http://*/*", "https://*/*" ],
+      "resources": [ "src/fonts/*.woff", "src/fonts/*.woff2", "src/images/*.png", "src/images/*.svg", "src/images/*.jpg", "src/images/*.gif", "src/images/*.webp", "src/js/*.js", "src/css/*.css", "src/icon/toolbar/*.png", "src/icon/toolbar/superhuman_go/*.png", "src/icon/app/*.png", "src/inkwell/index.html", "src/inkwell/assets/*.js" ]
+   } ]
+}

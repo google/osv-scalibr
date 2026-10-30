@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	metadata "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	metadata "github.com/google/osv-scalibr/extractor/filesystem/misc/browser/extensions"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
@@ -35,7 +35,7 @@ var (
 		Permissions:          []string{"permission_1", "permission_2"},
 		UpdateURL:            "https://example.com/update",
 	}
-	metadataProto1 = &pb.ChromeExtensionsMetadata{
+	metadataProto1 = &pb.BrowserExtensionsMetadata{
 		Name:                 "Test Extension",
 		Description:          "Test Description",
 		AuthorEmail:          "test@example.com",
@@ -51,7 +51,7 @@ func TestToProto(t *testing.T) {
 	testCases := []struct {
 		desc string
 		m    *metadata.Metadata
-		want *pb.ChromeExtensionsMetadata
+		want *pb.BrowserExtensionsMetadata
 	}{
 		{
 			desc: "set_metadata",
@@ -82,7 +82,7 @@ func TestToProto(t *testing.T) {
 func TestToStruct(t *testing.T) {
 	testCases := []struct {
 		desc string
-		m    *pb.ChromeExtensionsMetadata
+		m    *pb.BrowserExtensionsMetadata
 		want *metadata.Metadata
 	}{
 

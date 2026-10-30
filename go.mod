@@ -55,7 +55,6 @@ require (
 	github.com/saferwall/pe v1.6.4
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/spdx/tools-golang v0.5.7
-	github.com/thoas/go-funk v0.9.3
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/jsonc v0.3.3
 	github.com/tidwall/sjson v1.2.5

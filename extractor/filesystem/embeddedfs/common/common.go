@@ -43,8 +43,9 @@ import (
 )
 
 const (
-	defaultPageSize  = 1024 * 1024
-	defaultCacheSize = 100 * 1024 * 1024
+	defaultPageSize     = 1024 * 1024
+	defaultCacheSize    = 100 * 1024 * 1024
+	defaultMaxFileBytes = 1024 * 1024 * 1024 // 1 GiB
 )
 
 // DetectFilesystem identifies the filesystem type by magic bytes.
@@ -94,8 +95,11 @@ func normalizePath(p string) string {
 }
 
 // filterEntriesFat32 removes ".", "..", "lost+found", and "/"-containing entries from FAT32 entries.
-func filterEntriesFat32(entries []os.FileInfo) []os.FileInfo {
-	var filtered []os.FileInfo
+func filterEntriesFat32[T interface {
+	Name() string
+	IsDir() bool
+}](entries []T) []T {
+	var filtered []T
 	for _, e := range entries {
 		name := e.Name()
 		if name == "." || name == ".." || name == "lost+found" || strings.Contains(name, "/") {
@@ -132,8 +136,43 @@ func filterEntriesNtfs(entries []*parser.FileInfo) []*parser.FileInfo {
 	return filtered
 }
 
+// writeExtractedFile creates parent directories and writes r to relPath within root,
+// bounding the write to maxBytes when maxBytes > 0.
+func writeExtractedFile(root *os.Root, relPath string, r io.Reader, perm fs.FileMode, maxBytes int64) error {
+	if dir := filepath.Dir(relPath); dir != "." {
+		if err := root.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
+	f, err := root.OpenFile(relPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm&0777)
+	if err != nil {
+		return err
+	}
+	if maxBytes > 0 {
+		r = io.LimitReader(r, maxBytes)
+	}
+	_, copyErr := io.Copy(f, r)
+	closeErr := f.Close()
+	if copyErr != nil {
+		return copyErr
+	}
+	return closeErr
+}
+
 // ExtractAllRecursiveExt extracts all files from an ext4 filesystem to a temporary directory recursively.
 func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error {
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", destPath, err)
+	}
+	root, err := os.OpenRoot(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to open root %s: %w", destPath, err)
+	}
+	defer root.Close()
+	return extractRecursiveExt(fs, srcPath, "", root)
+}
+
+func extractRecursiveExt(fs *ext4.FileSystem, srcPath, relDir string, root *os.Root) error {
 	srcPath = normalizePath(srcPath)
 	entries, err := fs.ReadDir(srcPath)
 	if err != nil {
@@ -143,20 +182,16 @@ func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error
 
 	entries = filterEntriesExt(entries)
 
-	if err := os.MkdirAll(destPath, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", destPath, err)
-	}
-
 	for _, entry := range entries {
 		srcFullPath := path.Join(srcPath, entry.Name())
-		destFullPath := filepath.Join(destPath, entry.Name())
+		relPath := filepath.Join(relDir, entry.Name())
 
 		if entry.IsDir() {
-			if err := os.MkdirAll(destFullPath, 0755); err != nil {
-				fmt.Printf("Warning: Failed to create directory %s: %v\n", destFullPath, err)
+			if err := root.MkdirAll(relPath, 0755); err != nil {
+				fmt.Printf("Warning: Failed to create directory %s: %v\n", relPath, err)
 				continue
 			}
-			if err := ExtractAllRecursiveExt(fs, srcFullPath, destFullPath); err != nil {
+			if err := extractRecursiveExt(fs, srcFullPath, relPath, root); err != nil {
 				fmt.Printf("Warning: Failed to extract directory %s: %v\n", srcFullPath, err)
 				continue
 			}
@@ -166,17 +201,10 @@ func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error
 				fmt.Printf("Warning: Failed to open file %s: %v\n", srcFullPath, err)
 				continue
 			}
-			defer file.Close()
-
-			destFile, err := os.Create(destFullPath)
+			err = writeExtractedFile(root, relPath, file, 0666, defaultMaxFileBytes)
+			file.Close()
 			if err != nil {
-				fmt.Printf("Warning: Failed to create file %s: %v\n", destFullPath, err)
-				continue
-			}
-			defer destFile.Close()
-
-			if _, err := io.Copy(destFile, file); err != nil {
-				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, destFullPath, err)
+				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, relPath, err)
 				continue
 			}
 		}
@@ -186,11 +214,30 @@ func ExtractAllRecursiveExt(fs *ext4.FileSystem, srcPath, destPath string) error
 
 // ExtractAllRecursiveFat32 extracts all files from a FAT32 filesystem to a temporary directory recursively.
 func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) error {
-	if srcPath == "" || srcPath == "." {
-		srcPath = "/"
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", destPath, err)
 	}
-	srcPath = normalizePath(srcPath)
-	entries, err := fs.ReadDir(srcPath)
+	root, err := os.OpenRoot(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to open root %s: %w", destPath, err)
+	}
+	defer root.Close()
+	return extractRecursiveFat32(fs, srcPath, "", root)
+}
+
+func extractRecursiveFat32(fs *fat32.FileSystem, srcPath, relDir string, root *os.Root) error {
+	lookupPath := strings.TrimPrefix(srcPath, "/")
+	if lookupPath == "" {
+		lookupPath = "."
+	}
+	entries, err := fs.ReadDir(lookupPath)
+	if err != nil {
+		if srcPath == "" || srcPath == "." {
+			srcPath = "/"
+		}
+		srcPath = normalizePath(srcPath)
+		entries, err = fs.ReadDir(srcPath)
+	}
 	if err != nil {
 		fmt.Printf("Warning: Failed to list directory %s: %v\n", srcPath, err)
 		return nil // Continue processing other entries
@@ -198,40 +245,33 @@ func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) er
 
 	entries = filterEntriesFat32(entries)
 
-	if err := os.MkdirAll(destPath, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", destPath, err)
-	}
-
 	for _, entry := range entries {
 		srcFullPath := path.Join(srcPath, entry.Name())
-		destFullPath := filepath.Join(destPath, entry.Name())
+		relPath := filepath.Join(relDir, entry.Name())
 
 		if entry.IsDir() {
-			if err := os.MkdirAll(destFullPath, 0755); err != nil {
-				fmt.Printf("Warning: Failed to create directory %s: %v\n", destFullPath, err)
+			if err := root.MkdirAll(relPath, 0755); err != nil {
+				fmt.Printf("Warning: Failed to create directory %s: %v\n", relPath, err)
 				continue
 			}
-			if err := ExtractAllRecursiveFat32(fs, srcFullPath, destFullPath); err != nil {
+			if err := extractRecursiveFat32(fs, srcFullPath, relPath, root); err != nil {
 				fmt.Printf("Warning: Failed to extract directory %s: %v\n", srcFullPath, err)
 				continue
 			}
 		} else {
-			file, err := fs.OpenFile(srcFullPath, os.O_RDONLY)
+			filePath := strings.TrimPrefix(srcFullPath, "/")
+			file, err := fs.OpenFile(filePath, os.O_RDONLY)
+			if err != nil {
+				file, err = fs.OpenFile(srcFullPath, os.O_RDONLY)
+			}
 			if err != nil {
 				fmt.Printf("Warning: Failed to open file %s: %v\n", srcFullPath, err)
 				continue
 			}
-			defer file.Close()
-
-			destFile, err := os.Create(destFullPath)
+			err = writeExtractedFile(root, relPath, file, 0666, defaultMaxFileBytes)
+			file.Close()
 			if err != nil {
-				fmt.Printf("Warning: Failed to create file %s: %v\n", destFullPath, err)
-				continue
-			}
-			defer destFile.Close()
-
-			if _, err := io.Copy(destFile, file); err != nil {
-				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, destFullPath, err)
+				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, relPath, err)
 				continue
 			}
 		}
@@ -241,6 +281,18 @@ func ExtractAllRecursiveFat32(fs *fat32.FileSystem, srcPath, destPath string) er
 
 // ExtractAllRecursiveNtfs extracts all files from a NTFS filesystem to a temporary directory recursively.
 func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) error {
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", destPath, err)
+	}
+	root, err := os.OpenRoot(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to open root %s: %w", destPath, err)
+	}
+	defer root.Close()
+	return extractRecursiveNtfs(fs, srcPath, "", root)
+}
+
+func extractRecursiveNtfs(fs *parser.NTFSContext, srcPath, relDir string, root *os.Root) error {
 	srcPath = normalizePath(srcPath)
 	if srcPath == "" || srcPath == "." {
 		srcPath = "/"
@@ -259,20 +311,16 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 	entries := parser.ListDir(fs, entry)
 	entries = filterEntriesNtfs(entries)
 
-	if err := os.MkdirAll(destPath, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", destPath, err)
-	}
-
 	for _, entryInfo := range entries {
 		srcFullPath := path.Join(srcPath, entryInfo.Name)
-		destFullPath := filepath.Join(destPath, entryInfo.Name)
+		relPath := filepath.Join(relDir, entryInfo.Name)
 
 		if entryInfo.IsDir {
-			if err := os.MkdirAll(destFullPath, 0755); err != nil {
-				fmt.Printf("Warning: Failed to create directory %s: %v\n", destFullPath, err)
+			if err := root.MkdirAll(relPath, 0755); err != nil {
+				fmt.Printf("Warning: Failed to create directory %s: %v\n", relPath, err)
 				continue
 			}
-			if err := ExtractAllRecursiveNtfs(fs, srcFullPath, destFullPath); err != nil {
+			if err := extractRecursiveNtfs(fs, srcFullPath, relPath, root); err != nil {
 				fmt.Printf("Warning: Failed to extract directory %s: %v\n", srcFullPath, err)
 				continue
 			}
@@ -292,28 +340,13 @@ func ExtractAllRecursiveNtfs(fs *parser.NTFSContext, srcPath, destPath string) e
 			// Convert io.ReaderAt to io.Reader using io.NewSectionReader
 			fileReader := io.NewSectionReader(fileReaderAt, 0, entryInfo.Size)
 
-			destFile, err := os.Create(destFullPath)
-			if err != nil {
-				fmt.Printf("Warning: Failed to create file %s: %v\n", destFullPath, err)
-				continue
-			}
-			defer destFile.Close()
-
-			if _, err := io.Copy(destFile, fileReader); err != nil {
-				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, destFullPath, err)
+			if err := writeExtractedFile(root, relPath, fileReader, 0666, defaultMaxFileBytes); err != nil {
+				fmt.Printf("Warning: Failed to copy file %s to %s: %v\n", srcFullPath, relPath, err)
 				continue
 			}
 		}
 	}
 	return nil
-}
-
-// isInvalidEntry checks for ".", "..", "$"-prefixed, and "/"-containing entries in ExFAT.
-func isInvalidEntry(entry string) bool {
-	if entry == "" || entry == "." || entry == ".." || strings.HasPrefix(entry, "$") || strings.Contains(entry, "/") {
-		return true
-	}
-	return false
 }
 
 // ExtractAllRecursiveExFAT extracts all files from an exFAT filesystem to a temporary directory recursively.
@@ -333,47 +366,58 @@ func ExtractAllRecursiveExFAT(section *io.SectionReader, dst string) error {
 		return fmt.Errorf("failed to list exfat entries: %w", err)
 	}
 
+	if err := os.MkdirAll(dst, 0o755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dst, err)
+	}
+	root, err := os.OpenRoot(dst)
+	if err != nil {
+		return fmt.Errorf("failed to open root %s: %w", dst, err)
+	}
+	defer root.Close()
+
 	for _, relPath := range files {
 		node := nodes[relPath]
-		resPath := strings.ReplaceAll(relPath, "\\", string(os.PathSeparator))
-		outPath := filepath.Join(dst, resPath)
-
-		if isInvalidEntry(resPath) {
+		resPath := strings.TrimLeft(strings.ReplaceAll(relPath, "\\", string(os.PathSeparator)), "/\\")
+		if resPath == "" || resPath == "." {
 			continue
 		}
 
 		sde := node.StreamDirectoryEntry()
 		if node.IsDirectory() {
-			if err := os.MkdirAll(outPath, 0o755); err != nil {
-				return fmt.Errorf("failed to create directory %s: %w", outPath, err)
+			if err := root.MkdirAll(resPath, 0o755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", resPath, err)
 			}
 			continue
 		}
 
-		if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
-			return fmt.Errorf("failed to create parent directories for %s: %w", outPath, err)
-		}
-
-		outFile, err := os.Create(outPath)
-		if err != nil {
-			return fmt.Errorf("failed to create file %s: %w", outPath, err)
-		}
-
-		useFat := !sde.GeneralSecondaryFlags.NoFatChain()
-		if _, _, err := er.WriteFromClusterChain(sde.FirstCluster, sde.ValidDataLength, useFat, outFile); err != nil {
-			// Ignore this error because we're going to manually truncate the file at the end
-			if !strings.Contains(err.Error(), "written bytes do not equal data-size") {
-				return fmt.Errorf("failed to write cluster chain %s: %w", outPath, err)
+		if dir := filepath.Dir(resPath); dir != "." {
+			if err := root.MkdirAll(dir, 0o755); err != nil {
+				return fmt.Errorf("failed to create parent directories for %s: %w", resPath, err)
 			}
 		}
 
-		err = outFile.Truncate(int64(sde.ValidDataLength))
+		outFile, err := root.OpenFile(resPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 		if err != nil {
+			return fmt.Errorf("failed to create file %s: %w", resPath, err)
+		}
+
+		dataLen := min(sde.ValidDataLength, uint64(defaultMaxFileBytes))
+		useFat := !sde.GeneralSecondaryFlags.NoFatChain()
+		if _, _, err := er.WriteFromClusterChain(sde.FirstCluster, dataLen, useFat, outFile); err != nil {
+			// Ignore this error because we're going to manually truncate the file at the end
+			if !strings.Contains(err.Error(), "written bytes do not equal data-size") {
+				outFile.Close()
+				return fmt.Errorf("failed to write cluster chain %s: %w", resPath, err)
+			}
+		}
+
+		if err := outFile.Truncate(int64(dataLen)); err != nil {
+			outFile.Close()
 			continue
 		}
 
 		if err := outFile.Close(); err != nil {
-			return fmt.Errorf("failed to close file %s: %w", outPath, err)
+			return fmt.Errorf("failed to close file %s: %w", resPath, err)
 		}
 	}
 
@@ -681,6 +725,12 @@ func TARToTempDir(reader io.Reader, maxFreeSpaceUsageRatio float64) (string, err
 	if err != nil {
 		return "", fmt.Errorf("failed to create temporary directory: %w", err)
 	}
+	root, err := os.OpenRoot(tempDir)
+	if err != nil {
+		os.RemoveAll(tempDir)
+		return "", fmt.Errorf("failed to open root %s: %w", tempDir, err)
+	}
+	defer root.Close()
 
 	maxAllowedBytes := calcMaxAllowedBytes(freeSpaceBytes(tempDir), maxFreeSpaceUsageRatio)
 
@@ -704,24 +754,28 @@ loop:
 			break
 		}
 
-		target := filepath.Join(tempDir, hdr.Name)
+		relPath := strings.TrimLeft(hdr.Name, "/\\")
 		switch hdr.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if relPath == "" || relPath == "." || relPath == "./" {
+				continue
+			}
+			if err := root.MkdirAll(relPath, 0755); err != nil {
 				extractErr = fmt.Errorf(
-					"failed to create directory %s: %w", target, err,
+					"failed to create directory %s: %w", relPath, err,
 				)
 				break loop
 			}
 		case tar.TypeReg, tar.TypeGNUSparse:
-			dir := filepath.Dir(target)
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				extractErr = fmt.Errorf("failed to create directory %s: %w", dir, err)
-				break loop
+			if dir := filepath.Dir(relPath); dir != "." {
+				if err := root.MkdirAll(dir, 0755); err != nil {
+					extractErr = fmt.Errorf("failed to create directory %s: %w", dir, err)
+					break loop
+				}
 			}
-			outFile, err := os.Create(target)
+			outFile, err := root.OpenFile(relPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 			if err != nil {
-				extractErr = fmt.Errorf("failed to create file %s: %w", target, err)
+				extractErr = fmt.Errorf("failed to create file %s: %w", relPath, err)
 				break loop
 			}
 			// TypeGNUSparse entries are always sparse, but TypeReg entries may or
@@ -730,10 +784,13 @@ loop:
 			written, err := sparseCopy(outFile, tr, hdr.Size)
 			if err != nil {
 				outFile.Close()
-				extractErr = fmt.Errorf("failed to copy file %s: %w", target, err)
+				extractErr = fmt.Errorf("failed to copy file %s: %w", relPath, err)
 				break loop
 			}
-			outFile.Close()
+			if err := outFile.Close(); err != nil {
+				extractErr = fmt.Errorf("failed to close file %s: %w", relPath, err)
+				break loop
+			}
 			totalExtractedSize += written
 			if maxAllowedBytes > 0 && totalExtractedSize > maxAllowedBytes {
 				extractErr = fmt.Errorf(
@@ -748,6 +805,7 @@ loop:
 	}
 
 	if extractErr != nil {
+		root.Close()
 		os.RemoveAll(tempDir)
 		return "", extractErr
 	}

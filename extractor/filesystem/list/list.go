@@ -49,8 +49,10 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/gleam/gleamtoml"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gobinary"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gowork"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/vendormodules"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabal"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabalconf"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/cabalprojectfreeze"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/haskell/stacklock"
 	javaarchive "github.com/google/osv-scalibr/extractor/filesystem/language/java/archive"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/gradlelockfile"
@@ -97,7 +99,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/swift/podfilelock"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/zig/buildzigzon"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven"
-	chromeextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/chrome/extensions"
+	browserextensions "github.com/google/osv-scalibr/extractor/filesystem/misc/browser/extensions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/githubactions"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/gitrepo"
 	"github.com/google/osv-scalibr/extractor/filesystem/misc/netscaler"
@@ -109,6 +111,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/cos"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/dpkg"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/flatpak"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/freebsd"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/homebrew"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz"
@@ -279,6 +282,7 @@ var (
 	// GoSource extractors for Go.
 	GoSource = InitMap{
 		gomod.Name:         {protoCfg(gomod.New)},
+		gowork.Name:        {protoCfg(gowork.New)},
 		vendormodules.Name: {protoCfg(vendormodules.New)},
 	}
 	// GoArtifact extractors for Go.
@@ -304,8 +308,12 @@ var (
 	ElixirSource = InitMap{elixir.Name: {protoCfg(elixir.New)}}
 	// HaskellSource extractors for Haskell.
 	HaskellSource = InitMap{
-		stacklock.Name: {protoCfg(stacklock.New)},
-		cabal.Name:     {protoCfg(cabal.New)},
+		stacklock.Name:          {protoCfg(stacklock.New)},
+		cabalprojectfreeze.Name: {protoCfg(cabalprojectfreeze.New)},
+	}
+	// HaskellArtifact extractors for Haskell.
+	HaskellArtifact = InitMap{
+		cabalconf.Name: {protoCfg(cabalconf.New)},
 	}
 	// RSource extractors for R source extractors
 	RSource = InitMap{
@@ -401,6 +409,7 @@ var (
 		portage.Name:    {protoCfg(portage.New)},
 		flatpak.Name:    {protoCfg(flatpak.New)},
 		spack.Name:      {protoCfg(spack.New)},
+		freebsd.Name:    {protoCfg(freebsd.New)},
 		homebrew.Name:   {protoCfg(homebrew.New)},
 		macapps.Name:    {protoCfg(macapps.New)},
 		macports.Name:   {protoCfg(macports.New)},
@@ -525,10 +534,10 @@ var (
 
 	// Misc artifact extractors.
 	Misc = InitMap{
-		vscodeextensions.Name: {protoCfg(vscodeextensions.New)},
-		wordpressplugins.Name: {protoCfg(wordpressplugins.New)},
-		chromeextensions.Name: {protoCfg(chromeextensions.New)},
-		netscaler.Name:        {protoCfg(netscaler.New)},
+		vscodeextensions.Name:  {protoCfg(vscodeextensions.New)},
+		wordpressplugins.Name:  {protoCfg(wordpressplugins.New)},
+		browserextensions.Name: {protoCfg(browserextensions.New)},
+		netscaler.Name:         {protoCfg(netscaler.New)},
 	}
 
 	// MiscSource extractors for miscellaneous purposes.
@@ -606,6 +615,7 @@ var (
 		FFA,
 		JuliaArtifact,
 		RubyArtifact,
+		HaskellArtifact,
 		ZigArtifact,
 	)
 
@@ -639,7 +649,7 @@ var (
 		"nim":        vals(NimSource),
 		"ocaml":      vals(OcamlSource),
 		"elixir":     vals(ElixirSource),
-		"haskell":    vals(HaskellSource),
+		"haskell":    vals(concat(HaskellSource, HaskellArtifact)),
 		"r":          vals(RSource),
 		"ruby":       vals(concat(RubySource, RubyArtifact)),
 		"dotnet":     vals(concat(DotnetSource, DotnetArtifact)),

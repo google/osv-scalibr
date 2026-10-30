@@ -61,7 +61,6 @@ func TestAnnotate(t *testing.T) {
 		{
 			desc:         "missing_info_dir",
 			infoContents: nil,
-			wantErr:      cmpopts.AnyError,
 		},
 		{
 			desc:         "empty_info_dir",
@@ -146,7 +145,7 @@ func TestAnnotate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			root := ""
+			root := t.TempDir()
 			if tt.infoContents != nil {
 				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, true)
 			}
