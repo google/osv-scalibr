@@ -103,15 +103,13 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to get real path for %s: %w", input.Path, err)
 	}
 
-	// If called on a virtual FS, clean up the temporary directory
-	if input.Root == "" {
-		defer func() {
-			dir := filepath.Dir(qcow2Path)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v\n", dir, err)
-			}
-		}()
-	}
+	// Clean up the temporary directory where the file was copied.
+	defer func() {
+		dir := filepath.Dir(qcow2Path)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v\n", dir, err)
+		}
+	}()
 
 	// Create a temporary file for the raw disk image
 	tmpRaw, err := os.CreateTemp("", "scalibr-qcow2-raw-*.raw")

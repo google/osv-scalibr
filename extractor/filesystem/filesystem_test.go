@@ -112,6 +112,20 @@ func TestInitWalkContext(t *testing.T) {
 			},
 			wantErr: filesystem.ErrNotRelativeToScanRoots,
 		},
+		{
+			desc: "pathsToExtract_sharing_string_prefix_without_separator_raises_error",
+			scanRoots: map[string][]string{
+				"darwin":  {"/scanroot"},
+				"linux":   {"/scanroot"},
+				"windows": {"C:\\scanroot"},
+			},
+			pathsToExtract: map[string][]string{
+				"darwin":  {"/scanroot_other/file1.txt"},
+				"linux":   {"/scanroot_other/file1.txt"},
+				"windows": {"C:\\scanroot_other\\file1.txt"},
+			},
+			wantErr: filesystem.ErrNotRelativeToScanRoots,
+		},
 	}
 
 	for _, tc := range testCases {

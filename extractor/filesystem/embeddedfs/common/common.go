@@ -661,6 +661,9 @@ func (e *EmbeddedDirFS) Stat(name string) (fs.FileInfo, error) {
 func (e *EmbeddedDirFS) Close() error {
 	e.RefMu.Lock()
 	defer e.RefMu.Unlock()
+	if c, ok := e.FS.(io.Closer); ok {
+		_ = c.Close()
+	}
 	if e.File == nil {
 		return nil // Already closed
 	}

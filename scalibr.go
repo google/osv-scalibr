@@ -238,6 +238,17 @@ func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
+	defer func() {
+		for _, r := range cfg.ScanRoots {
+			if r != nil && r.FS != nil {
+				if c, ok := r.FS.(io.Closer); ok {
+					if err := c.Close(); err != nil {
+						log.Warnf("failed to close scan root %q: %v", r.Path, err)
+					}
+				}
+			}
+		}
+	}()
 	extractors := pl.FilesystemExtractors(cfg.Plugins)
 	extractors, err := cf.SetupVelesExtractors(extractors)
 	if err != nil {

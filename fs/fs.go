@@ -17,12 +17,16 @@ package fs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
+	"strings"
+	"sync"
 )
 
 // FS is a filesystem interface that allows the opening of files, reading of
@@ -68,9 +72,225 @@ func (r *ScanRoot) WithAbsolutePath() (*ScanRoot, error) {
 	return &ScanRoot{FS: r.FS, Path: absroot}, nil
 }
 
-// DirFS returns an FS implementation that accesses the real filesystem at the given root.
+const maxSymlinkDepth = 40
+
+// DirFS returns an FS implementation that accesses the real filesystem at the
+// given root, confined to root via os.Root. The underlying os.Root handle is
+// opened lazily on first access and can be released via Close.
 func DirFS(root string) FS {
-	return os.DirFS(root).(FS)
+	return &rootFS{dir: root}
+}
+
+type rootFS struct {
+	dir  string
+	mu   sync.Mutex
+	root *os.Root
+}
+
+func (r *rootFS) getRoot() (*os.Root, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.root != nil {
+		return r.root, nil
+	}
+	root, err := os.OpenRoot(r.dir)
+	if err != nil {
+		return nil, err
+	}
+	r.root = root
+	return root, nil
+}
+
+func (r *rootFS) withRoot(op, name string, fn func(*os.Root) error) error {
+	if r.dir == "" {
+		return &fs.PathError{Op: op, Path: name, Err: errors.New("os: DirFS with empty root")}
+	}
+	if runtime.GOOS == "windows" {
+		root, err := os.OpenRoot(r.dir)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = root.Close() }()
+		return fn(root)
+	}
+	root, err := r.getRoot()
+	if err != nil {
+		return err
+	}
+	return fn(root)
+}
+
+// Close releases the underlying os.Root file descriptor if one was opened.
+func (r *rootFS) Close() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.root == nil {
+		return nil
+	}
+	err := r.root.Close()
+	r.root = nil
+	return err
+}
+
+func doInRoot[T any](
+	r *rootFS,
+	opName, name string,
+	resolve func(*os.Root, string, error) (string, bool),
+	fn func(*os.Root, string) (T, error),
+) (T, error) {
+	var res T
+	err := r.withRoot(opName, name, func(root *os.Root) error {
+		var opErr error
+		res, opErr = fn(root, name)
+		if opErr == nil {
+			return nil
+		}
+		if resolved, ok := resolve(root, name, opErr); ok {
+			res, opErr = fn(root, resolved)
+		}
+		return opErr
+	})
+	return res, err
+}
+
+func (r *rootFS) Open(name string) (fs.File, error) {
+	f, err := doInRoot(r, "open", name, resolveInRoot, func(root *os.Root, p string) (fs.File, error) {
+		return root.FS().Open(p)
+	})
+	return f, err
+}
+
+func (r *rootFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := doInRoot(r, "readdir", name, resolveInRoot, func(root *os.Root, p string) ([]fs.DirEntry, error) {
+		return root.FS().(fs.ReadDirFS).ReadDir(p)
+	})
+	return entries, err
+}
+
+func (r *rootFS) Stat(name string) (fs.FileInfo, error) {
+	info, err := doInRoot(r, "stat", name, resolveInRoot, func(root *os.Root, p string) (fs.FileInfo, error) {
+		return root.FS().(fs.StatFS).Stat(p)
+	})
+	return info, err
+}
+
+func (r *rootFS) ReadFile(name string) ([]byte, error) {
+	b, err := doInRoot(r, "open", name, resolveInRoot, func(root *os.Root, p string) ([]byte, error) {
+		return root.FS().(fs.ReadFileFS).ReadFile(p)
+	})
+	return b, err
+}
+
+func (r *rootFS) ReadLink(name string) (string, error) {
+	return doInRoot(r, "readlink", name, resolveParentInRoot, func(root *os.Root, p string) (string, error) {
+		return root.FS().(fs.ReadLinkFS).ReadLink(p)
+	})
+}
+
+func (r *rootFS) Lstat(name string) (fs.FileInfo, error) {
+	return doInRoot(r, "lstat", name, resolveParentInRoot, func(root *os.Root, p string) (fs.FileInfo, error) {
+		return root.FS().(fs.ReadLinkFS).Lstat(p)
+	})
+}
+
+func resolveParentInRoot(root *os.Root, name string, opErr error) (string, bool) {
+	if !fs.ValidPath(name) {
+		return "", false
+	}
+	dir := path.Dir(name)
+	if dir == "." {
+		return "", false
+	}
+	resolvedDir, ok := resolveInRoot(root, dir, opErr)
+	if !ok {
+		return "", false
+	}
+	return path.Join(resolvedDir, path.Base(name)), true
+}
+
+// resolveInRoot resolves intra-root absolute symlinks (such as
+// /etc/os-release -> /usr/lib/os-release in guest container/VM rootfses)
+// relative to root, up to maxSymlinkDepth hops. It returns true only if at
+// least one absolute symlink was rewritten into a valid root-relative path.
+func resolveInRoot(root *os.Root, name string, opErr error) (string, bool) {
+	if opErr != nil && (errors.Is(opErr, fs.ErrNotExist) || errors.Is(opErr, fs.ErrInvalid)) {
+		return "", false
+	}
+	if !fs.ValidPath(name) || name == "." || (runtime.GOOS == "windows" && strings.ContainsRune(name, '\\')) {
+		return "", false
+	}
+	remaining := strings.Split(name, "/")
+	cur := ""
+	curIsDir := true
+	hops := 0
+	rewroteAbs := false
+
+	for len(remaining) > 0 {
+		part := remaining[0]
+		remaining = remaining[1:]
+		if !curIsDir {
+			return "", false
+		}
+		if part == "" || part == "." {
+			continue
+		}
+		if part == ".." {
+			if cur == "" {
+				return "", false
+			}
+			if idx := strings.LastIndexByte(cur, '/'); idx >= 0 {
+				cur = cur[:idx]
+			} else {
+				cur = ""
+			}
+			continue
+		}
+
+		next := part
+		if cur != "" {
+			next = cur + "/" + part
+		}
+		fi, err := root.Lstat(filepath.FromSlash(next))
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) && rewroteAbs && cur != "" && len(remaining) == 0 {
+				return next, fs.ValidPath(next)
+			}
+			return "", false
+		}
+		if fi.Mode()&fs.ModeSymlink == 0 {
+			cur = next
+			curIsDir = fi.IsDir()
+			continue
+		}
+
+		hops++
+		if hops > maxSymlinkDepth {
+			return "", false
+		}
+		target, err := root.Readlink(filepath.FromSlash(next))
+		if err != nil || filepath.VolumeName(target) != "" {
+			return "", false
+		}
+		target = filepath.ToSlash(target)
+		if strings.HasPrefix(target, "/") {
+			rewroteAbs = true
+			cur = ""
+			curIsDir = true
+			if trimmed := strings.TrimLeft(target, "/"); trimmed != "" {
+				remaining = append(strings.Split(trimmed, "/"), remaining...)
+			}
+		} else if target != "" {
+			remaining = append(strings.Split(target, "/"), remaining...)
+		}
+	}
+
+	if !rewroteAbs {
+		return "", false
+	}
+	if cur == "" {
+		cur = "."
+	}
+	return cur, fs.ValidPath(cur)
 }
 
 // Sub returns an FS corresponding to the subtree rooted at dir within fsys.
@@ -133,10 +353,9 @@ func NewReaderAt(ioReader io.Reader) (io.ReaderAt, error) {
 	return bytes.NewReader(buff.Bytes()), nil
 }
 
-// GetRealPath returns the real absolute path of the file on the scanning host's filesystem.
-// If the file is on a virtual filesystem (e.g. a remote container), it is first copied into a
-// temporary directory on the scanning host's filesystem. It's up to the caller to delete the
-// directory once they're done using it.
+// GetRealPath copies the file into an isolated temporary directory on the scanning host's
+// filesystem and returns its absolute path. It is up to the caller to delete the temporary
+// directory (filepath.Dir(realPath)) once they are done using it.
 //
 // Sample code to delete the directory:
 // ```
@@ -147,12 +366,29 @@ func NewReaderAt(ioReader io.Reader) (io.ReaderAt, error) {
 //	    log.Errorf("os.RemoveAll(%q): %w", dir, err)
 //	}
 func GetRealPath(root *ScanRoot, path string, reader io.Reader) (string, error) {
-	if !root.IsVirtual() {
-		return filepath.Join(root.Path, path), nil
+	if root != nil {
+		fsys := root.FS
+		if fsys == nil && !root.IsVirtual() {
+			// Fallback for unit tests that construct ScanInput with FS: nil.
+			fsys = DirFS(root.Path)
+			if c, ok := fsys.(io.Closer); ok {
+				defer c.Close()
+			}
+		}
+		if fsys != nil {
+			f, err := fsys.Open(filepath.ToSlash(path))
+			if err == nil {
+				defer f.Close()
+				reader = f
+			} else if !errors.Is(err, fs.ErrNotExist) || reader == nil {
+				return "", err
+			}
+		}
+	}
+	if reader == nil {
+		return "", errors.New("GetRealPath: both root.FS and reader are nil")
 	}
 
-	// This is a virtual filesystem.
-	// Move the file to the scanning hosts's filesystem.
 	dir, err := os.MkdirTemp("", "scalibr-tmp")
 	if err != nil {
 		return "", err
@@ -160,19 +396,16 @@ func GetRealPath(root *ScanRoot, path string, reader io.Reader) (string, error) 
 	realPath := filepath.Join(dir, "file")
 	f, err := os.Create(realPath)
 	if err != nil {
+		_ = os.RemoveAll(dir)
 		return "", err
 	}
-	defer f.Close()
-
-	if reader == nil {
-		reader, err = root.FS.Open(path)
-		if err != nil {
-			return "", err
-		}
+	if _, err := io.Copy(f, reader); err != nil {
+		_ = f.Close()
+		_ = os.RemoveAll(dir)
+		return "", err
 	}
-
-	_, err = io.Copy(f, reader)
-	if err != nil {
+	if err := f.Close(); err != nil {
+		_ = os.RemoveAll(dir)
 		return "", err
 	}
 

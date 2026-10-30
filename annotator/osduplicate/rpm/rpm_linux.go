@@ -95,15 +95,13 @@ func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs
 	if err != nil {
 		return fmt.Errorf("GetRealPath(%v, %v): %w", root, dbPath, err)
 	}
-	if root.IsVirtual() {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Dir(realDBPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
+	// The file got copied to a temporary dir, remove it at the end.
+	defer func() {
+		dir := filepath.Dir(realDBPath)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		}
+	}()
 
 	db, err := rpmdb.Open(realDBPath)
 	if err != nil {

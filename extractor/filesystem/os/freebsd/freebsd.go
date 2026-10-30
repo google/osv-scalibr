@@ -170,14 +170,12 @@ func (e Extractor) extractFromSQLite(ctx context.Context, input *filesystem.Scan
 	if err != nil {
 		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
 	}
-	if input.Root == "" {
-		defer func() {
-			dir := filepath.Dir(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
+	defer func() {
+		dir := filepath.Dir(absPath)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		}
+	}()
 
 	db, err := sql.Open("sqlite", absPath)
 	if err != nil {
