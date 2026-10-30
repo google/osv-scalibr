@@ -49,6 +49,27 @@ func TestDetect_truePositives(t *testing.T) {
 		want []veles.Secret
 	}{
 		{
+			name: "bad_checksum_stays_low_confidence",
+			in:   []byte("5100000000000007"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("5100000000000007"), sensitiveinformation.LikelihoodUnlikely),
+			},
+		},
+		{
+			name: "bad_checksum_with_keyword_and_issuer_stays_low_confidence",
+			in:   []byte("credit card: 5100-0000-0000-0007"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("5100-0000-0000-0007"), sensitiveinformation.LikelihoodUnlikely),
+			},
+		},
+		{
+			name: "bad_checksum_with_keyword_without_known_issuer_stays_low_confidence",
+			in:   []byte("credit card: 7000000000000000046"),
+			want: []veles.Secret{
+				creditCardFindingWithLikelihood([]byte("7000000000000000046"), sensitiveinformation.LikelihoodUnlikely),
+			},
+		},
+		{
 			name: "match_only",
 			in:   []byte("5100000000000008"),
 			want: []veles.Secret{
@@ -207,10 +228,6 @@ func TestDetect_trueNegatives(t *testing.T) {
 			in:   []byte("51000000000000000000"),
 		},
 		{
-			name: "bad_checksum",
-			in:   []byte("5100000000000007"),
-		},
-		{
 			name: "all_same_digits",
 			in:   []byte("0000000000000000"),
 		},
@@ -271,9 +288,6 @@ func TestDetect_published_test_cards(t *testing.T) {
 }
 
 func TestValidCreditCardNumber(t *testing.T) {
-	// Synthetic fixtures exercise Luhn independently of issuer ranges and the
-	// published-test-card filter. The penultimate digit is always doubled:
-	// 4 becomes 8, 5 becomes 1, and 9 becomes 9 after reduction.
 	cases := []struct {
 		name string
 		in   string
@@ -286,8 +300,8 @@ func TestValidCreditCardNumber(t *testing.T) {
 		{name: "odd_length_doubled_4", in: "7000000000000000045", want: true},
 		{name: "odd_length_doubled_5", in: "7000000000000000052", want: true},
 		{name: "odd_length_doubled_9", in: "7000000000000000094", want: true},
-		{name: "even_length_bad_checksum", in: "7000000000000048"},
-		{name: "odd_length_bad_checksum", in: "7000000000000000046"},
+		{name: "even_length_bad_checksum_is_not_filtered", in: "7000000000000048", want: true},
+		{name: "odd_length_bad_checksum_is_not_filtered", in: "7000000000000000046", want: true},
 		{name: "spaced", in: "7000 0000 0000 0047", want: true},
 		{name: "hyphenated", in: "7000-0000-0000-0047", want: true},
 		{name: "empty"},
@@ -306,6 +320,33 @@ func TestValidCreditCardNumber(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := validCreditCardNumber([]byte(tc.in)); got != tc.want {
 				t.Errorf("validCreditCardNumber(%q) = %t, want %t", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestLuhnCheck(t *testing.T) {
+	// The penultimate digit is always doubled: 4 becomes 8, 5 becomes 1,
+	// and 9 becomes 9 after reduction. Nonzero check digits stay unchanged.
+	cases := []struct {
+		name   string
+		digits string
+		want   bool
+	}{
+		{name: "minimum_12_digits", digits: "700000000047", want: true},
+		{name: "even_length_doubled_4", digits: "7000000000000047", want: true},
+		{name: "even_length_doubled_5", digits: "7000000000000054", want: true},
+		{name: "even_length_doubled_9", digits: "7000000000000096", want: true},
+		{name: "odd_length_doubled_4", digits: "7000000000000000045", want: true},
+		{name: "odd_length_doubled_5", digits: "7000000000000000052", want: true},
+		{name: "odd_length_doubled_9", digits: "7000000000000000094", want: true},
+		{name: "even_length_bad_checksum", digits: "7000000000000048"},
+		{name: "odd_length_bad_checksum", digits: "7000000000000000046"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := luhnCheck(tc.digits); got != tc.want {
+				t.Errorf("luhnCheck(%q) = %t, want %t", tc.digits, got, tc.want)
 			}
 		})
 	}

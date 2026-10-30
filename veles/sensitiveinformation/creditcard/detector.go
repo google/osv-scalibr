@@ -224,21 +224,24 @@ func NewDetector() veles.Detector {
 				return sensitiveinformation.SensitiveInformation{}, false
 			}
 
-			likelihood := sensitiveinformation.LikelihoodUnlikely
-			if keywordMatch {
-				likelihood = sensitiveinformation.LikelihoodLikely
-				if hasCommonIssuerAndLength(normalizedDigits(b)) {
-					likelihood = sensitiveinformation.LikelihoodVeryLikely
-				}
-			}
-
 			finding := sensitiveinformation.SensitiveInformation{
 				InfoType: sensitiveinformation.InfoType{
 					Name:        "CREDIT_CARD_NUMBER",
 					Sensitivity: sensitiveinformation.SensitivityLevelHigh,
 				},
-				Likelihood: likelihood,
+				Likelihood: sensitiveinformation.LikelihoodUnlikely,
 				Raw:        bytes.Clone(b),
+			}
+
+			if !luhnCheck(normalizedDigits(b)) {
+				return finding, true
+			}
+
+			if keywordMatch {
+				finding.Likelihood = sensitiveinformation.LikelihoodLikely
+				if hasCommonIssuerAndLength(normalizedDigits(b)) {
+					finding.Likelihood = sensitiveinformation.LikelihoodVeryLikely
+				}
 			}
 
 			return finding, true
@@ -264,11 +267,8 @@ func validCreditCardNumber(b []byte) bool {
 			break
 		}
 	}
-	if allSame {
-		return false
-	}
 
-	return luhnCheck(digits)
+	return !allSame
 }
 
 // Luhn check
