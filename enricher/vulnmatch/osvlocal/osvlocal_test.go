@@ -92,6 +92,7 @@ func TestEnrich(t *testing.T) {
 		goPkg      = &extractor.Package{Name: "github.com/gin-gonic/gin", Version: "1.8.1", PURLType: purl.TypeGolang}
 		fzfPkg     = &extractor.Package{Name: "fzf", Version: "0.63.0", PURLType: purl.TypeBrew}
 		pyPkg      = &extractor.Package{Name: "requests", Version: "1.63.0", PURLType: purl.TypePyPi}
+		rustPkg    = &extractor.Package{Name: "serde", Version: "1.0.0", PURLType: purl.TypeCargo} // missing db
 		unknownPkg = &extractor.Package{Name: "unknown", PURLType: purl.TypeGolang}
 		gitPkg     = &extractor.Package{
 			Name:     "some-git-dep",
@@ -510,6 +511,13 @@ func TestEnrich(t *testing.T) {
 			return
 		}
 
+		// Intentionally return 404 for crates.io to be a missing/unavailable database.
+		if strings.HasSuffix(r.URL.Path, "crates.io/all.zip") {
+			w.WriteHeader(http.StatusNotFound)
+
+			return
+		}
+
 		t.Fatalf("unexpected call to %s", r.URL.Path)
 	})
 
@@ -643,6 +651,17 @@ func TestEnrich(t *testing.T) {
 				{Vulnerability: &goVuln1, Package: goPkgWithCommit, Plugins: []string{Name}},
 				{Vulnerability: &goVuln2, Package: goPkgWithCommit, Plugins: []string{Name}},
 				{Vulnerability: &goVuln3, Package: goPkgWithCommit, Plugins: []string{Name}},
+			},
+		},
+		{
+			name:     "missing_db_continues_matching_other_ecosystems",
+			packages: []*extractor.Package{rustPkg, goPkg, jsPkg},
+			wantErr:  cmpopts.AnyError,
+			wantPackageVulns: []*inventory.PackageVuln{
+				{Vulnerability: &goVuln1, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln2, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &goVuln3, Package: goPkg, Plugins: []string{Name}},
+				{Vulnerability: &jsVuln1, Package: jsPkg, Plugins: []string{Name}},
 			},
 		},
 	}
