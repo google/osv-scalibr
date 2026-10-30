@@ -251,6 +251,7 @@ func npmLockfile(lockfile string, fsys scalibrfs.FS) (*packagelockjson.LockFile,
 // Note that only NPM packages from root/node_modules/../package.json are considered.
 // For example, if package @foo/bar was installed from root/node_modules/foo/bar/package.json,
 // then the map will contain root as the key and package @foo/bar as the value.
+// Packages from node_modules/../package.json directly under the scan root are mapped to ".".
 func MapNPMProjectRootsToPackages(packages []*extractor.Package) map[string][]*extractor.Package {
 	rootsToPackages := map[string][]*extractor.Package{}
 	for _, pkg := range packages {
@@ -274,7 +275,13 @@ func npmProjectRootDirectory(path string) string {
 		return ""
 	}
 
-	nodeModulesIndex := strings.Index(filepath.ToSlash(path), "/node_modules/")
+	slashPath := filepath.ToSlash(path)
+	// The scan root is the project directory, e.g. node_modules/foo/package.json.
+	if strings.HasPrefix(slashPath, nodeModulesDirectory+"/") {
+		return "."
+	}
+
+	nodeModulesIndex := strings.Index(slashPath, "/node_modules/")
 	if nodeModulesIndex == -1 {
 		return ""
 	}

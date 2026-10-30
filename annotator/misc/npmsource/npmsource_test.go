@@ -499,6 +499,44 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 			},
 			wantAnyErr: false,
 		},
+		{
+			name: "scan_root_is_the_project_directory",
+			lockfiles: map[string]string{
+				"package-lock.json": "testdata/package-lock.json",
+			},
+			inputPackage: &extractor.Package{
+				Name:     "wrappy",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("node_modules/dependency-1/package.json"),
+			},
+			wantPackage: &extractor.Package{
+				Name:     "wrappy",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("node_modules/dependency-1/package.json"),
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					Source: metadata.PublicRegistry,
+				},
+			},
+		},
+		{
+			name: "scan_root_is_the_project_directory_with_hidden_lockfile",
+			lockfiles: map[string]string{
+				"node_modules/.package-lock.json": "testdata/package-lock.json",
+			},
+			inputPackage: &extractor.Package{
+				Name:     "local-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("node_modules/local-package/package.json"),
+			},
+			wantPackage: &extractor.Package{
+				Name:     "local-package",
+				PURLType: "npm",
+				Location: extractor.LocationFromPath("node_modules/local-package/package.json"),
+				Metadata: &metadata.JavascriptPackageJSONMetadata{
+					Source: metadata.Local,
+				},
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -577,6 +615,114 @@ func TestMapNPMProjectRootsToPackages(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "maps_scan_root_to_package_when_scanning_the_project_directory",
+			inputPackages: []*extractor.Package{
+				{
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("node_modules/dependency-1/package.json"),
+				},
+			},
+			want: map[string][]*extractor.Package{
+				".": []*extractor.Package{
+					{
+						Name:     "acorn",
+						Version:  "1.0.0",
+						PURLType: "npm",
+						Location: extractor.LocationFromPath("node_modules/dependency-1/package.json"),
+					},
+				},
+			},
+		},
+		{
+			name: "maps_scan_root_to_nested_package_when_scanning_the_project_directory",
+			inputPackages: []*extractor.Package{
+				{
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("node_modules/dependency-1/node_modules/dependency-2/package.json"),
+				},
+			},
+			want: map[string][]*extractor.Package{
+				".": []*extractor.Package{
+					{
+						Name:     "acorn",
+						Version:  "1.0.0",
+						PURLType: "npm",
+						Location: extractor.LocationFromPath("node_modules/dependency-1/node_modules/dependency-2/package.json"),
+					},
+				},
+			},
+		},
+		{
+			name: "maps_root_directory_to_nested_package",
+			inputPackages: []*extractor.Package{
+				{
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/node_modules/dependency-2/package.json"),
+				},
+			},
+			want: map[string][]*extractor.Package{
+				"testproject": []*extractor.Package{
+					{
+						Name:     "acorn",
+						Version:  "1.0.0",
+						PURLType: "npm",
+						Location: extractor.LocationFromPath("testproject/node_modules/dependency-1/node_modules/dependency-2/package.json"),
+					},
+				},
+			},
+		},
+		{
+			name: "maps_absolute_root_directory_to_package",
+			inputPackages: []*extractor.Package{
+				{
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("/testproject/node_modules/dependency-1/package.json"),
+				},
+			},
+			want: map[string][]*extractor.Package{
+				"/testproject": []*extractor.Package{
+					{
+						Name:     "acorn",
+						Version:  "1.0.0",
+						PURLType: "npm",
+						Location: extractor.LocationFromPath("/testproject/node_modules/dependency-1/package.json"),
+					},
+				},
+			},
+		},
+		{
+			name: "no_map_for_package_json_in_scan_root",
+			inputPackages: []*extractor.Package{
+				{
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("package.json"),
+				},
+			},
+			want: make(map[string][]*extractor.Package),
+		},
+		{
+			name: "no_map_for_directory_with_node_modules_name_prefix",
+			inputPackages: []*extractor.Package{
+				{
+					Name:     "acorn",
+					Version:  "1.0.0",
+					PURLType: "npm",
+					Location: extractor.LocationFromPath("node_modules_backup/dependency-1/package.json"),
+				},
+			},
+			want: make(map[string][]*extractor.Package),
 		},
 		{
 			name: "no_map_for_non-npm_packages",
