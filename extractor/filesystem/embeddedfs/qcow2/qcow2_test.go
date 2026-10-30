@@ -27,6 +27,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/qcow2"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -122,12 +123,18 @@ func TestExtractValidQCOW2(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		path string
+		name  string
+		path  string
+		useFS bool
 	}{
 		{
 			name: "qcow2",
 			path: filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.qcow2"),
+		},
+		{
+			name:  "qcow2 via FS",
+			path:  filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.qcow2"),
+			useFS: true,
 		},
 		{
 			name: "LUKS Encrypted qcow2",
@@ -146,18 +153,20 @@ func TestExtractValidQCOW2(t *testing.T) {
 				t.Fatalf("os.Stat(%q) failed: %v", tt.path, err)
 			}
 
-			f, err := os.Open(tt.path)
-			if err != nil {
-				t.Fatalf("os.Open(%q) failed: %v", tt.path, err)
-			}
-			defer f.Close()
-
 			input := &filesystem.ScanInput{
-				Path:   tt.path,
-				Root:   ".",
-				Info:   info,
-				Reader: f,
-				FS:     nil,
+				Path: tt.path,
+				Root: ".",
+				Info: info,
+			}
+			if tt.useFS {
+				input.FS = scalibrfs.DirFS(".")
+			} else {
+				f, err := os.Open(tt.path)
+				if err != nil {
+					t.Fatalf("os.Open(%q) failed: %v", tt.path, err)
+				}
+				defer f.Close()
+				input.Reader = f
 			}
 
 			ctx := t.Context()
@@ -289,5 +298,36 @@ func TestExtractNonExistentQCOW2(t *testing.T) {
 	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
+	}
+}
+
+func TestExtractSymlinkEscapeRejected(t *testing.T) {
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, "disk.qcow2")
+	validQCOW2, err := os.ReadFile(filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.qcow2"))
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	if err := os.WriteFile(outsidePath, validQCOW2, 0600); err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", outsidePath, err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot(%q): %v", scanRoot, err)
+	}
+	defer root.Close()
+
+	extractor, err := qcow2.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("qcow2.New: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		FS:   root.FS().(scalibrfs.FS),
+		Path: "disk.qcow2",
+		Root: scanRoot,
+	}
+	if _, err := extractor.Extract(t.Context(), input); err == nil {
+		t.Errorf("Extract(disk.qcow2) succeeded through escaping symlink, want error")
 	}
 }
