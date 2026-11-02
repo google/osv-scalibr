@@ -74,9 +74,6 @@ func ParseNPMRegistryInfo(npmrc NpmrcConfig) NPMRegistryConfig {
 		if idx := strings.LastIndex(name, ":"); idx >= 0 {
 			part1, part2 = name[:idx], name[idx+1:]
 		}
-		value := os.ExpandEnv(value)
-		// os.ExpandEnv isn't quire right here - npm config replaces only ${VAR}, not $VAR
-		// and if VAR is unset, it will leave the string as "${VAR}"
 		switch {
 		case name == "registry": // registry=...
 			config.ScopeURLs[""] = value
@@ -183,8 +180,15 @@ type NpmrcConfig map[string]string
 // https://docs.npmjs.com/cli/v10/configuring-npm/npmrc
 // https://docs.npmjs.com/cli/v10/using-npm/config
 func loadNpmrc(projectDir string) (NpmrcConfig, error) {
-	// project npmrc is always in ./.npmrc
-	projectFile, _ := filepath.Abs(filepath.Join(projectDir, ".npmrc"))
+	// Read project .npmrc confined to projectDir so symlinks cannot escape projectDir,
+	// and do not allow project .npmrc to override userconfig, globalconfig, or prefix.
+	var projectData []byte
+	if projectDir != "" {
+		if root, err := os.OpenRoot(projectDir); err == nil {
+			projectData, _ = root.ReadFile(".npmrc")
+			_ = root.Close()
+		}
+	}
 	builtinFile := builtinNpmrc()
 	envVarOpts, _ := envVarNpmrc()
 
@@ -192,8 +196,8 @@ func loadNpmrc(projectDir string) (NpmrcConfig, error) {
 		Loose:              true, // ignore missing files
 		KeyValueDelimiters: "=",  // default delimiters are "=:", but npmrc uses : in some keys
 	}
-	// Make use of data overwriting to load the correct values
-	fullNpmrc, err := ini.LoadSources(opts, builtinFile, projectFile, envVarOpts)
+	// Resolve userconfig only from trusted host config (builtin and environment variables).
+	fullNpmrc, err := ini.LoadSources(opts, builtinFile, envVarOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -203,9 +207,7 @@ func loadNpmrc(projectDir string) (NpmrcConfig, error) {
 	var userFile string
 	switch {
 	case fullNpmrc.Section("").HasKey("userconfig"):
-		userFile = os.ExpandEnv(fullNpmrc.Section("").Key("userconfig").String())
-		// os.ExpandEnv isn't quire right here - npm config replaces only ${VAR}, not $VAR
-		// and if VAR is unset, it will leave the string as "${VAR}"
+		userFile = fullNpmrc.Section("").Key("userconfig").String()
 	default:
 		homeDir, err := os.UserHomeDir()
 		if err == nil { // only set userFile if homeDir exists
@@ -213,8 +215,8 @@ func loadNpmrc(projectDir string) (NpmrcConfig, error) {
 		}
 	}
 
-	// reload the npmrc files with the user file included
-	fullNpmrc, err = ini.LoadSources(opts, builtinFile, userFile, projectFile, envVarOpts)
+	// Reload trusted host npmrc files with the user file included to resolve globalconfig/prefix.
+	fullNpmrc, err = ini.LoadSources(opts, builtinFile, userFile, envVarOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -224,17 +226,17 @@ func loadNpmrc(projectDir string) (NpmrcConfig, error) {
 	// cannot be set within the global npmrc itself
 	switch {
 	case fullNpmrc.Section("").HasKey("globalconfig"):
-		globalFile = os.ExpandEnv(fullNpmrc.Section("").Key("globalconfig").String())
+		globalFile = fullNpmrc.Section("").Key("globalconfig").String()
 	// TODO: Windows
 	case fullNpmrc.Section("").HasKey("prefix"):
-		prefix := os.ExpandEnv(fullNpmrc.Section("").Key("prefix").String())
+		prefix := fullNpmrc.Section("").Key("prefix").String()
 		globalFile, _ = filepath.Abs(filepath.Join(prefix, "etc", "npmrc"))
 	case os.Getenv("PREFIX") != "":
 		globalFile, _ = filepath.Abs(filepath.Join(os.Getenv("PREFIX"), "etc", "npmrc"))
 	}
 
 	// return final joined config, with correct overriding order
-	fullNpmrc, err = ini.LoadSources(opts, builtinFile, globalFile, userFile, projectFile, envVarOpts)
+	fullNpmrc, err = ini.LoadSources(opts, builtinFile, globalFile, userFile, projectData, envVarOpts)
 	if err != nil {
 		return nil, err
 	}
