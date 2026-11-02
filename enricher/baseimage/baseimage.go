@@ -30,7 +30,7 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 
-	grpcpb "deps.dev/api/v3alpha"
+	agrpc "deps.dev/api/v3alpha"
 	"github.com/google/osv-scalibr/depsdev"
 	"github.com/google/osv-scalibr/plugin/config"
 )
@@ -61,7 +61,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to establish gRPC connection for %s: %w", Name, err)
 	}
-	client := grpcpb.NewInsightsClient(conn)
+	client := agrpc.NewInsightsClient(conn)
 	return &Enricher{Client: NewClientGRPC(client)}, nil
 }
 
