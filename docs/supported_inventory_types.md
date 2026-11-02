@@ -229,12 +229,13 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | HTTP Cookie                                 | `secrets/httpcookie`                   |
 
 ### Sensitive information
-| Type                                           | Extractor Plugin                       |
-| ---------------------------------------------- | -------------------------------------- |
-| International Bank Account Number              | `sensitiveinformation/iban`            |
-| US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
-| US Individual Taxpayer Identification Number   | `secrets/itin`                         |
-| US Social Security Number                      | `sensitiveinformation/ssn`             |
+| Type                                           | Extractor Plugin                            |
+| ---------------------------------------------- | ------------------------------------------- |
+| International Bank Account Number              | `sensitiveinformation/iban`                 |
+| US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`                 |
+| US Individual Taxpayer Identification Number   | `secrets/itin`                              |
+| US Social Security Number                      | `sensitiveinformation/ssn`                  |
+| US Bank Account Number                         | `sensitiveinformation/usbankaccountnumber`  |
 
 ### Container inventory
 
