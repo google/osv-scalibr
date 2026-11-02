@@ -31,6 +31,7 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 )
@@ -133,19 +134,11 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract returns an Inventory with embedded filesystems which contains mount functions for each filesystem in the .vmdk file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	vmdkPath, err := input.GetRealPath()
+	sr, closer, err := openSectionReader(input)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to get real path for %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("failed to open %s: %w", input.Path, err)
 	}
-	// If called on a virtual FS, clean up the temporary directory
-	if input.Root == "" {
-		defer func() {
-			dir := filepath.Dir(vmdkPath)
-			if err := os.RemoveAll(dir); err != nil {
-				fmt.Printf("os.RemoveAll(%q): %v\n", dir, err)
-			}
-		}()
-	}
+	defer closer.Close()
 
 	// Create a temporary file for the raw disk image
 	tmpRaw, err := os.CreateTemp("", "scalibr-vmdk-raw-*.raw")
@@ -153,11 +146,12 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}
 	tmpRawPath := tmpRaw.Name()
+	tmpRaw.Close()
 
 	// Convert VMDK to raw
-	if err := convertVMDKToRaw(vmdkPath, tmpRawPath); err != nil {
+	if err := convertVMDKReaderToRaw(sr, tmpRawPath); err != nil {
 		os.Remove(tmpRawPath)
-		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", vmdkPath, err)
+		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", input.Path, err)
 	}
 
 	// Retrieve all partitions and the associated disk handle from the raw disk image.
@@ -177,11 +171,46 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		partitionIndex := i + 1 // go-diskfs uses 1-based indexing
 		getEmbeddedFS := common.NewPartitionEmbeddedFSGetter("vmdk", partitionIndex, p, disk, tmpRawPath, &refMu, &refCount)
 		embeddedFSs = append(embeddedFSs, &inventory.EmbeddedFS{
-			Path:          fmt.Sprintf("%s:%d", vmdkPath, partitionIndex),
+			Path:          fmt.Sprintf("%s:%d", input.Path, partitionIndex),
 			GetEmbeddedFS: getEmbeddedFS,
 		})
 	}
 	return inventory.Inventory{EmbeddedFSs: embeddedFSs}, nil
+}
+
+func openSectionReader(input *filesystem.ScanInput) (*io.SectionReader, io.Closer, error) {
+	if input.Reader != nil {
+		if input.Info == nil {
+			return nil, nil, errors.New("input.Info is nil")
+		}
+		ra, err := scalibrfs.NewReaderAt(input.Reader)
+		if err != nil {
+			return nil, nil, err
+		}
+		return io.NewSectionReader(ra, 0, input.Info.Size()), io.NopCloser(nil), nil
+	}
+	fsys := input.FS
+	if fsys == nil && input.Root != "" {
+		fsys = scalibrfs.DirFS(input.Root)
+	}
+	if fsys != nil {
+		f, err := fsys.Open(filepath.ToSlash(input.Path))
+		if err != nil {
+			return nil, nil, err
+		}
+		fi, err := f.Stat()
+		if err != nil {
+			f.Close()
+			return nil, nil, err
+		}
+		ra, err := scalibrfs.NewReaderAt(f)
+		if err != nil {
+			f.Close()
+			return nil, nil, err
+		}
+		return io.NewSectionReader(ra, 0, fi.Size()), f, nil
+	}
+	return nil, nil, errors.New("no input filesystem or reader provided")
 }
 
 // VMDK conversion functions
@@ -208,18 +237,14 @@ func readHeaderAt(r io.ReaderAt, offset int64) (sparseExtentHeader, error) {
 }
 
 // readFooterIfGDAtEnd reads the footer header near EOF if GDOffset is GDAtEnd.
-func readFooterIfGDAtEnd(f *os.File, hdr *sparseExtentHeader) error {
+func readFooterIfGDAtEnd(f *io.SectionReader, hdr *sparseExtentHeader) error {
 	if hdr.GDOffset != GDAtEnd {
 		return nil
 	}
-	fi, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	if fi.Size() < 1536 {
+	if f.Size() < 1536 {
 		return errors.New("file too small to contain footer/EOS")
 	}
-	base := fi.Size() - 1536
+	base := f.Size() - 1536
 	footerHeaderBlock := make([]byte, 512)
 	if _, err := f.ReadAt(footerHeaderBlock, base+512); err != nil {
 		return fmt.Errorf("read footer header block: %w", err)
@@ -237,7 +262,7 @@ func readFooterIfGDAtEnd(f *os.File, hdr *sparseExtentHeader) error {
 }
 
 // readStreamMarker reads a VMDK stream marker.
-func readStreamMarker(f *os.File) (val uint64, size uint32, typ uint32, data []byte, err error) {
+func readStreamMarker(f io.ReadSeeker) (val uint64, size uint32, typ uint32, data []byte, err error) {
 	head := make([]byte, 12)
 	if _, err = io.ReadFull(f, head); err != nil {
 		return 0, 0, 0, nil, err
@@ -277,7 +302,7 @@ func readStreamMarker(f *os.File) (val uint64, size uint32, typ uint32, data []b
 }
 
 // convertStreamOptimizedExtent converts a stream-optimized VMDK extent.
-func convertStreamOptimizedExtent(f *os.File, out *os.File, hdr sparseExtentHeader) error {
+func convertStreamOptimizedExtent(f *io.SectionReader, out *os.File, hdr sparseExtentHeader) error {
 	if hdr.GDOffset == GDAtEnd {
 		if err := readFooterIfGDAtEnd(f, &hdr); err != nil {
 			return fmt.Errorf("read footer: %w", err)
@@ -431,7 +456,7 @@ func getGDGT(hdr sparseExtentHeader) (*gdgtInfo, error) {
 }
 
 // readGD reads GD sectors from file.
-func readGD(f *os.File, hdr sparseExtentHeader, info *gdgtInfo) error {
+func readGD(f io.ReaderAt, hdr sparseExtentHeader, info *gdgtInfo) error {
 	if hdr.GDOffset == 0 {
 		return errors.New("no GD offset")
 	}
@@ -448,7 +473,7 @@ func readGD(f *os.File, hdr sparseExtentHeader, info *gdgtInfo) error {
 }
 
 // convertMonolithicSparse converts a monolithic sparse VMDK.
-func convertMonolithicSparse(f *os.File, out *os.File, hdr sparseExtentHeader) error {
+func convertMonolithicSparse(f io.ReaderAt, out *os.File, hdr sparseExtentHeader) error {
 	info, err := getGDGT(hdr)
 	if err != nil {
 		return err
@@ -536,6 +561,14 @@ func convertVMDKToRaw(inPath string, outPath string) error {
 		return err
 	}
 	defer in.Close()
+	fi, err := in.Stat()
+	if err != nil {
+		return fmt.Errorf("stat input: %w", err)
+	}
+	return convertVMDKReaderToRaw(io.NewSectionReader(in, 0, fi.Size()), outPath)
+}
+
+func convertVMDKReaderToRaw(in *io.SectionReader, outPath string) error {
 	out, err := os.Create(outPath)
 	if err != nil {
 		return err
@@ -544,12 +577,8 @@ func convertVMDKToRaw(inPath string, outPath string) error {
 
 	hdr, err := readHeaderAt(in, 0)
 	if err != nil {
-		fi, st := in.Stat()
-		if st != nil {
-			return fmt.Errorf("stat input: %w", st)
-		}
-		if fi.Size() >= 1024 {
-			offset := fi.Size() - 1024
+		if in.Size() >= 1024 {
+			offset := in.Size() - 1024
 			hdr2, err2 := readHeaderAt(in, offset)
 			if err2 == nil {
 				hdr = hdr2
