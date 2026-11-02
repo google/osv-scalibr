@@ -235,6 +235,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
 | US Individual Taxpayer Identification Number   | `secrets/itin`                         |
 | US Social Security Number                      | `sensitiveinformation/ssn`             |
+| US ABA Routing Transit Number                  | `sensitiveinformation/abartn`          |
 
 ### Container inventory
 
