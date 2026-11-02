@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -1318,4 +1319,33 @@ func (a *containerMetaRecorder) Annotate(_ context.Context, _ *annotator.ScanInp
 		a.GotLayer = append(a.GotLayer, pkg.LayerMetadata)
 	}
 	return nil
+}
+
+type closeTrackingFS struct {
+	scalibrfs.FS
+
+	closeCount int
+}
+
+func (c *closeTrackingFS) Close() error {
+	c.closeCount++
+	if closer, ok := c.FS.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
+}
+
+func TestScan_ClosesScanRoots(t *testing.T) {
+	dir := t.TempDir()
+	tracked := &closeTrackingFS{FS: scalibrfs.DirFS(dir)}
+	cfg := &scalibr.ScanConfig{
+		ScanRoots: []*scalibrfs.ScanRoot{{FS: tracked, Path: dir}},
+	}
+	res := scalibr.New().Scan(t.Context(), cfg)
+	if res.Status.Status != plugin.ScanStatusSucceeded {
+		t.Fatalf("Scan failed: %s", res.Status.FailureReason)
+	}
+	if tracked.closeCount != 1 {
+		t.Errorf("Scan closeCount = %d, want 1", tracked.closeCount)
+	}
 }

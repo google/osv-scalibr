@@ -21,7 +21,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -131,28 +130,22 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (inventory.Inve
 		return inventory.Inventory{}, fmt.Errorf("the file header does not contain magic bytes %w", err)
 	}
 
-	// Retrieve the real path of the file
-	absPath, err := input.GetRealPath()
+	// Open the PE file directly on real filesystems or via a temporary copy on virtual ones.
+	osFile, cleanup, err := input.OpenOSFile()
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
+	defer func() {
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", input.Path, err)
+		}
+	}()
 
-	if input.Root == "" {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Dir(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
-
-	// Open the PE file
-	f, err := pe.New(absPath, &pe.Options{})
+	f, err := pe.NewFile(osFile, &pe.Options{})
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Parse the PE file
 	if err := f.Parse(); err != nil {
