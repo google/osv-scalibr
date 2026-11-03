@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packages>
+  <package
+    id="Microsoft.CodeDom.Providers.DotNetCompilerPlatform"
+    version="1.0.0"
+    targetFramework="net46" />
+</packages>
