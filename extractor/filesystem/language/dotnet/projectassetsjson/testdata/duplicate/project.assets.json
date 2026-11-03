@@ -1,0 +1,44 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETFramework,Version=v4.7.2": {
+      "Microsoft.Build.Tasks.Git/1.0.0-beta2-19351-01": {
+        "type": "package"
+      },
+      "NuGet.Frameworks/5.5.0": {
+        "type": "project"
+      }
+    },
+    ".NETStandard,Version=v2.0": {
+      "Microsoft.Build.Tasks.Git/1.0.0-beta2-19351-01": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0"
+        }
+      },
+      "TargetOnly.Package/2.0.0": {
+        "type": "package"
+      },
+      "NuGet.Frameworks/5.5.0": {
+        "type": "project"
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.Build.Tasks.Git/1.0.0-beta2-19351-01": {
+      "type": "package"
+    },
+    "Microsoft.Build.Tasks.Git/1.0.0-beta2-19351-01": {
+      "type": "package"
+    },
+    "Microsoft.NETCore.Platforms/1.1.0": {
+      "type": "package"
+    },
+    "LibraryOnly.Package/1.0.0": {
+      "type": "package"
+    },
+    "NuGet.Frameworks/5.5.0": {
+      "type": "project"
+    }
+  }
+}
