@@ -155,10 +155,11 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 // already normalized based on their ecosystem using vulns.NormalizeName.
 func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
 	for _, affected := range v.GetAffected() {
-		for _, name := range names {
-			ap := affected.GetPackage()
+		ap := affected.GetPackage()
+		apName := vulns.NormalizeName(ap.GetName(), ap.GetEcosystem())
 
-			if vulns.NormalizeName(ap.GetName(), ap.GetEcosystem()) == name {
+		for _, name := range names {
+			if apName == name {
 				return true
 			}
 
