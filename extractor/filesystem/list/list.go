@@ -75,6 +75,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/ocaml/opam"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/perl/cpan"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/php/composerlock"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condaenv"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/condameta"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/ipythoninstall"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/pdmlock"
@@ -270,6 +271,7 @@ var (
 		poetrylock.Name:     {protoCfg(poetrylock.New)},
 		pylock.Name:         {protoCfg(pylock.New)},
 		condameta.Name:      {protoCfg(condameta.New)},
+		condaenv.Name:       {protoCfg(condaenv.New)},
 		ipythoninstall.Name: {protoCfg(ipythoninstall.New)},
 		uvlock.Name:         {protoCfg(uvlock.New)},
 		pyprojecttoml.Name:  {protoCfg(pyprojecttoml.New)},
