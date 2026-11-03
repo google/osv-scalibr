@@ -1,0 +1,44 @@
+{
+  "dependencyTreeRoots": [
+    {"name": "example", "reference": "workspace:."}
+  ],
+  "packageRegistryData": [
+    [
+      null,
+      [
+        [null, {"packageLocation": "./", "linkType": "SOFT"}]
+      ]
+    ],
+    [
+      "lodash",
+      [
+        ["npm:4.17.21", {"packageLocation": ".yarn/cache/lodash/", "linkType": "HARD"}]
+      ]
+    ],
+    [
+      "@scope/pkg",
+      [
+        ["virtual:first#npm:1.2.3-beta.1", {"packageLocation": ".yarn/cache/pkg/", "linkType": "HARD"}],
+        ["virtual:second#npm:1.2.3-beta.1", {"packageLocation": ".yarn/cache/pkg/", "linkType": "HARD"}]
+      ]
+    ],
+    [
+      "typescript",
+      [
+        ["patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5", {"packageLocation": ".yarn/cache/typescript/", "linkType": "HARD"}]
+      ]
+    ],
+    [
+      "workspace-package",
+      [
+        ["workspace:packages/local", {"packageLocation": "packages/local/", "linkType": "SOFT"}]
+      ]
+    ],
+    [
+      "git-package",
+      [
+        ["https://github.com/example/repo.git#commit=abc", {"packageLocation": ".yarn/cache/git/", "linkType": "HARD"}]
+      ]
+    ]
+  ]
+}
