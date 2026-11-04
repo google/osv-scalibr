@@ -16,6 +16,8 @@ package trace
 
 import (
 	"fmt"
+	"maps"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,11 +28,52 @@ import (
 	"github.com/google/osv-scalibr/artifact/image/layerscanning/testing/fakelayerbuilder"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/os/apk"
+	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/opencontainers/go-digest"
 )
+
+// buildFakeChainLayersFromDiffs constructs a slice of fake ChainLayers from
+// per-layer file diffs, accumulating files across layers to simulate a
+// container image's cumulative chain layers.
+func buildFakeChainLayersFromDiffs(t *testing.T, layerDiffs []map[string]string) []image.ChainLayer {
+	t.Helper()
+	testDir := t.TempDir()
+	cumulativeFiles := map[string]string{}
+	chainLayers := make([]image.ChainLayer, 0, len(layerDiffs))
+
+	for i, diffFiles := range layerDiffs {
+		diffID := digest.Digest(fmt.Sprintf("sha256:diff-id-%d", i))
+		chainID := digest.Digest(fmt.Sprintf("sha256:chain-id-%d", i))
+		command := fmt.Sprintf("command-%d", i)
+
+		layer, err := fakelayer.New(filepath.Join(testDir, fmt.Sprintf("layer-%d", i)), diffID, command, diffFiles, false)
+		if err != nil {
+			t.Fatalf("fakelayer.New(layer-%d) failed: %v", i, err)
+		}
+
+		maps.Copy(cumulativeFiles, diffFiles)
+		chainFiles := maps.Clone(cumulativeFiles)
+		cl, err := fakechainlayer.New(&fakechainlayer.Config{
+			TestDir:           filepath.Join(testDir, fmt.Sprintf("chainlayer-%d", i)),
+			Index:             i,
+			DiffID:            diffID,
+			ChainID:           chainID,
+			Command:           command,
+			Layer:             layer,
+			Files:             chainFiles,
+			FilesAlreadyExist: false,
+		})
+		if err != nil {
+			t.Fatalf("fakechainlayer.New(chainlayer-%d) failed: %v", i, err)
+		}
+		chainLayers = append(chainLayers, cl)
+	}
+	return chainLayers
+}
 
 func TestPopulateLayerDetails(t *testing.T) {
 	lm := func(i int) *extractor.LayerMetadata {
@@ -56,6 +99,10 @@ func TestPopulateLayerDetails(t *testing.T) {
 	)
 
 	fakeLayerExtractor := fakelayerbuilder.FakeTestLayersExtractor{}
+	apkExtractor, err := apk.New(nil)
+	if err != nil {
+		t.Fatalf("apk.New(nil) failed: %v", err)
+	}
 	fakeChainLayers := fakelayerbuilder.BuildFakeChainLayersFromPath(t, t.TempDir(), "testdata/populatelayers.yml")
 
 	tests := []struct {
@@ -381,6 +428,188 @@ func TestPopulateLayerDetails(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "apk_packages_with_os_release_added_in_later_layer",
+			pkgs: []*extractor.Package{
+				{
+					Name:     "musl",
+					Version:  "1.2.4-r1",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "musl",
+						OriginName:   "musl",
+						OSID:         "wolfi",
+						OSVersionID:  "20230201",
+						Architecture: "x86_64",
+					},
+					Location: extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:  []string{apk.Name},
+				},
+				{
+					Name:     "busybox",
+					Version:  "1.36.1-r2",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "busybox",
+						OriginName:   "busybox",
+						OSID:         "wolfi",
+						OSVersionID:  "20230201",
+						Architecture: "x86_64",
+					},
+					Location: extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:  []string{apk.Name},
+				},
+				{
+					Name:     "curl",
+					Version:  "8.4.0-r0",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "curl",
+						OriginName:   "curl",
+						OSID:         "wolfi",
+						OSVersionID:  "20230201",
+						Architecture: "x86_64",
+					},
+					Location: extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:  []string{apk.Name},
+				},
+			},
+			extractor: apkExtractor,
+			chainLayers: buildFakeChainLayersFromDiffs(t, []map[string]string{
+				{
+					"lib/apk/db/installed": "P:musl\nV:1.2.4-r1\nA:x86_64\no:musl\n\nP:busybox\nV:1.36.1-r2\nA:x86_64\no:busybox\n\n",
+				},
+				{
+					"etc/os-release": "ID=wolfi\nVERSION_ID=20230201\n",
+				},
+				{
+					"lib/apk/db/installed": "P:musl\nV:1.2.4-r1\nA:x86_64\no:musl\n\nP:busybox\nV:1.36.1-r2\nA:x86_64\no:busybox\n\nP:curl\nV:8.4.0-r0\nA:x86_64\no:curl\n\n",
+				},
+			}),
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "musl",
+					Version:  "1.2.4-r1",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "musl",
+						OriginName:   "musl",
+						OSID:         "wolfi",
+						OSVersionID:  "20230201",
+						Architecture: "x86_64",
+					},
+					Location:      extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:       []string{apk.Name},
+					LayerMetadata: lm(0),
+				},
+				{
+					Name:     "busybox",
+					Version:  "1.36.1-r2",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "busybox",
+						OriginName:   "busybox",
+						OSID:         "wolfi",
+						OSVersionID:  "20230201",
+						Architecture: "x86_64",
+					},
+					Location:      extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:       []string{apk.Name},
+					LayerMetadata: lm(0),
+				},
+				{
+					Name:     "curl",
+					Version:  "8.4.0-r0",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "curl",
+						OriginName:   "curl",
+						OSID:         "wolfi",
+						OSVersionID:  "20230201",
+						Architecture: "x86_64",
+					},
+					Location:      extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:       []string{apk.Name},
+					LayerMetadata: lm(2),
+				},
+			},
+		},
+		{
+			name: "apk_packages_with_os_release_upgraded_in_later_layer",
+			pkgs: []*extractor.Package{
+				{
+					Name:     "musl",
+					Version:  "1.2.4-r1",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "musl",
+						OriginName:   "musl",
+						OSID:         "alpine",
+						OSVersionID:  "3.18.5",
+						Architecture: "x86_64",
+					},
+					Location: extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:  []string{apk.Name},
+				},
+				{
+					Name:     "alpine-release",
+					Version:  "3.18.5-r0",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "alpine-release",
+						OriginName:   "alpine-base",
+						OSID:         "alpine",
+						OSVersionID:  "3.18.5",
+						Architecture: "x86_64",
+					},
+					Location: extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:  []string{apk.Name},
+				},
+			},
+			extractor: apkExtractor,
+			chainLayers: buildFakeChainLayersFromDiffs(t, []map[string]string{
+				{
+					"etc/os-release":       "ID=alpine\nVERSION_ID=3.18.4\n",
+					"lib/apk/db/installed": "P:musl\nV:1.2.4-r1\nA:x86_64\no:musl\n\nP:alpine-release\nV:3.18.4-r0\nA:x86_64\no:alpine-base\n\n",
+				},
+				{
+					"etc/os-release":       "ID=alpine\nVERSION_ID=3.18.5\n",
+					"lib/apk/db/installed": "P:musl\nV:1.2.4-r1\nA:x86_64\no:musl\n\nP:alpine-release\nV:3.18.5-r0\nA:x86_64\no:alpine-base\n\n",
+				},
+			}),
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "musl",
+					Version:  "1.2.4-r1",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "musl",
+						OriginName:   "musl",
+						OSID:         "alpine",
+						OSVersionID:  "3.18.5",
+						Architecture: "x86_64",
+					},
+					Location:      extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:       []string{apk.Name},
+					LayerMetadata: lm(0),
+				},
+				{
+					Name:     "alpine-release",
+					Version:  "3.18.5-r0",
+					PURLType: purl.TypeApk,
+					Metadata: &apkmeta.Metadata{
+						PackageName:  "alpine-release",
+						OriginName:   "alpine-base",
+						OSID:         "alpine",
+						OSVersionID:  "3.18.5",
+						Architecture: "x86_64",
+					},
+					Location:      extractor.LocationFromPath("lib/apk/db/installed"),
+					Plugins:       []string{apk.Name},
+					LayerMetadata: lm(1),
+				},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -390,7 +619,7 @@ func TestPopulateLayerDetails(t *testing.T) {
 				Extractors:     []filesystem.Extractor{tc.extractor},
 			}
 			inv := inventory.Inventory{Packages: tc.pkgs}
-			PopulateLayerDetails(t.Context(), &inv, tc.chainLayers, []filesystem.Extractor{fakeLayerExtractor}, config)
+			PopulateLayerDetails(t.Context(), &inv, tc.chainLayers, []filesystem.Extractor{fakeLayerExtractor, apkExtractor}, config)
 			if diff := cmp.Diff(tc.wantPackages, inv.Packages, cmpopts.IgnoreFields(extractor.LayerMetadata{}, "ParentContainer")); diff != "" {
 				t.Errorf("PopulateLayerDetails(ctx, %v, %v, config) returned an unexpected diff (-want +got): %v", tc.pkgs, tc.chainLayers, diff)
 			}
