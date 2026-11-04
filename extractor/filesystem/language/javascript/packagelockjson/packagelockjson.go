@@ -136,8 +136,8 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			finalVersion = detail.Version[i+1:]
 		}
 
-		// we can't resolve a version from a "file:" dependency
-		if strings.HasPrefix(detail.Version, "file:") {
+		// we can't resolve a version from a "file:" or "link:" dependency
+		if isLocalVersion(detail.Version) {
 			finalVersion = ""
 		} else {
 			commit = commitextractor.TryExtractCommit(detail.Version)
@@ -165,6 +165,9 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 		}
 
 		source := DeterminePackageSource(detail.Resolved, commit)
+		if isLocalVersion(detail.Version) {
+			source = metadata.Local
+		}
 
 		details.add(name+"@"+version, packageDetails{
 			Name:      name,
@@ -217,7 +220,20 @@ func isHTTP(raw string) bool {
 	return (strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) && u.Host != ""
 }
 
+func isLocalVersion(version string) bool {
+	return strings.HasPrefix(version, "file:") || strings.HasPrefix(version, "link:")
+}
+
+// isNodeModulesPath checks whether a lockfile v2/v3 package key is inside a node_modules directory.
+// Entries outside node_modules (e.g. "packages/auth" or "deps/etag") represent local workspace
+// or file directory packages rather than installed registry packages.
+func isNodeModulesPath(namePath string) bool {
+	return slices.Contains(strings.Split(namePath, "/"), "node_modules")
+}
+
 // DeterminePackageSource determines the source of an npm package based on its resolved field and commit.
+// If resolved and commit are both empty, it defaults to public registry (e.g. when
+// omit-lockfile-registry-resolved=true is set in .npmrc).
 // If it is an HTTP or HTTPS endpoint containing "npm", it is classified as a public registry.
 // Otherwise, if it is an HTTP or git endpoint, it is classified as other.
 // Anything else (e.g. local directory, file: protocol) is classified as local.
@@ -227,6 +243,9 @@ func DeterminePackageSource(resolved, commit string) metadata.NPMPackageSource {
 	}
 	if isHTTP(resolved) || isGit(resolved, commit) {
 		return metadata.Other
+	}
+	if resolved == "" {
+		return metadata.PublicRegistry
 	}
 	return metadata.Local
 }
@@ -268,6 +287,9 @@ func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *l
 		}
 
 		source := DeterminePackageSource(detail.Resolved, commit)
+		if isLocalVersion(detail.Version) || (detail.Resolved == "" && !isNodeModulesPath(namePath)) {
+			source = metadata.Local
+		}
 
 		details.add(finalName+"@"+finalVersion, packageDetails{
 			Name:      finalName,

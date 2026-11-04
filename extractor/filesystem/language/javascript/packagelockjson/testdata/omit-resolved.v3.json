@@ -1,0 +1,44 @@
+{
+  "name": "omit-resolved-app",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "omit-resolved-app",
+      "version": "1.0.0",
+      "workspaces": [
+        "packages/*"
+      ],
+      "dependencies": {
+        "@chat-template/auth": "*",
+        "body-parser": "2.2.0",
+        "local-tarball": "file:local-tarball-1.0.0.tgz"
+      }
+    },
+    "packages/auth": {
+      "name": "@chat-template/auth",
+      "version": "1.0.0",
+      "dependencies": {
+        "debug": "^4.3.4"
+      }
+    },
+    "node_modules/@chat-template/auth": {
+      "resolved": "packages/auth",
+      "link": true
+    },
+    "node_modules/body-parser": {
+      "version": "2.2.0",
+      "integrity": "sha512-placeholder=="
+    },
+    "packages/auth/node_modules/debug": {
+      "version": "4.3.4",
+      "integrity": "sha512-placeholder=="
+    },
+    "node_modules/local-tarball": {
+      "version": "1.0.0",
+      "resolved": "file:local-tarball-1.0.0.tgz",
+      "integrity": "sha512-placeholder=="
+    }
+  }
+}

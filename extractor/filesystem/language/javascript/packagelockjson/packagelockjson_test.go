@@ -585,7 +585,7 @@ func TestDeterminePackageSource(t *testing.T) {
 		{
 			name:     "empty resolved",
 			resolved: "",
-			want:     metadata.Local,
+			want:     metadata.PublicRegistry,
 		},
 	}
 
