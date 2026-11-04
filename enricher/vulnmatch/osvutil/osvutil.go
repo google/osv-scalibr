@@ -207,10 +207,13 @@ func version(pkg *extractor.Package, name string, eco osvecosystem.Parsed) strin
 	// false positives. This compromise still allows osv-scanner to pick up
 	// when the user is using a minor version that is out-of-support.
 	if eco.Ecosystem == osvconstants.EcosystemGo && name == "stdlib" {
-		components := strings.Split(pkg.Version, ".")
+		// SBOMs may report the toolchain version as e.g. "go1.20.1".
+		v := strings.TrimPrefix(pkg.Version, "go")
+		components := strings.Split(v, ".")
 		if len(components) == 2 {
 			return components[0] + "." + components[1] + ".99"
 		}
+		return v
 	}
 
 	version := pkg.Version
