@@ -16,6 +16,7 @@
 package packageslockjson
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,10 +25,12 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/tidwall/gjson"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -137,18 +140,29 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	p, err := Parse(input.Reader)
+	b, err := io.ReadAll(input.Reader)
 	if err != nil {
 		return nil, err
 	}
+
+	p, err := Parse(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	finder := linefinder.NewJSONLineFinder(b)
+
 	var res []*extractor.Package
-	for _, packages := range p.Dependencies {
+	for framework, packages := range p.Dependencies {
 		for pkgName, info := range packages {
+			// If a package key is duplicated within the same framework object,
+			// the first occurrence wins when resolving the line number.
+			line := finder.LineOf("dependencies." + gjson.Escape(framework) + "." + gjson.Escape(pkgName))
 			pkg := &extractor.Package{
 				Name:     pkgName,
 				Version:  info.Resolved,
 				PURLType: purl.TypeNuget,
-				Location: extractor.LocationFromPath(input.Path),
+				Location: extractor.LocationFromPathAndLine(input.Path, line),
 			}
 			res = append(res, pkg)
 		}
