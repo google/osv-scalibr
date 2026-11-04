@@ -157,7 +157,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion: "1.0.0",
 						Type:           "project",
 					},
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 45),
 				},
 				{
 					Name:     "AWSSDK.Core",
@@ -168,7 +168,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion: "3.7.10.6",
 						Type:           "package",
 					},
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 50),
 				},
 				{
 					Name:     "Microsoft.Extensions.DependencyInjection",
@@ -179,7 +179,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion: "6.0.0",
 						Type:           "package",
 					},
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 57),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
@@ -215,7 +215,7 @@ func TestExtract(t *testing.T) {
 						PackageVersion: "1.0.0",
 						Type:           "project",
 					},
-					Location: extractor.LocationFromPath("testdata/nopackagename"),
+					Location: extractor.LocationFromPathAndLine("testdata/nopackagename", 45),
 				},
 				{
 					Name:     "AWSSDK.Core",
@@ -226,7 +226,38 @@ func TestExtract(t *testing.T) {
 						PackageVersion: "3.7.10.6",
 						Type:           "package",
 					},
-					Location: extractor.LocationFromPath("testdata/nopackagename"),
+					Location: extractor.LocationFromPathAndLine("testdata/nopackagename", 50),
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			// When duplicate keys exist in "libraries", first occurrence wins for line number resolution.
+			name: "duplicate_library_keys",
+			path: "testdata/duplicate",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "TestLibrary",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNuget,
+					Metadata: &depsjson.Metadata{
+						PackageName:    "TestLibrary",
+						PackageVersion: "1.0.0",
+						Type:           "project",
+					},
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 3),
+				},
+				{
+					Name:     "AWSSDK.Core",
+					Version:  "3.7.10.6",
+					PURLType: purl.TypeNuget,
+					Metadata: &depsjson.Metadata{
+						PackageName:    "AWSSDK.Core",
+						PackageVersion: "3.7.10.6",
+						Type:           "package",
+					},
+					// First occurrence wins (line 6, not line 9).
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 6),
 				},
 			},
 			wantResultMetric: stats.FileExtractedResultSuccess,
