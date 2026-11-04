@@ -16,6 +16,7 @@ package unpack_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -321,8 +322,44 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 		dir        string
 		tarEntries []tarEntry
 		want       map[string]contentAndMode
+		wantAbsent []string
 		wantErr    error
 	}{
+		{
+			name: "paths_outside_the_unpack_root_are_skipped",
+			cfg:  unpack.DefaultUnpackerConfig(),
+			dir:  t.TempDir(),
+			tarEntries: []tarEntry{
+				{
+					Header: &tar.Header{
+						Name: "../file-escape/file.txt",
+						Mode: 0644,
+						Size: int64(len("escaped")),
+					},
+					Data: bytes.NewBufferString("escaped"),
+				},
+				{
+					Header: &tar.Header{
+						Name:     "../symlink-escape/link.txt",
+						Typeflag: tar.TypeSymlink,
+						Linkname: "/target.txt",
+						Mode:     0777,
+					},
+				},
+				{
+					Header: &tar.Header{
+						Name: "safe.txt",
+						Mode: 0644,
+						Size: int64(len("safe")),
+					},
+					Data: bytes.NewBufferString("safe"),
+				},
+			},
+			want: map[string]contentAndMode{
+				filepath.FromSlash("unpack/safe.txt"): {content: "safe", mode: fs.FileMode(0644)},
+			},
+			wantAbsent: []string{"file-escape", "symlink-escape"},
+		},
 		{
 			name: "os.Root_fails_when_writing_files_outside_base_directory_due_to_long_symlink_target",
 			cfg: unpack.DefaultUnpackerConfig().WithRequirer(require.NewFileRequirerPaths([]string{
@@ -478,6 +515,11 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 			if diff := cmp.Diff(tc.want, got, cmp.AllowUnexported(contentAndMode{})); diff != "" {
 				t.Fatalf("Unpacker{%+v}.UnpackSquashed(%q, %q) returned unexpected diff (-want +got):\n%s", tc.cfg, unpackDir, tarPath, diff)
 			}
+			for _, path := range tc.wantAbsent {
+				if _, err := os.Lstat(filepath.Join(tc.dir, path)); !errors.Is(err, fs.ErrNotExist) {
+					t.Errorf("path %q exists or could not be checked: %v", path, err)
+				}
+			}
 
 			tmpFilesGot := filesInTmp(t, os.TempDir())
 
@@ -487,6 +529,109 @@ func TestUnpackSquashedFromTarball(t *testing.T) {
 				t.Errorf("returned unexpected diff (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestUnpackSquashedFromTarballDoesNotCreateDirectoriesThroughSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires additional privileges on Windows")
+	}
+
+	tests := []struct {
+		name    string
+		header  *tar.Header
+		data    io.Reader
+		wantErr bool
+	}{
+		{
+			name: "regular_file",
+			header: &tar.Header{
+				Name: "pivot/created/file.txt",
+				Mode: 0644,
+				Size: int64(len("escaped")),
+			},
+			data:    bytes.NewBufferString("escaped"),
+			wantErr: true,
+		},
+		{
+			name: "symlink",
+			header: &tar.Header{
+				Name:     "pivot/created/link.txt",
+				Typeflag: tar.TypeSymlink,
+				Linkname: "target.txt",
+				Mode:     0777,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			baseDir := t.TempDir()
+			unpackDir := filepath.Join(baseDir, "unpack")
+			if err := os.Mkdir(unpackDir, 0755); err != nil {
+				t.Fatalf("os.Mkdir(%q): %v", unpackDir, err)
+			}
+			outsideDir := filepath.Join(baseDir, "outside")
+			if err := os.Mkdir(outsideDir, 0755); err != nil {
+				t.Fatalf("os.Mkdir(%q): %v", outsideDir, err)
+			}
+			if err := os.Symlink(outsideDir, filepath.Join(unpackDir, "pivot")); err != nil {
+				t.Fatalf("os.Symlink(%q, %q): %v", outsideDir, filepath.Join(unpackDir, "pivot"), err)
+			}
+
+			tarPath := filepath.Join(baseDir, "image.tar")
+			if err := createTarball(t, tarPath, []tarEntry{{Header: tc.header, Data: tc.data}}); err != nil {
+				t.Fatalf("createTarball(%q): %v", tarPath, err)
+			}
+
+			u := mustNewUnpacker(t, unpack.DefaultUnpackerConfig())
+			err := u.UnpackSquashedFromTarball(unpackDir, tarPath)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("UnpackSquashedFromTarball(%q, %q) error: got %v, want error %v", unpackDir, tarPath, err, tc.wantErr)
+			}
+			if _, err := os.Lstat(filepath.Join(outsideDir, "created")); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("directory outside unpack root exists or could not be checked: %v", err)
+			}
+		})
+	}
+}
+
+func TestUnpackSquashedFromTarballDoesNotOverwriteExistingFile(t *testing.T) {
+	baseDir := t.TempDir()
+	unpackDir := filepath.Join(baseDir, "unpack")
+	if err := os.Mkdir(unpackDir, 0755); err != nil {
+		t.Fatalf("os.Mkdir(%q): %v", unpackDir, err)
+	}
+
+	filePath := filepath.Join(unpackDir, "existing.txt")
+	if err := os.WriteFile(filePath, []byte("existing"), 0644); err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", filePath, err)
+	}
+
+	tarPath := filepath.Join(baseDir, "image.tar")
+	content := "replacement"
+	if err := createTarball(t, tarPath, []tarEntry{{
+		Header: &tar.Header{
+			Name: "existing.txt",
+			Mode: 0644,
+			Size: int64(len(content)),
+		},
+		Data: bytes.NewBufferString(content),
+	}}); err != nil {
+		t.Fatalf("createTarball(%q): %v", tarPath, err)
+	}
+
+	u := mustNewUnpacker(t, unpack.DefaultUnpackerConfig())
+	if err := u.UnpackSquashedFromTarball(unpackDir, tarPath); err != nil {
+		t.Fatalf("UnpackSquashedFromTarball(%q, %q): %v", unpackDir, tarPath, err)
+	}
+
+	got, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("os.ReadFile(%q): %v", filePath, err)
+	}
+	if diff := cmp.Diff("existing", string(got)); diff != "" {
+		t.Errorf("existing file content differs (-want +got):\n%s", diff)
 	}
 }
 

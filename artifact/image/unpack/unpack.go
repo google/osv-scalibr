@@ -275,11 +275,15 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 		}
 
 		cleanPath := path.Clean(header.Name)
+		if !filepath.IsLocal(filepath.FromSlash(cleanPath)) {
+			log.Warnf("skipping file with path outside the unpack root: %q", header.Name)
+			continue
+		}
 		fullPath := path.Join(dir, cleanPath)
 
 		// Skip files already unpacked.
 		// Lstat is used instead of Stat to avoid following symlinks, because their targets may not exist yet.
-		if _, err = root.Lstat(fullPath); err == nil {
+		if _, err = root.Lstat(cleanPath); err == nil {
 			continue
 		}
 
@@ -314,8 +318,8 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 
 			content := buf.Bytes()
 
-			parent := filepath.Dir(fullPath)
-			if err := os.MkdirAll(parent, fs.ModePerm); err != nil {
+			parent := filepath.Dir(cleanPath)
+			if err := root.MkdirAll(parent, fs.ModePerm); err != nil {
 				log.Errorf("failed to create directory %q for file %q: %v", parent, fullPath, err)
 				return nil, fmt.Errorf("failed to create directory %q for file %q: %w", parent, fullPath, err)
 			}
@@ -343,12 +347,13 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			// TODO(b/406760694): Remove this once the bug is fixed.
 
 		case tar.TypeLink, tar.TypeSymlink:
-			parent := filepath.Dir(fullPath)
-			if err := os.MkdirAll(parent, fs.ModePerm); err != nil {
+			parent := filepath.Dir(cleanPath)
+			if err := root.MkdirAll(parent, fs.ModePerm); err != nil {
 				log.Errorf("failed to create directory %q: %v", parent, err)
 				if symlinkErrStrategy == SymlinkErrReturn {
 					return nil, fmt.Errorf("failed to create directory %q: %w", parent, err)
 				}
+				continue
 			}
 
 			target := header.Linkname
@@ -370,8 +375,7 @@ func unpack(dir string, reader io.Reader, symlinkResolution SymlinkResolution, s
 			}
 
 			if symlinkResolution == SymlinkRetain {
-				// TODO(b/578074888): Remove this package in favor of layerscanning/image.
-				if err := os.Symlink(targetPath, fullPath); err != nil {
+				if err := root.Symlink(targetPath, cleanPath); err != nil {
 					log.Errorf("failed to symlink %q to %q: %v", fullPath, targetPath, err)
 					if symlinkErrStrategy == SymlinkErrReturn {
 						return nil, fmt.Errorf("failed to symlink %q to %q: %w", fullPath, targetPath, err)
