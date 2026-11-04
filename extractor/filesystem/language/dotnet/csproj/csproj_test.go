@@ -167,7 +167,36 @@ func TestExtract(t *testing.T) {
 					Name:     "LiteDB",
 					Version:  "5.0.12",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPathAndLine("testdata/valid", 3),
+				},
+			},
+		},
+		{
+			Name: "empty .csproj file",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/empty",
+			},
+			WantErr: cmpopts.AnyError,
+		},
+		// Duplicate PackageReference elements are decoded in order with their own
+		// XML stream byte offsets, so each entry gets its own line number.
+		{
+			Name: "duplicate packages",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/duplicate",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 3),
+				},
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate", 4),
 				},
 			},
 		},
@@ -205,6 +234,20 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/noversion",
 			},
 			WantPackages: nil,
+		},
+		{
+			Name: "package with child Version element",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/childversion",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "LiteDB",
+					Version:  "5.0.12",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/childversion", 3),
+				},
+			},
 		},
 	}
 
