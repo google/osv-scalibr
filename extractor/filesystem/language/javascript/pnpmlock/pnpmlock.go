@@ -120,6 +120,10 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 		return name, version, nil
 	}
 
+	// peer dependency suffixes such as "(@babel/core@7.21.0)(react@18.2.0)" can
+	// contain "/" (scoped peers), which would corrupt the split below
+	dependencyPath, _, _ = strings.Cut(dependencyPath, "(")
+
 	parts := strings.Split(dependencyPath, "/")
 	if len(parts) < 2 {
 		return "", "", fmt.Errorf("invalid dependency path: %v", dependencyPath)
