@@ -1436,13 +1436,12 @@ func TestRunWithNilStats(t *testing.T) {
 	if err = wc.PrepareNewScan(cwd, fsys); err != nil {
 		t.Fatalf("wc.PrepareNewScan: %v", err)
 	}
-	gotInvNil, gotStatusNil, err := filesystem.RunFS(t.Context(), configNil, wc)
+	gotInvNil, err := filesystem.RunFS(t.Context(), configNil, wc)
 	if err != nil {
 		t.Fatalf("filesystem.RunFS with nil Stats: %v", err)
 	}
 
 	// Test with NoopCollector
-	fc := &fakeCollector{}
 	configNoop := &filesystem.Config{
 		Extractors: []filesystem.Extractor{fakeEx1, fakeEx2},
 		ScanRoots: []*scalibrfs.ScanRoot{{
@@ -1459,7 +1458,7 @@ func TestRunWithNilStats(t *testing.T) {
 	if err = wc2.PrepareNewScan(cwd, fsys); err != nil {
 		t.Fatalf("wc.PrepareNewScan: %v", err)
 	}
-	gotInvNoop, gotStatusNoop, err := filesystem.RunFS(t.Context(), configNoop, wc2)
+	gotInvNoop, err := filesystem.RunFS(t.Context(), configNoop, wc2)
 	if err != nil {
 		t.Fatalf("filesystem.RunFS with NoopCollector: %v", err)
 	}
@@ -1520,7 +1519,7 @@ func TestRunWithExplicitCollector(t *testing.T) {
 	if err = wc.PrepareNewScan(cwd, fsys); err != nil {
 		t.Fatalf("wc.PrepareNewScan: %v", err)
 	}
-	gotInv, gotStatus, err := filesystem.RunFS(t.Context(), config, wc)
+	gotInv, err := filesystem.RunFS(t.Context(), config, wc)
 	if err != nil {
 		t.Fatalf("filesystem.RunFS: %v", err)
 	}
