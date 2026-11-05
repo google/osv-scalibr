@@ -15,7 +15,7 @@
 package bazelmaven
 
 import (
-	"github.com/bazelbuild/buildtools/build"
+	"github.com/bazel-contrib/buildtools/v10/build"
 )
 
 // loadMapping maps rule names to their source paths
