@@ -298,6 +298,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |
 | Checks for weak passwords for local Windows accounts.                        | `weakcredentials/winlocal`               |
 | Detects PAM misconfigurations that allow authentication bypass. (Linux-only) | `misc/pammisconfig`                      |
+| Detects CVE-2026-123158 OpenSSH + musl pre-authentication password bypass.   | `misc/sshhole`                           |
 
 ## Annotators
 
