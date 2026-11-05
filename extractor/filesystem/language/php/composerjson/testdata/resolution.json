@@ -1,0 +1,11 @@
+{
+  "name": "vendor/project",
+  "require": {
+    "vendor/exact": "1.2.3",
+    "vendor/caret": "^3.4.5",
+    "vendor/tilde": "~2.3",
+    "vendor/range": ">=1.5",
+    "vendor/wildcard": "*",
+    "vendor/or": "^7.0 || ^8.0"
+  }
+}
