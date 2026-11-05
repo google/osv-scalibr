@@ -99,6 +99,7 @@ var (
 // extractPnpmPackageNameAndVersion parses a dependency path, attempting to
 // extract the name and version of the package it represents
 func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion float64) (string, string, error) {
+	fmt.Printf("Extracting package name and version from %s\n", dependencyPath)
 	// file dependencies must always have a name property to be installed,
 	// and their dependency path never has the version encoded, so we can
 	// skip trying to extract either from their dependency path
@@ -112,6 +113,11 @@ func extractPnpmPackageNameAndVersion(dependencyPath string, lockfileVersion flo
 		dependencyPath, isScoped := strings.CutPrefix(dependencyPath, "@")
 
 		name, version, _ := strings.Cut(dependencyPath, "@")
+
+		// v9 lockfiles don't track the version of file dependencies, so just bail
+		if strings.HasPrefix(version, "file:") {
+			return "", "", nil
+		}
 
 		if isScoped {
 			name = "@" + name

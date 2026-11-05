@@ -1,0 +1,22 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      lodash:
+        specifier: file:./vendor/lodash
+        version: file:vendor/lodash
+
+packages:
+
+  lodash@file:vendor/lodash:
+    resolution: {directory: vendor/lodash, type: directory}
+
+snapshots:
+
+  lodash@file:vendor/lodash: {}
