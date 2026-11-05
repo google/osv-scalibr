@@ -77,6 +77,8 @@ func typeSpecificPURL(p *Package) *purl.PackageURL {
 		return hexpurl.MakePackageURL(p.Name, p.Version)
 	case purl.TypeGithub:
 		return githubPURL(p.Name, p.Version)
+	case purl.TypeSwift:
+		return swiftPURL(p.Name, p.Version)
 	case purl.TypeDebian, purl.TypeOpkg, purl.TypeFlatpak, purl.TypeApk, purl.TypeCOS, purl.TypeRPM,
 		purl.TypeSnap, purl.TypePacman, purl.TypePortage, purl.TypeNix, purl.TypeFreeBSD:
 		return ospurl.MakePackageURL(p.Name, p.Version, p.PURLType, p.Metadata)
@@ -102,6 +104,27 @@ func githubPURL(name, version string) *purl.PackageURL {
 		Type:      purl.TypeGithub,
 		Namespace: owner,
 		Name:      repo,
+		Version:   version,
+	}
+}
+
+// swiftPURL builds a pkg:swift PURL from a Package whose Name is the repository
+// location without scheme or ".git" (e.g. "github.com/apple/swift-nio"). The
+// purl spec puts the host and owner in the namespace and the repo in the name,
+// so everything before the last "/" becomes the namespace.
+func swiftPURL(name, version string) *purl.PackageURL {
+	i := strings.LastIndex(name, "/")
+	if i <= 0 || i == len(name)-1 {
+		return &purl.PackageURL{
+			Type:    purl.TypeSwift,
+			Name:    name,
+			Version: version,
+		}
+	}
+	return &purl.PackageURL{
+		Type:      purl.TypeSwift,
+		Namespace: name[:i],
+		Name:      name[i+1:],
 		Version:   version,
 	}
 }

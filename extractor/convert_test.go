@@ -164,6 +164,53 @@ func TestToPURL(t *testing.T) {
 			},
 		},
 		{
+			name: "swift_purl",
+			pkg: &extractor.Package{
+				Name:     "github.com/apple/swift-nio",
+				Version:  "2.0.0",
+				PURLType: purl.TypeSwift,
+				Location: extractor.LocationFromPath("location"),
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeSwift,
+				Namespace: "github.com/apple",
+				Name:      "swift-nio",
+				Version:   "2.0.0",
+			},
+			wantStr: "pkg:swift/github.com/apple/swift-nio@2.0.0",
+		},
+		{
+			name: "swift_purl_nested_group",
+			pkg: &extractor.Package{
+				Name:     "gitlab.com/group/sub/repo",
+				Version:  "1.0.0",
+				PURLType: purl.TypeSwift,
+				Location: extractor.LocationFromPath("location"),
+			},
+			want: &purl.PackageURL{
+				Type:      purl.TypeSwift,
+				Namespace: "gitlab.com/group/sub",
+				Name:      "repo",
+				Version:   "1.0.0",
+			},
+			wantStr: "pkg:swift/gitlab.com/group/sub/repo@1.0.0",
+		},
+		{
+			name: "swift_purl_no_slash",
+			pkg: &extractor.Package{
+				Name:     "swift-nio",
+				Version:  "2.0.0",
+				PURLType: purl.TypeSwift,
+				Location: extractor.LocationFromPath("location"),
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeSwift,
+				Name:    "swift-nio",
+				Version: "2.0.0",
+			},
+			wantStr: "pkg:swift/swift-nio@2.0.0",
+		},
+		{
 			name: "spdx_purl",
 			pkg: &extractor.Package{
 				Name:     "name",
