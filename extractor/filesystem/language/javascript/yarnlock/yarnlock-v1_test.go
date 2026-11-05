@@ -605,6 +605,15 @@ func TestExtractor_Extract_v1(t *testing.T) {
 						Commit: "",
 					},
 				},
+				{
+					Name:     "safe-buffer",
+					Version:  "5.2.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/with-aliases.v1.lock", 20),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
 			},
 		},
 	}
