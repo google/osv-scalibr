@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/purl"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -498,6 +499,66 @@ func TestNewZippedDB_WithSpecificPackages(t *testing.T) {
 			Affected: []*osvpb.Affected{
 				{Package: &osvpb.Package{Name: "pkg-3"}},
 				{Package: &osvpb.Package{Name: "pkg-2"}},
+			},
+		},
+	})
+}
+
+func TestNewZippedDB_WithSpecificPackages_NormalizedNames(t *testing.T) {
+	testDir := createTestDir(t)
+
+	ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+			"GHSA-1.json": {
+				Id: "GHSA-1",
+				Affected: []*osvpb.Affected{
+					{Package: &osvpb.Package{Ecosystem: "NuGet", Name: "newtonsoft.json"}},
+				},
+			},
+			"GHSA-2.json": {
+				Id: "GHSA-2",
+				Affected: []*osvpb.Affected{
+					{Package: &osvpb.Package{Ecosystem: "crates.io", Name: "Serde-Json"}},
+				},
+			},
+			"GHSA-3.json": {
+				Id: "GHSA-3",
+				Affected: []*osvpb.Affected{
+					{Package: &osvpb.Package{Ecosystem: "npm", Name: "jquery-querybuilder"}},
+				},
+			},
+		})
+	})
+
+	db, err := newZippedDB(
+		t.Context(),
+		testDir,
+		"my-db",
+		ts.URL,
+		false,
+		[]*extractor.Package{
+			{Name: "Newtonsoft.Json", PURLType: purl.TypeNuget},
+			{Name: "serde_json", PURLType: purl.TypeCargo},
+			{Name: "jQuery-QueryBuilder", PURLType: purl.TypeNPM},
+		},
+		http.DefaultClient,
+	)
+
+	if err != nil {
+		t.Fatalf("unexpected error \"%v\"", err)
+	}
+
+	expectDBToHaveOSVs(t, db, []*osvpb.Vulnerability{
+		{
+			Id: "GHSA-1",
+			Affected: []*osvpb.Affected{
+				{Package: &osvpb.Package{Ecosystem: "NuGet", Name: "newtonsoft.json"}},
+			},
+		},
+		{
+			Id: "GHSA-2",
+			Affected: []*osvpb.Affected{
+				{Package: &osvpb.Package{Ecosystem: "crates.io", Name: "Serde-Json"}},
 			},
 		},
 	})

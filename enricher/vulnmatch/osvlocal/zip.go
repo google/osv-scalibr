@@ -164,10 +164,18 @@ func (db *zipDB) fetchZip(ctx context.Context) (*zip.Reader, error) {
 	return zipReader, nil
 }
 
+// mightAffectPackages checks if the vulnerability might impact at least one
+// of the named packages, so that vulnerabilities can be filtered out early.
+//
+// Only the name is considered, and the incoming names are expected to be
+// already normalized based on their ecosystem using vulns.NormalizeName.
 func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
 	for _, affected := range v.GetAffected() {
+		ap := affected.GetPackage()
+		apName := vulns.NormalizeName(ap.GetName(), ap.GetEcosystem())
+
 		for _, name := range names {
-			if affected.GetPackage().GetName() == name {
+			if apName == name {
 				return true
 			}
 
@@ -252,7 +260,10 @@ func newZippedDB(ctx context.Context, dbBasePath, name, url string, offline bool
 	// map the packages to their names ahead of loading,
 	// to make things simpler and reduce double working
 	for _, inv := range invs {
-		names = append(names, osvutil.ParsePackage(inv).Name)
+		pkg := osvutil.ParsePackage(inv)
+
+		// use the normalized version of the name while we still know the ecosystem
+		names = append(names, vulns.NormalizeName(pkg.Name, string(pkg.Ecosystem.Ecosystem)))
 	}
 
 	if err := db.load(ctx, names); err != nil {
