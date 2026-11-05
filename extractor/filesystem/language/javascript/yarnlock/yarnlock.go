@@ -50,6 +50,8 @@ var (
 	// Format for yarn.lock v1: `resolved "git+ssh://git@github.com:G-Rath/repo-2#hash"`
 	// Format for yarn.lock v2: `resolution: "@my-scope/my-first-package@https://github.com/my-org/my-first-pkg.git#commit=hash"`
 	yarnPackageResolutionRe = regexp.MustCompile(`^ {2}"?(?:resolution:|resolved)"? "([^ '"]+)"$`)
+	// "is spec actually an alias" regex.
+	yarnIsAliasRe = regexp.MustCompile(`^npm:[a-z@]`)
 )
 
 func shouldSkipYarnLine(line string) bool {
@@ -123,11 +125,16 @@ func extractYarnPackageName(header string) string {
 	if isScoped {
 		str = strings.TrimPrefix(str, "@")
 	}
-	name, right, _ := strings.Cut(str, "@")
+	name, spec, _ := strings.Cut(str, "@")
 
-	// Packages can also contain an NPM entry, e.g. @nicolo-ribaudo/chokidar-2@npm:2.1.8-no-fsevents.3
-	if strings.HasPrefix(right, "npm:") && strings.Contains(right, "@") {
-		return extractYarnPackageName(strings.TrimPrefix(right, "npm:"))
+	// if the spec is an alias, extract the name of the underlying package
+	if yarnIsAliasRe.MatchString(spec) {
+		return extractYarnPackageName(
+			strings.TrimSuffix(
+				strings.TrimPrefix(spec, "npm:"),
+				"\"",
+			),
+		)
 	}
 
 	if isScoped {
