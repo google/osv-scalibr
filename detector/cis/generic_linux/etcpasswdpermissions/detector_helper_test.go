@@ -36,7 +36,7 @@ type fakeFileInfo struct {
 	gid   uint32
 }
 
-func (f *fakeFS) Open(name string) (fs.File, error) {
+func (f fakeFS) Open(name string) (fs.File, error) {
 	if name == "etc/passwd" {
 		if f.exists {
 			return &fakeFile{perms: f.perms, uid: f.uid, gid: f.gid}, nil
@@ -52,15 +52,15 @@ func (fakeFS) Stat(name string) (fs.FileInfo, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (f *fakeFile) Stat() (fs.FileInfo, error) {
+func (f fakeFile) Stat() (fs.FileInfo, error) {
 	return &fakeFileInfo{perms: f.perms, uid: f.uid, gid: f.gid}, nil
 }
 func (fakeFile) Read([]byte) (int, error) { return 0, errors.New("failed to read") }
 func (fakeFile) Close() error             { return nil }
 
-func (fakeFileInfo) Name() string         { return "/etc/passwd" }
-func (fakeFileInfo) Size() int64          { return 1 }
-func (i *fakeFileInfo) Mode() fs.FileMode { return i.perms }
-func (fakeFileInfo) ModTime() time.Time   { return time.Now() }
-func (i *fakeFileInfo) IsDir() bool       { return false }
-func (i *fakeFileInfo) Sys() any          { return &syscall.Stat_t{Uid: i.uid, Gid: i.gid} }
+func (fakeFileInfo) Name() string        { return "/etc/passwd" }
+func (fakeFileInfo) Size() int64         { return 1 }
+func (i fakeFileInfo) Mode() fs.FileMode { return i.perms }
+func (fakeFileInfo) ModTime() time.Time  { return time.Now() }
+func (i fakeFileInfo) IsDir() bool       { return false }
+func (i fakeFileInfo) Sys() any          { return &syscall.Stat_t{Uid: i.uid, Gid: i.gid} }

@@ -81,11 +81,11 @@ type fakeFile struct {
 	offset int
 }
 
-func (f fakeFile) Stat() (fs.FileInfo, error) {
+func (f *fakeFile) Stat() (fs.FileInfo, error) {
 	return f.info, nil
 }
 
-func (f fakeFile) Close() error {
+func (f *fakeFile) Close() error {
 	return nil
 }
 

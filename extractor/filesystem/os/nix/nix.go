@@ -52,13 +52,13 @@ func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
 }
 
 // Name of the extractor.
-func (e Extractor) Name() string { return Name }
+func (e *Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e *Extractor) Version() int { return 0 }
 
 // Requirements of the extractor.
-func (e Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *Extractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
 
 // FileRequired returns true if a given path corresponds to a unique, unprocessed
 // directory under the nixStoreDir path.
@@ -98,7 +98,7 @@ var packageStoreUnstableRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0
 
 // Extract extracts packages from the filenames of the directories in the nix
 // store path.
-func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	// Check for cancellation or timeout.
 	if err := ctx.Err(); err != nil {
 		return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)

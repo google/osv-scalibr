@@ -74,7 +74,7 @@ func (i *Inventory) Append(other ...Inventory) {
 }
 
 // IsEmpty returns true if there are no packages, findings, etc. in this Inventory.
-func (i Inventory) IsEmpty() bool {
+func (i *Inventory) IsEmpty() bool {
 	if len(i.Packages) != 0 {
 		return false
 	}
@@ -101,7 +101,7 @@ func (i Inventory) IsEmpty() bool {
 
 // ExpandPathsToAbsolute changes the paths of the inventory
 // items from relative to absolute paths.
-func (i Inventory) ExpandPathsToAbsolute() error {
+func (i *Inventory) ExpandPathsToAbsolute() error {
 	var errs []error
 	for _, p := range i.Packages {
 		absRoot, err := filepath.Abs(p.ScanRoot)

@@ -68,10 +68,10 @@ type DepGroupMetadata struct {
 	DepGroupVals []string
 }
 
-var _ DepGroups = DepGroupMetadata{}
+var _ DepGroups = &DepGroupMetadata{}
 
 // DepGroups return the dependency groups property in the metadata
-func (dgm DepGroupMetadata) DepGroups() []string {
+func (dgm *DepGroupMetadata) DepGroups() []string {
 	return dgm.DepGroupVals
 }
 
