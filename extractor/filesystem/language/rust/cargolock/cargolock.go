@@ -27,6 +27,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/commitextractor"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -42,6 +43,7 @@ const (
 type cargoLockPackage struct {
 	Name    string `toml:"name"`
 	Version string `toml:"version"`
+	Source  string `toml:"source"`
 }
 
 type cargoLockFile struct {
@@ -100,11 +102,21 @@ func (e Extractor) Extract(_ context.Context, input *filesystem.ScanInput) (inve
 			loc = extractor.LocationFromPath(input.Path)
 		}
 
+		commit := commitextractor.TryExtractCommit(lockPackage.Source)
+		var repo string
+		if commit != "" {
+			repo = commitextractor.TryExtractRepo(lockPackage.Source)
+		}
+
 		packages = append(packages, &extractor.Package{
 			Name:     lockPackage.Name,
 			Version:  lockPackage.Version,
 			PURLType: purl.TypeCargo,
 			Location: loc,
+			SourceCode: &extractor.SourceCodeIdentifier{
+				Commit: commit,
+				Repo:   repo,
+			},
 		})
 	}
 
