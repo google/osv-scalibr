@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/osv-scalibr/log"
-
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -44,7 +42,6 @@ func (m *Metadata) ToNamespace() string {
 	if m.OSID != "" {
 		return m.OSID
 	}
-	log.Errorf("os-release[ID] not set, fallback to 'alpine'")
 	return "alpine"
 }
 
@@ -54,7 +51,6 @@ func (m *Metadata) ToDistro() string {
 	if m.OSVersionID != "" {
 		return m.OSVersionID
 	}
-	log.Errorf("VERSION_ID not set in os-release")
 	return ""
 }
 
