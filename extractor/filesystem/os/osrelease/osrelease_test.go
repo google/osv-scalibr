@@ -16,10 +16,13 @@ package osrelease_test
 
 import (
 	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+	"testing/fstest"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
@@ -132,5 +135,70 @@ func TestNotAnOS(t *testing.T) {
 	}
 	if got != nil {
 		t.Fatalf("Got OS data on empty FS: %+v", got)
+	}
+}
+
+// wrapErrFS wraps errors the way the container image layer FS does.
+type wrapErrFS struct {
+	scalibrfs.FS
+}
+
+func (w wrapErrFS) Open(name string) (fs.File, error) {
+	f, err := w.FS.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get virtual file to open %s: %w", name, err)
+	}
+	return f, nil
+}
+
+func (w wrapErrFS) Stat(name string) (fs.FileInfo, error) {
+	fi, err := w.FS.Stat(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get virtual file to stat %s: %w", name, err)
+	}
+	return fi, nil
+}
+
+func TestGetOSReleaseWrappedNotExistError(t *testing.T) {
+	tests := []struct {
+		name    string
+		files   fstest.MapFS
+		want    map[string]string
+		wantErr error
+	}{
+		{
+			name:  "falls back to usr/lib/os-release",
+			files: fstest.MapFS{"etc/hostname": {Data: []byte("h")}, "usr/lib/os-release": {Data: []byte("ID=debian\nVERSION_ID=12")}},
+			want:  map[string]string{"ID": "debian", "VERSION_ID": "12"},
+		},
+		{
+			name: "etc/os-release wins when both exist",
+			files: fstest.MapFS{
+				"etc/os-release":     {Data: []byte("ID=alpine")},
+				"usr/lib/os-release": {Data: []byte("ID=debian")},
+			},
+			want: map[string]string{"ID": "alpine"},
+		},
+		{
+			name:    "neither file exists",
+			files:   fstest.MapFS{"etc/hostname": {Data: []byte("h")}},
+			wantErr: os.ErrNotExist,
+		},
+		{
+			name:    "no etc dir is not a distro",
+			files:   fstest.MapFS{"foo": {Data: []byte("x")}},
+			wantErr: osrelease.ErrNotADistro,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := osrelease.GetOSRelease(wrapErrFS{tt.files})
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("GetOSRelease() error: got %v, want %v", err, tt.wantErr)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatalf("GetOSRelease() (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
