@@ -31,27 +31,33 @@ import (
 	"github.com/pierrec/lz4/v4"
 )
 
-// mainRepoPattern matches files containing main OS repositories indexes
-var mainRepoPattern = regexp.MustCompile(`[\w.]+(?:-[\w%-]+)?_dists_[\w-]+_main_binary-\w+_Packages(?:\.gz|.lz4|.zst)?$`)
+// osRepoPattern matches apt Packages indexes for any archive component
+// (main, universe, multiverse, restricted, contrib, non-free, ...).
+// Matching only `_main_` incorrectly skipped Ubuntu universe packages and
+// similar official components that still ship OS advisories (#2610).
+var osRepoPattern = regexp.MustCompile(`[\w.]+(?:-[\w%-]+)?_dists_[\w.-]+_[\w+-]+_binary-\w+_Packages(?:\.gz|\.lz4|\.zst)?$`)
 
 const aptListDir = "var/lib/apt/lists"
 
-// aptCache contains the set of packages listed in main OS repositories indexes
+// aptCache contains the set of packages listed in OS repository indexes
 type aptCache struct {
 	value map[string]struct{}
 }
 
-// isFromMainOSRepo returns true if a package found in main OS repo index
-func (a *aptCache) isFromMainOSRepo(pkgName string) bool {
+// isFromOSRepo returns true if a package is listed in a matched apt Packages index
+func (a *aptCache) isFromOSRepo(pkgName string) bool {
 	_, exists := a.value[pkgName]
 	return exists
 }
 
-// ErrMissingAptCache is returned if the cache folder is missing or empty
+// ErrMissingAptCache is returned if the cache folder is missing, empty, or
+// contains no recognizable Packages indexes.
 var ErrMissingAptCache = errors.New("missing apt cache folder: " + aptListDir)
 
-// extractAptCache extracts main repositories information from the var/lib/apt/lists folder
-// if the var/lib/apt/lists folder is empty or doesn't exists it returns errorMissingAptCache
+// extractAptCache extracts repository package names from var/lib/apt/lists.
+// If the folder is missing, empty, or has no matching Packages indexes, it
+// returns ErrMissingAptCache so callers can fall back to annotating every
+// dpkg-owned path.
 func extractAptCache(root *fs.ScanRoot) (*aptCache, error) {
 	entries, err := iofs.ReadDir(root.FS, aptListDir)
 	if err != nil {
@@ -77,14 +83,20 @@ func extractAptCache(root *fs.ScanRoot) (*aptCache, error) {
 		}
 		name := entry.Name()
 
-		// skip other repositories' indexes
-		if !mainRepoPattern.MatchString(name) {
+		// skip non-Packages indexes (InRelease, Sources, lock leftovers, ...)
+		if !osRepoPattern.MatchString(name) {
 			continue
 		}
 
 		if err := parseAptList(root.FS, filepath.Join(aptListDir, name), cache); err != nil {
 			return nil, err
 		}
+	}
+
+	// A non-empty lists dir with only auxfiles/lock/partial (or no matching
+	// Packages indexes) must be treated like a missing cache (#2610).
+	if len(cache.value) == 0 {
+		return nil, ErrMissingAptCache
 	}
 
 	return cache, nil
