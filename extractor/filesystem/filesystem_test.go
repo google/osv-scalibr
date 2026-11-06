@@ -1395,3 +1395,149 @@ func TestIsInterestingExecutable(t *testing.T) {
 		})
 	}
 }
+
+// TestRunWithNilStats verifies that filesystem.Run works without panic when Stats is nil,
+// and produces the same inventory as using stats.NoopCollector{}.
+func TestRunWithNilStats(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd(): %v", err)
+	}
+
+	name1 := "software1"
+	name2 := "software2"
+	path1 := "dir1/file1.txt"
+	path2 := "dir2/sub/file2.txt"
+	fsys := setupMapFS(t, mapFS{
+		".":                  nil,
+		"dir1":               nil,
+		"dir2":               nil,
+		"dir1/file1.txt":     []byte("Content"),
+		"dir2/sub/file2.txt": []byte("More content"),
+	})
+	fakeEx1 := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}})
+	fakeEx2 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}})
+
+	// Test with nil Stats
+	var nilStats stats.Collector
+	configNil := &filesystem.Config{
+		Extractors: []filesystem.Extractor{fakeEx1, fakeEx2},
+		ScanRoots: []*scalibrfs.ScanRoot{{
+			FS: fsys, Path: cwd,
+		}},
+		Stats: nilStats,
+	}
+	wc, err := filesystem.InitWalkContext(t.Context(), configNil, []*scalibrfs.ScanRoot{{
+		FS: fsys, Path: cwd,
+	}})
+	if err != nil {
+		t.Fatalf("filesystem.InitializeWalkContext with nil Stats: %v", err)
+	}
+	if err = wc.PrepareNewScan(cwd, fsys); err != nil {
+		t.Fatalf("wc.PrepareNewScan: %v", err)
+	}
+	gotInvNil, err := filesystem.RunFS(t.Context(), configNil, wc)
+	if err != nil {
+		t.Fatalf("filesystem.RunFS with nil Stats: %v", err)
+	}
+
+	// Test with NoopCollector
+	configNoop := &filesystem.Config{
+		Extractors: []filesystem.Extractor{fakeEx1, fakeEx2},
+		ScanRoots: []*scalibrfs.ScanRoot{{
+			FS: fsys, Path: cwd,
+		}},
+		Stats: stats.NoopCollector{},
+	}
+	wc2, err := filesystem.InitWalkContext(t.Context(), configNoop, []*scalibrfs.ScanRoot{{
+		FS: fsys, Path: cwd,
+	}})
+	if err != nil {
+		t.Fatalf("filesystem.InitializeWalkContext with NoopCollector: %v", err)
+	}
+	if err = wc2.PrepareNewScan(cwd, fsys); err != nil {
+		t.Fatalf("wc.PrepareNewScan: %v", err)
+	}
+	gotInvNoop, err := filesystem.RunFS(t.Context(), configNoop, wc2)
+	if err != nil {
+		t.Fatalf("filesystem.RunFS with NoopCollector: %v", err)
+	}
+
+	// Verify identical inventory between nil and no-op
+	if diff := cmp.Diff(gotInvNil, gotInvNoop, cmpopts.SortSlices(extracttest.PackageCmpLess), fe.AllowUnexported, cmp.AllowUnexported(fakeCollector{}, fakeExtractorFS{}, fakeExtractorSoftware{})); diff != "" {
+		t.Errorf("inventory with nil Stats differs from NoopCollector:\n%s", diff)
+	}
+
+	// Verify both produce expected packages
+	if !slices.ContainsFunc(gotInvNil.Packages, func(p *extractor.Package) bool {
+		return p.Name == name1
+	}) {
+		t.Errorf("expected package %q not found with nil Stats", name1)
+	}
+	if !slices.ContainsFunc(gotInvNil.Packages, func(p *extractor.Package) bool {
+		return p.Name == name2
+	}) {
+		t.Errorf("expected package %q not found with nil Stats", name2)
+	}
+}
+
+// TestRunWithExplicitCollector verifies that explicit collectors receive all expected callbacks.
+func TestRunWithExplicitCollector(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd(): %v", err)
+	}
+
+	name1 := "software1"
+	name2 := "software2"
+	path1 := "dir1/file1.txt"
+	path2 := "dir2/sub/file2.txt"
+	fsys := setupMapFS(t, mapFS{
+		".":                  nil,
+		"dir1":               nil,
+		"dir2":               nil,
+		"dir1/file1.txt":     []byte("Content"),
+		"dir2/sub/file2.txt": []byte("More content"),
+	})
+	fakeEx1 := fe.New("ex1", 1, []string{path1}, map[string]fe.NamesErr{path1: {Names: []string{name1}, Err: nil}})
+	fakeEx2 := fe.New("ex2", 2, []string{path2}, map[string]fe.NamesErr{path2: {Names: []string{name2}, Err: nil}})
+
+	fc := &fakeCollector{}
+	config := &filesystem.Config{
+		Extractors: []filesystem.Extractor{fakeEx1, fakeEx2},
+		ScanRoots: []*scalibrfs.ScanRoot{{
+			FS: fsys, Path: cwd,
+		}},
+		Stats: fc,
+	}
+	wc, err := filesystem.InitWalkContext(t.Context(), config, []*scalibrfs.ScanRoot{{
+		FS: fsys, Path: cwd,
+	}})
+	if err != nil {
+		t.Fatalf("filesystem.InitializeWalkContext: %v", err)
+	}
+	if err = wc.PrepareNewScan(cwd, fsys); err != nil {
+		t.Fatalf("wc.PrepareNewScan: %v", err)
+	}
+	gotInv, err := filesystem.RunFS(t.Context(), config, wc)
+	if err != nil {
+		t.Fatalf("filesystem.RunFS: %v", err)
+	}
+
+	// Verify callbacks were invoked
+	if fc.AfterInodeVisitedCount != 6 {
+		t.Errorf("expected 6 AfterInodeVisited callbacks, got %d", fc.AfterInodeVisitedCount)
+	}
+
+	// Verify expected packages found
+	if !slices.ContainsFunc(gotInv.Packages, func(p *extractor.Package) bool {
+		return p.Name == name1
+	}) {
+		t.Errorf("expected package %q not found", name1)
+	}
+	if !slices.ContainsFunc(gotInv.Packages, func(p *extractor.Package) bool {
+		return p.Name == name2
+	}) {
+		t.Errorf("expected package %q not found", name2)
+	}
+}
