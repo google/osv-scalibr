@@ -1,0 +1,8 @@
+{"1.2.0",
+[{<<"cowlib">>,{pkg,<<"cowlib">>,<<"2.11.0">>},0}]}.
+[
+{pkg_hash,[
+ {<<"cowlib">>, <<"0B9FF9C346629256C42EBE1EEB769A83C6CB771A6EE5960BD110AB0B9B872063">>}]},
+{pkg_hash_ext,[
+ {<<"cowlib">>, <<"2B3E9DA0B21C4565751A6D4901C20D1B4CC25CBB7FD50D91D2AB6DD287BC86A9">>}]}
+].
