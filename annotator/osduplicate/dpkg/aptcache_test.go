@@ -88,7 +88,7 @@ func TestExtractAptCache(t *testing.T) {
 			wantErr: ErrMissingAptCache,
 		},
 		{
-			name: "valid_apt_cache_with_matching_and_non-matching_files",
+			name: "valid_apt_cache_with_matching_and_non-index_files",
 			txt: `
 -- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
 Package: curl
@@ -98,9 +98,8 @@ Architecture: amd64
 Package: wget
 Version: 4.5.6
 
--- storage.googleapis.com_dataproc-bigtop-repo_2%5f3%5fdeb12%5f20251203%5f064720-RC01_dists_dataproc_contrib_binary-amd64_Packages.lz4 --
-Package: htop
-Version: 2.0.0
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_InRelease --
+Origin: Ubuntu
 `,
 			want: &aptCache{
 				value: map[string]struct{}{
@@ -108,6 +107,37 @@ Version: 2.0.0
 					"wget": {},
 				},
 			},
+		},
+		{
+			name: "includes_universe_and_contrib_components",
+			txt: `
+-- var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_jammy_universe_binary-amd64_Packages --
+Package: python3-aiohttp
+Version: 3.8.1-4
+
+-- var/lib/apt/lists/deb.debian.org_debian_dists_bookworm_contrib_binary-amd64_Packages.lz4 --
+Package: htop
+Version: 2.0.0
+
+-- var/lib/apt/lists/ports.ubuntu.com_ubuntu_dists_noble-updates_main_binary-arm64_Packages --
+Package: curl
+Version: 1.2.3
+`,
+			want: &aptCache{
+				value: map[string]struct{}{
+					"python3-aiohttp": {},
+					"htop":            {},
+					"curl":            {},
+				},
+			},
+		},
+		{
+			name: "lists_dir_with_only_aux_files_is_missing_cache",
+			txt: `
+-- var/lib/apt/lists/lock --
+-- var/lib/apt/lists/auxfiles/.keep --
+`,
+			wantErr: ErrMissingAptCache,
 		},
 		{
 			name: "multiple_OS",
