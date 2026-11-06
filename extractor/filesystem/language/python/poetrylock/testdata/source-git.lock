@@ -13,6 +13,21 @@ url = "https://github.com/dzshn/ike"
 reference = "main"
 resolved_reference = "cd66602cd29f61a2d2e7fb995fef1e61708c034d"
 
+[[package]]
+name = "requests"
+version = "2.32.3"
+description = "Python HTTP for Humans."
+category = "main"
+optional = false
+python-versions = ">=3.8"
+develop = false
+
+[package.source]
+type = "git"
+url = "git@github.com:psf/requests.git"
+reference = "v2.32.3"
+resolved_reference = "0e322af87745eff34caffe4df68456ebc20d9068"
+
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
@@ -20,3 +35,4 @@ content-hash = "caace575a3fdb485cd691c43e149955ba18518e9532e14158066ac5c0776c7c7
 
 [metadata.files]
 ike = []
+requests = []
