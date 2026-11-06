@@ -94,7 +94,7 @@ type ScanConfig struct {
 	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the glob matches a directory, it will be skipped.
-	SkipDirGlob glob.Glob
+	SkipDirGlob *glob.Pattern
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
 	MaxFileSize int64
 	// Optional: Skip files declared in .gitignore files in source repos.
