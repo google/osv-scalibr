@@ -101,6 +101,11 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 		if cpes := extractCPEs(pkg); len(cpes) > 0 {
 			comp.CPE = cpes[0]
 		}
+		// TODO: use the cdx "list" form for licenses when an expression cannot be built,
+		//  rather than mirroring the lossy NOASSERTION route spdx takes
+		if expr, _ := spdx.LicenseExpression(pkg.Licenses); expr != spdx.NoAssertion {
+			comp.Licenses = &cyclonedx.Licenses{{Expression: expr}}
+		}
 		occ := []cyclonedx.EvidenceOccurrence{}
 		occ = appendOccurrenceFromLocation(pkg.Location.Descriptor, occ)
 		for _, r := range pkg.Location.Related {
