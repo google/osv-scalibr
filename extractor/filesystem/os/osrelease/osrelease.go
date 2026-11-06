@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -30,18 +31,19 @@ import (
 var ErrNotADistro = errors.New("does not have expected distro os-release file")
 
 // GetOSRelease tries different os-release locations and parses the first found.
-func GetOSRelease(fs scalibrfs.FS) (map[string]string, error) {
+func GetOSRelease(fsys scalibrfs.FS) (map[string]string, error) {
 	paths := []string{"etc/os-release", "usr/lib/os-release"}
 
-	if _, err := fs.Stat("etc"); os.IsNotExist(err) {
+	// errors.Is, not os.IsNotExist: some filesystems (e.g. the image layer FS) wrap the error.
+	if _, err := fsys.Stat("etc"); errors.Is(err, fs.ErrNotExist) {
 		// Probably not a linux filesystem
 		return nil, ErrNotADistro
 	}
 
 	for _, p := range paths {
-		f, err := fs.Open(p)
+		f, err := fsys.Open(p)
 		if err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
 			return nil, err
