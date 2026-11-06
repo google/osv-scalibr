@@ -87,7 +87,8 @@ type PropertyWithOrigin struct {
 type DependencyWithOrigin struct {
 	maven.Dependency
 
-	Origin string // Origin indicates where the dependency comes from
+	Origin      string              // Origin indicates where the dependency comes from
+	ResolvedKey maven.DependencyKey // ResolvedKey identifies property-backed source coordinates
 }
 
 type mavenManifest struct {
@@ -412,49 +413,57 @@ func buildPropertiesWithOrigins(project maven.Project, originPrefix string) []Pr
 func buildOriginalRequirements(project maven.Project, originPrefix string) []DependencyWithOrigin {
 	var dependencies []DependencyWithOrigin //nolint:prealloc
 	if project.Parent.GroupID != "" && project.Parent.ArtifactID != "" {
-		dependencies = append(dependencies, DependencyWithOrigin{
-			Dependency: maven.Dependency{
-				GroupID:    project.Parent.GroupID,
-				ArtifactID: project.Parent.ArtifactID,
-				Version:    project.Parent.Version,
-				Type:       "pom",
-			},
-			Origin: mavenOrigin(originPrefix, mavenutil.OriginParent),
-		})
+		dependencies = append(dependencies, dependencyWithOrigin(project, maven.Dependency{
+			GroupID:    project.Parent.GroupID,
+			ArtifactID: project.Parent.ArtifactID,
+			Version:    project.Parent.Version,
+			Type:       "pom",
+		}, mavenOrigin(originPrefix, mavenutil.OriginParent)))
 	}
 	for _, d := range project.Dependencies {
-		dependencies = append(dependencies, DependencyWithOrigin{Dependency: d, Origin: originPrefix})
+		dependencies = append(dependencies, dependencyWithOrigin(project, d, originPrefix))
 	}
 	for _, d := range project.DependencyManagement.Dependencies {
-		dependencies = append(dependencies, DependencyWithOrigin{
-			Dependency: d,
-			Origin:     mavenOrigin(originPrefix, mavenutil.OriginManagement),
-		})
+		dependencies = append(dependencies, dependencyWithOrigin(project, d, mavenOrigin(originPrefix, mavenutil.OriginManagement)))
 	}
 	for _, prof := range project.Profiles {
+		profileProject := project
+		profileProject.Properties.Properties = append(slices.Clone(project.Properties.Properties), prof.Properties.Properties...)
 		for _, d := range prof.Dependencies {
-			dependencies = append(dependencies, DependencyWithOrigin{
-				Dependency: d,
-				Origin:     mavenOrigin(originPrefix, mavenutil.OriginProfile, string(prof.ID)),
-			})
+			dependencies = append(dependencies, dependencyWithOrigin(profileProject, d, mavenOrigin(originPrefix, mavenutil.OriginProfile, string(prof.ID))))
 		}
 		for _, d := range prof.DependencyManagement.Dependencies {
-			dependencies = append(dependencies, DependencyWithOrigin{
-				Dependency: d,
-				Origin:     mavenOrigin(originPrefix, mavenutil.OriginProfile, string(prof.ID), mavenutil.OriginManagement),
-			})
+			dependencies = append(dependencies, dependencyWithOrigin(profileProject, d, mavenOrigin(originPrefix, mavenutil.OriginProfile, string(prof.ID), mavenutil.OriginManagement)))
 		}
 	}
 	for _, plugin := range project.Build.PluginManagement.Plugins {
 		for _, d := range plugin.Dependencies {
-			dependencies = append(dependencies, DependencyWithOrigin{
-				Dependency: d,
-				Origin:     mavenOrigin(originPrefix, mavenutil.OriginPlugin, plugin.Name()),
-			})
+			dependencies = append(dependencies, dependencyWithOrigin(project, d, mavenOrigin(originPrefix, mavenutil.OriginPlugin, plugin.Name())))
 		}
 	}
 
 	return dependencies
+}
+
+func dependencyWithOrigin(project maven.Project, dependency maven.Dependency, origin string) DependencyWithOrigin {
+	result := DependencyWithOrigin{Dependency: dependency, Origin: origin}
+	if !dependency.GroupID.ContainsProperty() && !dependency.ArtifactID.ContainsProperty() {
+		return result
+	}
+
+	coordinate := dependency
+	coordinate.Version = "0"
+	interpolationProject := maven.Project{
+		ProjectKey:   project.ProjectKey,
+		Parent:       project.Parent,
+		Properties:   project.Properties,
+		Dependencies: []maven.Dependency{coordinate},
+	}
+	if err := interpolationProject.Interpolate(); err == nil && len(interpolationProject.Dependencies) == 1 {
+		result.ResolvedKey = interpolationProject.Dependencies[0].Key()
+	}
+
+	return result
 }
 
 // For dependencies in profiles and plugins, we use origin to indicate where they are from.
@@ -776,7 +785,7 @@ func OriginalDependency(patch result.PackageUpdate, origDeps []DependencyWithOri
 	dependency.ArtifactID = maven.String(IDs[1])
 
 	for _, d := range origDeps {
-		if d.Key() == dependency.Key() && d.Version != "" {
+		if (d.Key() == dependency.Key() || d.ResolvedKey == dependency.Key()) && d.Version != "" {
 			// If the version is empty, keep looking until we find some non-empty requirement.
 			return d
 		}
