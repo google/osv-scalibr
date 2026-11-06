@@ -1,0 +1,163 @@
+[
+  {
+    "osv": {
+      "id": "GHSA-fv66-9v8q-g76r",
+      "affected": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "react-server-dom-webpack"
+          },
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "19.0.0"
+                },
+                {
+                  "fixed": "19.0.1"
+                },
+                {
+                  "introduced": "19.1.0"
+                },
+                {
+                  "fixed": "19.1.2"
+                },
+                {
+                  "introduced": "19.2.0"
+                },
+                {
+                  "fixed": "19.2.1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": {
+      "filename": "__jelly_sentinel_suppress_module_wide_sink__"
+    },
+    "patterns": [
+      "call \u003creact-server-dom-webpack/**\u003e.{decodeReply,decodeReplyFromBusboy,decodeReplyFromAsyncIterable,decodeAction,decodeFormState}"
+    ]
+  },
+  {
+    "osv": {
+      "id": "GHSA-fv66-9v8q-g76r",
+      "affected": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "react-server-dom-turbopack"
+          },
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "19.0.0"
+                },
+                {
+                  "fixed": "19.0.1"
+                },
+                {
+                  "introduced": "19.1.0"
+                },
+                {
+                  "fixed": "19.1.2"
+                },
+                {
+                  "introduced": "19.2.0"
+                },
+                {
+                  "fixed": "19.2.1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": {
+      "filename": "__jelly_sentinel_suppress_module_wide_sink__"
+    },
+    "patterns": [
+      "call \u003creact-server-dom-turbopack/**\u003e.{decodeReply,decodeReplyFromBusboy,decodeReplyFromAsyncIterable,decodeAction,decodeFormState}"
+    ]
+  },
+  {
+    "osv": {
+      "id": "GHSA-fv66-9v8q-g76r",
+      "affected": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "react-server-dom-parcel"
+          },
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "19.0.0"
+                },
+                {
+                  "fixed": "19.0.1"
+                },
+                {
+                  "introduced": "19.1.0"
+                },
+                {
+                  "fixed": "19.1.2"
+                },
+                {
+                  "introduced": "19.2.0"
+                },
+                {
+                  "fixed": "19.2.1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": {
+      "filename": "__jelly_sentinel_suppress_module_wide_sink__"
+    },
+    "patterns": [
+      "call \u003creact-server-dom-parcel/**\u003e.{decodeReply,decodeReplyFromBusboy,decodeReplyFromAsyncIterable,decodeAction,decodeFormState}"
+    ]
+  },
+  {
+    "osv": {
+      "id": "GHSA-j5w5-568x-rq53",
+      "affected": [
+        {
+          "package": {
+            "ecosystem": "npm",
+            "name": "@evomap/evolver"
+          },
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.69.3"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": {
+      "filename": "__jelly_sentinel_suppress_module_wide_sink__"
+    },
+    "patterns": [
+      "call \u003c@evomap/evolver/**\u003e.extractSignals"
+    ]
+  }
+]

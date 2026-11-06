@@ -1,0 +1,8 @@
+{
+  "name": "cve-negative-test",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@evomap/evolver": "1.69.1"
+  }
+}
