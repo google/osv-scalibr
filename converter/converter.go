@@ -17,6 +17,8 @@
 package converter
 
 import (
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -87,6 +89,7 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 		bom.Metadata.Authors = &authors
 	}
 
+	pkgRefs := make(map[*extractor.Package]string)
 	comps := make([]cyclonedx.Component, 0, len(i.Packages))
 	for _, pkg := range i.Packages {
 		comp := cyclonedx.Component{
@@ -95,6 +98,7 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 			Name:    pkg.Name,
 			Version: pkg.Version,
 		}
+		pkgRefs[pkg] = comp.BOMRef
 		if p := pkg.PURL(); p != nil {
 			comp.PackageURL = p.String()
 		}
@@ -119,8 +123,75 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 		comps = append(comps, comp)
 	}
 	bom.Components = &comps
+	bom.Vulnerabilities = buildCDXVulnerabilities(i.PackageVulns, pkgRefs)
 
 	return bom
+}
+
+func buildCDXVulnerabilities(vulns []*inventory.PackageVuln, pkgRefs map[*extractor.Package]string) *[]cyclonedx.Vulnerability {
+	if len(vulns) == 0 {
+		return nil
+	}
+
+	cdxVulns := make(map[string]*cyclonedx.Vulnerability)
+
+	for _, pv := range vulns {
+		if _, ok := cdxVulns[pv.Vulnerability.GetId()]; !ok {
+			// TODO: fill out this data
+			cdxVulns[pv.Vulnerability.GetId()] = &cyclonedx.Vulnerability{
+				BOMRef: uuid.New().String(),
+				ID:     pv.Vulnerability.GetId(),
+				// Source:         nil,
+				// References:     nil,
+				// Ratings:        nil,
+				// CWEs:           nil,
+				Description: pv.Vulnerability.GetSummary(),
+				Detail:      pv.Vulnerability.GetDetails(),
+				// Recommendation: "",
+				// Workaround:     "",
+				// ProofOfConcept: nil,
+				// Advisories:     nil,
+				// Created:        "",
+				// Published:      "",
+				// Updated:        "",
+				// Rejected:       "",
+				// Credits:        nil,
+				// Tools:          nil,
+				// Analysis:       nil,
+				Affects: &[]cyclonedx.Affects{},
+				// Properties:     nil,
+			}
+		}
+
+		if ref, ok := pkgRefs[pv.Package]; ok {
+			cdxVuln := cdxVulns[pv.Vulnerability.GetId()]
+
+			found := false
+
+			for _, affect := range *cdxVuln.Affects {
+				found = affect.Ref == ref
+
+				if found {
+					break
+				}
+			}
+
+			if !found {
+				*cdxVuln.Affects = append(*cdxVuln.Affects, cyclonedx.Affects{Ref: ref})
+			}
+		}
+	}
+
+	sliced := make([]cyclonedx.Vulnerability, 0, len(cdxVulns))
+	for _, cdxVuln := range cdxVulns {
+		sliced = append(sliced, *cdxVuln)
+	}
+
+	slices.SortFunc(sliced, func(a, b cyclonedx.Vulnerability) int {
+		return strings.Compare(a.ID, b.ID)
+	})
+
+	return &sliced
 }
 
 func extractCPEs(p *extractor.Package) []string {

@@ -15,8 +15,11 @@
 package converter_test
 
 import (
+	"fmt"
 	"math/rand"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/go-cmp/cmp"
@@ -26,6 +29,9 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestToCDX(t *testing.T) {
@@ -257,6 +263,636 @@ func TestToCDX(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("converter.ToCDX(%v): unexpected diff (-want +got):\n%s", tc.inv, diff)
+			}
+		})
+	}
+}
+
+func TestToCDX_Vulnerabilities_Affects(t *testing.T) {
+	type vulnAffects struct {
+		ID      string
+		Affects []string
+	}
+
+	// two occurrences of the same package, which should be referenced separately
+	pkgA := &extractor.Package{Name: "lodash", Version: "4.17.20", PURLType: purl.TypeNPM}
+	pkgB := &extractor.Package{Name: "lodash", Version: "4.17.20", PURLType: purl.TypeNPM}
+	pkgC := &extractor.Package{Name: "other", Version: "1.0.0", PURLType: purl.TypeNPM}
+
+	// not part of the inventory packages
+	pkgD := &extractor.Package{Name: "missing", Version: "1.0.0", PURLType: purl.TypeNPM}
+
+	tests := []struct {
+		name  string
+		vulns []*inventory.PackageVuln
+		// affected components are given as indexes into the inventory packages (pkgA, pkgB, pkgC)
+		want []vulnAffects
+	}{
+		{
+			name:  "no_vulnerabilities",
+			vulns: nil,
+			want:  nil,
+		},
+		{
+			name: "one_vulnerability_one_package",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgA},
+			},
+			want: []vulnAffects{
+				{ID: "GHSA-1", Affects: []string{"0"}},
+			},
+		},
+		{
+			name: "same_vulnerability_multiple_packages",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgA},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgC},
+			},
+			want: []vulnAffects{
+				{ID: "GHSA-1", Affects: []string{"0", "2"}},
+			},
+		},
+		{
+			name: "same_package_different_occurrences",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgA},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-2"}, Package: pkgB},
+			},
+			want: []vulnAffects{
+				{ID: "GHSA-1", Affects: []string{"0"}},
+				{ID: "GHSA-2", Affects: []string{"1"}},
+			},
+		},
+		{
+			name: "unordered_vulnerabilities",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-3"}, Package: pkgA},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgB},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-2"}, Package: pkgC},
+			},
+			// vulns should be sorted by id
+			want: []vulnAffects{
+				{ID: "GHSA-1", Affects: []string{"1"}},
+				{ID: "GHSA-2", Affects: []string{"2"}},
+				{ID: "GHSA-3", Affects: []string{"0"}},
+			},
+		},
+		{
+			name: "same_package_listed_twice_for_same_vulnerability",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgA},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgA},
+			},
+			want: []vulnAffects{
+				{ID: "GHSA-1", Affects: []string{"0"}},
+			},
+		},
+		{
+			name: "package_not_in_inventory",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgD},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-2"}, Package: pkgD},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-2"}, Package: pkgA},
+			},
+			want: []vulnAffects{
+				{ID: "GHSA-1", Affects: []string{}},
+				{ID: "GHSA-2", Affects: []string{"0"}},
+			},
+		},
+		{
+			name: "mixed_packages_and_vulnerabilities",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgB},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}, Package: pkgC},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-2"}, Package: pkgB},
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-3"}, Package: pkgA},
+			},
+			want: []vulnAffects{
+				{ID: "GHSA-1", Affects: []string{"1", "2"}},
+				{ID: "GHSA-2", Affects: []string{"1"}},
+				{ID: "GHSA-3", Affects: []string{"0"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inv := inventory.Inventory{
+				Packages:     []*extractor.Package{pkgA, pkgB, pkgC},
+				PackageVulns: tt.vulns,
+			}
+
+			bom := converter.ToCDX(inv, converter.CDXConfig{})
+
+			// map component refs back to their index, since the refs are random
+			indexes := make(map[string]string)
+			for i, comp := range *bom.Components {
+				indexes[comp.BOMRef] = strconv.Itoa(i)
+			}
+
+			var got []vulnAffects
+			if bom.Vulnerabilities != nil {
+				for _, vuln := range *bom.Vulnerabilities {
+					affects := []string{}
+					for _, affect := range *vuln.Affects {
+						index, ok := indexes[affect.Ref]
+						if !ok {
+							index = "unknown ref " + affect.Ref
+						}
+						affects = append(affects, index)
+					}
+					got = append(got, vulnAffects{ID: vuln.ID, Affects: affects})
+				}
+			}
+
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("converter.ToCDX(%v): unexpected vulnerabilities diff (-want +got):\n%s", inv, diff)
+			}
+		})
+	}
+}
+
+func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
+	tests := []struct {
+		name  string
+		vulns []*inventory.PackageVuln
+		want  *[]cyclonedx.Vulnerability
+	}{
+		{
+			name: "empty_vulnerability",
+			vulns: []*inventory.PackageVuln{
+				{Vulnerability: &osvpb.Vulnerability{Id: "GHSA-1"}},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:  "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:      "GHSA-1",
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "basic_vulnerability",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id:      "GHSA-1",
+						Details: "This is an open source vulnerability!",
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:  "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:      "GHSA-1",
+					Affects: &[]cyclonedx.Affects{},
+					Detail:  "This is an open source vulnerability!",
+				},
+			},
+		},
+		{
+			name: "fulsome_vulnerability",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id:        "GO-2022-1144",
+						Modified:  &timestamppb.Timestamp{},
+						Published: &timestamppb.Timestamp{},
+						Withdrawn: &timestamppb.Timestamp{},
+						Aliases:   []string{"CVE-2022-41717", "GHSA-xrjj-mj9h-534m"},
+						Summary:   "Excessive memory growth in net/http and golang.org/x/net/http2",
+						Details: "An attacker can cause excessive memory growth in a Go server accepting HTTP/2 requests.\n\n" +
+							"HTTP/2 server connections contain a cache of HTTP header keys sent by the client. While the total " +
+							"number of entries in this cache is capped, an attacker sending very large keys can cause the " +
+							"server to allocate approximately 64 MiB per open connection.",
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{Ecosystem: "Go", Name: "stdlib"},
+							},
+						},
+						References: []*osvpb.Reference{
+							{Type: osvpb.Reference_REPORT, Url: "https://go.dev/issue/56350"},
+							{Type: osvpb.Reference_FIX, Url: "https://go.dev/cl/455717"},
+							{Type: osvpb.Reference_FIX, Url: "https://go.dev/cl/455635"},
+							{
+								Type: osvpb.Reference_WEB,
+								Url:  "https://groups.google.com/g/golang-announce/c/L_3rmdT0BMU/m/yZDrXjIiBQAJ",
+							},
+						},
+						Credits: []*osvpb.Credit{{Name: "Josselin Costanzi"}},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:      "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:          "GO-2022-1144",
+					Description: "Excessive memory growth in net/http and golang.org/x/net/http2",
+					Detail: "An attacker can cause excessive memory growth in a Go server accepting HTTP/2 requests.\n\n" +
+						"HTTP/2 server connections contain a cache of HTTP header keys sent by the client. While the total " +
+						"number of entries in this cache is capped, an attacker sending very large keys can cause the " +
+						"server to allocate approximately 64 MiB per open connection.",
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "withdrawn_vulnerability",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						SchemaVersion: "1.7.0",
+						Id:            "GHSA-rv95-896h-c2vc",
+						Modified:      timestamppb.New(time.Date(2025, 7, 21, 16, 57, 31, 0, time.UTC)),
+						Published:     timestamppb.New(time.Date(2024, 3, 25, 19, 40, 26, 0, time.UTC)),
+						Withdrawn:     timestamppb.New(time.Date(2025, 7, 22, 16, 57, 31, 0, time.UTC)),
+						Summary:       "Express.js Open Redirect in malformed URLs",
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{Ecosystem: "npm", Name: "express", Purl: "pkg:npm/express"},
+								Ranges:  []*osvpb.Range{{Type: osvpb.Range_SEMVER, Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: "4.19.2"}}}},
+								DatabaseSpecific: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"source": {Kind: &structpb.Value_StringValue{StringValue: "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2024/03/GHSA-rv95-896h-c2vc/GHSA-rv95-896h-c2vc.json"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:      "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:          "GHSA-rv95-896h-c2vc",
+					Description: "Express.js Open Redirect in malformed URLs",
+					Affects:     &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			// in practice this shouldn't happen, but if it ever does
+			// then we just use the details of the first version
+			name: "repeated_vulnerability",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id:        "GO-2022-1144",
+						Modified:  &timestamppb.Timestamp{},
+						Published: &timestamppb.Timestamp{},
+						Withdrawn: &timestamppb.Timestamp{},
+						Aliases:   []string{"CVE-2022-41717", "GHSA-xrjj-mj9h-534m"},
+						Summary:   "Excessive memory growth in net/http",
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{Ecosystem: "Go", Name: "stdlib"},
+							},
+						},
+						References: []*osvpb.Reference{
+							{Type: osvpb.Reference_REPORT, Url: "https://go.dev/issue/56350"},
+							{Type: osvpb.Reference_FIX, Url: "https://go.dev/cl/455717"},
+							{Type: osvpb.Reference_FIX, Url: "https://go.dev/cl/455635"},
+							{
+								Type: osvpb.Reference_WEB,
+								Url:  "https://groups.google.com/g/golang-announce/c/L_3rmdT0BMU/m/yZDrXjIiBQAJ",
+							},
+						},
+						Credits: []*osvpb.Credit{{Name: "Josselin Costanzi"}},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id:        "GO-2022-1144",
+						Modified:  &timestamppb.Timestamp{},
+						Published: &timestamppb.Timestamp{},
+						Withdrawn: &timestamppb.Timestamp{},
+						Aliases:   []string{"CVE-2022-41717", "GHSA-xrjj-mj9h-534m"},
+						Summary:   "Excessive memory growth in net/http and golang.org/x/net/http2",
+						Details: "An attacker can cause excessive memory growth in a Go server accepting HTTP/2 requests.\n\n" +
+							"HTTP/2 server connections contain a cache of HTTP header keys sent by the client. While the total " +
+							"number of entries in this cache is capped, an attacker sending very large keys can cause the " +
+							"server to allocate approximately 64 MiB per open connection.",
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{Ecosystem: "Go", Name: "stdlib"},
+							},
+						},
+						References: []*osvpb.Reference{
+							{Type: osvpb.Reference_REPORT, Url: "https://go.dev/issue/56350"},
+							{Type: osvpb.Reference_FIX, Url: "https://go.dev/cl/455717"},
+							{Type: osvpb.Reference_FIX, Url: "https://go.dev/cl/455635"},
+							{
+								Type: osvpb.Reference_WEB,
+								Url:  "https://groups.google.com/g/golang-announce/c/L_3rmdT0BMU/m/yZDrXjIiBQAJ",
+							},
+						},
+						Credits: []*osvpb.Credit{{Name: "Josselin Costanzi"}},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:      "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:          "GO-2022-1144",
+					Description: "Excessive memory growth in net/http",
+					Detail:      "",
+					Affects:     &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "various_vulnerabilities",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id:      "CVE-2020-11978",
+						Summary: "CVE-2020-11978",
+						Details: "CVE-2020-11978",
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{Name: "apache-airflow"},
+								Severity: []*osvpb.Severity{
+									{
+										Type:  osvpb.Severity_CVSS_V3,
+										Score: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+									},
+								},
+								Ranges: []*osvpb.Range{{
+									Type:   osvpb.Range_ECOSYSTEM,
+									Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: "1.10.11"}},
+								}},
+							},
+						},
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"extra": {Kind: &structpb.Value_StringValue{
+									StringValue: fmt.Sprintf("%s %s %s", "unknown", "1.0.0", "")},
+								},
+							},
+						},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "VULN-001",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:H"}, // 6.6
+							{Type: osvpb.Severity_CVSS_V2, Score: "AV:L/AC:L/Au:S/C:P/I:P/A:C"},                   // 5.7
+						},
+						Aliases: []string{"CVE-111", "OSV-2"},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id:      "VULN-003",
+						Aliases: []string{"CVE-111", "OSV-2"},
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{
+									Ecosystem: "npm",
+									Name:      "pkg",
+								},
+								Ranges: []*osvpb.Range{
+									{
+										Type: osvpb.Range_SEMVER,
+										Events: []*osvpb.Event{
+											{Introduced: "0"},
+											{Fixed: "1.9.1"},
+										},
+									},
+								},
+								Severity: []*osvpb.Severity{
+									{Type: osvpb.Severity_CVSS_V4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 9.9
+								},
+							},
+							{
+								Package: &osvpb.Package{
+									Ecosystem: "npm",
+									Name:      "pkg",
+								},
+								Ranges: []*osvpb.Range{
+									{
+										Type: osvpb.Range_SEMVER,
+										Events: []*osvpb.Event{
+											{Introduced: "2.0.0"},
+											{Fixed: "2.9.9"},
+										},
+									},
+								},
+								Severity: []*osvpb.Severity{
+									{Type: osvpb.Severity_CVSS_V4, Score: "CVSS:4.0/AV:L/AC:H/AT:P/PR:H/UI:A/VC:H/VI:H/VA:L/SC:N/SI:H/SA:H"}, // 7.0
+								},
+							},
+						},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id:      "CVE-2023-38408",
+						Summary: "CVE-2023-38408",
+						Details: "CVE-2023-38408",
+						Affected: []*osvpb.Affected{{
+							Package: &osvpb.Package{
+								Name: "openssh",
+							},
+							Severity: []*osvpb.Severity{{
+								Type:  osvpb.Severity_CVSS_V3,
+								Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+							}},
+							Ranges: []*osvpb.Range{{
+								Type:   osvpb.Range_ECOSYSTEM,
+								Events: []*osvpb.Event{{Introduced: "0"}, {Fixed: "9.3.p2"}},
+							}},
+						}},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						SchemaVersion: "1.7.0",
+						Id:            "GHSA-2c4m-59x9-fr2g",
+						Modified:      timestamppb.New(time.Date(2023, 11, 8, 4, 12, 18, 674169000, time.UTC)),
+						Published:     timestamppb.New(time.Date(2023, 5, 12, 20, 19, 25, 0, time.UTC)),
+						Aliases:       []string{"CVE-2023-29401", "GO-2023-1737"},
+						Summary:       "Gin Web Framework does not properly sanitize filename parameter ...",
+						Details:       "The filename parameter of the Context.FileAttachment function is ...",
+						Severity:      []*osvpb.Severity{{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N"}},
+						References: []*osvpb.Reference{
+							{Type: osvpb.Reference_ADVISORY, Url: "https://nvd.nist.gov/vuln/detail/CVE-2023-29401"},
+							{Type: osvpb.Reference_WEB, Url: "https://github.com/gin-gonic/gin/issues/3555"},
+							{Type: osvpb.Reference_WEB, Url: "https://github.com/gin-gonic/gin/pull/3556"},
+							{Type: osvpb.Reference_PACKAGE, Url: "https://github.com/gin-gonic/gin"},
+							{Type: osvpb.Reference_WEB, Url: "https://github.com/gin-gonic/gin/releases/tag/v1.9.1"},
+							{Type: osvpb.Reference_WEB, Url: "https://pkg.go.dev/vuln/GO-2023-1737"},
+						},
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"cwe_ids": {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{Values: []*structpb.Value{
+									{Kind: &structpb.Value_StringValue{StringValue: "CWE-494"}},
+								}}}},
+								"github_reviewed":    {Kind: &structpb.Value_BoolValue{BoolValue: true}},
+								"github_reviewed_at": {Kind: &structpb.Value_StringValue{StringValue: "2023-05-12T20:19:25Z"}},
+								"nvd_published_at":   {Kind: &structpb.Value_StringValue{StringValue: "2023-06-08T21:15:16Z"}},
+								"severity":           {Kind: &structpb.Value_StringValue{StringValue: "MODERATE"}},
+							},
+						},
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{
+									Ecosystem: "Go",
+									Name:      "gin",
+									Purl:      "pkg:golang/github.com/gin-gonic/gin",
+								},
+								Ranges: []*osvpb.Range{
+									{Type: osvpb.Range_SEMVER, Events: []*osvpb.Event{{Introduced: "1.3.1-0.20190301021747-ccb9e902956d"}, {Fixed: "1.9.1"}}},
+								},
+								DatabaseSpecific: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"source": {Kind: &structpb.Value_StringValue{StringValue: "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2023/05/GHSA-2c4m-59x9-fr2g/GHSA-2c4m-59x9-fr2g.json"}},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						SchemaVersion: "1.7.0",
+						Id:            "GO-2023-1737",
+						Aliases:       []string{"CVE-2023-29401", "GHSA-2c4m-59x9-fr2g"},
+						Summary:       "Improper handling of filenames in Content-Disposition HTTP heade...",
+						Details:       "The filename parameter of the Context.FileAttachment function is ...",
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"review_status": {Kind: &structpb.Value_StringValue{StringValue: "REVIEWED"}},
+								"url":           {Kind: &structpb.Value_StringValue{StringValue: "https://pkg.go.dev/vuln/GO-2023-1737"}},
+							},
+						},
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{
+									Ecosystem: "Go",
+									Name:      "gin",
+									Purl:      "pkg:golang/github.com/gin-gonic/gin",
+								},
+								Ranges: []*osvpb.Range{
+									{Type: osvpb.Range_SEMVER, Events: []*osvpb.Event{{Introduced: "1.3.1-0.20190301021747-ccb9e902956d"}, {Fixed: "1.9.1"}}},
+								},
+								DatabaseSpecific: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"source": {Kind: &structpb.Value_StringValue{StringValue: "https://vuln.go.dev/ID/GO-2023-1737.json"}},
+									},
+								},
+								EcosystemSpecific: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"imports": {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
+											Values: []*structpb.Value{
+												{Kind: &structpb.Value_StructValue{StructValue: &structpb.Struct{
+													Fields: map[string]*structpb.Value{
+														"path": {Kind: &structpb.Value_StringValue{StringValue: "github.com/gin-gonic/gin"}},
+														"symbols": {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
+															Values: []*structpb.Value{
+																{Kind: &structpb.Value_StringValue{StringValue: "Context.FileAttachment"}},
+															},
+														}}},
+													},
+												}}},
+											},
+										}}},
+									},
+								},
+							},
+						},
+						Modified:  timestamppb.New(time.Date(2024, 5, 20, 16, 3, 47, 0, time.UTC)),
+						Published: timestamppb.New(time.Date(2023, 5, 11, 18, 59, 56, 0, time.UTC)),
+						Credits:   []*osvpb.Credit{{Name: "motoyasu-saburi"}},
+						References: []*osvpb.Reference{
+							{Type: osvpb.Reference_REPORT, Url: "https://github.com/gin-gonic/gin/issues/3555"},
+							{Type: osvpb.Reference_FIX, Url: "https://github.com/gin-gonic/gin/pull/3556"},
+							{Type: osvpb.Reference_WEB, Url: "https://github.com/gin-gonic/gin/releases/tag/v1.9.1"},
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:      "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:          "CVE-2020-11978",
+					Affects:     &[]cyclonedx.Affects{},
+					Description: "CVE-2020-11978",
+					Detail:      "CVE-2020-11978",
+				},
+				{
+					BOMRef:      "eb9d18a4-4784-445d-87f3-c67cf22746e9",
+					ID:          "CVE-2023-38408",
+					Affects:     &[]cyclonedx.Affects{},
+					Description: "CVE-2023-38408",
+					Detail:      "CVE-2023-38408",
+				},
+				{
+					BOMRef:      "95af5a25-3679-41ba-a2ff-6cd471c483f1",
+					ID:          "GHSA-2c4m-59x9-fr2g",
+					Affects:     &[]cyclonedx.Affects{},
+					Description: "Gin Web Framework does not properly sanitize filename parameter ...",
+					Detail:      "The filename parameter of the Context.FileAttachment function is ...",
+				},
+				{
+					BOMRef:      "5fb90bad-b37c-4821-b6d9-5526a41a9504",
+					ID:          "GO-2023-1737",
+					Affects:     &[]cyclonedx.Affects{},
+					Description: "Improper handling of filenames in Content-Disposition HTTP heade...",
+					Detail:      "The filename parameter of the Context.FileAttachment function is ...",
+				},
+				{
+					BOMRef:  "81855ad8-681d-4d86-91e9-1e00167939cb",
+					ID:      "VULN-001",
+					Affects: &[]cyclonedx.Affects{},
+				},
+				{
+					BOMRef:  "6694d2c4-22ac-4208-a007-2939487f6999",
+					ID:      "VULN-003",
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "vulnerability_with_credits",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Credits: []*osvpb.Credit{
+							{Name: "Jane Doe"},
+							{
+								Name:    "Example Security Team",
+								Contact: []string{"https://example.com/security", "mailto:security@example.com"},
+								Type:    osvpb.Credit_REPORTER,
+							},
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:  "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:      "GHSA-1",
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Make UUIDs deterministic
+			uuid.SetRand(rand.New(rand.NewSource(1)))
+
+			inv := inventory.Inventory{
+				Packages:     []*extractor.Package{},
+				PackageVulns: tt.vulns,
+			}
+
+			got := converter.ToCDX(inv, converter.CDXConfig{}).Vulnerabilities
+
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("converter.ToCDX(%v): unexpected vulnerabilities diff (-want +got):\n%s", inv, diff)
 			}
 		})
 	}
