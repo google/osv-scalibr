@@ -113,6 +113,13 @@ secret detectors as `filesystem.Extractor`. (See
 -   [ ] **Validate when possible**: Detectors must be accompanied by a validator
     whenever secret validation is feasible.
 
+-   [ ] **Validator acceptance tests**: Each validator must have a test that calls
+    [velestest.AcceptValidator](../veles/velestest/accept_validator.go).
+
+-   [ ] **Validator context cancellation**: Validator context cancellation is covered by
+    `velestest.AcceptValidator`; do not duplicate that check in individual
+    validator tests.
+
 -   [ ] **Side-Effect Free Validation**: Validators must be as
     **side-effect-free** as possible.
 

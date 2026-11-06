@@ -29,6 +29,8 @@ import (
 const (
 	// CodeSignatureDoesNotMatch is returned by AWS if a request and the signature don't match
 	CodeSignatureDoesNotMatch = "SignatureDoesNotMatch"
+	// InvalidClientTokenID is returned by AWS if the provided token id is not valid
+	InvalidClientTokenID = "InvalidClientTokenId"
 	// CodeAccessDenied is returned by AWS if the user doesn't have access to a resource
 	CodeAccessDenied = "AccessDenied"
 )
@@ -110,7 +112,7 @@ func (v *Validator) Validate(ctx context.Context, key Credentials) (veles.Valida
 	}
 
 	switch errResp.Error.Code {
-	case CodeSignatureDoesNotMatch:
+	case CodeSignatureDoesNotMatch, InvalidClientTokenID:
 		// Signature mismatch => credentials invalid
 		return veles.ValidationInvalid, nil
 	case CodeAccessDenied:
