@@ -20,7 +20,6 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
-	"github.com/thoas/go-funk"
 )
 
 const (
@@ -116,9 +115,12 @@ func ToOtherLicenses(otherLicenses stringset.Set) []*v2_3.OtherLicense {
 	if otherLicenses.Empty() {
 		return nil
 	}
-	return funk.Map(otherLicenses.Elements(), func(l string) *v2_3.OtherLicense {
-		return &v2_3.OtherLicense{LicenseIdentifier: spdxLicenceRef(l), ExtractedText: l}
-	}).([]*v2_3.OtherLicense)
+	elems := otherLicenses.Elements()
+	res := make([]*v2_3.OtherLicense, 0, len(elems))
+	for _, l := range elems {
+		res = append(res, &v2_3.OtherLicense{LicenseIdentifier: spdxLicenceRef(l), ExtractedText: l})
+	}
+	return res
 }
 
 func spdxLicenceRef(l string) string {

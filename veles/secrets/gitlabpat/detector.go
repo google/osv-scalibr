@@ -17,9 +17,10 @@
 package gitlabpat
 
 import (
+	"cmp"
 	"hash/crc32"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -165,7 +166,7 @@ func (d *detector) Detect(content []byte) ([]veles.Secret, []int) {
 	}
 
 	// Sort by start offset to preserve document order
-	sort.Slice(finalMatches, func(i, j int) bool { return finalMatches[i].start < finalMatches[j].start })
+	slices.SortFunc(finalMatches, func(a, b match) int { return cmp.Compare(a.start, b.start) })
 
 	secrets := make([]veles.Secret, 0, len(finalMatches))
 	offsets := make([]int, 0, len(finalMatches))

@@ -31,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/vulnenrichertest"
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestComputePatches(t *testing.T) {
@@ -69,7 +70,7 @@ func TestComputePatches(t *testing.T) {
 				t.Fatalf("failed decoding wantFile: %v", err)
 			}
 
-			fsys := scalibrfs.DirFS("./testdata")
+			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
 			g, err := tt.readWriter.Read(tt.lockfilePath, fsys)
 			if err != nil {
 				t.Fatalf("failed reading graph: %v", err)

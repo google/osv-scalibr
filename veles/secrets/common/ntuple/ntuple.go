@@ -85,8 +85,8 @@ func (d *Detector) Detect(b []byte) ([]veles.Secret, []int) {
 			partials = append(partials, list...)
 		}
 
-		sort.Slice(partials, func(i, j int) bool {
-			return partials[i].Start < partials[j].Start
+		slices.SortFunc(partials, func(a, b Match) int {
+			return cmp.Compare(a.Start, b.Start)
 		})
 
 		var out []veles.Secret
@@ -225,8 +225,8 @@ func (d *Detector) selectTuples(candidates []*Tuple) []*Tuple {
 	}
 
 	// Sort by End time to allow for O(log N) lookbacks
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].End < candidates[j].End
+	slices.SortFunc(candidates, func(a, b *Tuple) int {
+		return cmp.Compare(a.End, b.End)
 	})
 
 	// dp[i] will store the optimal state up to the i-th candidate

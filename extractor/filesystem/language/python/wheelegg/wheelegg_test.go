@@ -342,7 +342,7 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			fsys := scalibrfs.DirFS(".")
+			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
 
 			r, err := fsys.Open(tt.path)
 			defer func() {
@@ -361,7 +361,7 @@ func TestExtract(t *testing.T) {
 
 			collector := testcollector.New()
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: fsys, Path: tt.path, Info: info, Reader: r}
 			e, err := wheelegg.New(&cpb.PluginConfig{})
 			if err != nil {
 				t.Fatalf("wheelegg.New() error: %v", err)
@@ -455,7 +455,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: noReadAt}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), Path: tt.path, Info: info, Reader: noReadAt}
 			got, err := e.Extract(t.Context(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
@@ -499,7 +499,7 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 
 			collector := testcollector.New()
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), Path: tt.path, Info: info, Reader: r}
 			e, err := wheelegg.New(&cpb.PluginConfig{})
 			if err != nil {
 				t.Fatalf("wheelegg.New() error: %v", err)
@@ -543,7 +543,7 @@ func (r reader) Stat() (fs.FileInfo, error) {
 }
 
 func TestExtractEggWithoutSize(t *testing.T) {
-	fsys := scalibrfs.DirFS(".")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
 	path := "testdata/monotonic-1.6-py3.10.egg"
 
 	r, err := fsys.Open(path)
@@ -560,7 +560,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 	// egg file.
 	var info fs.FileInfo
 
-	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
+	input := &filesystem.ScanInput{FS: fsys, Path: path, Info: info, Reader: r}
 	e := wheelegg.Extractor{}
 	_, gotErr := e.Extract(t.Context(), input)
 	wantErr := wheelegg.ErrSizeNotSet

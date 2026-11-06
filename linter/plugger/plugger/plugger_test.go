@@ -16,6 +16,7 @@ package plugger_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,6 +26,17 @@ import (
 )
 
 var ignoreOrder = cmpopts.SortSlices(func(a, b string) bool { return a < b })
+
+func TestRunReportsPackageErrors(t *testing.T) {
+	config := plugger.Config
+	plugger.Config = &packages.Config{Mode: config.Mode, Dir: "./testdata"}
+	t.Cleanup(func() { plugger.Config = config })
+
+	_, err := plugger.Run(nil, []string{"testdata/broken"})
+	if err == nil || !strings.Contains(err.Error(), "this-package-does-not-exist") {
+		t.Fatalf("Run() error = %v, want missing import error", err)
+	}
+}
 
 func cfg() *packages.Config {
 	cfg := plugger.Config

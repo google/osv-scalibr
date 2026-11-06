@@ -142,10 +142,10 @@ func TestAlignUp(t *testing.T) {
 }
 
 func TestConvertQCOW2ToRawMissingArgs(t *testing.T) {
-	if err := convertQCOW2ToRaw("", "out.raw", ""); err == nil {
+	if err := convertQCOW2ToRaw("", "out.raw"); err == nil {
 		t.Fatalf("expected error for missing input")
 	}
-	if err := convertQCOW2ToRaw("in.qcow2", "", ""); err == nil {
+	if err := convertQCOW2ToRaw("in.qcow2", ""); err == nil {
 		t.Fatalf("expected error for missing output")
 	}
 }
@@ -183,7 +183,7 @@ func TestConvertQCOW2ToRawMinimalImage(t *testing.T) {
 	}
 	f.Close()
 
-	if err := convertQCOW2ToRaw(in, out, ""); err != nil {
+	if err := convertQCOW2ToRaw(in, out); err != nil {
 		t.Fatalf("convertQCOW2ToRaw failed: %v", err)
 	}
 

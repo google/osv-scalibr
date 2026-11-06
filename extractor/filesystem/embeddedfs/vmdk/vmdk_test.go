@@ -15,7 +15,9 @@
 package vmdk_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -28,6 +30,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/vmdk"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -228,6 +231,20 @@ func TestExtractInvalidVMDK(t *testing.T) {
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
 	}
+
+	// Stream-optimized VMDK with corrupt primary header and fallback footer header at size-1024.
+	buf := make([]byte, 1536)
+	binary.LittleEndian.PutUint32(buf[512:516], vmdk.SparseMagic)
+	binary.LittleEndian.PutUint64(buf[512+56:512+64], vmdk.GDAtEnd)
+	binary.LittleEndian.PutUint16(buf[512+77:512+79], 1)
+	fallbackInput := &filesystem.ScanInput{
+		Path:   "fallback.vmdk",
+		Info:   fakefs.FakeFileInfo{FileSize: int64(len(buf))},
+		Reader: bytes.NewReader(buf),
+	}
+	if _, err := extractor.Extract(ctx, fallbackInput); err == nil {
+		t.Errorf("Extract(fallback.vmdk) succeeded, want error")
+	}
 }
 
 func TestExtractNonExistentVMDK(t *testing.T) {
@@ -248,5 +265,36 @@ func TestExtractNonExistentVMDK(t *testing.T) {
 	_, err = extractor.Extract(ctx, input)
 	if err == nil {
 		t.Errorf("Extract(%q) succeeded, want error", path)
+	}
+}
+
+func TestExtractSymlinkEscapeRejected(t *testing.T) {
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, "disk.vmdk")
+	validVMDK, err := os.ReadFile(filepath.FromSlash("testdata/valid-ext-exfat-fat32-ntfs.vmdk"))
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	if err := os.WriteFile(outsidePath, validVMDK, 0600); err != nil {
+		t.Fatalf("os.WriteFile(%q): %v", outsidePath, err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot(%q): %v", scanRoot, err)
+	}
+	defer root.Close()
+
+	extractor, err := vmdk.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("vmdk.New: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		FS:   root.FS().(scalibrfs.FS),
+		Path: "disk.vmdk",
+		Root: scanRoot,
+	}
+	if _, err := extractor.Extract(t.Context(), input); err == nil {
+		t.Errorf("Extract(disk.vmdk) succeeded through escaping symlink, want error")
 	}
 }

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -147,7 +147,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			}
 		}
 
-		sort.Strings(depGroupVals)
+		slices.Sort(depGroupVals)
 
 		pkgDetails.Metadata = &osv.DepGroupMetadata{
 			DepGroupVals: depGroupVals,

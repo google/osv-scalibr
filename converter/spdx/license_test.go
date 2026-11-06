@@ -110,3 +110,33 @@ func TestLicenseExpression(t *testing.T) {
 		})
 	}
 }
+
+func TestToOtherLicenses(t *testing.T) {
+	tests := []struct {
+		name  string
+		input stringset.Set
+		want  []*v2_3.OtherLicense
+	}{
+		{
+			name:  "empty_set",
+			input: stringset.New(),
+			want:  nil,
+		},
+		{
+			name:  "multiple_custom_licenses",
+			input: stringset.New("MADE UP", "??"),
+			want: []*v2_3.OtherLicense{
+				{LicenseIdentifier: "LicenseRef---", ExtractedText: "??"},
+				{LicenseIdentifier: "LicenseRef-MADE-UP", ExtractedText: "MADE UP"},
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := spdx.ToOtherLicenses(tc.input)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("ToOtherLicenses(%v) returned unexpected diff (-want +got):\n%s", tc.input, diff)
+			}
+		})
+	}
+}

@@ -16,7 +16,7 @@ package spdx
 
 import (
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -46,7 +46,7 @@ func mapCommonLicenseNames() map[string]string {
 	for canonical := range canonicalLicenses {
 		sortedCanonical = append(sortedCanonical, canonical)
 	}
-	sort.Strings(sortedCanonical)
+	slices.Sort(sortedCanonical)
 
 	// alreadyPopulated prevents an initialism from clobbering a name
 	alreadyPopulated := func(canonical, l string) bool {

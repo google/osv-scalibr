@@ -238,6 +238,7 @@ func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
+	defer closeScanRoots(cfg.ScanRoots)
 	extractors := pl.FilesystemExtractors(cfg.Plugins)
 	extractors, err := cf.SetupVelesExtractors(extractors)
 	if err != nil {
@@ -378,6 +379,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 			FS: imagefs,
 		},
 	}
+	defer closeScanRoots(cfg.ScanRoots)
 
 	storeAbsPath := cfg.StoreAbsolutePath
 	// We want to store absolute paths in the inventory,
@@ -458,12 +460,12 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	if err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
-		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+		return scanResult, nil // Errors are returned in the scanResult.
 	}
 	if err := validateEnricherRequirements(enrichers, cfg.Capabilities); err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
-		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+		return scanResult, nil // Errors are returned in the scanResult.
 	}
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
@@ -497,6 +499,18 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	runtime.KeepAlive(img)
 
 	return scanResult, nil
+}
+
+func closeScanRoots(scanRoots []*scalibrfs.ScanRoot) {
+	for _, r := range scanRoots {
+		if r != nil && r.FS != nil {
+			if c, ok := r.FS.(io.Closer); ok {
+				if err := c.Close(); err != nil {
+					log.Warnf("failed to close scan root %q: %v", r.Path, err)
+				}
+			}
+		}
+	}
 }
 
 type newScanResultOptions struct {

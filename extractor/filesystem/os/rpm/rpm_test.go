@@ -20,7 +20,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -549,7 +549,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			pkgs := got.Packages
-			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			slices.SortFunc(pkgs, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
 			gotFirst3 := pkgs[:min(len(pkgs), 3)]
 			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tmpPath, diff)
@@ -865,7 +865,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			}
 
 			pkgs := got.Packages
-			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			slices.SortFunc(pkgs, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
 			gotFirst3 := pkgs[:min(len(pkgs), 3)]
 			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)

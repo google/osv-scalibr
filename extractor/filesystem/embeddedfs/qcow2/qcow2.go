@@ -17,7 +17,9 @@ package qcow2
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,8 +28,8 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
-	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -98,20 +100,11 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract returns an Inventory with embedded filesystems which contains mount functions for each filesystem in the .qcow2 file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	qcow2Path, err := input.GetRealPath()
+	sr, closer, err := openSectionReader(input)
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to get real path for %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("failed to open %s: %w", input.Path, err)
 	}
-
-	// If called on a virtual FS, clean up the temporary directory
-	if input.Root == "" {
-		defer func() {
-			dir := filepath.Dir(qcow2Path)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v\n", dir, err)
-			}
-		}()
-	}
+	defer closer.Close()
 
 	// Create a temporary file for the raw disk image
 	tmpRaw, err := os.CreateTemp("", "scalibr-qcow2-raw-*.raw")
@@ -119,9 +112,10 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		return inventory.Inventory{}, fmt.Errorf("failed to create temporary raw file: %w", err)
 	}
 	tmpRawPath := tmpRaw.Name()
+	tmpRaw.Close()
 
 	// Convert QCOW2 to raw
-	if err := convertQCOW2ToRaw(qcow2Path, tmpRawPath, e.password); err != nil {
+	if err := convertQCOW2ReaderToRaw(sr, tmpRawPath, e.password); err != nil {
 		os.Remove(tmpRawPath)
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", input.Path, err)
 	}
@@ -148,4 +142,39 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		})
 	}
 	return inventory.Inventory{EmbeddedFSs: embeddedFSs}, nil
+}
+
+func openSectionReader(input *filesystem.ScanInput) (*io.SectionReader, io.Closer, error) {
+	if input.Reader != nil {
+		if input.Info == nil {
+			return nil, nil, errors.New("input.Info is nil")
+		}
+		ra, err := scalibrfs.NewReaderAt(input.Reader)
+		if err != nil {
+			return nil, nil, err
+		}
+		return io.NewSectionReader(ra, 0, input.Info.Size()), io.NopCloser(nil), nil
+	}
+	fsys := input.FS
+	if fsys == nil && input.Root != "" {
+		fsys = scalibrfs.DirFS(input.Root)
+	}
+	if fsys != nil {
+		f, err := fsys.Open(filepath.ToSlash(input.Path))
+		if err != nil {
+			return nil, nil, err
+		}
+		fi, err := f.Stat()
+		if err != nil {
+			f.Close()
+			return nil, nil, err
+		}
+		ra, err := scalibrfs.NewReaderAt(f)
+		if err != nil {
+			f.Close()
+			return nil, nil, err
+		}
+		return io.NewSectionReader(ra, 0, fi.Size()), f, nil
+	}
+	return nil, nil, errors.New("no input filesystem or reader provided")
 }

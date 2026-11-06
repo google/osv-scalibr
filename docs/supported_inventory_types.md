@@ -14,8 +14,8 @@ Plugins are grouped into the following categories:
 
 > [!TIP]
 > Learn how to contribute new plugins by reading the documentation
-> for [new extractors](/docs/new_extractor.md.md),
-> [new detectors](/docs/new_detector),
+> for [new extractors](/docs/new_extractor.md),
+> [new detectors](/docs/new_detector.md),
 > and [new enrichers](/docs/new_enricher.md).
 
 The following sections list all available plugins.
@@ -32,31 +32,32 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### OS packages
 
-| Inventory Type    | Details                        | Extractor Plugin                             |
-|-------------------| ------------------------------ |----------------------------------------------|
-| Alpine            | APK                            | `os/apk`                                     |
-| Chrome extensions |                                | `chrome/extensions`                          |
-| COS               | cos-package-info.json          | `os/cos`                                     |
-| DPKG              | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
-| Chisel            |                                | `os/chisel`                                  |
-| Nix               |                                | `os/nix`                                     |
-| OPKG              | e.g. OpenWrt                   | `os/dpkg`                                    |
-| RPM               | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
-| Zypper            | e.g. openSUSE                  | `os/rpm`                                     |
-| Pacman            | e.g. Arch Linux                | `os/pacman`                                  |
-| Kernel modules    | .ko                            | `os/kernel/module`                           |
-| Kernel archives   | vmlinuz                        | `os/kernel/vmlinuz`                          |
-| Portage           | e.g. Gentoo Linux              | `os/portage`                                 |
-| SNAP              |                                | `os/snap`                                    |
-| Spack             |                                | `os/spack`                                   |
-| Flatpak           |                                | `os/flatpak`                                 |
-| Homebrew          | OS X                           | `os/homebrew`                                |
-| MacPorts          | OS X                           | `os/macports`                                |
-| OS X Applications | OS X                           | `os/macapps`                                 |
-| Chocolatey        | Windows software               | `os/chocolatey`                              |
-| Windows           | Build number                   | `windows/regosversion`                       |
-| Windows           | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
-| Windows           | Installed software             | `windows/ospackages`                         |
+| Inventory Type     | Details                        | Extractor Plugin                             |
+|--------------------| ------------------------------ |----------------------------------------------|
+| Alpine             | APK                            | `os/apk`                                     |
+| Browser extensions |                                | `browser/extensions`                         |
+| COS                | cos-package-info.json          | `os/cos`                                     |
+| DPKG               | e.g. Debian, Ubuntu            | `os/dpkg`                                    |
+| Chisel             |                                | `os/chisel`                                  |
+| Nix                |                                | `os/nix`                                     |
+| OPKG               | e.g. OpenWrt                   | `os/dpkg`                                    |
+| RPM                | e.g. RHEL, CentOS, Rocky Linux, AlmaLinux, Mageia | `os/rpm`                                     |
+| Zypper             | e.g. openSUSE                  | `os/rpm`                                     |
+| Pacman             | e.g. Arch Linux                | `os/pacman`                                  |
+| Kernel modules     | .ko                            | `os/kernel/module`                           |
+| Kernel archives    | vmlinuz                        | `os/kernel/vmlinuz`                          |
+| Portage            | e.g. Gentoo Linux              | `os/portage`                                 |
+| SNAP               |                                | `os/snap`                                    |
+| Spack              |                                | `os/spack`                                   |
+| FreeBSD pkg        | FreeBSD and derivatives        | `os/freebsd`                                 |
+| Flatpak            |                                | `os/flatpak`                                 |
+| Homebrew           | OS X                           | `os/homebrew`                                |
+| MacPorts           | OS X                           | `os/macports`                                |
+| OS X Applications  | OS X                           | `os/macapps`                                 |
+| Chocolatey         | Windows software               | `os/chocolatey`                              |
+| Windows            | Build number                   | `windows/regosversion`                       |
+| Windows            | Hotpatches                     | `windows/dismpatch`, `windows/regpatchlevel` |
+| Windows            | Installed software             | `windows/ospackages`                         |
 
 ### Language packages
 
@@ -79,9 +80,11 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Gleam      | gleam.toml                                        | `gleam/gleamtoml`                    |
 | Go         | Go binaries                                       | `go/binary`                          |
 |            | go.mod (OSV)                                      | `go/gomod`                           |
+|            | go.work / go.work.sum                             | `go/gowork`                          |
 |            | vendor/modules.txt                                | `go/vendormodules`                   |
 | Haskell    | stack.yaml.lock                                   | `haskell/stacklock`                  |
-|            | cabal.project.freeze                              | `haskell/cabal`                      |
+|            | cabal Installed packages                          | `haskell/cabalconf`                  |
+|            | cabal.project.freeze                              | `haskell/cabalprojectfreeze`         |
 | Java       | Java archives                                     | `java/archive`                       |
 |            | pom.xml                                           | `java/pomxml`                        |
 |            | gradle.lockfile                                   | `java/gradlelockfile`                |
@@ -108,6 +111,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | pdm.lock                                          | `python/pdmlock`                     |
 |            | Conda packages                                    | `python/condameta`                   |
 |            | setup.py                                          | `python/setup`                       |
+|            | setup.cfg                                         | `python/setupcfg`                    |
 |            | uv.lock                                           | `python/uvlock`                      |
 |            | pyproject.toml                                    | `python/pyprojecttoml`               |
 |            | IPython pip/uv/conda directives                   | `python/ipythoninstall`              |
@@ -227,6 +231,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Sensitive information
 | Type                                           | Extractor Plugin                       |
 | ---------------------------------------------- | -------------------------------------- |
+| Credit Card Number                             | `sensitiveinformation/creditcard`      |
 | International Bank Account Number              | `sensitiveinformation/iban`            |
 | US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
 | US Individual Taxpayer Identification Number   | `secrets/itin`                         |
@@ -252,16 +257,16 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 
 ### Misc
 
-| Type                               | Extractor Plugin    |
-|------------------------------------| ------------------- |
-| Wordpress plugins                  | `wordpress/plugins` |
-| VSCode extensions                  | `vscode/extensions` |
-| Chrome extensions                  | `chrome/extensions` |
-| Maven entries in Bazel build files | `os/bazelmaven`     |
-| Bazel build graph targets          | `bazel/aspect` *    |
-| NetScaler installations            | `netscaler`         |
-| GitHub Actions workflow dependencies| `github/actions`    |
-| Git repositories (and submodules)   | `misc/gitrepo`      |
+| Type                                 | Extractor Plugin     |
+|--------------------------------------|----------------------|
+| Wordpress plugins                    | `wordpress/plugins`  |
+| VSCode extensions                    | `vscode/extensions`  |
+| Browser extensions                   | `browser/extensions` |
+| Maven entries in Bazel build files   | `os/bazelmaven`      |
+| Bazel build graph targets            | `bazel/aspect` *     |
+| NetScaler installations              | `netscaler`          |
+| GitHub Actions workflow dependencies | `github/actions`     |
+| Git repositories (and submodules)    | `misc/gitrepo`       |
 
 ### EmbeddedFS
 
@@ -293,6 +298,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |
 | Checks for weak passwords for local Windows accounts.                        | `weakcredentials/winlocal`               |
 | Detects PAM misconfigurations that allow authentication bypass. (Linux-only) | `misc/pammisconfig`                      |
+| Detects CVE-2026-123158 OpenSSH + musl pre-authentication password bypass.   | `misc/sshhole`                           |
 
 ## Annotators
 

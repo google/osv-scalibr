@@ -16,7 +16,8 @@ package suggest
 
 import (
 	"reflect"
-	"sort"
+	"slices"
+	"strings"
 	"testing"
 
 	"deps.dev/util/maven"
@@ -452,8 +453,8 @@ func TestMavenSuggester_Suggest(t *testing.T) {
 			},
 		},
 	}
-	sort.Slice(got.PackageUpdates, func(i, j int) bool {
-		return got.PackageUpdates[i].Name < got.PackageUpdates[j].Name
+	slices.SortFunc(got.PackageUpdates, func(a, b result.PackageUpdate) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("Patch suggested does not match expected (-want +got): %s\n", diff)

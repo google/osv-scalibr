@@ -49,6 +49,11 @@ func Run(interfaceNames []string, pkgsPattern []string) ([]*Constructor, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to load packages: %w", err)
 	}
+	for _, pkg := range pkgs {
+		if len(pkg.Errors) > 0 {
+			return nil, fmt.Errorf("failed to load package %s: %w", pkg.PkgPath, pkg.Errors[0])
+		}
+	}
 
 	pkgs = FilterNoLintPackages(pkgs)
 	interfaces := FindInterfaces(pkgs, interfaceNames)

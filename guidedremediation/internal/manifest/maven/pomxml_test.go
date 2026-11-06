@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/result"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 var (
@@ -176,7 +177,7 @@ func TestReadWrite(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	fsys := scalibrfs.DirFS("./testdata")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
 	got, err := mavenRW.Read("my-app/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
