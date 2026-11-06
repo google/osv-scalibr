@@ -10,6 +10,23 @@ both programmatic and interactive modes.
 > in the project. Please ensure you trust the source code and artifacts before
 > proceeding.
 
+### Unsafe Python lockfile generation
+
+Native Python lockfile generation is disabled by default. To permit it, library
+callers must explicitly set `options.FixVulnsOptions.AllowUnsafeExecution = true`.
+Without this opt-in, requests to regenerate Python lockfiles fail before
+dependency resolution or file modification. Manifest-only Python remediation
+does not require this option; npm continues to disable lifecycle scripts with
+`--ignore-scripts`.
+
+The opt-in allows `pip-compile`, `poetry lock`, and `pipenv lock` to execute
+dependency build hooks (including `setup.py`) or package-manager plugins with
+the caller's privileges. It does **not** sandbox these tools. Only enable it for
+trusted projects and dependencies, or inside an appropriately isolated
+environment without access to host credentials or other sensitive resources.
+Existing lockfile format support is unchanged; opting in does not add support
+for reading Poetry or Pipenv lockfiles. Interactive behavior is unchanged.
+
 ## Overview
 
 This package is part of the SCALIBR library and handles the **remediation**

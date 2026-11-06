@@ -49,6 +49,11 @@ type FixVulnsOptions struct {
 	HTTPClient        *http.Client                       // Custom HTTP client for fetching dependency metadata, may be nil.
 	DepCachePopulator DependencyCachePopulator           // Interface for populating the cache of the resolve.Client. Can be nil.
 	ProjectRoot       string                             // Optional filesystem boundary for all manifest and lockfile access. Defaults to the nearest Git root, then the primary file's directory.
+	// AllowUnsafeExecution permits native Python lockfile generation. Package
+	// managers may execute dependency build hooks, setup.py, or plugins with the
+	// caller's privileges. Enable only for trusted projects and dependencies or
+	// in an appropriately isolated environment. This option does not sandbox tools.
+	AllowUnsafeExecution bool
 }
 
 // RemediationOptions are the configuration options for vulnerability remediation.
