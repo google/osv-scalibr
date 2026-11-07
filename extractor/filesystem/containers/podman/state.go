@@ -154,13 +154,13 @@ func (s *sqliteState) Close() error {
 	return s.conn.Close()
 }
 
-func getDBState(path string) (state, error) {
+func getDBState(inputPath, realPath string) (state, error) {
 	switch {
-	case strings.HasSuffix(path, "bolt_state.db"):
-		return newBoltState(path)
-	case strings.HasSuffix(path, "db.sql"):
-		return newSqliteState(path)
+	case strings.HasSuffix(inputPath, "bolt_state.db"):
+		return newBoltState(realPath)
+	case strings.HasSuffix(inputPath, "db.sql"):
+		return newSqliteState(realPath)
 	default:
-		return nil, fmt.Errorf("cannot create state from %s, database not implemented", path)
+		return nil, fmt.Errorf("cannot create state from %s, database not implemented", inputPath)
 	}
 }

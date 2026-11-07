@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -274,5 +275,57 @@ func TestExtract_SymlinkEscapeRejected(t *testing.T) {
 	}
 	if _, err := extr.Extract(t.Context(), input); err == nil {
 		t.Fatal("Extract() succeeded on symlink escaping scan root, want error")
+	}
+}
+
+func TestExtract_VirtualFS(t *testing.T) {
+	data, err := os.ReadFile("testdata/bolt_state.db")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	mfs := fstest.MapFS{
+		"containers/storage/libpod/bolt_state.db": &fstest.MapFile{
+			Data: data,
+			Mode: 0644,
+		},
+	}
+	extr, err := podman.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("podman.New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:   mfs,
+		Path: "containers/storage/libpod/bolt_state.db",
+	}
+	got, err := extr.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract() failed on virtual FS: %v", err)
+	}
+	if len(got.Packages) == 0 {
+		t.Fatal("Extract() returned no packages from virtual FS, want > 0")
+	}
+}
+
+func TestExtract_SymlinkEscapeRejected_NilFS(t *testing.T) {
+	data, err := os.ReadFile("testdata/bolt_state.db")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, "bolt_state.db")
+	if err := os.WriteFile(outsidePath, data, 0600); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	extr, err := podman.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("podman.New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:   nil,
+		Path: "bolt_state.db",
+		Root: scanRoot,
+	}
+	if _, err := extr.Extract(t.Context(), input); err == nil {
+		t.Fatal("Extract() succeeded on symlink escaping scan root with nil FS, want error")
 	}
 }

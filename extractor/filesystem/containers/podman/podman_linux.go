@@ -19,12 +19,14 @@ package podman
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 )
 
 // FileRequired returns true if the specified file matches podman db file pattern.
@@ -44,22 +46,26 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract container inventory through the podman db file passed as the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	if input.FS != nil {
-		if _, err := input.FS.Stat(filepath.ToSlash(input.Path)); err != nil {
-			return inventory.Inventory{}, fmt.Errorf("error opening file: %s with error: %w", input.Path, err)
-		}
-	}
-	path := filepath.Join(input.Root, input.Path)
-
-	state, err := getDBState(path)
+	realPath, err := input.GetRealPath()
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("error opening file: %s with error: %w", path, err)
+		return inventory.Inventory{}, fmt.Errorf("error opening file: %s with error: %w", input.Path, err)
+	}
+	defer func() {
+		dir := filepath.Dir(realPath)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		}
+	}()
+
+	state, err := getDBState(input.Path, realPath)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("error opening file: %s with error: %w", input.Path, err)
 	}
 	defer state.Close()
 
 	ctrs, err := state.AllContainers()
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("error listing containers in file: %s with error: %w", path, err)
+		return inventory.Inventory{}, fmt.Errorf("error listing containers in file: %s with error: %w", input.Path, err)
 	}
 
 	pkgs := make([]*extractor.Package, 0, len(ctrs))
