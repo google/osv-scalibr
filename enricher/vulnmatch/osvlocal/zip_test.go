@@ -17,6 +17,7 @@ package osvlocal
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -27,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/fakeserver"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -562,4 +564,93 @@ func TestNewZippedDB_WithSpecificPackages_NormalizedNames(t *testing.T) {
 			},
 		},
 	})
+}
+
+// warnRecorder is a logger that keeps track of the warnings it is given.
+type warnRecorder struct {
+	log.DefaultLogger
+
+	warnings []string
+}
+
+func (r *warnRecorder) Warnf(format string, args ...any) {
+	r.warnings = append(r.warnings, fmt.Sprintf(format, args...))
+}
+
+func TestNewZippedDB_Online_CacheWriteOutcome(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(t *testing.T, storedAt string)
+		wantWarning bool
+	}{
+		{
+			name:  "cache_is_writable",
+			setup: func(*testing.T, string) {},
+		},
+		{
+			name: "cache_directory_cannot_be_created",
+			setup: func(t *testing.T, storedAt string) {
+				t.Helper()
+
+				//nolint:gosec // being world readable is fine
+				if err := os.WriteFile(path.Dir(storedAt), []byte("not a directory"), 0644); err != nil {
+					t.Fatalf("could not block the cache directory: %v", err)
+				}
+			},
+			wantWarning: true,
+		},
+		{
+			name: "cache_file_cannot_be_written",
+			setup: func(t *testing.T, storedAt string) {
+				t.Helper()
+
+				if err := os.MkdirAll(storedAt, 0750); err != nil {
+					t.Fatalf("could not block the cache file: %v", err)
+				}
+			},
+			wantWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testDir := createTestDir(t)
+			storedAt := determineStoredAtPath(testDir, "my-db")
+			tt.setup(t, storedAt)
+
+			recorder := &warnRecorder{}
+			log.SetLogger(recorder)
+			t.Cleanup(func() { log.SetLogger(&log.DefaultLogger{}) })
+
+			ts := fakeserver.CreateZipServer(t, func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = fakeserver.WriteOSVsZip(t, w, map[string]*osvpb.Vulnerability{
+					"GHSA-1.json": {Id: "GHSA-1"},
+				})
+			})
+
+			db, err := newZippedDB(t.Context(), testDir, "my-db", ts.URL, false, nil, http.DefaultClient)
+			if err != nil {
+				t.Fatalf("unexpected error \"%v\"", err)
+			}
+
+			// the download succeeded, so the results should be available either way
+			expectDBToHaveOSVs(t, db, []*osvpb.Vulnerability{{Id: "GHSA-1"}})
+
+			if !tt.wantWarning {
+				if len(recorder.warnings) != 0 {
+					t.Errorf("expected no warnings, got %q", recorder.warnings)
+				}
+
+				if _, err := os.ReadFile(storedAt); err != nil {
+					t.Errorf("expected the archive to be cached: %v", err)
+				}
+
+				return
+			}
+
+			if len(recorder.warnings) != 1 || !strings.Contains(recorder.warnings[0], storedAt) {
+				t.Errorf("expected one warning mentioning %q, got %q", storedAt, recorder.warnings)
+			}
+		})
+	}
 }
