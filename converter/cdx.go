@@ -17,6 +17,8 @@ package converter
 import (
 	"time"
 
+	"github.com/CycloneDX/cyclonedx-go"
+	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -26,4 +28,23 @@ func formatDateIfExists(ts *timestamppb.Timestamp) string {
 	}
 
 	return ts.AsTime().Format(time.RFC3339)
+}
+
+func buildCDXReferences(vuln *osvpb.Vulnerability) *[]cyclonedx.VulnerabilityReference {
+	aliases := vuln.GetAliases()
+
+	if len(aliases) == 0 {
+		return nil
+	}
+
+	references := make([]cyclonedx.VulnerabilityReference, len(aliases))
+
+	for i, alias := range aliases {
+		references[i] = cyclonedx.VulnerabilityReference{
+			ID: alias,
+			Source: &cyclonedx.Source{},
+		}
+	}
+
+	return &references
 }
