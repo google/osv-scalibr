@@ -484,8 +484,12 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 			},
 			want: &[]cyclonedx.Vulnerability{
 				{
-					BOMRef:      "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
-					ID:          "GO-2022-1144",
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GO-2022-1144",
+					References: &[]cyclonedx.VulnerabilityReference{
+						{ID: "CVE-2022-41717", Source: &cyclonedx.Source{}},
+						{ID: "GHSA-xrjj-mj9h-534m", Source: &cyclonedx.Source{}},
+					},
 					Description: "Excessive memory growth in net/http and golang.org/x/net/http2",
 					Detail: "An attacker can cause excessive memory growth in a Go server accepting HTTP/2 requests.\n\n" +
 						"HTTP/2 server connections contain a cache of HTTP header keys sent by the client. While the total " +
@@ -597,8 +601,12 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 			},
 			want: &[]cyclonedx.Vulnerability{
 				{
-					BOMRef:      "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
-					ID:          "GO-2022-1144",
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GO-2022-1144",
+					References: &[]cyclonedx.VulnerabilityReference{
+						{ID: "CVE-2022-41717", Source: &cyclonedx.Source{}},
+						{ID: "GHSA-xrjj-mj9h-534m", Source: &cyclonedx.Source{}},
+					},
 					Description: "Excessive memory growth in net/http",
 					Detail:      "",
 					Affects:     &[]cyclonedx.Affects{},
@@ -837,8 +845,12 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Detail:      "CVE-2023-38408",
 				},
 				{
-					BOMRef:      "95af5a25-3679-41ba-a2ff-6cd471c483f1",
-					ID:          "GHSA-2c4m-59x9-fr2g",
+					BOMRef: "95af5a25-3679-41ba-a2ff-6cd471c483f1",
+					ID:     "GHSA-2c4m-59x9-fr2g",
+					References: &[]cyclonedx.VulnerabilityReference{
+						{ID: "CVE-2023-29401", Source: &cyclonedx.Source{}},
+						{ID: "GO-2023-1737", Source: &cyclonedx.Source{}},
+					},
 					Affects:     &[]cyclonedx.Affects{},
 					Description: "Gin Web Framework does not properly sanitize filename parameter ...",
 					Detail:      "The filename parameter of the Context.FileAttachment function is ...",
@@ -847,8 +859,12 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Rejected:    "",
 				},
 				{
-					BOMRef:      "5fb90bad-b37c-4821-b6d9-5526a41a9504",
-					ID:          "GO-2023-1737",
+					BOMRef: "5fb90bad-b37c-4821-b6d9-5526a41a9504",
+					ID:     "GO-2023-1737",
+					References: &[]cyclonedx.VulnerabilityReference{
+						{ID: "CVE-2023-29401", Source: &cyclonedx.Source{}},
+						{ID: "GHSA-2c4m-59x9-fr2g", Source: &cyclonedx.Source{}},
+					},
 					Affects:     &[]cyclonedx.Affects{},
 					Description: "Improper handling of filenames in Content-Disposition HTTP heade...",
 					Detail:      "The filename parameter of the Context.FileAttachment function is ...",
@@ -857,13 +873,21 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Rejected:    "",
 				},
 				{
-					BOMRef:  "81855ad8-681d-4d86-91e9-1e00167939cb",
-					ID:      "VULN-001",
-					Affects: &[]cyclonedx.Affects{},
+					BOMRef: "81855ad8-681d-4d86-91e9-1e00167939cb",
+					ID:     "VULN-001",
+					References: &[]cyclonedx.VulnerabilityReference{
+						{ID: "CVE-111", Source: &cyclonedx.Source{}},
+						{ID: "OSV-2", Source: &cyclonedx.Source{}},
+					},
+					Affects:    &[]cyclonedx.Affects{},
 				},
 				{
-					BOMRef:  "6694d2c4-22ac-4208-a007-2939487f6999",
-					ID:      "VULN-003",
+					BOMRef: "6694d2c4-22ac-4208-a007-2939487f6999",
+					ID:     "VULN-003",
+					References: &[]cyclonedx.VulnerabilityReference{
+						{ID: "CVE-111", Source: &cyclonedx.Source{}},
+						{ID: "OSV-2", Source: &cyclonedx.Source{}},
+					},
 					Affects: &[]cyclonedx.Affects{},
 				},
 			},

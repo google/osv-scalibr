@@ -31,7 +31,6 @@ import (
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/uuid"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ToPURL converts a SCALIBR package structure into a package URL.
@@ -143,7 +142,7 @@ func buildCDXVulnerabilities(vulns []*inventory.PackageVuln, pkgRefs map[*extrac
 				BOMRef: uuid.New().String(),
 				ID:     pv.Vulnerability.GetId(),
 				// Source:         nil,
-				// References:     nil,
+				References: buildCDXReferences(pv.Vulnerability),
 				// Ratings:        nil,
 				// CWEs:           nil,
 				Description: pv.Vulnerability.GetSummary(),
