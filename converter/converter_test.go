@@ -284,6 +284,56 @@ func TestToCDX(t *testing.T) {
 				}),
 			},
 		},
+		{
+			desc: "Packages_with_deprecation",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{
+					{
+						Name:     "not-deprecated",
+						Version:  "1.0.0",
+						PURLType: purl.TypeNPM,
+					},
+					{
+						Name:       "deprecated",
+						Version:    "1.0.0",
+						PURLType:   purl.TypeNPM,
+						Deprecated: true,
+					},
+				},
+			},
+			want: &cyclonedx.BOM{
+				Metadata: &cyclonedx.Metadata{
+					Tools: &cyclonedx.ToolsChoice{
+						Components: &[]cyclonedx.Component{
+							{
+								Type: cyclonedx.ComponentTypeApplication,
+								Name: "SCALIBR",
+								ExternalReferences: new([]cyclonedx.ExternalReference{
+									{URL: "https://github.com/google/osv-scalibr", Type: cyclonedx.ERTypeWebsite},
+								}),
+							},
+						},
+					},
+				},
+				Components: new([]cyclonedx.Component{
+					{
+						BOMRef:     "92d2572b-cd06-48d2-96c5-2f5054e2d083",
+						Type:       "library",
+						Name:       "not-deprecated",
+						Version:    "1.0.0",
+						PackageURL: "pkg:npm/not-deprecated@1.0.0",
+					},
+					{
+						BOMRef:     "6bf84c71-74cb-4476-b64c-c3dbd968b0f7",
+						Type:       "library",
+						Name:       "deprecated",
+						Version:    "1.0.0",
+						PackageURL: "pkg:npm/deprecated@1.0.0",
+						Properties: &[]cyclonedx.Property{{Name: "osv:deprecated", Value: "true"}},
+					},
+				}),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
