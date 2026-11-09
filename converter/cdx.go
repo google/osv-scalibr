@@ -121,7 +121,7 @@ func buildCDXAdvisories(vuln *osvpb.Vulnerability) *[]cyclonedx.Advisory {
 }
 
 func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
-	credits := &cyclonedx.Credits{Individuals: &[]cyclonedx.OrganizationalContact{}}
+	var individuals []cyclonedx.OrganizationalContact
 
 	for _, credit := range vuln.GetCredits() {
 		// tools are not people or organisations
@@ -131,17 +131,17 @@ func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
 
 		// TODO: decide on if we do "Individuals" or "Organisations"
 		//  (osv does not provide a way to distinguish)
-		*credits.Individuals = append(*credits.Individuals, cyclonedx.OrganizationalContact{
+		individuals = append(individuals, cyclonedx.OrganizationalContact{
 			Name:  credit.GetName(),
 			Email: firstEmail(credit.GetContact()),
 		})
 	}
 
-	if len(*credits.Individuals) == 0 {
+	if len(individuals) == 0 {
 		return nil
 	}
 
-	return credits
+	return &cyclonedx.Credits{Individuals: &individuals}
 }
 
 // firstEmail returns the first contact url that begins with "mailto:"
