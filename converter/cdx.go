@@ -15,9 +15,11 @@
 package converter
 
 import (
+	"strings"
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/google/osv-scalibr/internal/severity"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -47,6 +49,56 @@ func buildCDXReferences(vuln *osvpb.Vulnerability) *[]cyclonedx.VulnerabilityRef
 	}
 
 	return &references
+}
+
+var cdxScoringMapper = map[osvpb.Severity_Type]cyclonedx.ScoringMethod{
+	osvpb.Severity_CVSS_V2: cyclonedx.ScoringMethodCVSSv2,
+	osvpb.Severity_CVSS_V3: cyclonedx.ScoringMethodCVSSv3,
+	osvpb.Severity_CVSS_V4: cyclonedx.ScoringMethodCVSSv4,
+}
+
+var cdxSeverityMapper = map[string]cyclonedx.Severity{
+	"critical": cyclonedx.SeverityCritical,
+	"high":     cyclonedx.SeverityHigh,
+	"medium":   cyclonedx.SeverityMedium,
+	"low":      cyclonedx.SeverityLow,
+	"none":     cyclonedx.SeverityNone,
+}
+
+func buildCDXRatings(vuln *osvpb.Vulnerability) *[]cyclonedx.VulnerabilityRating {
+	var ratings []cyclonedx.VulnerabilityRating
+
+	for _, sev := range vuln.GetSeverity() {
+		// skip severities that cdx does not support
+		method, ok := cdxScoringMapper[sev.GetType()]
+		if !ok {
+			continue
+		}
+
+		// there is nothing to rate without a vector
+		if sev.GetScore() == "" {
+			continue
+		}
+
+		cdxRating := cyclonedx.VulnerabilityRating{
+			Method: method,
+			Vector: sev.GetScore(),
+		}
+
+		// keep the vector even if it cannot be scored, so the data is not lost
+		if score, rating, err := severity.CalculateScoreAndRating(sev); err == nil {
+			cdxRating.Score = &score
+			cdxRating.Severity = cdxSeverityMapper[strings.ToLower(rating)]
+		}
+
+		ratings = append(ratings, cdxRating)
+	}
+
+	if len(ratings) == 0 {
+		return nil
+	}
+
+	return &ratings
 }
 
 func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
