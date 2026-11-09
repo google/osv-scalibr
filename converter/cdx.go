@@ -41,10 +41,33 @@ func buildCDXReferences(vuln *osvpb.Vulnerability) *[]cyclonedx.VulnerabilityRef
 
 	for i, alias := range aliases {
 		references[i] = cyclonedx.VulnerabilityReference{
-			ID: alias,
+			ID:     alias,
 			Source: &cyclonedx.Source{},
 		}
 	}
 
 	return &references
+}
+
+func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
+	credits := &cyclonedx.Credits{Individuals: &[]cyclonedx.OrganizationalContact{}}
+
+	for _, credit := range vuln.GetCredits() {
+		// tools are not people or organisations
+		if credit.GetType() == osvpb.Credit_TOOL {
+			continue
+		}
+
+		// TODO: decide on if we do "Individuals" or "Organisations"
+		//  (osv does not provide a way to distinguish)
+		*credits.Individuals = append(*credits.Individuals, cyclonedx.OrganizationalContact{
+			Name: credit.GetName(),
+		})
+	}
+
+	if len(*credits.Individuals) == 0 {
+		return nil
+	}
+
+	return credits
 }

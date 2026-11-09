@@ -154,7 +154,7 @@ func buildCDXVulnerabilities(vulns []*inventory.PackageVuln, pkgRefs map[*extrac
 				Published: formatDateIfExists(pv.Vulnerability.GetPublished()),
 				Updated:   formatDateIfExists(pv.Vulnerability.GetModified()),
 				Rejected:  formatDateIfExists(pv.Vulnerability.GetWithdrawn()),
-				// Credits:        nil,
+				Credits:   buildCDXCredits(pv.Vulnerability),
 				// Tools:          nil,
 				// Analysis:       nil,
 				Affects: &[]cyclonedx.Affects{},
