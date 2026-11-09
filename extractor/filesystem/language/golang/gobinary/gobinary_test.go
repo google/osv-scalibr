@@ -462,3 +462,247 @@ func createPackages(pkgs []*extractor.Package, location string) []*extractor.Pac
 	}
 	return res
 }
+
+func TestExtractDependencyGraph(t *testing.T) {
+	binPath := "testdata/binary_with_modules-linux-amd64"
+	file, err := os.Open(binPath)
+	if err != nil {
+		t.Fatalf("Failed to open test binary: %v", err)
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		t.Fatalf("Stat failed: %v", err)
+	}
+
+	cfg := &cpb.PluginConfig{
+		PluginSpecific: []*cpb.PluginSpecificConfig{{
+			Config: &cpb.PluginSpecificConfig_GoBinary{
+				GoBinary: &cpb.GoBinaryConfig{ExtractDependencyRelations: true},
+			},
+		}},
+	}
+
+	ext, err := gobinary.New(cfg)
+	if err != nil {
+		t.Fatalf("gobinary.New failed: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Path:   binPath,
+		Info:   info,
+		Reader: file,
+	}
+
+	inv, err := ext.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	pkgsByName := make(map[string]*extractor.Package)
+	for _, p := range inv.Packages {
+		pkgsByName[p.Name] = p
+	}
+
+	requireID := func(name string) string {
+		p := pkgsByName[name]
+		if p == nil {
+			t.Fatalf("Package %q not found in inventory", name)
+		}
+		id, err := p.RequireID()
+		if err != nil {
+			t.Fatalf("RequireID failed for %q: %v", name, err)
+		}
+		return id
+	}
+
+	mainID := requireID("binary_with_modules")
+	ginID := requireID("github.com/gin-gonic/gin")
+	isattyID := requireID("github.com/mattn/go-isatty")
+
+	ginPkg := pkgsByName["github.com/gin-gonic/gin"]
+	if ginPkg.ParentIDs == nil || !ginPkg.ParentIDs[mainID] {
+		t.Errorf("Expected gin to have parent 'binary_with_modules' (ID: %s), got: %v", mainID, ginPkg.ParentIDs)
+	}
+
+	isattyPkg := pkgsByName["github.com/mattn/go-isatty"]
+	if isattyPkg.ParentIDs == nil || !isattyPkg.ParentIDs[ginID] {
+		t.Errorf("Expected go-isatty to have parent 'github.com/gin-gonic/gin' (ID: %s), got: %v", ginID, isattyPkg.ParentIDs)
+	}
+
+	sysPkg := pkgsByName["golang.org/x/sys"]
+	if sysPkg.ParentIDs == nil || !sysPkg.ParentIDs[isattyID] {
+		t.Errorf("Expected golang.org/x/sys to have parent 'github.com/mattn/go-isatty' (ID: %s), got: %v", isattyID, sysPkg.ParentIDs)
+	}
+}
+
+func TestExtractDependencyGraph_ModuleReplacement(t *testing.T) {
+	binPath := "testdata/binary_with_module_replacement-linux-amd64"
+	file, err := os.Open(binPath)
+	if err != nil {
+		t.Fatalf("Failed to open test binary: %v", err)
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		t.Fatalf("Stat failed: %v", err)
+	}
+
+	cfg := &cpb.PluginConfig{
+		PluginSpecific: []*cpb.PluginSpecificConfig{{
+			Config: &cpb.PluginSpecificConfig_GoBinary{
+				GoBinary: &cpb.GoBinaryConfig{ExtractDependencyRelations: true},
+			},
+		}},
+	}
+
+	ext, err := gobinary.New(cfg)
+	if err != nil {
+		t.Fatalf("gobinary.New failed: %v", err)
+	}
+
+	input := &filesystem.ScanInput{
+		Path:   binPath,
+		Info:   info,
+		Reader: file,
+	}
+
+	inv, err := ext.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	pkgsByName := make(map[string]*extractor.Package)
+	for _, p := range inv.Packages {
+		pkgsByName[p.Name] = p
+	}
+
+	// xerrors was declared as golang.org/x/xerrors replaced by github.com/golang/xerrors.
+	mainPkg := pkgsByName["binary_with_module_replacement"]
+	if mainPkg == nil {
+		t.Fatalf("Main package 'binary_with_module_replacement' not found in inventory: %v", inv.Packages)
+	}
+	mainID, err := mainPkg.RequireID()
+	if err != nil {
+		t.Fatalf("RequireID failed for main module: %v", err)
+	}
+
+	xerrorsPkg := pkgsByName["github.com/golang/xerrors"]
+	if xerrorsPkg == nil {
+		t.Fatalf("Replaced package 'github.com/golang/xerrors' not found in inventory: %v", inv.Packages)
+	}
+	if xerrorsPkg.ParentIDs == nil || !xerrorsPkg.ParentIDs[mainID] {
+		t.Errorf("Expected replaced module 'github.com/golang/xerrors' to have parent 'binary_with_module_replacement' (ID: %s), got: %v", mainID, xerrorsPkg.ParentIDs)
+	}
+}
+
+type failingIDGenerator struct{}
+
+func (f *failingIDGenerator) GenerateID(pkgName string) (string, error) {
+	return "", errors.New("id generator error")
+}
+
+func TestLinkParentIDs(t *testing.T) {
+	tests := []struct {
+		name       string
+		edges      []gobinary.ModuleEdge
+		pkgs       []*extractor.Package
+		customGen  extractor.IDGenerator
+		wantErr    bool
+		wantParent map[string][]string
+	}{
+		{
+			name: "valid edge links parent ID",
+			edges: []gobinary.ModuleEdge{
+				{Module: "example.com/modA", DependsOn: "example.com/modB"},
+			},
+			pkgs: []*extractor.Package{
+				{Name: "example.com/modA", ID: "id-modA"},
+				{Name: "example.com/modB", ID: "id-modB"},
+			},
+			wantParent: map[string][]string{
+				"example.com/modB": {"id-modA"},
+			},
+		},
+		{
+			name: "unlinked edges skip missing and link valid edges",
+			edges: []gobinary.ModuleEdge{
+				{Module: "example.com/missing", DependsOn: "example.com/modB"},
+				{Module: "example.com/modA", DependsOn: "example.com/missing"},
+				{Module: "example.com/modA", DependsOn: "example.com/modA"},
+				{Module: "example.com/modA", DependsOn: "example.com/modB"},
+			},
+			pkgs: []*extractor.Package{
+				{Name: "example.com/modA", ID: "id-modA"},
+				{Name: "example.com/modB", ID: "id-modB"},
+			},
+			wantParent: map[string][]string{
+				"example.com/modB": {"id-modA"},
+			},
+		},
+		{
+			name: "main module edge skipped when main has no package in inventory",
+			edges: []gobinary.ModuleEdge{
+				{Module: "main", DependsOn: "example.com/modA"},
+				{Module: "example.com/modA", DependsOn: "example.com/modB"},
+			},
+			pkgs: []*extractor.Package{
+				{Name: "example.com/modA", ID: "id-modA"},
+				{Name: "example.com/modB", ID: "id-modB"},
+			},
+			wantParent: map[string][]string{
+				"example.com/modB": {"id-modA"},
+			},
+		},
+		{
+			name: "RequireID error returns error",
+			edges: []gobinary.ModuleEdge{
+				{Module: "example.com/modA", DependsOn: "example.com/modB"},
+			},
+			pkgs: []*extractor.Package{
+				{Name: "example.com/modA"},
+				{Name: "example.com/modB", ID: "id-modB"},
+			},
+			customGen: &failingIDGenerator{},
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.customGen != nil {
+				old := extractor.GetIDGenerator()
+				extractor.SetIDGenerator(tt.customGen)
+				t.Cleanup(func() {
+					extractor.SetIDGenerator(old)
+				})
+			}
+
+			err := gobinary.LinkParentIDs(tt.edges, tt.pkgs)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("LinkParentIDs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+
+			pkgsByName := make(map[string]*extractor.Package)
+			for _, p := range tt.pkgs {
+				pkgsByName[p.Name] = p
+			}
+			for pkgName, wantParents := range tt.wantParent {
+				pkg := pkgsByName[pkgName]
+				if pkg == nil {
+					t.Fatalf("package %q not found in pkgs", pkgName)
+				}
+				for _, parentID := range wantParents {
+					if pkg.ParentIDs == nil || !pkg.ParentIDs[parentID] {
+						t.Errorf("package %q missing parent ID %q, got: %v", pkgName, parentID, pkg.ParentIDs)
+					}
+				}
+			}
+		})
+	}
+}
