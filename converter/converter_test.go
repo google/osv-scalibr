@@ -536,6 +536,11 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Published: "1970-01-01T00:00:00Z",
 					Updated:   "1970-01-01T00:00:00Z",
 					Rejected:  "1970-01-01T00:00:00Z",
+					Credits: &cyclonedx.Credits{
+						Individuals: &[]cyclonedx.OrganizationalContact{
+							{Name: "Josselin Costanzi"},
+						},
+					},
 				},
 			},
 		},
@@ -650,6 +655,11 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Published:   "1970-01-01T00:00:00Z",
 					Updated:     "1970-01-01T00:00:00Z",
 					Rejected:    "1970-01-01T00:00:00Z",
+					Credits: &cyclonedx.Credits{
+						Individuals: &[]cyclonedx.OrganizationalContact{
+							{Name: "Josselin Costanzi"},
+						},
+					},
 				},
 			},
 		},
@@ -908,6 +918,11 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Published:   "2023-05-11T18:59:56Z",
 					Updated:     "2024-05-20T16:03:47Z",
 					Rejected:    "",
+					Credits: &cyclonedx.Credits{
+						Individuals: &[]cyclonedx.OrganizationalContact{
+							{Name: "motoyasu-saburi"},
+						},
+					},
 				},
 				{
 					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
@@ -930,13 +945,14 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 			},
 		},
 		{
-			name: "vulnerability_with_credits",
+			name: "vulnerabilities_with_credits",
 			vulns: []*inventory.PackageVuln{
 				{
 					Vulnerability: &osvpb.Vulnerability{
 						Id: "GHSA-1",
 						Credits: []*osvpb.Credit{
 							{Name: "Jane Doe"},
+							{Name: "John Doe", Type: osvpb.Credit_SPONSOR},
 							{
 								Name:    "Example Security Team",
 								Contact: []string{"https://example.com/security", "mailto:security@example.com"},
@@ -945,11 +961,50 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 						},
 					},
 				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-2",
+						Credits: []*osvpb.Credit{
+							{Name: "cURL", Type: osvpb.Credit_TOOL},
+						},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-3",
+						Credits: []*osvpb.Credit{
+							{Name: "Jane Doe"},
+							{Name: "cURL", Type: osvpb.Credit_TOOL},
+						},
+					},
+				},
 			},
 			want: &[]cyclonedx.Vulnerability{
 				{
-					BOMRef:  "52fdfc07-2182-454f-963f-5f0f9a621d72",
-					ID:      "GHSA-1",
+					BOMRef: "52fdfc07-2182-454f-963f-5f0f9a621d72",
+					ID:     "GHSA-1",
+					Credits: &cyclonedx.Credits{
+						Individuals: &[]cyclonedx.OrganizationalContact{
+							{Name: "Jane Doe"},
+							{Name: "John Doe"},
+							{Name: "Example Security Team"},
+						},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+				{
+					BOMRef:  "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:      "GHSA-2",
+					Affects: &[]cyclonedx.Affects{},
+				},
+				{
+					BOMRef: "81855ad8-681d-4d86-91e9-1e00167939cb",
+					ID:     "GHSA-3",
+					Credits: &cyclonedx.Credits{
+						Individuals: &[]cyclonedx.OrganizationalContact{
+							{Name: "Jane Doe"},
+						},
+					},
 					Affects: &[]cyclonedx.Affects{},
 				},
 			},
