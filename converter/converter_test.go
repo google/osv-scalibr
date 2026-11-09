@@ -1008,6 +1008,84 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 			},
 		},
 		{
+			name: "advisories_from_advisory_references_only",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						References: []*osvpb.Reference{
+							{Type: osvpb.Reference_ADVISORY, Url: "https://example.com/advisory/1"},
+							{Type: osvpb.Reference_WEB, Url: "https://example.com/blog"},
+							{Type: osvpb.Reference_ADVISORY, Url: "https://example.com/advisory/2"},
+							{Type: osvpb.Reference_FIX, Url: "https://example.com/fix"},
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					// all advisories are kept, in their original order
+					Advisories: &[]cyclonedx.Advisory{
+						{URL: "https://example.com/advisory/1"},
+						{URL: "https://example.com/advisory/2"},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "ratings_ignore_affected_severities",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"}, // 7.5, high
+						},
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{Ecosystem: "npm", Name: "pkg"},
+								Severity: []*osvpb.Severity{
+									{Type: osvpb.Severity_CVSS_V4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"}, // 9.3, critical
+								},
+							},
+						},
+					},
+				},
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-2",
+						Affected: []*osvpb.Affected{
+							{
+								Package: &osvpb.Package{Ecosystem: "npm", Name: "pkg"},
+								Severity: []*osvpb.Severity{
+									{Type: osvpb.Severity_CVSS_V4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"}, // 9.3, critical
+								},
+							},
+						},
+					},
+				},
+			},
+			// only top-level severities are used for ratings
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					Ratings: &[]cyclonedx.VulnerabilityRating{
+						{Score: new(7.5), Severity: "high", Method: "CVSSv3", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+				{
+					BOMRef:  "81855ad8-681d-4d86-91e9-1e00167939cb",
+					ID:      "GHSA-2",
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
 			name: "ratings_cvss_v2_v3_v4",
 			vulns: []*inventory.PackageVuln{
 				{
