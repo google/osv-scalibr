@@ -101,6 +101,25 @@ func buildCDXRatings(vuln *osvpb.Vulnerability) *[]cyclonedx.VulnerabilityRating
 	return &ratings
 }
 
+func buildCDXAdvisories(vuln *osvpb.Vulnerability) *[]cyclonedx.Advisory {
+	var advisories []cyclonedx.Advisory
+
+	for _, reference := range vuln.GetReferences() {
+		if reference.GetType() != osvpb.Reference_ADVISORY {
+			continue
+		}
+		advisories = append(advisories, cyclonedx.Advisory{
+			URL: reference.GetUrl(),
+		})
+	}
+
+	if len(advisories) == 0 {
+		return nil
+	}
+
+	return &advisories
+}
+
 func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
 	credits := &cyclonedx.Credits{Individuals: &[]cyclonedx.OrganizationalContact{}}
 
