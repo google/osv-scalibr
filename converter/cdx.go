@@ -132,7 +132,8 @@ func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
 		// TODO: decide on if we do "Individuals" or "Organisations"
 		//  (osv does not provide a way to distinguish)
 		*credits.Individuals = append(*credits.Individuals, cyclonedx.OrganizationalContact{
-			Name: credit.GetName(),
+			Name:  credit.GetName(),
+			Email: firstEmail(credit.GetContact()),
 		})
 	}
 
@@ -141,4 +142,16 @@ func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
 	}
 
 	return credits
+}
+
+// firstEmail returns the first contact url that begins with "mailto:"
+// without the prefix, if any
+func firstEmail(contacts []string) string {
+	for _, contact := range contacts {
+		if email, ok := strings.CutPrefix(contact, "mailto:"); ok {
+			return email
+		}
+	}
+
+	return ""
 }

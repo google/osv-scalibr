@@ -956,7 +956,7 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 						Individuals: &[]cyclonedx.OrganizationalContact{
 							{Name: "Jane Doe"},
 							{Name: "John Doe"},
-							{Name: "Example Security Team"},
+							{Name: "Example Security Team", Email: "security@example.com"},
 						},
 					},
 					Affects: &[]cyclonedx.Affects{},
@@ -972,6 +972,35 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Credits: &cyclonedx.Credits{
 						Individuals: &[]cyclonedx.OrganizationalContact{
 							{Name: "Jane Doe"},
+						},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "vulnerability_with_credit_contacts",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Credits: []*osvpb.Credit{
+							{Name: "Jane Doe", Contact: []string{"mailto:jane@example.com", "mailto:jane@example.org"}},
+							{Name: "John Doe", Contact: []string{"https://example.com/john"}},
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					Credits: &cyclonedx.Credits{
+						Individuals: &[]cyclonedx.OrganizationalContact{
+							// only the first email is kept
+							{Name: "Jane Doe", Email: "jane@example.com"},
+							// contacts that are not emails are dropped
+							{Name: "John Doe"},
 						},
 					},
 					Affects: &[]cyclonedx.Affects{},
