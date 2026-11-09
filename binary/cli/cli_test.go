@@ -1121,3 +1121,39 @@ func TestRemoteImageOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCDXConfig_Authors(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		authors string
+		want    []string
+	}{
+		{
+			desc:    "no_authors",
+			authors: "",
+			want:    nil,
+		},
+		{
+			desc:    "one_author",
+			authors: "author",
+			want:    []string{"author"},
+		},
+		{
+			desc:    "multiple_authors",
+			authors: "author1,author2",
+			want:    []string{"author1", "author2"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			flags := &cli.Flags{CDXAuthors: tc.authors}
+
+			got := flags.GetCDXConfig().Authors
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("%+v.GetCDXConfig().Authors unexpected diff (-want +got):\n%s", flags, diff)
+			}
+		})
+	}
+}
