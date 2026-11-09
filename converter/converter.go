@@ -136,47 +136,30 @@ func buildCDXVulnerabilities(vulns []*inventory.PackageVuln, pkgRefs map[*extrac
 	cdxVulns := make(map[string]*cyclonedx.Vulnerability)
 
 	for _, pv := range vulns {
-		if _, ok := cdxVulns[pv.Vulnerability.GetId()]; !ok {
-			// TODO: fill out this data
-			cdxVulns[pv.Vulnerability.GetId()] = &cyclonedx.Vulnerability{
-				BOMRef: uuid.New().String(),
-				ID:     pv.Vulnerability.GetId(),
-				// Source:         nil,
-				References: buildCDXReferences(pv.Vulnerability),
-				Ratings:    buildCDXRatings(pv.Vulnerability),
-				// CWEs:           nil,
+		id := pv.Vulnerability.GetId()
+
+		if _, ok := cdxVulns[id]; !ok {
+			cdxVulns[id] = &cyclonedx.Vulnerability{
+				BOMRef:      uuid.New().String(),
+				ID:          id,
+				References:  buildCDXReferences(pv.Vulnerability),
+				Ratings:     buildCDXRatings(pv.Vulnerability),
 				Description: pv.Vulnerability.GetSummary(),
 				Detail:      pv.Vulnerability.GetDetails(),
-				// Recommendation: "",
-				// Workaround:     "",
-				// ProofOfConcept: nil,
-				Advisories: buildCDXAdvisories(pv.Vulnerability),
-				Published:  formatDateIfExists(pv.Vulnerability.GetPublished()),
-				Updated:    formatDateIfExists(pv.Vulnerability.GetModified()),
-				Rejected:   formatDateIfExists(pv.Vulnerability.GetWithdrawn()),
-				Credits:    buildCDXCredits(pv.Vulnerability),
-				// Tools:          nil,
-				// Analysis:       nil,
-				Affects: &[]cyclonedx.Affects{},
-				// Properties:     nil,
+				Advisories:  buildCDXAdvisories(pv.Vulnerability),
+				Published:   formatDateIfExists(pv.Vulnerability.GetPublished()),
+				Updated:     formatDateIfExists(pv.Vulnerability.GetModified()),
+				Rejected:    formatDateIfExists(pv.Vulnerability.GetWithdrawn()),
+				Credits:     buildCDXCredits(pv.Vulnerability),
+				Affects:     &[]cyclonedx.Affects{},
 			}
 		}
 
 		if ref, ok := pkgRefs[pv.Package]; ok {
-			cdxVuln := cdxVulns[pv.Vulnerability.GetId()]
+			affects := cdxVulns[id].Affects
 
-			found := false
-
-			for _, affect := range *cdxVuln.Affects {
-				found = affect.Ref == ref
-
-				if found {
-					break
-				}
-			}
-
-			if !found {
-				*cdxVuln.Affects = append(*cdxVuln.Affects, cyclonedx.Affects{Ref: ref})
+			if !slices.ContainsFunc(*affects, func(a cyclonedx.Affects) bool { return a.Ref == ref }) {
+				*affects = append(*affects, cyclonedx.Affects{Ref: ref})
 			}
 		}
 	}
