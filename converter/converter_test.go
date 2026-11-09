@@ -865,6 +865,7 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					Affects:     &[]cyclonedx.Affects{},
 					Description: "Gin Web Framework does not properly sanitize filename parameter ...",
 					Detail:      "The filename parameter of the Context.FileAttachment function is ...",
+					Advisories:  &[]cyclonedx.Advisory{{URL: "https://nvd.nist.gov/vuln/detail/CVE-2023-29401"}},
 					Published:   "2023-05-12T20:19:25Z",
 					Updated:     "2023-11-08T04:12:18Z",
 					Rejected:    "",
