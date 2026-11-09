@@ -861,6 +861,7 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 						{ID: "CVE-2023-29401", Source: &cyclonedx.Source{}},
 						{ID: "GO-2023-1737", Source: &cyclonedx.Source{}},
 					},
+					Ratings:     &[]cyclonedx.VulnerabilityRating{{Score: new(4.3), Severity: "medium", Method: "CVSSv3", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:L/A:N"}},
 					Affects:     &[]cyclonedx.Affects{},
 					Description: "Gin Web Framework does not properly sanitize filename parameter ...",
 					Detail:      "The filename parameter of the Context.FileAttachment function is ...",
@@ -893,6 +894,10 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 					References: &[]cyclonedx.VulnerabilityReference{
 						{ID: "CVE-111", Source: &cyclonedx.Source{}},
 						{ID: "OSV-2", Source: &cyclonedx.Source{}},
+					},
+					Ratings: &[]cyclonedx.VulnerabilityRating{
+						{Score: new(6.6), Severity: "medium", Method: "CVSSv3", Vector: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:H"},
+						{Score: new(5.7), Severity: "medium", Method: "CVSSv2", Vector: "AV:L/AC:L/Au:S/C:P/I:P/A:C"},
 					},
 					Affects: &[]cyclonedx.Affects{},
 				},
@@ -968,6 +973,159 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 							{Name: "Jane Doe"},
 						},
 					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "ratings_cvss_v2_v3_v4",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V2, Score: "AV:N/AC:L/Au:N/C:P/I:N/A:N"},                                      // 5.0, medium
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"},                    // 7.5, high
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"},                    // 9.8, critical
+							{Type: osvpb.Severity_CVSS_V4, Score: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"}, // 9.3, critical
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					Ratings: &[]cyclonedx.VulnerabilityRating{
+						{Score: new(5.0), Severity: "medium", Method: "CVSSv2", Vector: "AV:N/AC:L/Au:N/C:P/I:N/A:N"},
+						{Score: new(7.5), Severity: "high", Method: "CVSSv3", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"},
+						{Score: new(9.8), Severity: "critical", Method: "CVSSv3", Vector: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"},
+						{Score: new(9.3), Severity: "critical", Method: "CVSSv4", Vector: "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "ratings_differ_across_cvss_versions",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V2, Score: "AV:N/AC:L/Au:N/C:P/I:N/A:N"},                   // 5.0, medium
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"}, // 7.5, high
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					Ratings: &[]cyclonedx.VulnerabilityRating{
+						{Score: new(5.0), Severity: "medium", Method: "CVSSv2", Vector: "AV:N/AC:L/Au:N/C:P/I:N/A:N"},
+						{Score: new(7.5), Severity: "high", Method: "CVSSv3", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "ratings_zero_score",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N"}, // 0.0, none
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					Ratings: &[]cyclonedx.VulnerabilityRating{
+						{Score: new(0.0), Severity: "none", Method: "CVSSv3", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N"},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "ratings_ignore_unsupported_severity_types",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_Ubuntu, Score: "high"},
+							{Type: osvpb.Severity_UNSPECIFIED, Score: "high"},
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"}, // 7.5, high
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					Ratings: &[]cyclonedx.VulnerabilityRating{
+						{Score: new(7.5), Severity: "high", Method: "CVSSv3", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "ratings_keep_unscorable_vectors",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:X"},                                // invalid metric value
+							{Type: osvpb.Severity_CVSS_V3, Score: "not a vector"},                                 // unsupported CVSS_V3 version
+							{Type: osvpb.Severity_CVSS_V4, Score: ""},                                             // empty score
+							{Type: osvpb.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"}, // 7.5, high
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef: "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:     "GHSA-1",
+					// invalid vectors are kept without a score, and empty ones are skipped
+					Ratings: &[]cyclonedx.VulnerabilityRating{
+						{Method: "CVSSv3", Vector: "CVSS:3.1/AV:X"},
+						{Method: "CVSSv3", Vector: "not a vector"},
+						{Score: new(7.5), Severity: "high", Method: "CVSSv3", Vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"},
+					},
+					Affects: &[]cyclonedx.Affects{},
+				},
+			},
+		},
+		{
+			name: "ratings_only_ignored_severities",
+			vulns: []*inventory.PackageVuln{
+				{
+					Vulnerability: &osvpb.Vulnerability{
+						Id: "GHSA-1",
+						Severity: []*osvpb.Severity{
+							{Type: osvpb.Severity_Ubuntu, Score: "high"},
+							{Type: osvpb.Severity_UNSPECIFIED, Score: "high"},
+							{Type: osvpb.Severity_CVSS_V3, Score: ""}, // empty score
+						},
+					},
+				},
+			},
+			want: &[]cyclonedx.Vulnerability{
+				{
+					BOMRef:  "9566c74d-1003-4c4d-bbbb-0407d1e2c649",
+					ID:      "GHSA-1",
 					Affects: &[]cyclonedx.Affects{},
 				},
 			},

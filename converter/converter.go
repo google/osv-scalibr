@@ -143,7 +143,7 @@ func buildCDXVulnerabilities(vulns []*inventory.PackageVuln, pkgRefs map[*extrac
 				ID:     pv.Vulnerability.GetId(),
 				// Source:         nil,
 				References: buildCDXReferences(pv.Vulnerability),
-				// Ratings:        nil,
+				Ratings:    buildCDXRatings(pv.Vulnerability),
 				// CWEs:           nil,
 				Description: pv.Vulnerability.GetSummary(),
 				Detail:      pv.Vulnerability.GetDetails(),
