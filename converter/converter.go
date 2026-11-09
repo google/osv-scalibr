@@ -139,20 +139,7 @@ func buildCDXVulnerabilities(vulns []*inventory.PackageVuln, pkgRefs map[*extrac
 		id := pv.Vulnerability.GetId()
 
 		if _, ok := cdxVulns[id]; !ok {
-			cdxVulns[id] = &cyclonedx.Vulnerability{
-				BOMRef:      uuid.New().String(),
-				ID:          id,
-				References:  buildCDXReferences(pv.Vulnerability),
-				Ratings:     buildCDXRatings(pv.Vulnerability),
-				Description: pv.Vulnerability.GetSummary(),
-				Detail:      pv.Vulnerability.GetDetails(),
-				Advisories:  buildCDXAdvisories(pv.Vulnerability),
-				Published:   formatDateIfExists(pv.Vulnerability.GetPublished()),
-				Updated:     formatDateIfExists(pv.Vulnerability.GetModified()),
-				Rejected:    formatDateIfExists(pv.Vulnerability.GetWithdrawn()),
-				Credits:     buildCDXCredits(pv.Vulnerability),
-				Affects:     &[]cyclonedx.Affects{},
-			}
+			cdxVulns[id] = buildCDXVulnerability(pv.Vulnerability)
 		}
 
 		if ref, ok := pkgRefs[pv.Package]; ok {
