@@ -20,6 +20,7 @@ import (
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/osv-scalibr/internal/severity"
+	"github.com/google/uuid"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -30,6 +31,23 @@ func formatDateIfExists(ts *timestamppb.Timestamp) string {
 	}
 
 	return ts.AsTime().Format(time.RFC3339)
+}
+
+func buildCDXVulnerability(vuln *osvpb.Vulnerability) *cyclonedx.Vulnerability {
+	return &cyclonedx.Vulnerability{
+		BOMRef:      uuid.New().String(),
+		ID:          vuln.GetId(),
+		References:  buildCDXReferences(vuln),
+		Ratings:     buildCDXRatings(vuln),
+		Description: vuln.GetSummary(),
+		Detail:      vuln.GetDetails(),
+		Advisories:  buildCDXAdvisories(vuln),
+		Published:   formatDateIfExists(vuln.GetPublished()),
+		Updated:     formatDateIfExists(vuln.GetModified()),
+		Rejected:    formatDateIfExists(vuln.GetWithdrawn()),
+		Credits:     buildCDXCredits(vuln),
+		Affects:     &[]cyclonedx.Affects{},
+	}
 }
 
 func buildCDXReferences(vuln *osvpb.Vulnerability) *[]cyclonedx.VulnerabilityReference {
