@@ -110,6 +110,9 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 		if expr, _ := spdx.LicenseExpression(pkg.Licenses); expr != spdx.NoAssertion {
 			comp.Licenses = &cyclonedx.Licenses{{Expression: expr}}
 		}
+		if pkg.Deprecated {
+			comp.Properties = &[]cyclonedx.Property{{Name: "osv:deprecated", Value: "true"}}
+		}
 		occ := []cyclonedx.EvidenceOccurrence{}
 		occ = appendOccurrenceFromLocation(pkg.Location.Descriptor, occ)
 		for _, r := range pkg.Location.Related {
