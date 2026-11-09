@@ -147,8 +147,6 @@ func buildCDXCredits(vuln *osvpb.Vulnerability) *cyclonedx.Credits {
 			continue
 		}
 
-		// TODO: decide on if we do "Individuals" or "Organisations"
-		//  (osv does not provide a way to distinguish)
 		individuals = append(individuals, cyclonedx.OrganizationalContact{
 			Name:  credit.GetName(),
 			Email: firstEmail(credit.GetContact()),
