@@ -95,7 +95,10 @@ entries in case there are multiple in one file.
 Extractors should be in a sub-folder of
 [/extractor/filesystem](/extractor/filesystem/) or
 [/extractor/standalone](/extractor/standalone/)
-depending on the Extractor type. Take a look at existing folders and pick
+depending on the Extractor type. For language, infrastructure, or container
+runtime version managers, see
+[extractor/filesystem/runtime/README.md](/extractor/filesystem/runtime/README.md).
+Take a look at existing folders and pick
 whichever is the most appropriate location for your Extractor, or create a new
 folder if none of the existing ones apply. Feel free to ask SCALIBR devs for
 location suggestions during code review.

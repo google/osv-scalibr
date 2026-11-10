@@ -113,9 +113,13 @@ const (
 	TypeGooget = "googet"
 	// TypeWordpress is pkg:wordpress purl
 	TypeWordpress = "wordpress"
-	// TypeAsdf is pkg:asdf purl
+	// TypeAsdf is a pkg:asdf purl.
+	//
+	// Deprecated: Use TypeGeneric instead.
 	TypeAsdf = "asdf"
-	// TypeMise is pkg:mise purl
+	// TypeMise is a pkg:mise purl.
+	//
+	// Deprecated: Use TypeGeneric instead.
 	TypeMise = "mise"
 	// TypeMacports is pkg:macports purl
 	TypeMacports = "macports"

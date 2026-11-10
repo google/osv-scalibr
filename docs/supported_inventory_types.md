@@ -129,13 +129,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
 | Zig        | Zig build.zig.zon packages                        | `zig/buildzigzon`                    |
 
-### Language runtime managers
+### Runtime managers
 
-| runtime | Details        | Extractor Plugin(s) |
-| ------- | -------------- | ------------------- |
-| asdf    | .tool-versions | `runtime/asdf`      |
-| mise    | mise.toml      | `runtime/mise`      |
-| nvm     | .nvmrc         | `runtime/nvm`       |
+| Manager     | Details        | Extractor Plugin(s)   |
+| ----------- | -------------- | --------------------- |
+| asdf        | .tool-versions | `runtime/asdf`        |
+| mise        | mise.toml      | `runtime/mise`        |
+| nodeversion | .node-version  | `runtime/nodeversion` |
+| nvm         | .nvmrc         | `runtime/nvm`         |
 
 ### Secrets
 

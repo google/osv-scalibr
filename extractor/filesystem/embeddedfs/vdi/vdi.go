@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -29,6 +31,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/embeddedfs/common"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 )
 
@@ -36,9 +39,17 @@ const (
 	// Name is the unique identifier for the vdi extractor.
 	Name = "embeddedfs/vdi"
 	// Signature is always 0xBEDA107F.
-	// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L107
+	// Reference: https://github.com/qemu/qemu/blob/ed698be7700160c74d24ef7830adccd2a28d840a/block/vdi.c#L107-L108
 	// Reference : https://forums.virtualbox.org/viewtopic.php?t=8046
 	Signature = 0xBEDA107F
+
+	// Reference: https://github.com/qemu/qemu/blob/ed698be7700160c74d24ef7830adccd2a28d840a/block/vdi.c#L113-L115
+	vdiTypeDynamic = 1
+	vdiTypeStatic  = 2
+
+	// Reference: https://github.com/qemu/qemu/blob/ed698be7700160c74d24ef7830adccd2a28d840a/block/vdi.c#L125-L131
+	vdiUnallocated = 0xFFFFFFFF
+	vdiDiscarded   = 0xFFFFFFFE
 )
 
 // header describes the on-disk VDI header structure.
@@ -68,6 +79,8 @@ type header struct {
 	UUIDParent      [16]byte
 	Unused2         [7]uint64
 }
+
+var headerSize = int64(binary.Size(&header{}))
 
 // Extractor implements the filesystem.Extractor interface for vdi.
 type Extractor struct {
@@ -124,10 +137,24 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract returns an Inventory with embedded filesystems which contains mount functions for each filesystem in the .vdi file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	// Check wether input.Reader is nil or not.
-	if input.Reader == nil {
-		return inventory.Inventory{}, errors.New("input.Reader is nil")
+	vdiPath, err := input.GetRealPath()
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to get real path for %s: %w", input.Path, err)
 	}
+	if input.Root == "" {
+		defer func() {
+			dir := filepath.Dir(vdiPath)
+			if err := os.RemoveAll(dir); err != nil {
+				log.Errorf("os.RemoveAll(%q): %v", dir, err)
+			}
+		}()
+	}
+
+	vdiFile, err := os.Open(vdiPath)
+	if err != nil {
+		return inventory.Inventory{}, fmt.Errorf("failed to open VDI image %s: %w", vdiPath, err)
+	}
+	defer vdiFile.Close()
 
 	// Create a temporary file for the raw disk image
 	tmpRaw, err := os.CreateTemp("", "scalibr-vdi-raw-*.raw")
@@ -137,7 +164,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	tmpRawPath := tmpRaw.Name()
 
 	// Convert VDI to raw
-	if err := convertVDIToRaw(input.Reader, tmpRaw); err != nil {
+	if err := convertVDIToRaw(vdiFile, tmpRaw); err != nil {
 		os.Remove(tmpRawPath)
 		return inventory.Inventory{}, fmt.Errorf("failed to convert %s to raw image: %w", input.Path, err)
 	}
@@ -166,115 +193,103 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	return inventory.Inventory{EmbeddedFSs: embeddedFSs}, nil
 }
 
-// VDI conversion functions
+type sparseWriter interface {
+	io.Writer
+	io.Seeker
+	Truncate(size int64) error
+}
 
-// convertVDIToRaw converts a VDI image to a raw image using streaming I/O only (no Seek).
-func convertVDIToRaw(in io.Reader, out io.Writer) error {
+// convertVDIToRaw converts a VDI image to a raw image.
+func convertVDIToRaw(in io.ReaderAt, out sparseWriter) error {
 	var hdr header
-	if err := binary.Read(in, binary.LittleEndian, &hdr); err != nil {
+	if err := binary.Read(io.NewSectionReader(in, 0, headerSize), binary.LittleEndian, &hdr); err != nil {
 		return fmt.Errorf("failed to read VDI header: %w", err)
 	}
-
-	// Sanity check: VDI signature should be 0xBEDA107F
 	if hdr.Signature != Signature {
 		return errors.New("not a valid VDI file (bad signature)")
 	}
-
-	curPos := int64(binary.Size(hdr))
+	if hdr.DiskSize > math.MaxInt64 {
+		return fmt.Errorf("VDI disk size %d exceeds the maximum supported size", hdr.DiskSize)
+	}
 
 	switch hdr.ImageType {
-	// dynamic / sparse
-	// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L114
-	case 1:
-		// Skip to block map
-		if int64(hdr.OffsetBmap) > curPos {
-			if err := skipBytes(in, int64(hdr.OffsetBmap)-curPos); err != nil {
-				return fmt.Errorf("failed to skip to block map: %w", err)
-			}
-			curPos = int64(hdr.OffsetBmap)
-		}
-
-		indices := make([]uint32, hdr.BlocksInImage)
-		if err := binary.Read(in, binary.LittleEndian, &indices); err != nil {
-			return fmt.Errorf("failed to read block map: %w", err)
-		}
-		curPos += int64(4 * len(indices))
-
-		stride := uint64(hdr.BlockSize) + uint64(hdr.BlockExtra)
-		for i := range indices {
-			virtOffset := uint64(i) * uint64(hdr.BlockSize)
-			writeSize := uint64(hdr.BlockSize)
-			if virtOffset+writeSize > hdr.DiskSize {
-				writeSize = hdr.DiskSize - virtOffset
-			}
-
-			idx := indices[i]
-			// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L125-L131
-			if idx == 0xFFFFFFFF || idx == 0xFFFFFFFE {
-				// unallocated/discarded: write zeros
-				if err := writeZeros(out, int64(writeSize)); err != nil {
-					return err
-				}
-				continue
-			}
-
-			// Physical location of block
-			phys := int64(hdr.OffsetData) + int64(uint64(idx)*stride) + int64(hdr.BlockExtra)
-			if phys > curPos {
-				if err := skipBytes(in, phys-curPos); err != nil {
-					return fmt.Errorf("failed to skip to data block: %w", err)
-				}
-				curPos = phys
-			}
-
-			n, err := io.CopyN(out, in, int64(writeSize))
-			curPos += n
-			if err != nil {
-				return fmt.Errorf("failed to read data block: %w", err)
-			}
-		}
-		return nil
-
-	// static / fixed
-	// Reference : https://github.com/qemu/qemu/blob/master/block/vdi.c#L115
-	case 2:
-		if int64(hdr.OffsetData) > curPos {
-			if err := skipBytes(in, int64(hdr.OffsetData)-curPos); err != nil {
-				return err
-			}
-		}
-		_, err := io.CopyN(out, in, int64(hdr.DiskSize))
-		if err != nil && !errors.Is(err, io.EOF) {
-			return err
-		}
-		return nil
-
+	case vdiTypeDynamic:
+		return convertDynamicVDIToRaw(in, out, &hdr)
+	case vdiTypeStatic:
+		return convertFixedVDIToRaw(in, out, &hdr)
 	default:
 		return fmt.Errorf("unsupported VDI type %d", hdr.ImageType)
 	}
 }
 
-func writeZeros(w io.Writer, n int64) error {
-	buf := make([]byte, 64*1024)
-	for n > 0 {
-		chunk := min(int64(len(buf)), n)
-		if _, err := w.Write(buf[:chunk]); err != nil {
-			return err
+func convertDynamicVDIToRaw(in io.ReaderAt, out sparseWriter, hdr *header) error {
+	if hdr.BlockSize == 0 {
+		return errors.New("invalid VDI block size 0")
+	}
+	// The map must cover the disk
+	// Reference: https://github.com/qemu/qemu/blob/ed698be7700160c74d24ef7830adccd2a28d840a/block/vdi.c#L454-L461
+	if uint64(hdr.BlocksInImage)*uint64(hdr.BlockSize) < hdr.DiskSize {
+		return fmt.Errorf("VDI block count %d cannot cover disk size %d with block size %d",
+			hdr.BlocksInImage, hdr.DiskSize, hdr.BlockSize)
+	}
+
+	mapOffset := max(headerSize, int64(hdr.OffsetBmap))
+	mapSize := int64(hdr.BlocksInImage) * 4
+
+	// Verify the full block map exists without loading it into memory.
+	if mapSize > 0 {
+		var last [1]byte
+		if _, err := io.ReadFull(io.NewSectionReader(in, mapOffset+mapSize-1, 1), last[:]); err != nil {
+			return fmt.Errorf("failed to read block map: %w", err)
 		}
-		n -= chunk
+	}
+
+	mapReader := io.NewSectionReader(in, mapOffset, mapSize)
+	stride := uint64(hdr.BlockSize) + uint64(hdr.BlockExtra)
+	seenBlocks := make(map[uint32]struct{})
+	var mapEntry [4]byte
+	for i := range hdr.BlocksInImage {
+		virtOffset := uint64(i) * uint64(hdr.BlockSize)
+		if virtOffset >= hdr.DiskSize {
+			break
+		}
+		writeSize := min(uint64(hdr.BlockSize), hdr.DiskSize-virtOffset)
+		if _, err := io.ReadFull(mapReader, mapEntry[:]); err != nil {
+			return fmt.Errorf("failed to read block map entry %d: %w", i, err)
+		}
+		idx := binary.LittleEndian.Uint32(mapEntry[:])
+		if idx == vdiUnallocated || idx == vdiDiscarded {
+			// Keep unallocated blocks sparse in the raw output.
+			if _, err := out.Seek(int64(writeSize), io.SeekCurrent); err != nil {
+				return fmt.Errorf("failed to create sparse hole at guest offset %d: %w", virtOffset, err)
+			}
+			continue
+		}
+		// Reject repeated physical blocks before copying their data.
+		// Reference: https://github.com/qemu/qemu/blob/ed698be7700160c74d24ef7830adccd2a28d840a/block/vdi.c#L298-L312
+		if _, seen := seenBlocks[idx]; seen {
+			return fmt.Errorf("duplicate VDI block index %d at map entry %d", idx, i)
+		}
+		seenBlocks[idx] = struct{}{}
+
+		// Physical location of block
+		phys := int64(hdr.OffsetData) + int64(uint64(idx)*stride) + int64(hdr.BlockExtra)
+		_, err := io.CopyN(out, io.NewSectionReader(in, phys, int64(writeSize)), int64(writeSize))
+		if err != nil {
+			return fmt.Errorf("failed to read data block: %w", err)
+		}
+	}
+	if err := out.Truncate(int64(hdr.DiskSize)); err != nil {
+		return fmt.Errorf("failed to set raw image size: %w", err)
 	}
 	return nil
 }
 
-func skipBytes(r io.Reader, n int64) error {
-	buf := make([]byte, 64*1024)
-	for n > 0 {
-		chunk := min(int64(len(buf)), n)
-		_, err := io.CopyN(io.Discard, r, chunk)
-		if err != nil {
-			return err
-		}
-		n -= chunk
+func convertFixedVDIToRaw(in io.ReaderAt, out sparseWriter, hdr *header) error {
+	dataOffset := max(headerSize, int64(hdr.OffsetData))
+	_, err := io.CopyN(out, io.NewSectionReader(in, dataOffset, int64(hdr.DiskSize)), int64(hdr.DiskSize))
+	if err != nil && !errors.Is(err, io.EOF) {
+		return err
 	}
 	return nil
 }
