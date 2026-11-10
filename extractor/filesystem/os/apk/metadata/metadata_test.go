@@ -137,3 +137,57 @@ func TestToStruct(t *testing.T) {
 		})
 	}
 }
+
+func TestToNamespace(t *testing.T) {
+	testCases := []struct {
+		desc string
+		m    *metadata.Metadata
+		want string
+	}{
+		{
+			desc: "os_id_set",
+			m:    &metadata.Metadata{OSID: "chainguard"},
+			want: "chainguard",
+		},
+		{
+			desc: "fallback_to_alpine",
+			m:    &metadata.Metadata{},
+			want: "alpine",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := tc.m.ToNamespace(); got != tc.want {
+				t.Errorf("ToNamespace() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestToDistro(t *testing.T) {
+	testCases := []struct {
+		desc string
+		m    *metadata.Metadata
+		want string
+	}{
+		{
+			desc: "os_version_id_set",
+			m:    &metadata.Metadata{OSVersionID: "3.18.0"},
+			want: "3.18.0",
+		},
+		{
+			desc: "empty_when_unset",
+			m:    &metadata.Metadata{},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := tc.m.ToDistro(); got != tc.want {
+				t.Errorf("ToDistro() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
