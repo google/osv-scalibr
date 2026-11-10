@@ -1,0 +1,26 @@
+[tools]
+"" = "1.0.0"
+"   " = "1.0.0"
+"core:" = "1.0.0"
+"CORE:go" = "v1.22.4"
+"asdf:runc" = "1.1.12"
+"asdf:owner/repo" = "1.0.0"
+"vfox:cmake" = "3.29.6"
+"npm:@biomejs/biome" = "1.9.4"
+"cargo:ripgrep" = "14.1.0"
+"owner/repo" = "1.0.0"
+"node@20" = "20.12.2"
+"node[os=linux]" = "20.12.2"
+Node = ["file:.nvmrc", "lts/*", "lts:iron", "lts-iron", "^20.12.0", "~20.1", "20.x", "*", "v20.12.2"]
+custom = "ver-1.0.0"
+deno = "sub-1:2.0"
+elixir = "tag:v1.16.2"
+erlang = "rev:1a2b3c4"
+java = ["temurin-21.0.2+13.0.LTS", { path = "/opt/jdk" }]
+py = ["3.12.1", "latest", "latest:3", "system", "miniconda3-latest", { version = "3.11.9" }]
+ruby = ["ref:master", "ref-1a2b3c4", "branch:main"]
+rust = ["prefix:1.80", "stable", "nightly"]
+zig = "lts"
+
+[[tools.bun]]
+version = "1.1.0"
