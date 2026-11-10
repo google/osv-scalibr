@@ -33,18 +33,20 @@ func EmptyGitignore() GitignorePattern {
 }
 
 // GitignoreMatch returns whether the specified file path should be ignored
-// according to the specified .gitignore patterns. Patterns are combined in order
-// (root to leaf) and evaluated with last-match-wins semantics, matching Git's behavior.
+// according to the specified .gitignore patterns (ordered root to leaf).
+// Patterns are evaluated with last-match-wins semantics, matching Git's behavior:
+// like gitignore.Matcher, they are checked from the last one backwards and the
+// first match decides, without copying them into a new slice.
 func GitignoreMatch(gitignores []GitignorePattern, filePath []string, isDir bool) bool {
-	var allPatterns []gitignore.Pattern
-	for _, patterns := range gitignores {
-		allPatterns = append(allPatterns, patterns...)
+	for i := len(gitignores) - 1; i >= 0; i-- {
+		patterns := gitignores[i]
+		for j := len(patterns) - 1; j >= 0; j-- {
+			if m := patterns[j].Match(filePath, isDir); m > gitignore.NoMatch {
+				return m == gitignore.Exclude
+			}
+		}
 	}
-	if len(allPatterns) == 0 {
-		return false
-	}
-	matcher := gitignore.NewMatcher(allPatterns)
-	return matcher.Match(filePath, isDir)
+	return false
 }
 
 // ParseDirForGitignore parses .gitignore patterns found in the

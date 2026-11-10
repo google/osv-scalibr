@@ -161,3 +161,43 @@ func TestGitignoreChildNegation(t *testing.T) {
 		})
 	}
 }
+
+func TestGitignoreChildNegationFromSubdirScanRoot(t *testing.T) {
+	tests := []struct {
+		name      string
+		path      []string
+		wantMatch bool
+	}{
+		{
+			name:      "Child_negates_parent_pattern",
+			path:      []string{"testdata", "issue2587", "app", "requirements.txt"},
+			wantMatch: false,
+		},
+		{
+			name:      "Parent_pattern_applies",
+			path:      []string{"testdata", "issue2587", "app", "other.txt"},
+			wantMatch: true,
+		},
+	}
+
+	fs := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
+	// Scan root is the app dir: parent patterns come from ParseParentGitignores.
+	patterns, err := ParseParentGitignores(fs, "testdata/issue2587/app")
+	if err != nil {
+		t.Fatalf("ParseParentGitignores(testdata/issue2587/app): %v", err)
+	}
+	appPattern, err := ParseDirForGitignore(fs, "testdata/issue2587/app")
+	if err != nil {
+		t.Fatalf("ParseDirForGitignore(testdata/issue2587/app): %v", err)
+	}
+	patterns = append(patterns, appPattern)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GitignoreMatch(patterns, tt.path, false)
+			if got != tt.wantMatch {
+				t.Errorf("GitignoreMatch(%v, %v): got %v, want %v", patterns, tt.path, got, tt.wantMatch)
+			}
+		})
+	}
+}
