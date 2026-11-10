@@ -16,6 +16,7 @@ package osrelease_test
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -112,7 +113,11 @@ func TestGetOSRelease(t *testing.T) {
 				t.Fatalf("WriteFile(%s): %v", tt.path, err)
 			}
 
-			got, err := osrelease.GetOSRelease(scalibrfs.DirFS(d))
+			fsys := scalibrfs.DirFS(d)
+			if c, ok := fsys.(io.Closer); ok {
+				t.Cleanup(func() { _ = c.Close() })
+			}
+			got, err := osrelease.GetOSRelease(fsys)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("FileRequired(%s) error: got %v, want %v", tt.path, err, tt.wantErr)
 			}
@@ -125,8 +130,12 @@ func TestGetOSRelease(t *testing.T) {
 
 func TestNotAnOS(t *testing.T) {
 	d := t.TempDir()
+	fsys := scalibrfs.DirFS(d)
+	if c, ok := fsys.(io.Closer); ok {
+		t.Cleanup(func() { _ = c.Close() })
+	}
 
-	got, err := osrelease.GetOSRelease(scalibrfs.DirFS(d))
+	got, err := osrelease.GetOSRelease(fsys)
 	if !errors.Is(err, osrelease.ErrNotADistro) {
 		t.Fatalf("Got unexpected error on empty FS: %v", err)
 	}

@@ -197,6 +197,7 @@ type ScanResult = result.ScanResult
 
 // Scan executes the extraction/detection/annotation/etc. plugins using the provided scan config.
 func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
+	defer closeScanRoots(cfg.ScanRoots)
 	if cfg.Stats == nil {
 		cfg.Stats = stats.NoopCollector{}
 	}
@@ -238,7 +239,6 @@ func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
-	defer closeScanRoots(cfg.ScanRoots)
 	extractors := pl.FilesystemExtractors(cfg.Plugins)
 	extractors, err := cf.SetupVelesExtractors(extractors)
 	if err != nil {

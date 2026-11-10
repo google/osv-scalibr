@@ -1146,7 +1146,11 @@ func setupMapFS(t *testing.T, mapFS mapFS) scalibrfs.FS {
 			}
 		}
 	}
-	return scalibrfs.DirFS(root)
+	fsys := scalibrfs.DirFS(root)
+	if c, ok := fsys.(io.Closer); ok {
+		t.Cleanup(func() { _ = c.Close() })
+	}
+	return fsys
 }
 
 // To not break the test every time we add a new metric, we inherit from the NoopCollector.

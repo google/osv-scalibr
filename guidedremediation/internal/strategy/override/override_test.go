@@ -24,7 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/maven"
 	"github.com/google/osv-scalibr/guidedremediation/internal/remediation"
@@ -136,7 +135,7 @@ func TestComputePatches(t *testing.T) {
 				t.Fatalf("failed decoding wantFile: %v", err)
 			}
 
-			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
+			fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata"))
 			m, err := tt.readWriter.Read(tt.manifestPath, fsys)
 			if err != nil {
 				t.Fatalf("failed reading manifest: %v", err)

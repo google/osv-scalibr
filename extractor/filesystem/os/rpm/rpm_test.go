@@ -33,7 +33,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -533,7 +532,7 @@ func TestExtract(t *testing.T) {
 			e.(*rpm.Extractor).Stats = collector
 
 			input := &filesystem.ScanInput{
-				FS:   scalibrfs.DirFS(filepath.Dir(tmpPath)),
+				FS:   fakefs.DirFS(t, filepath.Dir(tmpPath)),
 				Path: filepath.Base(tmpPath),
 				Root: filepath.Dir(tmpPath),
 				Info: info,
@@ -852,7 +851,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Info: info,
+				FS: fakefs.DirFS(t, d), Path: tt.path, Reader: r, Info: info,
 			}
 
 			e, err := rpm.New(&cpb.PluginConfig{})

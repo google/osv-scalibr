@@ -15,6 +15,7 @@
 package npmsource_test
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,7 +54,7 @@ func TestAnnotate_AbsolutePackagePath(t *testing.T) {
 	inv := &inventory.Inventory{Packages: []*extractor.Package{copier.Copy(inputPackage).(*extractor.Package)}}
 
 	input := &annotator.ScanInput{
-		ScanRoot: scalibrfs.RealFSScanRoot(root),
+		ScanRoot: testScanRoot(t, root),
 	}
 
 	wantPackage := &extractor.Package{
@@ -275,7 +276,7 @@ func TestAnnotate_LockfileV1(t *testing.T) {
 
 			root := setupNPMLockfiles(t, tt.lockfiles)
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(root),
+				ScanRoot: testScanRoot(t, root),
 			}
 
 			anno, err := npmsource.New(&cpb.PluginConfig{})
@@ -508,7 +509,7 @@ func TestAnnotate_LockfileV2(t *testing.T) {
 
 			root := setupNPMLockfiles(t, tt.lockfiles)
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(root),
+				ScanRoot: testScanRoot(t, root),
 			}
 
 			anno, err := npmsource.New(&cpb.PluginConfig{})
@@ -734,7 +735,7 @@ func TestResolvedFromLockfile(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			root := setupNPMLockfiles(t, tt.lockfiles)
-			fsys := scalibrfs.DirFS(root)
+			fsys := testScanRoot(t, root).FS
 
 			got, err := npmsource.ResolvedFromLockfile("testproject", fsys)
 			gotErr := err != nil
@@ -746,6 +747,15 @@ func TestResolvedFromLockfile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func testScanRoot(t *testing.T, root string) *scalibrfs.ScanRoot {
+	t.Helper()
+	sr := scalibrfs.RealFSScanRoot(root)
+	if c, ok := sr.FS.(io.Closer); ok {
+		t.Cleanup(func() { _ = c.Close() })
+	}
+	return sr
 }
 
 func setupNPMLockfiles(t *testing.T, dbPaths map[string]string) string {

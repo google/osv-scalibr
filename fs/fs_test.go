@@ -17,12 +17,15 @@ package fs_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
@@ -83,6 +86,11 @@ func TestSub(t *testing.T) {
 
 func TestSubEmptyDir(t *testing.T) {
 	base := scalibrfs.DirFS(t.TempDir())
+	t.Cleanup(func() {
+		if c, ok := base.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
 	for _, dir := range []string{"", "."} {
 		if got := scalibrfs.Sub(base, dir); got != base {
 			t.Errorf("Sub(base, %q) returned a new FS, want the original", dir)
@@ -481,5 +489,246 @@ func TestOpenOSFile(t *testing.T) {
 	}
 	if _, err := os.Stat(tmpDir); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("temp dir %q still exists after cleanup: %v", tmpDir, err)
+	}
+}
+
+func populateShallowTree(tb testing.TB, dir string, numDirs, filesPerDir int) {
+	tb.Helper()
+	payload := []byte("package-metadata-data")
+	for d := range numDirs {
+		sub := filepath.Join(dir, fmt.Sprintf("dir%d", d))
+		if err := os.MkdirAll(sub, 0o755); err != nil {
+			tb.Fatal(err)
+		}
+		for f := range filesPerDir {
+			if err := os.WriteFile(filepath.Join(sub, fmt.Sprintf("file%d.txt", f)), payload, 0o644); err != nil {
+				tb.Fatal(err)
+			}
+		}
+	}
+}
+
+func populateDeepTree(tb testing.TB, dir string) {
+	tb.Helper()
+	payload := []byte("package-metadata-data")
+	// 5 * 5 * 5 = 125 leaf directories at depth 4 (files at depth 5: aX/bY/cZ/leaf/fileW.txt),
+	// 20 files per leaf dir = 2,500 files total across 281 directories.
+	for a := range 5 {
+		for b := range 5 {
+			for c := range 5 {
+				leaf := filepath.Join(
+					dir,
+					fmt.Sprintf("a%d", a),
+					fmt.Sprintf("b%d", b),
+					fmt.Sprintf("c%d", c),
+					"leaf",
+				)
+				if err := os.MkdirAll(leaf, 0o755); err != nil {
+					tb.Fatal(err)
+				}
+				for f := range 20 {
+					if err := os.WriteFile(filepath.Join(leaf, fmt.Sprintf("file%d.txt", f)), payload, 0o644); err != nil {
+						tb.Fatal(err)
+					}
+				}
+			}
+		}
+	}
+}
+
+func runWalkDirOpenTraversal(fsys scalibrfs.FS) (int, error) {
+	ops := 0
+	err := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			ops++
+			return nil
+		}
+		ops++
+		f, err := fsys.Open(p)
+		if err != nil {
+			return err
+		}
+		return f.Close()
+	})
+	ops++
+	return ops, err
+}
+
+// runScalibrStyleTraversal mirrors SCALIBR's WalkDirUnsorted + diriterate.ReadDir
+// (which executes fsys.Stat(dir) + fsys.Open(dir) + ReadDir(1) on every directory)
+// plus Stat + Lstat + Open on every visited file.
+func runScalibrStyleTraversal(fsys scalibrfs.FS) (int, error) {
+	ops := 0
+	var walk func(rel string) error
+	walk = func(rel string) error {
+		ops++
+		if _, err := fsys.Stat(rel); err != nil {
+			return err
+		}
+		ops++
+		dirFile, err := fsys.Open(rel)
+		if err != nil {
+			return err
+		}
+		rdf, ok := dirFile.(fs.ReadDirFile)
+		if !ok {
+			_ = dirFile.Close()
+			return fmt.Errorf("not a ReadDirFile: %T", dirFile)
+		}
+		var subDirs []string
+		var files []string
+		for {
+			entries, err := rdf.ReadDir(1)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if err != nil {
+				_ = dirFile.Close()
+				return err
+			}
+			for _, entry := range entries {
+				child := entry.Name()
+				if rel != "." {
+					child = path.Join(rel, child)
+				}
+				if entry.IsDir() {
+					subDirs = append(subDirs, child)
+				} else {
+					files = append(files, child)
+				}
+			}
+		}
+		_ = dirFile.Close()
+
+		for _, file := range files {
+			ops++
+			if _, err := fs.Lstat(fsys, file); err != nil {
+				return err
+			}
+			ops++
+			if _, err := fsys.Stat(file); err != nil {
+				return err
+			}
+			ops++
+			f, err := fsys.Open(file)
+			if err != nil {
+				return err
+			}
+			_ = f.Close()
+		}
+		for _, sub := range subDirs {
+			if err := walk(sub); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	err := walk(".")
+	return ops, err
+}
+
+func TestDirFSTraversal(t *testing.T) {
+	shallowDir := t.TempDir()
+	populateShallowTree(t, shallowDir, 25, 100)
+
+	deepDir := t.TempDir()
+	populateDeepTree(t, deepDir)
+
+	workloads := []struct {
+		name string
+		dir  string
+		run  func(scalibrfs.FS) (int, error)
+	}{
+		{
+			name: "Shallow_Depth2_2500Files_WalkDirOpen",
+			dir:  shallowDir,
+			run:  runWalkDirOpenTraversal,
+		},
+		{
+			name: "Shallow_Depth2_2500Files_ScalibrWalkStatLstatOpen",
+			dir:  shallowDir,
+			run:  runScalibrStyleTraversal,
+		},
+		{
+			name: "Deep_Depth5_2500Files_WalkDirOpen",
+			dir:  deepDir,
+			run:  runWalkDirOpenTraversal,
+		},
+		{
+			name: "Deep_Depth5_2500Files_ScalibrWalkStatLstatOpen",
+			dir:  deepDir,
+			run:  runScalibrStyleTraversal,
+		},
+	}
+
+	for _, wl := range workloads {
+		t.Run(wl.name, func(t *testing.T) {
+			fsys := scalibrfs.DirFS(wl.dir)
+			start := time.Now()
+			ops, err := wl.run(fsys)
+			elapsed := time.Since(start)
+			if closer, ok := fsys.(io.Closer); ok {
+				if closeErr := closer.Close(); closeErr != nil {
+					t.Fatalf("Close(): %v", closeErr)
+				}
+			}
+			if err != nil {
+				t.Fatalf("traversal failed: %v", err)
+			}
+			perOp := elapsed / time.Duration(ops)
+			t.Logf("[GOOS=%s] %s: %v (%d ops, %v/op)", runtime.GOOS, wl.name, elapsed, ops, perOp)
+		})
+	}
+}
+
+func BenchmarkDirFSTraversal(b *testing.B) {
+	shallowDir := b.TempDir()
+	populateShallowTree(b, shallowDir, 25, 100)
+
+	deepDir := b.TempDir()
+	populateDeepTree(b, deepDir)
+
+	workloads := []struct {
+		name string
+		dir  string
+		run  func(scalibrfs.FS) (int, error)
+	}{
+		{
+			name: "Shallow_Depth2_2500Files_WalkDirOpen",
+			dir:  shallowDir,
+			run:  runWalkDirOpenTraversal,
+		},
+		{
+			name: "Shallow_Depth2_2500Files_ScalibrWalkStatLstatOpen",
+			dir:  shallowDir,
+			run:  runScalibrStyleTraversal,
+		},
+		{
+			name: "Deep_Depth5_2500Files_WalkDirOpen",
+			dir:  deepDir,
+			run:  runWalkDirOpenTraversal,
+		},
+		{
+			name: "Deep_Depth5_2500Files_ScalibrWalkStatLstatOpen",
+			dir:  deepDir,
+			run:  runScalibrStyleTraversal,
+		},
+	}
+
+	for _, wl := range workloads {
+		b.Run(wl.name, func(b *testing.B) {
+			for range b.N {
+				fsys := scalibrfs.DirFS(wl.dir)
+				if _, err := wl.run(fsys); err != nil {
+					b.Fatalf("traversal: %v", err)
+				}
+				if closer, ok := fsys.(io.Closer); ok {
+					_ = closer.Close()
+				}
+			}
+		})
 	}
 }

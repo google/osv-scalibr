@@ -16,6 +16,7 @@ package detectorrunner_test
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -182,8 +183,12 @@ func TestRun(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			px, _ := packageindex.New([]*extractor.Package{})
 			tmp := t.TempDir()
+			sr := scalibrfs.RealFSScanRoot(tmp)
+			if c, ok := sr.FS.(io.Closer); ok {
+				t.Cleanup(func() { _ = c.Close() })
+			}
 			gotFindings, gotStatus, err := detectorrunner.Run(
-				t.Context(), stats.NoopCollector{}, tc.det, scalibrfs.RealFSScanRoot(tmp), px,
+				t.Context(), stats.NoopCollector{}, tc.det, sr, px,
 			)
 			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("detectorrunner.Run(%v): unexpected error (-want +got):\n%s", tc.det, diff)
