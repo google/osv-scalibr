@@ -33,7 +33,7 @@ var (
 const keyMaxLen = 65
 
 // Platform API Keys can be found with this regex, ex: HRKU-AALJCYR7SRzPkj9_BGqhi1jAI1J5P4WfD6ITENvdVydAPCnNcAlrMMahHrTo
-var keyRe = regexp.MustCompile(`\b(HRKU-[0-9a-zA-Z_-]{60})\b`)
+var keyRe = regexp.MustCompile(`\b(HRKU-[\da-zA-Z_-]{60})\b`)
 
 // NewSecretKeyDetector returns a detector for Heroku Platform Keys (HRKU-...).
 func NewSecretKeyDetector() veles.Detector {

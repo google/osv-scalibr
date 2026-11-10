@@ -48,10 +48,10 @@ var (
 	reSpec            = regexp.MustCompile(`^Gem::Specification\.new`)
 	reName            = regexp.MustCompile(`\s*\w+\.name\s*=\s*["']([^"']+)["']`)
 	reVerLiteral      = regexp.MustCompile(`\s*\w+\.version\s*=\s*["']([^"']+)["']`)
-	reVerConst        = regexp.MustCompile(`\s*\w+\.version\s*=\s*([A-Za-z0-9_:]+)`)
+	reVerConst        = regexp.MustCompile(`\s*\w+\.version\s*=\s*([A-Za-z\d_:]+)`)
 	reRequireRel      = regexp.MustCompile(`^\s*require_relative\s+["']([^"']+)["']`)
 	reRequireLiteral  = regexp.MustCompile(`^\s*require\s+["']([^"']+)["']`)
-	reConstAssignment = regexp.MustCompile(`\b([A-Z][A-Za-z0-9_]*)\s*=\s*(?:'([^']+)'|"([^"]+)")(?:\s*\.freeze)?`)
+	reConstAssignment = regexp.MustCompile(`\b([A-Z][A-Za-z\d_]*)\s*=\s*(?:'([^']+)'|"([^"]+)")(?:\s*\.freeze)?`)
 )
 
 // Extractor extracts RubyGem package info from *.gemspec files.

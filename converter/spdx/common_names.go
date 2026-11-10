@@ -24,16 +24,16 @@ import (
 
 var (
 	// conditionally remove hyphen before version number
-	minusVersion = regexp.MustCompile("[-]([0-9])")
+	minusVersion = regexp.MustCompile(`-(\d)`)
 
 	// conditionally remove hyphen after version number
-	versionMinus = regexp.MustCompile("([0-9])[-]")
+	versionMinus = regexp.MustCompile(`(\d)-`)
 
 	// remove ".0" from end of version number
-	trailingZero = regexp.MustCompile("[.]0($|[^.0-9])")
+	trailingZero = regexp.MustCompile(`[.]0($|[^.\d])`)
 
 	// turn "-Variant-Name" into initialism "VN"
-	trailingInitialism = regexp.MustCompile("[-]([A-Z])[a-z]+($|[^A-Za-z])")
+	trailingInitialism = regexp.MustCompile("-([A-Z])[a-z]+($|[^A-Za-z])")
 
 	commonLicenseNameToShortIdentifier map[string]string
 )

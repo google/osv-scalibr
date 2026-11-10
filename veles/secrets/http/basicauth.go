@@ -39,7 +39,7 @@ var (
 			`["'\s=:]{0,10}` +
 			// Optional nearby "value" key (handles JSON/YAML)
 			`(?:.{0,150}?\bvalue["'\s=:]*)?` +
-			`Basic\s+([a-z0-9+/]+={0,2})`,
+			`Basic\s+([a-z\d+/]+={0,2})`,
 	)
 )
 

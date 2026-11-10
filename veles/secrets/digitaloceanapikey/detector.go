@@ -29,7 +29,7 @@ const maxTokenLength = 71
 // keyRe is a regular expression that matches a DigitalOcean API key.
 // DigitalOcean API keys have the form: `dop_v1_` followed by 64
 // alphanumeric characters.
-var keyRe = regexp.MustCompile(`dop_v1_[abcdef0-9]{64}`)
+var keyRe = regexp.MustCompile(`dop_v1_[abcdef\d]{64}`)
 
 // NewDetector returns a new simpletoken.Detector that matches
 // DigitalOcean API keys.

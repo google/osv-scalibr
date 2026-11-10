@@ -29,7 +29,7 @@ const maxTokenLength = 53
 // keyRe is a regular expression that matches a Perplexity API key.
 // Perplexity API keys have the form: `pplx-` followed by 48
 // alphanumeric characters.
-var keyRe = regexp.MustCompile(`pplx-[A-Za-z0-9]{48}`)
+var keyRe = regexp.MustCompile(`pplx-[A-Za-z\d]{48}`)
 
 // NewDetector returns a new simpletoken.Detector that matches
 // Perplexity API keys.

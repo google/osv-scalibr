@@ -29,7 +29,7 @@ const maxTokenLength = 40
 // tokenRe is a regular expression that matches an npm.js access token.
 // npm.js access tokens have the form: `npm_` followed by 36
 // alphanumeric characters.
-var tokenRe = regexp.MustCompile(`npm_[a-zA-Z0-9]{36}`)
+var tokenRe = regexp.MustCompile(`npm_[a-zA-Z\d]{36}`)
 
 // NewDetector returns a new simpletoken.Detector that matches
 // npm.js access tokens.

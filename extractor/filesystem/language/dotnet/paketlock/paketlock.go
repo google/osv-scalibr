@@ -51,7 +51,7 @@ var (
 	// Example: "    NUnit (2.6.3)" - exactly 4 spaces for top-level packages
 	// Note: We only match top-level packages (not indented dependency constraints)
 	// The regex requires exactly 4 spaces followed by a non-space character
-	reLockPackage = regexp.MustCompile(`^    ([^\s(]+)\s*\(([^)]+)\)`)
+	reLockPackage = regexp.MustCompile(`^ {4}([^\s(]+)\s*\(([^)]+)\)`)
 )
 
 // Extractor extracts packages from Paket lock files.

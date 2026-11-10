@@ -35,7 +35,7 @@ var (
 const personalAccessTokenMaxLen = 64
 
 // Compiled regex for matching Square Personal Access Tokens.
-var personalAccessTokenRe = regexp.MustCompile(`EAAA[\w\-\+\=]{60}`)
+var personalAccessTokenRe = regexp.MustCompile(`EAAA[\w\-+=]{60}`)
 
 // Regex for Square OAuth Application IDs.
 // Format: Always starts with "sq0idp-" followed by 22 characters.
@@ -43,7 +43,7 @@ var personalAccessTokenRe = regexp.MustCompile(`EAAA[\w\-\+\=]{60}`)
 const oAuthApplicationIDMaxLen = 29 // sq0idp- (7 chars) + 22 chars = 29 total
 
 // Compiled regex for matching Square OAuth Application IDs.
-var oAuthApplicationIDRe = regexp.MustCompile(`sq0idp-[A-Za-z0-9_-]{22}`)
+var oAuthApplicationIDRe = regexp.MustCompile(`sq0idp-[A-Za-z\d_-]{22}`)
 
 // Regex for Square OAuth Application Secrets.
 // Format: Always starts with "sq0csp-" followed by 43 characters.
@@ -51,7 +51,7 @@ var oAuthApplicationIDRe = regexp.MustCompile(`sq0idp-[A-Za-z0-9_-]{22}`)
 const oAuthApplicationSecretMaxLen = 50 // sq0csp- (7 chars) + 43 chars = 50 total
 
 // Compiled regex for matching Square OAuth Application Secrets.
-var oAuthApplicationSecretRe = regexp.MustCompile(`sq0csp-[A-Za-z0-9_-]{43}`)
+var oAuthApplicationSecretRe = regexp.MustCompile(`sq0csp-[A-Za-z\d_-]{43}`)
 
 const (
 	// maxDistance is the maximum distance between OAuth Application ID and Secret to be considered for pairing.

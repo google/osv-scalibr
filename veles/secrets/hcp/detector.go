@@ -35,9 +35,9 @@ const (
 
 var (
 	// reClientID is a regular expression that matches HCP client IDs from env vars or strings.
-	reClientID = regexp.MustCompile(`["']?\b(?:HCP_CLIENT_ID|hcp_client_id)\b["']?\s*[:=]\s*["']?([A-Za-z0-9]{32})["']?`)
+	reClientID = regexp.MustCompile(`["']?\b(?:HCP_CLIENT_ID|hcp_client_id)\b["']?\s*[:=]\s*["']?([A-Za-z\d]{32})["']?`)
 	// reClientSec is a regular expression that matches HCP client secrets from env vars or strings.
-	reClientSec = regexp.MustCompile(`["']?\b(?:HCP_CLIENT_SECRET|hcp_client_secret)\b["']?\s*[:=]\s*["']?([A-Za-z0-9._~\-]{64})["']?`)
+	reClientSec = regexp.MustCompile(`["']?\b(?:HCP_CLIENT_SECRET|hcp_client_secret)\b["']?\s*[:=]\s*["']?([A-Za-z\d._~\-]{64})["']?`)
 )
 
 // NewPairDetector returns a Detector that finds HCP client credentials from key/value pairs.

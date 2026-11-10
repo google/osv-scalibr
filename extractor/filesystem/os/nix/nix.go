@@ -93,8 +93,8 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return true
 }
 
-var packageStoreRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0-9.-]+)-([0-9.]+)(?:-(\S+))?$`)
-var packageStoreUnstableRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0-9.-]+)-(unstable-[0-9]{4}-[0-9]{2}-[0-9]{2})$`)
+var packageStoreRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0-9.-]+)-([\d.]+)(?:-(\S+))?$`)
+var packageStoreUnstableRegex = regexp.MustCompile(`^([a-zA-Z0-9]{32})-([a-zA-Z0-9.-]+)-(unstable-\d{4}-\d{2}-\d{2})$`)
 
 // Extract extracts packages from the filenames of the directories in the nix
 // store path.

@@ -49,7 +49,7 @@ const (
 )
 
 // spdx_id must only contain letters, numbers, "." and "-"
-var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z0-9.-]`)
+var spdxIDInvalidCharRe = regexp.MustCompile(`[^a-zA-Z\d.-]`)
 
 // Config describes custom settings that should be applied to the generated SPDX file.
 type Config struct {

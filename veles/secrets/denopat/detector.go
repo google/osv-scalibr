@@ -28,11 +28,11 @@ const maxTokenLength = 40
 
 // userPatRe is a regular expression that matches a Deno User Personal Access Token.
 // User PATs have the form: `ddp_` followed by 36 alphanumeric characters.
-var userPatRe = regexp.MustCompile(`ddp_[A-Za-z0-9]{36}`)
+var userPatRe = regexp.MustCompile(`ddp_[A-Za-z\d]{36}`)
 
 // orgPatRe is a regular expression that matches a Deno Organization Personal Access Token.
 // Organization PATs have the form: `ddo_` followed by 36 alphanumeric characters.
-var orgPatRe = regexp.MustCompile(`ddo_[A-Za-z0-9]{36}`)
+var orgPatRe = regexp.MustCompile(`ddo_[A-Za-z\d]{36}`)
 
 var _ veles.Detector = NewUserTokenDetector()
 var _ veles.Detector = NewOrgTokenDetector()

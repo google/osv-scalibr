@@ -40,7 +40,7 @@ var (
 	// patRe is a regular expression that matches a Docker Hub API key.
 	// Docker Hub Personal Access Tokens have the form: `dckr_pat_` followed by 27
 	// alphanumeric characters.
-	patRe = regexp.MustCompile(`dckr_pat_[A-Za-z0-9_-]{27}`)
+	patRe = regexp.MustCompile(`dckr_pat_[A-Za-z\d_-]{27}`)
 
 	// usernamePattern matches:
 	//
