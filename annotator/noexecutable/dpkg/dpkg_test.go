@@ -16,6 +16,7 @@ package dpkg_test
 
 import (
 	"context"
+	"io"
 	"runtime"
 	"testing"
 
@@ -152,8 +153,12 @@ func TestAnnotate(t *testing.T) {
 			if tt.ctx == nil {
 				tt.ctx = t.Context()
 			}
+			sr := scalibrfs.RealFSScanRoot(root)
+			if c, ok := sr.FS.(io.Closer); ok {
+				t.Cleanup(func() { _ = c.Close() })
+			}
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(root),
+				ScanRoot: sr,
 			}
 			// Deep copy the packages to avoid modifying the original inventory that is used in other tests.
 			packages := copier.Copy(tt.packages).([]*extractor.Package)

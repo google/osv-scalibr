@@ -22,8 +22,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -1336,16 +1338,120 @@ func (c *closeTrackingFS) Close() error {
 }
 
 func TestScan_ClosesScanRoots(t *testing.T) {
-	dir := t.TempDir()
-	tracked := &closeTrackingFS{FS: scalibrfs.DirFS(dir)}
-	cfg := &scalibr.ScanConfig{
-		ScanRoots: []*scalibrfs.ScanRoot{{FS: tracked, Path: dir}},
+	t.Run("success", func(t *testing.T) {
+		dir := t.TempDir()
+		tracked := &closeTrackingFS{FS: scalibrfs.DirFS(dir)}
+		cfg := &scalibr.ScanConfig{
+			ScanRoots: []*scalibrfs.ScanRoot{{FS: tracked, Path: dir}},
+		}
+		res := scalibr.New().Scan(t.Context(), cfg)
+		if res.Status.Status != plugin.ScanStatusSucceeded {
+			t.Fatalf("Scan failed: %s", res.Status.FailureReason)
+		}
+		if tracked.closeCount != 1 {
+			t.Errorf("Scan closeCount = %d, want 1", tracked.closeCount)
+		}
+	})
+
+	t.Run("early_validation_error", func(t *testing.T) {
+		dir1 := t.TempDir()
+		dir2 := t.TempDir()
+		tracked1 := &closeTrackingFS{FS: scalibrfs.DirFS(dir1)}
+		tracked2 := &closeTrackingFS{FS: scalibrfs.DirFS(dir2)}
+		cfg := &scalibr.ScanConfig{
+			ScanRoots: []*scalibrfs.ScanRoot{
+				{FS: tracked1, Path: dir1},
+				{FS: tracked2, Path: dir2},
+			},
+			PathsToExtract: []string{"file.txt"},
+		}
+		res := scalibr.New().Scan(t.Context(), cfg)
+		if res.Status.Status != plugin.ScanStatusFailed {
+			t.Fatalf("Scan status = %v, want %v", res.Status.Status, plugin.ScanStatusFailed)
+		}
+		if tracked1.closeCount != 1 || tracked2.closeCount != 1 {
+			t.Errorf("Scan closeCounts = (%d, %d), want (1, 1)", tracked1.closeCount, tracked2.closeCount)
+		}
+	})
+}
+
+type benchAllFilesExtractor struct{}
+
+func (benchAllFilesExtractor) Name() string                       { return "bench/allfiles" }
+func (benchAllFilesExtractor) Version() int                       { return 1 }
+func (benchAllFilesExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (benchAllFilesExtractor) FileRequired(api filesystem.FileAPI) bool {
+	return strings.HasSuffix(api.Path(), ".txt")
+}
+func (benchAllFilesExtractor) Extract(_ context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
+	if _, err := input.FS.Stat(input.Path); err != nil {
+		return inventory.Inventory{}, err
 	}
+	return inventory.Inventory{}, nil
+}
+
+func populateDeepScanTree(tb testing.TB, dir string) {
+	tb.Helper()
+	payload := []byte("package-metadata-data")
+	// 5 * 5 * 5 = 125 leaf directories at depth 4 (files at depth 5: aX/bY/cZ/leaf/fileW.txt),
+	// 20 files per leaf dir = 2,500 files total across 281 directories.
+	for a := range 5 {
+		for b := range 5 {
+			for c := range 5 {
+				leaf := filepath.Join(
+					dir,
+					fmt.Sprintf("a%d", a),
+					fmt.Sprintf("b%d", b),
+					fmt.Sprintf("c%d", c),
+					"leaf",
+				)
+				if err := os.MkdirAll(leaf, 0o755); err != nil {
+					tb.Fatal(err)
+				}
+				for f := range 20 {
+					if err := os.WriteFile(filepath.Join(leaf, fmt.Sprintf("file%d.txt", f)), payload, 0o644); err != nil {
+						tb.Fatal(err)
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestScanTraversal(t *testing.T) {
+	dir := t.TempDir()
+	populateDeepScanTree(t, dir)
+
+	// Each scan visits 281 directories via diriterate.ReadDir (281 Stat + 281 Open = 562 ops)
+	// plus 1 initial Stat(".") plus 2,500 files (each opened by RunFS + Stat in Extract = 5,000 ops)
+	// = 5,563 FS operations per Scan().
+	const opsPerScan = 5563
+	cfg := &scalibr.ScanConfig{
+		ScanRoots: scalibrfs.RealFSScanRoots(dir),
+		Plugins:   []plugin.Plugin{benchAllFilesExtractor{}},
+	}
+	start := time.Now()
 	res := scalibr.New().Scan(t.Context(), cfg)
+	elapsed := time.Since(start)
 	if res.Status.Status != plugin.ScanStatusSucceeded {
 		t.Fatalf("Scan failed: %s", res.Status.FailureReason)
 	}
-	if tracked.closeCount != 1 {
-		t.Errorf("Scan closeCount = %d, want 1", tracked.closeCount)
+	t.Logf("[GOOS=%s] Scan() deep tree: %v (%d ops, %v/op)", runtime.GOOS, elapsed, opsPerScan, elapsed/opsPerScan)
+}
+
+func BenchmarkScanTraversal(b *testing.B) {
+	dir := b.TempDir()
+	populateDeepScanTree(b, dir)
+
+	b.ResetTimer()
+	for range b.N {
+		cfg := &scalibr.ScanConfig{
+			ScanRoots: scalibrfs.RealFSScanRoots(dir),
+			Plugins:   []plugin.Plugin{benchAllFilesExtractor{}},
+		}
+		res := scalibr.New().Scan(b.Context(), cfg)
+		if res.Status.Status != plugin.ScanStatusSucceeded {
+			b.Fatalf("Scan failed: %s", res.Status.FailureReason)
+		}
 	}
 }

@@ -30,7 +30,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/clients/clienttest"
 	"github.com/google/osv-scalibr/clients/datasource"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/parser"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -177,7 +176,7 @@ func TestReadWrite(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata"))
 	got, err := mavenRW.Read("my-app/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -659,7 +658,7 @@ func TestRead_MultiModuleDiscovery(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	fsys := scalibrfs.DirFS(dir)
+	fsys := fakefs.DirFS(t, dir)
 	got, err := mavenRW.Read("module-a/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -753,7 +752,7 @@ func TestWriteDoesNotEscapeProjectRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fsys := scalibrfs.DirFS(project)
+	fsys := fakefs.DirFS(t, project)
 	m, err := rw.Read("pom.xml", fsys)
 	if err != nil {
 		t.Fatal(err)
@@ -1356,7 +1355,7 @@ func TestRead_MultiModuleDiscovery_NonStandardPOM(t *testing.T) {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
 
-	fsys := scalibrfs.DirFS(dir)
+	fsys := fakefs.DirFS(t, dir)
 	got, err := mavenRW.Read("module-a/pom.xml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)

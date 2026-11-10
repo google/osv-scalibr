@@ -17,7 +17,6 @@ package internal
 import (
 	"testing"
 
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -49,7 +48,7 @@ func TestGitignoreMatch(t *testing.T) {
 		},
 	}
 
-	pattern, err := ParseDirForGitignore(scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), "testdata")
+	pattern, err := ParseDirForGitignore(fakefs.DirFS(t, fakefs.CopyTestData(t, ".")), "testdata")
 	if err != nil {
 		t.Fatalf("ParseDirForGitignore(testdata): %v", err)
 	}
@@ -65,7 +64,7 @@ func TestGitignoreMatch(t *testing.T) {
 }
 
 func TestParseDirForGitignoreFileDoesntExist(t *testing.T) {
-	_, err := ParseDirForGitignore(scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), "testdata/nonexistent")
+	_, err := ParseDirForGitignore(fakefs.DirFS(t, fakefs.CopyTestData(t, ".")), "testdata/nonexistent")
 	if err != nil {
 		t.Fatalf("ParseDirForGitignore(testdata/nonexistent): %v", err)
 	}
@@ -94,7 +93,7 @@ func TestFindParentGitignores(t *testing.T) {
 		},
 	}
 
-	patterns, err := ParseParentGitignores(scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), "testdata/subdir")
+	patterns, err := ParseParentGitignores(fakefs.DirFS(t, fakefs.CopyTestData(t, ".")), "testdata/subdir")
 	if err != nil {
 		t.Fatalf("ParseParentGitignores(testdata): %v", err)
 	}

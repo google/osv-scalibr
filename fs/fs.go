@@ -105,18 +105,6 @@ func (r *rootFS) withRoot(op, name string, fn func(*os.Root) error) error {
 	if r.dir == "" {
 		return &fs.PathError{Op: op, Path: name, Err: errors.New("os: DirFS with empty root")}
 	}
-	// On Windows, an open *os.Root handle holds a directory handle without delete
-	// sharing, causing os.RemoveAll / t.TempDir() cleanup to fail with
-	// ERROR_SHARING_VIOLATION when callers do not explicitly call Close().
-	// Open and close *os.Root per operation on Windows to avoid leaking locks.
-	if runtime.GOOS == "windows" {
-		root, err := os.OpenRoot(r.dir)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = root.Close() }()
-		return fn(root)
-	}
 	root, err := r.getRoot()
 	if err != nil {
 		return err
@@ -202,7 +190,7 @@ func resolveParentInRoot(root *os.Root, name string, opErr error) (string, bool)
 // relative to root, up to maxSymlinkDepth hops. It returns true only if at
 // least one absolute symlink was rewritten into a valid root-relative path.
 func resolveInRoot(root *os.Root, name string, opErr error) (string, bool) {
-	if opErr != nil && (errors.Is(opErr, fs.ErrNotExist) || errors.Is(opErr, fs.ErrInvalid) || errors.Is(opErr, fs.ErrPermission)) {
+	if opErr == nil || !strings.Contains(opErr.Error(), "path escapes from parent") {
 		return "", false
 	}
 	if !fs.ValidPath(name) || name == "." || (runtime.GOOS == "windows" && strings.ContainsRune(name, '\\')) {

@@ -16,6 +16,7 @@ package cos_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -204,6 +205,9 @@ func TestAnnotate(t *testing.T) {
 			}
 
 			err = anno.Annotate(tt.ctx, input, inv)
+			if c, ok := input.ScanRoot.FS.(io.Closer); ok {
+				_ = c.Close()
+			}
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Annotate(%v) error: %v, want %v", tt.packages, err, tt.wantErr)
 			}

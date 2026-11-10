@@ -142,7 +142,11 @@ func TestIssue51617(t *testing.T) {
 	//nolint:errcheck
 	defer os.Chmod(bad, 0700) // avoid errors on cleanup
 	var saw []string
-	err := WalkDirUnsorted(scalibrfs.DirFS(dir), ".", func(path string, d fs.DirEntry, err error) error {
+	fsys := scalibrfs.DirFS(dir)
+	if c, ok := fsys.(io.Closer); ok {
+		t.Cleanup(func() { _ = c.Close() })
+	}
+	err := WalkDirUnsorted(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return filepath.SkipDir
 		}

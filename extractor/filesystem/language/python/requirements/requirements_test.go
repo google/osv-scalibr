@@ -25,7 +25,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/purl"
@@ -634,7 +633,7 @@ func TestExtract(t *testing.T) {
 			}
 			e.(*requirements.Extractor).Stats = collector
 
-			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
+			fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "."))
 
 			r, err := fsys.Open(tt.path)
 			defer func() {

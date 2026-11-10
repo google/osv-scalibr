@@ -43,7 +43,7 @@ func TestEnricher_Enrich(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
+			FS:   fakefs.DirFS(t, fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -314,7 +314,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
+			FS:   fakefs.DirFS(t, fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -843,7 +843,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: tempDir,
-			FS:   scalibrfs.DirFS(tempDir),
+			FS:   fakefs.DirFS(t, tempDir),
 		},
 	}
 

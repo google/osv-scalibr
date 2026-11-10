@@ -15,6 +15,7 @@
 package whiteout_test
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -121,6 +122,9 @@ func TestWhiteout(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			tmp := t.TempDir()
 			fs := scalibrfs.DirFS(tmp)
+			if c, ok := fs.(io.Closer); ok {
+				t.Cleanup(func() { _ = c.Close() })
+			}
 
 			// Create directories first, then write files to fs.
 			for _, dir := range tc.dirs {
