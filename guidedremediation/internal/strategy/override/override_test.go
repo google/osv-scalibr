@@ -33,6 +33,7 @@ import (
 	"github.com/google/osv-scalibr/guidedremediation/options"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/guidedremediation/upgrade"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestComputePatches(t *testing.T) {
@@ -135,7 +136,7 @@ func TestComputePatches(t *testing.T) {
 				t.Fatalf("failed decoding wantFile: %v", err)
 			}
 
-			fsys := scalibrfs.DirFS("./testdata")
+			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
 			m, err := tt.readWriter.Read(tt.manifestPath, fsys)
 			if err != nil {
 				t.Fatalf("failed reading manifest: %v", err)

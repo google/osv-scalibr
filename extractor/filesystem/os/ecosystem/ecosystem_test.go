@@ -23,6 +23,7 @@ import (
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/ecosystem"
 	flatpakmeta "github.com/google/osv-scalibr/extractor/filesystem/os/flatpak/metadata"
+	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	nixmeta "github.com/google/osv-scalibr/extractor/filesystem/os/nix/metadata"
 	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
 	portagemeta "github.com/google/osv-scalibr/extractor/filesystem/os/portage/metadata"
@@ -131,6 +132,35 @@ func TestMakeEcosystemAPK(t *testing.T) {
 	}
 }
 
+func TestMakeEcosystemFreeBSD(t *testing.T) {
+	tests := []struct {
+		desc     string
+		metadata *freebsdmeta.Metadata
+		want     string
+	}{
+		{
+			desc: "with_version",
+			metadata: &freebsdmeta.Metadata{
+				OSVersionID: "14.0",
+			},
+			want: "FreeBSD:14.0",
+		},
+		{
+			desc:     "without_version",
+			metadata: &freebsdmeta.Metadata{},
+			want:     "FreeBSD",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			got := ecosystem.MakeEcosystem(tt.metadata)
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
+				t.Errorf("ecosystem.MakeEcosystem(%v) (-want +got):\n%s", tt.metadata, diff)
+			}
+		})
+	}
+}
+
 func TestMakeEcosystemDebian(t *testing.T) {
 	tests := []struct {
 		desc     string
@@ -156,6 +186,21 @@ func TestMakeEcosystemDebian(t *testing.T) {
 				OSVersionID: "12",
 			},
 			want: "Debian:12",
+		},
+		{
+			desc: "Echo",
+			metadata: &dpkgmeta.Metadata{
+				OSID: "echo",
+			},
+			want: "Echo",
+		},
+		{
+			desc: "Echo_version_not_used_as_suffix",
+			metadata: &dpkgmeta.Metadata{
+				OSID:        "echo",
+				OSVersionID: "2.0",
+			},
+			want: "Echo",
 		},
 		{
 			desc: "OS_ID_present_(OpenWrt),_not_valid_ecosystem,_so_ecosystem_should_be_empty",

@@ -16,10 +16,11 @@
 package dotnetpe
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
-	"os"
+	"io"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -129,27 +130,22 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) (inventory.Inve
 		return inventory.Inventory{}, fmt.Errorf("the file header does not contain magic bytes %w", err)
 	}
 
-	// Retrieve the real path of the file
-	absPath, err := input.GetRealPath()
+	// Open the PE file directly on real filesystems or via a temporary copy on virtual ones.
+	osFile, cleanup, err := input.OpenOSFile()
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
+	defer func() {
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", input.Path, err)
+		}
+	}()
 
-	if input.Root == "" {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Base(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
-
-	// Open the PE file
-	f, err := pe.New(absPath, &pe.Options{})
+	f, err := pe.NewFile(osFile, &pe.Options{})
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
+	defer func() { _ = f.Close() }()
 
 	// Parse the PE file
 	if err := f.Parse(); err != nil {
@@ -224,11 +220,16 @@ func hasPEMagicBytes(input *filesystem.ScanInput) (bool, error) {
 		return false, nil
 	}
 
-	var magic uint16
-	if err := binary.Read(input.Reader, binary.LittleEndian, &magic); err != nil {
+	var buf [2]byte
+	n, err := io.ReadFull(input.Reader, buf[:])
+	if n > 0 {
+		input.Reader = io.MultiReader(bytes.NewReader(buf[:n]), input.Reader)
+	}
+	if err != nil {
 		return false, err
 	}
 
+	magic := binary.LittleEndian.Uint16(buf[:])
 	// Validate if the magic bytes match any of the expected PE signatures
 	hasPESignature := magic == pe.ImageDOSSignature || magic == pe.ImageDOSZMSignature
 	return hasPESignature, nil

@@ -416,6 +416,73 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name:        "package_with_string_contributors",
+			path:        "testdata/parse5-parser-stream/package.json",
+			includeDeps: true,
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "parse5-parser-stream",
+					Version:  "7.1.2",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/parse5-parser-stream/package.json", 2),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Author: &metadata.Person{
+							Name:  "Ivan Nikulin",
+							Email: "ifaaan@gmail.com",
+							URL:   "https://github.com/inikulin",
+						},
+						Contributors: []*metadata.Person{
+							{
+								Name: "https://github.com/inikulin/parse5/graphs/contributors",
+							},
+						},
+						Dependencies: map[string]string{
+							"parse5": "^7.0.0",
+						},
+					},
+				},
+				{
+					Name:     "parse5",
+					Version:  "7.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/parse5-parser-stream/package.json", 11),
+				},
+			},
+		},
+		{
+			name: "package_with_string_maintainers_and_contributors",
+			path: "testdata/string-people.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "string-people",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/string-people.json", 2),
+					Metadata: &metadata.JavascriptPackageJSONMetadata{
+						Maintainers: []*metadata.Person{
+							{
+								Name:  "Alice Maintainer",
+								Email: "alice@example.com",
+							},
+						},
+						Contributors: []*metadata.Person{
+							{
+								Name:  "Bob Contributor",
+								Email: "bob@example.com",
+								URL:   "https://example.com/bob",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:             "package_with_invalid_contributors",
+			path:             "testdata/invalid-contributors.json",
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
 			name:             "invalid packagejson",
 			path:             "testdata/invalid",
 			wantErr:          cmpopts.AnyError,

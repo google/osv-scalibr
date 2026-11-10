@@ -49,10 +49,10 @@ Run `scalibr --help` for a list of additional CLI args.
 ### As a library:
 
 1.  Import `github.com/google/osv-scalibr` into your Go project
-1.  Create a new [scalibr.ScanConfig](/scalibr.go#L36) struct, configure the
+1.  Create a new [scalibr.ScanConfig](/scalibr.go) struct, configure the
     extraction and detection plugins to run
 1.  Call `scalibr.New().Scan()` with the config
-1.  Parse the returned [scalibr.ScanResults](/scalibr.go#L50)
+1.  Parse the returned [scalibr.ScanResults](/scalibr.go)
 
 See below for an example code snippet.
 
@@ -98,7 +98,7 @@ The binary runs SCALIBR's "recommended" internal plugins by default. You can
 enable more plugins with the `--plugins=` flags. See the
 definition files for a list of all built-in plugins and their CLI flags
 ([extractors (fs)](/extractor/filesystem/list/list.go),
-[extractors (standalone)](/extractor/filesystem/list/list.go),
+[extractors (standalone)](/extractor/standalone/list/list.go),
 [detectors](/detector/list/list.go),
 [annotators](/annotator/list/list.go),
 [enrichers](/enricher/enricherlist/list.go)).
@@ -107,7 +107,7 @@ definition files for a list of all built-in plugins and their CLI flags
 
 A collection of all built-in plugin modules can be found in the definition files
 ([extractors (fs)](/extractor/filesystem/list/list.go),
-[extractors (standalone)](/extractor/filesystem/list/list.go),
+[extractors (standalone)](/extractor/standalone/list/list.go),
 [detectors](/detector/list/list.go),
 [annotators](/annotator/list/list.go),
 [enrichers](/enricher/enricherlist/list.go)).
@@ -155,8 +155,8 @@ cfg := &scalibr.ScanConfig{
 Custom plugins can only be run when using OSV-SCALIBR as a library.
 
 1.  Create an implementation of the OSV-SCALIBR
-    [Extractor](/extractor/filesystem/extractor.go#L30) or
-    [Detector](/detector/detector.go#L28) interface.
+    [Extractor](/extractor/filesystem/filesystem.go) or
+    [Detector](/detector/detector.go) interface.
 2.  Add the newly created struct to the scan config and run the scan, e.g.
 
 ```

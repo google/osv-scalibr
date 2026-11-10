@@ -235,6 +235,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			// This is the root package itself.
 			continue
 		}
+		if strings.Contains(strings.TrimSuffix(group.header, ":"), "@patch:") {
+			// patched packages are also listed under the locator they patch
+			continue
+		}
 		pkg := parseYarnPackageGroup(group)
 		pkg.Location = extractor.LocationFromPathAndLine(input.Path, group.lineNumber)
 		packages = append(packages, pkg)

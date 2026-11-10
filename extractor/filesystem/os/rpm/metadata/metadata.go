@@ -20,8 +20,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/osv-scalibr/log"
-
 	"github.com/google/osv-scalibr/binary/proto/metadata"
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
@@ -61,7 +59,6 @@ func (m *Metadata) ToNamespace() string {
 	case "azurelinux", "mariner":
 		return "azurelinux"
 	case "":
-		log.Errorf("os-release[ID] not set, fallback to ''")
 		return ""
 	default:
 		return m.OSID
@@ -74,15 +71,12 @@ func (m *Metadata) ToDistro() string {
 	if v == "" {
 		v = m.OSBuildID
 		if v == "" {
-			log.Errorf("VERSION_ID and BUILD_ID not set in os-release")
 			return ""
 		}
-		log.Errorf("os-release[VERSION_ID] not set, fallback to BUILD_ID")
 	}
 
 	id := m.OSID
 	if id == "" {
-		log.Errorf("os-release[ID] not set, fallback to ''")
 		return v
 	}
 	return fmt.Sprintf("%s-%s", id, v)

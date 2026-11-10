@@ -1,0 +1,13 @@
+{
+  "name": "parse5-parser-stream",
+  "version": "7.1.2",
+  "author": {
+    "name": "Ivan Nikulin",
+    "email": "ifaaan@gmail.com",
+    "url": "https://github.com/inikulin"
+  },
+  "contributors": "https://github.com/inikulin/parse5/graphs/contributors",
+  "dependencies": {
+    "parse5": "^7.0.0"
+  }
+}

@@ -71,7 +71,7 @@ type headerExtension struct {
 }
 
 // convertQCOW2ToRaw converts a QCOW2 file to a raw disk image.
-func convertQCOW2ToRaw(inputPath string, outputPath string, password string) error {
+func convertQCOW2ToRaw(inputPath string, outputPath string) error {
 	if inputPath == "" {
 		return errors.New("convertVMDKToRaw(): must supply an input file")
 	}
@@ -90,7 +90,19 @@ func convertQCOW2ToRaw(inputPath string, outputPath string, password string) err
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %w", err)
 	}
-	fileSize := uint64(fileInfo.Size())
+	return convertQCOW2ReaderToRaw(io.NewSectionReader(inputFile, 0, fileInfo.Size()), outputPath, "")
+}
+
+func convertQCOW2ReaderToRaw(inputFile *io.SectionReader, outputPath string, password string) error {
+	if inputFile == nil {
+		return errors.New("convertQCOW2ReaderToRaw(): must supply an input file")
+	}
+
+	if outputPath == "" {
+		return errors.New("convertQCOW2ReaderToRaw(): must supply an output file")
+	}
+
+	fileSize := uint64(inputFile.Size())
 
 	header, extensions, err := parseHeader(inputFile)
 	if err != nil {
@@ -135,7 +147,7 @@ func convertQCOW2ToRaw(inputPath string, outputPath string, password string) err
 	return nil
 }
 
-func parseHeader(reader io.Reader) (*header, []headerExtension, error) {
+func parseHeader(reader io.ReadSeeker) (*header, []headerExtension, error) {
 	var h header
 	if err := binary.Read(reader, binary.BigEndian, &h); err != nil {
 		return nil, nil, fmt.Errorf("failed to read header: %w", err)
@@ -177,7 +189,7 @@ func parseHeader(reader io.Reader) (*header, []headerExtension, error) {
 	}
 
 	if h.Version >= 3 && h.HeaderLength > 112 {
-		if _, err := reader.(io.Seeker).Seek(int64(h.HeaderLength), io.SeekStart); err != nil {
+		if _, err := reader.Seek(int64(h.HeaderLength), io.SeekStart); err != nil {
 			return nil, nil, fmt.Errorf("failed to seek to extensions: %w", err)
 		}
 	}

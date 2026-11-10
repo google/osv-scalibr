@@ -17,16 +17,17 @@ package gitrepo
 
 import (
 	"context"
+	"io/fs"
 	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
 
 	gitconfig "github.com/go-git/go-git/v5/config"
-
-	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/format/index"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -77,53 +78,25 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 // ============================================================================
 
 func extractFromGitDir(input *filesystem.ScanInput) (inventory.Inventory, error) {
-	absDotGitDir := filepath.Join(input.Root, filepath.FromSlash(input.Path))
-	absRepoRoot := filepath.Dir(absDotGitDir)
+	dotGitPath := filepath.ToSlash(input.Path)
+	configPath := path.Join(dotGitPath, "config")
+	cfgFile, err := input.FS.Open(configPath)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
+	defer cfgFile.Close()
 
-	repo, plainOpenErr := git.PlainOpen(absRepoRoot)
+	gitCfg, err := gitconfig.ReadConfig(cfgFile)
+	if err != nil {
+		return inventory.Inventory{}, err
+	}
 
 	urls := make(map[string]bool)
-	commitSHA := ""
-
-	if plainOpenErr == nil {
-		remotes, err := repo.Remotes()
-		if err != nil {
-			return inventory.Inventory{}, err
-		}
-		for _, remote := range remotes {
-			cfg := remote.Config()
-			if cfg != nil {
-				for _, u := range cfg.URLs {
-					normalized := normalizeURL(u)
-					if normalized != "" {
-						urls[normalized] = true
-					}
-				}
-			}
-		}
-		if ref, err := repo.Head(); err == nil {
-			commitSHA = ref.Hash().String()
-		}
-	} else {
-		// Fallback for missing HEAD or other PlainOpen failures
-		configPath := path.Join(input.Path, "config")
-		cfgFile, err := input.FS.Open(configPath)
-		if err != nil {
-			return inventory.Inventory{}, plainOpenErr
-		}
-		defer cfgFile.Close()
-
-		gitCfg, err := gitconfig.ReadConfig(cfgFile)
-		if err != nil {
-			return inventory.Inventory{}, err
-		}
-
-		for _, remote := range gitCfg.Remotes {
-			for _, u := range remote.URLs {
-				normalized := normalizeURL(u)
-				if normalized != "" {
-					urls[normalized] = true
-				}
+	for _, remote := range gitCfg.Remotes {
+		for _, u := range remote.URLs {
+			normalized := normalizeURL(u)
+			if normalized != "" {
+				urls[normalized] = true
 			}
 		}
 	}
@@ -131,6 +104,8 @@ func extractFromGitDir(input *filesystem.ScanInput) (inventory.Inventory, error)
 	if len(urls) == 0 {
 		return inventory.Inventory{}, nil
 	}
+
+	commitSHA := resolveHeadCommit(input.FS, dotGitPath)
 
 	var packages []*extractor.Package
 	for u := range urls {
@@ -154,51 +129,164 @@ func extractFromGitDir(input *filesystem.ScanInput) (inventory.Inventory, error)
 		packages = append(packages, pkg)
 	}
 
-	if plainOpenErr == nil {
-		visited := make(map[string]bool)
-		packages = append(packages, extractSubmodules(repo, absRepoRoot, path.Dir(input.Path), visited)...)
-	}
+	visited := make(map[string]bool)
+	packages = append(packages, extractSubmodules(input.FS, dotGitPath, path.Dir(dotGitPath), visited)...)
 
 	return inventory.Inventory{
 		Packages: packages,
 	}, nil
 }
 
-func extractSubmodules(repo *git.Repository, absRepoRoot, relativePath string, visited map[string]bool) []*extractor.Package {
-	if visited[absRepoRoot] {
+func isCleanRelPath(p string) bool {
+	if p == "" || p == "." || strings.HasPrefix(p, "/") || strings.Contains(p, `\`) {
+		return false
+	}
+	cleaned := path.Clean(p)
+	return cleaned == p && cleaned != ".." && !strings.HasPrefix(cleaned, "../")
+}
+
+func isHexHash(s string) bool {
+	if len(s) != 40 {
+		return false
+	}
+	for i := range len(s) {
+		c := s[i]
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+func resolveHeadCommit(fsys scalibrfs.FS, dotGitPath string) string {
+	if dotGitPath == "" || !isCleanRelPath(dotGitPath) {
+		return ""
+	}
+	headBytes, err := fs.ReadFile(fsys, path.Join(dotGitPath, "HEAD"))
+	if err != nil {
+		return ""
+	}
+	head := strings.TrimSpace(string(headBytes))
+	if strings.HasPrefix(head, "ref:") {
+		refName := strings.TrimSpace(strings.TrimPrefix(head, "ref:"))
+		if !isCleanRelPath(refName) {
+			return ""
+		}
+		if refBytes, err := fs.ReadFile(fsys, path.Join(dotGitPath, refName)); err == nil {
+			sha := strings.TrimSpace(string(refBytes))
+			if isHexHash(sha) {
+				return sha
+			}
+		}
+		if packedBytes, err := fs.ReadFile(fsys, path.Join(dotGitPath, "packed-refs")); err == nil {
+			return resolvePackedRef(string(packedBytes), refName)
+		}
+		return ""
+	}
+	if isHexHash(head) {
+		return head
+	}
+	return ""
+}
+
+func resolvePackedRef(content, targetRef string) string {
+	var matchedSHA string
+	for _, rawLine := range strings.Split(content, "\n") {
+		line := strings.TrimSpace(rawLine)
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "^") {
+			continue
+		}
+		spaceIdx := strings.IndexByte(line, ' ')
+		if spaceIdx <= 0 {
+			return ""
+		}
+		sha := line[:spaceIdx]
+		ref := strings.TrimSpace(line[spaceIdx+1:])
+		if !isHexHash(sha) || ref == "" {
+			return ""
+		}
+		if ref == targetRef {
+			matchedSHA = sha
+		}
+	}
+	return matchedSHA
+}
+
+func extractSubmodules(fsys scalibrfs.FS, dotGitPath, relativePath string, visited map[string]bool) []*extractor.Package {
+	if visited[relativePath] {
 		return nil
 	}
-	visited[absRepoRoot] = true
+	visited[relativePath] = true
 
-	wt, err := repo.Worktree()
+	gitmodulesPath := ".gitmodules"
+	if relativePath != "." && relativePath != "" {
+		gitmodulesPath = path.Join(relativePath, ".gitmodules")
+	}
+	if !isCleanRelPath(gitmodulesPath) {
+		return nil
+	}
+
+	modulesBytes, err := fs.ReadFile(fsys, gitmodulesPath)
 	if err != nil {
 		return nil
 	}
 
-	submodules, err := wt.Submodules()
-	if err != nil {
+	modules := gitconfig.NewModules()
+	if err := modules.Unmarshal(modulesBytes); err != nil {
 		return nil
 	}
+
+	var idx *index.Index
+	indexLoaded := false
 
 	var packages []*extractor.Package
-	for _, sub := range submodules {
-		cfg := sub.Config()
-		if cfg == nil {
+	for _, sub := range modules.Submodules {
+		if sub == nil || sub.Validate() != nil {
+			continue
+		}
+		subRelFromRepo := filepath.ToSlash(sub.Path)
+		if !isCleanRelPath(subRelFromRepo) {
 			continue
 		}
 
-		subSHA := extractSubmoduleCommitSHA(sub)
-
-		normalizedSubURL := normalizeURL(cfg.URL)
+		normalizedSubURL := normalizeURL(sub.URL)
 		if normalizedSubURL == "" {
 			continue
 		}
 
+		subRelativePath := subRelFromRepo
+		if relativePath != "." && relativePath != "" {
+			subRelativePath = path.Join(relativePath, subRelFromRepo)
+		}
+		if !isCleanRelPath(subRelativePath) {
+			continue
+		}
+
+		subDotGit := resolveSubmoduleGitDir(fsys, dotGitPath, subRelativePath, filepath.ToSlash(sub.Name))
+		subSHA := resolveHeadCommit(fsys, subDotGit)
+		if subSHA == "" {
+			if !indexLoaded && isCleanRelPath(dotGitPath) {
+				indexLoaded = true
+				if idxFile, err := fsys.Open(path.Join(dotGitPath, "index")); err == nil {
+					var parsedIdx index.Index
+					if err := index.NewDecoder(idxFile).Decode(&parsedIdx); err == nil {
+						idx = &parsedIdx
+					}
+					_ = idxFile.Close()
+				}
+			}
+			if idx != nil {
+				if entry, err := idx.Entry(subRelFromRepo); err == nil && entry != nil && !entry.Hash.IsZero() {
+					subSHA = entry.Hash.String()
+				}
+			}
+		}
+
 		subPkg := &extractor.Package{
-			Name:     inferRepoName(normalizedSubURL, cfg.Path),
+			Name:     inferRepoName(normalizedSubURL, subRelFromRepo),
 			Version:  subSHA,
 			PURLType: purl.TypeGeneric,
-			Location: extractor.LocationFromPath(filepath.ToSlash(filepath.Join(relativePath, cfg.Path))),
+			Location: extractor.LocationFromPath(subRelativePath),
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Repo:   normalizedSubURL,
 				Commit: subSHA,
@@ -211,43 +299,42 @@ func extractSubmodules(repo *git.Repository, absRepoRoot, relativePath string, v
 		}
 		packages = append(packages, subPkg)
 
-		// Recursive call for nested submodules
-		if subRepo, err := sub.Repository(); err == nil {
-			// Compute the absolute path of the submodule directory.
-			absSubRoot := filepath.Join(absRepoRoot, filepath.FromSlash(cfg.Path))
-			subRelativePath := path.Join(relativePath, cfg.Path)
-			packages = append(packages, extractSubmodules(subRepo, absSubRoot, subRelativePath, visited)...)
+		if subDotGit != "" {
+			packages = append(packages, extractSubmodules(fsys, subDotGit, subRelativePath, visited)...)
 		}
 	}
 
 	return packages
 }
 
-// extractSubmoduleCommitSHA extracts the commit SHA of the submodule.
-// If the submodule is not initialized or not checked out locally, it returns the commit SHA from
-// `git submodule status`.
-// If the submodule is initialized and checked out locally, it returns the commit SHA from HEAD
-// (`git ls-tree HEAD`). This captures local updates to the submodule version that have not yet
-// been committed to the parent repository.
-func extractSubmoduleCommitSHA(sub *git.Submodule) string {
-	fallbackSHA := ""
-	status, err := sub.Status()
-	if err == nil {
-		fallbackSHA = status.Expected.String()
+func resolveSubmoduleGitDir(fsys scalibrfs.FS, parentDotGit, subRelativePath, subName string) string {
+	candidateDotGit := path.Join(subRelativePath, ".git")
+	if info, err := fs.Stat(fsys, candidateDotGit); err == nil {
+		if info.IsDir() {
+			return candidateDotGit
+		}
+		if data, err := fs.ReadFile(fsys, candidateDotGit); err == nil {
+			line := strings.TrimSpace(string(data))
+			if strings.HasPrefix(line, "gitdir:") {
+				target := strings.TrimSpace(strings.TrimPrefix(line, "gitdir:"))
+				if !strings.HasPrefix(target, "/") {
+					resolved := path.Clean(path.Join(subRelativePath, filepath.ToSlash(target)))
+					if isCleanRelPath(resolved) {
+						if info, err := fs.Stat(fsys, resolved); err == nil && info.IsDir() {
+							return resolved
+						}
+					}
+				}
+			}
+		}
 	}
-	if fallbackSHA == "0000000000000000000000000000000000000000" {
-		fallbackSHA = ""
+	if isCleanRelPath(parentDotGit) && isCleanRelPath(subName) {
+		modDir := path.Join(parentDotGit, "modules", subName)
+		if info, err := fs.Stat(fsys, modDir); err == nil && info.IsDir() {
+			return modDir
+		}
 	}
-
-	subRepo, err := sub.Repository()
-	if err != nil {
-		return fallbackSHA
-	}
-	ref, err := subRepo.Head()
-	if err != nil {
-		return fallbackSHA
-	}
-	return ref.Hash().String()
+	return ""
 }
 
 // ============================================================================

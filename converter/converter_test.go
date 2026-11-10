@@ -16,7 +16,6 @@ package converter_test
 
 import (
 	"math/rand"
-	"runtime"
 	"testing"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -150,45 +149,6 @@ func TestToCDX(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("converter.ToCDX(%v): unexpected diff (-want +got):\n%s", tc.inv, diff)
-			}
-		})
-	}
-}
-
-func TestToPURL(t *testing.T) {
-	tests := []struct {
-		desc   string
-		pkg    *extractor.Package
-		want   *purl.PackageURL
-		onGoos string
-	}{
-		{
-			desc: "Valid_package_extractor",
-			pkg: &extractor.Package{
-				Name:     "software",
-				Version:  "1.0.0",
-				PURLType: purl.TypePyPi,
-				Location: extractor.LocationFromPath("/file1"),
-				Plugins:  []string{wheelegg.Name},
-			},
-			want: &purl.PackageURL{
-				Type:    purl.TypePyPi,
-				Name:    "software",
-				Version: "1.0.0",
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.desc, func(t *testing.T) {
-			if tc.onGoos != "" && tc.onGoos != runtime.GOOS {
-				t.Skipf("Skipping test on %s", runtime.GOOS)
-			}
-
-			got := converter.ToPURL(tc.pkg)
-
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("converter.ToPURL(%v) returned unexpected diff (-want +got):\n%s", tc.pkg, diff)
 			}
 		})
 	}

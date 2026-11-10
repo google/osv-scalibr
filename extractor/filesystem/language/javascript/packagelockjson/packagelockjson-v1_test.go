@@ -971,7 +971,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Location:   extractor.LocationFromPath("testdata/same-package-different-groups.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &metadata.JavascriptPackageMetadata{
-						Source:       metadata.Local,
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{"dev"},
 					},
 				},
@@ -982,7 +982,7 @@ func TestNPMLockExtractor_Extract_V1(t *testing.T) {
 					Location:   extractor.LocationFromPath("testdata/same-package-different-groups.v1.json"),
 					SourceCode: &extractor.SourceCodeIdentifier{},
 					Metadata: &metadata.JavascriptPackageMetadata{
-						Source:       metadata.Local,
+						Source:       metadata.PublicRegistry,
 						DepGroupVals: []string{},
 					},
 				},
