@@ -17,6 +17,7 @@ package fs_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -83,6 +84,11 @@ func TestSub(t *testing.T) {
 
 func TestSubEmptyDir(t *testing.T) {
 	base := scalibrfs.DirFS(t.TempDir())
+	t.Cleanup(func() {
+		if c, ok := base.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
 	for _, dir := range []string{"", "."} {
 		if got := scalibrfs.Sub(base, dir); got != base {
 			t.Errorf("Sub(base, %q) returned a new FS, want the original", dir)
@@ -481,5 +487,46 @@ func TestOpenOSFile(t *testing.T) {
 	}
 	if _, err := os.Stat(tmpDir); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("temp dir %q still exists after cleanup: %v", tmpDir, err)
+	}
+}
+
+func BenchmarkDirFSTraversal(b *testing.B) {
+	dir := b.TempDir()
+	const numDirs = 25
+	const filesPerDir = 100
+	for d := 0; d < numDirs; d++ {
+		sub := filepath.Join(dir, fmt.Sprintf("dir%d", d))
+		if err := os.MkdirAll(sub, 0o755); err != nil {
+			b.Fatal(err)
+		}
+		for f := 0; f < filesPerDir; f++ {
+			if err := os.WriteFile(filepath.Join(sub, fmt.Sprintf("file%d.txt", f)), []byte("data"), 0o644); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fsys := scalibrfs.DirFS(dir)
+		err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() {
+				f, err := fsys.Open(path)
+				if err != nil {
+					return err
+				}
+				_ = f.Close()
+			}
+			return nil
+		})
+		if err != nil {
+			b.Fatalf("WalkDir: %v", err)
+		}
+		if closer, ok := fsys.(io.Closer); ok {
+			_ = closer.Close()
+		}
 	}
 }

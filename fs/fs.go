@@ -27,6 +27,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 // FS is a filesystem interface that allows the opening of files, reading of
@@ -82,19 +83,26 @@ func DirFS(root string) FS {
 }
 
 type rootFS struct {
-	dir  string
-	mu   sync.Mutex
-	root *os.Root
+	dir    string
+	mu     sync.Mutex
+	root   *os.Root
+	timer  *time.Timer
+	active int
 }
 
 func (r *rootFS) getRoot() (*os.Root, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if runtime.GOOS == "windows" && r.timer != nil {
+		r.timer.Stop()
+	}
+	r.active++
 	if r.root != nil {
 		return r.root, nil
 	}
 	root, err := os.OpenRoot(r.dir)
 	if err != nil {
+		r.active--
 		return nil, err
 	}
 	r.root = root
@@ -105,35 +113,69 @@ func (r *rootFS) withRoot(op, name string, fn func(*os.Root) error) error {
 	if r.dir == "" {
 		return &fs.PathError{Op: op, Path: name, Err: errors.New("os: DirFS with empty root")}
 	}
-	// On Windows, an open *os.Root handle holds a directory handle without delete
-	// sharing, causing os.RemoveAll / t.TempDir() cleanup to fail with
-	// ERROR_SHARING_VIOLATION when callers do not explicitly call Close().
-	// Open and close *os.Root per operation on Windows to avoid leaking locks.
-	if runtime.GOOS == "windows" {
-		root, err := os.OpenRoot(r.dir)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = root.Close() }()
-		return fn(root)
-	}
 	root, err := r.getRoot()
 	if err != nil {
 		return err
 	}
+	defer r.postOp()
 	return fn(root)
+}
+
+func (r *rootFS) postOp() {
+	if runtime.GOOS != "windows" {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.active--
+	if r.root == nil || isWindowsDriveRoot(r.dir) {
+		return
+	}
+	if r.active == 0 {
+		if r.timer != nil {
+			r.timer.Stop()
+		}
+		// On Windows, os.OpenRoot holds a directory handle without delete sharing,
+		// causing t.TempDir() / os.RemoveAll cleanup in tests to fail with
+		// ERROR_SHARING_VIOLATION if the root handle is cached indefinitely.
+		// For non-drive roots, we keep the handle cached across rapid operations
+		// and release it after 20ms of inactivity, giving testing.go's retry loop
+		// a chance to succeed without penalizing traversal throughput.
+		r.timer = time.AfterFunc(20*time.Millisecond, func() {
+			r.mu.Lock()
+			defer r.mu.Unlock()
+			if r.active == 0 && r.root != nil {
+				_ = r.root.Close()
+				r.root = nil
+			}
+		})
+	}
 }
 
 // Close releases the underlying os.Root file descriptor if one was opened.
 func (r *rootFS) Close() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.timer != nil {
+		r.timer.Stop()
+		r.timer = nil
+	}
 	if r.root == nil {
 		return nil
 	}
 	err := r.root.Close()
 	r.root = nil
 	return err
+}
+
+func isWindowsDriveRoot(dir string) bool {
+	clean := filepath.Clean(dir)
+	vol := filepath.VolumeName(clean)
+	if vol != "" {
+		rest := strings.TrimPrefix(clean, vol)
+		return rest == "" || rest == `\` || rest == `/`
+	}
+	return clean == `\` || clean == `/`
 }
 
 func doInRoot[T any](

@@ -100,6 +100,11 @@ func TestScan(t *testing.T) {
 
 	tmp := t.TempDir()
 	fs := scalibrfs.DirFS(tmp)
+	t.Cleanup(func() {
+		if c, ok := fs.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
 	tmpRoot := []*scalibrfs.ScanRoot{{FS: fs, Path: tmp}}
 	_ = os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("Content"), 0644)
 	_ = os.WriteFile(filepath.Join(tmp, "config"), []byte("Content"), 0644)
@@ -780,6 +785,11 @@ func TestScanContainerVelesValidatorRequiresNetwork(t *testing.T) {
 func TestScan_ExtractorOverride(t *testing.T) {
 	tmp := t.TempDir()
 	fs := scalibrfs.DirFS(tmp)
+	t.Cleanup(func() {
+		if c, ok := fs.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
 	if err := os.WriteFile(filepath.Join(tmp, "file1"), []byte("content1"), 0644); err != nil {
 		t.Fatalf("write file1: %v", err)
 	}
@@ -1169,7 +1179,13 @@ func TestErrorOnFSErrors(t *testing.T) {
 
 func TestAnnotator(t *testing.T) {
 	tmp := t.TempDir()
-	tmpRoot := []*scalibrfs.ScanRoot{{FS: scalibrfs.DirFS(tmp), Path: tmp}}
+	fsys := scalibrfs.DirFS(tmp)
+	t.Cleanup(func() {
+		if c, ok := fsys.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
+	tmpRoot := []*scalibrfs.ScanRoot{{FS: fsys, Path: tmp}}
 	log.Warn(filepath.Join(tmp, "file.txt"))
 
 	cacheDir := filepath.Join(tmp, "tmp")
