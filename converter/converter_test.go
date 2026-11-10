@@ -238,10 +238,14 @@ func TestToCDX(t *testing.T) {
 						PackageURL: "pkg:npm/custom-license@1.0.0",
 					},
 					{
-						BOMRef:     "0bf50598-7592-4e66-8a5b-df2c7fc48445",
-						Type:       "library",
-						Name:       "non-standard-license",
-						Version:    "1.0.0",
+						BOMRef:  "0bf50598-7592-4e66-8a5b-df2c7fc48445",
+						Type:    "library",
+						Name:    "non-standard-license",
+						Version: "1.0.0",
+						Licenses: &cyclonedx.Licenses{
+							{License: &cyclonedx.License{Name: "non-standard"}},
+							{License: &cyclonedx.License{ID: "Apache-2.0"}},
+						},
 						PackageURL: "pkg:npm/non-standard-license@1.0.0",
 					},
 				}),
@@ -1306,6 +1310,149 @@ func TestToCDX_Vulnerabilities_Fields(t *testing.T) {
 
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("converter.ToCDX(%v): unexpected vulnerabilities diff (-want +got):\n%s", inv, diff)
+			}
+		})
+	}
+}
+
+func TestToCDX_Licenses(t *testing.T) {
+	tests := []struct {
+		name     string
+		licenses []string
+		want     *cyclonedx.Licenses
+	}{
+		{
+			name:     "no_licenses",
+			licenses: nil,
+			want:     nil,
+		},
+		{
+			name:     "empty_licenses",
+			licenses: []string{},
+			want:     nil,
+		},
+		{
+			name:     "only_empty_licenses",
+			licenses: []string{"", ""},
+			want:     nil,
+		},
+		{
+			name:     "single_spdx_license",
+			licenses: []string{"MIT"},
+			want:     &cyclonedx.Licenses{{Expression: "MIT"}},
+		},
+		{
+			name:     "duplicate_spdx_licenses",
+			licenses: []string{"MIT", "mit"},
+			want:     &cyclonedx.Licenses{{Expression: "MIT"}},
+		},
+		{
+			name:     "spdx_expression",
+			licenses: []string{"MIT AND Zlib"},
+			want:     &cyclonedx.Licenses{{Expression: "MIT AND Zlib"}},
+		},
+		{
+			name:     "multiple_spdx_licenses",
+			licenses: []string{"MIT", "Apache-2.0"},
+			want:     &cyclonedx.Licenses{{Expression: "Apache-2.0 AND MIT"}},
+		},
+		{
+			name:     "custom_license",
+			licenses: []string{"MIT", "My Custom License"},
+			want:     &cyclonedx.Licenses{{Expression: "LicenseRef-My-Custom-License AND MIT"}},
+		},
+		// the following cannot be represented as an expression, so the list form is used
+		{
+			name:     "non_standard_license",
+			licenses: []string{"non-standard"},
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+			},
+		},
+		{
+			name:     "unknown_license",
+			licenses: []string{"unknown"},
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "unknown"}},
+			},
+		},
+		{
+			name:     "non_standard_and_spdx_licenses",
+			licenses: []string{"non-standard", "Apache-2.0"},
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+				{License: &cyclonedx.License{ID: "Apache-2.0"}},
+			},
+		},
+		{
+			name:     "non_standard_and_spdx_expression",
+			licenses: []string{"non-standard", "MIT AND Zlib"},
+			// expressions are kept whole, as they cannot be part of the list form
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+				{License: &cyclonedx.License{Name: "MIT AND Zlib"}},
+			},
+		},
+		{
+			name:     "non_standard_and_custom_license",
+			licenses: []string{"non-standard", "My Custom License"},
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+				{License: &cyclonedx.License{Name: "My Custom License"}},
+			},
+		},
+		{
+			name:     "non_standard_and_non_canonical_spdx_licenses",
+			licenses: []string{"non-standard", "mit", "Apache2"},
+			// spdx licenses are normalized to their canonical short identifier
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+				{License: &cyclonedx.License{ID: "MIT"}},
+				{License: &cyclonedx.License{ID: "Apache-2.0"}},
+			},
+		},
+		{
+			// based on jakarta.annotation-api from google/osv-scanner#3236
+			name:     "non_standard_and_deprecated_spdx_license",
+			licenses: []string{"non-standard", "GPL-2.0-with-classpath-exception"},
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+				{License: &cyclonedx.License{ID: "GPL-2.0-with-classpath-exception"}},
+			},
+		},
+		{
+			name:     "non_standard_and_empty_licenses",
+			licenses: []string{"", "non-standard", "  "},
+			// empty (and whitespace-only) licenses are skipped
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+			},
+		},
+		{
+			name:     "non_standard_and_duplicate_licenses",
+			licenses: []string{"non-standard", "MIT", "mit", "non-standard"},
+			// licenses are deduplicated after being normalized
+			want: &cyclonedx.Licenses{
+				{License: &cyclonedx.License{Name: "non-standard"}},
+				{License: &cyclonedx.License{ID: "MIT"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inv := inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "software",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Licenses: tt.licenses,
+				}},
+			}
+
+			got := (*converter.ToCDX(inv, converter.CDXConfig{}).Components)[0].Licenses
+
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("converter.ToCDX(%v): unexpected licenses diff (-want +got):\n%s", inv, diff)
 			}
 		})
 	}

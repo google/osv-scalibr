@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/google/osv-scalibr/converter/spdx"
 	"github.com/google/osv-scalibr/internal/severity"
 	"github.com/google/uuid"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -31,6 +32,44 @@ func formatDateIfExists(ts *timestamppb.Timestamp) string {
 	}
 
 	return ts.AsTime().Format(time.RFC3339)
+}
+
+func buildCDXLicenses(licenses []string) *cyclonedx.Licenses {
+	if expr, _ := spdx.LicenseExpression(licenses); expr != spdx.NoAssertion {
+		return &cyclonedx.Licenses{{Expression: expr}}
+	}
+
+	cdxLicenses := make(cyclonedx.Licenses, 0, len(licenses))
+	seen := make(map[cyclonedx.License]bool)
+
+	for _, l := range licenses {
+		if strings.TrimSpace(l) == "" {
+			continue
+		}
+
+		var license cyclonedx.License
+
+		// if this is a valid spdx license, use "ID", otherwise use "name"
+		if identifier, ok := spdx.ShortIdentifier(l); ok {
+			license.ID = identifier
+		} else {
+			license.Name = l
+		}
+
+		// skip licenses we've already seen
+		if seen[license] {
+			continue
+		}
+		seen[license] = true
+
+		cdxLicenses = append(cdxLicenses, cyclonedx.LicenseChoice{License: &license})
+	}
+
+	if len(cdxLicenses) == 0 {
+		return nil
+	}
+
+	return &cdxLicenses
 }
 
 func buildCDXVulnerability(vuln *osvpb.Vulnerability) *cyclonedx.Vulnerability {
