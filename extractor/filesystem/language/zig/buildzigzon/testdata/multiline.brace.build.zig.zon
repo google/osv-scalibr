@@ -1,0 +1,19 @@
+.{
+    .dependencies = .{
+        .foo = .{ .hash = "foo-1.0.0-1oDot9yRBwDA_ovd6GC1M_ViW3LarywMaGrH6vcuEjqv", .url =
+        \\https://example.com/foo.tar.gz
+        },
+        .bar = .{
+            .url = "https://example.com/bar.tar.gz",
+            .hash = "bar-2.0.0-kr-CoAljAwBNZ9qtzbsczvhValCeJO74j7fmVhzNLdK3",
+        },
+    },
+    .name = .real_pkg,
+    .version = "1.0.0",
+    .fingerprint = 0xf73eae912b707c24,
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

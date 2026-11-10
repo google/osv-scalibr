@@ -35,6 +35,7 @@ import (
 	"github.com/google/osv-scalibr/detector/misc/cronjobprivesc"
 	"github.com/google/osv-scalibr/detector/misc/dockersocket"
 	"github.com/google/osv-scalibr/detector/misc/pammisconfig"
+	"github.com/google/osv-scalibr/detector/misc/sshhole"
 	"github.com/google/osv-scalibr/detector/weakcredentials/codeserver"
 	"github.com/google/osv-scalibr/detector/weakcredentials/etcshadow"
 	"github.com/google/osv-scalibr/detector/weakcredentials/filebrowser"
@@ -101,6 +102,7 @@ var Misc = InitMap{
 	cronjobprivesc.Name: {protoCfg(cronjobprivesc.New)},
 	dockersocket.Name:   {protoCfg(dockersocket.New)},
 	pammisconfig.Name:   {protoCfg(pammisconfig.New)},
+	sshhole.Name:        {protoCfg(sshhole.New)},
 }
 
 // CVE for vulnerabilities that have a CVE associated

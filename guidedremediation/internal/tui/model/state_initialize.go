@@ -134,7 +134,7 @@ type inPlaceResolutionMsg struct {
 
 func doInPlaceResolutionCmd(opts options.FixVulnsOptions, rw lockfile.ReadWriter) tea.Cmd {
 	return func() tea.Msg {
-		g, err := parser.ParseLockfile(opts.Lockfile, rw)
+		g, err := parser.ParseLockfile(opts.Lockfile, rw, opts.ProjectRoot)
 		if err != nil {
 			return inPlaceResolutionMsg{err: err}
 		}
@@ -158,7 +158,7 @@ type doRelockMsg struct {
 
 func doInitialRelockCmd(opts options.FixVulnsOptions, rw manifest.ReadWriter) tea.Cmd {
 	return func() tea.Msg {
-		m, err := parser.ParseManifest(opts.Manifest, rw)
+		m, err := parser.ParseManifest(opts.Manifest, rw, opts.ProjectRoot)
 		if err != nil {
 			return doRelockMsg{err: err}
 		}

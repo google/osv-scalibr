@@ -22,13 +22,11 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"regexp"
-	"strings"
+	"slices"
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/language/python/requirements"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
@@ -41,16 +39,6 @@ const (
 	Name = "python/pyprojecttoml"
 )
 
-// regexes (regices?) for PEP 508
-var (
-	reUnsupportedConstraints = regexp.MustCompile(`\*|<[^=]|,|!=`)
-	reWhitespace             = regexp.MustCompile(`[ \t\r]`)
-	// Regex to match valid package name (?i for case-insensitivity)
-	// https://packaging.python.org/en/latest/specifications/name-normalization/
-	reValidPkg = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
-	reExtras   = regexp.MustCompile(`\[[^\[\]]*\]`)
-)
-
 // pyprojectFile represents the structure of a pyproject.toml file
 type pyprojectFile struct {
 	Project projectTable `toml:"project"`
@@ -58,6 +46,9 @@ type pyprojectFile struct {
 
 // projectTable represents the [project] table as defined by PEP 621
 type projectTable struct {
+	Name                 string              `toml:"name"`
+	Version              string              `toml:"version"`
+	Dynamic              []string            `toml:"dynamic"`
 	Dependencies         []string            `toml:"dependencies"`
 	OptionalDependencies map[string][]string `toml:"optional-dependencies"`
 }
@@ -68,9 +59,7 @@ type Extractor struct{}
 var _ filesystem.Extractor = Extractor{}
 
 // New returns a new instance of the extractor.
-//
-//nolint:plugger
-func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
+func New(*cpb.PluginConfig) (filesystem.Extractor, error) {
 	return &Extractor{}, nil
 }
 
@@ -101,116 +90,27 @@ func (e Extractor) Extract(
 
 	var f pyprojectFile
 	if err := toml.Unmarshal(content, &f); err != nil {
-		// malformed TOML = return empty inventory.
 		return inventory.Inventory{}, fmt.Errorf("failed to parse pyproject.toml: %w", err)
 	}
 
-	// No [project] table or no dependencies declared.
-	if len(f.Project.Dependencies) == 0 &&
-		len(f.Project.OptionalDependencies) == 0 {
+	if f.Project.Name == "" {
+		// If no project.name is set, we assume that this is not a PEP-621 file.
+		// Other tools use this file to store their configuration: poetry, uv, etc.
 		return inventory.Inventory{}, nil
 	}
 
 	var pkgs []*extractor.Package
-
-	for _, dep := range f.Project.Dependencies {
-		if pkg := parseDep(dep, input.Path); pkg != nil {
-			pkgs = append(pkgs, pkg)
-		}
-	}
-
-	for _, deps := range f.Project.OptionalDependencies {
-		for _, dep := range deps {
-			if pkg := parseDep(dep, input.Path); pkg != nil {
-				pkgs = append(pkgs, pkg)
-			}
-		}
-	}
+	pkgs = append(pkgs, &extractor.Package{
+		Name:     f.Project.Name,
+		Version:  f.Project.Version,
+		PURLType: purl.TypePyPi,
+		Location: extractor.LocationFromPath(input.Path),
+		Metadata: &Metadata{
+			HasDynamicDependencies: slices.Contains(f.Project.Dynamic, "dependencies"),
+			Dependencies:           f.Project.Dependencies,
+			OptionalDependencies:   f.Project.OptionalDependencies,
+		},
+	})
 
 	return inventory.Inventory{Packages: pkgs}, nil
-}
-
-// parseDep parses a single PEP 508 dependency string and returns a package, or nil if the string is invalid or unsupported
-func parseDep(dep, path string) *extractor.Package {
-	s := removeWhiteSpaces(dep)
-	s = ignorePythonSpecifier(s)
-	s = removeExtras(s)
-
-	if len(s) == 0 {
-		return nil
-	}
-
-	name, version, comp := getLowestVersion(s)
-	if name == "" {
-		return nil
-	}
-	if version == "" && comp != "" {
-		return nil
-	}
-	if !isValidPackage(name) {
-		return nil
-	}
-
-	return &extractor.Package{
-		Name:     name,
-		Version:  version,
-		PURLType: purl.TypePyPi,
-		Location: extractor.LocationFromPath(
-			filepath.ToSlash(path),
-		),
-		Metadata: &requirements.Metadata{
-			VersionComparator: comp,
-			Requirement:       dep,
-		},
-	}
-}
-
-// ignorePythonSpecifier strips environment markers from a PEP 508 string.
-// TODO: Put in common location for all Python extractors to use (applies to all the below functions).
-func ignorePythonSpecifier(s string) string {
-	return strings.SplitN(s, ";", 2)[0]
-}
-
-// removeExtras strips extras from a PEP 508 package name.
-func removeExtras(s string) string {
-	return reExtras.ReplaceAllString(s, "")
-}
-
-// removeWhiteSpaces removes spaces, tabs, and carriage returns.
-func removeWhiteSpaces(s string) string {
-	return reWhitespace.ReplaceAllString(s, "")
-}
-
-// isValidPackage returns true if s looks like a valid PyPI package name.
-func isValidPackage(s string) bool {
-	return reValidPkg.MatchString(s)
-}
-
-// nameFromRequirement extracts just the package name from a PEP 508 string.
-func nameFromRequirement(s string) string {
-	for _, sep := range []string{"===", "==", ">=", "<=", "~=", "!=", "<"} {
-		s, _, _ = strings.Cut(s, sep)
-	}
-	return s
-}
-
-// getLowestVersion parses a PEP 508 string into name, version, and comparator.
-func getLowestVersion(s string) (name, version, comparator string) {
-	if reUnsupportedConstraints.FindString(s) != "" {
-		return nameFromRequirement(s), "", ""
-	}
-
-	separators := []string{"===", "==", ">=", "<=", "~="}
-	for _, sep := range separators {
-		if strings.Contains(s, sep) {
-			t := strings.SplitN(s, sep, 2)
-			if len(t) != 2 {
-				return "", "", ""
-			}
-			return t[0], t[1], sep
-		}
-	}
-
-	// no version constraint
-	return s, "", ""
 }

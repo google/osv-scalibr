@@ -17,6 +17,7 @@ package metadata_test
 import (
 	"testing"
 
+	"deps.dev/util/maven"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/java/archive/metadata"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -29,11 +30,53 @@ var (
 		ArtifactID: "artifact-id",
 		GroupID:    "group-id",
 		SHA1:       "sha1",
+		Dependencies: []maven.Dependency{
+			{
+				GroupID:    maven.String("group-id-1"),
+				ArtifactID: maven.String("artifact-id-1"),
+				Version:    maven.String("1.0.0"),
+				Scope:      maven.String("compile"),
+				Optional:   "false",
+			},
+			{
+				GroupID:    maven.String("group-id-2"),
+				ArtifactID: maven.String("artifact-id-2"),
+				Version:    maven.String("1.0.0"),
+				Scope:      maven.String("test"),
+				Optional:   "true",
+			},
+		},
+		Parent: &maven.ProjectKey{
+			GroupID:    maven.String("parent-group-id"),
+			ArtifactID: maven.String("parent-artifact-id"),
+			Version:    maven.String("1.0.0"),
+		},
 	}
 	metadataProto1 = &pb.JavaArchiveMetadata{
 		ArtifactId: "artifact-id",
 		GroupId:    "group-id",
 		Sha1:       "sha1",
+		Dependencies: []*pb.JavaLockfileDependency{
+			{
+				GroupId:            "group-id-1",
+				ArtifactId:         "artifact-id-1",
+				VersionRequirement: "1.0.0",
+				Scope:              "compile",
+				IsOptional:         false,
+			},
+			{
+				GroupId:            "group-id-2",
+				ArtifactId:         "artifact-id-2",
+				VersionRequirement: "1.0.0",
+				Scope:              "test",
+				IsOptional:         true,
+			},
+		},
+		Parent: &pb.JavaLockfileParent{
+			GroupId:    "parent-group-id",
+			ArtifactId: "parent-artifact-id",
+			Version:    "1.0.0",
+		},
 	}
 )
 

@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
@@ -131,7 +132,17 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
-		log.Errorf("osrelease.ParseOsRelease(): %v", err)
+		log.Warnf("osrelease.ParseOsRelease(): %v", err)
+	} else {
+		var missing []string
+		for _, k := range []string{"ID", "VERSION_ID"} {
+			if m[k] == "" {
+				missing = append(missing, k)
+			}
+		}
+		if len(missing) > 0 {
+			log.Warnf("os-release is missing key(s): %s", strings.Join(missing, ", "))
+		}
 	}
 
 	scanner := apkutil.NewScanner(input.Reader)

@@ -255,6 +255,10 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 			file: "debian-versions.txt",
 		},
 		{
+			name: "Echo",
+			file: "debian-versions.txt",
+		},
+		{
 			name: "Debian",
 			file: "debian-versions-generated.txt",
 		},

@@ -42,12 +42,14 @@ func TestToProto(t *testing.T) {
 		{
 			desc: "set_all_fields",
 			m: &wheelegg.PythonPackageMetadata{
-				Author:      "some-author",
-				AuthorEmail: "some-author@google.com",
+				Author:       "some-author",
+				AuthorEmail:  "some-author@google.com",
+				RequiresDist: []string{"some-dep", "some-other-dep"},
 			},
 			want: &pb.PythonPackageMetadata{
-				Author:      "some-author",
-				AuthorEmail: "some-author@google.com",
+				Author:       "some-author",
+				AuthorEmail:  "some-author@google.com",
+				RequiresDist: []string{"some-dep", "some-other-dep"},
 			},
 		},
 	}
@@ -89,12 +91,14 @@ func TestToStruct(t *testing.T) {
 		{
 			desc: "all_fields",
 			m: &pb.PythonPackageMetadata{
-				Author:      "some-author",
-				AuthorEmail: "some-author@google.com",
+				Author:       "some-author",
+				AuthorEmail:  "some-author@google.com",
+				RequiresDist: []string{"some-dep", "some-other-dep"},
 			},
 			want: &wheelegg.PythonPackageMetadata{
-				Author:      "some-author",
-				AuthorEmail: "some-author@google.com",
+				Author:       "some-author",
+				AuthorEmail:  "some-author@google.com",
+				RequiresDist: []string{"some-dep", "some-other-dep"},
 			},
 		},
 	}

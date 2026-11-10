@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-
 // Package rpm extracts packages from rpm database.
 package rpm
 
@@ -23,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	rpmdb "github.com/erikvarga/go-rpmdb/pkg"
@@ -165,15 +164,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 	if err != nil {
 		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
 	}
-	if input.Root == "" {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Dir(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
+	// The file got copied to a temporary dir, remove it at the end.
+	defer func() {
+		dir := filepath.Dir(absPath)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		}
+	}()
 	rpmPkgs, err := e.parseRPMDB(ctx, absPath)
 	if err != nil {
 		return nil, fmt.Errorf("ParseRPMDB(%s): %w", absPath, err)
@@ -181,7 +178,17 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 
 	m, err := osrelease.GetOSRelease(input.FS)
 	if err != nil {
-		log.Errorf("osrelease.ParseOsRelease(): %v", err)
+		log.Warnf("osrelease.ParseOsRelease(): %v", err)
+	} else {
+		var missing []string
+		for _, k := range []string{"ID", "VERSION_ID"} {
+			if m[k] == "" {
+				missing = append(missing, k)
+			}
+		}
+		if len(missing) > 0 {
+			log.Warnf("os-release is missing key(s): %s", strings.Join(missing, ", "))
+		}
 	}
 
 	var pkgs []*extractor.Package

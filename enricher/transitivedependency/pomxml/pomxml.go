@@ -55,7 +55,6 @@ const (
 type Enricher struct {
 	DepClient   resolve.Client
 	MavenClient *datasource.MavenRegistryAPIClient
-	IDGenerator extractor.IDGenerator
 }
 
 // Name returns the name of the enricher.
@@ -99,6 +98,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 
 	upstreamRegistry := ""
 	depsdevRequirements := false
+	enableCache := false
 	localRegistry := ""
 	disableGoogleAuth := false
 	if cfg.ProtoConfig != nil {
@@ -109,6 +109,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 	if specific != nil {
 		upstreamRegistry = specific.UpstreamRegistry
 		depsdevRequirements = specific.DepsDevRequirements
+		enableCache = specific.EnableCache
 	}
 
 	httpClient := cfg.ClientFactories.HTTPClient()
@@ -129,6 +130,7 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 		},
 		localRegistry,
 		disableGoogleAuth,
+		enableCache,
 		httpClient,
 		googleClient,
 	)
@@ -144,13 +146,12 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 		}
 		depClient = resolution.NewDepsDevClientWithConn(conn)
 	} else {
-		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient)
+		depClient = resolution.NewMavenRegistryClientWithAPI(mavenClient, enableCache)
 	}
 
 	return &Enricher{
 		DepClient:   depClient,
 		MavenClient: mavenClient,
-		IDGenerator: &extractor.RandomIDGenerator{},
 	}, nil
 }
 
@@ -338,7 +339,7 @@ func (e Enricher) extract(ctx context.Context, packages []*extractor.Package, in
 		return inventory.Inventory{}, fmt.Errorf("failed resolving %v: %s", root, g.Error)
 	}
 
-	nameToID, err := internal.GetNameToIDMapping(g, packages, e.IDGenerator)
+	nameToID, err := internal.GetNameToIDMapping(g, packages)
 	if err != nil {
 		return inventory.Inventory{}, err
 	}

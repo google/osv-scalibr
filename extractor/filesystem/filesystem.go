@@ -103,7 +103,7 @@ type Config struct {
 	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the regex matches a glob, it will be skipped.
-	SkipDirGlob glob.Glob
+	SkipDirGlob *glob.Pattern
 	// Optional: Skip files declared in .gitignore files in source repos.
 	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
@@ -113,7 +113,7 @@ type Config struct {
 	// Optional: Limit for visited inodes. If 0, no limit is applied.
 	MaxInodes int
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
-	MaxFileSize int
+	MaxFileSize int64
 	// Optional: If true, print a detailed analysis of the duration of each extractor.
 	PrintDurationAnalysis bool
 	// Optional: If true, fail the scan if any permission errors are encountered.
@@ -222,6 +222,16 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		// Run extractors on the mounted filesystem using Run
 		mountedInv, mountedStatus, err := Run(ctx, &recConfig)
+		// Collect temporary directories and raw files after traversal for removal,
+		// and close the mounted filesystem so open directory handles are released.
+		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
+			embeddedFS.TempPaths = c.TempPaths()
+		}
+		if c, ok := mountedFS.(io.Closer); ok {
+			if closeErr := c.Close(); closeErr != nil {
+				log.Warnf("Failed to close mounted filesystem %s: %v", embeddedFS.Path, closeErr)
+			}
+		}
 		if err != nil {
 			status = append(status, &plugin.Status{
 				Name:    "EmbeddedFS",
@@ -244,11 +254,6 @@ func runOnScanRoot(ctx context.Context, config *Config, scanRoot *scalibrfs.Scan
 
 		additionalInv.Append(mountedInv)
 		status = plugin.DedupeStatuses(slices.Concat(status, mountedStatus))
-
-		// Collect temporary directories and raw files after traversal for removal.
-		if c, ok := mountedFS.(common.CloserWithTmpPaths); ok {
-			embeddedFS.TempPaths = c.TempPaths()
-		}
 	}
 
 	// Combine inventories
@@ -353,11 +358,11 @@ type walkContext struct {
 	ignoreSubDirs   bool
 	dirsToSkip      map[string]bool // Anything under these paths should be skipped.
 	skipDirRegex    *regexp.Regexp
-	skipDirGlob     glob.Glob
+	skipDirGlob     *glob.Pattern
 	useGitignore    bool
 	maxInodes       int
 	inodesVisited   int
-	maxFileSize     int // In bytes.
+	maxFileSize     int64 // In bytes.
 	dirsVisited     int
 	errorOnFSErrors bool
 
@@ -524,7 +529,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 				if err != nil {
 					return fmt.Errorf("failed to get file size for %q: %w", path, err)
 				}
-				if fSize > int64(wc.maxFileSize) {
+				if fSize > wc.maxFileSize {
 					log.Debugf("Skipping file %q because it has size %d bytes and the maximum is %d bytes", path, fSize, wc.maxFileSize)
 					return nil
 				}
@@ -702,6 +707,9 @@ func stripFromAtLeastOnePrefix(path string, scanRoots []*scalibrfs.ScanRoot) (st
 		if err != nil {
 			return "", err
 		}
+		if !filepath.IsLocal(rel) {
+			continue
+		}
 
 		return rel, nil
 	}
@@ -761,12 +769,17 @@ func (wc *walkContext) printStatus() {
 	wc.lastExtracts = wc.extractCalls
 }
 
-// GetRealPath returns the real absolute path of the file on the scanning host's filesystem.
-// If the file is on a virtual filesystem (e.g. a remote container), it is first copied into a
-// temporary directory on the scanning host's filesystem. It's up to the caller to delete the
-// directory once they're done using it.
+// GetRealPath copies the file into an isolated temporary directory on the scanning host's
+// filesystem and returns its absolute path. It is up to the caller to delete the temporary
+// directory (filepath.Dir(realPath)) once they are done using it.
 func (i *ScanInput) GetRealPath() (string, error) {
 	return scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
+}
+
+// OpenOSFile returns an *os.File handle for the scanned file along with a cleanup function.
+// On real filesystems it opens the file directly without copying it to a temporary directory.
+func (i *ScanInput) OpenOSFile() (*os.File, func() error, error) {
+	return scalibrfs.OpenOSFile(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }
 
 // TODO(b/380419487): This list is not exhaustive. We should add more extensions here.

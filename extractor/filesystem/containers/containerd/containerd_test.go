@@ -29,7 +29,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -284,6 +286,19 @@ func TestExtract(t *testing.T) {
 					// Copy mock content store
 					createFileFromTestData(t, d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256", "4a027e20a3f6606ecdc4a5e412ac16c636d1cdb4b390d92a8265047b6873174c", "testdata/mock_content_store/4a027e20a3f6606ecdc4a5e412ac16c636d1cdb4b390d92a8265047b6873174c")
 					createFileFromTestData(t, d, "var/lib/containerd/io.containerd.content.v1.content/blobs/sha256", "5cdef4ac3335f68428701c14c5f12992f5e3669ce8ab7309257d263eb7a856b1", "testdata/mock_content_store/5cdef4ac3335f68428701c14c5f12992f5e3669ce8ab7309257d263eb7a856b1")
+					for _, layer := range []string{
+						"sha256=4952de04fe7e4a2b63ed8ac879f7bb23cefa98d6005677c59ebd01fe27d02ba2",
+						"sha256=627c009aa11539cb60bc61ce3709ab81059b224674abd8e06f27b26798969155",
+						"sha256=b9390f60b84fa6b5e7772d3c32dd1e141eb12f34e4cd98dd03da87e7552d76fe",
+						"sha256=bced0e9a39b0302b03e79b279a5de8394544197578327bfe3108a989b4a7154e",
+						"sha256=18b09c39ca9f595897956456d144ca812ba219cfe72cee888945b7050fc53b38",
+						"sha256=edcb98f6af683f89a724d9da7bf8927059c91c86db4723a42201cd227340d7b5",
+						"sha256=a8ff6f8cbdfd6741c10dd183560df7212db666db046768b0f05bbc3904515f03",
+					} {
+						if err := os.MkdirAll(filepath.Join(d, "var/lib/containerd/io.containerd.snapshotter.v1.gcfs/snapshotter/layers", layer), 0755); err != nil {
+							t.Fatalf("MkdirAll failed: %v", err)
+						}
+					}
 				} else {
 					createFileFromTestData(t, d, "var/lib/containerd/io.containerd.snapshotter.v1.overlayfs", "metadata.db", tt.snapshotterdbpath)
 				}
@@ -354,6 +369,40 @@ func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInp
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := &filesystem.ScanInput{Path: path, Reader: reader, Root: root, Info: info}
+	input := &filesystem.ScanInput{FS: scalibrfs.DirFS(root), Path: path, Reader: reader, Root: root, Info: info}
 	return input
+}
+
+func TestExtract_SymlinkEscapeRejected(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Skipping test on %s", runtime.GOOS)
+	}
+	data, err := os.ReadFile("testdata/meta_linux_test_single.db")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	relPath := "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, relPath)
+	if err := os.WriteFile(outsidePath, data, 0600); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot: %v", err)
+	}
+	defer root.Close()
+
+	e, err := containerd.New(&cpb.PluginConfig{MaxFileSizeBytes: 500 * units.MiB})
+	if err != nil {
+		t.Fatalf("containerd.New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:   root.FS().(scalibrfs.FS),
+		Path: relPath,
+		Root: scanRoot,
+	}
+	if _, err := e.Extract(t.Context(), input); err == nil {
+		t.Fatal("Extract() succeeded on symlink escaping scan root, want error")
+	}
 }

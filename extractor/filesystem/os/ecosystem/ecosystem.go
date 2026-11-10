@@ -20,6 +20,7 @@ import (
 
 	apkmeta "github.com/google/osv-scalibr/extractor/filesystem/os/apk/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	modulemeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/module/metadata"
 	vmlinuzmeta "github.com/google/osv-scalibr/extractor/filesystem/os/kernel/vmlinuz/metadata"
 	pacmanmeta "github.com/google/osv-scalibr/extractor/filesystem/os/pacman/metadata"
@@ -44,12 +45,18 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *apkmeta.Metadata:
 		// Check for specific distros that use APK but map to different ecosystems.
 		// These checks must come before the version == "" guard because rolling
-		// distros (Wolfi, Chainguard) may not set VERSION_ID in os-release.
+		// distros (Wolfi, Chainguard, MinimOS) may not set VERSION_ID in os-release.
 		if m.OSID == "wolfi" {
 			return osvecosystem.FromEcosystem(osvconstants.EcosystemWolfi)
 		}
 		if m.OSID == "chainguard" {
 			return osvecosystem.FromEcosystem(osvconstants.EcosystemChainguard)
+		}
+		// MinimOS advisories are published under a single unversioned ecosystem on
+		// OSV.dev, so the VERSION_ID (a rolling build date, e.g. 20241031) is not
+		// used as a suffix.
+		if m.OSID == "minimos" {
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemMinimOS)
 		}
 		version := m.ToDistro()
 		if version == "" {
@@ -67,6 +74,11 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpine, Suffix: m.TrimDistroVersion(version)}
 
 	case *dpkgmeta.Metadata:
+		// Echo advisories are published under a single unversioned ecosystem on
+		// OSV.dev, so the VERSION_ID is not used as a suffix.
+		if m.OSID == "echo" {
+			return osvecosystem.FromEcosystem(osvconstants.EcosystemEcho)
+		}
 		namespace = m.ToNamespace()
 		osVersionID = m.OSVersionID
 
@@ -132,6 +144,9 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 	case *modulemeta.Metadata:
 		namespace = m.ToNamespace()
 		osVersionID = m.OSVersionID
+
+	case *freebsdmeta.Metadata:
+		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemFreeBSD, Suffix: m.OSVersionID}
 
 	case *spdxmeta.Metadata:
 		// TODO(#2213): This is temporary while we work on a more unified solution.

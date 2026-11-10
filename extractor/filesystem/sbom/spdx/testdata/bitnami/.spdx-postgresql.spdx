@@ -1,0 +1,43 @@
+{
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "spdxVersion": "SPDX-2.3",
+    "creationInfo": {
+        "created": "1970-01-01T00:00:00Z",
+        "creators": [
+            "Organization: Broadcom Inc. and/or its subsidiaries.",
+            "Tool: Blacksmith-6.60.4"
+        ]
+    },
+    "name": "SPDX document for PostgreSQL 18.4.0",
+    "dataLicense": "CC0-1.0",
+    "documentDescribes": [
+        "SPDXRef-postgresql"
+    ],
+    "documentNamespace": "pkg:bitnami/postgresql@18.4.0-0?arch=amd64&distro=photon-5",
+    "packages": [
+        {
+            "SPDXID": "SPDXRef-postgresql",
+            "name": "postgresql",
+            "versionInfo": "18.4.0-0",
+            "downloadLocation": "https://{\n    name: \"bitnami/.spdx-postgresql.spdx\",\n    path: \"testdata/bitnami/.spdx-postgresql.spdx\",\n    wantPackages: []*extractor.Package{\n        {\n            Name:     \"postgresql\",\n            Version:  \"18.4.0-0\",\n            PURLType: purl.TypeBitnami,\n            Metadata: &spdxmeta.Metadata{\n                PURL: &purl.PackageURL{\n                    Type:    purl.TypeBitnami,\n                    Name:    \"postgresql\",\n                    Version: \"18.4.0-0\",\n                    Qualifiers: purl.QualifiersFromMap(map[string]string{\n                        \"arch\":   \"amd64\",\n                        \"distro\": \"photon-5\",\n                    }),\n                },\n            },\n            Location: extractor.LocationFromPath(\"testdata/bitnami/.spdx-postgresql.spdx\"),\n        },\n    },\n},github.com/postgres/postgres/archive/refs/tags/REL_18_4.tar.gz",
+            "licenseConcluded": "PostgreSQL",
+            "licenseDeclared": "PostgreSQL",
+            "supplier": "Organization: Bitnami",
+            "originator": "Organization: upstream",
+            "primaryPackagePurpose": "LIBRARY",
+            "filesAnalyzed": false,
+            "externalRefs": [
+                {
+                    "referenceCategory": "SECURITY",
+                    "referenceType": "cpe23Type",
+                    "referenceLocator": "cpe:2.3:*:postgresql:postgresql:18.4.0:*:*:*:*:*:*:*"
+                },
+                {
+                    "referenceCategory": "PACKAGE-MANAGER",
+                    "referenceType": "purl",
+                    "referenceLocator": "pkg:bitnami/postgresql@18.4.0-0?arch=amd64&distro=photon-5"
+                }
+            ]
+        }
+    ]
+}

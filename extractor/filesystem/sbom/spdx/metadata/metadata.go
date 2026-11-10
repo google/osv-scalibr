@@ -40,6 +40,7 @@ type Metadata struct {
 	PURL               *purl.PackageURL
 	CPEs               []string
 	ExternalReferences []ExternalReference
+	SPDXID             string
 }
 
 // ToProto converts the SPDX metadata struct to the SPDXPackageMetadata proto.
@@ -57,6 +58,7 @@ func ToProto(m *Metadata) *pb.SPDXPackageMetadata {
 		Purl:               purlproto.ToProto(m.PURL),
 		Cpes:               m.CPEs,
 		ExternalReferences: extRefs,
+		SpdxId:             m.SPDXID,
 	}
 }
 
@@ -78,5 +80,6 @@ func ToStruct(m *pb.SPDXPackageMetadata) *Metadata {
 		PURL:               purlproto.FromProto(m.GetPurl()),
 		CPEs:               m.GetCpes(),
 		ExternalReferences: extRefs,
+		SPDXID:             m.GetSpdxId(),
 	}
 }

@@ -29,6 +29,7 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -188,7 +189,7 @@ func TestExtract(t *testing.T) {
 			if err != nil {
 				t.Fatalf("homebrew.New: %v", err)
 			}
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Reader: nil}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), Path: tt.path, Reader: nil}
 			got, err := e.Extract(t.Context(), input)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Extract(%s) unexpected error (-want +got):\n%s", tt.path, diff)

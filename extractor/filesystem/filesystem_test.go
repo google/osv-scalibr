@@ -25,7 +25,6 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -37,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/inventory/location"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -109,6 +109,20 @@ func TestInitWalkContext(t *testing.T) {
 				"darwin":  {"/scanroot/mydir/", "/myotherroot/mydir/"},
 				"linux":   {"/scanroot/mydir/", "/myotherroot/mydir/"},
 				"windows": {"C:\\scanroot\\mydir\\", "D:\\myotherroot\\mydir\\"},
+			},
+			wantErr: filesystem.ErrNotRelativeToScanRoots,
+		},
+		{
+			desc: "pathsToExtract_sharing_string_prefix_without_separator_raises_error",
+			scanRoots: map[string][]string{
+				"darwin":  {"/scanroot"},
+				"linux":   {"/scanroot"},
+				"windows": {"C:\\scanroot"},
+			},
+			pathsToExtract: map[string][]string{
+				"darwin":  {"/scanroot_other/file1.txt"},
+				"linux":   {"/scanroot_other/file1.txt"},
+				"windows": {"C:\\scanroot_other\\file1.txt"},
 			},
 			wantErr: filesystem.ErrNotRelativeToScanRoots,
 		},
@@ -263,8 +277,8 @@ func TestRun_EmbeddedFS(t *testing.T) {
 
 	// Sort package locations for comparison
 	for _, p := range gotInv.Packages {
-		sort.Slice(p.Location.Related, func(i, j int) bool {
-			return p.Location.Related[i].File.Path < p.Location.Related[j].File.Path
+		slices.SortFunc(p.Location.Related, func(a, b location.Location) int {
+			return strings.Compare(a.File.Path, b.File.Path)
 		})
 	}
 
@@ -283,8 +297,8 @@ func TestRun_EmbeddedFS(t *testing.T) {
 	for _, s := range seen {
 		dedupedStatus = append(dedupedStatus, s)
 	}
-	sort.Slice(dedupedStatus, func(i, j int) bool {
-		return dedupedStatus[i].Name < dedupedStatus[j].Name
+	slices.SortFunc(dedupedStatus, func(a, b *plugin.Status) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	// Compare status
@@ -427,7 +441,7 @@ func TestRunFS(t *testing.T) {
 		skipDirGlob      string
 		skipDirRegex     string
 		maxInodes        int
-		maxFileSizeBytes int
+		maxFileSizeBytes int64
 		wantErr          error
 		wantPkg          inventory.Inventory
 		wantStatus       []*plugin.Status
@@ -879,7 +893,7 @@ func TestRunFS(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			fc := &fakeCollector{}
 			var skipDirRegex *regexp.Regexp
-			var skipDirGlob glob.Glob
+			var skipDirGlob *glob.Pattern
 			if tc.skipDirRegex != "" {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
 			}
@@ -922,8 +936,8 @@ func TestRunFS(t *testing.T) {
 
 			// The order of the locations doesn't matter.
 			for _, p := range gotInv.Packages {
-				sort.Slice(p.Location.Related, func(i, j int) bool {
-					return p.Location.Related[i].File.Path < p.Location.Related[j].File.Path
+				slices.SortFunc(p.Location.Related, func(a, b location.Location) int {
+					return strings.Compare(a.File.Path, b.File.Path)
 				})
 			}
 
@@ -934,8 +948,8 @@ func TestRunFS(t *testing.T) {
 			// The order of the statuses doesn't matter.
 			for _, s := range gotStatus {
 				if s.Status.FileErrors != nil {
-					sort.Slice(s.Status.FileErrors, func(i, j int) bool {
-						return s.Status.FileErrors[i].FilePath < s.Status.FileErrors[j].FilePath
+					slices.SortFunc(s.Status.FileErrors, func(a, b *plugin.FileError) int {
+						return strings.Compare(a.FilePath, b.FilePath)
 					})
 				}
 			}

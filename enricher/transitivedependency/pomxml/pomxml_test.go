@@ -17,7 +17,7 @@ package pomxml_test
 import (
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
@@ -34,13 +34,16 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestEnricher_Enrich(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS("."),
+			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -155,7 +158,6 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -307,10 +309,12 @@ func TestEnricher_Enrich(t *testing.T) {
 //   - no <type> (defaults to jar) → kept
 //   - <type>jar</type> explicit → kept
 func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS("."),
+			FS:   scalibrfs.DirFS(fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -363,7 +367,6 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 
 	enrichy.(*pomxml.Enricher).DepClient = resolutionClient
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 
 	err = enrichy.Enrich(t.Context(), &input, &inv)
 	if err != nil {
@@ -471,6 +474,8 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 }
 
 func TestEnricher_Enrich_LocalModules(t *testing.T) {
+	extractor.SetIDGenerator(&mockidgenerator.MockIDGenerator{})
+
 	tempDir := t.TempDir()
 
 	// Create root parent pom.xml, defining modules a and b
@@ -775,9 +780,8 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		t.Fatalf("failed to create enricher: %v", err)
 	}
 
-	enrichy.(*pomxml.Enricher).IDGenerator = &mockidgenerator.MockIDGenerator{}
 	enrichy.(*pomxml.Enricher).MavenClient = apiClient
-	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient)
+	enrichy.(*pomxml.Enricher).DepClient = resolution.NewMavenRegistryClientWithAPI(apiClient, false)
 
 	// Prepare inventory:
 	// - module-a/pom.xml and pom.xml (parent) are both in starting packages (keeps original coverage of parent registration)
@@ -953,12 +957,8 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 		},
 	}
 
-	sort.Slice(inv.Packages, func(i, j int) bool {
-		return inv.Packages[i].Name < inv.Packages[j].Name
-	})
-	sort.Slice(wantInventory.Packages, func(i, j int) bool {
-		return wantInventory.Packages[i].Name < wantInventory.Packages[j].Name
-	})
+	slices.SortFunc(inv.Packages, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
+	slices.SortFunc(wantInventory.Packages, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
 	if diff := cmp.Diff(wantInventory, inv); diff != "" {
 		t.Errorf("%s.Enrich() diff (-want +got):\n%s", enrichy.Name(), diff)
 	}

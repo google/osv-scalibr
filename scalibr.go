@@ -94,9 +94,9 @@ type ScanConfig struct {
 	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the glob matches a directory, it will be skipped.
-	SkipDirGlob glob.Glob
+	SkipDirGlob *glob.Pattern
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
-	MaxFileSize int
+	MaxFileSize int64
 	// Optional: Skip files declared in .gitignore files in source repos.
 	UseGitignore bool
 	// Optional: stats allows to enter a metric hook. If left nil, no metrics will be recorded.
@@ -238,6 +238,7 @@ func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
 		sro.EndTime = time.Now()
 		return newScanResult(sro)
 	}
+	defer closeScanRoots(cfg.ScanRoots)
 	extractors := pl.FilesystemExtractors(cfg.Plugins)
 	extractors, err := cf.SetupVelesExtractors(extractors)
 	if err != nil {
@@ -378,6 +379,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 			FS: imagefs,
 		},
 	}
+	defer closeScanRoots(cfg.ScanRoots)
 
 	storeAbsPath := cfg.StoreAbsolutePath
 	// We want to store absolute paths in the inventory,
@@ -385,18 +387,22 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	// (always '/' as we only support linux containers)
 	cfg.StoreAbsolutePath = false
 
-	// Suppress running enrichers until after layer details are populated.
+	// Suppress running annotators and enrichers until after layer details are populated.
+	var annotators []annotator.Annotator
 	var enrichers []enricher.Enricher
-	var nonEnricherPlugins []plugin.Plugin
+	var nonDeferredPlugins []plugin.Plugin
 
 	for _, p := range cfg.Plugins {
-		if e, ok := p.(enricher.Enricher); ok {
-			enrichers = append(enrichers, e)
-		} else {
-			nonEnricherPlugins = append(nonEnricherPlugins, p)
+		switch plugin := p.(type) {
+		case annotator.Annotator:
+			annotators = append(annotators, plugin)
+		case enricher.Enricher:
+			enrichers = append(enrichers, plugin)
+		default:
+			nonDeferredPlugins = append(nonDeferredPlugins, plugin)
 		}
 	}
-	cfg.Plugins = nonEnricherPlugins
+	cfg.Plugins = nonDeferredPlugins
 
 	chainLayers, err := img.ChainLayers()
 	if err != nil {
@@ -435,17 +441,31 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 		cims[len(cims)-1].Labels = img.Labels()
 	}
 
+	// Run annotators with the updated inventory.
+	annotatorCfg := &annotator.Config{
+		Annotators: annotators,
+		ScanRoot: &scalibrfs.ScanRoot{
+			FS: imagefs,
+		},
+	}
+	annotatorStatus, err := annotator.Run(ctx, annotatorCfg, &scanResult.Inventory)
+	scanResult.PluginStatus = append(scanResult.PluginStatus, annotatorStatus...)
+	if err != nil {
+		scanResult.Status.Status = plugin.ScanStatusFailed
+		scanResult.Status.FailureReason = err.Error()
+	}
+
 	// Run enrichers with the updated inventory.
 	enrichers, err = ce.SetupVelesEnrichers(enrichers)
 	if err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
-		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+		return scanResult, nil // Errors are returned in the scanResult.
 	}
 	if err := validateEnricherRequirements(enrichers, cfg.Capabilities); err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
-		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+		return scanResult, nil // Errors are returned in the scanResult.
 	}
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
@@ -479,6 +499,18 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	runtime.KeepAlive(img)
 
 	return scanResult, nil
+}
+
+func closeScanRoots(scanRoots []*scalibrfs.ScanRoot) {
+	for _, r := range scanRoots {
+		if r != nil && r.FS != nil {
+			if c, ok := r.FS.(io.Closer); ok {
+				if err := c.Close(); err != nil {
+					log.Warnf("failed to close scan root %q: %v", r.Path, err)
+				}
+			}
+		}
+	}
 }
 
 type newScanResultOptions struct {

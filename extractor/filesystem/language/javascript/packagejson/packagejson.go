@@ -16,6 +16,7 @@
 package packagejson
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -50,12 +51,12 @@ const (
 )
 
 type packageJSON struct {
-	Version      string             `json:"version"`
-	Name         string             `json:"name"`
-	Engines      any                `json:"engines"`
-	Author       *metadata.Person   `json:"author"`
-	Maintainers  []*metadata.Person `json:"maintainers"`
-	Contributors []*metadata.Person `json:"contributors"`
+	Version      string           `json:"version"`
+	Name         string           `json:"name"`
+	Engines      any              `json:"engines"`
+	Author       *metadata.Person `json:"author"`
+	Maintainers  people           `json:"maintainers"`
+	Contributors people           `json:"contributors"`
 	// Not an NPM field but present for VSCode Extension Manifest files.
 	Contributes *struct {
 	} `json:"contributes"`
@@ -64,12 +65,28 @@ type packageJSON struct {
 	Dependencies map[string]string `json:"dependencies"`
 }
 
+// people accepts the usual array of package.json people and the string form
+// used by some published packages. Other top-level JSON types remain errors.
+type people []*metadata.Person
+
+func (p *people) UnmarshalJSON(b []byte) error {
+	b = bytes.TrimSpace(b)
+	if len(b) > 0 && b[0] == '"' {
+		var parsed metadata.Person
+		if err := parsed.UnmarshalJSON(b); err != nil {
+			return err
+		}
+		*p = people{&parsed}
+		return nil
+	}
+	return json.Unmarshal(b, (*[]*metadata.Person)(p))
+}
+
 // Extractor extracts javascript packages from package.json files.
 type Extractor struct {
-	Stats                         stats.Collector
-	maxFileSizeBytes              int64
-	includeDependencies           bool
-	includeDependencyRequirements bool
+	Stats               stats.Collector
+	maxFileSizeBytes    int64
+	includeDependencies bool
 }
 
 // New returns a package.json extractor.
@@ -80,7 +97,6 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 	}
 
 	includeDependencies := false
-	includeDependencyRequirements := false
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.JavascriptPackageJsonConfig {
 		return c.GetJavascriptPackageJson()
 	})
@@ -89,13 +105,11 @@ func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
 			maxFileSizeBytes = specific.GetMaxFileSizeBytes()
 		}
 		includeDependencies = specific.GetIncludeDependencies()
-		includeDependencyRequirements = specific.GetIncludeDependencyRequirements()
 	}
 
 	return &Extractor{
-		maxFileSizeBytes:              maxFileSizeBytes,
-		includeDependencies:           includeDependencies,
-		includeDependencyRequirements: includeDependencyRequirements,
+		maxFileSizeBytes:    maxFileSizeBytes,
+		includeDependencies: includeDependencies,
 	}, nil
 }
 
@@ -210,22 +224,17 @@ func (e Extractor) parse(path string, r io.Reader) ([]*extractor.Package, error)
 	rootLoc := extractor.LocationFromPath(path)
 	rootLoc.Descriptor.File.LineNumber = nameLine
 
-	metadata := &metadata.JavascriptPackageJSONMetadata{
-		Author:       p.Author,
-		Maintainers:  removeEmptyPersons(p.Maintainers),
-		Contributors: removeEmptyPersons(p.Contributors),
-	}
-
-	if e.includeDependencyRequirements {
-		metadata.Dependencies = p.Dependencies
-	}
-
 	pkgs = append(pkgs, &extractor.Package{
 		Name:     p.Name,
 		Version:  p.Version,
 		PURLType: purl.TypeNPM,
 		Location: rootLoc,
-		Metadata: metadata,
+		Metadata: &metadata.JavascriptPackageJSONMetadata{
+			Author:       p.Author,
+			Maintainers:  removeEmptyPersons(p.Maintainers),
+			Contributors: removeEmptyPersons(p.Contributors),
+			Dependencies: p.Dependencies,
+		},
 	})
 
 	if e.includeDependencies {
@@ -295,7 +304,7 @@ func (p packageJSON) isUnityPackage() bool {
 func removeEmptyPersons(persons []*metadata.Person) []*metadata.Person {
 	var result []*metadata.Person
 	for _, p := range persons {
-		if p.Name != "" {
+		if p != nil && p.Name != "" {
 			result = append(result, p)
 		}
 	}

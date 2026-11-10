@@ -22,9 +22,23 @@ import (
 	spb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
 
+func layerAttributeToProto(la *extractor.LayerAttribute) *spb.LayerAttribute {
+	if la == nil {
+		return nil
+	}
+	return &spb.LayerAttribute{
+		Value:  la.Value,
+		Plugin: la.Plugin,
+	}
+}
+
 func layerMetadataToProto(lm *extractor.LayerMetadata) *spb.LayerMetadata {
 	if lm == nil {
 		return nil
+	}
+	var attributes []*spb.LayerAttribute
+	for _, la := range lm.Attributes {
+		attributes = append(attributes, layerAttributeToProto(la))
 	}
 	return &spb.LayerMetadata{
 		Index:          int32(lm.Index),
@@ -33,6 +47,7 @@ func layerMetadataToProto(lm *extractor.LayerMetadata) *spb.LayerMetadata {
 		Command:        lm.Command,
 		IsEmpty:        lm.IsEmpty,
 		BaseImageIndex: int32(lm.BaseImageIndex),
+		Attributes:     attributes,
 	}
 }
 
@@ -64,17 +79,20 @@ func containerImageMetadataToProto(cim *extractor.ContainerImageMetadata) *spb.C
 	if len(cim.BaseImages) > 1 {
 		for _, bi := range cim.BaseImages[1:] {
 			var baseImageDetails []*spb.BaseImageDetails
+			var chainID string
 			for _, bid := range bi {
+				if bid == nil {
+					continue
+				}
+				if chainID == "" && bid.ChainID != "" {
+					chainID = bid.ChainID.String()
+				}
 				baseImageDetails = append(baseImageDetails, baseImageDetailsToProto(bid))
-			}
-			if len(bi) == 0 {
-				// This should never happen
-				continue
 			}
 
 			baseImageChains = append(baseImageChains, &spb.BaseImageChain{
 				BaseImages: baseImageDetails,
-				ChainId:    bi[0].ChainID.String(),
+				ChainId:    chainID,
 			})
 		}
 	}
@@ -85,6 +103,16 @@ func containerImageMetadataToProto(cim *extractor.ContainerImageMetadata) *spb.C
 		LayerMetadata:   layerMetadata,
 		BaseImageChains: baseImageChains,
 		Labels:          cim.Labels,
+	}
+}
+
+func layerAttributeToStruct(la *spb.LayerAttribute) *extractor.LayerAttribute {
+	if la == nil {
+		return nil
+	}
+	return &extractor.LayerAttribute{
+		Value:  la.GetValue(),
+		Plugin: la.GetPlugin(),
 	}
 }
 
@@ -100,6 +128,10 @@ func layerMetadataToStruct(lm *spb.LayerMetadata) *extractor.LayerMetadata {
 	if err != nil {
 		log.Errorf("Failed to parse chain ID %q: %v", lm.GetChainId(), err)
 	}
+	var attributes []*extractor.LayerAttribute
+	for _, la := range lm.GetAttributes() {
+		attributes = append(attributes, layerAttributeToStruct(la))
+	}
 	return &extractor.LayerMetadata{
 		Index:          int(lm.GetIndex()),
 		DiffID:         diffID,
@@ -107,6 +139,7 @@ func layerMetadataToStruct(lm *spb.LayerMetadata) *extractor.LayerMetadata {
 		Command:        lm.GetCommand(),
 		IsEmpty:        lm.GetIsEmpty(),
 		BaseImageIndex: int(lm.GetBaseImageIndex()),
+		Attributes:     attributes,
 	}
 }
 
@@ -138,14 +171,21 @@ func containerImageMetadataToStruct(cim *spb.ContainerImageMetadata) *extractor.
 	baseImageChains := cim.GetBaseImageChains()
 	if len(baseImageChains) > 1 {
 		for _, bic := range baseImageChains[1:] {
-			chainID, err := digest.Parse(bic.GetChainId())
-			if err != nil {
-				log.Errorf("Failed to parse chain ID %q: %v", bic.GetChainId(), err)
-				continue
+			var chainID digest.Digest
+			if bic.GetChainId() != "" {
+				parsedChainID, err := digest.Parse(bic.GetChainId())
+				if err != nil {
+					log.Errorf("Failed to parse chain ID %q: %v", bic.GetChainId(), err)
+				} else {
+					chainID = parsedChainID
+				}
 			}
 
 			var baseImageDetails []*extractor.BaseImageDetails
 			for _, bid := range bic.GetBaseImages() {
+				if bid == nil {
+					continue
+				}
 				baseImageDetails = append(baseImageDetails, baseImageDetailsToStruct(bid, chainID))
 			}
 			baseImages = append(baseImages, baseImageDetails)

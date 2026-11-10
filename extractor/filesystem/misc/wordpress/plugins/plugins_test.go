@@ -57,6 +57,11 @@ func TestFileRequired(t *testing.T) {
 			wantResultMetric: stats.FileRequiredResultOK,
 		},
 		{
+			name:         "required_in_sub_subdir",
+			path:         "foo/test/bar/wp-content/plugins/foo/inc/test.php",
+			wantRequired: false,
+		},
+		{
 			name:         "not_required",
 			path:         "test.php",
 			wantRequired: false,
@@ -92,6 +97,17 @@ func TestFileRequired(t *testing.T) {
 			maxFileSizeBytes: 0,
 			wantRequired:     true,
 			wantResultMetric: stats.FileRequiredResultOK,
+		},
+		// wordpress does not support directory plugins in mu-plugins
+		{
+			name:         "mu_plugins",
+			path:         "foo/test/bar/wp-content/mu-plugins/foo/test.php",
+			wantRequired: false,
+		},
+		{
+			name:         "mu_plugins",
+			path:         "foo/test/bar/wp-content/mu-plugins/test.php",
+			wantRequired: false,
 		},
 	}
 
@@ -131,16 +147,30 @@ func TestExtract(t *testing.T) {
 		{
 			Name: "valid_plugin_file",
 			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/valid",
+				Path: "testdata/akismet/valid",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "Akismet Anti-spam: Spam Protection",
+					Name:     "akismet",
 					Version:  "5.3",
 					PURLType: purl.TypeWordpress,
-					Location: extractor.LocationFromPath("testdata/valid"),
+					Location: extractor.LocationFromPath("testdata/akismet/valid"),
 				},
 			},
+		},
+		{
+			Name: "no_name",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/akismet/no-name",
+			},
+			WantPackages: nil,
+		},
+		{
+			Name: "no_version",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/akismet/no-version",
+			},
+			WantPackages: nil,
 		},
 		{
 			Name: "invalid_file",

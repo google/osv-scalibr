@@ -143,6 +143,7 @@ func SecretToProto(s *inventory.Secret) (*spb.Secret, error) {
 		Secret: sec,
 		Status: res,
 		// TODO(b/400910349) Remove once integrators no longer read this field.
+		//nolint:staticcheck // nolint:SA1019
 		Locations: []*spb.LocationLegacy{locationToLegacyProto(&s.Location)},
 		Location:  LocationToProto(&s.Location),
 	}, nil

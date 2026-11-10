@@ -51,7 +51,7 @@ func TestNpmRegistryClient(t *testing.T) {
 		"//"+strings.TrimPrefix(srv2.URL, "http://")+"/:_authToken="+authToken,
 	)
 
-	cl, err := datasource.NewNPMRegistryAPIClient(filepath.Dir(npmrcFile))
+	cl, err := datasource.NewNPMRegistryAPIClient(filepath.Dir(npmrcFile), nil)
 	if err != nil {
 		t.Fatalf("failed creating npm api client: %v", err)
 	}

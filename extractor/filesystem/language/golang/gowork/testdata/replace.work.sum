@@ -1,0 +1,8 @@
+example.com/bad/thing v1.4.5 h1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=
+example.com/bad/thing v1.4.5/go.mod h1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=
+example.com/any/version v1.0.0 h1:ccccccccccccccccccccccccccccccccccccccccccc=
+example.com/any/version v1.0.0/go.mod h1:ddddddddddddddddddddddddddddddddddddddddddd=
+example.com/any/version v1.1.0 h1:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee=
+example.com/any/version v1.1.0/go.mod h1:fffffffffffffffffffffffffffffffffffffffffff=
+example.com/local/thing v1.0.0 h1:ggggggggggggggggggggggggggggggggggggggggggg=
+example.com/local/thing v1.0.0/go.mod h1:hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh=

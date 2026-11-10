@@ -17,6 +17,7 @@ package python
 
 import (
 	"errors"
+	"os"
 
 	"deps.dev/util/resolve"
 	"github.com/google/osv-scalibr/fs"
@@ -47,6 +48,6 @@ func (r readWriter) Read(path string, fsys fs.FS) (*resolve.Graph, error) {
 }
 
 // Write is not supported as intended for requirements.txt.
-func (r readWriter) Write(path string, fsys fs.FS, patches []result.Patch, outputPath string) error {
+func (r readWriter) Write(path string, fsys fs.FS, patches []result.Patch, outputRoot *os.Root, outputPath string) error {
 	return errors.New("not supported")
 }

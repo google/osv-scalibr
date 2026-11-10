@@ -17,6 +17,7 @@ package osvlocal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -29,7 +30,6 @@ import (
 	"github.com/google/osv-scalibr/inventory/vex"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/plugin/config"
-	scalibrversion "github.com/google/osv-scalibr/version"
 )
 
 const (
@@ -44,7 +44,6 @@ var _ enricher.Enricher = &Enricher{}
 type Enricher struct {
 	zippedDBRemoteHost string
 
-	userAgent  string
 	localPath  string
 	download   bool
 	httpClient *http.Client
@@ -60,14 +59,9 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 		return nil, fmt.Errorf("HTTP client is nil for %s", Name)
 	}
 
-	userAgent := "osv-scalibr/" + scalibrversion.ScannerVersion
 	remoteHost := "https://osv-vulnerabilities.storage.googleapis.com"
 	localPath := ""
 	download := true
-
-	if cfg.ProtoConfig != nil && cfg.ProtoConfig.UserAgent != "" {
-		userAgent = cfg.ProtoConfig.UserAgent
-	}
 
 	specific := plugin.FindConfig(cfg.ProtoConfig, func(c *cpb.PluginSpecificConfig) *cpb.OSVLocalConfig { return c.GetOsvlocal() })
 	if specific != nil {
@@ -78,7 +72,6 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 
 	return &Enricher{
 		zippedDBRemoteHost: remoteHost,
-		userAgent:          userAgent,
 		localPath:          localPath,
 		download:           download,
 		httpClient:         httpClient,
@@ -88,7 +81,6 @@ func New(cfg *config.PluginConfig) (enricher.Enricher, error) {
 func newForTesting(zippedDBRemoteHost string) enricher.Enricher {
 	return &Enricher{
 		zippedDBRemoteHost: zippedDBRemoteHost,
-		userAgent:          "",
 		localPath:          "",
 		download:           true,
 		httpClient:         http.DefaultClient,
@@ -107,8 +99,9 @@ func (Enricher) Version() int {
 
 // Requirements of the Enricher.
 // Needs network access if database downloading is enabled.
+// Otherwise, defaults to NetworkAny because this enricher does not require the whole scan to be offline.
 func (e Enricher) Requirements() *plugin.Capabilities {
-	network := plugin.NetworkOffline
+	network := plugin.NetworkAny
 
 	if e.download {
 		network = plugin.NetworkOnline
@@ -133,7 +126,6 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	}
 	dbs, err := newlocalMatcher(
 		e.localPath,
-		e.userAgent,
 		e.download,
 		e.zippedDBRemoteHost,
 		e.httpClient,
@@ -147,7 +139,12 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		vulns, err := dbs.MatchVulnerabilities(ctx, pkg, inv.Packages)
 
 		if err != nil {
-			return err
+			// Abort immediately if the context was cancelled
+			// otherwise continue matching packages so one failed DB doesn't prevent us from matching other ecosystems.
+			if ctx.Err() != nil {
+				return err
+			}
+			continue
 		}
 
 		for _, vuln := range vulns {
@@ -163,6 +160,14 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	// It's possible for other enrichers/detectors to have already added the same vulnerability
 	// for the same package, so we deduplicate and merge the results.
 	inv.PackageVulns = dedupPackageVulns(inv.PackageVulns)
+
+	if len(dbs.failedDBs) > 0 {
+		errs := make([]error, 0, len(dbs.failedDBs))
+		for _, eco := range slices.Sorted(maps.Keys(dbs.failedDBs)) {
+			errs = append(errs, dbs.failedDBs[eco])
+		}
+		return errors.Join(errs...)
+	}
 
 	return nil
 }

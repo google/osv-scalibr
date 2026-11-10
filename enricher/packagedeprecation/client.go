@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	grpcpb "deps.dev/api/v3alpha"
+	pb "deps.dev/api/v3alpha"
 	"github.com/google/osv-scalibr/log"
 )
 
@@ -44,18 +44,18 @@ type Response struct {
 
 // VersionKey contains the components to query a package version on deps.dev.
 type VersionKey struct {
-	System  grpcpb.System
+	System  pb.System
 	Name    string
 	Version string
 }
 
 // GRPCClient is the GRPC client for deps.dev.
 type GRPCClient struct {
-	client grpcpb.InsightsClient
+	client pb.InsightsClient
 }
 
 // NewClient returns a new GRPCClient for deps.dev
-func NewClient(c grpcpb.InsightsClient) *GRPCClient {
+func NewClient(c pb.InsightsClient) *GRPCClient {
 	return &GRPCClient{client: c}
 }
 

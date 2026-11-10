@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/enricher/baseimage"
 	el "github.com/google/osv-scalibr/enricher/enricherlist"
+	"github.com/google/osv-scalibr/enricher/os/ubuntu/binarytosource"
 	"github.com/google/osv-scalibr/plugin/config/configtest"
 )
 
@@ -54,6 +55,11 @@ func TestEnrichersFromName(t *testing.T) {
 			desc: "Find_all_extractors_of_a_type",
 			name: "layerdetails",
 			want: []string{baseimage.Name},
+		},
+		{
+			desc: "Find_OS_package_metadata_enrichers",
+			name: "ospackagemetadata",
+			want: []string{binarytosource.Name},
 		},
 		{
 			desc:    "Nonexistent plugin",

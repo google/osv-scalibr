@@ -166,12 +166,21 @@ func parseYarnPackageGroup(desc *packageDescription) *extractor.Package {
 		log.Errorf("Failed to determine version of %s while parsing a yarn.lock", name)
 	}
 
+	purlType := purl.TypeNPM
+	commit := commitextractor.TryExtractCommit(resolution)
+	var repo string
+	if commit != "" {
+		purlType = purl.TypeGit
+		repo = commitextractor.TryExtractRepo(resolution)
+	}
+
 	return &extractor.Package{
 		Name:     name,
 		Version:  version,
-		PURLType: purl.TypeNPM,
+		PURLType: purlType,
 		SourceCode: &extractor.SourceCodeIdentifier{
-			Commit: commitextractor.TryExtractCommit(resolution),
+			Commit: commit,
+			Repo:   repo,
 		},
 	}
 }
@@ -224,6 +233,10 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		}
 		if strings.HasSuffix(group.header, "@workspace:.\":") {
 			// This is the root package itself.
+			continue
+		}
+		if strings.Contains(strings.TrimSuffix(group.header, ":"), "@patch:") {
+			// patched packages are also listed under the locator they patch
 			continue
 		}
 		pkg := parseYarnPackageGroup(group)

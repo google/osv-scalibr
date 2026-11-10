@@ -1,0 +1,20 @@
+.{
+    .name = .multiline_pkg,
+    .version =
+    \\1.2.3
+    ,
+    .fingerprint = 0xf73eae912b707c24,
+    .dependencies = .{
+        .zigrc = .{
+            .url = "git+https://github.com/Aandreba/zigrc/#b1e98f1cc506e975bdb27341c27d920021e7b4d8",
+            .hash =
+            \\zigrc-1.0.0-lENlWzvQAACulrbkL9PVhWjFsWSkYhi7AmfSbCM-2Xlh
+            ,
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

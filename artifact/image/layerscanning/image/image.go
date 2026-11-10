@@ -27,10 +27,12 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"archive/tar"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -184,9 +186,41 @@ func (img *Image) Size() int64 {
 	return img.size
 }
 
+// V1ImageFromRemoteName creates a v1.Image from a remote container image name.
+func V1ImageFromRemoteName(imageName string, imageOptions ...remote.Option) (v1.Image, error) {
+	imageName = strings.TrimPrefix(imageName, "https://")
+	var image v1.Image
+	if strings.Contains(imageName, "@") {
+		// Pull from a digest name.
+		ref, err := name.NewDigest(imageName)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse digest: %w", err)
+		}
+		descriptor, err := remote.Get(ref, imageOptions...)
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t pull remote image %s: %w", ref, err)
+		}
+		image, err = descriptor.Image()
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t parse image manifest %s: %w", ref, err)
+		}
+	} else {
+		// Pull from a tag.
+		tag, err := name.NewTag(imageName)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse image reference: %w", err)
+		}
+		image, err = remote.Image(tag, imageOptions...)
+		if err != nil {
+			return nil, fmt.Errorf("couldn’t pull remote image %s: %w", tag, err)
+		}
+	}
+	return image, nil
+}
+
 // FromRemoteName creates an Image from a remote container image name.
 func FromRemoteName(imageName string, config *Config, imageOptions ...remote.Option) (*Image, error) {
-	v1Image, err := scalibrimage.V1ImageFromRemoteName(imageName, imageOptions...)
+	v1Image, err := V1ImageFromRemoteName(imageName, imageOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load image from remote name %q: %w", imageName, err)
 	}
@@ -366,9 +400,7 @@ func FromV1Image(v1Image v1.Image, config *Config) (*Image, error) {
 
 	// Reverse loop through the layers to start from the latest layer first. This allows us to skip
 	// all files already seen.
-	for i := len(chainLayers) - 1; i >= 0; i-- {
-		chainLayer := chainLayers[i]
-
+	for i, chainLayer := range slices.Backward(chainLayers) {
 		// If the layer is empty, then there is nothing to do.
 		if chainLayer.latestLayer.IsEmpty() {
 			continue
@@ -589,7 +621,6 @@ func fillChainLayersWithFilesFromTar(img *Image, tarReader *tar.Reader, chainLay
 
 		// Check if the file is a whiteout.
 		isWhiteout := whiteout.IsWhiteout(basename)
-		// TODO(b/379094217): Handle Opaque Whiteouts
 		if isWhiteout {
 			basename = whiteout.ToPath(basename)
 		}
@@ -790,7 +821,6 @@ func fillChainLayersWithVirtualFile(chainLayersToFill []*chainLayer, newNode *vi
 }
 
 // inWhiteoutDir returns whether the file is in a whiteout directory.
-// TODO(b/379094217): Verify that this works for opaque whiteouts.
 func inWhiteoutDir(layer *chainLayer, filePath string) bool {
 	for filePath != "" {
 		dirname := path.Dir(filePath)

@@ -34,6 +34,7 @@ type NPMRegistryAPIClient struct {
 	// This should only be written to when the client is first being created.
 	// Other functions should not modify it & it is not covered by the mutex.
 	registries NPMRegistryConfig
+	httpClient *http.Client
 
 	// cache fields
 	mu             sync.Mutex
@@ -43,13 +44,17 @@ type NPMRegistryAPIClient struct {
 
 // NewNPMRegistryAPIClient returns a new NPMRegistryAPIClient.
 // projectDir is the directory (on disk) to read the project-level .npmrc config file from (for registries).
-func NewNPMRegistryAPIClient(projectDir string) (*NPMRegistryAPIClient, error) {
+func NewNPMRegistryAPIClient(projectDir string, httpClient *http.Client) (*NPMRegistryAPIClient, error) {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
 	registryConfig, err := LoadNPMRegistryConfig(projectDir)
 	if err != nil {
 		return nil, err
 	}
 	return &NPMRegistryAPIClient{
 		registries: registryConfig,
+		httpClient: httpClient,
 		details:    NewRequestCache[string, npmRegistryPackageDetails](),
 	}, nil
 }
@@ -87,7 +92,7 @@ func (c *NPMRegistryAPIClient) FullJSON(ctx context.Context, pkg, version string
 }
 
 func (c *NPMRegistryAPIClient) get(ctx context.Context, urlComponents ...string) (gjson.Result, error) {
-	resp, err := c.registries.MakeRequest(ctx, http.DefaultClient, urlComponents...)
+	resp, err := c.registries.MakeRequest(ctx, c.httpClient, urlComponents...)
 	if err != nil {
 		return gjson.Result{}, err
 	}

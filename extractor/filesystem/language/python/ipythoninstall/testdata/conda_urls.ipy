@@ -1,0 +1,3 @@
+%conda install https://conda.anaconda.org/conda-forge/linux-64/requests-2.32.3-pyhd8ed1ab_0.conda https://repo.anaconda.com/pkgs/main/linux-64/certifi-2025.4.26-py313h06a4308_0.tar.bz2 plainpkg=1.2.3
+%mamba install https://conda.anaconda.org/conda-forge/noarch/jupyterlab-4.3.0-pyhd8ed1ab_0.conda
+%pip install https://example.test/packages/not-a-conda-install-1.0.0-py_0.conda

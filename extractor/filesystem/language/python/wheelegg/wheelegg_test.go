@@ -296,6 +296,42 @@ func TestExtract(t *testing.T) {
 			}},
 		},
 		{
+			name: "with_dependencies",
+			path: "testdata/pyopenssl-26.0.0.dist-info",
+			wantPackages: []*extractor.Package{{
+				Name:     "pyOpenSSL",
+				Version:  "26.0.0",
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPathAndLine("testdata/pyopenssl-26.0.0.dist-info", 2),
+				Metadata: &wheelegg.PythonPackageMetadata{
+					Author:      "The pyOpenSSL developers",
+					AuthorEmail: "cryptography-dev@python.org",
+					RequiresDist: []string{
+						"cryptography<47,>=46.0.0",
+						"typing-extensions>=4.9; python_version < \"3.13\" and python_version >= \"3.8\"",
+						"pytest-rerunfailures; extra == \"test\"",
+						"pretend; extra == \"test\"",
+						"pytest>=3.0.1; extra == \"test\"",
+						"sphinx!=5.2.0,!=5.2.0.post0,!=7.2.5; extra == \"docs\"",
+						"sphinx_rtd_theme; extra == \"docs\"",
+					},
+				},
+			}},
+		},
+		{
+			name: "repeated_pkginfo",
+			path: "testdata/repeated_pkginfo",
+			wantPackages: []*extractor.Package{{
+				Name:     "root",
+				Version:  "1.0.0", // Keep the first occurrence, ignore the others.
+				PURLType: purl.TypePyPi,
+				Location: extractor.LocationFromPathAndLine("testdata/repeated_pkginfo", 2),
+				Metadata: &wheelegg.PythonPackageMetadata{
+					RequiresDist: []string{"dep3", "dep2", "dep1"},
+				},
+			}},
+		},
+		{
 			name:             "empty file",
 			path:             "testdata/empty",
 			wantErr:          cmpopts.AnyError,
@@ -306,7 +342,7 @@ func TestExtract(t *testing.T) {
 	for _, tt := range tests {
 		// Note the subtest here
 		t.Run(tt.name, func(t *testing.T) {
-			fsys := scalibrfs.DirFS(".")
+			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
 
 			r, err := fsys.Open(tt.path)
 			defer func() {
@@ -325,7 +361,7 @@ func TestExtract(t *testing.T) {
 
 			collector := testcollector.New()
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: fsys, Path: tt.path, Info: info, Reader: r}
 			e, err := wheelegg.New(&cpb.PluginConfig{})
 			if err != nil {
 				t.Fatalf("wheelegg.New() error: %v", err)
@@ -419,7 +455,7 @@ func TestExtractWithoutReadAt(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: noReadAt}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), Path: tt.path, Info: info, Reader: noReadAt}
 			got, err := e.Extract(t.Context(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
@@ -463,7 +499,7 @@ func TestExtractErrorsWithFakeFiles(t *testing.T) {
 
 			collector := testcollector.New()
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: scalibrfs.DirFS(fakefs.CopyTestData(t, ".")), Path: tt.path, Info: info, Reader: r}
 			e, err := wheelegg.New(&cpb.PluginConfig{})
 			if err != nil {
 				t.Fatalf("wheelegg.New() error: %v", err)
@@ -507,7 +543,7 @@ func (r reader) Stat() (fs.FileInfo, error) {
 }
 
 func TestExtractEggWithoutSize(t *testing.T) {
-	fsys := scalibrfs.DirFS(".")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
 	path := "testdata/monotonic-1.6-py3.10.egg"
 
 	r, err := fsys.Open(path)
@@ -524,7 +560,7 @@ func TestExtractEggWithoutSize(t *testing.T) {
 	// egg file.
 	var info fs.FileInfo
 
-	input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: path, Info: info, Reader: r}
+	input := &filesystem.ScanInput{FS: fsys, Path: path, Info: info, Reader: r}
 	e := wheelegg.Extractor{}
 	_, gotErr := e.Extract(t.Context(), input)
 	wantErr := wheelegg.ErrSizeNotSet

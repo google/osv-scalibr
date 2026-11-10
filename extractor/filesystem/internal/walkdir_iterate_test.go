@@ -22,7 +22,7 @@ import (
 	pathpkg "path"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -155,7 +155,7 @@ func TestIssue51617(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []string{".", "a", "a/bad", "a/next"}
-	sort.Strings(saw)
+	slices.Sort(saw)
 	if !reflect.DeepEqual(saw, want) {
 		t.Errorf("got directories %v, want %v", saw, want)
 	}

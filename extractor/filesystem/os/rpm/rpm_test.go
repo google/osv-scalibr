@@ -20,8 +20,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -44,11 +43,6 @@ import (
 )
 
 func TestFileRequired(t *testing.T) {
-	// supported OSes
-	if runtime.GOOS == "windows" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name             string
 		path             string
@@ -173,11 +167,6 @@ SUPPORT_END=2024-05-14
 VARIANT="Container Image"`
 
 func TestExtract(t *testing.T) {
-	// supported OSes
-	if runtime.GOOS == "windows" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name       string
 		path       string
@@ -560,7 +549,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			pkgs := got.Packages
-			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			slices.SortFunc(pkgs, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
 			gotFirst3 := pkgs[:min(len(pkgs), 3)]
 			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tmpPath, diff)
@@ -588,11 +577,6 @@ func TestExtract(t *testing.T) {
 }
 
 func TestExtract_VirtualFilesystem(t *testing.T) {
-	// supported OSes
-	if runtime.GOOS == "windows" {
-		t.Skipf("Test skipped, OS unsupported: %v", runtime.GOOS)
-	}
-
 	tests := []struct {
 		name       string
 		path       string
@@ -881,7 +865,7 @@ func TestExtract_VirtualFilesystem(t *testing.T) {
 			}
 
 			pkgs := got.Packages
-			sort.Slice(pkgs, func(i, j int) bool { return pkgs[i].Name < pkgs[j].Name })
+			slices.SortFunc(pkgs, func(a, b *extractor.Package) int { return strings.Compare(a.Name, b.Name) })
 			gotFirst3 := pkgs[:min(len(pkgs), 3)]
 			if diff := cmp.Diff(tt.wantPackages, gotFirst3); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)

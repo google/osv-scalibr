@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/url"
 	"path"
 	"path/filepath"
 	"slices"
@@ -31,7 +32,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
-	"github.com/google/osv-scalibr/extractor/filesystem/osv"
+	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/metadata"
 	"github.com/google/osv-scalibr/internal/dependencyfile/packagelockjson"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -54,7 +55,9 @@ type packageDetails struct {
 	Name      string
 	Version   string
 	Commit    string
+	Repo      string
 	DepGroups []string
+	Source    metadata.NPMPackageSource
 	Line      int
 }
 
@@ -81,11 +84,27 @@ func mergeNpmDepsGroups(a, b packageDetails) []string {
 	return slices.Compact(combined)
 }
 
+func sourcePriority(s metadata.NPMPackageSource) int {
+	switch s {
+	case metadata.PublicRegistry:
+		return 3
+	case metadata.Other:
+		return 2
+	case metadata.Local:
+		return 1
+	default:
+		return 0
+	}
+}
+
 func (pdm npmPackageDetailsMap) add(key string, details packageDetails) {
 	existing, ok := pdm[key]
 
 	if ok {
 		details.DepGroups = mergeNpmDepsGroups(existing, details)
+		if sourcePriority(existing.Source) > sourcePriority(details.Source) {
+			details.Source = existing.Source
+		}
 	}
 
 	pdm[key] = details
@@ -107,6 +126,7 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 		version := detail.Version
 		finalVersion := version
 		commit := ""
+		repo := ""
 
 		// If the package is aliased, get the name and version
 		// E.g. npm:string-width@^4.2.0
@@ -116,11 +136,14 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			finalVersion = detail.Version[i+1:]
 		}
 
-		// we can't resolve a version from a "file:" dependency
-		if strings.HasPrefix(detail.Version, "file:") {
+		// we can't resolve a version from a "file:" or "link:" dependency
+		if isLocalVersion(detail.Version) {
 			finalVersion = ""
 		} else {
 			commit = commitextractor.TryExtractCommit(detail.Version)
+			if commit == "" && detail.Resolved != "" {
+				commit = commitextractor.TryExtractCommit(detail.Resolved)
+			}
 
 			// if there is a commit, we want to deduplicate based on that rather than
 			// the version (the versions must match anyway for the commits to match)
@@ -129,6 +152,10 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			if commit != "" {
 				finalVersion = ""
 				version = commit
+				repo = commitextractor.TryExtractRepo(detail.Version)
+				if repo == "" && detail.Resolved != "" {
+					repo = commitextractor.TryExtractRepo(detail.Resolved)
+				}
 			}
 		}
 
@@ -137,11 +164,18 @@ func parseNpmLockDependencies(dependencies map[string]packagelockjson.Dependency
 			line = finder.LineOf(currentPath)
 		}
 
+		source := DeterminePackageSource(detail.Resolved, commit)
+		if isLocalVersion(detail.Version) {
+			source = metadata.Local
+		}
+
 		details.add(name+"@"+version, packageDetails{
 			Name:      name,
 			Version:   finalVersion,
 			Commit:    commit,
+			Repo:      repo,
 			DepGroups: detail.DepGroups(),
+			Source:    source,
 			Line:      line,
 		})
 	}
@@ -160,11 +194,67 @@ func extractNpmPackageName(name string) string {
 	return pkgName
 }
 
+// isGit checks if the package was resolved from a git repository or commit.
+func isGit(raw, commit string) bool {
+	if commit != "" {
+		return true
+	}
+	lower := strings.ToLower(raw)
+	return strings.HasPrefix(lower, "git+") ||
+		strings.HasPrefix(lower, "git://") ||
+		strings.HasPrefix(lower, "git@") ||
+		strings.HasPrefix(lower, "ssh://") ||
+		strings.HasPrefix(lower, "github:") ||
+		strings.HasPrefix(lower, "gitlab:") ||
+		strings.HasPrefix(lower, "bitbucket:") ||
+		strings.HasSuffix(lower, ".git") ||
+		strings.Contains(lower, ".git#")
+}
+
+// isHTTP checks if the raw string is an HTTP or HTTPS URL.
+func isHTTP(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	return (strings.EqualFold(u.Scheme, "http") || strings.EqualFold(u.Scheme, "https")) && u.Host != ""
+}
+
+func isLocalVersion(version string) bool {
+	return strings.HasPrefix(version, "file:") || strings.HasPrefix(version, "link:")
+}
+
+// isNodeModulesPath checks whether a lockfile v2/v3 package key is inside a node_modules directory.
+// Entries outside node_modules (e.g. "packages/auth" or "deps/etag") represent local workspace
+// or file directory packages rather than installed registry packages.
+func isNodeModulesPath(namePath string) bool {
+	return slices.Contains(strings.Split(namePath, "/"), "node_modules")
+}
+
+// DeterminePackageSource determines the source of an npm package based on its resolved field and commit.
+// If resolved and commit are both empty, it defaults to public registry (e.g. when
+// omit-lockfile-registry-resolved=true is set in .npmrc).
+// If it is an HTTP or HTTPS endpoint containing "npm", it is classified as a public registry.
+// Otherwise, if it is an HTTP or git endpoint, it is classified as other.
+// Anything else (e.g. local directory, file: protocol) is classified as local.
+func DeterminePackageSource(resolved, commit string) metadata.NPMPackageSource {
+	if isHTTP(resolved) && strings.Contains(strings.ToLower(resolved), "npm") {
+		return metadata.PublicRegistry
+	}
+	if isHTTP(resolved) || isGit(resolved, commit) {
+		return metadata.Other
+	}
+	if resolved == "" {
+		return metadata.PublicRegistry
+	}
+	return metadata.Local
+}
+
 func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *linefinder.JSONLineFinder) map[string]packageDetails {
 	details := npmPackageDetailsMap{}
 
 	for namePath, detail := range packages {
-		if namePath == "" {
+		if namePath == "" || detail.Link {
 			continue
 		}
 
@@ -176,11 +266,19 @@ func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *l
 		finalVersion := detail.Version
 
 		commit := commitextractor.TryExtractCommit(detail.Resolved)
+		repo := ""
+		if commit == "" && detail.Version != "" {
+			commit = commitextractor.TryExtractCommit(detail.Version)
+		}
 
 		// if there is a commit, we want to deduplicate based on that rather than
 		// the version (the versions must match anyway for the commits to match)
 		if commit != "" {
 			finalVersion = commit
+			repo = commitextractor.TryExtractRepo(detail.Resolved)
+			if repo == "" && detail.Version != "" {
+				repo = commitextractor.TryExtractRepo(detail.Version)
+			}
 		}
 
 		line := 0
@@ -188,11 +286,18 @@ func parseNpmLockPackages(packages map[string]packagelockjson.Package, finder *l
 			line = finder.LineOf("packages." + gjson.Escape(namePath))
 		}
 
+		source := DeterminePackageSource(detail.Resolved, commit)
+		if isLocalVersion(detail.Version) || (detail.Resolved == "" && !isNodeModulesPath(namePath)) {
+			source = metadata.Local
+		}
+
 		details.add(finalName+"@"+finalVersion, packageDetails{
 			Name:      finalName,
 			Version:   detail.Version,
 			Commit:    commit,
+			Repo:      repo,
 			DepGroups: detail.DepGroups(),
+			Source:    source,
 			Line:      line,
 		})
 	}
@@ -334,15 +439,22 @@ func (e Extractor) extractPkgLock(_ context.Context, input *filesystem.ScanInput
 			pkg.DepGroups = []string{}
 		}
 
+		purlType := purl.TypeNPM
+		if pkg.Commit != "" {
+			purlType = purl.TypeGit
+		}
+
 		result[i] = &extractor.Package{
 			Name: pkg.Name,
 			SourceCode: &extractor.SourceCodeIdentifier{
 				Commit: pkg.Commit,
+				Repo:   pkg.Repo,
 			},
 			Version:  pkg.Version,
-			PURLType: purl.TypeNPM,
-			Metadata: &osv.DepGroupMetadata{
+			PURLType: purlType,
+			Metadata: &metadata.JavascriptPackageMetadata{
 				DepGroupVals: pkg.DepGroups,
+				Source:       pkg.Source,
 			},
 			Location: extractor.LocationFromPathAndLine(input.Path, pkg.Line),
 		}

@@ -76,6 +76,14 @@ func TestFromString(t *testing.T) {
 				Qualifiers: purl.QualifiersFromMap(map[string]string{"platform": "java"}),
 			},
 		}, {
+			name: "generic",
+			purl: "pkg:generic/nodejs@20.12.2",
+			want: purl.PackageURL{
+				Type:    "generic",
+				Name:    "nodejs",
+				Version: "20.12.2",
+			},
+		}, {
 			name: "github",
 			purl: "pkg:github/package-url/purl-spec@244fd47e07d1004#everybody/loves/dogs",
 			want: purl.PackageURL{
@@ -92,6 +100,14 @@ func TestFromString(t *testing.T) {
 				Type:    "golang",
 				Name:    "package-name",
 				Version: "1.2.3",
+			},
+		}, {
+			name: "hackage",
+			purl: "pkg:hackage/Agda@2.6.4.3",
+			want: purl.PackageURL{
+				Type:    "hackage",
+				Name:    "Agda",
+				Version: "2.6.4.3",
 			},
 		}, {
 			name: "maven",
@@ -137,6 +153,22 @@ func TestFromString(t *testing.T) {
 				Name:       "python-exec",
 				Version:    "17162.336.16",
 				Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "cos-101"}),
+			},
+		}, {
+			name: "asdf_deprecated",
+			purl: "pkg:asdf/nodejs@20.12.2",
+			want: purl.PackageURL{
+				Type:    "asdf",
+				Name:    "nodejs",
+				Version: "20.12.2",
+			},
+		}, {
+			name: "mise_deprecated",
+			purl: "pkg:mise/nodejs@22",
+			want: purl.PackageURL{
+				Type:    "mise",
+				Name:    "nodejs",
+				Version: "22",
 			},
 		},
 	}

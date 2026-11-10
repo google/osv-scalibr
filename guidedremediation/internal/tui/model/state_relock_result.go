@@ -522,6 +522,7 @@ func (st stateRelockResult) write(m Model) tea.Msg {
 		m.relockBaseManifest.Manifest,
 		[]result.Patch{patches},
 		m.manifestRW,
+		m.options.ProjectRoot,
 	)
 	if err != nil {
 		return writeMsg{err}
@@ -548,13 +549,13 @@ func (st stateRelockResult) write(m Model) tea.Msg {
 		return fmt.Errorf("failed removing old node_modules/: %w", err)
 	}
 
-	c := exec.CommandContext(context.Background(), npmPath, "install", "--package-lock-only")
+	c := exec.CommandContext(context.Background(), npmPath, "install", "--package-lock-only", "--ignore-scripts")
 	c.Dir = dir
 
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		if err != nil {
 			// try again with "--legacy-peer-deps"
-			c = exec.CommandContext(context.Background(), npmPath, "install", "--package-lock-only", "--legacy-peer-deps")
+			c = exec.CommandContext(context.Background(), npmPath, "install", "--package-lock-only", "--legacy-peer-deps", "--ignore-scripts")
 			c.Dir = dir
 
 			return tea.ExecProcess(c, func(err error) tea.Msg { return writeMsg{err} })()

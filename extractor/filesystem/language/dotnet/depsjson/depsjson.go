@@ -19,6 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
@@ -130,9 +132,22 @@ type DepsJSON struct {
 }
 
 func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.Package, error) {
+	content, err := io.ReadAll(input.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read input: %w", err)
+	}
+
+	// assume such JSON files are not the .NET type, e.g. the WordPress
+	// ecosystem has roots/vite-plugin which emits editor.deps.json
+	var probe map[string]any
+	if err := json.Unmarshal(content, &probe); err != nil {
+		//nolint:nilerr // this is a different type of file, not an error
+		return nil, nil
+	}
+
 	var deps DepsJSON
-	decoder := json.NewDecoder(input.Reader)
-	if err := decoder.Decode(&deps); err != nil {
+
+	if err := json.Unmarshal(content, &deps); err != nil {
 		log.Errorf("Error parsing deps.json: %v", err)
 		return nil, err
 	}

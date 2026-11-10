@@ -93,6 +93,11 @@ func TestFileRequired(t *testing.T) {
 			path:           "testdata/sbom.spdx.foo.ext",
 			wantIsRequired: false,
 		},
+		{
+			name:           ".spdx-postgresql.spdx",
+			path:           "testdata/bitnami/.spdx-postgresql.spdx",
+			wantIsRequired: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -125,7 +130,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -141,7 +147,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -163,8 +170,9 @@ func TestExtract(t *testing.T) {
 					Version:  "1.21.1",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
-						PURL: getPURL("nginx", "1.21.1"),
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						PURL:   getPURL("nginx", "1.21.1"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -185,7 +193,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -205,7 +214,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -221,7 +231,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -241,7 +252,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -257,7 +269,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -277,7 +290,8 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "cpe:2.3:a:nginx:nginx:1.21.1",
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
+						SPDXID: "nginx",
+						CPEs:   []string{"cpe:2.3:a:nginx:nginx:1.21.1"},
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -293,7 +307,8 @@ func TestExtract(t *testing.T) {
 					Version:  "1.1.1l",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						PURL: getPURL("openssl", "1.1.1l"),
+						SPDXID: "openssl",
+						PURL:   getPURL("openssl", "1.1.1l"),
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "SECURITY",
@@ -315,6 +330,7 @@ func TestExtract(t *testing.T) {
 					Version:  "3.14.3-debian13",
 					PURLType: purl.TypeDocker,
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "dhi-pkg-python",
 						PURL: &purl.PackageURL{
 							Type:      purl.TypeDocker,
 							Namespace: "dhi",
@@ -347,6 +363,7 @@ func TestExtract(t *testing.T) {
 					Version:  "3.14.3-debian13-dev",
 					PURLType: purl.TypeDocker,
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "dhi-python",
 						PURL: &purl.PackageURL{
 							Type:      purl.TypeDocker,
 							Namespace: "dhi",
@@ -379,6 +396,7 @@ func TestExtract(t *testing.T) {
 					Version:  "3.14.3",
 					PURLType: purl.TypeDHI,
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "python",
 						PURL: &purl.PackageURL{
 							Type:       purl.TypeDHI,
 							Name:       "python",
@@ -404,6 +422,7 @@ func TestExtract(t *testing.T) {
 				{
 					Name: "flatbuffers",
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "Package-flatbuffers",
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "OTHER",
@@ -419,7 +438,8 @@ func TestExtract(t *testing.T) {
 					Version:  "25.9.23",
 					PURLType: purl.TypeGeneric,
 					Metadata: &spdxmeta.Metadata{
-						CPEs: []string{"cpe:2.3:a:some_company:flatbuffers:25.9.23:*:*:*:*:*:*:*"},
+						SPDXID: "SourcePackage-flatbuffers",
+						CPEs:   []string{"cpe:2.3:a:some_company:flatbuffers:25.9.23:*:*:*:*:*:*:*"},
 						PURL: &purl.PackageURL{
 							Type:       purl.TypeGeneric,
 							Namespace:  "some_company",
@@ -446,6 +466,7 @@ func TestExtract(t *testing.T) {
 					Name:    "custom-pkg",
 					Version: "1.0.0",
 					Metadata: &spdxmeta.Metadata{
+						SPDXID: "custom-pkg",
 						ExternalReferences: []spdxmeta.ExternalReference{
 							{
 								Category: "OTHER",
@@ -456,6 +477,257 @@ func TestExtract(t *testing.T) {
 						},
 					},
 					Location: extractor.LocationFromPath("testdata/external_refs.spdx.json"),
+				},
+			},
+		},
+		{
+			name: "descendant_of.spdx.json",
+			path: "testdata/descendant_of.spdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "log4j",
+					Version:  "1.2.15",
+					PURLType: purl.TypeMaven,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "SourcePackage-log4j",
+						CPEs:   []string{"cpe:2.3:a:apache:log4j:1.2.15:*:*:*:*:*:*:*"},
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeMaven,
+							Namespace:  "log4j",
+							Name:       "log4j",
+							Version:    "1.2.15",
+							Qualifiers: purl.Qualifiers{},
+						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:maven/log4j/log4j@1.2.15",
+							},
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:apache:log4j:1.2.15:*:*:*:*:*:*:*",
+							},
+							{
+								Category: "OTHER",
+								RefType:  "DownstreamSourceURI",
+								Locator:  "path/to/log4j/v1_2_15",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/descendant_of.spdx.json"),
+				},
+			},
+		},
+		{
+			name: "ancestor_of.spdx.json",
+			path: "testdata/ancestor_of.spdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "log4j",
+					Version:  "1.2.15",
+					PURLType: purl.TypeMaven,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "SourcePackage-log4j",
+						CPEs:   []string{"cpe:2.3:a:apache:log4j:1.2.15:*:*:*:*:*:*:*"},
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeMaven,
+							Namespace:  "log4j",
+							Name:       "log4j",
+							Version:    "1.2.15",
+							Qualifiers: purl.Qualifiers{},
+						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:maven/log4j/log4j@1.2.15",
+							},
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:apache:log4j:1.2.15:*:*:*:*:*:*:*",
+							},
+							{
+								Category: "OTHER",
+								RefType:  "DownstreamSourceURI",
+								Locator:  "path/to/log4j/v1_2_15",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/ancestor_of.spdx.json"),
+				},
+			},
+		},
+		{
+			name: "multi_descendant.spdx.json",
+			path: "testdata/multi_descendant.spdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "pkg",
+					Version:  "5.0",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "SourcePackage-pkg",
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeGeneric,
+							Namespace:  "google",
+							Name:       "pkg",
+							Version:    "5.0",
+							Qualifiers: purl.Qualifiers{},
+						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:generic/google/pkg@5.0",
+							},
+							{
+								Category: "OTHER",
+								RefType:  "DownstreamSourceURI",
+								Locator:  "some/downstream/location",
+							},
+							{
+								Category: "OTHER",
+								RefType:  "DownstreamSourceURI",
+								Locator:  "another/downstream/location",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/multi_descendant.spdx.json"),
+				},
+			},
+		},
+		{
+			name: "independent_packages_descendant.spdx.json",
+			path: "testdata/independent_packages_descendant.spdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "child",
+					Version:  "1.0.0",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "SourcePackage-Child",
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeGeneric,
+							Name:       "child",
+							Version:    "1.0.0",
+							Qualifiers: purl.Qualifiers{},
+						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:generic/child@1.0.0",
+							},
+							{
+								Category: "OTHER",
+								RefType:  "ExtraChildRef",
+								Locator:  "child-ref-value",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/independent_packages_descendant.spdx.json"),
+				},
+				{
+					Name:     "parent",
+					Version:  "2.0.0",
+					PURLType: purl.TypeGeneric,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "SourcePackage-Parent",
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeGeneric,
+							Name:       "parent",
+							Version:    "2.0.0",
+							Qualifiers: purl.Qualifiers{},
+						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:generic/parent@2.0.0",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/independent_packages_descendant.spdx.json"),
+				},
+			},
+		},
+		{
+			name: "overlapping_refs.spdx.json",
+			path: "testdata/overlapping_refs.spdx.json",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "log4j",
+					Version:  "1.2.15",
+					PURLType: purl.TypeMaven,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "SourcePackage-log4j",
+						CPEs:   []string{"cpe:2.3:a:apache:log4j:1.2.15:*:*:*:*:*:*:*"},
+						PURL: &purl.PackageURL{
+							Type:       purl.TypeMaven,
+							Namespace:  "log4j",
+							Name:       "log4j",
+							Version:    "1.2.15",
+							Qualifiers: purl.Qualifiers{},
+						},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:maven/log4j/log4j@1.2.15",
+							},
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:a:apache:log4j:1.2.15:*:*:*:*:*:*:*",
+							},
+							{
+								Category: "OTHER",
+								RefType:  "DownstreamSourceURI",
+								Locator:  "path/to/log4j/v1_2_15",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/overlapping_refs.spdx.json"),
+				},
+			},
+		},
+		{
+			name: "bitnami/.spdx-postgresql.spdx",
+			path: "testdata/bitnami/.spdx-postgresql.spdx",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "postgresql",
+					Version:  "18.4.0-0",
+					PURLType: purl.TypeBitnami,
+					Metadata: &spdxmeta.Metadata{
+						SPDXID: "postgresql",
+						PURL: &purl.PackageURL{
+							Type:    purl.TypeBitnami,
+							Name:    "postgresql",
+							Version: "18.4.0-0",
+							Qualifiers: purl.QualifiersFromMap(map[string]string{
+								"arch":   "amd64",
+								"distro": "photon-5",
+							}),
+						},
+						CPEs: []string{"cpe:2.3:*:postgresql:postgresql:18.4.0:*:*:*:*:*:*:*"},
+						ExternalReferences: []spdxmeta.ExternalReference{
+							{
+								Category: "SECURITY",
+								RefType:  "cpe23Type",
+								Locator:  "cpe:2.3:*:postgresql:postgresql:18.4.0:*:*:*:*:*:*:*",
+							},
+							{
+								Category: "PACKAGE-MANAGER",
+								RefType:  "purl",
+								Locator:  "pkg:bitnami/postgresql@18.4.0-0?arch=amd64&distro=photon-5",
+							},
+						},
+					},
+					Location: extractor.LocationFromPath("testdata/bitnami/.spdx-postgresql.spdx"),
 				},
 			},
 		},
@@ -492,15 +764,23 @@ func TestExtract(t *testing.T) {
 
 			want := inventory.Inventory{Packages: tt.wantPackages}
 
-			if diff := cmp.Diff(want, got, cmpopts.SortSlices(pkgLess)); diff != "" {
+			if diff := cmp.Diff(want, got, cmpopts.SortSlices(pkgCompare)); diff != "" {
 				t.Errorf("Extract(%s) (-want +got):\n%s", tt.path, diff)
 			}
 		})
 	}
 }
 
-func pkgLess(i1, i2 *extractor.Package) bool {
-	return i1.Name < i2.Name
+// pkgCompare is a custom comparison function for extractor.Package.
+// It sorts packages by name, then version, then PURL type.
+func pkgCompare(i1, i2 *extractor.Package) bool {
+	if i1.Name != i2.Name {
+		return i1.Name < i2.Name
+	}
+	if i1.Version != i2.Version {
+		return i1.Version < i2.Version
+	}
+	return i1.PURLType < i2.PURLType
 }
 
 func getPURL(name, version string) *purl.PackageURL {

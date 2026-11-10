@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package asdf extracts the installed language runtime names and versions from asdf .tool-version files.
+// Package asdf extracts the installed runtime names and versions from asdf .tool-versions files.
 package asdf
 
 import (
@@ -59,18 +59,6 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return path.Base(api.Path()) == ".tool-versions"
 }
 
-func parseToolLine(line string) (tool string, versions []string, ok bool) {
-	line = strings.TrimSpace(line)
-	if line == "" || strings.HasPrefix(line, "#") {
-		return "", nil, false
-	}
-	fields := strings.Fields(line)
-	if len(fields) < 2 {
-		return "", nil, false
-	}
-	return fields[0], fields[1:], true
-}
-
 // Extract extracts packages from the asdf .tool-versions file.
 //
 // Reference: https://asdf-vm.com/manage/configuration.html#tool-versions
@@ -88,19 +76,23 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			continue
 		}
 
-		for _, v := range versions {
-			// Skip entries that don't store version strings.
-			if v == "system" || strings.HasPrefix(v, "file:") {
+		name, ok := normalizeToolName(tool)
+		if !ok {
+			continue
+		}
+		for _, rawVersion := range versions {
+			version, ok := normalizeVersion(rawVersion)
+			if !ok {
 				continue
 			}
 			pkgs = append(pkgs, &extractor.Package{
-				Name:     tool,
-				Version:  v,
-				PURLType: purl.TypeAsdf,
+				Name:     name,
+				Version:  version,
+				PURLType: purl.TypeGeneric,
 				Location: extractor.LocationFromPath(input.Path),
 				Metadata: &asdfmeta.Metadata{
 					ToolName:    tool,
-					ToolVersion: v,
+					ToolVersion: rawVersion,
 				},
 			})
 		}
@@ -110,4 +102,64 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		return inventory.Inventory{}, err
 	}
 	return inventory.Inventory{Packages: pkgs}, nil
+}
+
+func parseToolLine(line string) (tool string, versions []string, ok bool) {
+	line, _, _ = strings.Cut(line, "#")
+	fields := strings.Fields(line)
+	if len(fields) < 2 {
+		return "", nil, false
+	}
+	return fields[0], fields[1:], true
+}
+
+func normalizeToolName(tool string) (string, bool) {
+	tool = strings.ToLower(tool)
+	if prefix, rest, hasColon := strings.Cut(tool, ":"); hasColon {
+		switch prefix {
+		case "core", "asdf", "vfox":
+			tool = rest
+		default:
+			// Skip non-runtime package or URL backends (e.g., npm:, cargo:, pipx:, github:).
+			return "", false
+		}
+	}
+	// Skip empty names and custom plugin repo/URL or option specs (e.g., asdf:owner/repo, node[opt=val]).
+	if tool == "" || strings.ContainsAny(tool, ":/@[]") {
+		return "", false
+	}
+	switch tool {
+	case "node":
+		return "nodejs", true
+	case "py":
+		return "python", true
+	case "go":
+		return "golang", true
+	default:
+		return tool, true
+	}
+}
+
+func normalizeVersion(v string) (string, bool) {
+	// Skip non-numeric aliases (e.g., "system", "latest", "nightly"), path/ref/prefix
+	// directives (e.g., "path:/opt/go", "ref:v1.0.0", "prefix:20.11"), and semver
+	// range constraints (e.g., "^20.12.0", ">=1.21").
+	if !strings.ContainsAny(v, "0123456789") ||
+		strings.ContainsAny(v, ":/^~*<>|=") {
+		return "", false
+	}
+	// Skip unpinned channel, git ref, subtraction, or wildcard prefixes/suffixes
+	// (e.g., "lts-iron", "ref-main", "sub-0.1:22", "miniconda3-latest", "20.x").
+	lower := strings.ToLower(v)
+	if strings.HasPrefix(lower, "lts-") ||
+		strings.HasPrefix(lower, "ref-") ||
+		strings.HasPrefix(lower, "sub-") ||
+		strings.HasSuffix(lower, "-latest") ||
+		strings.HasSuffix(lower, ".x") {
+		return "", false
+	}
+	if len(v) > 1 && v[0] == 'v' && v[1] >= '0' && v[1] <= '9' {
+		v = v[1:]
+	}
+	return v, true
 }

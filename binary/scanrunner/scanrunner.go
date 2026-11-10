@@ -22,6 +22,7 @@ import (
 	scalibr "github.com/google/osv-scalibr"
 	scalibrlayerimage "github.com/google/osv-scalibr/artifact/image/layerscanning/image"
 	"github.com/google/osv-scalibr/binary/cli"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/version"
@@ -37,6 +38,10 @@ func RunScan(flags *cli.Flags) int {
 
 	if flags.Verbose {
 		log.SetLogger(&log.DefaultLogger{Verbose: true})
+	}
+
+	if flags.DeterministicIDs {
+		extractor.SetIDGenerator(&extractor.SequentialIDGenerator{})
 	}
 
 	cfg, err := flags.GetScanConfig()
@@ -61,7 +66,7 @@ func RunScan(flags *cli.Flags) int {
 
 	var result *scalibr.ScanResult
 	if flags.ImageTarball != "" {
-		layerCfg := scalibrlayerimage.DefaultConfig()
+		layerCfg := newLayerConfig(flags)
 		log.Infof("Scanning image tarball: %s", flags.ImageTarball)
 		img, err := scalibrlayerimage.FromTarball(flags.ImageTarball, layerCfg)
 		if err != nil {
@@ -85,11 +90,29 @@ func RunScan(flags *cli.Flags) int {
 			return 1
 		}
 	} else if flags.ImageLocal != "" { // We will scan an image in the local hard disk
-		layerCfg := scalibrlayerimage.DefaultConfig()
+		layerCfg := newLayerConfig(flags)
 		log.Infof("Scanning local image: %s", flags.ImageLocal)
 		img, err := scalibrlayerimage.FromLocalDockerImage(flags.ImageLocal, layerCfg)
 		if err != nil {
 			log.Errorf("Failed to scan local image: %v", err)
+			return 1
+		}
+		defer func() {
+			if tmpErr := img.CleanUp(); tmpErr != nil {
+				log.Errorf("Failed to clean up image: %v", tmpErr)
+			}
+		}()
+		result, err = scalibr.New().ScanContainer(context.Background(), img, cfg)
+		if err != nil {
+			log.Errorf("Failed to scan container: %v", err)
+			return 1
+		}
+	} else if flags.RemoteImage != "" {
+		layerCfg := newLayerConfig(flags)
+		log.Infof("Scanning remote image: %s", flags.RemoteImage)
+		img, err := scalibrlayerimage.FromRemoteName(flags.RemoteImage, layerCfg, flags.RemoteImageOptions()...)
+		if err != nil {
+			log.Errorf("Failed to pull remote image: %v", err)
 			return 1
 		}
 		defer func() {
@@ -130,4 +153,14 @@ func RunScan(flags *cli.Flags) int {
 	}
 
 	return 0
+}
+
+func newLayerConfig(flags *cli.Flags) *scalibrlayerimage.Config {
+	config := scalibrlayerimage.DefaultConfig()
+	if flags.MaxFileSize > 0 {
+		config.MaxFileBytes = flags.MaxFileSize
+	} else {
+		log.Infof("Max file size not specified, defaulting to %d bytes", config.MaxFileBytes)
+	}
+	return config
 }

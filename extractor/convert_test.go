@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	javascriptmeta "github.com/google/osv-scalibr/extractor/filesystem/language/javascript/packagejson/metadata"
 	dpkgmeta "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
+	freebsdmeta "github.com/google/osv-scalibr/extractor/filesystem/os/freebsd/metadata"
 	cdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	spdxmeta "github.com/google/osv-scalibr/extractor/filesystem/sbom/spdx/metadata"
 	"github.com/google/osv-scalibr/inventory/osvecosystem"
@@ -52,6 +53,32 @@ func TestToPURL(t *testing.T) {
 			},
 			want: &purl.PackageURL{
 				Type:    purl.TypeGolang,
+				Name:    "name",
+				Version: "version",
+			},
+		},
+		{
+			name: "hackage_purl",
+			pkg: &extractor.Package{
+				Name:     "Agda",
+				Version:  "2.6.4.3",
+				PURLType: purl.TypeHackage,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeHackage,
+				Name:    "Agda",
+				Version: "2.6.4.3",
+			},
+		},
+		{
+			name: "git_purl",
+			pkg: &extractor.Package{
+				Name:     "name",
+				Version:  "version",
+				PURLType: purl.TypeGit,
+			},
+			want: &purl.PackageURL{
+				Type:    purl.TypeGit,
 				Name:    "name",
 				Version: "version",
 			},
@@ -280,6 +307,24 @@ func TestToEcosystem(t *testing.T) {
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
 		},
 		{
+			name: "hackage_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Agda",
+				Version:  "2.6.4.3",
+				PURLType: purl.TypeHackage,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemHackage),
+		},
+		{
+			name: "git_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "some-git-dep",
+				Version:  "1.0.0",
+				PURLType: purl.TypeGit,
+			},
+			want: osvecosystem.FromEcosystem("GIT"),
+		},
+		{
 			name: "os_ecosystem",
 			pkg: &extractor.Package{
 				Name:     "Name",
@@ -307,6 +352,15 @@ func TestToEcosystem(t *testing.T) {
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemDockerHardenedImages),
 		},
 		{
+			name: "bitnami_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeBitnami,
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemBitnami),
+		},
+		{
 			name: "github_actions_ecosystem",
 			pkg: &extractor.Package{
 				Name:     "actions/checkout",
@@ -314,6 +368,21 @@ func TestToEcosystem(t *testing.T) {
 				PURLType: purl.TypeGithub,
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGitHubActions),
+		},
+		{
+			name: "freebsd_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "curl",
+				Version:  "8.4.0",
+				PURLType: purl.TypeFreeBSD,
+				Metadata: &freebsdmeta.Metadata{
+					OSVersionID: "14.0",
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemFreeBSD,
+				Suffix:    "14.0",
+			},
 		},
 		{
 			name: "spdx_alpine_ecosystem",
