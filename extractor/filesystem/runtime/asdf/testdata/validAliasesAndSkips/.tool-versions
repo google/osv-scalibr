@@ -1,0 +1,13 @@
+# Runtime versions with aliases, backend prefixes, comments, and non-version specifiers
+node v20.12.2 latest latest:20 lts lts/* lts:iron lts-iron file:.nvmrc ref:main ref-1a2b3c4 path:/tmp/node prefix:20 sub-1:22 ^20.0.0 ~20.1 >=20 20.x * # inline comment
+go 1.21.9
+core:go 1.22.4
+vfox:cmake 3.29.6
+java temurin-21.0.2+13.0.LTS
+py 3.12.1 miniconda3-latest
+rust nightly stable
+npm:prettier 3.3.3
+asdf:owner/repo 1.0.0
+owner/repo 1.0.0
+core: 1.0.0
+terraform 1.6.0
