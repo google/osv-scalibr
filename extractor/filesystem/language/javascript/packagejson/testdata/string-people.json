@@ -1,0 +1,6 @@
+{
+  "name": "string-people",
+  "version": "1.0.0",
+  "maintainers": "Alice Maintainer <alice@example.com>",
+  "contributors": "Bob Contributor <bob@example.com> (https://example.com/bob)"
+}

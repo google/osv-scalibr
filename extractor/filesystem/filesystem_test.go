@@ -112,6 +112,20 @@ func TestInitWalkContext(t *testing.T) {
 			},
 			wantErr: filesystem.ErrNotRelativeToScanRoots,
 		},
+		{
+			desc: "pathsToExtract_sharing_string_prefix_without_separator_raises_error",
+			scanRoots: map[string][]string{
+				"darwin":  {"/scanroot"},
+				"linux":   {"/scanroot"},
+				"windows": {"C:\\scanroot"},
+			},
+			pathsToExtract: map[string][]string{
+				"darwin":  {"/scanroot_other/file1.txt"},
+				"linux":   {"/scanroot_other/file1.txt"},
+				"windows": {"C:\\scanroot_other\\file1.txt"},
+			},
+			wantErr: filesystem.ErrNotRelativeToScanRoots,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -879,7 +893,7 @@ func TestRunFS(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			fc := &fakeCollector{}
 			var skipDirRegex *regexp.Regexp
-			var skipDirGlob glob.Glob
+			var skipDirGlob *glob.Pattern
 			if tc.skipDirRegex != "" {
 				skipDirRegex = regexp.MustCompile(tc.skipDirRegex)
 			}

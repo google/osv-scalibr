@@ -44,6 +44,11 @@ func TestFileRequired(t *testing.T) {
 			want: true,
 		},
 		{
+			desc: "tgz",
+			path: "archive.tgz",
+			want: true,
+		},
+		{
 			desc: "tar",
 			path: "archive.tar",
 			want: true,
@@ -66,8 +71,22 @@ func TestFileRequired(t *testing.T) {
 			want:        true,
 		},
 		{
+			desc:        "tgz_file_size_below_limit",
+			path:        "archive.tgz",
+			fileSize:    1000,
+			maxFileSize: 1000,
+			want:        true,
+		},
+		{
 			desc:        "file_size_above_limit",
 			path:        "archive.tar.gz",
+			fileSize:    1001,
+			maxFileSize: 1000,
+			want:        false,
+		},
+		{
+			desc:        "tgz_file_size_above_limit",
+			path:        "archive.tgz",
 			fileSize:    1001,
 			maxFileSize: 1000,
 			want:        false,
@@ -128,6 +147,13 @@ func TestExtract(t *testing.T) {
 			name: "gzipped_tar",
 			inputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/archive.tar.gz",
+			},
+			wantFiles: map[string]string{"file.txt": "tar.gz contents"},
+		},
+		{
+			name: "tgz_archive",
+			inputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/archive.tgz",
 			},
 			wantFiles: map[string]string{"file.txt": "tar.gz contents"},
 		},

@@ -87,7 +87,7 @@ func TestConvertQCOW2ClusterBitsRejected(t *testing.T) {
 	var msBefore, msAfter runtime.MemStats
 	runtime.ReadMemStats(&msBefore)
 
-	convertErr := convertQCOW2ToRaw(inputPath, outputPath, "")
+	convertErr := convertQCOW2ToRaw(inputPath, outputPath)
 
 	runtime.ReadMemStats(&msAfter)
 	allocMB := (msAfter.TotalAlloc - msBefore.TotalAlloc) >> 20

@@ -148,43 +148,43 @@ func TestExtract(t *testing.T) {
 					Name:     "NUnit",
 					Version:  "2.6.4",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 3),
 				},
 				{
 					Name:     "FSharp.Core",
 					Version:  "4.5.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 5),
 				},
 				{
 					Name:     "Newtonsoft.Json",
 					Version:  "12.0.3",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 6),
 				},
 				{
 					Name:     "Microsoft.Extensions.Logging",
 					Version:  "6.0.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 7),
 				},
 				{
 					Name:     "FAKE",
 					Version:  "5.20.4",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 9),
 				},
 				{
 					Name:     "Paket",
 					Version:  "7.0.0",
 					PURLType: purl.TypeNuget,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 10),
 				},
 				{
 					Name:     "fsprojects/Paket",
 					Version:  "5.0.0",
 					PURLType: purl.TypeGithub,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 14),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo: "https://github.com/fsprojects/Paket",
 					},
@@ -193,7 +193,7 @@ func TestExtract(t *testing.T) {
 					Name:     "fsharp/FAKE",
 					Version:  "5.20.4",
 					PURLType: purl.TypeGithub,
-					Location: extractor.LocationFromPath("testdata/paket.lock"),
+					Location: extractor.LocationFromPathAndLine("testdata/paket.lock", 16),
 					SourceCode: &extractor.SourceCodeIdentifier{
 						Repo: "https://github.com/fsharp/FAKE",
 					},
@@ -213,6 +213,26 @@ func TestExtract(t *testing.T) {
 				Path: "testdata/empty-lock-dir/paket.lock",
 			},
 			WantPackages: []*extractor.Package{},
+		},
+		{
+			Name: "duplicate package declarations",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/duplicate/paket.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "NUnit",
+					Version:  "2.6.4",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate/paket.lock", 4),
+				},
+				{
+					Name:     "NUnit",
+					Version:  "2.6.4",
+					PURLType: purl.TypeNuget,
+					Location: extractor.LocationFromPathAndLine("testdata/duplicate/paket.lock", 9),
+				},
+			},
 		},
 	}
 

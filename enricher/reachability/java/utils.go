@@ -79,12 +79,12 @@ func mkdirAll(jarRoot *os.Root, path string, perm os.FileMode) error {
 }
 
 func openFromRoot(root *scalibrfs.ScanRoot, fullPath string) (fs.File, error) {
-	rootPath := root.Path
-
-	relPath := fullPath
-	if strings.HasPrefix(fullPath, rootPath) {
-		relPath = fullPath[len(rootPath):]
+	pathSlash := filepath.ToSlash(fullPath)
+	rootSlash := strings.TrimRight(filepath.ToSlash(root.Path), "/")
+	if rootSlash != "" {
+		if rel, ok := strings.CutPrefix(pathSlash, rootSlash+"/"); ok {
+			pathSlash = rel
+		}
 	}
-
-	return root.FS.Open(filepath.ToSlash(relPath))
+	return root.FS.Open(strings.TrimPrefix(pathSlash, "/"))
 }

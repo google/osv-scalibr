@@ -79,17 +79,20 @@ func containerImageMetadataToProto(cim *extractor.ContainerImageMetadata) *spb.C
 	if len(cim.BaseImages) > 1 {
 		for _, bi := range cim.BaseImages[1:] {
 			var baseImageDetails []*spb.BaseImageDetails
+			var chainID string
 			for _, bid := range bi {
+				if bid == nil {
+					continue
+				}
+				if chainID == "" && bid.ChainID != "" {
+					chainID = bid.ChainID.String()
+				}
 				baseImageDetails = append(baseImageDetails, baseImageDetailsToProto(bid))
-			}
-			if len(bi) == 0 {
-				// This should never happen
-				continue
 			}
 
 			baseImageChains = append(baseImageChains, &spb.BaseImageChain{
 				BaseImages: baseImageDetails,
-				ChainId:    bi[0].ChainID.String(),
+				ChainId:    chainID,
 			})
 		}
 	}
@@ -168,14 +171,21 @@ func containerImageMetadataToStruct(cim *spb.ContainerImageMetadata) *extractor.
 	baseImageChains := cim.GetBaseImageChains()
 	if len(baseImageChains) > 1 {
 		for _, bic := range baseImageChains[1:] {
-			chainID, err := digest.Parse(bic.GetChainId())
-			if err != nil {
-				log.Errorf("Failed to parse chain ID %q: %v", bic.GetChainId(), err)
-				continue
+			var chainID digest.Digest
+			if bic.GetChainId() != "" {
+				parsedChainID, err := digest.Parse(bic.GetChainId())
+				if err != nil {
+					log.Errorf("Failed to parse chain ID %q: %v", bic.GetChainId(), err)
+				} else {
+					chainID = parsedChainID
+				}
 			}
 
 			var baseImageDetails []*extractor.BaseImageDetails
 			for _, bid := range bic.GetBaseImages() {
+				if bid == nil {
+					continue
+				}
 				baseImageDetails = append(baseImageDetails, baseImageDetailsToStruct(bid, chainID))
 			}
 			baseImages = append(baseImages, baseImageDetails)

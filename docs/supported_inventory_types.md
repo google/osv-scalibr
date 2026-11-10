@@ -14,8 +14,8 @@ Plugins are grouped into the following categories:
 
 > [!TIP]
 > Learn how to contribute new plugins by reading the documentation
-> for [new extractors](/docs/new_extractor.md.md),
-> [new detectors](/docs/new_detector),
+> for [new extractors](/docs/new_extractor.md),
+> [new detectors](/docs/new_detector.md),
 > and [new enrichers](/docs/new_enricher.md).
 
 The following sections list all available plugins.
@@ -129,13 +129,14 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Perl       | Perl CPAN packages                                | `perl/cpan`                          |
 | Zig        | Zig build.zig.zon packages                        | `zig/buildzigzon`                    |
 
-### Language runtime managers
+### Runtime managers
 
-| runtime | Details        | Extractor Plugin(s) |
-| ------- | -------------- | ------------------- |
-| asdf    | .tool-versions | `runtime/asdf`      |
-| mise    | mise.toml      | `runtime/mise`      |
-| nvm     | .nvmrc         | `runtime/nvm`       |
+| Manager     | Details        | Extractor Plugin(s)   |
+| ----------- | -------------- | --------------------- |
+| asdf        | .tool-versions | `runtime/asdf`        |
+| mise        | mise.toml      | `runtime/mise`        |
+| nodeversion | .node-version  | `runtime/nodeversion` |
+| nvm         | .nvmrc         | `runtime/nvm`         |
 
 ### Secrets
 
@@ -231,6 +232,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 ### Sensitive information
 | Type                                           | Extractor Plugin                       |
 | ---------------------------------------------- | -------------------------------------- |
+| Credit Card Number                             | `sensitiveinformation/creditcard`      |
 | International Bank Account Number              | `sensitiveinformation/iban`            |
 | US Adoption Taxpayer Identification Number     | `sensitiveinformation/atin`            |
 | US Individual Taxpayer Identification Number   | `secrets/itin`                         |
@@ -297,6 +299,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Checks for default credentials in File Browser.                              | `weakcredentials/filebrowser`            |
 | Checks for weak passwords for local Windows accounts.                        | `weakcredentials/winlocal`               |
 | Detects PAM misconfigurations that allow authentication bypass. (Linux-only) | `misc/pammisconfig`                      |
+| Detects CVE-2026-123158 OpenSSH + musl pre-authentication password bypass.   | `misc/sshhole`                           |
 
 ## Annotators
 

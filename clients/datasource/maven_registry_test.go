@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -105,6 +106,41 @@ func TestGetProjectSnapshot(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("GetProject(%s, %s, %s):\ngot %v\nwant %v\n", "org.example", "x.y.z", "3.3.1-SNAPSHOT", got, want)
+	}
+}
+
+func TestGetProjectWithoutEnabledRegistry(t *testing.T) {
+	srv := clienttest.NewMockHTTPServer(t)
+	tests := []struct {
+		name     string
+		registry datasource.MavenRegistry
+		version  string
+		want     string
+	}{
+		{
+			name:     "snapshot",
+			registry: datasource.MavenRegistry{URL: srv.URL, ReleasesEnabled: true},
+			version:  "1.0.0-SNAPSHOT",
+			want:     "no registry has snapshots enabled",
+		},
+		{
+			name:     "release",
+			registry: datasource.MavenRegistry{URL: srv.URL, SnapshotsEnabled: true},
+			version:  "1.0.0",
+			want:     "no registry has releases enabled",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := datasource.NewMavenRegistryAPIClient(t.Context(), tc.registry, "", false, false, &http.Client{}, nil)
+			_, err := client.GetProject(t.Context(), "org.example", "x.y.z", tc.version)
+			if err == nil {
+				t.Fatal("GetProject() succeeded, want an error")
+			}
+			if !strings.Contains(err.Error(), tc.want) || strings.Contains(err.Error(), "%!") {
+				t.Errorf("GetProject() error = %q, want it to contain %q", err, tc.want)
+			}
+		})
 	}
 }
 

@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package mise extracts the installed language runtime names and versions from mise.toml files.
+// Package mise extracts the installed runtime names and versions from mise.toml files.
 package mise
 
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -39,6 +41,11 @@ const (
 
 // Extractor extracts mise tools.
 type Extractor struct{}
+
+// miseTomlFile represents the structure of a mise.toml file.
+type miseTomlFile struct {
+	Tools map[string]any `toml:"tools"`
+}
 
 // New returns a new instance of the extractor.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) { return &Extractor{}, nil }
@@ -105,11 +112,6 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 	return false
 }
 
-// miseTomlFile represents the structure of a mise.toml file.
-type miseTomlFile struct {
-	Tools map[string]any `toml:"tools"`
-}
-
 // Extract extracts packages from the mise.toml file.
 //
 // Reference: https://mise.jdx.dev/configuration.html
@@ -121,39 +123,109 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	}
 
 	var pkgs []*extractor.Package
-	for tool, value := range parsedTomlFile.Tools {
+	for _, tool := range slices.Sorted(maps.Keys(parsedTomlFile.Tools)) {
 		if err := ctx.Err(); err != nil {
 			return inventory.Inventory{}, fmt.Errorf("%s halted due to context error: %w", e.Name(), err)
 		}
 
-		var version string
-		switch v := value.(type) {
-		case string:
-			// Simple string version: terraform = "1"
-			version = v
-		case map[string]any:
-			// Object with options like: ToolName = { version = "22", ...}
-			if ver, ok := v["version"].(string); ok {
-				version = ver
-			}
-		}
-
-		// Skip if no version was found
-		if version == "" {
+		name, ok := normalizeToolName(tool)
+		if !ok {
 			continue
 		}
 
-		pkgs = append(pkgs, &extractor.Package{
-			Name:     tool,
-			Version:  version,
-			PURLType: purl.TypeMise,
-			Location: extractor.LocationFromPath(input.Path),
-			Metadata: &misemeta.Metadata{
-				ToolName:    tool,
-				ToolVersion: version,
-			},
-		})
+		for _, rawVersion := range extractRawVersions(parsedTomlFile.Tools[tool]) {
+			version, ok := normalizeVersion(rawVersion)
+			if !ok {
+				continue
+			}
+
+			pkgs = append(pkgs, &extractor.Package{
+				Name:     name,
+				Version:  version,
+				PURLType: purl.TypeGeneric,
+				Location: extractor.LocationFromPath(input.Path),
+				Metadata: &misemeta.Metadata{
+					ToolName:    tool,
+					ToolVersion: rawVersion,
+				},
+			})
+		}
 	}
 
 	return inventory.Inventory{Packages: pkgs}, nil
+}
+
+func normalizeToolName(tool string) (string, bool) {
+	tool = strings.ToLower(strings.TrimSpace(tool))
+	if prefix, rest, hasColon := strings.Cut(tool, ":"); hasColon {
+		switch prefix {
+		case "core", "asdf", "vfox":
+			tool = rest
+		default:
+			// Skip non-runtime package or URL backends (e.g., npm:, cargo:, pipx:, github:).
+			return "", false
+		}
+	}
+	// Skip empty names and custom plugin repo/URL or option specs (e.g., asdf:owner/repo, node[opt=val]).
+	if tool == "" || strings.ContainsAny(tool, ":/@[] \t\r\n") {
+		return "", false
+	}
+	switch tool {
+	case "node":
+		return "nodejs", true
+	case "py":
+		return "python", true
+	case "go":
+		return "golang", true
+	default:
+		return tool, true
+	}
+}
+
+func extractRawVersions(value any) []string {
+	switch v := value.(type) {
+	case string:
+		return []string{v}
+	case map[string]any:
+		return extractRawVersions(v["version"])
+	case []map[string]any:
+		var out []string
+		for _, elem := range v {
+			out = append(out, extractRawVersions(elem["version"])...)
+		}
+		return out
+	case []any:
+		var out []string
+		for _, elem := range v {
+			out = append(out, extractRawVersions(elem)...)
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func normalizeVersion(v string) (string, bool) {
+	v = strings.TrimSpace(v)
+	// Skip non-numeric aliases (e.g., "system", "latest", "nightly"), path/ref/prefix
+	// directives (e.g., "path:/opt/go", "ref:v1.0.0", "prefix:20.11"), and semver
+	// range constraints or whitespace-separated expressions (e.g., "^20.12.0", ">= 1.21").
+	if !strings.ContainsAny(v, "0123456789") ||
+		strings.ContainsAny(v, ":/^~*<>|= \t\r\n") {
+		return "", false
+	}
+	// Skip unpinned channel, git ref, subtraction, or wildcard prefixes/suffixes
+	// (e.g., "lts-iron", "ref-main", "sub-0.1:22", "miniconda3-latest", "20.x").
+	lower := strings.ToLower(v)
+	if strings.HasPrefix(lower, "lts-") ||
+		strings.HasPrefix(lower, "ref-") ||
+		strings.HasPrefix(lower, "sub-") ||
+		strings.HasSuffix(lower, "-latest") ||
+		strings.HasSuffix(lower, ".x") {
+		return "", false
+	}
+	if len(v) > 1 && v[0] == 'v' && v[1] >= '0' && v[1] <= '9' {
+		v = v[1:]
+	}
+	return v, true
 }

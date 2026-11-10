@@ -19,11 +19,10 @@ import (
 	"context"
 	"errors"
 	"io/fs"
-	"slices"
+	"strings"
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
-	"github.com/google/osv-scalibr/extractor/filesystem/ffa/unknownbinariesextr"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/osrelease"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
@@ -32,10 +31,34 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
-// locationAndIndex is a struct to represent a location and the index of the layer it was found in.
+// locationAndIndex is a struct to represent a location, the extractor plugin, and the index of the
+// layer it was found in.
 type locationAndIndex struct {
 	location string
+	plugin   string
 	index    int
+}
+
+// packageKey uniquely identifies a package within a layer without depending on /etc/os-release
+// fields (which may be populated or updated in a different layer than the package database).
+type packageKey struct {
+	name    string
+	version string
+	purl    string
+}
+
+func newPackageKey(pkg *extractor.Package, plugin string) packageKey {
+	if !strings.HasPrefix(plugin, "os/") {
+		if p := pkg.PURL(); p != nil {
+			return packageKey{
+				purl: p.String(),
+			}
+		}
+	}
+	return packageKey{
+		name:    pkg.Name,
+		version: pkg.Version,
+	}
 }
 
 // PopulateLayerDetails populates the LayerDetails field of the inventory with the origin details
@@ -86,9 +109,9 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 		}
 	}
 
-	// locationIndexToPackages is used as a package cache to avoid re-extracting the same
+	// locationIndexToPackageKeys is used as a package cache to avoid re-extracting the same
 	// package from a file multiple times.
-	locationIndexToPackages := map[locationAndIndex][]*extractor.Package{}
+	locationIndexToPackageKeys := map[locationAndIndex]map[packageKey]bool{}
 	lastLayerIndex := len(chainLayers) - 1
 
 	// Build a map from the extractor list for faster access.
@@ -113,10 +136,8 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 			continue
 		}
 
-		var pkgPURL string
-		if pkg.PURL() != nil {
-			pkgPURL = pkg.PURL().String()
-		}
+		// Use packageKey rather than PURL to avoid using OS-Release dependent metadata.
+		pkgKey := newPackageKey(pkg, pkgExtractor.Name())
 
 		var foundOrigin bool
 		fileLocation := pkg.Location.PathOrEmpty()
@@ -130,68 +151,54 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 
 			pkgLocationAndIndex := locationAndIndex{
 				location: fileLocation,
+				plugin:   pkgExtractor.Name(),
 				index:    i,
 			}
 
-			var oldPackages []*extractor.Package
-			if cachedPackages, ok := locationIndexToPackages[pkgLocationAndIndex]; ok {
-				oldPackages = cachedPackages
-			} else if _, err := oldChainLayer.FS().Stat(fileLocation); errors.Is(err, fs.ErrNotExist) {
-				// Check if file still exist in this layer, if not skip extraction.
-				// This is both an optimization, and avoids polluting the log output with false file not found errors.
-				oldPackages = []*extractor.Package{}
-			} else if filesExistInLayer(oldChainLayer, pkg.Location) {
-				// Update the extractor config to use the files from the current layer.
-				// We only take extract the first location because other locations are derived from the initial
-				// extraction location. If other locations can no longer be determined from the first location
-				// they should not be included here, and the trace for those packages stops here.
-				updateExtractorConfig([]string{fileLocation}, pkgExtractor, oldChainLayer.FS())
+			oldPackageKeys, cached := locationIndexToPackageKeys[pkgLocationAndIndex]
+			if !cached {
+				var oldPackages []*extractor.Package
+				if _, err := oldChainLayer.FS().Stat(fileLocation); errors.Is(err, fs.ErrNotExist) {
+					// Check if file still exists in this layer, if not skip extraction.
+					// This is both an optimization, and avoids polluting the log output with false file not found errors.
+					oldPackages = []*extractor.Package{}
+				} else if filesExistInLayer(oldChainLayer, pkg.Location) {
+					// Update the extractor config to use the files from the current layer.
+					// We only take extract the first location because other locations are derived from the initial
+					// extraction location. If other locations can no longer be determined from the first location
+					// they should not be included here, and the trace for those packages stops here.
+					updateExtractorConfig([]string{fileLocation}, pkgExtractor, oldChainLayer.FS())
 
-				// Runs SCALIBR extraction on the file of interest in oldChainLayer.
-				oldInv, _, err := filesystem.Run(ctx, config)
-				oldPackages = oldInv.Packages
-				if err != nil {
-					break
-				}
-			} else {
-				// If none of the files from the packages are present in the underlying layer, then there
-				// will be no difference in the extracted packages from oldChainLayer, so extraction can be
-				// skipped in the chain layer. This is an optimization to avoid extracting the same package
-				// multiple times.
-				continue
-			}
-
-			// Cache the packages for future use.
-			locationIndexToPackages[pkgLocationAndIndex] = oldPackages
-
-			foundPackage := false
-			for _, oldPKG := range oldPackages {
-				// If the package is from unknown binaries extractor, only Locations will be filled
-				// We should skip the purl check
-				if !slices.Contains(pkg.Plugins, unknownbinariesextr.Name) {
-					// PURLs are being used as a package key, so if they are different, skip this package.
-					oldPKGPURL := oldPKG.PURL()
-					if oldPKGPURL == nil || oldPKGPURL.String() != pkgPURL {
-						continue
+					// Runs SCALIBR extraction on the file of interest in oldChainLayer.
+					oldInv, _, err := filesystem.Run(ctx, config)
+					oldPackages = oldInv.Packages
+					if err != nil {
+						break
 					}
-				}
-
-				if !isLocationEqual(oldPKG.Location, pkg.Location) {
+				} else {
+					// If none of the files from the packages are present in the underlying layer, then there
+					// will be no difference in the extracted packages from oldChainLayer, so extraction can be
+					// skipped in the chain layer. This is an optimization to avoid extracting the same package
+					// multiple times.
 					continue
 				}
 
-				foundPackage = true
-				break
+				// Cache the package keys for future use.
+				oldPackageKeys = make(map[packageKey]bool, len(oldPackages))
+				for _, oldPKG := range oldPackages {
+					oldPackageKeys[newPackageKey(oldPKG, pkgExtractor.Name())] = true
+				}
+				locationIndexToPackageKeys[pkgLocationAndIndex] = oldPackageKeys
 			}
 
-			// If the package is not present in the old layer, then it was introduced in the previous layer we actually scanned
-			if !foundPackage {
+			// If the package is not present in the old layer, then it was introduced in the previous layer we actually scanned.
+			if !oldPackageKeys[pkgKey] {
 				layerDetails = cim.LayerMetadata[lastScannedLayerIndex]
 				foundOrigin = true
 				break
 			}
 
-			// This is now the latest scanned layer
+			// This is now the latest scanned layer.
 			lastScannedLayerIndex = i
 		}
 
@@ -202,21 +209,6 @@ func PopulateLayerDetails(ctx context.Context, inv *inventory.Inventory, chainLa
 		}
 		pkg.LayerMetadata = layerDetails
 	}
-}
-
-// isLocationEqual checks if two package locations are equal.
-func isLocationEqual(l1 extractor.PackageLocation, l2 extractor.PackageLocation) bool {
-	if l1.Descriptor == nil || l2.Descriptor == nil {
-		log.Warnf("Empty package locations found. This should not happen.")
-		return false
-	}
-
-	if l1.Descriptor.File == nil || l2.Descriptor.File == nil {
-		log.Warnf("Non-file locations found. This should not happen.")
-		return false
-	}
-
-	return l1.Descriptor.File.Path == l2.Descriptor.File.Path
 }
 
 // getSingleLayerFSFromChainLayer returns the filesystem of the underlying layer in the chain layer.

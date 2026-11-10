@@ -634,7 +634,7 @@ func TestExtract(t *testing.T) {
 			}
 			e.(*requirements.Extractor).Stats = collector
 
-			fsys := scalibrfs.DirFS(".")
+			fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "."))
 
 			r, err := fsys.Open(tt.path)
 			defer func() {
@@ -651,7 +651,7 @@ func TestExtract(t *testing.T) {
 				t.Fatalf("Stat(): %v", err)
 			}
 
-			input := &filesystem.ScanInput{FS: scalibrfs.DirFS("."), Path: tt.path, Info: info, Reader: r}
+			input := &filesystem.ScanInput{FS: fsys, Path: tt.path, Info: info, Reader: r}
 			got, err := e.Extract(t.Context(), input)
 			if err != nil {
 				t.Fatalf("Extract(%s): %v", tt.path, err)
