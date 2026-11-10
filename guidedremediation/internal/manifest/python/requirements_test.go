@@ -24,10 +24,11 @@ import (
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestReadRequirements(t *testing.T) {
-	fsys := scalibrfs.DirFS("./testdata/requirements")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/requirements"))
 	pypiRW, _ := GetRequirementsReadWriter()
 	got, err := pypiRW.Read("requirements.txt", fsys)
 	if err != nil {
@@ -166,7 +167,7 @@ func TestReadRequirementsDoesNotReadRecursivePathOutsideProject(t *testing.T) {
 
 func TestWriteRequirements(t *testing.T) {
 	rw, _ := GetRequirementsReadWriter()
-	fsys := scalibrfs.DirFS("./testdata/requirements")
+	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/requirements"))
 	manif, err := rw.Read("requirements.txt", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)

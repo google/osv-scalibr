@@ -17,7 +17,7 @@ package grpcclient_test
 import (
 	"testing"
 
-	pb "deps.dev/api/v3alpha"
+	agrpc "deps.dev/api/v3alpha"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/clients/depsdev/v1alpha1/grpcclient"
@@ -50,7 +50,7 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     *grpcclient.Config
-		want    pb.InsightsClient
+		want    agrpc.InsightsClient
 		wantErr error
 	}{
 		{

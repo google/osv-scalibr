@@ -53,6 +53,32 @@ func TestExtractor_Extract_v1(t *testing.T) {
 			},
 		},
 		{
+			Name: "patch_tag",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/patch-tag.v1.lock",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "balanced-match",
+					Version:  "1.0.2",
+					Location: extractor.LocationFromPathAndLine("testdata/patch-tag.v1.lock", 3),
+					PURLType: purl.TypeNPM,
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+				{
+					Name:     "concat-map",
+					Version:  "0.0.1",
+					Location: extractor.LocationFromPathAndLine("testdata/patch-tag.v1.lock", 8),
+					PURLType: purl.TypeNPM,
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+			},
+		},
+		{
 			Name: "package with no version in header",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/no-version.v1.lock",

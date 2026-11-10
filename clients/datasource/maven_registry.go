@@ -353,6 +353,10 @@ func (m *MavenRegistryAPIClient) fetchProject(ctx context.Context, key maven.Pro
 			}
 			errs = append(errs, err)
 		}
+		// Every registry that is tried either returns or records an error.
+		if len(errs) == 0 {
+			return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s: no registry has releases enabled", groupID, artifactID, version)
+		}
 
 		return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s:\n%w", groupID, artifactID, version, errors.Join(errs...))
 	}
@@ -382,6 +386,10 @@ func (m *MavenRegistryAPIClient) fetchProject(ctx context.Context, key maven.Pro
 			return project, nil
 		}
 		errs = append(errs, err)
+	}
+	if len(errs) == 0 {
+		return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s: no registry has snapshots enabled; "+
+			"declare a <repository> with <snapshots><enabled>true</enabled></snapshots> in the pom.xml", groupID, artifactID, version)
 	}
 
 	return maven.Project{}, fmt.Errorf("failed to fetch Maven project %s:%s@%s:\n%w", groupID, artifactID, version, errors.Join(errs...))

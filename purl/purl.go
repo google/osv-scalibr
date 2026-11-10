@@ -113,9 +113,13 @@ const (
 	TypeGooget = "googet"
 	// TypeWordpress is pkg:wordpress purl
 	TypeWordpress = "wordpress"
-	// TypeAsdf is pkg:asdf purl
+	// TypeAsdf is a pkg:asdf purl.
+	//
+	// Deprecated: Use TypeGeneric instead.
 	TypeAsdf = "asdf"
-	// TypeMise is pkg:mise purl
+	// TypeMise is a pkg:mise purl.
+	//
+	// Deprecated: Use TypeGeneric instead.
 	TypeMise = "mise"
 	// TypeMacports is pkg:macports purl
 	TypeMacports = "macports"
@@ -135,6 +139,8 @@ const (
 	TypeDHI = "dhi"
 	// TypeZig is pkg:zig purl
 	TypeZig = "zig"
+	// TypeFreeBSD is pkg:freebsd purl.
+	TypeFreeBSD = "freebsd"
 )
 
 // PackageURL is the struct representation of the parts that make a package url.
@@ -250,6 +256,7 @@ func validType(t string) bool {
 		TypeCPAN:       true,
 		TypeDHI:        true,
 		TypeZig:        true,
+		TypeFreeBSD:    true,
 	}
 
 	// purl type is case-insensitive, canonical form is lower-case

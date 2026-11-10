@@ -90,7 +90,16 @@ func fetchLocalArchiveCRC32CHash(data []byte) uint32 {
 	return crc32.Checksum(data, crc32.MakeTable(crc32.Castagnoli))
 }
 
-func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
+func readZip(data []byte) (*zip.Reader, error) {
+	zipReader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("could not read OSV database archive: %w", err)
+	}
+
+	return zipReader, nil
+}
+
+func (db *zipDB) fetchZip(ctx context.Context) (*zip.Reader, error) {
 	cache, err := os.ReadFile(db.StoredAt)
 
 	if db.Offline {
@@ -98,7 +107,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 			return nil, errOfflineDatabaseNotFound
 		}
 
-		return cache, nil
+		return readZip(cache)
 	}
 
 	if err == nil {
@@ -109,7 +118,7 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		}
 
 		if fetchLocalArchiveCRC32CHash(cache) == remoteHash {
-			return cache, nil
+			return readZip(cache)
 		}
 	}
 
@@ -138,6 +147,13 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("could not read OSV database archive from response: %w", err)
 	}
 
+	// make sure we've actually got a zip before caching it
+	zipReader, err := readZip(body)
+
+	if err != nil {
+		return nil, err
+	}
+
 	err = os.MkdirAll(path.Dir(db.StoredAt), 0750)
 
 	if err == nil {
@@ -145,13 +161,21 @@ func (db *zipDB) fetchZip(ctx context.Context) ([]byte, error) {
 		_ = os.WriteFile(db.StoredAt, body, 0644)
 	}
 
-	return body, nil
+	return zipReader, nil
 }
 
+// mightAffectPackages checks if the vulnerability might impact at least one
+// of the named packages, so that vulnerabilities can be filtered out early.
+//
+// Only the name is considered, and the incoming names are expected to be
+// already normalized based on their ecosystem using vulns.NormalizeName.
 func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
 	for _, affected := range v.GetAffected() {
+		ap := affected.GetPackage()
+		apName := vulns.NormalizeName(ap.GetName(), ap.GetEcosystem())
+
 		for _, name := range names {
-			if affected.GetPackage().GetName() == name {
+			if apName == name {
 				return true
 			}
 
@@ -205,15 +229,10 @@ func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
 func (db *zipDB) load(ctx context.Context, names []string) error {
 	db.Vulnerabilities = []*osvpb.Vulnerability{}
 
-	body, err := db.fetchZip(ctx)
+	zipReader, err := db.fetchZip(ctx)
 
 	if err != nil {
 		return err
-	}
-
-	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
-	if err != nil {
-		return fmt.Errorf("could not read OSV database archive: %w", err)
 	}
 
 	// Read all the files from the zip archive
@@ -241,7 +260,10 @@ func newZippedDB(ctx context.Context, dbBasePath, name, url string, offline bool
 	// map the packages to their names ahead of loading,
 	// to make things simpler and reduce double working
 	for _, inv := range invs {
-		names = append(names, osvutil.ParsePackage(inv).Name)
+		pkg := osvutil.ParsePackage(inv)
+
+		// use the normalized version of the name while we still know the ecosystem
+		names = append(names, vulns.NormalizeName(pkg.Name, string(pkg.Ecosystem.Ecosystem)))
 	}
 
 	if err := db.load(ctx, names); err != nil {

@@ -37,19 +37,54 @@ func TestFileRequired(t *testing.T) {
 		wantRequired bool
 	}{
 		{
-			name:         "invalid path",
+			name:         "invalid_path",
 			path:         "/tmp/var/scalibr",
 			wantRequired: false,
 		},
 		{
-			name:         "mise.toml",
+			name:         "mise_toml",
 			path:         "mise.toml",
 			wantRequired: true,
 		},
 		{
-			name:         "nested mise.toml",
+			name:         "nested_mise_toml",
 			path:         "/tmp/project/mise.toml",
 			wantRequired: true,
+		},
+		{
+			name:         "mise_local_toml",
+			path:         "/tmp/project/mise.local.toml",
+			wantRequired: true,
+		},
+		{
+			name:         "config_mise_toml",
+			path:         "/home/user/.config/mise.toml",
+			wantRequired: true,
+		},
+		{
+			name:         "mise_dir_config_toml",
+			path:         "/tmp/project/mise/config.toml",
+			wantRequired: true,
+		},
+		{
+			name:         "dot_mise_config_toml",
+			path:         "/tmp/project/.mise/config.toml",
+			wantRequired: true,
+		},
+		{
+			name:         "config_mise_dir_config_toml",
+			path:         "/home/user/.config/mise/config.toml",
+			wantRequired: true,
+		},
+		{
+			name:         "config_mise_conf_d_toml",
+			path:         "/home/user/.config/mise/conf.d/tools.toml",
+			wantRequired: true,
+		},
+		{
+			name:         "unrelated_config_toml",
+			path:         "/tmp/project/config.toml",
+			wantRequired: false,
 		},
 	}
 
@@ -69,25 +104,15 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "valid mise.toml",
+			Name: "valid_mise_toml",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/valid-mise.toml",
 			},
 			WantPackages: []*extractor.Package{
 				{
-					Name:     "terraform",
-					Version:  "1",
-					PURLType: purl.TypeMise,
-					Metadata: &misemeta.Metadata{
-						ToolName:    "terraform",
-						ToolVersion: "1",
-					},
-					Location: extractor.LocationFromPath("testdata/valid-mise.toml"),
-				},
-				{
 					Name:     "aws-cli",
 					Version:  "2",
-					PURLType: purl.TypeMise,
+					PURLType: purl.TypeGeneric,
 					Metadata: &misemeta.Metadata{
 						ToolName:    "aws-cli",
 						ToolVersion: "2",
@@ -95,26 +120,134 @@ func TestExtract(t *testing.T) {
 					Location: extractor.LocationFromPath("testdata/valid-mise.toml"),
 				},
 				{
-					Name:     "node",
+					Name:     "nodejs",
 					Version:  "22",
-					PURLType: purl.TypeMise,
+					PURLType: purl.TypeGeneric,
 					Metadata: &misemeta.Metadata{
 						ToolName:    "node",
 						ToolVersion: "22",
 					},
 					Location: extractor.LocationFromPath("testdata/valid-mise.toml"),
 				},
+				{
+					Name:     "terraform",
+					Version:  "1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "terraform",
+						ToolVersion: "1",
+					},
+					Location: extractor.LocationFromPath("testdata/valid-mise.toml"),
+				},
 			},
 		},
 		{
-			Name: "empty mise.toml",
+			Name: "aliases_prefixes_arrays_and_skips",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/aliases-arrays-skips.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "golang",
+					Version:  "1.22.4",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "CORE:go",
+						ToolVersion: "v1.22.4",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "nodejs",
+					Version:  "20.12.2",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "Node",
+						ToolVersion: "v20.12.2",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "runc",
+					Version:  "1.1.12",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "asdf:runc",
+						ToolVersion: "1.1.12",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "bun",
+					Version:  "1.1.0",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "bun",
+						ToolVersion: "1.1.0",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "custom",
+					Version:  "ver-1.0.0",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "custom",
+						ToolVersion: "ver-1.0.0",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "java",
+					Version:  "temurin-21.0.2+13.0.LTS",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "java",
+						ToolVersion: "temurin-21.0.2+13.0.LTS",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "python",
+					Version:  "3.12.1",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "py",
+						ToolVersion: "3.12.1",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "python",
+					Version:  "3.11.9",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "py",
+						ToolVersion: "3.11.9",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+				{
+					Name:     "cmake",
+					Version:  "3.29.6",
+					PURLType: purl.TypeGeneric,
+					Metadata: &misemeta.Metadata{
+						ToolName:    "vfox:cmake",
+						ToolVersion: "3.29.6",
+					},
+					Location: extractor.LocationFromPath("testdata/aliases-arrays-skips.toml"),
+				},
+			},
+		},
+		{
+			Name: "empty_mise_toml",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/empty-mise.toml",
 			},
 			WantPackages: nil,
 		},
 		{
-			Name: "invalid toml",
+			Name: "invalid_toml",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/not-valid-toml.toml",
 			},
@@ -141,7 +274,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			wantInv := inventory.Inventory{Packages: tt.WantPackages}
-			if diff := cmp.Diff(wantInv, got, cmpopts.SortSlices(extracttest.PackageCmpLess)); diff != "" {
+			if diff := cmp.Diff(wantInv, got); diff != "" {
 				t.Errorf("%s.Extract(%q) diff (-want +got):\n%s", extr.Name(), tt.InputConfig.Path, diff)
 			}
 		})

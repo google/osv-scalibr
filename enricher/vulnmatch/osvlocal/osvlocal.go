@@ -17,6 +17,7 @@ package osvlocal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -138,7 +139,12 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 		vulns, err := dbs.MatchVulnerabilities(ctx, pkg, inv.Packages)
 
 		if err != nil {
-			return err
+			// Abort immediately if the context was cancelled
+			// otherwise continue matching packages so one failed DB doesn't prevent us from matching other ecosystems.
+			if ctx.Err() != nil {
+				return err
+			}
+			continue
 		}
 
 		for _, vuln := range vulns {
@@ -154,6 +160,14 @@ func (e *Enricher) Enrich(ctx context.Context, _ *enricher.ScanInput, inv *inven
 	// It's possible for other enrichers/detectors to have already added the same vulnerability
 	// for the same package, so we deduplicate and merge the results.
 	inv.PackageVulns = dedupPackageVulns(inv.PackageVulns)
+
+	if len(dbs.failedDBs) > 0 {
+		errs := make([]error, 0, len(dbs.failedDBs))
+		for _, eco := range slices.Sorted(maps.Keys(dbs.failedDBs)) {
+			errs = append(errs, dbs.failedDBs[eco])
+		}
+		return errors.Join(errs...)
+	}
 
 	return nil
 }
