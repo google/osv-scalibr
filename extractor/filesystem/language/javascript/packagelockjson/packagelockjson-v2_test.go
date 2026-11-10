@@ -795,6 +795,66 @@ func TestNPMLockExtractor_Extract_V2(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "omit resolved",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/omit-resolved.v3.json",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "@chat-template/auth",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/omit-resolved.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Local,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "body-parser",
+					Version:  "2.2.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/omit-resolved.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "debug",
+					Version:  "4.3.4",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/omit-resolved.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.PublicRegistry,
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:     "local-tarball",
+					Version:  "1.0.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/omit-resolved.v3.json"),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+					Metadata: &metadata.JavascriptPackageMetadata{
+						Source:       metadata.Local,
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

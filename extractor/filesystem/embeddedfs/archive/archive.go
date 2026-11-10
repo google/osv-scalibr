@@ -83,7 +83,7 @@ func (e *Extractor) Requirements() *plugin.Capabilities {
 // FileRequired checks if the file is a supported archive.
 func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 	path := api.Path()
-	if !strings.HasSuffix(path, ".tar") && !strings.HasSuffix(path, ".tar.gz") {
+	if !strings.HasSuffix(path, ".tar") && !strings.HasSuffix(path, ".tar.gz") && !strings.HasSuffix(path, ".tgz") {
 		return false
 	}
 
@@ -112,7 +112,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("common.TARToTempDir(%q): %w", input.Path, err)
 		}
-	} else if strings.HasSuffix(input.Path, ".tar.gz") {
+	} else if strings.HasSuffix(input.Path, ".tar.gz") || strings.HasSuffix(input.Path, ".tgz") {
 		reader, err := gzip.NewReader(input.Reader)
 		if err != nil {
 			return inventory.Inventory{}, fmt.Errorf("gzip.NewReader(%q): %w", input.Path, err)

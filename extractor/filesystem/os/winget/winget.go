@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/os/winget/metadata"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	_ "modernc.org/sqlite" // Import sqlite driver
@@ -97,16 +98,13 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("GetRealPath(%v): %w", input, err)
 	}
-
-	if input.Root == "" {
-		// The file got copied to a temporary dir, remove it at the end.
-		defer func() {
-			dir := filepath.Dir(absPath)
-			if err := os.RemoveAll(dir); err != nil {
-				fmt.Printf("Warning: failed to clean up temporary directory %s: %v\n", dir, err)
-			}
-		}()
-	}
+	// The file got copied to a temporary dir, remove it at the end.
+	defer func() {
+		dir := filepath.Dir(absPath)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		}
+	}()
 
 	db, err := sql.Open("sqlite", absPath)
 	if err != nil {

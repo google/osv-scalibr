@@ -63,6 +63,7 @@ func TestDetectorsFromName(t *testing.T) {
 				"cronjobprivesc",
 				"dockersocket",
 				"misc/pammisconfig",
+				"misc/sshhole",
 			},
 		},
 		{

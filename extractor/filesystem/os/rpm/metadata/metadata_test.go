@@ -222,3 +222,77 @@ func TestOpenEulerEcosystemSuffix(t *testing.T) {
 		})
 	}
 }
+
+func TestToNamespace(t *testing.T) {
+	testCases := []struct {
+		desc string
+		meta *metadata.Metadata
+		want string
+	}{
+		{
+			desc: "sles_maps_to_suse",
+			meta: &metadata.Metadata{OSID: "sles"},
+			want: "suse",
+		},
+		{
+			desc: "mariner_maps_to_azurelinux",
+			meta: &metadata.Metadata{OSID: "mariner"},
+			want: "azurelinux",
+		},
+		{
+			desc: "fedora",
+			meta: &metadata.Metadata{OSID: "fedora"},
+			want: "fedora",
+		},
+		{
+			desc: "empty_when_unset",
+			meta: &metadata.Metadata{},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := tc.meta.ToNamespace(); got != tc.want {
+				t.Errorf("ToNamespace() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestToDistro(t *testing.T) {
+	testCases := []struct {
+		desc string
+		meta *metadata.Metadata
+		want string
+	}{
+		{
+			desc: "os_id_and_version_id",
+			meta: &metadata.Metadata{OSID: "fedora", OSVersionID: "38"},
+			want: "fedora-38",
+		},
+		{
+			desc: "fallback_to_build_id",
+			meta: &metadata.Metadata{OSID: "fedora", OSBuildID: "rolling"},
+			want: "fedora-rolling",
+		},
+		{
+			desc: "missing_os_id_returns_version",
+			meta: &metadata.Metadata{OSVersionID: "38"},
+			want: "38",
+		},
+		{
+			desc: "empty_when_unset",
+			meta: &metadata.Metadata{},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			if got := tc.meta.ToDistro(); got != tc.want {
+				t.Errorf("ToDistro() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

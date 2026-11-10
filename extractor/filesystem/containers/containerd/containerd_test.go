@@ -29,7 +29,9 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/containers/containerd"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -367,6 +369,40 @@ func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInp
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := &filesystem.ScanInput{Path: path, Reader: reader, Root: root, Info: info}
+	input := &filesystem.ScanInput{FS: scalibrfs.DirFS(root), Path: path, Reader: reader, Root: root, Info: info}
 	return input
+}
+
+func TestExtract_SymlinkEscapeRejected(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Skipping test on %s", runtime.GOOS)
+	}
+	data, err := os.ReadFile("testdata/meta_linux_test_single.db")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	relPath := "var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
+	scanRoot, outsidePath := fakefs.CreateSymlinkEscapeFixture(t, relPath)
+	if err := os.WriteFile(outsidePath, data, 0600); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	root, err := os.OpenRoot(scanRoot)
+	if err != nil {
+		t.Fatalf("os.OpenRoot: %v", err)
+	}
+	defer root.Close()
+
+	e, err := containerd.New(&cpb.PluginConfig{MaxFileSizeBytes: 500 * units.MiB})
+	if err != nil {
+		t.Fatalf("containerd.New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:   root.FS().(scalibrfs.FS),
+		Path: relPath,
+		Root: scanRoot,
+	}
+	if _, err := e.Extract(t.Context(), input); err == nil {
+		t.Fatal("Extract() succeeded on symlink escaping scan root, want error")
+	}
 }

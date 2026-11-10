@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	grpcpb "deps.dev/api/v3alpha"
+	agrpc "deps.dev/api/v3alpha"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -47,11 +47,11 @@ type Result struct {
 
 // ClientGRPC implements a client for the underlying deps.dev client.
 type ClientGRPC struct {
-	client grpcpb.InsightsClient
+	client agrpc.InsightsClient
 }
 
 // NewClientGRPC returns a new ClientGRPC.
-func NewClientGRPC(client grpcpb.InsightsClient) Client {
+func NewClientGRPC(client agrpc.InsightsClient) Client {
 	return &ClientGRPC{client: client}
 }
 

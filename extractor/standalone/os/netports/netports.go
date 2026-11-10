@@ -29,8 +29,8 @@ import (
 	"github.com/google/osv-scalibr/extractor/standalone"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
-	psutilnet "github.com/shirou/gopsutil/net"
-	"github.com/shirou/gopsutil/process"
+	psutilnet "github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v3/process"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
