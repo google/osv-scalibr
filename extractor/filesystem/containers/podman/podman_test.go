@@ -230,7 +230,7 @@ func TestExtractor_Extract(t *testing.T) {
 			}
 
 			scanInput := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: filepath.Base(tt.Path), Reader: nil, Root: d, Info: nil,
+				FS: fakefs.DirFS(t, d), Path: filepath.Base(tt.Path), Reader: nil, Root: d, Info: nil,
 			}
 
 			got, err := extr.Extract(t.Context(), scanInput)

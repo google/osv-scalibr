@@ -369,7 +369,7 @@ func createScanInput(t *testing.T, root string, path string) *filesystem.ScanInp
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := &filesystem.ScanInput{FS: scalibrfs.DirFS(root), Path: path, Reader: reader, Root: root, Info: info}
+	input := &filesystem.ScanInput{FS: fakefs.DirFS(t, root), Path: path, Reader: reader, Root: root, Info: info}
 	return input
 }
 

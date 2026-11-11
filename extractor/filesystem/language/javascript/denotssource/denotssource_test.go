@@ -29,7 +29,6 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denometadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/denotssource"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
@@ -350,7 +349,7 @@ func TestExtractDenoConfigAncestorCheck(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
-				FS:     scalibrfs.DirFS(rootDir),
+				FS:     fakefs.DirFS(t, rootDir),
 				Path:   tsRelPath,
 				Root:   rootDir,
 				Reader: f,
