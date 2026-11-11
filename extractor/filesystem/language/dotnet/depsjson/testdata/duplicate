@@ -1,0 +1,13 @@
+{
+  "libraries": {
+    "TestLibrary/1.0.0": {
+      "type": "project"
+    },
+    "AWSSDK.Core/3.7.10.6": {
+      "type": "package"
+    },
+    "AWSSDK.Core/3.7.10.6": {
+      "type": "package"
+    }
+  }
+}
