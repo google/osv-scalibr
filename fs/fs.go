@@ -72,7 +72,24 @@ func (r *ScanRoot) WithAbsolutePath() (*ScanRoot, error) {
 	return &ScanRoot{FS: r.FS, Path: absroot}, nil
 }
 
-const maxSymlinkDepth = 40
+const (
+	maxSymlinkDepth = 40
+
+	// errPathEscapesMsg is the error text of the unexported os.errPathEscapes
+	// sentinel returned inside *fs.PathError by os.Root operations when a path
+	// or symlink resolves outside the root (including intra-root absolute
+	// symlinks in a guest container/VM rootfs such as
+	// /etc/os-release -> /usr/lib/os-release).
+	//
+	// Go's standard library (src/os/root.go) defines errPathEscapes as an
+	// unexported errors.New("path escapes from parent") with no exported
+	// sentinel or error type for errors.Is or errors.As. We match this message
+	// before walking path components in resolveInRoot so normal errors (such as
+	// fs.ErrNotExist on missing files) do not trigger redundant per-component
+	// root.Lstat syscalls. TestOSRootPathEscapesError and TestDirFS_Symlinks
+	// fail if Go ever changes this string.
+	errPathEscapesMsg = "path escapes from parent"
+)
 
 // DirFS returns an FS implementation that accesses the real filesystem at the
 // given root, confined to root via os.Root. The underlying os.Root handle is
@@ -104,18 +121,6 @@ func (r *rootFS) getRoot() (*os.Root, error) {
 func (r *rootFS) withRoot(op, name string, fn func(*os.Root) error) error {
 	if r.dir == "" {
 		return &fs.PathError{Op: op, Path: name, Err: errors.New("os: DirFS with empty root")}
-	}
-	// On Windows, an open *os.Root handle holds a directory handle without delete
-	// sharing, causing os.RemoveAll / t.TempDir() cleanup to fail with
-	// ERROR_SHARING_VIOLATION when callers do not explicitly call Close().
-	// Open and close *os.Root per operation on Windows to avoid leaking locks.
-	if runtime.GOOS == "windows" {
-		root, err := os.OpenRoot(r.dir)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = root.Close() }()
-		return fn(root)
 	}
 	root, err := r.getRoot()
 	if err != nil {
@@ -197,12 +202,22 @@ func resolveParentInRoot(root *os.Root, name string, opErr error) (string, bool)
 	return path.Join(resolvedDir, path.Base(name)), true
 }
 
+// isPathEscapesErr reports whether err is the unexported os.errPathEscapes
+// sentinel returned by os.Root when a path or symlink escapes the root.
+func isPathEscapesErr(err error) bool {
+	var pathErr *fs.PathError
+	if errors.As(err, &pathErr) && pathErr.Err != nil {
+		return pathErr.Err.Error() == errPathEscapesMsg
+	}
+	return err != nil && strings.Contains(err.Error(), errPathEscapesMsg)
+}
+
 // resolveInRoot resolves intra-root absolute symlinks (such as
 // /etc/os-release -> /usr/lib/os-release in guest container/VM rootfses)
 // relative to root, up to maxSymlinkDepth hops. It returns true only if at
 // least one absolute symlink was rewritten into a valid root-relative path.
 func resolveInRoot(root *os.Root, name string, opErr error) (string, bool) {
-	if opErr != nil && (errors.Is(opErr, fs.ErrNotExist) || errors.Is(opErr, fs.ErrInvalid) || errors.Is(opErr, fs.ErrPermission)) {
+	if !isPathEscapesErr(opErr) {
 		return "", false
 	}
 	if !fs.ValidPath(name) || name == "." || (runtime.GOOS == "windows" && strings.ContainsRune(name, '\\')) {
