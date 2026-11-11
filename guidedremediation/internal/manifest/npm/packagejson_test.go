@@ -23,7 +23,6 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest/npm"
 	"github.com/google/osv-scalibr/guidedremediation/result"
@@ -109,7 +108,7 @@ func TestRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata"))
 	got, err := rw.Read("package.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -168,7 +167,7 @@ func TestReadWithWorkspaces(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/workspaces"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata/workspaces"))
 	got, err := rw.Read("package.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
@@ -278,7 +277,7 @@ func TestReadDoesNotLoadWorkspaceOutsideProject(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m, err := rw.Read("package.json", scalibrfs.DirFS(project))
+	m, err := rw.Read("package.json", fakefs.DirFS(t, project))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -294,7 +293,7 @@ func TestWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating ReadWriter: %v", err)
 	}
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata"))
 	manif, err := rw.Read("package.json", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)
