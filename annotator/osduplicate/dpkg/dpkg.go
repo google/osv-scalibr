@@ -88,10 +88,11 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 			break
 		}
 
-		// Do not add duplication annotation on packages which are from non-main repos
-		// since vuln matching can happen only on packages hosted on main repos
+		// Skip packages not listed in any matched apt Packages index when the
+		// cache is present. Official components such as universe are included;
+		// when the cache is missing we annotate every dpkg-owned path.
 		pkgName := trimExtension(it.Name())
-		if !isAptCacheEmpty && !aptCache.isFromMainOSRepo(pkgName) {
+		if !isAptCacheEmpty && !aptCache.isFromOSRepo(pkgName) {
 			it.Skip()
 			continue
 		}

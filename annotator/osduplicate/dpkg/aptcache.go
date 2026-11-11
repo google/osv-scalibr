@@ -31,27 +31,39 @@ import (
 	"github.com/pierrec/lz4/v4"
 )
 
-// mainRepoPattern matches files containing main OS repositories indexes
-var mainRepoPattern = regexp.MustCompile(`[\w.]+(?:-[\w%-]+)?_dists_[\w-]+_main_binary-\w+_Packages(?:\.gz|.lz4|.zst)?$`)
+// packagesIndexPattern matches apt Packages indexes and captures the archive
+// component (main, universe, contrib, ...).
+var packagesIndexPattern = regexp.MustCompile(`[\w.]+(?:-[\w%-]+)?_dists_[\w.-]+_([\w+-]+)_binary-\w+_Packages(?:\.gz|\.lz4|\.zst)?$`)
+
+// officialOrigins are the Release "Origin" values of the official distro
+// archives. Non-main components (universe, contrib, ...) are only indexed when
+// they come from one of these, so third-party repos stay excluded (#1857, #2610).
+var officialOrigins = map[string]struct{}{
+	"Debian": {},
+	"Ubuntu": {},
+}
 
 const aptListDir = "var/lib/apt/lists"
 
-// aptCache contains the set of packages listed in main OS repositories indexes
+// aptCache contains the set of packages listed in OS repository indexes
 type aptCache struct {
 	value map[string]struct{}
 }
 
-// isFromMainOSRepo returns true if a package found in main OS repo index
-func (a *aptCache) isFromMainOSRepo(pkgName string) bool {
+// isFromOSRepo returns true if a package is listed in a matched apt Packages index
+func (a *aptCache) isFromOSRepo(pkgName string) bool {
 	_, exists := a.value[pkgName]
 	return exists
 }
 
-// ErrMissingAptCache is returned if the cache folder is missing or empty
+// ErrMissingAptCache is returned if the cache folder is missing, empty, or
+// contains no recognizable Packages indexes.
 var ErrMissingAptCache = errors.New("missing apt cache folder: " + aptListDir)
 
-// extractAptCache extracts main repositories information from the var/lib/apt/lists folder
-// if the var/lib/apt/lists folder is empty or doesn't exists it returns errorMissingAptCache
+// extractAptCache extracts repository package names from var/lib/apt/lists.
+// If the folder is missing, empty, or has no matching Packages indexes, it
+// returns ErrMissingAptCache so callers can fall back to annotating every
+// dpkg-owned path.
 func extractAptCache(root *fs.ScanRoot) (*aptCache, error) {
 	entries, err := iofs.ReadDir(root.FS, aptListDir)
 	if err != nil {
@@ -68,23 +80,60 @@ func extractAptCache(root *fs.ScanRoot) (*aptCache, error) {
 		return nil, ErrMissingAptCache
 	}
 
+	// Suites ("<source>_dists_<suite>" file name prefixes) whose
+	// InRelease/Release file has an official Origin.
+	officialSuites := map[string]bool{}
+	for _, entry := range entries {
+		name := entry.Name()
+		suite, ok := strings.CutSuffix(name, "_InRelease")
+		if !ok {
+			suite, ok = strings.CutSuffix(name, "_Release")
+		}
+		if entry.IsDir() || !ok || !strings.Contains(suite, "_dists_") {
+			continue
+		}
+		origin, err := releaseOrigin(root.FS, filepath.Join(aptListDir, name))
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := officialOrigins[origin]; ok {
+			officialSuites[suite] = true
+		}
+	}
+
 	cache := &aptCache{
 		value: make(map[string]struct{}),
 	}
+	foundIndex := false
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
 		name := entry.Name()
 
-		// skip other repositories' indexes
-		if !mainRepoPattern.MatchString(name) {
+		// skip non-Packages indexes (InRelease, Sources, lock leftovers, ...)
+		m := packagesIndexPattern.FindStringSubmatchIndex(name)
+		if m == nil {
+			continue
+		}
+		foundIndex = true
+
+		// main is indexed from any source as before; other components only
+		// from official distro archives.
+		component, suite := name[m[2]:m[3]], name[:m[2]-1]
+		if component != "main" && !officialSuites[suite] {
 			continue
 		}
 
 		if err := parseAptList(root.FS, filepath.Join(aptListDir, name), cache); err != nil {
 			return nil, err
 		}
+	}
+
+	// A non-empty lists dir with only auxfiles/lock/partial (no Packages
+	// indexes) must be treated like a missing cache (#2610).
+	if !foundIndex {
+		return nil, ErrMissingAptCache
 	}
 
 	return cache, nil
@@ -115,6 +164,25 @@ func parseAptList(fileSystem iofs.FS, path string, cache *aptCache) error {
 	}
 
 	return scanner.Err()
+}
+
+// releaseOrigin returns the value of the "Origin" field of an apt
+// InRelease/Release file, or "" if there is none.
+func releaseOrigin(fileSystem iofs.FS, path string) (string, error) {
+	f, err := fileSystem.Open(path)
+	if err != nil {
+		return "", nil // Skip files we can't open
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Split(discard.LongLines(bufio.MaxScanTokenSize))
+	for scanner.Scan() {
+		if after, ok := bytes.CutPrefix(scanner.Bytes(), []byte("Origin: ")); ok {
+			return string(bytes.TrimSpace(after)), nil
+		}
+	}
+	return "", scanner.Err()
 }
 
 // readerFromExtension returns an io.ReadCloser depending on the file extension

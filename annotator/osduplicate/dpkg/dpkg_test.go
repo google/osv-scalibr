@@ -137,6 +137,86 @@ Package: curl
 			},
 		},
 		{
+			desc: "some_pkgs_found_in_info_and_in_universe_repo",
+			txt: `
+-- var/lib/dpkg/info/python3-aiohttp.list --
+/some/path
+/path/to/file-in-info
+/some/other/path
+-- var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_jammy_main_binary-amd64_Packages --
+Package: curl
+-- var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_jammy_InRelease --
+Origin: Ubuntu
+-- var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_jammy_universe_binary-amd64_Packages --
+Package: python3-aiohttp
+`,
+			packages: []*extractor.Package{
+				{
+					Name:     "aiohttp",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "aiohttp",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
+				},
+			},
+		},
+		{
+			desc: "some_pkgs_found_in_info_and_in_third-party_repo",
+			txt: `
+-- var/lib/dpkg/info/python3-aiohttp.list --
+/path/to/file-in-info
+-- var/lib/apt/lists/archive.ubuntu.com_ubuntu_dists_jammy_main_binary-amd64_Packages --
+Package: curl
+-- var/lib/apt/lists/storage.googleapis.com_dataproc-bigtop-repo_2%5f3%5fdeb12%5f20251203%5f064720-RC01_dists_dataproc_contrib_binary-amd64_Packages --
+Package: python3-aiohttp
+`,
+			packages: []*extractor.Package{
+				{
+					Name:     "aiohttp",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "aiohttp",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+				},
+			},
+		},
+		{
+			desc: "lists_dir_without_packages_indexes_annotates_like_missing_cache",
+			txt: `
+-- var/lib/dpkg/info/dpkg-pkg-name.list --
+/path/to/file-in-info
+-- var/lib/apt/lists/lock --
+`,
+			packages: []*extractor.Package{
+				{
+					Name:     "launguage-pkg",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+				},
+			},
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "launguage-pkg",
+					Location: extractor.LocationFromPath("path/to/file-in-info"),
+					ExploitabilitySignals: []*vex.PackageExploitabilitySignal{{
+						Plugin:          dpkg.Name,
+						Justification:   vex.ComponentNotPresent,
+						MatchesAllVulns: true,
+					}},
+				},
+			},
+		},
+		{
 			desc: "some_pkgs_found_in_info_and_in_main_repo",
 			txt: `
 -- var/lib/dpkg/info/dpkg-pkg-name.list --
