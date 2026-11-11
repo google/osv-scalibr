@@ -18,6 +18,7 @@ package osvecosystem
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
@@ -44,6 +45,7 @@ func (p Parsed) IsEmpty() bool {
 }
 
 var ubuntuVariantReplacer = strings.NewReplacer(":Pro", "", ":LTS", "")
+var pypiNameNormalizerRe = regexp.MustCompile(`[-_.]+`)
 
 func (p Parsed) normalizeSuffix() string {
 	if p.Ecosystem == osvconstants.EcosystemUbuntu && p.Suffix != "" {
@@ -114,6 +116,11 @@ func (p Parsed) NormalizePackageName(name string) string {
 	// crates.io names are case-insensitive, and treat '-' and '_' as equivalent
 	if p.Ecosystem == osvconstants.EcosystemCratesIO {
 		return strings.ReplaceAll(strings.ToLower(name), "_", "-")
+	}
+
+	// PyPI names are normalized per https://www.python.org/dev/peps/pep-0503/#normalized-names
+	if p.Ecosystem == osvconstants.EcosystemPyPI {
+		return strings.ToLower(pypiNameNormalizerRe.ReplaceAllString(name, "-"))
 	}
 
 	return name

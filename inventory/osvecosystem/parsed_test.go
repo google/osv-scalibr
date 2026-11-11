@@ -309,8 +309,93 @@ func TestParsed_NormalizePackageName(t *testing.T) {
 			eco:  osvconstants.EcosystemNPM,
 		},
 		{
-			name: "Foo_Bar",
-			want: "Foo_Bar",
+			name: "requests",
+			want: "requests",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "pip",
+			want: "pip",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "a",
+			want: "a",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "python-dateutil",
+			want: "python-dateutil",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "scikit-learn",
+			want: "scikit-learn",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "nvidia-cudnn-cu12",
+			want: "nvidia-cudnn-cu12",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Django",
+			want: "django",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "PyYAML",
+			want: "pyyaml",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "MarkupSafe",
+			want: "markupsafe",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "typing_extensions",
+			want: "typing-extensions",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "opencv_python_headless",
+			want: "opencv-python-headless",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "zope.interface",
+			want: "zope-interface",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "ruamel.yaml.clib",
+			want: "ruamel-yaml-clib",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Flask_SQLAlchemy",
+			want: "flask-sqlalchemy",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Sphinx_RTD.Theme",
+			want: "sphinx-rtd-theme",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "foo__bar",
+			want: "foo-bar",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "foo--bar",
+			want: "foo-bar",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Foo._-Bar",
+			want: "foo-bar",
 			eco:  osvconstants.EcosystemPyPI,
 		},
 		{
