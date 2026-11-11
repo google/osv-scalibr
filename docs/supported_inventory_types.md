@@ -93,6 +93,7 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 | Javascript | Installed NPM packages (package.json)             | `javascript/packagejson`             |
 |            | package-lock.json, npm-shrinkwrap.json            | `javascript/packagelockjson`         |
 |            | yarn.lock                                         | `javascript/yarnlock`                |
+|            | Yarn Plug'n'Play (.pnp.cjs, .pnp.data.json)       | `javascript/yarnpnp`                 |
 |            | pnpm-lock.yaml                                    | `javascript/pnpmlock`                |
 |            | bun.lock                                          | `javascript/bunlock`                 |
 |            | deno.json                                         | `javascript/denojson`                |
