@@ -26,7 +26,7 @@ var (
 	// Matches on "auth_provider_x509_cert_url" somewhere between curly braces.
 	// This matches very broadly and gives us some vague "JSON context" that we
 	// can further refine on.
-	reJSON = regexp.MustCompile(`\{[^{]+auth_provider_x509_cert_url[^}]+}`)
+	reJSON = regexp.MustCompile(`\{[^{]+auth_provider_x509_cert_url[^}]+\}`)
 
 	// Matches on a base64-encoded GCP service account key (in pretty JSON
 	// format). This relies on consistent field order and whitespace.

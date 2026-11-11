@@ -58,7 +58,7 @@ var (
 	// https://packaging.python.org/en/latest/specifications/name-normalization/
 	reValidPkg                      = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z\d])$`)
 	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z\d_]+)})`)
-	reExtras                        = regexp.MustCompile(`\[[^\[\]]*]`)
+	reExtras                        = regexp.MustCompile(`\[[^\[\]]*\]`)
 	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:\s+|^)(?:--hash|--global-option|--config-settings|-C).*`)
 	reHashOption                    = regexp.MustCompile(`(?:\s+|^)--hash=(\S+)`)
 )
