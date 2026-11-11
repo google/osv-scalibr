@@ -374,6 +374,54 @@ func TestExtractor_Extract(t *testing.T) {
 			},
 		},
 		{
+			Name: "scoped peer dependencies v6",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/scoped-peer-dependencies-v6.yaml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:       "lodash",
+					Version:    "4.17.20",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-peer-dependencies-v6.yaml", 5),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "next",
+					Version:    "13.3.2-canary.13",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-peer-dependencies-v6.yaml", 9),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "next",
+					Version:    "13.4.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-peer-dependencies-v6.yaml", 13),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+				{
+					Name:       "@scope/pkg",
+					Version:    "1.0.0",
+					PURLType:   purl.TypeNPM,
+					Location:   extractor.LocationFromPathAndLine("testdata/scoped-peer-dependencies-v6.yaml", 17),
+					SourceCode: &extractor.SourceCodeIdentifier{},
+					Metadata: &osv.DepGroupMetadata{
+						DepGroupVals: []string{},
+					},
+				},
+			},
+		},
+		{
 			Name: "peer dependencies advanced",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/peer-dependencies-advanced.yaml",
