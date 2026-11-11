@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/vulns"
 	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/log"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -158,7 +159,12 @@ func (db *zipDB) fetchZip(ctx context.Context) (*zip.Reader, error) {
 
 	if err == nil {
 		//nolint:gosec // being world readable is fine
-		_ = os.WriteFile(db.StoredAt, body, 0644)
+		err = os.WriteFile(db.StoredAt, body, 0644)
+	}
+
+	// the archive is still usable from memory, so this does not fail the load
+	if err != nil {
+		log.Warnf("Could not cache %s database at %s: %v", db.Name, db.StoredAt, err)
 	}
 
 	return zipReader, nil
