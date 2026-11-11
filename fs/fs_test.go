@@ -83,6 +83,11 @@ func TestSub(t *testing.T) {
 
 func TestSubEmptyDir(t *testing.T) {
 	base := scalibrfs.DirFS(t.TempDir())
+	t.Cleanup(func() {
+		if c, ok := base.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
 	for _, dir := range []string{"", "."} {
 		if got := scalibrfs.Sub(base, dir); got != base {
 			t.Errorf("Sub(base, %q) returned a new FS, want the original", dir)
