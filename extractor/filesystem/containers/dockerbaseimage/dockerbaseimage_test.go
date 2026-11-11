@@ -157,6 +157,30 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
+			name: "registry_with_port",
+			path: "testdata/dockerfile.registry-port",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "localhost:5000/app",
+					Version:  "latest",
+					Location: extractor.LocationFromPath("testdata/dockerfile.registry-port"),
+					PURLType: purl.TypeDocker,
+				},
+				{
+					Name:     "registry.example.com:5000/team/app",
+					Version:  "1.2.3",
+					Location: extractor.LocationFromPath("testdata/dockerfile.registry-port"),
+					PURLType: purl.TypeDocker,
+				},
+				{
+					Name:     "ghcr.io/org/app",
+					Version:  "sha256:5a271780516b718910041c0993952f14371490216692290d234a9b231d102e1c",
+					Location: extractor.LocationFromPath("testdata/dockerfile.registry-port"),
+					PURLType: purl.TypeDocker,
+				},
+			},
+		},
+		{
 			name:         "scratch layer",
 			path:         "testdata/dockerfile.scratch",
 			wantPackages: nil,
