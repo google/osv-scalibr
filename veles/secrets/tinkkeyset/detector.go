@@ -32,11 +32,11 @@ var (
 	//
 	// The plaintext has 3 different base64 representations depending
 	// on its byte alignment, all of which the regex matches.
-	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]*(?:dHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbm|R5cGUuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmNyeXB0by50aW5r|0eXBlLmdvb2dsZWFwaXMuY29tL2dvb2dsZS5jcnlwdG8udGlua)[A-Za-z0-9+/]*={0,2}`)
+	base64Pattern = regexp.MustCompile(`[A-Za-z0-9+/]*(?:dHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUuY3J5cHRvLnRpbm|R5cGUuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmNyeXB0by50aW5r|0eXBlLmdvb2dsZWFwaXMuY29tL2dvb2dsZS5jcnlwdG8udGlua)[A-Za-z\d+/]*={0,2}`)
 
 	// jsonPattern matches correctly Tink keyset json strings
 	// thanks to the known `{"primaryKeyId":` start and `]}` ending
-	jsonPattern = regexp.MustCompile(`(?s){\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?\]\s*\}`)
+	jsonPattern = regexp.MustCompile(`(?s){\s*"primaryKeyId"\s*:\s*\d+,\s*"key"\s*:\s*\[\s*.*?]\s*}`)
 
 	// tinkTypeURL can be found in both binary and json tink keyset encodings
 	tinkTypeURL = []byte("type.googleapis.com/google.crypto.tink")

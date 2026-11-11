@@ -34,9 +34,9 @@ const maxTokenLength = 319
 //
 // Based on the specs at: https://gitlab.com/gitlab-com/content-sites/handbook/-/blob/a5c49599bd88f1751616b40e4e32331aa2c8bf50/content/handbook/engineering/architecture/design-documents/cells/routable_tokens.md#L80
 var (
-	reRoutableVersioned = regexp.MustCompile(`(?P<prefix>glpat-)(?P<payload>[0-9A-Za-z_-]{27,300})\.(?P<version>[0-9a-z]{2})\.(?P<length>[0-9a-z]{2})(?P<crc>[0-9a-z]{7})`)
-	reRoutable          = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{27,300}\.[0-9a-z]{2}[0-9a-z]{7}`)
-	reLegacy            = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{20}`)
+	reRoutableVersioned = regexp.MustCompile(`(?P<prefix>glpat-)(?P<payload>[0-9A-Za-z_-]{27,300})\.(?P<version>[0-9a-z]{2})\.(?P<length>[0-9a-z]{2})(?P<crc>[\da-z]{7})`)
+	reRoutable          = regexp.MustCompile(`glpat-[0-9A-Za-z_-]{27,300}\.[0-9a-z]{2}[\da-z]{7}`)
+	reLegacy            = regexp.MustCompile(`glpat-[\dA-Za-z_-]{20}`)
 )
 
 var _ veles.Detector = NewDetector()

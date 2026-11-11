@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	reValidName = regexp.MustCompile(`^[a-z0-9/-]+$`)
+	reValidName = regexp.MustCompile(`^[a-z\d/-]+$`)
 )
 
 func TestPluginNamesValid(t *testing.T) {

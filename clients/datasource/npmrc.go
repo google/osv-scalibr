@@ -129,7 +129,7 @@ func (r NPMRegistryConfig) MakeRequest(ctx context.Context, httpClient *http.Cli
 	return r.Auths.GetAuth(reqURL).Get(ctx, httpClient, reqURL)
 }
 
-var urlHexRegex = regex.MustCompile(`%[0-9A-F]{2}`)
+var urlHexRegex = regex.MustCompile(`%[\dA-F]{2}`)
 
 // urlPathEscapeLower is url.PathEscape but with lowercase letters in hex codes (matching npm's behaviour)
 // e.g. "@reg/pkg" -> "@reg%2fpkg"

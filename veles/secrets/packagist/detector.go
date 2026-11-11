@@ -46,31 +46,31 @@ const (
 // apiKeyRe matches Packagist API Keys in the format:
 // packagist_ack_[0-9a-f]{28,32}
 // Based on observed format: 28-32 hex characters after prefix
-var apiKeyRe = regexp.MustCompile(`packagist_ack_[0-9a-f]{28,32}`)
+var apiKeyRe = regexp.MustCompile(`packagist_ack_[\da-f]{28,32}`)
 
 // apiSecretRe matches Packagist API Secrets in the format:
 // packagist_acs_[0-9a-f]{64,96}
 // Based on observed format: typically 80 hex characters after prefix
-var apiSecretRe = regexp.MustCompile(`packagist_acs_[0-9a-f]{64,96}`)
+var apiSecretRe = regexp.MustCompile(`packagist_acs_[\da-f]{64,96}`)
 
 // orgReadTokenRe matches Packagist Organization tokens with read-only access
-var orgReadTokenRe = regexp.MustCompile(`packagist_ort_[0-9a-f]{68}`)
+var orgReadTokenRe = regexp.MustCompile(`packagist_ort_[\da-f]{68}`)
 
 // orgUpdateTokenRe matches Packagist Organization tokens with update access
-var orgUpdateTokenRe = regexp.MustCompile(`packagist_out_[0-9a-f]{68}`)
+var orgUpdateTokenRe = regexp.MustCompile(`packagist_out_[\da-f]{68}`)
 
 // userUpdateTokenRe matches Packagist User tokens with update access
-var userUpdateTokenRe = regexp.MustCompile(`packagist_uut_[0-9a-f]{68}`)
+var userUpdateTokenRe = regexp.MustCompile(`packagist_uut_[\da-f]{68}`)
 
 // conductorUpdateTokenRe matches Packagist Conductor tokens with update access
-var conductorUpdateTokenRe = regexp.MustCompile(`packagist_cut_[0-9a-f]{68}`)
+var conductorUpdateTokenRe = regexp.MustCompile(`packagist_cut_[\da-f]{68}`)
 
 // repoURLRe matches repo.packagist.com URLs
-var repoURLRe = regexp.MustCompile(`https?://repo\.packagist\.com[/\w\-\.]*`)
+var repoURLRe = regexp.MustCompile(`https?://repo\.packagist\.com[/\w\-.]*`)
 
 // usernameRe matches username patterns with context (username, user, name keywords)
 // The capture group extracts just the username value
-var usernameRe = regexp.MustCompile(`(?i)\b(?:username|user|name)\b\s*[:=]?\s*([a-zA-Z0-9_\-]{3,50})\b`)
+var usernameRe = regexp.MustCompile(`(?i)\b(?:username|user|name)\b\s*[:=]?\s*([a-zA-Z\d_\-]{3,50})\b`)
 
 // NewAPISecretDetector returns a detector for Packagist API Keys and Secrets.
 // When both key and secret are found together (within 10KB distance), it returns an APISecret

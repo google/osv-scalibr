@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	keyRe = regexp.MustCompile(`AQ\.Ab8R[a-zA-Z0-9_-]{46}`)
+	keyRe = regexp.MustCompile(`AQ\.Ab8R[a-zA-Z\d_-]{46}`)
 )
 
 const (

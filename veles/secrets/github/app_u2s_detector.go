@@ -24,10 +24,10 @@ import (
 
 const u2sTokenBase64MaxLen = 56 // 40 bytes, base64 encoded
 
-var u2sTokenPattern = regexp.MustCompile(`ghu_[A-Za-z0-9]{36}`)
+var u2sTokenPattern = regexp.MustCompile(`ghu_[A-Za-z\d]{36}`)
 
 // // base64(ghu_) -> Z2h1X (minus the last incomplete byte)
-var u2sTokenBase64Pattern = regexp.MustCompile(`Z2h1X[0-9a-zA-Z+/=]{0,51}`)
+var u2sTokenBase64Pattern = regexp.MustCompile(`Z2h1X[\da-zA-Z+/=]{0,51}`)
 
 // NewAppU2SDetector returns a new Veles Detector that finds Github app user to server tokens
 func NewAppU2SDetector() veles.Detector {

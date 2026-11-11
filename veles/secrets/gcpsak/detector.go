@@ -33,7 +33,7 @@ var (
 	// That should be a reasonable heuristic. Note that this means we will miss
 	// (false negatives) base64-encoded GCP SAK that have been modified before
 	// encoding.
-	reBase64 = regexp.MustCompile(`ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIs[a-zA-Z0-9/+]{52,}`)
+	reBase64 = regexp.MustCompile(`ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIs[a-zA-Z\d/+]{52,}`)
 
 	// requiredKeys are the keys that must be present in a candidate's JSON
 	// representation for the Detector to produce a result.

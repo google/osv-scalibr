@@ -42,7 +42,7 @@ var (
 	// https://youtu.be/WMoyIh0y2Vg?si=3E4cseMwNQvpg0VB&t=440
 	// https://youtu.be/kNavqT_7310?si=5w6s8QQijkxhrIGB&t=289
 
-	clientIDRe = regexp.MustCompile(`\b3MVG[a-zA-Z0-9._\-]{20,180}\b`)
+	clientIDRe = regexp.MustCompile(`\b3MVG[a-zA-Z\d._\-]{20,180}\b`)
 
 	// clientSecretRe is a regular expression that matches salesforce OAuth2 client secrets.
 	// There is no clear documentation on the exact format of salesforce OAuth2 client secrets.
@@ -51,10 +51,10 @@ var (
 	// Moreover, real word demonstrations on youtube suggest it is Alphanumeric:
 	// https://youtu.be/WMoyIh0y2Vg?si=3E4cseMwNQvpg0VB&t=440
 	// https://youtu.be/kNavqT_7310?si=5w6s8QQijkxhrIGB&t=289
-	clientSecretRe = regexp.MustCompile(`(?i)\bclient[_-]?secret\b\s*[:=]?\s*([A-Za-z0-9]{30,100})\b`)
+	clientSecretRe = regexp.MustCompile(`(?i)\bclient[_-]?secret\b\s*[:=]?\s*([A-Za-z\d]{30,100})\b`)
 
 	// instanceURLRe is a regular expression that matches salesforce instance urls.
-	instanceURLRe = regexp.MustCompile(`\b[a-zA-Z0-9.]+\.my\.salesforce\.com\b`)
+	instanceURLRe = regexp.MustCompile(`\b[a-zA-Z\d.]+\.my\.salesforce\.com\b`)
 )
 
 // NewDetector returns a detector that matches Salesforce OAuth2 client credentials.

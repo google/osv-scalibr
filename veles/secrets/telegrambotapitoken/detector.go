@@ -52,7 +52,7 @@ var (
 	// - https://core.telegram.org/bots/api#authorizing-your-bot
 	// Other references that explain the format
 	// - https://stackoverflow.com/questions/61868770/tegram-bot-api-token-format
-	tokenRe = regexp.MustCompile(`\b([0-9]{8,10}:[a-zA-Z0-9_-]{35})\b`)
+	tokenRe = regexp.MustCompile(`\b(\d{8,10}:[a-zA-Z\d_-]{35})\b`)
 
 	// keywordRe is a regular expression that matches Telegram related keywords.
 	keywordRe = regexp.MustCompile(`(?i)(telegram|tgram)`)

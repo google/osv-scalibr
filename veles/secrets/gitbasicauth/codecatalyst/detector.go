@@ -31,7 +31,7 @@ const (
 
 var (
 	// urlPattern matches URLs containing basic authentication credentials.
-	urlPattern = regexp.MustCompile(`\bhttps://[^:\s]+:[^\s@]+@git\.[^/]*codecatalyst\.aws/[^\s]*`)
+	urlPattern = regexp.MustCompile(`\bhttps://[^:\s]+:[^\s@]+@git\.[^/]*codecatalyst\.aws/\S*`)
 )
 
 // NewDetector creates and returns a new instance of the CodeCatalyst secret detector.

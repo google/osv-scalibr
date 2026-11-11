@@ -37,7 +37,7 @@ var (
 	//
 	// References:
 	// - https://learn.microsoft.com/en-us/purview/sit-defn-azure-storage-account-key-generic
-	keyRe = regexp.MustCompile(`(?:[>'=?#]|\b)[A-Za-z0-9+\/]{86}==`)
+	keyRe = regexp.MustCompile(`(?:[>'=?#]|\b)[A-Za-z\d+/]{86}==`)
 
 	// contextRe matches Azure Storage account access keys context keywords
 	contextRe = regexp.MustCompile(`(?i)(?:\bazure[a-z_-]*key\b)|(?:\baz\s+storage\b)`)

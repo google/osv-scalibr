@@ -33,7 +33,7 @@ var (
 	// where (qualifier) is optional. Those without qualifier are considered innovation versions.
 	// version: YY.MM format. e.g. 24.03
 	// qualifier: currently supported are LTS, LTS SPd. e.g. LTS, LTS-SP1, LTS-SP2
-	openEulerPrettyNameRegexp = regexp.MustCompile(`^openEuler\s+([0-9]{2}\.[0-9]{2})(?:\s*\((LTS(?:[- ]SP\d+)?)\))?$`)
+	openEulerPrettyNameRegexp = regexp.MustCompile(`^openEuler\s+(\d{2}\.\d{2})(?:\s*\((LTS(?:[- ]SP\d+)?)\))?$`)
 )
 
 // Metadata holds parsing information for an rpm package.

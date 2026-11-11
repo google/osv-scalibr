@@ -34,11 +34,11 @@ const (
 
 // circleCIPATRe matches CircleCI Personal Access Tokens in the format:
 // CCIPAT_[A-Za-z0-9]{22}_[0-9a-f]{40}
-var circleCIPATRe = regexp.MustCompile(`CCIPAT_[A-Za-z0-9]{22}_[0-9a-f]{40}`)
+var circleCIPATRe = regexp.MustCompile(`CCIPAT_[A-Za-z0-9]{22}_[\da-f]{40}`)
 
 // circleCIProjectRe matches CircleCI Project Tokens in the format:
 // CCIPRJ_[A-Za-z0-9]{22}_[0-9a-f]{40}
-var circleCIProjectRe = regexp.MustCompile(`CCIPRJ_[A-Za-z0-9]{22}_[0-9a-f]{40}`)
+var circleCIProjectRe = regexp.MustCompile(`CCIPRJ_[A-Za-z0-9]{22}_[\da-f]{40}`)
 
 // NewPersonalAccessTokenDetector returns a detector for CircleCI Personal Access Tokens.
 func NewPersonalAccessTokenDetector() veles.Detector {

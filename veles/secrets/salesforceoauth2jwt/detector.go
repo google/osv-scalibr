@@ -40,7 +40,7 @@ var (
 	// Moreover, here are few real word demonstration on youtube:
 	// https://youtu.be/WMoyIh0y2Vg?si=3E4cseMwNQvpg0VB&t=440
 	// https://youtu.be/kNavqT_7310?si=5w6s8QQijkxhrIGB&t=289
-	clientIDRe = regexp.MustCompile(`\b3MVG[a-zA-Z0-9._\-]{20,180}\b`)
+	clientIDRe = regexp.MustCompile(`\b3MVG[a-zA-Z\d._\-]{20,180}\b`)
 
 	// usernameRe is a regular expression that matches salesforce Username emails.
 	usernameRe = regexp.MustCompile(`[\w.\-+%]{1,64}@[\w.\-]{2,255}\.[A-Za-z]{2,10}`)

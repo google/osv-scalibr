@@ -33,15 +33,15 @@ const (
 
 // vaultTokenRe is a regular expression that matches HashiCorp Vault tokens.
 // Vault tokens can start with older prefixes (s., b., r.) or newer prefixes (hvs., hvb.) followed by base64-like characters.
-var vaultTokenRe = regexp.MustCompile(`(?:hv[sb]|[sbr])\.[A-Za-z0-9_-]{24,}`)
+var vaultTokenRe = regexp.MustCompile(`(?:hv[sb]|[sbr])\.[A-Za-z\d_-]{24,}`)
 
 // appRoleRoleIDContextRe matches potential AppRole role IDs with context labels.
 // This matches patterns like "role_id: uuid" or "roleId: uuid"
-var appRoleRoleIDContextRe = regexp.MustCompile(`(?i)role[_-]?id\s*[:\s=]\s*([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})`)
+var appRoleRoleIDContextRe = regexp.MustCompile(`(?i)role[_-]?id\s*[:\s=]\s*([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[\da-fA-F]{12})`)
 
 // appRoleSecretIDContextRe matches potential AppRole secret IDs with context labels.
 // This matches patterns like "secret_id: uuid" or "secretId: uuid"
-var appRoleSecretIDContextRe = regexp.MustCompile(`(?i)secret[_-]?id\s*[:\s=]\s*([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})`)
+var appRoleSecretIDContextRe = regexp.MustCompile(`(?i)secret[_-]?id\s*[:\s=]\s*([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[\da-fA-F]{12})`)
 
 // NewTokenDetector returns a new simpletoken.Detector that matches HashiCorp Vault tokens.
 func NewTokenDetector() veles.Detector {

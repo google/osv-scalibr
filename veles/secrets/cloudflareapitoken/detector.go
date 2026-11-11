@@ -42,7 +42,7 @@ var (
 	)
 
 	// tokenRe matches a 40-character alphanumeric token (with underscores and hyphens).
-	tokenRe = regexp.MustCompile(`\b[A-Za-z0-9_-]{40}\b`)
+	tokenRe = regexp.MustCompile(`\b[A-Za-z\d_-]{40}\b`)
 )
 
 var _ veles.Detector = NewDetector()

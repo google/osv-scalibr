@@ -31,7 +31,7 @@ const (
 var (
 	// keyRe matches exactly 32 alphanumeric characters with word boundaries
 	// to avoid matching parts of larger base64 blobs.
-	keyRe = regexp.MustCompile(`\b[A-Za-z0-9]{32}\b`)
+	keyRe = regexp.MustCompile(`\b[A-Za-z\d]{32}\b`)
 
 	// contextRe matches Mistral-specific context indicators (case-insensitive).
 	// Matches:

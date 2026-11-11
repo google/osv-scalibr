@@ -29,7 +29,7 @@ var (
 // SendGrid API keys are exactly 69 characters: SG.<22 chars>.<43 chars>
 const maxKeyLen = 69
 
-var keyRe = regexp.MustCompile(`SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}`)
+var keyRe = regexp.MustCompile(`SG\.[A-Za-z0-9_-]{22}\.[A-Za-z\d_-]{43}`)
 
 // NewDetector returns a detector for SendGrid API keys (SG.xxx.yyy).
 func NewDetector() veles.Detector {

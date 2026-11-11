@@ -56,8 +56,8 @@ var (
 	reUnsupportedConstraints = regexp.MustCompile(`\*|<[^=]|,|!=`)
 	// Regex to match valid package name (?i for case-insensitivity)
 	// https://packaging.python.org/en/latest/specifications/name-normalization/
-	reValidPkg                      = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$`)
-	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z0-9_]+)\})`)
+	reValidPkg                      = regexp.MustCompile(`(?i)^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z\d])$`)
+	reEnvVar                        = regexp.MustCompile(`(?P<var>\$\{(?P<name>[A-Z\d_]+)})`)
 	reExtras                        = regexp.MustCompile(`\[[^\[\]]*\]`)
 	reTextAfterFirstOptionInclusive = regexp.MustCompile(`(?:\s+|^)(?:--hash|--global-option|--config-settings|-C).*`)
 	reHashOption                    = regexp.MustCompile(`(?:\s+|^)--hash=(\S+)`)

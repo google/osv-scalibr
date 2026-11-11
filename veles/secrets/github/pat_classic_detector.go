@@ -24,10 +24,10 @@ import (
 
 const classicPATBase64MaxLen = 56 // 40 bytes, base64 encoded
 
-var classicPATPattern = regexp.MustCompile(`ghp_[A-Za-z0-9]{36}`)
+var classicPATPattern = regexp.MustCompile(`ghp_[A-Za-z\d]{36}`)
 
 // base64(ghp_) -> Z2hwX (minus the last incomplete byte)
-var classicPATBase64Pattern = regexp.MustCompile(`Z2hwX[0-9a-zA-Z+/=]{0,51}`)
+var classicPATBase64Pattern = regexp.MustCompile(`Z2hwX[\da-zA-Z+/=]{0,51}`)
 
 // NewClassicPATDetector returns a new Veles Detector that finds Github classic personal access tokens
 func NewClassicPATDetector() veles.Detector {

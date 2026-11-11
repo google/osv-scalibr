@@ -25,7 +25,7 @@ import (
 const maxTokenLength = 57
 
 // keyRe is a regular expression that matches a RubyGems API key.
-var keyRe = regexp.MustCompile(`rubygems_[0-9a-f]{48}`)
+var keyRe = regexp.MustCompile(`rubygems_[\da-f]{48}`)
 
 // NewDetector returns a new simpletoken.Detector that matches RubyGems API keys.
 func NewDetector() veles.Detector {

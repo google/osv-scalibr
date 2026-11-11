@@ -86,8 +86,8 @@ func (d *detector) Detect(data []byte) (secrets []veles.Secret, positions []int)
 //
 // Both forms include a tenant ID as a 36-character GUID
 var (
-	reLoginMicrosoft = regexp.MustCompile(`^https://login\.microsoftonline\.com/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/v2\.0$`)
-	reStsWindows     = regexp.MustCompile(`^https://sts\.windows\.net/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/?$`)
+	reLoginMicrosoft = regexp.MustCompile(`^https://login\.microsoftonline\.com/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[\da-fA-F]{12})/v2\.0$`)
+	reStsWindows     = regexp.MustCompile(`^https://sts\.windows\.net/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[\da-fA-F]{12})/?$`)
 )
 
 // isValidAzureIssuer reports whether the given issuer ('iss') URL matches

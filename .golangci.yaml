@@ -54,6 +54,9 @@ linters:
           pkg: ^testing$
       analyze-types: true
     gocritic:
+      enabled-checks:
+        - badRegexp
+        - regexpSimplify
       disabled-checks:
         - ifElseChain
     revive:

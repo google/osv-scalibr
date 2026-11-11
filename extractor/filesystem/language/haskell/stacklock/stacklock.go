@@ -123,7 +123,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: pkgs}, err
 }
 
-var packageVersionRe = regexp.MustCompile(`hackage:\s*([a-zA-Z0-9\-]+)-([0-9.]+)@`)
+var packageVersionRe = regexp.MustCompile(`hackage:\s*([a-zA-Z0-9\-]+)-([\d.]+)@`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	s := bufio.NewScanner(input.Reader)

@@ -44,12 +44,12 @@ var (
 // API key: prefix `xai-` followed by 80 alphanumeric characters.
 const apiKeyMaxLen = 84
 
-var apiKeyRe = regexp.MustCompile(`xai-[A-Za-z0-9]{80}`)
+var apiKeyRe = regexp.MustCompile(`xai-[A-Za-z\d]{80}`)
 
 // Management key: prefix `xai-token-` followed by 80 alphanumeric characters.
 const mgmtKeyMaxLen = 90
 
-var mgmtKeyRe = regexp.MustCompile(`xai-token-[A-Za-z0-9]{80}`)
+var mgmtKeyRe = regexp.MustCompile(`xai-token-[A-Za-z\d]{80}`)
 
 // NewAPIKeyDetector returns a detector for standard xAI API keys (xai-...).
 func NewAPIKeyDetector() veles.Detector {

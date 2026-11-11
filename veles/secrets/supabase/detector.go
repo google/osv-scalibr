@@ -45,21 +45,21 @@ const (
 // patRe matches Supabase Personal Access Tokens in the format:
 // `sbp_` followed by 40 hexadecimal characters.
 // Reference : https://supabase.com/docs/reference/api/introduction#authentication
-var patRe = regexp.MustCompile(`sbp_[a-f0-9]{40}`)
+var patRe = regexp.MustCompile(`sbp_[a-f\d]{40}`)
 
 // projectSecretKeyRe matches Supabase Project Secret Keys in the format:
 // `sb_secret_` followed by 31-36 base64url characters.
 // Reference : https://supabase.com/docs/guides/api/api-keys#overview
-var projectSecretKeyRe = regexp.MustCompile(`sb_secret_[A-Za-z0-9_-]{31,36}`)
+var projectSecretKeyRe = regexp.MustCompile(`sb_secret_[A-Za-z\d_-]{31,36}`)
 
 // projectRefRe matches Supabase project references in URLs.
 // Format: `https://` followed by a 20-character lowercase alphanumeric
 // project reference, then `.supabase.co`.
 // Reference : https://supabase.com/docs/guides/auth/jwts
-var projectRefRe = regexp.MustCompile(`https://([a-z0-9]{20})\.supabase\.co`)
+var projectRefRe = regexp.MustCompile(`https://([a-z\d]{20})\.supabase\.co`)
 
 // jwtRe matches JWT tokens (three base64url segments separated by dots).
-var jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)
+var jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z\d_-]+`)
 
 // jwtPayload represents the decoded JWT payload.
 type jwtPayload struct {

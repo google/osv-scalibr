@@ -49,8 +49,8 @@ var (
 		".ipy":   true,
 	}
 
-	installCmdRe    = regexp.MustCompile(`^(?:!|%)(pip|conda|mamba|micromamba|uv)\b`)
-	packageSpecRe   = regexp.MustCompile(`^([A-Za-z0-9._-]+)(==|===|~=|>=|<=|>|<|=)?([A-Za-z0-9*._+-]+)?$`)
+	installCmdRe    = regexp.MustCompile(`^[!%](pip|conda|mamba|micromamba|uv)\b`)
+	packageSpecRe   = regexp.MustCompile(`^([A-Za-z0-9._-]+)(==|===|~=|>=|<=|>|<|=)?([A-Za-z\d*._+-]+)?$`)
 	packageExtrasRe = regexp.MustCompile(`\[[^\[\]]*\]`)
 
 	// These options consume the following token when passed without an inline value.

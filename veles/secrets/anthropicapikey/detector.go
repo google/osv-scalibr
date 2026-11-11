@@ -28,7 +28,7 @@ const maxTokenLength = 200
 // Anthropic API keys start with "sk-ant-" followed by an identifier
 // (valid identifiers such as: api03, admin01, etc.)
 // and base64-like characters with hyphens and underscores.
-var keyRe = regexp.MustCompile(`sk-ant-[a-zA-Z0-9]+-[A-Za-z0-9_-]+`)
+var keyRe = regexp.MustCompile(`sk-ant-[a-zA-Z0-9]+-[A-Za-z\d_-]+`)
 
 // NewDetector returns a new simpletoken.Detector that matches Anthropic API keys
 // and returns the appropriate key type (WorkspaceAPIKey or ModelAPIKey) based on the key content.

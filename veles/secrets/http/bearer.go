@@ -33,7 +33,7 @@ var (
 			`["'\s=:]{0,10}` +
 			// Optional nearby "value" key (handles JSON/YAML)
 			`(?:.{0,150}?\bvalue["'\s=:]*)?` +
-			`Bearer\s+([A-Za-z0-9\-\._~+/=]+)`,
+			`Bearer\s+([A-Za-z\d\-\._~+/=]+)`,
 	)
 )
 

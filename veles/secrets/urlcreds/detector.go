@@ -46,7 +46,7 @@ var (
 	// urlPattern matches URLs containing credentials.
 	// Format (per RFC 3986):
 	//   scheme://username[:password]@host[/path][?query][#fragment]
-	urlPattern = regexp.MustCompile(`\b[a-zA-Z0-9+.-]+:\/\/[^\s\?@#\/]+@[^\s]+\b`)
+	urlPattern = regexp.MustCompile(`\b[a-zA-Z\d+.-]+://[^\s?@#/]+@\S+\b`)
 )
 
 // NewDetector creates and returns a new instance of the URL with credentials detector.
