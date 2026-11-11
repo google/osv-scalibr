@@ -527,6 +527,12 @@ func TestNewZippedDB_WithSpecificPackages_NormalizedNames(t *testing.T) {
 					{Package: &osvpb.Package{Ecosystem: "npm", Name: "jquery-querybuilder"}},
 				},
 			},
+			"GHSA-4.json": {
+				Id: "GHSA-4",
+				Affected: []*osvpb.Affected{
+					{Package: &osvpb.Package{Ecosystem: "PyPI", Name: "Sphinx_RTD.Theme"}},
+				},
+			},
 		})
 	})
 
@@ -539,6 +545,7 @@ func TestNewZippedDB_WithSpecificPackages_NormalizedNames(t *testing.T) {
 		[]*extractor.Package{
 			{Name: "Newtonsoft.Json", PURLType: purl.TypeNuget},
 			{Name: "serde_json", PURLType: purl.TypeCargo},
+			{Name: "Sphinx_-RTD.Theme", PURLType: purl.TypePyPi},
 			{Name: "jQuery-QueryBuilder", PURLType: purl.TypeNPM},
 		},
 		http.DefaultClient,
@@ -559,6 +566,12 @@ func TestNewZippedDB_WithSpecificPackages_NormalizedNames(t *testing.T) {
 			Id: "GHSA-2",
 			Affected: []*osvpb.Affected{
 				{Package: &osvpb.Package{Ecosystem: "crates.io", Name: "Serde-Json"}},
+			},
+		},
+		{
+			Id: "GHSA-4",
+			Affected: []*osvpb.Affected{
+				{Package: &osvpb.Package{Ecosystem: "PyPI", Name: "Sphinx_RTD.Theme"}},
 			},
 		},
 	})
