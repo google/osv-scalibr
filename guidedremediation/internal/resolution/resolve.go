@@ -43,6 +43,10 @@ func Resolve(ctx context.Context, c resolve.Client, m manifest.Manifest, opts op
 		cl.AddVersion(lm.Root(), lm.Requirements())
 	}
 
+	if specific, ok := m.EcosystemSpecific().(maven.ManifestSpecific); ok && specific.MissingVersions != nil {
+		return nil, fmt.Errorf("%s: %w", m.FilePath(), specific.MissingVersions)
+	}
+
 	var r resolve.Resolver
 	sys := m.System()
 	switch sys {
