@@ -234,14 +234,14 @@ func (e Extractor) extractPackageJSONNode(
 //
 // ASAR layout (all uint32 little-endian):
 //
-//	[4B: 8]  [4B: headerPickleSize]   <- first Pickle (8 bytes total)
-//	[4B: headerPickleSize] [4B: jsonLen] [jsonLen bytes JSON] [padding]
-//	                                   <- second Pickle
+//	[4B: 4]  [4B: headerPickleSize]   <- first Pickle (8 bytes total)
+//	[4B: headerPickleSize-4] [4B: jsonLen] [jsonLen bytes JSON] [padding]
+//	                                   <- second Pickle (headerPickleSize bytes)
 //	[file data ...]
 type asarPrefix struct {
-	_                uint32 // always 8 (size of first Pickle payload)
+	_                uint32 // always 4 (size of first Pickle payload)
 	HeaderPickleSize uint32
-	_                uint32 // mirrors HeaderPickleSize
+	_                uint32 // payload size of the second Pickle
 	JSONLen          uint32
 }
 
@@ -277,9 +277,9 @@ func readHeader(r io.Reader) (asarHeader, int64, error) {
 		return asarHeader{}, 0, fmt.Errorf("parsing ASAR header JSON: %w", err)
 	}
 
-	// Data starts after the first Pickle (8 bytes), the second Pickle's
-	// 4-byte size field, and the headerPickleSize bytes of payload.
-	dataOffset := int64(12) + headerPickleSize
+	// Data starts after the first Pickle (8 bytes) and the second Pickle
+	// (headerPickleSize bytes, including its own 4-byte size field).
+	dataOffset := int64(8) + headerPickleSize
 	return hdr, dataOffset, nil
 }
 

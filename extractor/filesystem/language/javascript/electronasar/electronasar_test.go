@@ -165,6 +165,23 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Archive produced by `npx @electron/asar@4.3.1 pack`. A trailing
+			// file follows the manifest so that a misaligned read stays within
+			// the archive and fails JSON parsing instead of hitting EOF.
+			Name: "packed_by_asar_tool",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/asar_tool_packed.asar",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "packed-demo",
+					Version:  "1.2.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/asar_tool_packed.asar"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
