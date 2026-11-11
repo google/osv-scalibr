@@ -252,6 +252,90 @@ func TestParsed_MarshalJSON(t *testing.T) {
 	}
 }
 
+func TestParsed_NormalizePackageName(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+		eco  osvconstants.Ecosystem
+	}{
+		{
+			name: "Microsoft.OpenApi.Kiota",
+			want: "microsoft.openapi.kiota",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "Newtonsoft_Json",
+			want: "newtonsoft_json",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "Newtonsoft.Json",
+			want: "newtonsoft.json",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "Foo_Bar-Baz",
+			want: "foo_bar-baz",
+			eco:  osvconstants.EcosystemNuGet,
+		},
+		{
+			name: "lol_html",
+			want: "lol-html",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "Serde_Json",
+			want: "serde-json",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "serde_json",
+			want: "serde-json",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "serde-json",
+			want: "serde-json",
+			eco:  osvconstants.EcosystemCratesIO,
+		},
+		{
+			name: "jquery-querybuilder",
+			want: "jquery-querybuilder",
+			eco:  osvconstants.EcosystemNPM,
+		},
+		{
+			name: "jQuery-QueryBuilder",
+			want: "jQuery-QueryBuilder",
+			eco:  osvconstants.EcosystemNPM,
+		},
+		{
+			name: "Foo_Bar",
+			want: "Foo_Bar",
+			eco:  osvconstants.EcosystemPyPI,
+		},
+		{
+			name: "Foo_Bar",
+			want: "Foo_Bar",
+			eco:  "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.eco)+"/"+tt.name, func(t *testing.T) {
+			parsed := osvecosystem.FromEcosystem(tt.eco)
+
+			got := parsed.NormalizePackageName(tt.name)
+
+			if got != tt.want {
+				t.Errorf("%s.NormalizePackageName() = %v, want %v", tt.eco, got, tt.want)
+			}
+
+			if again := parsed.NormalizePackageName(got); again != got {
+				t.Errorf("%s.NormalizePackageName(%q) is not idempotent: got %q", tt.eco, got, again)
+			}
+		})
+	}
+}
+
 func TestParsed_String(t *testing.T) {
 	tests := buildCases(t)
 	for _, tt := range tests {

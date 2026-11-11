@@ -103,6 +103,22 @@ func (p Parsed) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + p.String() + `"`), nil
 }
 
+// NormalizePackageName applies ecosystem specific normalization rules to the name of
+// a package, to make it suitable to compare to other names from the same ecosystem.
+func (p Parsed) NormalizePackageName(name string) string {
+	// NuGet package IDs are case-insensitive
+	if p.Ecosystem == osvconstants.EcosystemNuGet {
+		return strings.ToLower(name)
+	}
+
+	// crates.io names are case-insensitive, and treat '-' and '_' as equivalent
+	if p.Ecosystem == osvconstants.EcosystemCratesIO {
+		return strings.ReplaceAll(strings.ToLower(name), "_", "-")
+	}
+
+	return name
+}
+
 // GetValidity checks if the ecosystem is a valid OSV ecosystem value. Returns nil if valid, error otherwise.
 func (p Parsed) GetValidity() error {
 	if p.IsEmpty() {
