@@ -103,7 +103,8 @@ See the docs on [how to add a new Extractor](/docs/new_extractor.md).
 |            | Julia installed packages (Manifest.toml)          | `julia/manifesttoml`                 |
 | Lua        | Luarocks modules                                  | `lua/luarocks`                       |
 | ObjectiveC | Podfile.lock                                      | `swift/podfilelock`                  |
-| PHP        | Composer                                          | `php/composerlock`                   |
+| PHP        | Composer lockfile                                 | `php/composerlock`                   |
+|            | Composer installed packages (installed.json)      | `php/composerinstalled`              |
 | Python     | Installed PyPI packages (global and venv)         | `python/wheelegg`                    |
 |            | requirements.txt                                  | `python/requirements`                |
 |            | poetry.lock                                       | `python/poetrylock`                  |
