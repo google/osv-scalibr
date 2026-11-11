@@ -32,6 +32,7 @@ import (
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/vulns"
 	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -168,11 +169,15 @@ func (db *zipDB) fetchZip(ctx context.Context) (*zip.Reader, error) {
 // of the named packages, so that vulnerabilities can be filtered out early.
 //
 // Only the name is considered, and the incoming names are expected to be
-// already normalized based on their ecosystem using vulns.NormalizeName.
+// already normalized based on their ecosystem using osvecosystem.Parsed
 func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
 	for _, affected := range v.GetAffected() {
 		ap := affected.GetPackage()
-		apName := vulns.NormalizeName(ap.GetName(), ap.GetEcosystem())
+
+		// it's safe to use the parsed ecosystem for normalizing the
+		// package name, even if the ecosystem itself is invalid
+		eco, _ := osvecosystem.Parse(ap.GetEcosystem())
+		apName := eco.NormalizePackageName(ap.GetName())
 
 		for _, name := range names {
 			if apName == name {
@@ -263,7 +268,7 @@ func newZippedDB(ctx context.Context, dbBasePath, name, url string, offline bool
 		pkg := osvutil.ParsePackage(inv)
 
 		// use the normalized version of the name while we still know the ecosystem
-		names = append(names, vulns.NormalizeName(pkg.Name, string(pkg.Ecosystem.Ecosystem)))
+		names = append(names, pkg.Ecosystem.NormalizePackageName(pkg.Name))
 	}
 
 	if err := db.load(ctx, names); err != nil {
