@@ -30,8 +30,13 @@ func (v NuGetVersion) compare(w NuGetVersion) int {
 	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
+	vBuild := strings.ToLower(v.build)
+	wBuild := strings.ToLower(w.build)
+	if diff := compareBuildComponents(vBuild, wBuild); diff != 0 {
+		return diff
+	}
 
-	return compareBuildComponents(strings.ToLower(v.build), strings.ToLower(w.build))
+	return compareEchoBuildComponents(vBuild, wBuild)
 }
 
 // Compare compares the given version to the receiver.

@@ -203,6 +203,10 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 			file: "semver-versions.txt",
 		},
 		{
+			name: "Echo:npm",
+			file: "semver-versions.txt",
+		},
+		{
 			name: "crates.io",
 			file: "semver-versions.txt",
 		},
@@ -219,6 +223,10 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 			file: "nuget-versions.txt",
 		},
 		{
+			name: "Echo:NuGet",
+			file: "nuget-versions.txt",
+		},
+		{
 			name: "Packagist",
 			file: "packagist-versions.txt",
 		},
@@ -231,6 +239,10 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 			file: "semver-versions.txt",
 		},
 		{
+			name: "Echo:Go",
+			file: "semver-versions.txt",
+		},
+		{
 			name: "Hex",
 			file: "semver-versions.txt",
 		},
@@ -239,11 +251,19 @@ func TestVersion_Compare_Ecosystems(t *testing.T) {
 			file: "maven-versions.txt",
 		},
 		{
+			name: "Echo:Maven",
+			file: "maven-versions.txt",
+		},
+		{
 			name: "Maven",
 			file: "maven-versions-generated.txt",
 		},
 		{
 			name: "PyPI",
+			file: "pypi-versions.txt",
+		},
+		{
+			name: "Echo:PyPI",
 			file: "pypi-versions.txt",
 		},
 		{

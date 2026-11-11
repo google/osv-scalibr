@@ -56,3 +56,8 @@
 -class.-jw.util.version.version-pre < 1.0
 -class.-jw.util.version.version-preview < 1.0
 -class.-jw.util.version.version-dev < 1.0
+
+25.2 < 25.2+echo.1
+25.2+echo.1 < 25.2+echo.2
+25.2+echo.2 < 25.2+echo.10
+25.2+echo.2 < 25.3
