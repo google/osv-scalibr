@@ -90,7 +90,9 @@ func WithMalformedSecrets[S veles.Secret](secrets ...S) AcceptValidatorOption[S]
 	}
 }
 
-// WithoutOnline disables online testing.
+// WithoutOnline skips the true-negatives check, which requires a live service.
+// Other checks may still make requests. In particular, malformed-secrets may
+// contact a live server if the validator does not reject malformed secrets locally.
 func WithoutOnline[S veles.Secret]() AcceptValidatorOption[S] {
 	return func(cfg *testConfig[S]) {
 		cfg.withoutOnline = true
@@ -115,7 +117,7 @@ func AcceptValidator[S veles.Secret](t *testing.T, v veles.Validator[S], opts ..
 	}
 	sampleSecret := cfg.trueNegatives[0]
 
-	// Test malformed secrets
+	// Test cancelled context
 	t.Run("cancelled-ctx", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
