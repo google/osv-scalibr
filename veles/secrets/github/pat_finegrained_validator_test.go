@@ -15,7 +15,6 @@
 package github_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,18 +22,31 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/github"
 	"github.com/google/osv-scalibr/veles/secrets/github/mockgithub"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
 	fineGrainedPATValidatorKey = `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`
 )
 
-func TestFineGrainedPATValidator(t *testing.T) {
-	cancelledContext, cancel := context.WithCancel(t.Context())
-	cancel()
+func TestAcceptFineGrainedPATValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		github.NewFineGrainedPATValidator(),
+		velestest.WithTrueNegatives(github.FineGrainedPersonalAccessToken{
+			// Matches fineGrainedPATPattern: github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}
+			Token: `github_pat_0000000000000000000000_00000000000000000000000000000000000000000000000000000000000`,
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[github.FineGrainedPersonalAccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
 
+func TestFineGrainedPATValidator(t *testing.T) {
 	mockGithubServer := func(code int) *httptest.Server {
 		return mockgithub.Server(
 			t, github.UserValidationEndpoint, code,
@@ -48,16 +60,7 @@ func TestFineGrainedPATValidator(t *testing.T) {
 		server  *httptest.Server
 		want    veles.ValidationStatus
 		wantErr error
-		//nolint:containedctx
-		ctx context.Context
 	}{
-		{
-			name:    "cancelled_context",
-			ctx:     cancelledContext,
-			server:  mockGithubServer(http.StatusOK),
-			want:    veles.ValidationFailed,
-			wantErr: cmpopts.AnyError,
-		},
 		{
 			name:   "valid_finegrainded_key",
 			token:  fineGrainedPATValidatorKey,
@@ -86,10 +89,6 @@ func TestFineGrainedPATValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.ctx == nil {
-				tt.ctx = t.Context()
-			}
-
 			// Create a validator with a mock client
 			validator := github.NewFineGrainedPATValidator()
 			validator.HTTPC = tt.server.Client()
@@ -99,7 +98,7 @@ func TestFineGrainedPATValidator(t *testing.T) {
 			key := github.FineGrainedPersonalAccessToken{Token: tt.token}
 
 			// Test validation
-			got, err := validator.Validate(tt.ctx, key)
+			got, err := validator.Validate(t.Context(), key)
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)

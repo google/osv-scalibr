@@ -87,6 +87,7 @@ func NewAPIValidator() *simplevalidate.Validator[GrokXAIAPIKey] {
 				"Authorization": "Bearer " + k.Key,
 			}
 		},
+		InvalidResponseCodes:   []int{http.StatusBadRequest},
 		StatusFromResponseBody: apiKeyStatusFromBody,
 		HTTPC: &http.Client{
 			Timeout: validationTimeout,

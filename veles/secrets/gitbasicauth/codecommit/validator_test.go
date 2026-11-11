@@ -15,7 +15,6 @@
 package codecommit_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,8 +22,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/codecommit"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 var (
@@ -34,27 +35,27 @@ var (
 	badHostURL               = "https://user:token@bad-host/v1/repos/osv-scalibr-bad"
 )
 
-func TestValidator(t *testing.T) {
-	cancelledContext, cancel := context.WithCancel(t.Context())
-	cancel()
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		codecommit.NewValidator(),
+		velestest.WithMalformedSecrets(codecommit.Credentials{FullURL: badHostURL}),
+		velestest.WithTrueNegatives(codecommit.Credentials{FullURL: validatorTestURL}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[codecommit.Credentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[codecommit.Credentials](),
+	)
+}
 
+func TestValidator(t *testing.T) {
 	cases := []struct {
-		//nolint:containedctx
-		ctx        context.Context
 		name       string
 		url        string
 		httpStatus int
 		want       veles.ValidationStatus
 		wantErr    error
 	}{
-		{
-			name:       "cancelled_context",
-			url:        validatorTestURL,
-			want:       veles.ValidationFailed,
-			ctx:        cancelledContext,
-			httpStatus: http.StatusOK,
-			wantErr:    cmpopts.AnyError,
-		},
 		{
 			name:    "bad_host",
 			url:     badHostURL,
@@ -83,9 +84,6 @@ func TestValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.ctx == nil {
-				tt.ctx = t.Context()
-			}
 			server := httptest.NewServer(mockserver.GitHandler(t, tt.httpStatus))
 			defer server.Close()
 
@@ -96,7 +94,7 @@ func TestValidator(t *testing.T) {
 			v := codecommit.NewValidator()
 			v.HTTPC = client
 
-			got, err := v.Validate(tt.ctx, codecommit.Credentials{FullURL: tt.url})
+			got, err := v.Validate(t.Context(), codecommit.Credentials{FullURL: tt.url})
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)

@@ -15,7 +15,6 @@
 package circleci_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,6 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/circleci"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 const (
@@ -72,6 +73,19 @@ func mockCircleCIPATServer(t *testing.T, expectedToken string, serverResponseCod
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(serverResponseCode)
 	}))
+}
+
+func TestAcceptPersonalAccessTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		circleci.NewPersonalAccessTokenValidator(),
+		velestest.WithTrueNegatives(circleci.PersonalAccessToken{
+			Token: "CCIPAT_invalid_token_1234567890_1234567890123456789012345678901234567890",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[circleci.PersonalAccessToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
 }
 
 func TestPersonalAccessTokenValidator(t *testing.T) {
@@ -173,6 +187,19 @@ func mockCircleCIProjectServer(t *testing.T, expectedToken string, serverRespons
 	}))
 }
 
+func TestAcceptProjectTokenValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		circleci.NewProjectTokenValidator(),
+		velestest.WithTrueNegatives(circleci.ProjectToken{
+			Token: "CCIPRJ_invalid_token_1234567890_1234567890123456789012345678901234567890",
+		}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[circleci.ProjectToken]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+	)
+}
+
 func TestProjectTokenValidator(t *testing.T) {
 	cases := []struct {
 		name                string
@@ -244,67 +271,5 @@ func TestProjectTokenValidator(t *testing.T) {
 				t.Errorf("Validate() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestPersonalAccessTokenValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := circleci.NewPersonalAccessTokenValidator()
-	validator.HTTPC = client
-
-	token := circleci.PersonalAccessToken{Token: validatorTestPAT}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
-	}
-}
-
-func TestProjectTokenValidator_ContextCancellation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	// Create a client with custom transport
-	client := &http.Client{
-		Transport: &mockTransport{testServer: server},
-	}
-
-	validator := circleci.NewProjectTokenValidator()
-	validator.HTTPC = client
-
-	token := circleci.ProjectToken{Token: validatorTestProject}
-
-	// Create a cancelled context
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	// Test validation with cancelled context
-	got, err := validator.Validate(ctx, token)
-
-	if err == nil {
-		t.Errorf("Validate() expected error due to context cancellation, got nil")
-	}
-	if got != veles.ValidationFailed {
-		t.Errorf("Validate() = %v, want %v", got, veles.ValidationFailed)
 	}
 }
