@@ -30,6 +30,7 @@ package source_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -37,6 +38,7 @@ import (
 	"github.com/google/osv-scalibr/enricher"
 	govcsource "github.com/google/osv-scalibr/enricher/reachability/go/source"
 	"github.com/google/osv-scalibr/extractor"
+	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/golang/gomod"
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
@@ -81,7 +83,7 @@ func TestEnricher(t *testing.T) {
 		},
 	}
 
-	pkgs := setupPackages()
+	pkgs := setupPackages(t)
 	vulns := setupPackageVulns(t, pkgs)
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
@@ -126,42 +128,108 @@ func TestEnricher(t *testing.T) {
 	}
 }
 
-func setupPackages() []*extractor.Package {
-	pkgs := []*extractor.Package{
+func TestEnricher_GoVersion(t *testing.T) {
+	testCases := []struct {
+		name          string
+		pkgs          []*extractor.Package
+		wantGoVersion string
+	}{
 		{
-			Name:     "stdlib",
-			Version:  "1.19",
-			PURLType: purl.TypeGolang,
-			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
-			Plugins:  []string{gomod.Name},
+			name: "without stdlib package",
+			pkgs: []*extractor.Package{
+				{
+					Name:     "github.com/ipfs/go-bitfield",
+					Version:  "1.0.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
+					Plugins:  []string{gomod.Name},
+				},
+			},
+			wantGoVersion: "",
 		},
-		// Affected by GO-2021-0053, but we don't actually call the vulnerable func
 		{
-			Name:     "github.com/gogo/protobuf",
-			Version:  "1.3.1",
-			PURLType: purl.TypeGolang,
-			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
-			Plugins:  []string{gomod.Name},
-		},
-		// Affected by GO-2023-1558, and we do call the vulnerable func
-		{
-			Name:     "github.com/ipfs/go-bitfield",
-			Version:  "1.0.0",
-			PURLType: purl.TypeGolang,
-			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
-			Plugins:  []string{gomod.Name},
-		},
-		// Affected by GO-2024-2937, but only present in the go.mod file, nor present in the code
-		{
-			Name:     "golang.org/x/image",
-			Version:  "0.4.0",
-			PURLType: purl.TypeGolang,
-			Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
-			Plugins:  []string{gomod.Name},
+			name: "with stdlib package",
+			pkgs: []*extractor.Package{
+				{
+					Name:     "github.com/ipfs/go-bitfield",
+					Version:  "1.0.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
+					Plugins:  []string{gomod.Name},
+				},
+				{
+					Name:     "stdlib",
+					Version:  "1.19",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPath(filepath.Join(".", "go.mod")),
+					Plugins:  []string{gomod.Name},
+				},
+			},
+			wantGoVersion: "1.19",
 		},
 	}
 
-	return pkgs
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gvcClient, err := newMockGovulncheckClient("testdata/govulncheckinput.json", nil, true)
+			if err != nil {
+				t.Fatalf("failed to create mock govulncheck client: %v", err)
+			}
+			enr := govcsource.NewWithClient(&cpb.PluginConfig{}, gvcClient)
+			input := enricher.ScanInput{
+				ScanRoot: &scalibrfs.ScanRoot{
+					Path: testProjPath,
+					FS:   scalibrfs.DirFS("."),
+				},
+			}
+			inv := inventory.Inventory{
+				Packages:     tc.pkgs,
+				PackageVulns: setupPackageVulns(t, tc.pkgs),
+			}
+			if err := enr.Enrich(t.Context(), &input, &inv); err != nil {
+				t.Fatalf("enr.Enrich() failed: %v", err)
+			}
+			if gvcClient.gotGoVersion != tc.wantGoVersion {
+				t.Errorf("RunGovulncheck goVersion = %q, want %q", gvcClient.gotGoVersion, tc.wantGoVersion)
+			}
+		})
+	}
+}
+
+func setupPackages(t *testing.T) []*extractor.Package {
+	t.Helper()
+	extr, err := gomod.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("gomod.New() error: %v", err)
+	}
+	goModContent := strings.Join([]string{
+		"module example.com/test",
+		"",
+		"go 1.19",
+		"",
+		"require (",
+		"\t// Affected by GO-2021-0053, but we don't actually call the vulnerable func",
+		"\tgithub.com/gogo/protobuf v1.3.1",
+		"\t// Affected by GO-2023-1558, and we do call the vulnerable func",
+		"\tgithub.com/ipfs/go-bitfield v1.0.0",
+		"\t// Affected by GO-2024-2937, but only present in the go.mod file, not in the code",
+		"\tgolang.org/x/image v0.4.0",
+		")",
+		"",
+	}, "\n")
+	inv, err := extr.Extract(t.Context(), &filesystem.ScanInput{
+		Path:   filepath.Join(".", "go.mod"),
+		Root:   testProjPath,
+		Reader: strings.NewReader(goModContent),
+		FS:     scalibrfs.DirFS("."),
+	})
+	if err != nil {
+		t.Fatalf("gomod.Extract() error: %v", err)
+	}
+	for _, pkg := range inv.Packages {
+		pkg.Plugins = []string{extr.Name()}
+	}
+	return inv.Packages
 }
 
 func setupPackageVulns(t *testing.T, pkgs []*extractor.Package) []*inventory.PackageVuln {

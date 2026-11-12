@@ -198,6 +198,7 @@ type PluginSpecificConfig struct {
 	//	*PluginSpecificConfig_Freebsd
 	//	*PluginSpecificConfig_HaskellCabalProjectFreeze
 	//	*PluginSpecificConfig_HaskellCabalConf
+	//	*PluginSpecificConfig_GoWork
 	Config        isPluginSpecificConfig_Config `protobuf_oneof:"config"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -880,6 +881,15 @@ func (x *PluginSpecificConfig) GetHaskellCabalConf() *HaskellCabalConfConfig {
 	return nil
 }
 
+func (x *PluginSpecificConfig) GetGoWork() *GoWorkConfig {
+	if x != nil {
+		if x, ok := x.Config.(*PluginSpecificConfig_GoWork); ok {
+			return x.GoWork
+		}
+	}
+	return nil
+}
+
 type isPluginSpecificConfig_Config interface {
 	isPluginSpecificConfig_Config()
 }
@@ -1169,6 +1179,10 @@ type PluginSpecificConfig_HaskellCabalConf struct {
 	HaskellCabalConf *HaskellCabalConfConfig `protobuf:"bytes,87,opt,name=haskell_cabal_conf,json=haskellCabalConf,proto3,oneof"`
 }
 
+type PluginSpecificConfig_GoWork struct {
+	GoWork *GoWorkConfig `protobuf:"bytes,88,opt,name=go_work,json=goWork,proto3,oneof"`
+}
+
 func (*PluginSpecificConfig_GoBinary) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_Govulncheck) isPluginSpecificConfig_Config() {}
@@ -1310,6 +1324,8 @@ func (*PluginSpecificConfig_Freebsd) isPluginSpecificConfig_Config() {}
 func (*PluginSpecificConfig_HaskellCabalProjectFreeze) isPluginSpecificConfig_Config() {}
 
 func (*PluginSpecificConfig_HaskellCabalConf) isPluginSpecificConfig_Config() {}
+
+func (*PluginSpecificConfig_GoWork) isPluginSpecificConfig_Config() {}
 
 type BazelAspectConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -4377,8 +4393,13 @@ type GoModConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Excludes indirect dependencies from the extraction.
 	ExcludeIndirect bool `protobuf:"varint,1,opt,name=exclude_indirect,json=excludeIndirect,proto3" json:"exclude_indirect,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Includes the Go standard library (stdlib) version from the go or toolchain
+	// directive as a dependency.
+	// Off by default: the go/toolchain directive is a minimum Go version, not the
+	// build toolchain, so matching it yields stdlib false positives.
+	IncludeStdlib bool `protobuf:"varint,2,opt,name=include_stdlib,json=includeStdlib,proto3" json:"include_stdlib,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GoModConfig) Reset() {
@@ -4414,6 +4435,13 @@ func (*GoModConfig) Descriptor() ([]byte, []int) {
 func (x *GoModConfig) GetExcludeIndirect() bool {
 	if x != nil {
 		return x.ExcludeIndirect
+	}
+	return false
+}
+
+func (x *GoModConfig) GetIncludeStdlib() bool {
+	if x != nil {
+		return x.IncludeStdlib
 	}
 	return false
 }
@@ -4888,6 +4916,54 @@ func (x *FreeBSDConfig) GetMaxFileSizeBytes() int64 {
 	return 0
 }
 
+type GoWorkConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Includes the Go standard library (stdlib) version from the go or toolchain
+	// directive as a dependency.
+	// Off by default: the go/toolchain directive is a minimum Go version, not the
+	// build toolchain, so matching it yields stdlib false positives.
+	IncludeStdlib bool `protobuf:"varint,1,opt,name=include_stdlib,json=includeStdlib,proto3" json:"include_stdlib,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GoWorkConfig) Reset() {
+	*x = GoWorkConfig{}
+	mi := &file_proto_config_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GoWorkConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GoWorkConfig) ProtoMessage() {}
+
+func (x *GoWorkConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_config_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GoWorkConfig.ProtoReflect.Descriptor instead.
+func (*GoWorkConfig) Descriptor() ([]byte, []int) {
+	return file_proto_config_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *GoWorkConfig) GetIncludeStdlib() bool {
+	if x != nil {
+		return x.IncludeStdlib
+	}
+	return false
+}
+
 var File_proto_config_proto protoreflect.FileDescriptor
 
 const file_proto_config_proto_rawDesc = "" +
@@ -4899,7 +4975,7 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x13disable_google_auth\x18\x04 \x01(\bR\x11disableGoogleAuth\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12F\n" +
-	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\x85%\n" +
+	"\x0fplugin_specific\x18\x02 \x03(\v2\x1d.scalibr.PluginSpecificConfigR\x0epluginSpecific\"\xb7%\n" +
 	"\x14PluginSpecificConfig\x126\n" +
 	"\tgo_binary\x18\x01 \x01(\v2\x17.scalibr.GoBinaryConfigH\x00R\bgoBinary\x12>\n" +
 	"\vgovulncheck\x18\x02 \x01(\v2\x1a.scalibr.GovulncheckConfigH\x00R\vgovulncheck\x122\n" +
@@ -4978,7 +5054,8 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x17ubuntu_binary_to_source\x18T \x01(\v2#.scalibr.UbuntuBinaryToSourceConfigH\x00R\x14ubuntuBinaryToSource\x122\n" +
 	"\afreebsd\x18U \x01(\v2\x16.scalibr.FreeBSDConfigH\x00R\afreebsd\x12k\n" +
 	"\x1chaskell_cabal_project_freeze\x18V \x01(\v2(.scalibr.HaskellCabalProjectFreezeConfigH\x00R\x19haskellCabalProjectFreeze\x12O\n" +
-	"\x12haskell_cabal_conf\x18W \x01(\v2\x1f.scalibr.HaskellCabalConfConfigH\x00R\x10haskellCabalConfB\b\n" +
+	"\x12haskell_cabal_conf\x18W \x01(\v2\x1f.scalibr.HaskellCabalConfConfigH\x00R\x10haskellCabalConf\x120\n" +
+	"\ago_work\x18X \x01(\v2\x15.scalibr.GoWorkConfigH\x00R\x06goWorkB\b\n" +
 	"\x06configJ\x04\b0\x109J\x04\b;\x10>J\x04\bB\x10DJ\x04\bO\x10Q\"^\n" +
 	"\x11BazelAspectConfig\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\"\n" +
@@ -5132,9 +5209,10 @@ const file_proto_config_proto_rawDesc = "" +
 	"\x15PythonCondametaConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"K\n" +
 	"\x14PythonWheelEggConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesJ\x04\b\x02\x10\x03\"8\n" +
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesJ\x04\b\x02\x10\x03\"_\n" +
 	"\vGoModConfig\x12)\n" +
-	"\x10exclude_indirect\x18\x01 \x01(\bR\x0fexcludeIndirect\"G\n" +
+	"\x10exclude_indirect\x18\x01 \x01(\bR\x0fexcludeIndirect\x12%\n" +
+	"\x0einclude_stdlib\x18\x02 \x01(\bR\rincludeStdlib\"G\n" +
 	"\x16WordpressPluginsConfig\x12-\n" +
 	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"}\n" +
 	"\rMariadbConfig\x12-\n" +
@@ -5162,7 +5240,9 @@ const file_proto_config_proto_rawDesc = "" +
 	"\vsocket_addr\x18\x01 \x01(\tR\n" +
 	"socketAddr\">\n" +
 	"\rFreeBSDConfig\x12-\n" +
-	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytesBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
+	"\x13max_file_size_bytes\x18\x01 \x01(\x03R\x10maxFileSizeBytes\"5\n" +
+	"\fGoWorkConfig\x12%\n" +
+	"\x0einclude_stdlib\x18\x01 \x01(\bR\rincludeStdlibBFB\x06ConfigP\x01Z:github.com/google/osv-scalibr/binary/proto/config_go_protob\x06proto3"
 
 var (
 	file_proto_config_proto_rawDescOnce sync.Once
@@ -5176,7 +5256,7 @@ func file_proto_config_proto_rawDescGZIP() []byte {
 	return file_proto_config_proto_rawDescData
 }
 
-var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 73)
+var file_proto_config_proto_msgTypes = make([]protoimpl.MessageInfo, 74)
 var file_proto_config_proto_goTypes = []any{
 	(*PluginConfig)(nil),                       // 0: scalibr.PluginConfig
 	(*PluginSpecificConfig)(nil),               // 1: scalibr.PluginSpecificConfig
@@ -5251,6 +5331,7 @@ var file_proto_config_proto_goTypes = []any{
 	(*QCOW2Config)(nil),                        // 70: scalibr.QCOW2Config
 	(*ContainerdRuntimeConfig)(nil),            // 71: scalibr.ContainerdRuntimeConfig
 	(*FreeBSDConfig)(nil),                      // 72: scalibr.FreeBSDConfig
+	(*GoWorkConfig)(nil),                       // 73: scalibr.GoWorkConfig
 }
 var file_proto_config_proto_depIdxs = []int32{
 	1,  // 0: scalibr.PluginConfig.plugin_specific:type_name -> scalibr.PluginSpecificConfig
@@ -5325,11 +5406,12 @@ var file_proto_config_proto_depIdxs = []int32{
 	72, // 69: scalibr.PluginSpecificConfig.freebsd:type_name -> scalibr.FreeBSDConfig
 	54, // 70: scalibr.PluginSpecificConfig.haskell_cabal_project_freeze:type_name -> scalibr.HaskellCabalProjectFreezeConfig
 	55, // 71: scalibr.PluginSpecificConfig.haskell_cabal_conf:type_name -> scalibr.HaskellCabalConfConfig
-	72, // [72:72] is the sub-list for method output_type
-	72, // [72:72] is the sub-list for method input_type
-	72, // [72:72] is the sub-list for extension type_name
-	72, // [72:72] is the sub-list for extension extendee
-	0,  // [0:72] is the sub-list for field type_name
+	73, // 72: scalibr.PluginSpecificConfig.go_work:type_name -> scalibr.GoWorkConfig
+	73, // [73:73] is the sub-list for method output_type
+	73, // [73:73] is the sub-list for method input_type
+	73, // [73:73] is the sub-list for extension type_name
+	73, // [73:73] is the sub-list for extension extendee
+	0,  // [0:73] is the sub-list for field type_name
 }
 
 func init() { file_proto_config_proto_init() }
@@ -5409,6 +5491,7 @@ func file_proto_config_proto_init() {
 		(*PluginSpecificConfig_Freebsd)(nil),
 		(*PluginSpecificConfig_HaskellCabalProjectFreeze)(nil),
 		(*PluginSpecificConfig_HaskellCabalConf)(nil),
+		(*PluginSpecificConfig_GoWork)(nil),
 	}
 	file_proto_config_proto_msgTypes[2].OneofWrappers = []any{}
 	file_proto_config_proto_msgTypes[56].OneofWrappers = []any{}
@@ -5419,7 +5502,7 @@ func file_proto_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_config_proto_rawDesc), len(file_proto_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   73,
+			NumMessages:   74,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

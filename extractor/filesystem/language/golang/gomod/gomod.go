@@ -41,31 +41,28 @@ const (
 	Name = "go/gomod"
 )
 
-// Extractor extracts go packages from a go.mod file,
-// including the stdlib version by using the top level go version
+// Extractor extracts go packages from a go.mod file.
 //
 // The output is not sorted and will not be in a consistent order
 type Extractor struct {
 	excludeIndirect bool
+	includeStdlib   bool
 }
 
 // New returns a new instance of the extractor with the default configuration.
 func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
-	excludeIndirect := false
-
 	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoModConfig { return c.GetGoMod() })
-	if specific != nil {
-		excludeIndirect = specific.GetExcludeIndirect()
-	}
-
-	return &Extractor{excludeIndirect: excludeIndirect}, nil
+	return &Extractor{
+		excludeIndirect: specific.GetExcludeIndirect(),
+		includeStdlib:   specific.GetIncludeStdlib(),
+	}, nil
 }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e Extractor) Version() int { return 1 }
 
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
@@ -198,8 +195,8 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 		stdlibLine = parsedLockfile.Toolchain.Syntax.Start.Line
 	}
 
-	// Add the Go stdlib as an explicit dependency.
-	if goVersion != "" {
+	// Add the Go stdlib as an explicit dependency when configured.
+	if e.includeStdlib && goVersion != "" {
 		packages[pkgKey{name: "stdlib"}] = &extractor.Package{
 			Name:     "stdlib",
 			Version:  goVersion,

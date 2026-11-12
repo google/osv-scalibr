@@ -25,12 +25,14 @@ import (
 
 // mockGovulncheckClient is the real implementation of govulncheckClient.
 type mockGovulncheckClient struct {
-	findings    map[string][]*internal.Finding
-	err         error
-	goAvailable bool
+	findings     map[string][]*internal.Finding
+	err          error
+	goAvailable  bool
+	gotGoVersion string
 }
 
-func (r *mockGovulncheckClient) RunGovulncheck(_ context.Context, _ string, _ []*vulnpb.Vulnerability, _ string) (map[string][]*internal.Finding, error) {
+func (r *mockGovulncheckClient) RunGovulncheck(_ context.Context, _ string, _ []*vulnpb.Vulnerability, goVersion string) (map[string][]*internal.Finding, error) {
+	r.gotGoVersion = goVersion
 	return r.findings, r.err
 }
 
