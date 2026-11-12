@@ -1,0 +1,8 @@
+{
+  "name": "cve-2025-55182-positive",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react-server-dom-webpack": "19.2.0"
+  }
+}

@@ -1,0 +1,71 @@
+[
+  {
+    "osv": {
+      "id": "GHSA-fv66-9v8q-g76r",
+      "affected": [
+        {
+          "package": { "ecosystem": "npm", "name": "react-server-dom-webpack" },
+          "ranges": [
+            {
+              "events": [
+                { "introduced": "19.0.0" }, { "fixed": "19.0.1" },
+                { "introduced": "19.1.0" }, { "fixed": "19.1.2" },
+                { "introduced": "19.2.0" }, { "fixed": "19.2.1" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": { "filename": "__jelly_sentinel_suppress_module_wide_sink__" },
+    "patterns": [
+      "call <react-server-dom-webpack/**>.{decodeReply,decodeReplyFromBusboy,decodeReplyFromAsyncIterable,decodeAction,decodeFormState}"
+    ]
+  },
+  {
+    "osv": {
+      "id": "GHSA-fv66-9v8q-g76r",
+      "affected": [
+        {
+          "package": { "ecosystem": "npm", "name": "react-server-dom-turbopack" },
+          "ranges": [
+            {
+              "events": [
+                { "introduced": "19.0.0" }, { "fixed": "19.0.1" },
+                { "introduced": "19.1.0" }, { "fixed": "19.1.2" },
+                { "introduced": "19.2.0" }, { "fixed": "19.2.1" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": { "filename": "__jelly_sentinel_suppress_module_wide_sink__" },
+    "patterns": [
+      "call <react-server-dom-turbopack/**>.{decodeReply,decodeReplyFromBusboy,decodeReplyFromAsyncIterable,decodeAction,decodeFormState}"
+    ]
+  },
+  {
+    "osv": {
+      "id": "GHSA-fv66-9v8q-g76r",
+      "affected": [
+        {
+          "package": { "ecosystem": "npm", "name": "react-server-dom-parcel" },
+          "ranges": [
+            {
+              "events": [
+                { "introduced": "19.0.0" }, { "fixed": "19.0.1" },
+                { "introduced": "19.1.0" }, { "fixed": "19.1.2" },
+                { "introduced": "19.2.0" }, { "fixed": "19.2.1" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "loc": { "filename": "__jelly_sentinel_suppress_module_wide_sink__" },
+    "patterns": [
+      "call <react-server-dom-parcel/**>.{decodeReply,decodeReplyFromBusboy,decodeReplyFromAsyncIterable,decodeAction,decodeFormState}"
+    ]
+  }
+]
