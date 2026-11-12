@@ -122,52 +122,6 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/two-packages.mod", 7),
 				},
-				{
-					Name:     "stdlib",
-					Version:  "1.17",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/two-packages.mod", 3),
-				},
-			},
-		},
-		{
-			Name: "toolchain",
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/toolchain.mod",
-			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:     "github.com/BurntSushi/toml",
-					Version:  "1.0.0",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/toolchain.mod", 8),
-				},
-				{
-					Name:     "stdlib",
-					Version:  "1.23.6",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/toolchain.mod", 5),
-				},
-			},
-		},
-		{
-			Name: "toolchain with suffix",
-			InputConfig: extracttest.ScanInputMockConfig{
-				Path: "testdata/toolchain-with-suffix.mod",
-			},
-			WantPackages: []*extractor.Package{
-				{
-					Name:     "github.com/BurntSushi/toml",
-					Version:  "1.0.0",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/toolchain-with-suffix.mod", 8),
-				},
-				{
-					Name:     "stdlib",
-					Version:  "1.23.6",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/toolchain-with-suffix.mod", 5),
-				},
 			},
 		},
 		{
@@ -205,12 +159,6 @@ func TestExtractor_Extract(t *testing.T) {
 					Version:  "0.0.0-20210630005230-0f9fa26af87c",
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/indirect-packages.mod", 13),
-				},
-				{
-					Name:     "stdlib",
-					Version:  "1.17",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/indirect-packages.mod", 3),
 				},
 			},
 		},
@@ -340,12 +288,6 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/indirect-1.23.mod", 7),
 				},
-				{
-					Name:     "stdlib",
-					Version:  "1.23",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/indirect-1.23.mod", 3),
-				},
 			},
 		},
 		{
@@ -393,12 +335,6 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/indirect-1.16.sum", 14),
 				},
-				{
-					Name:     "stdlib",
-					Version:  "1.16",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/indirect-1.16.mod", 3),
-				},
 			},
 		},
 	}
@@ -428,10 +364,11 @@ func TestExtractor_Extract(t *testing.T) {
 	}
 }
 
-func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
+func TestExtractor_Extract_WithConfig(t *testing.T) {
 	tests := []struct {
 		name            string
 		excludeIndirect bool
+		includeStdlib   bool
 		inputPath       string
 		wantPackages    []*extractor.Package
 		wantNotPackages []*extractor.Package
@@ -453,12 +390,6 @@ func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
 					Version:  "2.4.0",
 					PURLType: purl.TypeGolang,
 					Location: extractor.LocationFromPathAndLine("testdata/indirect-packages.mod", 7),
-				},
-				{
-					Name:     "stdlib",
-					Version:  "1.17",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/indirect-packages.mod", 3),
 				},
 			},
 			wantNotPackages: []*extractor.Package{
@@ -496,12 +427,6 @@ func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
 						Related:    []location.Location{{File: &location.File{Path: "testdata/indirect-1.16.sum", LineNumber: 6}}},
 					},
 				},
-				{
-					Name:     "stdlib",
-					Version:  "1.16",
-					PURLType: purl.TypeGolang,
-					Location: extractor.LocationFromPathAndLine("testdata/indirect-1.16.mod", 3),
-				},
 			},
 			wantNotPackages: []*extractor.Package{
 				{
@@ -526,6 +451,69 @@ func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:          "include stdlib from go directive",
+			includeStdlib: true,
+			inputPath:     "testdata/two-packages.mod",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "github.com/BurntSushi/toml",
+					Version:  "1.0.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.mod", 6),
+				},
+				{
+					Name:     "gopkg.in/yaml.v2",
+					Version:  "2.4.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.mod", 7),
+				},
+				{
+					Name:     "stdlib",
+					Version:  "1.17",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/two-packages.mod", 3),
+				},
+			},
+		},
+		{
+			name:          "include stdlib from toolchain directive",
+			includeStdlib: true,
+			inputPath:     "testdata/toolchain.mod",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "github.com/BurntSushi/toml",
+					Version:  "1.0.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/toolchain.mod", 8),
+				},
+				{
+					Name:     "stdlib",
+					Version:  "1.23.6",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/toolchain.mod", 5),
+				},
+			},
+		},
+		{
+			name:          "include stdlib from toolchain with suffix",
+			includeStdlib: true,
+			inputPath:     "testdata/toolchain-with-suffix.mod",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "github.com/BurntSushi/toml",
+					Version:  "1.0.0",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/toolchain-with-suffix.mod", 8),
+				},
+				{
+					Name:     "stdlib",
+					Version:  "1.23.6",
+					PURLType: purl.TypeGolang,
+					Location: extractor.LocationFromPathAndLine("testdata/toolchain-with-suffix.mod", 5),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -535,6 +523,7 @@ func TestExtractor_Extract_WithExcludeIndirectConfig(t *testing.T) {
 					{Config: &cpb.PluginSpecificConfig_GoMod{
 						GoMod: &cpb.GoModConfig{
 							ExcludeIndirect: tt.excludeIndirect,
+							IncludeStdlib:   tt.includeStdlib,
 						},
 					}},
 				},

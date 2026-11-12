@@ -122,6 +122,7 @@ message PluginSpecificConfig {
     FreeBSDConfig freebsd = 85;
     HaskellCabalProjectFreezeConfig haskell_cabal_project_freeze = 86;
     HaskellCabalConfConfig haskell_cabal_conf = 87;
+    GoWorkConfig go_work = 88;
   }
 }
 
@@ -606,6 +607,11 @@ message PythonWheelEggConfig {
 message GoModConfig {
   // Excludes indirect dependencies from the extraction.
   bool exclude_indirect = 1;
+  // Includes the Go standard library (stdlib) version from the go or toolchain
+  // directive as a dependency.
+  // Off by default: the go/toolchain directive is a minimum Go version, not the
+  // build toolchain, so matching it yields stdlib false positives.
+  bool include_stdlib = 2;
 }
 
 message WordpressPluginsConfig {
@@ -673,4 +679,12 @@ message FreeBSDConfig {
   // If set, this overrides the global max_file_size_bytes configuration
   // for this specific plugin.
   int64 max_file_size_bytes = 1;
+}
+
+message GoWorkConfig {
+  // Includes the Go standard library (stdlib) version from the go or toolchain
+  // directive as a dependency.
+  // Off by default: the go/toolchain directive is a minimum Go version, not the
+  // build toolchain, so matching it yields stdlib false positives.
+  bool include_stdlib = 1;
 }

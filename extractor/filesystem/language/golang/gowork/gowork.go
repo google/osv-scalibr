@@ -42,26 +42,29 @@ const (
 
 // Extractor extracts Go packages from go.work and go.work.sum files.
 //
-// go.work declares the Go version (emitted as stdlib) and the local module
-// directories participating in the workspace. go.work.sum pins the exact
-// checksums of all resolved dependencies across those modules and is parsed
-// to produce the versioned package inventory.
+// go.work declares the Go version (emitted as stdlib when include_stdlib is
+// enabled) and the local module directories participating in the workspace.
+// go.work.sum pins the exact checksums of all resolved dependencies across
+// those modules and is parsed to produce the versioned package inventory.
 //
 // Replace directives in go.work are applied as mutations to the packages
 // found in go.work.sum: the old module name/version is replaced with the
 // new one, mirroring the behaviour of the gomod extractor.
-type Extractor struct{}
+type Extractor struct {
+	includeStdlib bool
+}
 
 // New returns a new instance of the extractor.
-func New(_ *cpb.PluginConfig) (filesystem.Extractor, error) {
-	return &Extractor{}, nil
+func New(cfg *cpb.PluginConfig) (filesystem.Extractor, error) {
+	specific := plugin.FindConfig(cfg, func(c *cpb.PluginSpecificConfig) *cpb.GoWorkConfig { return c.GetGoWork() })
+	return &Extractor{includeStdlib: specific.GetIncludeStdlib()}, nil
 }
 
 // Name of the extractor.
 func (e Extractor) Name() string { return Name }
 
 // Version of the extractor.
-func (e Extractor) Version() int { return 0 }
+func (e Extractor) Version() int { return 1 }
 
 // Requirements of the extractor.
 func (e Extractor) Requirements() *plugin.Capabilities {
@@ -92,7 +95,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 
 	packages := map[pkgKey]*extractor.Package{}
 
-	// Emit stdlib from the go directive.
+	// Determine the Go version from the go/toolchain directives (emitted as stdlib only when include_stdlib is set).
 	goVersion := ""
 	stdlibLine := 0
 	if workFile.Go != nil && workFile.Go.Version != "" {
@@ -107,7 +110,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		goVersion = strings.TrimPrefix(v, "go")
 		stdlibLine = workFile.Toolchain.Syntax.Start.Line
 	}
-	if goVersion != "" {
+	if e.includeStdlib && goVersion != "" {
 		packages[pkgKey{name: "stdlib"}] = &extractor.Package{
 			Name:     "stdlib",
 			Version:  goVersion,
