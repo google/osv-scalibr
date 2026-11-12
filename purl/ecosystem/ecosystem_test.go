@@ -104,6 +104,26 @@ func TestFromPURL(t *testing.T) {
 			want:    "Debian",
 		},
 		{
+			desc:    "Echo with distro version",
+			purlStr: "pkg:deb/echo/openssl@3.5.4-1%2Be2?arch=amd64&distro=echo-2.0",
+			want:    "Echo",
+		},
+		{
+			desc:    "Echo without distro",
+			purlStr: "pkg:deb/echo/openssl@3.5.4-1%2Be2",
+			want:    "Echo",
+		},
+		{
+			desc:    "Echo detected from distro qualifier",
+			purlStr: "pkg:deb/linux/openssl@3.5.4-1%2Be2?distro=echo-2.0",
+			want:    "Echo",
+		},
+		{
+			desc:    "distro merely starting with echo is not Echo",
+			purlStr: "pkg:deb/linux/openssl@3.5.4-1?distro=echoos-1",
+			want:    "",
+		},
+		{
 			desc:    "Ubuntu with version",
 			purlStr: "pkg:deb/ubuntu/nginx@1.18.0?distro=22.04",
 			want:    "Ubuntu:22.04:LTS",

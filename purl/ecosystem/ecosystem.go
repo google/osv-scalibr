@@ -92,13 +92,19 @@ func debToEcosystem(p *purl.PackageURL) osvecosystem.Parsed {
 	var baseEcosystem osvconstants.Ecosystem
 	namespace := strings.ToLower(p.Namespace)
 
+	// Echo advisories are published under a single unversioned ecosystem on
+	// OSV.dev, so the distro version (e.g. "echo-2.0") is not used as a suffix.
+	distroLower := strings.ToLower(distro)
+	if namespace == "echo" || distroLower == "echo" || strings.HasPrefix(distroLower, "echo-") {
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemEcho)
+	}
+
 	if namespace == "debian" {
 		baseEcosystem = osvconstants.EcosystemDebian
 	} else if namespace == "ubuntu" {
 		baseEcosystem = osvconstants.EcosystemUbuntu
 	} else if distro != "" {
 		// Fallback: try to guess from distro qualifier
-		distroLower := strings.ToLower(distro)
 		if strings.HasPrefix(distroLower, "debian") {
 			baseEcosystem = osvconstants.EcosystemDebian
 		} else if strings.HasPrefix(distroLower, "ubuntu") {
