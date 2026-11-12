@@ -114,8 +114,11 @@ func (v SemverVersion) compare(w SemverVersion) int {
 	if diff := v.components.Cmp(w.components); diff != 0 {
 		return diff
 	}
+	if diff := compareBuildComponents(v.build, w.build); diff != 0 {
+		return diff
+	}
 
-	return compareBuildComponents(v.build, w.build)
+	return compareEchoBuildComponents(v.build, w.build)
 }
 
 // Compare compares the given version to the receiver.
