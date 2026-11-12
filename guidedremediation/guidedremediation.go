@@ -75,6 +75,9 @@ func FixVulns(opts options.FixVulnsOptions) (result.Result, error) {
 	if opts.VulnEnricher == nil || !strings.HasPrefix(opts.VulnEnricher.Name(), "vulnmatch/") {
 		return result.Result{}, errors.New("vulnmatch/ enricher is required for guided remediation")
 	}
+	if err := checkUnsafeLockfileGenerationEnabled(opts); err != nil {
+		return result.Result{}, err
+	}
 
 	if hasManifest {
 		var err error
@@ -562,6 +565,19 @@ func computeRelockPatches(ctx context.Context, res *result.Result, resolvedManif
 	res.Vulnerabilities = append(res.Vulnerabilities, vulns...)
 	res.Patches = append(res.Patches, result.Patch{Fixed: vulns})
 
+	return nil
+}
+
+func checkUnsafeLockfileGenerationEnabled(opts options.FixVulnsOptions) error {
+	if opts.Manifest == "" || opts.Lockfile == "" || !isLockfileForManifest(opts.Manifest, opts.Lockfile) {
+		return nil
+	}
+	if !opts.AllowUnsafeExecution {
+		switch filepath.Base(opts.Manifest) {
+		case "requirements.in", "pyproject.toml", "Pipfile":
+			return errors.New("regenerating Python lockfiles may execute arbitrary dependency or package-manager code; set AllowUnsafeExecution to true only for trusted projects and dependencies or in an appropriately isolated environment")
+		}
+	}
 	return nil
 }
 
