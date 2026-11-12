@@ -288,6 +288,11 @@ func TestParsed_Equal(t *testing.T) {
 		{"Ubuntu:24.04", "Ubuntu", true},
 		{"Ubuntu:24.04:LTS", "Ubuntu:22.04:LTS", false},
 		{"Ubuntu:24.04", "Debian:12", false},
+		{"Echo", "Echo", true},
+		{"Echo:PyPI", "Echo:PyPI", true},
+		{"Echo", "Echo:npm", false},
+		{"Echo:npm", "Echo", false},
+		{"Echo:PyPI", "Echo:npm", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.a+"=="+tt.b, func(t *testing.T) {
