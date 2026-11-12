@@ -83,16 +83,12 @@ func (e *Enricher) Enrich(ctx context.Context, input *enricher.ScanInput, inv *i
 		if !slices.Contains(pkg.Plugins, gomod.Name) {
 			continue
 		}
-		if pkg.Name == "stdlib" {
-			if l := pkg.Location.PathOrEmpty(); l != "" {
-				if goModVersions[l] != "" {
-					continue
-				}
-
+		if l := pkg.Location.PathOrEmpty(); filepath.Base(l) == "go.mod" {
+			if pkg.Name == "stdlib" {
 				// Set GOVERSION to the Go version in go.mod.
 				goModVersions[l] = pkg.Version
-
-				continue
+			} else if _, ok := goModVersions[l]; !ok {
+				goModVersions[l] = ""
 			}
 		}
 	}
