@@ -65,18 +65,32 @@ type DefaultPackageFinder struct {
 	classMap map[string][]string
 	// map of maven dependency to class files.
 	artifactMap map[string][]string
+	// set of package coordinates (groupID:artifactID:version) whose JARs were successfully mapped.
+	mappedPackages map[string]struct{}
+}
+
+func packageKey(pkg *extractor.Package) (string, bool) {
+	if pkg == nil {
+		return "", false
+	}
+	metadata, ok := pkg.Metadata.(*archivemeta.Metadata)
+	if !ok || metadata == nil {
+		return "", false
+	}
+	return metadata.GroupID + ":" + metadata.ArtifactID + ":" + pkg.Version, true
 }
 
 // loadJARMappings loads class mappings from a JAR archive.
-func loadJARMappings(metadata *archivemeta.Metadata, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, lock *sync.Mutex) {
+func loadJARMappings(metadata *archivemeta.Metadata, pkgKey string, reader *zip.Reader, classMap map[string][]string, artifactMap map[string][]string, mappedPackages map[string]struct{}, lock *sync.Mutex) {
 	lock.Lock()
+	defer lock.Unlock()
+	mappedPackages[pkgKey] = struct{}{}
+	artifactName := metadata.GroupID + ":" + metadata.ArtifactID
 	for _, f := range reader.File {
 		if strings.HasSuffix(f.Name, ".class") {
-			artifactName := fmt.Sprintf("%s:%s", metadata.GroupID, metadata.ArtifactID)
 			addClassMapping(artifactName, f.Name, classMap, artifactMap)
 		}
 	}
-	lock.Unlock()
 }
 
 func addClassMapping(artifactName, class string, classMap map[string][]string, artifactMap map[string][]string) {
@@ -94,7 +108,11 @@ func addClassMapping(artifactName, class string, classMap map[string][]string, a
 
 // extractClassMappings extracts class mappings from a .jar dependency by
 // downloading and unpacking the .jar from the relevant registry.
-func extractClassMappings(ctx context.Context, inv *extractor.Package, classMap map[string][]string, artifactMap map[string][]string, client *http.Client, lock *sync.Mutex) error {
+func extractClassMappings(ctx context.Context, inv *extractor.Package, classMap map[string][]string, artifactMap map[string][]string, mappedPackages map[string]struct{}, client *http.Client, lock *sync.Mutex) error {
+	pkgKey, ok := packageKey(inv)
+	if !ok {
+		return errors.New("missing maven metadata for package")
+	}
 	metadata := inv.Metadata.(*archivemeta.Metadata)
 	// TODO(#841): Handle when a class file contains in a nested JAR.
 
@@ -116,21 +134,22 @@ func extractClassMappings(ctx context.Context, inv *extractor.Package, classMap 
 	}
 
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return errors.New("jar not found: " + jarURL)
+	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("jar not found: %s", jarURL)
+		return fmt.Errorf("unexpected status %q downloading jar %q", resp.Status, jarURL)
 	}
 
 	nbytes, err := io.Copy(file, resp.Body)
 	if err != nil {
-		resp.Body.Close()
 		return err
 	}
-	resp.Body.Close()
 
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
@@ -143,7 +162,7 @@ func extractClassMappings(ctx context.Context, inv *extractor.Package, classMap 
 		return err
 	}
 
-	loadJARMappings(metadata, reader, classMap, artifactMap, lock)
+	loadJARMappings(metadata, pkgKey, reader, classMap, artifactMap, mappedPackages, lock)
 
 	return nil
 }
@@ -154,19 +173,42 @@ func NewDefaultPackageFinder(ctx context.Context, inv []*extractor.Package, jarR
 	// Download pkg, unpack, and store class mappings for each detected dependency.
 	classMap := map[string][]string{}
 	artifactMap := map[string][]string{}
+	mappedPackages := map[string]struct{}{}
 	lock := new(sync.Mutex)
 	group := new(errgroup.Group)
 	group.SetLimit(maxGoroutines)
 
-	for _, i := range inv {
+	errs := make([]error, len(inv))
+	for idx, pkg := range inv {
 		group.Go(func() error {
-			return extractClassMappings(ctx, i, classMap, artifactMap, client, lock)
+			dlErr := extractClassMappings(ctx, pkg, classMap, artifactMap, mappedPackages, client, lock)
+			errs[idx] = dlErr
+			return dlErr
 		})
 	}
 
-	if err := group.Wait(); err != nil {
-		// Tolerate some errors.
-		log.Error("failed to download package", "err", err)
+	if group.Wait() != nil {
+		var downloadErrs []error
+		for _, dlErr := range errs {
+			if dlErr != nil {
+				downloadErrs = append(downloadErrs, dlErr)
+				log.Debugf("Failed to download or map Maven package: %v", dlErr)
+			}
+		}
+
+		if len(mappedPackages) == 0 {
+			cause := downloadErrs[0]
+			if ctx.Err() != nil {
+				cause = ctx.Err()
+			}
+			allFailedErr := fmt.Errorf("failed to download all %d Maven packages (first error: %w)", len(downloadErrs), cause)
+			log.Errorf("Java reachability enricher %v", allFailedErr)
+			return nil, allFailedErr
+		}
+		// Tolerate partial errors (e.g. root application POM or private dependencies not on Maven Central);
+		// unmapped packages will not receive a reachability verdict.
+		log.Warnf("Java reachability enricher failed to download %d/%d Maven packages (first error: %v); skipping reachability verdict for unmapped packages",
+			len(downloadErrs), len(inv), downloadErrs[0])
 	}
 
 	if err := mapRootClasses(jarRoot, classMap, artifactMap); err != nil {
@@ -174,8 +216,9 @@ func NewDefaultPackageFinder(ctx context.Context, inv []*extractor.Package, jarR
 	}
 
 	return &DefaultPackageFinder{
-		classMap:    classMap,
-		artifactMap: artifactMap,
+		classMap:       classMap,
+		artifactMap:    artifactMap,
+		mappedPackages: mappedPackages,
 	}, nil
 }
 
@@ -230,6 +273,19 @@ func (f *DefaultPackageFinder) Classes(artifact string) ([]string, error) {
 	}
 
 	return nil, ErrArtifactNotFound
+}
+
+// IsMapped reports whether class mappings were successfully loaded for pkg.
+func (f *DefaultPackageFinder) IsMapped(pkg *extractor.Package) bool {
+	if f == nil {
+		return false
+	}
+	key, ok := packageKey(pkg)
+	if !ok {
+		return false
+	}
+	_, exists := f.mappedPackages[key]
+	return exists
 }
 
 // GetMainClasses extracts the main class name from the MANIFEST.MF file in a .jar.
