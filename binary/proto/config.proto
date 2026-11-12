@@ -135,6 +135,8 @@ message BazelAspectConfig {
 message GoBinaryConfig {
   // Enables extracting the module version from the Go binary content.
   bool version_from_content = 1;
+  // Enables extracting the module dependency relations from the Go binary.
+  bool extract_dependency_relations = 2;
 }
 
 message GovulncheckConfig {
