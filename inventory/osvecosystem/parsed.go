@@ -61,6 +61,13 @@ func (p Parsed) Equal(other Parsed) bool {
 	pSuffix := p.normalizeSuffix()
 	otherSuffix := other.normalizeSuffix()
 
+	// An Echo suffix names a different package ecosystem (e.g. "Echo:npm"),
+	// not a release of the same one, so a bare "Echo" OS package must not
+	// match an "Echo:<ECOSYSTEM>" advisory that happens to share its name.
+	if p.Ecosystem == osvconstants.EcosystemEcho {
+		return pSuffix == otherSuffix
+	}
+
 	// only care about the minor version if both ecosystems have one
 	// otherwise we just assume that they're the same and move on
 	if pSuffix != "" && otherSuffix != "" {
