@@ -18,7 +18,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/google/osv-scalibr/guidedremediation/internal/severity"
+	"github.com/google/osv-scalibr/internal/severity"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 

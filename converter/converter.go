@@ -17,6 +17,8 @@
 package converter
 
 import (
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -87,6 +89,7 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 		bom.Metadata.Authors = &authors
 	}
 
+	pkgRefs := make(map[*extractor.Package]string)
 	comps := make([]cyclonedx.Component, 0, len(i.Packages))
 	for _, pkg := range i.Packages {
 		comp := cyclonedx.Component{
@@ -95,11 +98,16 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 			Name:    pkg.Name,
 			Version: pkg.Version,
 		}
+		pkgRefs[pkg] = comp.BOMRef
 		if p := pkg.PURL(); p != nil {
 			comp.PackageURL = p.String()
 		}
 		if cpes := extractCPEs(pkg); len(cpes) > 0 {
 			comp.CPE = cpes[0]
+		}
+		comp.Licenses = buildCDXLicenses(pkg.Licenses)
+		if pkg.Deprecated {
+			comp.Properties = &[]cyclonedx.Property{{Name: "osv:deprecated", Value: "true"}}
 		}
 		occ := []cyclonedx.EvidenceOccurrence{}
 		occ = appendOccurrenceFromLocation(pkg.Location.Descriptor, occ)
@@ -114,8 +122,44 @@ func ToCDX(i inventory.Inventory, c CDXConfig) *cyclonedx.BOM {
 		comps = append(comps, comp)
 	}
 	bom.Components = &comps
+	bom.Vulnerabilities = buildCDXVulnerabilities(i.PackageVulns, pkgRefs)
 
 	return bom
+}
+
+func buildCDXVulnerabilities(vulns []*inventory.PackageVuln, pkgRefs map[*extractor.Package]string) *[]cyclonedx.Vulnerability {
+	if len(vulns) == 0 {
+		return nil
+	}
+
+	cdxVulns := make(map[string]*cyclonedx.Vulnerability)
+
+	for _, pv := range vulns {
+		id := pv.Vulnerability.GetId()
+
+		if _, ok := cdxVulns[id]; !ok {
+			cdxVulns[id] = buildCDXVulnerability(pv.Vulnerability)
+		}
+
+		if ref, ok := pkgRefs[pv.Package]; ok {
+			affects := cdxVulns[id].Affects
+
+			if !slices.ContainsFunc(*affects, func(a cyclonedx.Affects) bool { return a.Ref == ref }) {
+				*affects = append(*affects, cyclonedx.Affects{Ref: ref})
+			}
+		}
+	}
+
+	sliced := make([]cyclonedx.Vulnerability, 0, len(cdxVulns))
+	for _, cdxVuln := range cdxVulns {
+		sliced = append(sliced, *cdxVuln)
+	}
+
+	slices.SortFunc(sliced, func(a, b cyclonedx.Vulnerability) int {
+		return strings.Compare(a.ID, b.ID)
+	})
+
+	return &sliced
 }
 
 func extractCPEs(p *extractor.Package) []string {
