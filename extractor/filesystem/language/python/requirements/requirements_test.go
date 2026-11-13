@@ -274,6 +274,27 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name: "utf8_bom",
+			path: "testdata/bom.txt",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "requests",
+					Version:  "2.31.0",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/bom.txt", 1),
+					Metadata: &requirements.Metadata{Requirement: "requests==2.31.0"},
+				},
+				{
+					Name:     "urllib3",
+					Version:  "1.26.18",
+					PURLType: purl.TypePyPi,
+					Location: extractor.LocationFromPathAndLine("testdata/bom.txt", 2),
+					Metadata: &requirements.Metadata{Requirement: "urllib3==1.26.18"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
 			name: "comments",
 			path: "testdata/comments.txt",
 			wantPackages: []*extractor.Package{
