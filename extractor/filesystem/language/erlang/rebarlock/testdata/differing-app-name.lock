@@ -1,0 +1,8 @@
+{"1.2.0",
+[{<<"uuid">>,{pkg,<<"uuid_erl">>,<<"2.0.1">>},0},
+ {<<"quickrand">>,{pkg,<<"quickrand">>,<<"2.0.7">>},1}]}.
+[
+{pkg_hash,[
+ {<<"quickrand">>, <<"D2BD76676A446E6A058D678444B7FDA1387B813710D1AF6D6E29BB92186C8820">>},
+ {<<"uuid">>, <<"1FD9079C544D521063897887A1C5B3302DCA98F9BB06AADCDC6FB0663F256797">>}]}
+].
