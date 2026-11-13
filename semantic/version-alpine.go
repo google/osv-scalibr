@@ -15,44 +15,65 @@
 package semantic
 
 import (
+	"cmp"
 	"math/big"
 	"regexp"
 	"strings"
 )
 
 var (
-	alpineNumberComponentsFinder     = regexp.MustCompile(`^((\d+)\.?)*`)
-	alpineIsFirstCharLowercaseLetter = regexp.MustCompile(`^[a-z]`)
-	alpineSuffixesFinder             = regexp.MustCompile(`_(alpha|beta|pre|rc|cvs|svn|git|hg|p)(\d*)`)
-	alpineHashFinder                 = regexp.MustCompile(`^~([0-9a-f]+)`)
-	alpineBuildComponentFinder       = regexp.MustCompile(`^-r(\d*)`)
+	alpineNumberComponentsFinder = regexp.MustCompile(`^([\d.]*)`)
+	alpineLetterSectionFinder    = regexp.MustCompile(`^([a-z]\d+)*([a-z]\d*)`)
+	alpineSuffixesFinder         = regexp.MustCompile(`_(alpha|beta|pre|rc|cvs|svn|git|hg|p)(\d*)`)
+	alpineHashFinder             = regexp.MustCompile(`^~([0-9a-f]+)`)
+	alpineBuildComponentFinder   = regexp.MustCompile(`^-r(\d*)`)
 )
 
 type alpineNumberComponent struct {
-	original string
-	value    *big.Int
-	index    int
+	original   string
+	value      *big.Int
+	index      int
+	isTrailing bool
 }
 
 func (anc alpineNumberComponent) Cmp(b alpineNumberComponent) int {
-	// ignore trailing zeros for the first digits in each version
+	// For components after the first, use string comparison if either has a leading zero.
 	if anc.index != 0 && b.index != 0 {
-		if anc.original[0] == '0' || b.original[0] == '0' {
+		if anc.value == nil {
+			if b.value == nil {
+				if anc.isTrailing && !b.isTrailing {
+					return -1
+				}
+				if !anc.isTrailing && b.isTrailing {
+					return 1
+				}
+				return 0
+			}
+			if anc.isTrailing {
+				return -1
+			}
+			if b.value.Cmp(big.NewInt(0)) == 0 {
+				return 1 // nil > 0
+			}
+			return -1 // nil < 1
+		}
+
+		if b.value == nil {
+			if b.isTrailing {
+				return 1
+			}
+			if anc.value.Cmp(big.NewInt(0)) == 0 {
+				return -1 // 0 < nil
+			}
+			return 1 // 1 > nil
+		}
+
+		if (len(anc.original) > 0 && anc.original[0] == '0') || (len(b.original) > 0 && b.original[0] == '0') {
 			return strings.Compare(anc.original, b.original)
 		}
 	}
 
 	return anc.value.Cmp(b.value)
-}
-
-type alpineNumberComponents []alpineNumberComponent
-
-func (components *alpineNumberComponents) Fetch(n int) alpineNumberComponent {
-	if len(*components) <= n {
-		return alpineNumberComponent{original: "0", value: new(big.Int)}
-	}
-
-	return (*components)[n]
 }
 
 type alpineSuffix struct {
@@ -82,26 +103,51 @@ func weightAlpineSuffixString(suffixStr string) int {
 	return len(supported)
 }
 
+type alpineLetterComponent struct {
+	letter string
+	number *big.Int
+}
+
+type alpineComponentType int
+
+const (
+	componentNumeric alpineComponentType = iota
+	componentLetter
+	componentSuffix
+	componentHash
+	componentBuild
+)
+
 // AlpineVersion represents a version of an Alpine package.
 //
-// Currently, the APK version specification is as follows:
+// According to https://github.com/alpinelinux/apk-tools/blob/master/doc/apk-package.5.scd#package-info-metadata
+//
+// Currently the APK version specification is as follows:
 // *number{.number}...{letter}{\_suffix{number}}...{~hash}{-r#}*
 //
 // Each *number* component is a sequence of digits (0-9).
 //
 // The *letter* portion can follow only after end of all the numeric
 // version components. The *letter* is a single lower case letter (a-z).
-// This can follow one or more *\_suffix{number}* components. The list
-// of valid suffixes (and their sorting order) is:
-// *alpha*, *beta*, *pre*, *rc*, <no suffix>, *cvs*, *svn*, *git*, *hg*, *p*
 //
-// This can be follows with an optional *{~hash}* to indicate a commit
+// Optionally one or more *\_suffix{number}* components can follow.
+// The list of valid suffixes (and their sorting order) is:
+// *alpha*, *beta*, *pre*, *rc*, <no suffix>, *cvs*, *svn*, *git*, *hg*, *p*.
+//
+// This can be followed with an optional *{~hash}* to indicate a commit
 // hash from where it was built. This can be any length string of
 // lower case hexadecimal digits (0-9a-f).
 //
-// Finally, an optional package build component *-r{number}* can follow.
+// Finally an optional package build component *-r{number}* can follow.
 //
-// Also see https://github.com/alpinelinux/apk-tools/blob/master/doc/apk-package.5.scd#package-info-metadata
+// The above doesn't quite capture handling of 'invalid' versions, observing the behaviour
+// on Alpine v10 (apk-tools 2.10.6):
+//   - the *letter* component is actually {letter}{number}* and may repeat
+//     e.g. 1.0a9b10c11_pre1
+//   - versions are compared up to the first invalid token, and the invalid remainder is not compared
+//     e.g. 1.0apple = 1.0abc
+//   - a version with an invalid version is considered greater than the same version without one
+//     e.g. 1.0a < 1.0a_invalid
 type AlpineVersion struct {
 	// the original string that was parsed
 	original string
@@ -109,10 +155,12 @@ type AlpineVersion struct {
 	invalid bool
 	// the remainder of the string after parsing has been completed
 	remainder string
+	// the last component successfully parsed before the remainder
+	lastComponent alpineComponentType
 	// slice of number components which can be compared in a semver-like manner
-	components alpineNumberComponents
-	// optional single lower-case letter
-	letter string
+	components []alpineNumberComponent
+	// optional 'letter' components
+	letter []alpineLetterComponent
 	// slice of one or more suffixes, prefixed with "_" and optionally followed by a number.
 	//
 	// supported suffixes and their sort order are:
@@ -127,28 +175,41 @@ type AlpineVersion struct {
 var _ Version = AlpineVersion{}
 
 func (v AlpineVersion) compareComponents(w AlpineVersion) int {
-	numberOfComponents := max(len(v.components), len(w.components))
+	minLen := min(len(v.components), len(w.components))
 
-	for i := range numberOfComponents {
-		diff := v.components.Fetch(i).Cmp(w.components.Fetch(i))
-
-		if diff != 0 {
+	for i := range minLen {
+		if diff := v.components[i].Cmp(w.components[i]); diff != 0 {
 			return diff
 		}
 	}
 
-	return 0
+	return cmp.Compare(len(v.components), len(w.components))
 }
 
 func (v AlpineVersion) compareLetters(w AlpineVersion) int {
-	if v.letter == "" && w.letter != "" {
-		return -1
-	}
-	if v.letter != "" && w.letter == "" {
-		return +1
+	numberOfLetters := min(len(v.letter), len(w.letter))
+
+	for i := range numberOfLetters {
+		vl, wl := v.letter[i], w.letter[i]
+		if diff := strings.Compare(vl.letter, wl.letter); diff != 0 {
+			return diff
+		}
+		// no number < 0
+		if vl.number == nil {
+			if wl.number != nil {
+				return -1
+			}
+			continue // both empty
+		}
+		if wl.number == nil {
+			return +1
+		}
+		if diff := vl.number.Cmp(wl.number); diff != 0 {
+			return diff
+		}
 	}
 
-	return strings.Compare(v.letter, w.letter)
+	return cmp.Compare(len(v.letter), len(w.letter))
 }
 
 func (v AlpineVersion) fetchSuffix(n int) alpineSuffix {
@@ -194,42 +255,86 @@ func (v AlpineVersion) compareBuildComponents(w AlpineVersion) int {
 	return 0
 }
 
-func (v AlpineVersion) compareRemainder(w AlpineVersion) int {
-	if v.remainder == "" && w.remainder != "" {
-		return +1
+func compareNumericJunk(v, w AlpineVersion) (int, bool) {
+	if v.remainder != "" && v.lastComponent == componentNumeric && w.remainder == "" {
+		if w.lastComponent == componentLetter {
+			return 1, true
+		}
+		if w.lastComponent == componentNumeric {
+			if v.remainder == "_" {
+				return 1, true
+			}
+			return -1, true
+		}
 	}
+	return 0, false
+}
 
-	if v.remainder != "" && w.remainder == "" {
-		return -1
+func compareLetterJunk(v, w AlpineVersion) (int, bool) {
+	if v.remainder != "" && v.lastComponent == componentLetter && w.remainder == "" && w.lastComponent == componentLetter {
+		return -1, true
+	}
+	return 0, false
+}
+
+func compareFinalRemainders(v, w AlpineVersion) int {
+	if v.remainder != "" || w.remainder != "" {
+		if v.remainder != "" && w.remainder != "" {
+			if v.lastComponent == componentNumeric && w.lastComponent == componentBuild {
+				return 1
+			}
+			if v.lastComponent == componentBuild && w.lastComponent == componentNumeric {
+				return -1
+			}
+			if v.lastComponent == w.lastComponent {
+				return 0
+			}
+		}
+
+		if v.remainder != "" && w.remainder == "" {
+			return 1
+		}
+		if v.remainder == "" && w.remainder != "" {
+			return -1
+		}
 	}
 
 	return 0
 }
 
 func (v AlpineVersion) compare(w AlpineVersion) int {
-	// if both versions are invalid, then just use a string compare
-	if v.invalid && w.invalid {
-		return strings.Compare(v.original, w.original)
-	}
-
 	// note: commit hashes are ignored as we can't properly compare them
 	if diff := v.compareComponents(w); diff != 0 {
 		return diff
 	}
+
+	if diff, ok := compareNumericJunk(v, w); ok {
+		return diff
+	}
+	if diff, ok := compareNumericJunk(w, v); ok {
+		return -diff
+	}
+
 	if diff := v.compareLetters(w); diff != 0 {
 		return diff
 	}
+
+	if diff, ok := compareLetterJunk(v, w); ok {
+		return diff
+	}
+	if diff, ok := compareLetterJunk(w, v); ok {
+		return -diff
+	}
+
 	if diff := v.compareSuffixes(w); diff != 0 {
 		return diff
 	}
+
 	if diff := v.compareBuildComponents(w); diff != 0 {
 		return diff
 	}
-	if diff := v.compareRemainder(w); diff != 0 {
-		return diff
-	}
 
-	return 0
+	return compareFinalRemainders(v, w)
 }
 
 // Compare compares the given version to the receiver.
@@ -265,15 +370,20 @@ func parseAlpineNumberComponents(v *AlpineVersion, str string) (string, error) {
 		return str, nil
 	}
 
-	for i, d := range strings.Split(sub, ".") {
-		// while technically not allowed by the spec, currently apk does not
-		// consider it invalid to have a dot that isn't followed by a digit
+	parts := strings.Split(sub, ".")
+	for i, d := range parts {
 		if d == "" {
-			break
+			isTrailing := (i == len(parts)-1)
+			v.components = append(v.components, alpineNumberComponent{
+				value:      nil,
+				index:      i,
+				original:   "",
+				isTrailing: isTrailing,
+			})
+			continue
 		}
 
 		value, err := convertToBigInt(d)
-
 		if err != nil {
 			return "", err
 		}
@@ -285,22 +395,45 @@ func parseAlpineNumberComponents(v *AlpineVersion, str string) (string, error) {
 		})
 	}
 
+	v.lastComponent = componentNumeric
 	return strings.TrimPrefix(str, sub), nil
 }
 
 // parseAlpineLetter parses the given string into an alpineVersion.letter
 // and then returns the remainder of the string for continued parsing.
 //
-// The letter is optional, following after the numeric version components, and
-// must be a single lower case letter (a-z).
-//
 // This parser must be applied *after* parseAlpineNumberComponents.
-func parseAlpineLetter(v *AlpineVersion, str string) string {
-	if alpineIsFirstCharLowercaseLetter.MatchString(str) {
-		v.letter = str[:1]
+func parseAlpineLetter(v *AlpineVersion, str string) (string, error) {
+	validPart := alpineLetterSectionFinder.FindString(str)
+
+	if validPart == "" {
+		return str, nil
 	}
 
-	return strings.TrimPrefix(str, v.letter)
+	chunkFinder := regexp.MustCompile(`([a-z])(\d*)`)
+	matches := chunkFinder.FindAllStringSubmatch(validPart, -1)
+
+	for _, match := range matches {
+		letter := match[1]
+		numberStr := match[2]
+
+		var number *big.Int
+		if numberStr != "" {
+			var err error
+			number, err = convertToBigInt(numberStr)
+			if err != nil {
+				return "", err
+			}
+		}
+
+		v.letter = append(v.letter, alpineLetterComponent{
+			letter: letter,
+			number: number,
+		})
+	}
+
+	v.lastComponent = componentLetter
+	return str[len(validPart):], nil
 }
 
 // parseAlpineSuffixes parses the given string into alpineVersion.suffixes and
@@ -325,6 +458,7 @@ func parseAlpineSuffixes(v *AlpineVersion, str string) (string, error) {
 			weight: weightAlpineSuffixString(match[1]),
 			number: number,
 		})
+		v.lastComponent = componentSuffix
 		str = strings.TrimPrefix(str, match[0])
 	}
 
@@ -341,6 +475,10 @@ func parseAlpineSuffixes(v *AlpineVersion, str string) (string, error) {
 // This parser must be applied *after* parseAlpineSuffixes.
 func parseAlpineHash(v *AlpineVersion, str string) string {
 	v.hash = alpineHashFinder.FindString(str)
+
+	if v.hash != "" {
+		v.lastComponent = componentHash
+	}
 
 	return strings.TrimPrefix(str, v.hash)
 }
@@ -379,6 +517,7 @@ func parseAlpineBuildComponent(v *AlpineVersion, str string) (string, error) {
 
 	v.buildComponent = buildComponent
 
+	v.lastComponent = componentBuild
 	return strings.TrimPrefix(str, matches[0]), nil
 }
 
@@ -388,11 +527,19 @@ func ParseAlpineVersion(str string) (AlpineVersion, error) {
 
 	v := AlpineVersion{original: str, buildComponent: new(big.Int)}
 
+	// 0 vs empty string behaves weirdly, and inconsistently in different components
+	// but functionally, adding a leading 0 does not change the version
+	// i.e. ".0" == "0.0" == "00.0"
+	// Add a 0 to the beginning of the string to handle these cases easier
+	str = "0" + str
+
 	if str, err = parseAlpineNumberComponents(&v, str); err != nil {
 		return AlpineVersion{}, err
 	}
 
-	str = parseAlpineLetter(&v, str)
+	if str, err = parseAlpineLetter(&v, str); err != nil {
+		return AlpineVersion{}, err
+	}
 
 	if str, err = parseAlpineSuffixes(&v, str); err != nil {
 		return AlpineVersion{}, err
