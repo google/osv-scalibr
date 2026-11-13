@@ -34,13 +34,26 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/doyensec/safeurl"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/icholy/digest"
 )
 
 // HTTPValidator validates a URL using Basic or Digest authentication.
 type HTTPValidator struct{ Client *http.Client }
+
+var publicTransport = newPublicTransport()
+
+// NewHTTPClient returns an HTTP client using the same protected transport as the
+// FTP/SFTP dialer. Every connection, including redirects, is checked by safeurl.
+func NewHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: publicTransport,
+		Timeout:   10 * time.Second,
+	}
+}
 
 // Validate implements the standard challenge-response mechanism.
 // It sends an unauthenticated probe first, then attempts authentication
@@ -103,6 +116,23 @@ func (h *HTTPValidator) Validate(ctx context.Context, u *url.URL) (veles.Validat
 	default:
 		return veles.ValidationFailed, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
+}
+
+func newPublicTransport() *http.Transport {
+	// Credential URLs may use nonstandard ports. Restrict destinations rather
+	// than ports, preserving validation of public services on arbitrary ports.
+	ports := make([]int, 65535)
+	for i := range ports {
+		ports[i] = i + 1
+	}
+	config := safeurl.GetConfigBuilder().
+		SetAllowedPorts(ports...).
+		EnableIPv6(true).
+		Build()
+	// safeurl constructs an *http.Transport with a protected DialContext. No
+	// proxy is configured: it could resolve the destination outside this policy.
+	// Authentication is supplied through headers, never URL userinfo.
+	return safeurl.Client(config).Client.Transport.(*http.Transport)
 }
 
 func setDigestAuth(req *http.Request, userInfo *url.Userinfo, authHeader string) error {

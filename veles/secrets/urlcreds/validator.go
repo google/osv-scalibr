@@ -31,6 +31,7 @@ package urlcreds
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -46,13 +47,20 @@ type ProtocolValidator interface {
 
 // Validator is a URL credentials validator.
 type Validator struct {
+	// Client overrides the protected HTTP client. Only set this for trusted
+	// destinations, since a custom client controls its own network policy.
 	Client *http.Client
+	// DialContext overrides the protected FTP/SFTP dialer. Only set this for
+	// trusted destinations, since it bypasses destination filtering.
+	DialContext func(context.Context, string, string) (net.Conn, error)
 }
+
+var defaultHTTPClient = validators.NewHTTPClient()
 
 // NewValidator returns an URL credentials validator.
 func NewValidator() veles.Validator[Credentials] {
 	return &Validator{
-		Client: http.DefaultClient,
+		Client: defaultHTTPClient,
 	}
 }
 
@@ -67,9 +75,9 @@ func (v *Validator) Validate(ctx context.Context, secret Credentials) (veles.Val
 	case "http", "https":
 		validator = &validators.HTTPValidator{Client: v.Client}
 	case "ftp":
-		validator = &validators.FTPValidator{}
+		validator = &validators.FTPValidator{DialContext: v.DialContext}
 	case "sftp":
-		validator = &validators.SFTPValidator{}
+		validator = &validators.SFTPValidator{DialContext: v.DialContext}
 	default:
 		return veles.ValidationFailed, fmt.Errorf("scheme %q not supported", scheme)
 	}

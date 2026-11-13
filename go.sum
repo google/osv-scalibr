@@ -132,6 +132,8 @@ github.com/docker/go-connections v0.8.2 h1:9d9DEokx5W7qlr0shkFXIxEA7+TTD+llwzcyk
 github.com/docker/go-connections v0.8.2/go.mod h1:no1qkHdjq7kLMGUXYAduOhYPSJxxvgWBh7ogVvptn3Q=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
+github.com/doyensec/safeurl v0.2.5 h1:kKu0JNQy0tJ8jkDyB5h6Aml9vWWniq+mpoa12EGLcOQ=
+github.com/doyensec/safeurl v0.2.5/go.mod h1:3H0cgRpPYPSpgxRRn5yGD35Ns/LgGX/BVWSBbzUqXtY=
 github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589 h1:LzrKhEeL5tqo8i86+5a8JgL5cEJBRspVm4FsKRK/gxA=
 github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589/go.mod h1:zs3tKt0dOHncKZ7QhimWwN9RP7f6W6CLdjRfscKvvcA=
 github.com/dsoprea/go-logging v0.0.0-20190624164917-c4f10aab7696/go.mod h1:Nm/x2ZUNRW6Fe5C3LxdY1PyZY5wmDv/s5dkPJ/VB3iA=

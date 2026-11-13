@@ -30,34 +30,36 @@ package validators
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/url"
-	"time"
 
 	"github.com/google/osv-scalibr/veles"
 	"golang.org/x/crypto/ssh"
 )
 
 // SFTPValidator validates sftp URL credentials.
-type SFTPValidator struct{}
+type SFTPValidator struct {
+	// DialContext optionally overrides destination filtering for trusted callers.
+	DialContext func(context.Context, string, string) (net.Conn, error)
+}
 
 // Validate validates sftp URL credentials.
 //
 // Note: ssh.NewClientConn is used instead of ssh.Dial because ssh.Dial does not accept a context.
 func (s *SFTPValidator) Validate(ctx context.Context, u *url.URL) (veles.ValidationStatus, error) {
-	timeout := 10 * time.Second
-	// Add a timeout otherwise the tcp dial may take a long time (minutes)
-	dialer := &net.Dialer{Timeout: timeout}
-	rawConn, err := dialer.DialContext(ctx, "tcp", u.Host)
+	dial := s.DialContext
+	if dial == nil {
+		dial = dialPublicContext
+	}
+	rawConn, err := dial(ctx, "tcp", u.Host)
 	if err != nil {
 		return veles.ValidationFailed, err
 	}
 	defer rawConn.Close()
 
 	// Set a deadline otherwise the SSH handshake may stall indefinitely
-	if err := rawConn.SetDeadline(time.Now().Add(timeout)); err != nil {
-		return veles.ValidationFailed, errors.New("error setting connection deadline")
+	if err := setDeadline(ctx, rawConn); err != nil {
+		return veles.ValidationFailed, err
 	}
 
 	pass, _ := u.User.Password()

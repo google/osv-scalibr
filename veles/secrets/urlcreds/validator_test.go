@@ -29,6 +29,7 @@
 package urlcreds_test
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -41,14 +42,19 @@ import (
 	"net/http/httptest"
 	"net/textproto"
 	"net/url"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/doyensec/safeurl"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/velestest"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/net/dns/dnsmessage"
 )
 
 func TestAcceptValidator(t *testing.T) {
@@ -131,7 +137,11 @@ func TestValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			v := urlcreds.NewValidator()
+			v := newLocalValidator(t,
+				basicAuthHTTPSvr.Listener.Addr().(*net.TCPAddr).Port,
+				digestHTTPSvr.Listener.Addr().(*net.TCPAddr).Port,
+				digestHTTPSvrWithCookies.Listener.Addr().(*net.TCPAddr).Port,
+				addressPort(t, ftpAddr), addressPort(t, sftpAddr))
 			got, err := v.Validate(t.Context(), urlcreds.Credentials{FullURL: tt.url})
 
 			if err != nil {
@@ -175,7 +185,7 @@ func TestValidatorFTPRejectsLineBreaks(t *testing.T) {
 				connected <- true
 			}()
 
-			v := urlcreds.NewValidator()
+			v := newLocalValidator(t, l.Addr().(*net.TCPAddr).Port)
 			got, err := v.Validate(t.Context(), urlcreds.Credentials{
 				FullURL: fmt.Sprintf("ftp://%s:%s@%s/files", tc.user, tc.pass, l.Addr()),
 			})
@@ -202,7 +212,7 @@ func TestValidatorFTPEncodedCredentials(t *testing.T) {
 		Host:   addr,
 		User:   url.UserPassword("user@name", "pass:%word"),
 	}
-	v := urlcreds.NewValidator()
+	v := newLocalValidator(t, addressPort(t, addr))
 	got, err := v.Validate(t.Context(), urlcreds.Credentials{FullURL: u.String()})
 	if err != nil {
 		t.Fatalf("Validate(): %v", err)
@@ -210,6 +220,209 @@ func TestValidatorFTPEncodedCredentials(t *testing.T) {
 	if got != veles.ValidationValid {
 		t.Errorf("Validate() status = %v, want %v", got, veles.ValidationValid)
 	}
+}
+
+func TestValidatorBlocksInternalDestinations(t *testing.T) {
+	proxy := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("protected client must not send requests through an environment proxy")
+	}))
+	t.Cleanup(proxy.Close)
+	t.Setenv("HTTP_PROXY", proxy.URL)
+	t.Setenv("HTTPS_PROXY", proxy.URL)
+	t.Setenv("NO_PROXY", "")
+	for _, scheme := range []string{"http", "https", "ftp", "sftp"} {
+		t.Run(scheme, func(t *testing.T) {
+			for _, host := range []string{
+				"127.0.0.1", "10.0.0.1", "169.254.169.254", "100.100.100.200",
+				"::1", "fc00::1", "fe80::1", "::ffff:127.0.0.1",
+			} {
+				v := urlcreds.NewValidator()
+				status, err := v.Validate(t.Context(), urlcreds.Credentials{
+					FullURL: scheme + "://user:pass@" + net.JoinHostPort(host, "12345") + "/resource",
+				})
+				if err == nil || status != veles.ValidationFailed {
+					t.Fatalf("Validate(%q) = %v, %v; want ValidationFailed and error", host, status, err)
+				}
+				var blocked *safeurl.AllowedIPError
+				if !errors.As(err, &blocked) {
+					t.Fatalf("Validate(%q) error = %v; want safeurl destination rejection", host, err)
+				}
+			}
+		})
+	}
+}
+
+func TestValidatorBlocksRedirectToInternalDestination(t *testing.T) {
+	for _, authenticated := range []bool{false, true} {
+		name := "probe"
+		if authenticated {
+			name = "authenticated"
+		}
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if authenticated && r.Header.Get("Authorization") == "" {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				http.Redirect(w, r, "http://169.254.169.254/latest/meta-data/", http.StatusFound)
+			}))
+			t.Cleanup(server.Close)
+			// Permit only the local fixture. Redirects must still use the
+			// protected transport rather than http.DefaultClient.
+			client := safeurl.Client(safeurl.GetConfigBuilder().
+				SetAllowedIPs("127.0.0.1").
+				SetAllowedPorts(server.Listener.Addr().(*net.TCPAddr).Port, 80).
+				SetTimeout(time.Second).
+				Build()).Client
+			t.Cleanup(client.CloseIdleConnections)
+			v := urlcreds.NewValidator().(*urlcreds.Validator)
+			v.Client = client
+			status, err := v.Validate(t.Context(), urlcreds.Credentials{
+				FullURL: strings.Replace(server.URL, "://", "://user:pass@", 1),
+			})
+			var blocked *safeurl.AllowedIPError
+			if status != veles.ValidationFailed || !errors.As(err, &blocked) {
+				t.Fatalf("Validate() = %v, %v; want blocked redirect", status, err)
+			}
+		})
+	}
+}
+
+func TestValidatorBlocksSpecialUseAddresses(t *testing.T) {
+	for _, address := range []string{
+		"0.0.0.0", "0.1.2.3", "10.0.0.1", "127.0.0.1", "169.254.169.254",
+		"172.16.0.1", "192.168.0.1", "100.100.100.200", "192.0.0.1",
+		"192.0.2.1", "192.88.99.1", "198.18.0.1", "198.51.100.1",
+		"203.0.113.1", "224.0.0.1", "240.0.0.1", "255.255.255.255",
+		"::", "::1", "fc00::1", "fe80::1", "ff02::1", "::ffff:127.0.0.1",
+		"::ffff:10.0.0.1", "64:ff9b::a00:1", "64:ff9b:1::1", "100::1",
+		"100:0:0:1::1", "2001::1", "2001:db8::1", "2002:7f00:1::1",
+		"3fff::1", "5f00::1",
+	} {
+		status, err := urlcreds.NewValidator().Validate(t.Context(), urlcreds.Credentials{
+			FullURL: "ftp://user:pass@" + net.JoinHostPort(address, "22"),
+		})
+		var blocked *safeurl.AllowedIPError
+		if status != veles.ValidationFailed || !errors.As(err, &blocked) {
+			t.Errorf("Validate(%q) = %v, %v; want safeurl destination rejection", address, status, err)
+		}
+	}
+}
+
+func TestValidatorChecksReboundAddress(t *testing.T) {
+	// An earlier lookup returns a public address. The actual dial resolves the
+	// same name to loopback, which must be rejected before opening a connection.
+	server, err := (&net.ListenConfig{}).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { server.Close() })
+	var queries atomic.Int32
+	go serveRebindingDNS(t, server, &queries)
+	resolver := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "udp", server.LocalAddr().String())
+		},
+	}
+	oldResolver := net.DefaultResolver
+	net.DefaultResolver = resolver
+	t.Cleanup(func() { net.DefaultResolver = oldResolver })
+	for _, scheme := range []string{"ftp", "sftp"} {
+		t.Run(scheme, func(t *testing.T) {
+			queries.Store(0)
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			ips, err := resolver.LookupNetIP(ctx, "ip4", "rebind.example")
+			if err != nil || len(ips) != 1 || ips[0].String() != "8.8.8.8" {
+				t.Fatalf("initial lookup = %v, %v; want public address", ips, err)
+			}
+			status, err := urlcreds.NewValidator().Validate(ctx, urlcreds.Credentials{
+				FullURL: scheme + "://user:pass@rebind.example:22",
+			})
+			var blocked *safeurl.AllowedIPError
+			if status != veles.ValidationFailed || !errors.As(err, &blocked) {
+				t.Fatalf("Validate() = %v, %v; want rejection of rebound address", status, err)
+			}
+			if queries.Load() < 2 {
+				t.Errorf("DNS queries = %d, want at least two", queries.Load())
+			}
+		})
+	}
+}
+
+func serveRebindingDNS(t *testing.T, server net.PacketConn, queries *atomic.Int32) {
+	t.Helper()
+	buf := make([]byte, 512)
+	for {
+		n, addr, err := server.ReadFrom(buf)
+		if err != nil {
+			return // Closed by test cleanup.
+		}
+		var request dnsmessage.Message
+		if err := request.Unpack(buf[:n]); err != nil {
+			t.Error(err)
+			return
+		}
+		response := dnsmessage.Message{
+			Header: dnsmessage.Header{
+				ID: request.ID, Response: true, RecursionAvailable: true,
+			},
+			Questions: request.Questions,
+		}
+		for _, question := range request.Questions {
+			if question.Type != dnsmessage.TypeA {
+				continue
+			}
+			ip := [4]byte{127, 0, 0, 1}
+			if queries.Add(1) == 1 {
+				ip = [4]byte{8, 8, 8, 8}
+			}
+			response.Answers = append(response.Answers, dnsmessage.Resource{
+				Header: dnsmessage.ResourceHeader{
+					Name: question.Name, Type: dnsmessage.TypeA, Class: dnsmessage.ClassINET,
+				},
+				Body: &dnsmessage.AResource{A: ip},
+			})
+		}
+		data, err := response.Pack()
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if _, err := server.WriteTo(data, addr); err != nil {
+			t.Error(err)
+			return
+		}
+	}
+}
+
+// newLocalValidator permits only the loopback fixtures and their specific ports.
+// Production defaults are covered separately by destination-policy tests.
+func newLocalValidator(t *testing.T, ports ...int) *urlcreds.Validator {
+	t.Helper()
+	v := urlcreds.NewValidator().(*urlcreds.Validator)
+	v.Client = safeurl.Client(safeurl.GetConfigBuilder().
+		SetAllowedIPs("127.0.0.1").
+		SetAllowedPorts(ports...).
+		SetTimeout(time.Second).
+		Build()).Client
+	t.Cleanup(v.Client.CloseIdleConnections)
+	v.DialContext = v.Client.Transport.(*http.Transport).DialContext
+	return v
+}
+
+func addressPort(t *testing.T, address string) int {
+	t.Helper()
+	_, port, err := net.SplitHostPort(address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, err := strconv.Atoi(port)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
 
 func mockFTPServer(t *testing.T, validUser, validPass string) string {
