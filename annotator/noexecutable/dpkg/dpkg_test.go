@@ -28,9 +28,9 @@ import (
 	"github.com/google/osv-scalibr/common/linux/dpkg/testing/dpkgutil"
 	"github.com/google/osv-scalibr/extractor"
 	dpkgmetadata "github.com/google/osv-scalibr/extractor/filesystem/os/dpkg/metadata"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/inventory/vex"
+	"github.com/google/osv-scalibr/testing/fakefs"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -61,7 +61,6 @@ func TestAnnotate(t *testing.T) {
 		{
 			desc:         "missing_info_dir",
 			infoContents: nil,
-			wantErr:      cmpopts.AnyError,
 		},
 		{
 			desc:         "empty_info_dir",
@@ -146,7 +145,7 @@ func TestAnnotate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			root := ""
+			root := t.TempDir()
 			if tt.infoContents != nil {
 				root = dpkgutil.SetupDPKGInfo(t, tt.infoContents, true)
 			}
@@ -154,7 +153,7 @@ func TestAnnotate(t *testing.T) {
 				tt.ctx = t.Context()
 			}
 			input := &annotator.ScanInput{
-				ScanRoot: scalibrfs.RealFSScanRoot(root),
+				ScanRoot: fakefs.RealFSScanRoot(t, root),
 			}
 			// Deep copy the packages to avoid modifying the original inventory that is used in other tests.
 			packages := copier.Copy(tt.packages).([]*extractor.Package)

@@ -94,7 +94,7 @@ type ScanConfig struct {
 	// Optional: If the regex matches a directory, it will be skipped.
 	SkipDirRegex *regexp.Regexp
 	// Optional: If the glob matches a directory, it will be skipped.
-	SkipDirGlob glob.Glob
+	SkipDirGlob *glob.Pattern
 	// Optional: Files larger than this size in bytes are skipped. If 0, no limit is applied.
 	MaxFileSize int64
 	// Optional: Skip files declared in .gitignore files in source repos.
@@ -197,6 +197,7 @@ type ScanResult = result.ScanResult
 
 // Scan executes the extraction/detection/annotation/etc. plugins using the provided scan config.
 func (Scanner) Scan(ctx context.Context, cfg *ScanConfig) (sr *ScanResult) {
+	defer closeScanRoots(cfg.ScanRoots)
 	if cfg.Stats == nil {
 		cfg.Stats = stats.NoopCollector{}
 	}
@@ -378,6 +379,7 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 			FS: imagefs,
 		},
 	}
+	defer closeScanRoots(cfg.ScanRoots)
 
 	storeAbsPath := cfg.StoreAbsolutePath
 	// We want to store absolute paths in the inventory,
@@ -458,12 +460,12 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	if err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
-		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+		return scanResult, nil // Errors are returned in the scanResult.
 	}
 	if err := validateEnricherRequirements(enrichers, cfg.Capabilities); err != nil {
 		scanResult.Status.Status = plugin.ScanStatusFailed
 		scanResult.Status.FailureReason = err.Error()
-		return scanResult, nil //nolint:nilerr // Errors are returned in the scanResult.
+		return scanResult, nil // Errors are returned in the scanResult.
 	}
 	enricherCfg := &enricher.Config{
 		Enrichers: enrichers,
@@ -497,6 +499,18 @@ func (s Scanner) ScanContainer(ctx context.Context, img image.Image, cfg *ScanCo
 	runtime.KeepAlive(img)
 
 	return scanResult, nil
+}
+
+func closeScanRoots(scanRoots []*scalibrfs.ScanRoot) {
+	for _, r := range scanRoots {
+		if r != nil && r.FS != nil {
+			if c, ok := r.FS.(io.Closer); ok {
+				if err := c.Close(); err != nil {
+					log.Warnf("failed to close scan root %q: %v", r.Path, err)
+				}
+			}
+		}
+	}
 }
 
 type newScanResultOptions struct {

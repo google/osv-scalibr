@@ -41,6 +41,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -51,9 +52,21 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/veles"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
+	"github.com/google/osv-scalibr/veles/velestest"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/dns/dnsmessage"
 )
+
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		urlcreds.NewValidator(),
+		velestest.WithMalformedSecrets(urlcreds.Credentials{FullURL: ":::not-a-valid-url"}),
+		velestest.WithTrueNegatives(urlcreds.Credentials{FullURL: "http://admin:pass@domain.com/resource"}),
+		velestest.WithBrokenTransport(func(v *urlcreds.Validator) { v.Client = velestest.BrokenClient }),
+		velestest.WithoutOnline[urlcreds.Credentials](),
+	)
+}
 
 func TestValidator(t *testing.T) {
 	basicAuthHTTPSvr := mockBasicAuthHTTPServer(t, "admin", "pass")
@@ -124,19 +137,11 @@ func TestValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			v := urlcreds.NewValidator().(*urlcreds.Validator)
-			// These protocol fixtures intentionally listen on loopback. Production
-			// defaults are covered separately by destination-policy tests.
-			v.Client = safeurl.Client(safeurl.GetConfigBuilder().
-				SetAllowedIPs("127.0.0.1").
-				SetAllowedPorts(basicAuthHTTPSvr.Listener.Addr().(*net.TCPAddr).Port,
-					digestHTTPSvr.Listener.Addr().(*net.TCPAddr).Port,
-					digestHTTPSvrWithCookies.Listener.Addr().(*net.TCPAddr).Port,
-					addressPort(t, ftpAddr), addressPort(t, sftpAddr)).
-				SetTimeout(time.Second).
-				Build()).Client
-			t.Cleanup(v.Client.CloseIdleConnections)
-			v.DialContext = v.Client.Transport.(*http.Transport).DialContext
+			v := newLocalValidator(t,
+				basicAuthHTTPSvr.Listener.Addr().(*net.TCPAddr).Port,
+				digestHTTPSvr.Listener.Addr().(*net.TCPAddr).Port,
+				digestHTTPSvrWithCookies.Listener.Addr().(*net.TCPAddr).Port,
+				addressPort(t, ftpAddr), addressPort(t, sftpAddr))
 			got, err := v.Validate(t.Context(), urlcreds.Credentials{FullURL: tt.url})
 
 			if err != nil {
@@ -146,6 +151,74 @@ func TestValidator(t *testing.T) {
 				t.Errorf("Validate() diff (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestValidatorFTPRejectsLineBreaks(t *testing.T) {
+	cases := []struct {
+		name string
+		user string
+		pass string
+	}{
+		{name: "username_cr", user: "sensitive%0DNOOP", pass: "sensitive"},
+		{name: "username_lf", user: "sensitive%0ANOOP", pass: "sensitive"},
+		{name: "username_crlf", user: "sensitive%0D%0ANOOP", pass: "sensitive"},
+		{name: "password_cr", user: "sensitive", pass: "sensitive%0DNOOP"},
+		{name: "password_lf", user: "sensitive", pass: "sensitive%0ANOOP"},
+		{name: "password_crlf", user: "sensitive", pass: "sensitive%0D%0ANOOP"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			l, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { l.Close() })
+			connected := make(chan bool, 1)
+			go func() {
+				conn, err := l.Accept()
+				if err != nil {
+					connected <- false
+					return
+				}
+				conn.Close()
+				connected <- true
+			}()
+
+			v := newLocalValidator(t, l.Addr().(*net.TCPAddr).Port)
+			got, err := v.Validate(t.Context(), urlcreds.Credentials{
+				FullURL: fmt.Sprintf("ftp://%s:%s@%s/files", tc.user, tc.pass, l.Addr()),
+			})
+			l.Close()
+			if <-connected {
+				t.Error("Validate() connected despite line breaks in credentials")
+			}
+			if got != veles.ValidationFailed {
+				t.Errorf("Validate() status = %v, want %v", got, veles.ValidationFailed)
+			}
+			if err == nil {
+				t.Error("Validate() returned no error for line breaks in credentials")
+			} else if strings.Contains(err.Error(), "sensitive") {
+				t.Error("Validate() error exposed credentials")
+			}
+		})
+	}
+}
+
+func TestValidatorFTPEncodedCredentials(t *testing.T) {
+	addr := mockFTPServer(t, "user@name", "pass:%word")
+	u := &url.URL{
+		Scheme: "ftp",
+		Host:   addr,
+		User:   url.UserPassword("user@name", "pass:%word"),
+	}
+	v := newLocalValidator(t, addressPort(t, addr))
+	got, err := v.Validate(t.Context(), urlcreds.Credentials{FullURL: u.String()})
+	if err != nil {
+		t.Fatalf("Validate(): %v", err)
+	}
+	if got != veles.ValidationValid {
+		t.Errorf("Validate() status = %v, want %v", got, veles.ValidationValid)
 	}
 }
 
@@ -322,6 +395,21 @@ func serveRebindingDNS(t *testing.T, server net.PacketConn, queries *atomic.Int3
 			return
 		}
 	}
+}
+
+// newLocalValidator permits only the loopback fixtures and their specific ports.
+// Production defaults are covered separately by destination-policy tests.
+func newLocalValidator(t *testing.T, ports ...int) *urlcreds.Validator {
+	t.Helper()
+	v := urlcreds.NewValidator().(*urlcreds.Validator)
+	v.Client = safeurl.Client(safeurl.GetConfigBuilder().
+		SetAllowedIPs("127.0.0.1").
+		SetAllowedPorts(ports...).
+		SetTimeout(time.Second).
+		Build()).Client
+	t.Cleanup(v.Client.CloseIdleConnections)
+	v.DialContext = v.Client.Transport.(*http.Transport).DialContext
+	return v
 }
 
 func addressPort(t *testing.T, address string) int {

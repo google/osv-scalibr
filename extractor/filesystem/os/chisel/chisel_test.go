@@ -302,7 +302,7 @@ func TestExtract(t *testing.T) {
 			}
 
 			input := &filesystem.ScanInput{
-				FS: scalibrfs.DirFS(d), Path: tt.path, Reader: r, Root: d, Info: info,
+				FS: fakefs.DirFS(t, d), Path: tt.path, Reader: r, Root: d, Info: info,
 			}
 
 			cfg := tt.cfg

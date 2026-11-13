@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv-scalibr/artifact/image/whiteout"
-	scalibrfs "github.com/google/osv-scalibr/fs"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestWhiteout(t *testing.T) {
@@ -120,7 +120,7 @@ func TestWhiteout(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			tmp := t.TempDir()
-			fs := scalibrfs.DirFS(tmp)
+			fs := fakefs.DirFS(t, tmp)
 
 			// Create directories first, then write files to fs.
 			for _, dir := range tc.dirs {

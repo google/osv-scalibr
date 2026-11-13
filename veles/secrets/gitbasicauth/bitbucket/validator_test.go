@@ -15,7 +15,6 @@
 package bitbucket_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,8 +22,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv-scalibr/veles"
+	sv "github.com/google/osv-scalibr/veles/secrets/common/simplevalidate"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/bitbucket"
 	"github.com/google/osv-scalibr/veles/secrets/gitbasicauth/mockserver"
+	"github.com/google/osv-scalibr/veles/velestest"
 )
 
 var (
@@ -35,27 +36,26 @@ var (
 	badHostURL               = "https://x-token-auth:token@bad-host.com/workspace/bad-project-repo.git"
 )
 
-func TestValidator(t *testing.T) {
-	cancelledContext, cancel := context.WithCancel(t.Context())
-	cancel()
+func TestAcceptValidator(t *testing.T) {
+	velestest.AcceptValidator(
+		t,
+		bitbucket.NewValidator(),
+		velestest.WithTrueNegatives(bitbucket.Credentials{FullURL: validatorTokenURL}),
+		velestest.WithBrokenTransport(func(v *sv.Validator[bitbucket.Credentials]) {
+			v.HTTPC = velestest.BrokenClient
+		}),
+		velestest.WithoutOnline[bitbucket.Credentials](),
+	)
+}
 
+func TestValidator(t *testing.T) {
 	cases := []struct {
-		//nolint:containedctx
-		ctx        context.Context
 		name       string
 		url        string
 		httpStatus int
 		want       veles.ValidationStatus
 		wantErr    error
 	}{
-		{
-			name:       "cancelled_context",
-			url:        validatorTestURL,
-			want:       veles.ValidationFailed,
-			ctx:        cancelledContext,
-			httpStatus: http.StatusOK,
-			wantErr:    cmpopts.AnyError,
-		},
 		{
 			name:    "bad_host",
 			url:     badHostURL,
@@ -90,9 +90,6 @@ func TestValidator(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.ctx == nil {
-				tt.ctx = t.Context()
-			}
 			server := httptest.NewServer(mockserver.GitHandler(t, tt.httpStatus))
 			defer server.Close()
 
@@ -103,7 +100,7 @@ func TestValidator(t *testing.T) {
 			v := bitbucket.NewValidator()
 			v.HTTPC = client
 
-			got, err := v.Validate(tt.ctx, bitbucket.Credentials{FullURL: tt.url})
+			got, err := v.Validate(t.Context(), bitbucket.Credentials{FullURL: tt.url})
 
 			if !cmp.Equal(tt.wantErr, err, cmpopts.EquateErrors()) {
 				t.Fatalf("Validate() error: %v, want %v", err, tt.wantErr)

@@ -1,0 +1,9 @@
+GROUP Main
+NUGET
+  remote: https://api.nuget.org/v3/index.json
+    NUnit (2.6.4)
+
+GROUP Test
+NUGET
+  remote: https://api.nuget.org/v3/index.json
+    NUnit (2.6.4)

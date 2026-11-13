@@ -142,11 +142,13 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Package, error) {
 	var packages []*extractor.Package
 	scanner := bufio.NewScanner(reader)
+	lineNumber := 0
 
 	var currentSection string    // Track current section
 	var currentGitHubRepo string // Track current GitHub repo from remote: line
 
 	for scanner.Scan() {
+		lineNumber++
 		line := scanner.Text()
 
 		// Skip empty lines and comments
@@ -215,7 +217,7 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 
 		// Handle GitHub dependencies differently
 		if currentSection == "GITHUB" {
-			pkg := getGithubPkg(currentGitHubRepo, pkgName, version, path)
+			pkg := getGithubPkg(currentGitHubRepo, pkgName, version, path, lineNumber)
 			packages = append(packages, pkg)
 		} else {
 			// NuGet and other package types
@@ -223,7 +225,7 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 				Name:     pkgName,
 				Version:  version,
 				PURLType: purl.TypeNuget,
-				Location: extractor.LocationFromPath(path),
+				Location: extractor.LocationFromPathAndLine(path, lineNumber),
 			}
 			packages = append(packages, pkg)
 		}
@@ -244,7 +246,7 @@ func (e Extractor) parseLockFile(reader io.Reader, path string) ([]*extractor.Pa
 // For GitHub dependencies in lock files, there are two formats:
 // 1. Simple: "    repo/name (version/tag)" - package name matches repo
 // 2. With file: "    file/path.fs (commit)" - package name is file path, repo from remote: line
-func getGithubPkg(repoName string, pkgName string, version string, path string) *extractor.Package {
+func getGithubPkg(repoName string, pkgName string, version string, path string, lineNumber int) *extractor.Package {
 	commit := ""
 	pkgVersion := ""
 
@@ -283,7 +285,7 @@ func getGithubPkg(repoName string, pkgName string, version string, path string) 
 		Name:       repoName,
 		Version:    pkgVersion,
 		PURLType:   purl.TypeGithub,
-		Location:   extractor.LocationFromPath(path),
+		Location:   extractor.LocationFromPathAndLine(path, lineNumber),
 		SourceCode: sourceCode,
 	}
 }

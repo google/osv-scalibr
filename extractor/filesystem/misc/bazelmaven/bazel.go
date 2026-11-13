@@ -23,7 +23,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bazelbuild/buildtools/build"
+	"github.com/bazel-contrib/buildtools/v10/build"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	bazelmetadata "github.com/google/osv-scalibr/extractor/filesystem/misc/bazelmaven/metadata"

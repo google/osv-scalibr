@@ -15,66 +15,63 @@
 package cve20257775_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/osv-scalibr/detector/cve/cve20257775"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/fsmetadata"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/packageindex"
+	"github.com/google/osv-scalibr/testing/fakefs"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
 func TestScan(t *testing.T) {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
+	dir := fakefs.CopyTestData(t, "testdata")
+	fsys := fakefs.DirFS(t, dir)
 
 	pkgs := []*extractor.Package{
 		{
 			Name:     "NetScaler",
 			Version:  "14.1-47.47", // Vulnerable version
-			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:1:flash", "boot", "loader.conf")),
-			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
+			Location: extractor.LocationFromPath(filepath.Join(dir, "valid.vmdk:1:flash", "boot", "loader.conf")),
+			Metadata: &fsmetadata.Metadata{FS: fsys},
 		},
 		{
 			Name:     "NetScaler",
 			Version:  "14.1-47.48", // Benign Version
-			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:2:flash", "boot", "loader.conf")),
-			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
+			Location: extractor.LocationFromPath(filepath.Join(dir, "valid.vmdk:2:flash", "boot", "loader.conf")),
+			Metadata: &fsmetadata.Metadata{FS: fsys},
 		},
 		{
 			Name:     "NetScaler",
 			Version:  "13.1-59.21", // Vulnerable version
-			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:3:ns-13.1-59.21.gz")),
-			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
+			Location: extractor.LocationFromPath(filepath.Join(dir, "valid.vmdk:3:ns-13.1-59.21.gz")),
+			Metadata: &fsmetadata.Metadata{FS: fsys},
 		},
 		{
 			Name:     "NetScaler",
 			Version:  "13.1-59.22", // Benign Version
-			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:4:ns-13.1-59.22.gz")),
-			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
+			Location: extractor.LocationFromPath(filepath.Join(dir, "valid.vmdk:4:ns-13.1-59.22.gz")),
+			Metadata: &fsmetadata.Metadata{FS: fsys},
 		},
 		{
 			Name:     "NetScaler",
 			Version:  "12.1-55.329", // Vulnerable version
-			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:5:nsversion")),
-			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
+			Location: extractor.LocationFromPath(filepath.Join(dir, "valid.vmdk:5:nsversion")),
+			Metadata: &fsmetadata.Metadata{FS: fsys},
 		},
 		{
 			Name:     "NetScaler",
 			Version:  "12.1-55.330", // Benign Version
-			Location: extractor.LocationFromPath(filepath.Join(dir, "testdata", "valid.vmdk:6:nsversion")),
-			Metadata: &fsmetadata.Metadata{FS: scalibrfs.DirFS(filepath.Join(dir, "testdata"))},
+			Location: extractor.LocationFromPath(filepath.Join(dir, "valid.vmdk:6:nsversion")),
+			Metadata: &fsmetadata.Metadata{FS: fsys},
 		},
 	}
 
-	finding := runScan(t, filepath.Join(dir, "testdata"), pkgs)
+	finding := runScan(t, dir, pkgs)
 
 	if len(finding.PackageVulns) != 3 {
 		t.Fatalf("Expected 3 finding got %d", len(finding.PackageVulns))
@@ -96,7 +93,7 @@ func runScan(t *testing.T, dir string, pkgs []*extractor.Package) inventory.Find
 	if err != nil {
 		t.Fatalf("cve20257775.New() returned error: %v", err)
 	}
-	findings, err := detector.Scan(t.Context(), scalibrfs.RealFSScanRoot(dir), px)
+	findings, err := detector.Scan(t.Context(), fakefs.RealFSScanRoot(t, dir), px)
 	if err != nil {
 		t.Fatalf("Scan() returned error: %v", err)
 	}

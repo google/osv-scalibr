@@ -22,14 +22,13 @@ import (
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/go-cmp/cmp"
-	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/guidedremediation/internal/manifest"
 	"github.com/google/osv-scalibr/guidedremediation/result"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestReadPoetry(t *testing.T) {
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/poetry"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata/poetry"))
 	poetryRW, _ := GetPoetryReadWriter()
 	got, err := poetryRW.Read("pyproject.toml", fsys)
 	if err != nil {
@@ -126,7 +125,7 @@ func TestReadPoetry(t *testing.T) {
 
 func TestWritePoetry(t *testing.T) {
 	rw, _ := GetPoetryReadWriter()
-	fsys := scalibrfs.DirFS(fakefs.CopyTestData(t, "./testdata/poetry"))
+	fsys := fakefs.DirFS(t, fakefs.CopyTestData(t, "./testdata/poetry"))
 	manif, err := rw.Read("pyproject.toml", fsys)
 	if err != nil {
 		t.Fatalf("error reading manifest: %v", err)

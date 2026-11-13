@@ -34,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin/config/configtest"
 	"github.com/google/osv-scalibr/purl"
+	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
 func TestEnricher_Enrich(t *testing.T) {
@@ -42,7 +43,7 @@ func TestEnricher_Enrich(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS("."),
+			FS:   fakefs.DirFS(t, fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -313,7 +314,7 @@ func TestEnricher_Enrich_NonJarFiltering(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: "testdata",
-			FS:   scalibrfs.DirFS("."),
+			FS:   fakefs.DirFS(t, fakefs.CopyTestData(t, ".")),
 		},
 	}
 	inv := inventory.Inventory{
@@ -842,7 +843,7 @@ func TestEnricher_Enrich_LocalModules(t *testing.T) {
 	input := enricher.ScanInput{
 		ScanRoot: &scalibrfs.ScanRoot{
 			Path: tempDir,
-			FS:   scalibrfs.DirFS(tempDir),
+			FS:   fakefs.DirFS(t, tempDir),
 		},
 	}
 

@@ -352,7 +352,7 @@ func validateComponentType(componentType string) error {
 }
 
 type extractorOverride struct {
-	glob      glob.Glob
+	glob      *glob.Pattern
 	extractor filesystem.Extractor
 }
 
@@ -381,7 +381,7 @@ func (f *Flags) GetScanConfig() (*scalibr.ScanConfig, error) {
 			return nil, err
 		}
 	}
-	var skipDirGlob glob.Glob
+	var skipDirGlob *glob.Pattern
 	if f.SkipDirGlob != "" {
 		skipDirGlob, err = glob.Compile(f.SkipDirGlob)
 		if err != nil {

@@ -15,8 +15,14 @@ lint-plugger:
 		-interface github.com/google/osv-scalibr/veles.Detector \
 		./...
 
+lint-secureprotocol:
+	go run linter/secureprotocol/main.go ./...
+
 test:
 	CGO_ENABLED=1 go test ./...
+
+test-accept-validator:
+	ONLINE=1 CGO_ENABLED=1 go test ./veles/secrets/... -run 'TestAccept.*Validator'
 
 test_bench:
 	# add `-benchmem -cpuprofile=cpu.prof -memprofile=mem.prof` to extract cpu and memory profiling
