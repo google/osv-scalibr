@@ -1,0 +1,3 @@
+# while not officially legal syntax, pip supports both forms of quotes
+-r "other-requirements.txt"
+-r 'no_version.txt'
