@@ -17,7 +17,7 @@ package commitextractor_test
 import (
 	"testing"
 
-	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/commitextractor"
 )
 
 func TestTryExtractCommit(t *testing.T) {
