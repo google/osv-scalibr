@@ -605,6 +605,24 @@ func TestExtractor_Extract_v1(t *testing.T) {
 						Commit: "",
 					},
 				},
+				{
+					Name:     "@babel/helper-validator-identifier",
+					Version:  "8.0.6",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/with-aliases.v1.lock", 20),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+				{
+					Name:     "safe-buffer",
+					Version:  "5.2.1",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/with-aliases.v1.lock", 25),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
 			},
 		},
 	}
