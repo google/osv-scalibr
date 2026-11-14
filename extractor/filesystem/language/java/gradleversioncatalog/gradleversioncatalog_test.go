@@ -152,6 +152,42 @@ func TestExtractor_Extract(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "rich_versions_in_versions_table",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/rich-versions.versions.toml",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "org.codehaus.groovy:groovy",
+					Version:  "3.0.5",
+					PURLType: purl.TypeMaven,
+					Metadata: &javalockfile.Metadata{GroupID: "org.codehaus.groovy", ArtifactID: "groovy"},
+					Location: extractor.LocationFromPath("testdata/rich-versions.versions.toml"),
+				},
+				{
+					Name:     "commons-codec:commons-codec",
+					Version:  "1.17.1",
+					PURLType: purl.TypeMaven,
+					Metadata: &javalockfile.Metadata{GroupID: "commons-codec", ArtifactID: "commons-codec"},
+					Location: extractor.LocationFromPath("testdata/rich-versions.versions.toml"),
+				},
+				{
+					Name:     "org.apache.commons:commons-lang3",
+					Version:  "3.15.0",
+					PURLType: purl.TypeMaven,
+					Metadata: &javalockfile.Metadata{GroupID: "org.apache.commons", ArtifactID: "commons-lang3"},
+					Location: extractor.LocationFromPath("testdata/rich-versions.versions.toml"),
+				},
+				{
+					Name:     "com.squareup.okhttp3:okhttp",
+					Version:  "4.12.0",
+					PURLType: purl.TypeMaven,
+					Metadata: &javalockfile.Metadata{GroupID: "com.squareup.okhttp3", ArtifactID: "okhttp"},
+					Location: extractor.LocationFromPath("testdata/rich-versions.versions.toml"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
