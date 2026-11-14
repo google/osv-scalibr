@@ -42,27 +42,46 @@ const (
 )
 
 type uvLockPackageSource struct {
-	Virtual string `toml:"virtual"`
-	Git     string `toml:"git"`
+	Virtual  string `toml:"virtual"`
+	Editable string `toml:"editable"`
+	Git      string `toml:"git"`
+}
+
+type uvLockDependency struct {
+	Name    string   `toml:"name"`
+	Version string   `toml:"version"`
+	Extra   []string `toml:"extra"`
 }
 
 type uvLockPackage struct {
-	Name    string              `toml:"name"`
-	Version string              `toml:"version"`
-	Source  uvLockPackageSource `toml:"source"`
-
-	// uv stores "groups" as a table under "package" after all the packages, which due
-	// to how TOML works means it ends up being a property on the last package, even
-	// through in this context it's a global property rather than being per-package
-	Groups map[string][]uvOptionalDependency `toml:"optional-dependencies"`
+	Name                 string                        `toml:"name"`
+	Version              string                        `toml:"version"`
+	Source               uvLockPackageSource           `toml:"source"`
+	Dependencies         []uvLockDependency            `toml:"dependencies"`
+	OptionalDependencies map[string][]uvLockDependency `toml:"optional-dependencies"`
+	DevDependencies      map[string][]uvLockDependency `toml:"dev-dependencies"`
 }
 
-type uvOptionalDependency struct {
-	Name string `toml:"name"`
+type uvLockManifest struct {
+	Members []string `toml:"members"`
 }
+
 type uvLockFile struct {
 	Version  int             `toml:"version"`
+	Manifest uvLockManifest  `toml:"manifest"`
 	Packages []uvLockPackage `toml:"package"`
+}
+
+// depNode is a package in the dependency graph, either with its regular
+// dependencies (empty extra) or with the dependencies of one of its extras.
+type depNode struct {
+	pkg   int
+	extra string
+}
+
+type depGraph struct {
+	pkgs   []uvLockPackage
+	byName map[string][]int
 }
 
 // Extractor extracts python packages from uv.lock files.
@@ -106,15 +125,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	lineNums := findPackageLineNumbers(content, packageNames)
 
 	packages := make([]*extractor.Package, 0, len(parsedLockfile.Packages))
-
-	var groups map[string][]uvOptionalDependency
-
-	// uv stores "groups" as a table under "package" after all the packages, which due
-	// to how TOML works means it ends up being a property on the last package, even
-	// through in this context it's a global property rather than being per-package
-	if len(parsedLockfile.Packages) > 0 {
-		groups = parsedLockfile.Packages[len(parsedLockfile.Packages)-1].Groups
-	}
+	depGroups := resolveGroups(parsedLockfile)
 
 	for i, lockPackage := range parsedLockfile.Packages {
 		// skip including the root "package", since its name and version are most likely arbitrary
@@ -137,25 +148,111 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			}
 		}
 
-		depGroupVals := []string{}
-
-		for group, deps := range groups {
-			for _, dep := range deps {
-				if dep.Name == lockPackage.Name {
-					depGroupVals = append(depGroupVals, group)
-				}
-			}
-		}
-
-		slices.Sort(depGroupVals)
-
 		pkgDetails.Metadata = &osv.DepGroupMetadata{
-			DepGroupVals: depGroupVals,
+			DepGroupVals: depGroups[i],
 		}
 		packages = append(packages, pkgDetails)
 	}
 
 	return inventory.Inventory{Packages: packages}, nil
+}
+
+// resolveGroups returns the sorted dependency groups of each package, indexed
+// like lockfile.Packages. Groups and extras are only listed on the root
+// projects, so they are propagated to everything they pull in.
+func resolveGroups(lockfile uvLockFile) [][]string {
+	g := depGraph{
+		pkgs:   lockfile.Packages,
+		byName: make(map[string][]int, len(lockfile.Packages)),
+	}
+	for i, p := range lockfile.Packages {
+		g.byName[p.Name] = append(g.byName[p.Name], i)
+	}
+
+	var prodDeps []uvLockDependency
+	groupDeps := make(map[string][]uvLockDependency)
+	for _, root := range findRoots(lockfile) {
+		prodDeps = append(prodDeps, root.Dependencies...)
+		for name, deps := range root.OptionalDependencies {
+			groupDeps[name] = append(groupDeps[name], deps...)
+		}
+		for name, deps := range root.DevDependencies {
+			groupDeps[name] = append(groupDeps[name], deps...)
+		}
+	}
+
+	// A package needed in production has to be scanned even if a group also
+	// pulls it in, so it gets no groups, like in the poetrylock extractor.
+	prod := make(map[depNode]bool)
+	g.walk(prodDeps, prod, nil)
+
+	groups := make([][]string, len(lockfile.Packages))
+	for i := range groups {
+		groups[i] = []string{}
+	}
+
+	for name, deps := range groupDeps {
+		seen := make(map[depNode]bool)
+		g.walk(deps, seen, prod)
+		for n := range seen {
+			if n.extra == "" {
+				groups[n.pkg] = append(groups[n.pkg], name)
+			}
+		}
+	}
+
+	for _, pkgGroups := range groups {
+		slices.Sort(pkgGroups)
+	}
+
+	return groups
+}
+
+// findRoots returns the projects the lockfile was generated for. uv sorts
+// packages by name, so the root isn't necessarily the last [[package]].
+func findRoots(lockfile uvLockFile) []uvLockPackage {
+	var roots []uvLockPackage
+	for _, p := range lockfile.Packages {
+		isRoot := p.Source.Virtual == "." || p.Source.Editable == "."
+		if len(lockfile.Manifest.Members) > 0 {
+			isRoot = slices.Contains(lockfile.Manifest.Members, p.Name)
+		}
+		if isRoot {
+			roots = append(roots, p)
+		}
+	}
+	return roots
+}
+
+// walk adds every node that installing deps pulls in to seen. Nodes in skip,
+// and everything only reachable through them, are left out.
+func (g depGraph) walk(deps []uvLockDependency, seen, skip map[depNode]bool) {
+	for _, dep := range deps {
+		for _, i := range g.byName[dep.Name] {
+			// uv only writes the version when several packages share the name.
+			if dep.Version != "" && dep.Version != g.pkgs[i].Version {
+				continue
+			}
+
+			g.visit(depNode{pkg: i}, seen, skip)
+			for _, extra := range dep.Extra {
+				g.visit(depNode{pkg: i, extra: extra}, seen, skip)
+			}
+		}
+	}
+}
+
+func (g depGraph) visit(n depNode, seen, skip map[depNode]bool) {
+	if seen[n] || skip[n] {
+		return
+	}
+	seen[n] = true
+
+	if n.extra == "" {
+		g.walk(g.pkgs[n.pkg].Dependencies, seen, skip)
+	} else {
+		g.walk(g.pkgs[n.pkg].OptionalDependencies[n.extra], seen, skip)
+	}
 }
 
 // extractPackageName parses a TOML key-value line and returns the unquoted

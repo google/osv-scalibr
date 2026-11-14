@@ -30,8 +30,12 @@ import (
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
 
-func pkg(t *testing.T, name string, version string, path string, line int) *extractor.Package {
+func pkg(t *testing.T, name string, version string, path string, line int, groups ...string) *extractor.Package {
 	t.Helper()
+
+	if groups == nil {
+		groups = []string{}
+	}
 
 	return &extractor.Package{
 		Name:     name,
@@ -39,7 +43,7 @@ func pkg(t *testing.T, name string, version string, path string, line int) *extr
 		PURLType: purl.TypePyPi,
 		Location: extractor.LocationFromPathAndLine(path, line),
 		Metadata: &osv.DepGroupMetadata{
-			DepGroupVals: []string{},
+			DepGroupVals: groups,
 		},
 	}
 }
@@ -178,10 +182,10 @@ func TestExtractor_Extract(t *testing.T) {
 					PURLType: purl.TypePyPi,
 					Location: extractor.LocationFromPathAndLine("testdata/grouped-packages.lock", 39),
 					Metadata: &osv.DepGroupMetadata{
-						DepGroupVals: []string{"cli"},
+						DepGroupVals: []string{"cli", "dev", "test"},
 					},
 				},
-				pkg(t, "colorama", "0.4.6", "testdata/grouped-packages.lock", 51),
+				pkg(t, "colorama", "0.4.6", "testdata/grouped-packages.lock", 51, "cli", "dev", "test"),
 				{
 					Name:     "black",
 					Version:  "24.10.0",
@@ -200,15 +204,45 @@ func TestExtractor_Extract(t *testing.T) {
 						DepGroupVals: []string{"test"},
 					},
 				},
-				pkg(t, "mccabe", "0.7.0", "testdata/grouped-packages.lock", 83),
-				pkg(t, "mypy-extensions", "1.0.0", "testdata/grouped-packages.lock", 92),
-				pkg(t, "packaging", "24.2", "testdata/grouped-packages.lock", 101),
-				pkg(t, "pathspec", "0.12.1", "testdata/grouped-packages.lock", 110),
-				pkg(t, "platformdirs", "4.3.6", "testdata/grouped-packages.lock", 119),
-				pkg(t, "pycodestyle", "2.12.1", "testdata/grouped-packages.lock", 128),
-				pkg(t, "pyflakes", "3.2.0", "testdata/grouped-packages.lock", 137),
-				pkg(t, "tomli", "2.2.1", "testdata/grouped-packages.lock", 146),
-				pkg(t, "typing-extensions", "4.12.2", "testdata/grouped-packages.lock", 185),
+				pkg(t, "mccabe", "0.7.0", "testdata/grouped-packages.lock", 83, "test"),
+				pkg(t, "mypy-extensions", "1.0.0", "testdata/grouped-packages.lock", 92, "dev", "test"),
+				pkg(t, "packaging", "24.2", "testdata/grouped-packages.lock", 101, "dev", "test"),
+				pkg(t, "pathspec", "0.12.1", "testdata/grouped-packages.lock", 110, "dev", "test"),
+				pkg(t, "platformdirs", "4.3.6", "testdata/grouped-packages.lock", 119, "dev", "test"),
+				pkg(t, "pycodestyle", "2.12.1", "testdata/grouped-packages.lock", 128, "test"),
+				pkg(t, "pyflakes", "3.2.0", "testdata/grouped-packages.lock", 137, "test"),
+				pkg(t, "tomli", "2.2.1", "testdata/grouped-packages.lock", 146, "dev", "test"),
+				pkg(t, "typing-extensions", "4.12.2", "testdata/grouped-packages.lock", 185, "dev", "test"),
+			},
+		},
+		{
+			Name: "dev_dependencies",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/dev-dependencies.lock",
+			},
+			WantPackages: []*extractor.Package{
+				pkg(t, "app", "0.1.0", "testdata/dev-dependencies.lock", 6),
+				pkg(t, "click", "8.5.1", "testdata/dev-dependencies.lock", 42, "cli"),
+				pkg(t, "colorama", "0.4.6", "testdata/dev-dependencies.lock", 51, "dev"),
+				pkg(t, "iniconfig", "2.3.1", "testdata/dev-dependencies.lock", 60, "dev"),
+				pkg(t, "packaging", "26.3", "testdata/dev-dependencies.lock", 69, "dev"),
+				pkg(t, "pluggy", "1.7.0", "testdata/dev-dependencies.lock", 78, "dev"),
+				pkg(t, "pygments", "2.21.0", "testdata/dev-dependencies.lock", 87, "dev"),
+				pkg(t, "pysocks", "1.7.1", "testdata/dev-dependencies.lock", 96),
+				pkg(t, "pytest", "9.2.0", "testdata/dev-dependencies.lock", 105, "dev"),
+				pkg(t, "ruff", "0.17.5", "testdata/dev-dependencies.lock", 121, "lint"),
+				pkg(t, "urllib3", "2.8.0", "testdata/dev-dependencies.lock", 146),
+			},
+		},
+		{
+			Name: "workspace",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/workspace.lock",
+			},
+			WantPackages: []*extractor.Package{
+				pkg(t, "iniconfig", "2.3.1", "testdata/workspace.lock", 12, "dev"),
+				pkg(t, "member", "0.1.0", "testdata/workspace.lock", 21),
+				pkg(t, "urllib3", "2.8.0", "testdata/workspace.lock", 51),
 			},
 		},
 		{
