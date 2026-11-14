@@ -38,7 +38,7 @@ var (
 	}
 )
 
-// TryExtractCommit attempts to extract a commit hash from a package resolution string.
+// TryExtractCommit attempts to extract a commit hash from a JavaScript package resolution string.
 func TryExtractCommit(resolution string) string {
 	for _, re := range matchers {
 		matched := re.FindStringSubmatch(resolution)
@@ -151,7 +151,7 @@ func NormalizeRepo(raw string) string {
 	return "https://" + host + "/" + path
 }
 
-// TryExtractRepo extracts and normalizes the repository URL from a package resolution string.
+// TryExtractRepo extracts and normalizes the repository URL from a JavaScript package resolution string.
 func TryExtractRepo(resolution string) string {
 	res := extractRepoFromHashes(resolution)
 	if res != "" {
