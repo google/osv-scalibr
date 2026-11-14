@@ -58,6 +58,7 @@ func TestToCDX(t *testing.T) {
 				Metadata: &cyclonedx.Metadata{
 					Component: &cyclonedx.Component{
 						Name:    "sbom-1",
+						Type:    cyclonedx.ComponentTypeApplication,
 						Version: "1.0.0",
 						BOMRef:  "52fdfc07-2182-454f-963f-5f0f9a621d72",
 					},
@@ -125,6 +126,45 @@ func TestToCDX(t *testing.T) {
 				Components: new([]cyclonedx.Component{
 					{
 						BOMRef:     "6694d2c4-22ac-4208-a007-2939487f6999",
+						Type:       "library",
+						Name:       "software",
+						Version:    "1.2.3",
+						PackageURL: "pkg:pypi/software@1.2.3",
+					},
+				}),
+			},
+		},
+		{
+			desc: "Package_without_component_name",
+			inv: inventory.Inventory{
+				Packages: []*extractor.Package{{
+					Name:     "software",
+					Version:  "1.2.3",
+					PURLType: purl.TypePyPi,
+					Plugins:  []string{wheelegg.Name},
+				}},
+			},
+			config: converter.CDXConfig{
+				ComponentType:    "library",
+				ComponentVersion: "1.0.0",
+			},
+			want: &cyclonedx.BOM{
+				Metadata: &cyclonedx.Metadata{
+					Tools: &cyclonedx.ToolsChoice{
+						Components: &[]cyclonedx.Component{
+							{
+								Type: cyclonedx.ComponentTypeApplication,
+								Name: "SCALIBR",
+								ExternalReferences: new([]cyclonedx.ExternalReference{
+									{URL: "https://github.com/google/osv-scalibr", Type: cyclonedx.ERTypeWebsite},
+								}),
+							},
+						},
+					},
+				},
+				Components: new([]cyclonedx.Component{
+					{
+						BOMRef:     "eb9d18a4-4784-445d-87f3-c67cf22746e9",
 						Type:       "library",
 						Name:       "software",
 						Version:    "1.2.3",
