@@ -240,9 +240,30 @@ func TestExtractor_Extract(t *testing.T) {
 				Path: "testdata/workspace.lock",
 			},
 			WantPackages: []*extractor.Package{
-				pkg(t, "iniconfig", "2.3.1", "testdata/workspace.lock", 12, "dev"),
-				pkg(t, "member", "0.1.0", "testdata/workspace.lock", 21),
-				pkg(t, "urllib3", "2.8.0", "testdata/workspace.lock", 51),
+				pkg(t, "iniconfig", "2.3.1", "testdata/workspace.lock", 13, "dev"),
+				pkg(t, "member", "0.1.0", "testdata/workspace.lock", 22),
+				pkg(t, "pluggy", "1.7.0", "testdata/workspace.lock", 45),
+				// only another member's dev group needs it, but members are production
+				pkg(t, "tools", "0.1.0", "testdata/workspace.lock", 65),
+				pkg(t, "urllib3", "2.8.0", "testdata/workspace.lock", 76),
+			},
+		},
+		{
+			Name: "virtual_workspace",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/virtual-workspace.lock",
+			},
+			WantPackages: []*extractor.Package{
+				// dev = ["lib[cli]"] points back at the member's own extra
+				pkg(t, "click", "8.5.1", "testdata/virtual-workspace.lock", 17, "cli", "dev"),
+				pkg(t, "colorama", "0.4.6", "testdata/virtual-workspace.lock", 26, "dev"),
+				pkg(t, "idna", "3.20", "testdata/virtual-workspace.lock", 35),
+				pkg(t, "iniconfig", "2.3.1", "testdata/virtual-workspace.lock", 44, "dev"),
+				pkg(t, "lib", "0.1.0", "testdata/virtual-workspace.lock", 53),
+				pkg(t, "packaging", "26.3", "testdata/virtual-workspace.lock", 73, "dev"),
+				pkg(t, "pluggy", "1.7.0", "testdata/virtual-workspace.lock", 82, "dev"),
+				pkg(t, "pygments", "2.21.0", "testdata/virtual-workspace.lock", 91, "dev"),
+				pkg(t, "pytest", "9.2.0", "testdata/virtual-workspace.lock", 100, "dev"),
 			},
 		},
 		{

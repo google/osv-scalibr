@@ -63,7 +63,13 @@ type uvLockPackage struct {
 }
 
 type uvLockManifest struct {
-	Members []string `toml:"members"`
+	Members          []string                       `toml:"members"`
+	DependencyGroups map[string][]uvLockRequirement `toml:"dependency-groups"`
+}
+
+type uvLockRequirement struct {
+	Name   string   `toml:"name"`
+	Extras []string `toml:"extras"`
 }
 
 type uvLockFile struct {
@@ -157,9 +163,8 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 	return inventory.Inventory{Packages: packages}, nil
 }
 
-// resolveGroups returns the sorted dependency groups of each package, indexed
-// like lockfile.Packages. Groups and extras are only listed on the root
-// projects, so they are propagated to everything they pull in.
+// resolveGroups returns the sorted groups of each package, indexed like
+// lockfile.Packages. The roots' groups spread to everything they pull in.
 func resolveGroups(lockfile uvLockFile) [][]string {
 	g := depGraph{
 		pkgs:   lockfile.Packages,
@@ -169,10 +174,13 @@ func resolveGroups(lockfile uvLockFile) [][]string {
 		g.byName[p.Name] = append(g.byName[p.Name], i)
 	}
 
-	var prodDeps []uvLockDependency
+	// Production wins, like in poetrylock: a package that ships must be scanned.
+	// Roots count too, since groups can point back at them (dev = ["app[cli]"]).
+	prod := make(map[depNode]bool)
 	groupDeps := make(map[string][]uvLockDependency)
-	for _, root := range findRoots(lockfile) {
-		prodDeps = append(prodDeps, root.Dependencies...)
+	for _, i := range findRoots(lockfile) {
+		g.visit(depNode{pkg: i}, prod, nil)
+		root := lockfile.Packages[i]
 		for name, deps := range root.OptionalDependencies {
 			groupDeps[name] = append(groupDeps[name], deps...)
 		}
@@ -181,10 +189,13 @@ func resolveGroups(lockfile uvLockFile) [][]string {
 		}
 	}
 
-	// A package needed in production has to be scanned even if a group also
-	// pulls it in, so it gets no groups, like in the poetrylock extractor.
-	prod := make(map[depNode]bool)
-	g.walk(prodDeps, prod, nil)
+	// A workspace root without a [project] table has no [[package]], so uv
+	// keeps its groups in the manifest.
+	for name, reqs := range lockfile.Manifest.DependencyGroups {
+		for _, r := range reqs {
+			groupDeps[name] = append(groupDeps[name], uvLockDependency{Name: r.Name, Extra: r.Extras})
+		}
+	}
 
 	groups := make([][]string, len(lockfile.Packages))
 	for i := range groups {
@@ -208,17 +219,17 @@ func resolveGroups(lockfile uvLockFile) [][]string {
 	return groups
 }
 
-// findRoots returns the projects the lockfile was generated for. uv sorts
-// packages by name, so the root isn't necessarily the last [[package]].
-func findRoots(lockfile uvLockFile) []uvLockPackage {
-	var roots []uvLockPackage
-	for _, p := range lockfile.Packages {
+// findRoots returns the indexes of the root projects. uv sorts packages by
+// name, so the root isn't necessarily the last [[package]].
+func findRoots(lockfile uvLockFile) []int {
+	var roots []int
+	for i, p := range lockfile.Packages {
 		isRoot := p.Source.Virtual == "." || p.Source.Editable == "."
 		if len(lockfile.Manifest.Members) > 0 {
 			isRoot = slices.Contains(lockfile.Manifest.Members, p.Name)
 		}
 		if isRoot {
-			roots = append(roots, p)
+			roots = append(roots, i)
 		}
 	}
 	return roots
