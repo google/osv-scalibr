@@ -16,6 +16,7 @@ package electronasar_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,6 +24,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/electronasar"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrlog "github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/testing/extracttest"
 
@@ -165,6 +167,22 @@ func TestExtract(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Entries packed with --unpack keep their bytes in app.asar.unpacked
+			// and have no offset in the header.
+			Name: "unpacked_entry",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/unpacked_entries.asar",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "lodash",
+					Version:  "4.17.21",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPath("testdata/unpacked_entries.asar"),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -194,6 +212,63 @@ func TestExtract(t *testing.T) {
 				cmpopts.EquateEmpty(),
 			); diff != "" {
 				t.Errorf("Extract() packages mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+type warnCountingLogger struct {
+	scalibrlog.DefaultLogger
+
+	warnings []string
+}
+
+func (l *warnCountingLogger) Warnf(format string, args ...any) {
+	l.warnings = append(l.warnings, fmt.Sprintf(format, args...))
+}
+
+func (l *warnCountingLogger) Warn(args ...any) {
+	l.warnings = append(l.warnings, fmt.Sprint(args...))
+}
+
+func TestExtractWarnings(t *testing.T) {
+	tests := []struct {
+		name         string
+		path         string
+		wantWarnings int
+	}{
+		{
+			name:         "unpacked_entry_does_not_warn",
+			path:         "testdata/unpacked_entries.asar",
+			wantWarnings: 0,
+		},
+		{
+			name:         "packed_entry_without_offset_warns",
+			path:         "testdata/missing_offset.asar",
+			wantWarnings: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := &warnCountingLogger{}
+			scalibrlog.SetLogger(logger)
+			t.Cleanup(func() { scalibrlog.SetLogger(&scalibrlog.DefaultLogger{}) })
+
+			e, err := electronasar.New(&cpb.PluginConfig{})
+			if err != nil {
+				t.Fatalf("New(): %v", err)
+			}
+
+			scanInput := extracttest.GenerateScanInputMock(t, extracttest.ScanInputMockConfig{Path: tt.path})
+			defer extracttest.CloseTestScanInput(t, scanInput)
+
+			if _, err := e.Extract(context.Background(), &scanInput); err != nil {
+				t.Fatalf("Extract(%q): %v", tt.path, err)
+			}
+			if len(logger.warnings) != tt.wantWarnings {
+				t.Errorf("Extract(%q) logged %d warnings, want %d: %q",
+					tt.path, len(logger.warnings), tt.wantWarnings, logger.warnings)
 			}
 		})
 	}
