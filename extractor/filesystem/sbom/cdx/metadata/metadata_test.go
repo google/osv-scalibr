@@ -18,12 +18,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/sbom/cdx/metadata"
 	"github.com/google/osv-scalibr/purl"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "github.com/google/osv-scalibr/binary/proto/scan_result_go_proto"
 )
+
+var _ extractor.EcosystemProvider = &metadata.Metadata{}
 
 var (
 	purlStructDeb1 = &purl.PackageURL{

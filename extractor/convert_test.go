@@ -490,6 +490,178 @@ func TestToEcosystem(t *testing.T) {
 			},
 		},
 		{
+			name: "spdx_alpine_ecosystem_no_v_prefix",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeApk,
+						Namespace:  "alpine",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "3.18"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemAlpine,
+				Suffix:    "v3.18",
+			},
+		},
+		{
+			name: "cdx_alpine_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &cdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeApk,
+						Namespace:  "alpine",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "v3.18"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemAlpine,
+				Suffix:    "v3.18",
+			},
+		},
+		{
+			name: "spdx_alpine_ecosystem_invalid_distro",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeApk,
+						Namespace:  "alpine",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "bad"}),
+					},
+				},
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemAlpine),
+		},
+		{
+			name: "spdx_alpine_ecosystem_distro_without_minor",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeApk,
+						Namespace:  "alpine",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "v3"}),
+					},
+				},
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemAlpine),
+		},
+		{
+			name: "spdx_wolfi_ecosystem",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:      purl.TypeApk,
+						Namespace: "wolfi",
+						Name:      "nginx",
+						Version:   "1.18.0",
+					},
+				},
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemWolfi),
+		},
+		{
+			name: "spdx_wolfi_ecosystem_ignores_distro",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeApk,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeApk,
+						Namespace:  "wolfi",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "v3.18"}),
+					},
+				},
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemWolfi),
+		},
+		{
+			name: "spdx_debian_ecosystem_sid",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeDebian,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeDebian,
+						Namespace:  "debian",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "sid"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemDebian,
+				Suffix:    "sid",
+			},
+		},
+		{
+			name: "spdx_debian_ecosystem_experimental",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeDebian,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeDebian,
+						Namespace:  "debian",
+						Name:       "nginx",
+						Version:    "1.18.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "experimental"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemDebian,
+				Suffix:    "experimental",
+			},
+		},
+		{
+			name: "spdx_npm_ecosystem_ignores_distro",
+			pkg: &extractor.Package{
+				Name:     "foo",
+				Version:  "1.0.0",
+				PURLType: purl.TypeNPM,
+				Metadata: &spdxmeta.Metadata{
+					PURL: &purl.PackageURL{
+						Type:       purl.TypeNPM,
+						Name:       "foo",
+						Version:    "1.0.0",
+						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "v3.18"}),
+					},
+				},
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemNPM),
+		},
+		{
 			name: "spdx_ubuntu_ecosystem_with_provider",
 			pkg: &extractor.Package{
 				Name:     "nginx",
