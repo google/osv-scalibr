@@ -153,34 +153,31 @@ func (e Extractor) extractGoMod(input *filesystem.ScanInput) (map[pkgKey]*extrac
 
 	// Apply go.mod replace directives to the identified packages by updating their
 	// names+versions as instructed by the directive.
+	//
+	// Like the go command, each required module is looked up once: a directive for
+	// its exact version wins over one that replaces all versions, whatever order
+	// they are declared in, and the replacement is not replaced again.
+	replaces := map[pkgKey]*modfile.Replace{}
 	for _, replace := range parsedLockfile.Replace {
-		var replacements []pkgKey
+		// If the version to replace is omitted, all versions of the module are replaced.
+		replaces[pkgKey{name: replace.Old.Path, version: strings.TrimPrefix(replace.Old.Version, "v")}] = replace
+	}
 
-		if replace.Old.Version == "" {
-			// If the version to replace is omitted, all versions of the module are replaced.
-			for k, pkg := range packages {
-				if pkg.Name == replace.Old.Path {
-					replacements = append(replacements, k)
-				}
-			}
-		} else {
-			// If the version to replace is specified only that specific version of the
-			// module is replaced.
-			s := pkgKey{name: replace.Old.Path, version: strings.TrimPrefix(replace.Old.Version, "v")}
-
-			// A `replace` directive has no effect if the name or version to replace is not present.
-			if _, ok := packages[s]; ok {
-				replacements = []pkgKey{s}
-			}
+	for k := range packages {
+		replace, ok := replaces[k]
+		if !ok {
+			replace, ok = replaces[pkgKey{name: k.name}]
+		}
+		// A `replace` directive has no effect if the name or version to replace is not present.
+		if !ok {
+			continue
 		}
 
-		for _, replacement := range replacements {
-			packages[replacement] = &extractor.Package{
-				Name:     replace.New.Path,
-				Version:  strings.TrimPrefix(replace.New.Version, "v"),
-				PURLType: purl.TypeGolang,
-				Location: extractor.LocationFromPathAndLine(input.Path, replace.Syntax.Start.Line),
-			}
+		packages[k] = &extractor.Package{
+			Name:     replace.New.Path,
+			Version:  strings.TrimPrefix(replace.New.Version, "v"),
+			PURLType: purl.TypeGolang,
+			Location: extractor.LocationFromPathAndLine(input.Path, replace.Syntax.Start.Line),
 		}
 	}
 
