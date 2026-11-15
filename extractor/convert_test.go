@@ -283,6 +283,18 @@ func TestToPURL(t *testing.T) {
 	}
 }
 
+type testEcosystemProvider struct {
+	eco osvecosystem.Parsed
+}
+
+func (tep *testEcosystemProvider) IsProtoable() {}
+
+func (tep *testEcosystemProvider) Ecosystem() osvecosystem.Parsed {
+	return tep.eco
+}
+
+var _ extractor.EcosystemProvider = &testEcosystemProvider{}
+
 func TestToEcosystem(t *testing.T) {
 	tests := []struct {
 		name string
@@ -305,6 +317,18 @@ func TestToEcosystem(t *testing.T) {
 				PURLType: purl.TypeGolang,
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemGo),
+		},
+		{
+			name: "simple_ecosystem_with_provider",
+			pkg: &extractor.Package{
+				Name:     "name",
+				Version:  "version",
+				PURLType: purl.TypeGolang,
+				Metadata: &testEcosystemProvider{
+					eco: osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemNPM},
+				},
+			},
+			want: osvecosystem.FromEcosystem(osvconstants.EcosystemNPM),
 		},
 		{
 			name: "hackage_ecosystem",
@@ -359,6 +383,24 @@ func TestToEcosystem(t *testing.T) {
 				PURLType: purl.TypeBitnami,
 			},
 			want: osvecosystem.FromEcosystem(osvconstants.EcosystemBitnami),
+		},
+		{
+			name: "bitnami_ecosystem_with_provider",
+			pkg: &extractor.Package{
+				Name:     "Name",
+				Version:  "1.2.3",
+				PURLType: purl.TypeBitnami,
+				Metadata: &testEcosystemProvider{
+					eco: osvecosystem.Parsed{
+						Ecosystem: osvconstants.EcosystemUbuntu,
+						Suffix:    "22.04:LTS",
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemUbuntu,
+				Suffix:    "22.04:LTS",
+			},
 		},
 		{
 			name: "github_actions_ecosystem",
@@ -439,6 +481,24 @@ func TestToEcosystem(t *testing.T) {
 						Name:       "nginx",
 						Version:    "1.18.0",
 						Qualifiers: purl.QualifiersFromMap(map[string]string{"distro": "jammy"}),
+					},
+				},
+			},
+			want: osvecosystem.Parsed{
+				Ecosystem: osvconstants.EcosystemUbuntu,
+				Suffix:    "22.04:LTS",
+			},
+		},
+		{
+			name: "spdx_ubuntu_ecosystem_with_provider",
+			pkg: &extractor.Package{
+				Name:     "nginx",
+				Version:  "1.18.0",
+				PURLType: purl.TypeDebian,
+				Metadata: &testEcosystemProvider{
+					eco: osvecosystem.Parsed{
+						Ecosystem: osvconstants.EcosystemUbuntu,
+						Suffix:    "22.04:LTS",
 					},
 				},
 			},
