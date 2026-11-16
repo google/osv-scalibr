@@ -24,6 +24,7 @@ require (
 	github.com/containerd/containerd/v2 v2.3.6
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb
 	github.com/diskfs/go-diskfs v1.9.4
+	github.com/doyensec/safeurl v0.2.5
 	github.com/dsoprea/go-exfat v0.0.0-20190906070738-5e932fbdb589
 	github.com/erikvarga/go-rpmdb v0.0.0-20261001143808-1a11b79cbdd3
 	github.com/go-git/go-git/v5 v5.19.3
