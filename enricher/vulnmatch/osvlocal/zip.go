@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/google/osv-scalibr/extractor"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -200,30 +202,30 @@ func mightAffectPackagesBytes(content []byte, names []string) bool {
 
 // Loads the given zip file into the database as an OSV.
 // It is assumed that the file is JSON and in the working directory of the db
-func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
+func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) *osvpb.Vulnerability {
 	file, err := zipFile.Open()
 	if err != nil {
-		return
+		return nil
 	}
 	defer file.Close()
 
 	content, err := io.ReadAll(file)
 	if err != nil {
-		return
+		return nil
 	}
 
 	// if we have been provided a list of package names, only load advisories
 	// that might actually affect those packages, rather than all advisories
 	if len(names) > 0 && !mightAffectPackagesBytes(content, names) {
-		return
+		return nil
 	}
 
 	vulnerability := &osvpb.Vulnerability{}
 	if err := protojson.Unmarshal(content, vulnerability); err != nil {
-		return
+		return nil
 	}
 
-	db.Vulnerabilities = append(db.Vulnerabilities, vulnerability)
+	return vulnerability
 }
 
 // load fetches a zip archive of the OSV database and loads known vulnerabilities
@@ -236,22 +238,34 @@ func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
 // so that a new version of the archive is only downloaded if it has been
 // modified, per HTTP caching standards.
 func (db *zipDB) load(ctx context.Context, names []string) error {
-	db.Vulnerabilities = []*osvpb.Vulnerability{}
-
 	zipReader, err := db.fetchZip(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	// Read all the files from the zip archive
-	for _, zipFile := range zipReader.File {
+	results := make([]*osvpb.Vulnerability, len(zipReader.File))
+
+	var g errgroup.Group
+	g.SetLimit(runtime.GOMAXPROCS(0))
+
+	// Read all the files from the zip archive in parallel
+	for i, zipFile := range zipReader.File {
 		if !strings.HasSuffix(zipFile.Name, ".json") {
 			continue
 		}
 
-		db.loadZipFile(zipFile, names)
+		g.Go(func() error {
+			results[i] = db.loadZipFile(zipFile, names)
+			return nil
+		})
 	}
+
+	_ = g.Wait()
+
+	db.Vulnerabilities = slices.DeleteFunc(results, func(v *osvpb.Vulnerability) bool {
+		return v == nil
+	})
 
 	return nil
 }
