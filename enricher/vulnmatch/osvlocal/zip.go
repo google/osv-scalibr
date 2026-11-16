@@ -27,12 +27,14 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/google/osv-scalibr/enricher/vulnmatch/osvlocal/internal/vulns"
 	osvutil "github.com/google/osv-scalibr/enricher/vulnmatch/osvutil"
 	"github.com/google/osv-scalibr/extractor"
 	osvpb "github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/tidwall/gjson"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -164,24 +166,29 @@ func (db *zipDB) fetchZip(ctx context.Context) (*zip.Reader, error) {
 	return zipReader, nil
 }
 
-// mightAffectPackages checks if the vulnerability might impact at least one
+// mightAffectPackagesBytes checks if the vulnerability might impact at least one
 // of the named packages, so that vulnerabilities can be filtered out early.
 //
 // Only the name is considered, and the incoming names are expected to be
 // already normalized based on their ecosystem using vulns.NormalizeName.
-func mightAffectPackages(v *osvpb.Vulnerability, names []string) bool {
-	for _, affected := range v.GetAffected() {
-		ap := affected.GetPackage()
-		apName := vulns.NormalizeName(ap.GetName(), ap.GetEcosystem())
+func mightAffectPackagesBytes(content []byte, names []string) bool {
+	affected := gjson.GetBytes(content, "affected")
 
-		for _, name := range names {
-			if apName == name {
-				return true
-			}
+	for _, pkg := range affected.Get("#.package").Array() {
+		pkgName := vulns.NormalizeName(pkg.Get("name").String(), pkg.Get("ecosystem").String())
+
+		if slices.Contains(names, pkgName) {
+			return true
+		}
+	}
+
+	for _, repos := range affected.Get("#.ranges.#.repo").Array() {
+		for _, repo := range repos.Array() {
+			repoName := vulns.NormalizeRepo(repo.String())
 
 			// "name" will be the git repository in the case of the GIT ecosystem
-			for _, ran := range affected.GetRanges() {
-				if vulns.NormalizeRepo(ran.GetRepo()) == vulns.NormalizeRepo(name) {
+			for _, name := range names {
+				if repoName == vulns.NormalizeRepo(name) {
 					return true
 				}
 			}
@@ -205,16 +212,18 @@ func (db *zipDB) loadZipFile(zipFile *zip.File, names []string) {
 		return
 	}
 
+	// if we have been provided a list of package names, only load advisories
+	// that might actually affect those packages, rather than all advisories
+	if len(names) > 0 && !mightAffectPackagesBytes(content, names) {
+		return
+	}
+
 	vulnerability := &osvpb.Vulnerability{}
 	if err := protojson.Unmarshal(content, vulnerability); err != nil {
 		return
 	}
 
-	// if we have been provided a list of package names, only load advisories
-	// that might actually affect those packages, rather than all advisories
-	if len(names) == 0 || mightAffectPackages(vulnerability, names) {
-		db.Vulnerabilities = append(db.Vulnerabilities, vulnerability)
-	}
+	db.Vulnerabilities = append(db.Vulnerabilities, vulnerability)
 }
 
 // load fetches a zip archive of the OSV database and loads known vulnerabilities
