@@ -98,7 +98,7 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name:         "conf_file_outside_package.conf.d",
+			name:         "conf_file_outside_package_conf_d",
 			path:         "home/yuvraj/.stack/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			wantRequired: false,
 		},
@@ -108,17 +108,17 @@ func TestFileRequired(t *testing.T) {
 			wantRequired: false,
 		},
 		{
-			name:         "non-conf_file",
+			name:         "non_conf_file",
 			path:         "home/yuvraj/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.txt",
 			wantRequired: false,
 		},
 		{
-			name:         "directory-1",
+			name:         "directory_1",
 			path:         "home/yuvraj/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/pkgdb",
 			wantRequired: false,
 		},
 		{
-			name:         "directory-2",
+			name:         "directory_2",
 			path:         "home/yuvraj/snapshots/x86_64-linux-tinfo6/5d9c516138681e7612b8da0993c6b1cd6a130524681cc01c446e6d513c0eb003/9.10.3/package.conf.d",
 			wantRequired: false,
 		},
@@ -166,7 +166,7 @@ func TestFileRequired(t *testing.T) {
 func TestExtract(t *testing.T) {
 	tests := []extracttest.TestTableEntry{
 		{
-			Name: "ansi-terminal_package",
+			Name: "ansi_terminal_package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/ansi-terminal-1.1.5-9l6OdZnXoWK9mitTSq4yaK.conf",
 			},
@@ -194,7 +194,7 @@ func TestExtract(t *testing.T) {
 			},
 		},
 		{
-			Name: "abx2xml-go_package",
+			Name: "abx2xml_go_package",
 			InputConfig: extracttest.ScanInputMockConfig{
 				Path: "testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf",
 			},
@@ -204,6 +204,34 @@ func TestExtract(t *testing.T) {
 					Version:  "1.0",
 					PURLType: purl.TypeHackage,
 					Location: extractor.LocationFromPath("testdata/abx2xml-go-1.0-6a24666dc582c5d8e5cc9a1949ec4a9b927455ffb058881d1398f193add47c00.conf"),
+				},
+			},
+		},
+		{
+			Name: "sublibrary_package_name_before_name",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/sublibrary_package_name_first.conf",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "attoparsec",
+					Version:  "0.14.4",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/sublibrary_package_name_first.conf"),
+				},
+			},
+		},
+		{
+			Name: "sublibrary_name_before_package_name",
+			InputConfig: extracttest.ScanInputMockConfig{
+				Path: "testdata/sublibrary_name_first.conf",
+			},
+			WantPackages: []*extractor.Package{
+				{
+					Name:     "attoparsec",
+					Version:  "0.14.4",
+					PURLType: purl.TypeHackage,
+					Location: extractor.LocationFromPath("testdata/sublibrary_name_first.conf"),
 				},
 			},
 		},
