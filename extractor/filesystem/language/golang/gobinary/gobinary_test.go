@@ -535,6 +535,15 @@ func TestExtractDependencyGraph(t *testing.T) {
 	if sysPkg.ParentIDs == nil || !sysPkg.ParentIDs[isattyID] {
 		t.Errorf("Expected golang.org/x/sys to have parent 'github.com/mattn/go-isatty' (ID: %s), got: %v", isattyID, sysPkg.ParentIDs)
 	}
+
+	// 4. gopkg.in/yaml.v2 is initialized via inittask and should have parent 'binary_with_modules'
+	yamlPkg := pkgsByName["gopkg.in/yaml.v2"]
+	if yamlPkg == nil {
+		t.Fatalf("Package 'gopkg.in/yaml.v2' not found in inventory: %v", inv.Packages)
+	}
+	if yamlPkg.ParentIDs == nil || !yamlPkg.ParentIDs[mainID] {
+		t.Errorf("Expected yaml to have parent 'binary_with_modules' (ID: %s), got: %v", mainID, yamlPkg.ParentIDs)
+	}
 }
 
 func TestExtractDependencyGraph_ModuleReplacement(t *testing.T) {

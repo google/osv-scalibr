@@ -51,14 +51,15 @@ func ExtractDependencyGraph(r io.ReaderAt, bi *buildinfo.BuildInfo) ([]ModuleEdg
 	}
 
 	functions := mapFunctionsToModules(sections.symTable.Funcs, bi, mainModPath)
-	return sections.scanCrossModuleCalls(functions), nil
+	return sections.scanCrossModuleCalls(functions, bi, mainModPath), nil
 }
 
 type sections struct {
-	symTable  *gosym.Table
-	textStart uint64
-	textData  []byte
-	scanner   callScanner
+	symTable     *gosym.Table
+	textStart    uint64
+	textData     []byte
+	scanner      callScanner
+	inittaskPkgs []string
 }
 
 func loadMetadataSectionsFromELF(r io.ReaderAt) (*sections, error) {
@@ -99,11 +100,46 @@ func loadMetadataSectionsFromELF(r io.ReaderAt) (*sections, error) {
 	}
 
 	return &sections{
-		symTable:  symTable,
-		textStart: textSec.Addr,
-		textData:  textData,
-		scanner:   scanner,
+		symTable:     symTable,
+		textStart:    textSec.Addr,
+		textData:     textData,
+		scanner:      scanner,
+		inittaskPkgs: extractInittaskPackages(ef),
 	}, nil
+}
+
+type elfSymbolReader interface {
+	Symbols() ([]elf.Symbol, error)
+	DynamicSymbols() ([]elf.Symbol, error)
+}
+
+func extractInittaskPackages(ef elfSymbolReader) []string {
+	syms, _ := ef.Symbols()
+	pkgs := inittaskPackagesFromSymbols(syms)
+	if len(pkgs) == 0 {
+		dynsyms, _ := ef.DynamicSymbols()
+		pkgs = inittaskPackagesFromSymbols(dynsyms)
+	}
+
+	if len(pkgs) == 0 {
+		log.Warnf("no ..inittask symbols found; package initialization dependencies will not be extracted")
+	}
+	return pkgs
+}
+
+func inittaskPackagesFromSymbols(syms []elf.Symbol) []string {
+	var inittaskPkgs []string
+	seen := make(map[string]bool)
+	for _, s := range syms {
+		if strings.HasSuffix(s.Name, "..inittask") {
+			pkg := strings.TrimSuffix(s.Name, "..inittask")
+			if !seen[pkg] {
+				seen[pkg] = true
+				inittaskPkgs = append(inittaskPkgs, pkg)
+			}
+		}
+	}
+	return inittaskPkgs
 }
 
 func findPclntab(ef *elf.File) *elf.Section {
@@ -115,7 +151,7 @@ func findPclntab(ef *elf.File) *elf.Section {
 	return nil
 }
 
-func (s *sections) scanCrossModuleCalls(functions *moduleFunctionIndex) []ModuleEdge {
+func (s *sections) scanCrossModuleCalls(functions *moduleFunctionIndex, bi *buildinfo.BuildInfo, mainModPath string) []ModuleEdge {
 	textLen := uint64(len(s.textData))
 	seen := make(map[ModuleEdge]bool)
 	var edges []ModuleEdge
@@ -132,6 +168,18 @@ func (s *sections) scanCrossModuleCalls(functions *moduleFunctionIndex) []Module
 					edges = append(edges, edge)
 				}
 			}
+		}
+	}
+	for _, pkg := range s.inittaskPkgs {
+		unescaped := extractPackage(pkg + ".init")
+		mod := resolvePackageModule(unescaped, bi, mainModPath)
+		if mod == "" || mod == mainModPath {
+			continue
+		}
+		edge := ModuleEdge{Module: mainModPath, DependsOn: mod}
+		if !seen[edge] {
+			seen[edge] = true
+			edges = append(edges, edge)
 		}
 	}
 	return edges

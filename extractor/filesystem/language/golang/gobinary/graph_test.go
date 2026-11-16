@@ -16,6 +16,7 @@ package gobinary
 
 import (
 	"debug/buildinfo"
+	"debug/elf"
 	"debug/gosym"
 	"runtime/debug"
 	"testing"
@@ -267,8 +268,162 @@ func TestScanCrossModuleCalls(t *testing.T) {
 		Main: debug.Module{Path: "example.com/mainmod"},
 	}
 	idx := mapFunctionsToModules(funcs, bi, "example.com/mainmod")
-	edges := sec.scanCrossModuleCalls(idx)
+	edges := sec.scanCrossModuleCalls(idx, bi, "example.com/mainmod")
 	if len(edges) != 0 {
 		t.Errorf("Expected 0 edges for out of bounds functions, got %v", edges)
+	}
+}
+
+func TestScanCrossModuleCalls_Inittasks(t *testing.T) {
+	bi := &buildinfo.BuildInfo{
+		Main: debug.Module{Path: "example.com/mainmod"},
+		Deps: []*debug.Module{
+			{Path: "example.com/dep1"},
+			{Path: "example.com/dep2"},
+		},
+	}
+
+	sec := &sections{
+		inittaskPkgs: []string{
+			"example.com/mainmod",     // self-module, should be skipped
+			"fmt",                     // stdlib, should be skipped
+			"example.com/dep1",        // valid dependency
+			"example.com/dep2/subpkg", // valid dependency subpkg
+			"example.com/dep1",        // duplicate, should be deduplicated
+		},
+		scanner: x86_64CallScanner{},
+	}
+
+	idx := &moduleFunctionIndex{
+		entryToModule: make(map[uint64]string),
+	}
+
+	edges := sec.scanCrossModuleCalls(idx, bi, "example.com/mainmod")
+	wantEdges := []ModuleEdge{
+		{Module: "example.com/mainmod", DependsOn: "example.com/dep1"},
+		{Module: "example.com/mainmod", DependsOn: "example.com/dep2"},
+	}
+
+	if diff := cmp.Diff(wantEdges, edges); diff != "" {
+		t.Errorf("scanCrossModuleCalls inittasks mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestInittaskPackagesFromSymbols(t *testing.T) {
+	tests := []struct {
+		name string
+		syms []elf.Symbol
+		want []string
+	}{
+		{
+			name: "extracts_and_deduplicates_inittasks",
+			syms: []elf.Symbol{
+				{Name: "example.com/dep1..inittask"},
+				{Name: "example.com/dep2..inittask"},
+				{Name: "example.com/dep1..inittask"},
+				{Name: "example.com/dep.Foo"},
+			},
+			want: []string{"example.com/dep1", "example.com/dep2"},
+		},
+		{
+			name: "empty_symbols",
+			syms: nil,
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := inittaskPackagesFromSymbols(tt.syms)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("inittaskPackagesFromSymbols mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+type fakeSymbolReader struct {
+	symbols        []elf.Symbol
+	symbolsErr     error
+	dynamicSymbols []elf.Symbol
+	dynamicErr     error
+}
+
+func (f *fakeSymbolReader) Symbols() ([]elf.Symbol, error) {
+	return f.symbols, f.symbolsErr
+}
+
+func (f *fakeSymbolReader) DynamicSymbols() ([]elf.Symbol, error) {
+	return f.dynamicSymbols, f.dynamicErr
+}
+
+func TestExtractInittaskPackages(t *testing.T) {
+	tests := []struct {
+		name   string
+		reader elfSymbolReader
+		want   []string
+	}{
+		{
+			name: "primary_symbols_used_when_present",
+			reader: &fakeSymbolReader{
+				symbols: []elf.Symbol{
+					{Name: "example.com/dep1..inittask"},
+				},
+				dynamicSymbols: []elf.Symbol{
+					{Name: "example.com/from_dynsym..inittask"},
+				},
+			},
+			want: []string{"example.com/dep1"},
+		},
+		{
+			name: "dynamic_symbols_fallback_when_symbols_empty",
+			reader: &fakeSymbolReader{
+				symbols: nil,
+				dynamicSymbols: []elf.Symbol{
+					{Name: "example.com/dep1..inittask"},
+					{Name: "example.com/dep2..inittask"},
+				},
+			},
+			want: []string{"example.com/dep1", "example.com/dep2"},
+		},
+		{
+			name: "dynamic_symbols_fallback_when_symbols_has_no_inittasks",
+			reader: &fakeSymbolReader{
+				symbols: []elf.Symbol{
+					{Name: "example.com/other.Foo"},
+				},
+				dynamicSymbols: []elf.Symbol{
+					{Name: "example.com/dep1..inittask"},
+				},
+			},
+			want: []string{"example.com/dep1"},
+		},
+		{
+			name: "dynamic_symbols_fallback_when_symbols_returns_error",
+			reader: &fakeSymbolReader{
+				symbolsErr: elf.ErrNoSymbols,
+				dynamicSymbols: []elf.Symbol{
+					{Name: "example.com/dep1..inittask"},
+				},
+			},
+			want: []string{"example.com/dep1"},
+		},
+		{
+			name: "no_symbols_in_either_returns_nil",
+			reader: &fakeSymbolReader{
+				symbolsErr: elf.ErrNoSymbols,
+				dynamicErr: elf.ErrNoSymbols,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractInittaskPackages(tt.reader)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("extractInittaskPackages mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
