@@ -452,6 +452,7 @@ func (wc *walkContext) handleFile(path string, d fs.DirEntry, fserr error) error
 	}
 
 	wc.fileAPI.currentPath = path
+	wc.fileAPI.currentEntry = d
 	wc.fileAPI.currentStatCalled = false
 
 	if d.Type().IsDir() {
@@ -553,6 +554,7 @@ func (wc *walkContext) postHandleFile(path string, d fs.DirEntry) {
 type lazyFileAPI struct {
 	fs                scalibrfs.FS
 	currentPath       string
+	currentEntry      fs.DirEntry
 	currentFileInfo   fs.FileInfo
 	currentStatErr    error
 	currentStatCalled bool
@@ -564,7 +566,15 @@ func (api *lazyFileAPI) Path() string {
 func (api *lazyFileAPI) Stat() (fs.FileInfo, error) {
 	if !api.currentStatCalled {
 		api.currentStatCalled = true
-		api.currentFileInfo, api.currentStatErr = fs.Stat(api.fs, api.currentPath)
+		if api.currentEntry != nil && api.currentEntry.Type()&fs.ModeSymlink == 0 {
+			info, err := api.currentEntry.Info()
+			if err != nil {
+				err = internal.NormalizePathError(err, api.currentPath)
+			}
+			api.currentFileInfo, api.currentStatErr = info, err
+		} else {
+			api.currentFileInfo, api.currentStatErr = fs.Stat(api.fs, api.currentPath)
+		}
 	}
 	return api.currentFileInfo, api.currentStatErr
 }
@@ -646,6 +656,7 @@ func (wc *walkContext) PrepareNewScan(absRoot string, fs scalibrfs.FS) error {
 	wc.scanRoot = absRoot
 	wc.fs = fs
 	wc.fileAPI.fs = fs
+	wc.fileAPI.currentEntry = nil
 	wc.inventory = inventory.Inventory{}
 	return nil
 }

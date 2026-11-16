@@ -99,9 +99,10 @@ func DirFS(root string) FS {
 }
 
 type rootFS struct {
-	dir  string
-	mu   sync.Mutex
-	root *os.Root
+	dir     string
+	subRoot bool
+	mu      sync.Mutex
+	root    *os.Root
 }
 
 func (r *rootFS) getRoot() (*os.Root, error) {
@@ -109,6 +110,9 @@ func (r *rootFS) getRoot() (*os.Root, error) {
 	defer r.mu.Unlock()
 	if r.root != nil {
 		return r.root, nil
+	}
+	if r.subRoot {
+		return nil, fs.ErrClosed
 	}
 	root, err := os.OpenRoot(r.dir)
 	if err != nil {
@@ -155,8 +159,10 @@ func doInRoot[T any](
 		if opErr == nil {
 			return nil
 		}
-		if resolved, ok := resolve(root, name, opErr); ok {
-			res, opErr = fn(fsys, resolved)
+		if !r.subRoot {
+			if resolved, ok := resolve(root, name, opErr); ok {
+				res, opErr = fn(fsys, resolved)
+			}
 		}
 		return opErr
 	})
@@ -168,7 +174,39 @@ func (r *rootFS) Open(name string) (fs.File, error) {
 }
 
 func (r *rootFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	return doInRoot(r, "readdir", name, resolveInRoot, fs.ReadDir)
+	return r.readDir(name)
+}
+
+// OpenSubFS opens a confined child FS rooted at name relative to r.
+// Callers must Close the returned FS when done to release its os.Root handle.
+func (r *rootFS) OpenSubFS(name string) (FS, error) {
+	if !fs.ValidPath(name) || (runtime.GOOS == "windows" && strings.ContainsAny(name, "\\:")) {
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrInvalid}
+	}
+	var subRoot *os.Root
+	resolvedName := name
+	err := r.withRoot("open", name, func(root *os.Root) error {
+		var opErr error
+		subRoot, opErr = root.OpenRoot(filepath.FromSlash(name))
+		if opErr == nil {
+			return nil
+		}
+		if !r.subRoot {
+			if resolved, ok := resolveInRoot(root, name, opErr); ok {
+				resolvedName = resolved
+				subRoot, opErr = root.OpenRoot(filepath.FromSlash(resolved))
+			}
+		}
+		return opErr
+	})
+	if err == nil {
+		return &rootFS{
+			dir:     filepath.Join(r.dir, filepath.FromSlash(resolvedName)),
+			root:    subRoot,
+			subRoot: true,
+		}, nil
+	}
+	return nil, err
 }
 
 func (r *rootFS) Stat(name string) (fs.FileInfo, error) {

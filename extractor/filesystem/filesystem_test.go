@@ -27,6 +27,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -326,7 +327,7 @@ func (e fakeExtractorDirs) FileRequired(api filesystem.FileAPI) bool {
 func (e fakeExtractorDirs) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
 	path := filepath.ToSlash(input.Path)
 	if path == e.dir {
-		return inventory.Inventory{Packages: []*extractor.Package{&extractor.Package{
+		return inventory.Inventory{Packages: []*extractor.Package{{
 			Name:     e.name,
 			Location: extractor.LocationFromPath(path),
 		}}}, nil
@@ -1393,5 +1394,117 @@ func TestIsInterestingExecutable(t *testing.T) {
 				t.Fatalf("FileRequired(%s): got %v, want %v", tt.path, got, want)
 			}
 		})
+	}
+}
+
+type statErrEntry struct {
+	fs.DirEntry
+
+	err   error
+	calls *int
+}
+
+func (e statErrEntry) Info() (fs.FileInfo, error) {
+	if e.calls != nil {
+		*e.calls++
+	}
+	return nil, e.err
+}
+
+type nonReadDirFile struct {
+	fs.File
+}
+
+type statErrFS struct {
+	base      fstest.MapFS
+	err       error
+	infoCalls *int
+}
+
+func (f statErrFS) Open(name string) (fs.File, error) {
+	file, err := f.base.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	return nonReadDirFile{file}, nil
+}
+
+func (f statErrFS) Stat(name string) (fs.FileInfo, error) {
+	return f.base.Stat(name)
+}
+
+func (f statErrFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	entries, err := f.base.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+	for i, e := range entries {
+		if !e.IsDir() {
+			entries[i] = statErrEntry{DirEntry: e, err: f.err, calls: f.infoCalls}
+		}
+	}
+	return entries, nil
+}
+
+type statCapturingExtractor struct {
+	targetPath string
+	called     bool
+	firstErr   error
+	secondErr  error
+}
+
+func (*statCapturingExtractor) Name() string                       { return "test/stat-capture" }
+func (*statCapturingExtractor) Version() int                       { return 0 }
+func (*statCapturingExtractor) Requirements() *plugin.Capabilities { return &plugin.Capabilities{} }
+func (e *statCapturingExtractor) FileRequired(api filesystem.FileAPI) bool {
+	if api.Path() == e.targetPath {
+		e.called = true
+		_, e.firstErr = api.Stat()
+		_, e.secondErr = api.Stat()
+	}
+	return false
+}
+func (*statCapturingExtractor) Extract(_ context.Context, _ *filesystem.ScanInput) (inventory.Inventory, error) {
+	return inventory.Inventory{}, nil
+}
+
+func TestRun_LazyFileAPIStatErrorNormalizesPath(t *testing.T) {
+	sentinel := errors.New("injected entry stat failure")
+	infoCalls := 0
+	fsys := statErrFS{
+		base: fstest.MapFS{
+			"a/b/leaf.txt": &fstest.MapFile{Data: []byte("hello")},
+		},
+		err:       &fs.PathError{Op: "lstat", Path: "leaf.txt", Err: sentinel},
+		infoCalls: &infoCalls,
+	}
+	ex := &statCapturingExtractor{targetPath: "a/b/leaf.txt"}
+
+	_, _, err := filesystem.Run(t.Context(), &filesystem.Config{
+		Stats:      stats.NoopCollector{},
+		ScanRoots:  []*scalibrfs.ScanRoot{{FS: fsys}},
+		Extractors: []filesystem.Extractor{ex},
+	})
+	if err != nil {
+		t.Fatalf("filesystem.Run: %v", err)
+	}
+	if !ex.called {
+		t.Fatal("statCapturingExtractor was never invoked for a/b/leaf.txt")
+	}
+	if !errors.Is(ex.firstErr, sentinel) {
+		t.Fatalf("api.Stat() error = %v, want %v", ex.firstErr, sentinel)
+	}
+	var pe *fs.PathError
+	if !errors.As(ex.firstErr, &pe) {
+		t.Fatalf("api.Stat() error = %T, want *fs.PathError", ex.firstErr)
+	}
+	if pe.Op != "lstat" || pe.Path != "a/b/leaf.txt" {
+		t.Errorf("PathError = {Op:%q Path:%q}, want {Op:\"lstat\" Path:\"a/b/leaf.txt\"}", pe.Op, pe.Path)
+	}
+	if infoCalls != 1 {
+		t.Errorf("DirEntry.Info() called %d times across 2 api.Stat() calls, want 1 (cached)", infoCalls)
+	}
+	if !errors.Is(ex.secondErr, sentinel) || ex.secondErr.Error() != ex.firstErr.Error() {
+		t.Errorf("second api.Stat() call returned different error (%v vs %v)", ex.secondErr, ex.firstErr)
 	}
 }

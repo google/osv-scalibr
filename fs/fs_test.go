@@ -17,11 +17,13 @@ package fs_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -503,5 +505,450 @@ func TestOpenOSFile(t *testing.T) {
 	}
 	if _, err := os.Stat(tmpDir); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("temp dir %q still exists after cleanup: %v", tmpDir, err)
+	}
+}
+
+type subFSOpener interface {
+	OpenSubFS(name string) (scalibrfs.FS, error)
+}
+
+type dirOpener interface {
+	OpenDir(name string) (fs.ReadDirFile, error)
+}
+
+func TestDirFS_OpenSubFS(t *testing.T) {
+	parent := t.TempDir()
+	outsideDir := filepath.Join(parent, "outside")
+	if err := os.MkdirAll(outsideDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outsideDir, "secret.txt"), []byte("host-secret"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	root := filepath.Join(parent, "rootfs")
+	if err := os.MkdirAll(filepath.Join(root, "a", "b"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "a", "b", "leaf.txt"), []byte("leaf-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "top.txt"), []byte("top-data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fsys := scalibrfs.DirFS(root)
+	t.Cleanup(func() {
+		if c, ok := fsys.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
+
+	opener, ok := fsys.(subFSOpener)
+	if !ok {
+		t.Fatal("DirFS does not implement OpenSubFS")
+	}
+
+	subA, err := opener.OpenSubFS("a")
+	if err != nil {
+		t.Fatalf("OpenSubFS(a): %v", err)
+	}
+	subOpenerA, ok := subA.(subFSOpener)
+	if !ok {
+		t.Fatal("child FS does not implement OpenSubFS")
+	}
+	subB, err := subOpenerA.OpenSubFS("b")
+	if err != nil {
+		t.Fatalf("subA.OpenSubFS(b): %v", err)
+	}
+
+	got, err := fs.ReadFile(subB, "leaf.txt")
+	if err != nil {
+		t.Fatalf("subB.ReadFile(leaf.txt): %v", err)
+	}
+	if string(got) != "leaf-data" {
+		t.Errorf("subB.ReadFile(leaf.txt) = %q, want %q", got, "leaf-data")
+	}
+	if _, err := subB.Stat("leaf.txt"); err != nil {
+		t.Errorf("subB.Stat(leaf.txt): %v", err)
+	}
+	entries, err := subB.ReadDir(".")
+	if err != nil || len(entries) != 1 || entries[0].Name() != "leaf.txt" {
+		t.Errorf("subB.ReadDir(.) = (%v, %v), want [leaf.txt]", entries, err)
+	}
+
+	// Closing a child sub-FS must return fs.ErrClosed on further use and not affect the parent.
+	closerB, ok := subB.(io.Closer)
+	if !ok {
+		t.Fatal("child FS does not implement io.Closer")
+	}
+	if err := closerB.Close(); err != nil {
+		t.Fatalf("subB.Close(): %v", err)
+	}
+	if _, err := subB.Open("leaf.txt"); !errors.Is(err, fs.ErrClosed) {
+		t.Errorf("subB.Open after Close = %v, want fs.ErrClosed", err)
+	}
+	if _, err := subB.Stat("leaf.txt"); !errors.Is(err, fs.ErrClosed) {
+		t.Errorf("subB.Stat after Close = %v, want fs.ErrClosed", err)
+	}
+	if _, err := subB.ReadDir("."); !errors.Is(err, fs.ErrClosed) {
+		t.Errorf("subB.ReadDir after Close = %v, want fs.ErrClosed", err)
+	}
+	if closerA, ok := subA.(io.Closer); ok {
+		if err := closerA.Close(); err != nil {
+			t.Fatalf("subA.Close(): %v", err)
+		}
+	}
+	if _, err := fsys.Stat("a/b/leaf.txt"); err != nil {
+		t.Errorf("parent Stat(a/b/leaf.txt) after child Close: %v", err)
+	}
+
+	// Invalid paths and regular files must be rejected.
+	invalidPaths := []string{"..", "/a", "../outside"}
+	if runtime.GOOS == "windows" {
+		invalidPaths = append(invalidPaths, `a\b`, "C:a")
+	}
+	for _, p := range invalidPaths {
+		if sub, err := opener.OpenSubFS(p); err == nil {
+			if c, ok := sub.(io.Closer); ok {
+				_ = c.Close()
+			}
+			t.Errorf("OpenSubFS(%q) succeeded, want error", p)
+		} else if !errors.Is(err, fs.ErrInvalid) {
+			t.Errorf("OpenSubFS(%q) err = %v, want fs.ErrInvalid", p, err)
+		}
+	}
+	if sub, err := opener.OpenSubFS("top.txt"); err == nil {
+		if c, ok := sub.(io.Closer); ok {
+			_ = c.Close()
+		}
+		t.Error("OpenSubFS(top.txt) on regular file succeeded, want error")
+	}
+
+	// Closed subRoot under os.Getwd() must still return fs.ErrClosed (never trigger runfiles fallback).
+	wdFS := scalibrfs.DirFS(".")
+	t.Cleanup(func() {
+		if c, ok := wdFS.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
+	if wdOpener, ok := wdFS.(subFSOpener); ok {
+		wdSub, err := wdOpener.OpenSubFS(".")
+		if err != nil {
+			t.Fatalf("wdFS.OpenSubFS(.): %v", err)
+		}
+		if err := wdSub.(io.Closer).Close(); err != nil {
+			t.Fatalf("wdSub.Close(): %v", err)
+		}
+		if _, err := wdSub.Open("."); !errors.Is(err, fs.ErrClosed) {
+			t.Errorf("closed wdSub.Open(.) = %v, want fs.ErrClosed", err)
+		}
+		if sub, err := wdSub.(subFSOpener).OpenSubFS("."); err == nil {
+			if c, ok := sub.(io.Closer); ok {
+				_ = c.Close()
+			}
+			t.Error("closed wdSub.OpenSubFS(.) succeeded, want fs.ErrClosed")
+		} else if !errors.Is(err, fs.ErrClosed) {
+			t.Errorf("closed wdSub.OpenSubFS(.) = %v, want fs.ErrClosed", err)
+		}
+		if d, err := wdSub.(dirOpener).OpenDir("."); err == nil {
+			_ = d.Close()
+			t.Error("closed wdSub.OpenDir(.) succeeded, want fs.ErrClosed")
+		} else if !errors.Is(err, fs.ErrClosed) {
+			t.Errorf("closed wdSub.OpenDir(.) = %v, want fs.ErrClosed", err)
+		}
+	}
+
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	// Symlink confinement on OpenSubFS.
+	if err := os.Symlink(outsideDir, filepath.Join(root, "escape-abs")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("../outside", filepath.Join(root, "escape-rel")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("/a/b", filepath.Join(root, "intra-abs-dir")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("../top.txt", filepath.Join(root, "a", "up-to-parent")); err != nil {
+		t.Fatal(err)
+	}
+	// Intra-root absolute symlink inside child dir "a" whose target "/b/leaf.txt"
+	// matches a decoy "a/b/leaf.txt" under the child root, plus a symlink "/b" to
+	// decoy directory "a/b" and a scan-root-valid symlink "/a/b/leaf.txt".
+	if err := os.Symlink("/b/leaf.txt", filepath.Join(root, "a", "abs-link")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("/b", filepath.Join(root, "a", "abs-dir")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("/a/b/leaf.txt", filepath.Join(root, "a", "root-abs-link")); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, esc := range []string{"escape-abs", "escape-rel"} {
+		if sub, err := opener.OpenSubFS(esc); err == nil {
+			if c, ok := sub.(io.Closer); ok {
+				_ = c.Close()
+			}
+			t.Errorf("OpenSubFS(%q) succeeded across escaping symlink, want error", esc)
+		}
+	}
+
+	intraSub, err := opener.OpenSubFS("intra-abs-dir")
+	if err != nil {
+		t.Fatalf("OpenSubFS(intra-abs-dir): %v", err)
+	}
+	if c, ok := intraSub.(io.Closer); ok {
+		defer func() { _ = c.Close() }()
+	}
+	if got, err := fs.ReadFile(intraSub, "leaf.txt"); err != nil || string(got) != "leaf-data" {
+		t.Errorf("intraSub.ReadFile(leaf.txt) = (%q, %v), want (%q, nil)", got, err, "leaf-data")
+	}
+
+	// Child sub-FS rooted at "a" must confine symlinks targeting parent "../top.txt"
+	// and must not rewrite absolute symlinks against the subdirectory root.
+	confinedA, err := opener.OpenSubFS("a")
+	if err != nil {
+		t.Fatalf("OpenSubFS(a): %v", err)
+	}
+	if c, ok := confinedA.(io.Closer); ok {
+		defer func() { _ = c.Close() }()
+	}
+	if f, err := confinedA.Open("up-to-parent"); err == nil {
+		_ = f.Close()
+		t.Error("confinedA.Open(up-to-parent) escaped child root, want error")
+	}
+	if f, err := confinedA.Open("abs-link"); err == nil {
+		_ = f.Close()
+		t.Error("confinedA.Open(abs-link) resolved absolute symlink against child root decoy, want error")
+	}
+	if _, err := confinedA.Stat("abs-link"); err == nil {
+		t.Error("confinedA.Stat(abs-link) resolved absolute symlink against child root decoy, want error")
+	}
+	if sub, err := confinedA.(subFSOpener).OpenSubFS("abs-dir"); err == nil {
+		if c, ok := sub.(io.Closer); ok {
+			_ = c.Close()
+		}
+		t.Error("confinedA.OpenSubFS(abs-dir) resolved absolute symlink against child root decoy, want error")
+	}
+	if d, err := confinedA.(dirOpener).OpenDir("abs-dir"); err == nil {
+		_ = d.Close()
+		t.Error("confinedA.OpenDir(abs-dir) resolved absolute symlink against child root decoy, want error")
+	}
+	// Top-level scan root still resolves /a/b/leaf.txt, while child sub-FS rejects it.
+	if got, err := fs.ReadFile(fsys, "a/root-abs-link"); err != nil || string(got) != "leaf-data" {
+		t.Errorf("fsys.ReadFile(a/root-abs-link) = (%q, %v), want (%q, nil)", got, err, "leaf-data")
+	}
+	if f, err := confinedA.Open("root-abs-link"); err == nil {
+		_ = f.Close()
+		t.Error("confinedA.Open(root-abs-link) succeeded on child subRoot, want error")
+	}
+}
+
+func TestDirFS_OpenDirAndReadDir(t *testing.T) {
+	parent := t.TempDir()
+	outsideFile := filepath.Join(parent, "host-secret.txt")
+	if err := os.WriteFile(outsideFile, []byte("top-secret-data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	root := filepath.Join(parent, "rootfs")
+	manyDir := filepath.Join(root, "many")
+	if err := os.MkdirAll(filepath.Join(manyDir, "subdir-a"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "empty"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "regular.txt"), []byte("reg"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	const numFiles = 150
+	wantNames := make([]string, 0, numFiles+2)
+	wantNames = append(wantNames, "subdir-a")
+	for i := range numFiles {
+		name := fmt.Sprintf("f-%03d.txt", i)
+		wantNames = append(wantNames, name)
+		content := fmt.Sprintf("payload-%03d", i)
+		if err := os.WriteFile(filepath.Join(manyDir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Symlink(outsideFile, filepath.Join(manyDir, "escape-link")); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink("/many", filepath.Join(root, "many-abs-link")); err != nil {
+			t.Fatal(err)
+		}
+		wantNames = append(wantNames, "escape-link")
+	}
+	slices.Sort(wantNames)
+
+	fsys := scalibrfs.DirFS(root)
+	t.Cleanup(func() {
+		if c, ok := fsys.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
+
+	// Sorted ReadDir verifies entry names, types, and confined Info() behavior.
+	entries, err := fsys.ReadDir("many")
+	if err != nil {
+		t.Fatalf("ReadDir(many): %v", err)
+	}
+	gotNames := make([]string, 0, len(entries))
+	for _, e := range entries {
+		gotNames = append(gotNames, e.Name())
+		switch e.Name() {
+		case "subdir-a":
+			if !e.IsDir() || e.Type()&fs.ModeDir == 0 {
+				t.Errorf("subdir-a IsDir=%v Type=%v, want dir", e.IsDir(), e.Type())
+			}
+			info, err := e.Info()
+			if err != nil || !info.IsDir() {
+				t.Errorf("subdir-a Info() = (%v, %v), want dir info", info, err)
+			}
+		case "escape-link":
+			if e.IsDir() || e.Type()&fs.ModeSymlink == 0 {
+				t.Errorf("escape-link IsDir=%v Type=%v, want symlink", e.IsDir(), e.Type())
+			}
+			// Info() must use confined Lstat (reporting symlink mode), never following the escape target.
+			info, err := e.Info()
+			if err != nil {
+				t.Errorf("escape-link Info(): %v", err)
+			} else if info.Mode()&fs.ModeSymlink == 0 {
+				t.Errorf("escape-link Info().Mode() = %v, want ModeSymlink", info.Mode())
+			}
+		default:
+			if e.IsDir() || !e.Type().IsRegular() {
+				t.Errorf("%s IsDir=%v Type=%v, want regular file", e.Name(), e.IsDir(), e.Type())
+			}
+			if e.Name() == "f-000.txt" {
+				info, err := e.Info()
+				if err != nil {
+					t.Errorf("f-000.txt Info(): %v", err)
+				} else if wantSize := int64(len("payload-000")); info.Size() != wantSize {
+					t.Errorf("f-000.txt Size() = %d, want %d", info.Size(), wantSize)
+				}
+			}
+		}
+	}
+	if !slices.Equal(gotNames, wantNames) {
+		t.Errorf("ReadDir(many) returned %d entries, want %d sorted entries", len(gotNames), len(wantNames))
+	}
+
+	// Streaming OpenDir across multiple batches.
+	opener, ok := fsys.(dirOpener)
+	if !ok {
+		t.Fatal("DirFS does not implement OpenDir")
+	}
+	dirFile, err := opener.OpenDir("many")
+	if err != nil {
+		t.Fatalf("OpenDir(many): %v", err)
+	}
+	var streamedNames []string
+	for {
+		batch, err := dirFile.ReadDir(30)
+		for _, e := range batch {
+			streamedNames = append(streamedNames, e.Name())
+			if e.Name() == "f-042.txt" {
+				info, infoErr := e.Info()
+				if infoErr != nil || info.Size() != int64(len("payload-042")) {
+					t.Errorf("streamed f-042.txt Info() = (%v, %v), want size %d", info, infoErr, len("payload-042"))
+				}
+			}
+		}
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			t.Fatalf("dirFile.ReadDir(30): %v", err)
+		}
+	}
+	if err := dirFile.Close(); err != nil {
+		t.Errorf("dirFile.Close(): %v", err)
+	}
+	slices.Sort(streamedNames)
+	if !slices.Equal(streamedNames, wantNames) {
+		t.Errorf("OpenDir(many) streamed %d entries, want %d", len(streamedNames), len(wantNames))
+	}
+
+	// Empty directory, missing directory, regular file, and invalid path.
+	emptyEntries, err := fsys.ReadDir("empty")
+	if err != nil || len(emptyEntries) != 0 {
+		t.Errorf("ReadDir(empty) = (%v, %v), want empty", emptyEntries, err)
+	}
+	if _, err := fsys.ReadDir("missing"); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("ReadDir(missing) err = %v, want fs.ErrNotExist", err)
+	}
+	if _, err := fsys.ReadDir("regular.txt"); err == nil {
+		t.Error("ReadDir(regular.txt) succeeded, want error")
+	}
+	if _, err := fsys.ReadDir(".."); !errors.Is(err, fs.ErrInvalid) {
+		t.Errorf("ReadDir(..) err = %v, want fs.ErrInvalid", err)
+	}
+	if d, err := opener.OpenDir(".."); err == nil {
+		_ = d.Close()
+		t.Error("OpenDir(..) succeeded, want fs.ErrInvalid")
+	} else if !errors.Is(err, fs.ErrInvalid) {
+		t.Errorf("OpenDir(..) err = %v, want fs.ErrInvalid", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		linkDir, err := opener.OpenDir("many-abs-link")
+		if err != nil {
+			t.Fatalf("OpenDir(many-abs-link): %v", err)
+		}
+		defer func() { _ = linkDir.Close() }()
+		linkEntries, err := linkDir.ReadDir(-1)
+		if err != nil {
+			t.Fatalf("linkDir.ReadDir(-1): %v", err)
+		}
+		if len(linkEntries) != len(wantNames) {
+			t.Errorf("OpenDir(many-abs-link) got %d entries, want %d", len(linkEntries), len(wantNames))
+		}
+		for _, e := range linkEntries {
+			if e.Name() == "f-001.txt" {
+				if info, err := e.Info(); err != nil || info.Size() != int64(len("payload-001")) {
+					t.Errorf("many-abs-link f-001.txt Info() = (%v, %v), want size %d", info, err, len("payload-001"))
+				}
+			}
+		}
+	}
+}
+
+func BenchmarkDirFS_ReadDir(b *testing.B) {
+	root := b.TempDir()
+	sub := filepath.Join(root, "a", "b", "c", "d", "e")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		b.Fatal(err)
+	}
+	for i := range 100 {
+		if err := os.WriteFile(filepath.Join(sub, fmt.Sprintf("f-%03d.txt", i)), []byte("x"), 0o644); err != nil {
+			b.Fatal(err)
+		}
+	}
+	fsys := scalibrfs.DirFS(root)
+	b.Cleanup(func() {
+		if c, ok := fsys.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		entries, err := fsys.ReadDir("a/b/c/d/e")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(entries) != 100 {
+			b.Fatalf("ReadDir len = %d, want 100", len(entries))
+		}
 	}
 }
