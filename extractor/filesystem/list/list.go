@@ -197,6 +197,7 @@ import (
 	"github.com/google/osv-scalibr/veles/secrets/tinkkeyset"
 	"github.com/google/osv-scalibr/veles/secrets/urlcreds"
 	"github.com/google/osv-scalibr/veles/secrets/vapid"
+	"github.com/google/osv-scalibr/veles/sensitiveinformation/abartn"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/atin"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/creditcard"
 	"github.com/google/osv-scalibr/veles/sensitiveinformation/iban"
@@ -525,6 +526,7 @@ var (
 		{iban.NewDetector(), "sensitiveinformation/iban", 0},
 		{itin.NewDetector(), "secrets/itin", 0},
 		{ssn.NewDetector(), "sensitiveinformation/ssn", 0},
+		{abartn.NewDetector(), "sensitiveinformation/abartn", 0},
 	})
 
 	// Secrets contains both secret extractors and detectors.
