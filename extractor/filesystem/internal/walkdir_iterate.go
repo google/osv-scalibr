@@ -25,12 +25,58 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"syscall"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/fs/diriterate"
 )
 
+// maxSubRootDepth caps the number of simultaneously open child os.Root handles
+// during recursive traversal so deep directory trees stay well within tight
+// per-process file descriptor limits (such as macOS's default 256 soft limit,
+// where each active DirIterator holds 2 FDs due to fdopendir duplication).
+// If FD exhaustion still occurs (EMFILE/ENFILE), traversal falls back to the
+// parent FS without failing the subtree.
+const maxSubRootDepth = 32
+
+type subFSOpener interface {
+	OpenSubFS(name string) (scalibrfs.FS, error)
+}
+
 type postWalkDirFunc func(path string, d fs.DirEntry)
+
+// NormalizePathError rewrites a top-level *fs.PathError's Path field to
+// fullPath so callers see scan-root-relative paths rather than sub-root-relative
+// paths, without stripping wrapped or joined error context.
+func NormalizePathError(err error, fullPath string) error {
+	//nolint:errorlint // Only rewrite a top-level *fs.PathError so wrapped/joined error context is preserved.
+	if pe, ok := err.(*fs.PathError); ok && pe.Path != fullPath {
+		return &fs.PathError{Op: pe.Op, Path: fullPath, Err: pe.Err}
+	}
+	return err
+}
+
+func isFDExhausted(err error) bool {
+	return errors.Is(err, syscall.EMFILE) || errors.Is(err, syscall.ENFILE)
+}
+
+func closeFS(fsys scalibrfs.FS) {
+	if closer, ok := fsys.(io.Closer); ok {
+		_ = closer.Close()
+	}
+}
+
+func handleWalkErr(fullPath string, d fs.DirEntry, err error, walkDirFn fs.WalkDirFunc) error {
+	err = walkDirFn(fullPath, d, NormalizePathError(err, fullPath))
+	if err != nil {
+		if errors.Is(err, fs.SkipDir) && d.IsDir() {
+			return nil
+		}
+		return err
+	}
+	// End iteration after an error.
+	return nil
+}
 
 // walkDirUnsorted recursively descends path, calling walkDirFn. From caller side this function
 // should be equivalent to fs.walkDir, except that the files are not ordered, but walked in the
@@ -40,12 +86,12 @@ type postWalkDirFunc func(path string, d fs.DirEntry)
 // during the walk, which is then not seen by the walk. That problem existed also with fs.WalkDir,
 // which would return files which do not exist anymore. More details for unix:
 // https://man7.org/linux/man-pages/man2/getdents.2.html
-func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs.WalkDirFunc, postFN postWalkDirFunc) error {
+func walkDirUnsorted(curFS scalibrfs.FS, fullPath, relPath string, depth int, d fs.DirEntry, walkDirFn fs.WalkDirFunc, postFN postWalkDirFunc) error {
 	if postFN != nil {
-		defer postFN(name, d)
+		defer postFN(fullPath, d)
 	}
 	// This is the main call to walkDirFn for files and directories, without errors.
-	if err := walkDirFn(name, d, nil); err != nil || !d.IsDir() {
+	if err := walkDirFn(fullPath, d, nil); err != nil || !d.IsDir() {
 		if errors.Is(err, fs.SkipDir) && d.IsDir() {
 			// Successfully skipped directory.
 			err = nil
@@ -53,45 +99,77 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 		return err
 	}
 
-	dirs, err := diriterate.ReadDir(fsys, name)
-	if err != nil {
-		// Second call, to report ReadDir error.
-		// Same error handling as in fs.WalkDir: If an error occurred, the walkDirFn is called again,
-		// which can decide to continue (nil), SkipDir or skip all by other errors (e.g. SkipAll).
-		err = walkDirFn(name, d, err)
-		if err != nil {
-			if errors.Is(err, fs.SkipDir) && d.IsDir() {
-				err = nil
-			}
-			return err
+	// Open a confined child FS for this directory so children are opened relative
+	// to the parent directory FD in O(1) instead of re-traversing from the root.
+	var (
+		dirs  *diriterate.DirIterator
+		subFS scalibrfs.FS
+		err   error
+	)
+	defer func() {
+		if subFS != nil {
+			closeFS(subFS)
 		}
-		// End iteration after an error
-		return nil
+	}()
+	if relPath != "." && depth < maxSubRootDepth {
+		if opener, ok := curFS.(subFSOpener); ok {
+			openedSub, openErr := opener.OpenSubFS(relPath)
+			if openErr == nil {
+				dirs, err = diriterate.ReadDir(openedSub, ".")
+				if err == nil {
+					subFS = openedSub
+				} else {
+					closeFS(openedSub)
+					if !isFDExhausted(err) {
+						return handleWalkErr(fullPath, d, err, walkDirFn)
+					}
+				}
+			} else if !errors.Is(openErr, errors.ErrUnsupported) && !isFDExhausted(openErr) {
+				return handleWalkErr(fullPath, d, openErr, walkDirFn)
+			}
+		}
+	}
+
+	if dirs == nil {
+		dirs, err = diriterate.ReadDir(curFS, relPath)
+		if err != nil {
+			return handleWalkErr(fullPath, d, err, walkDirFn)
+		}
 	}
 	// Error can be ignored, as no write is happening.
-	defer dirs.Close()
+	defer func() {
+		if dirs != nil {
+			_ = dirs.Close()
+		}
+	}()
 
+	readAny := false
 	for {
 		d1, err := dirs.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			// Second call, to report ReadDir error.
-			// Same error handling as in fs.WalkDir: If an error occurred, the walkDirFn is called again,
-			// which can decide to continue (nil), SkipDir or skip all by other errors (e.g. SkipAll).
-			err = walkDirFn(name, d, err)
-			if err != nil {
-				if errors.Is(err, fs.SkipDir) && d.IsDir() {
-					err = nil
+			if !readAny && subFS != nil && isFDExhausted(err) {
+				_ = dirs.Close()
+				dirs = nil
+				closeFS(subFS)
+				subFS = nil
+				dirs, err = diriterate.ReadDir(curFS, relPath)
+				if err != nil {
+					return handleWalkErr(fullPath, d, err, walkDirFn)
 				}
-				return err
+				continue
 			}
-			// End iteration after an error
-			return nil
+			return handleWalkErr(fullPath, d, err, walkDirFn)
 		}
-		name1 := path.Join(name, d1.Name())
-		if err := walkDirUnsorted(fsys, name1, d1, walkDirFn, postFN); err != nil {
+		readAny = true
+		name1 := path.Join(fullPath, d1.Name())
+		childFS, childRel, childDepth := curFS, path.Join(relPath, d1.Name()), depth
+		if subFS != nil {
+			childFS, childRel, childDepth = subFS, d1.Name(), depth+1
+		}
+		if err := walkDirUnsorted(childFS, name1, childRel, childDepth, d1, walkDirFn, postFN); err != nil {
 			if errors.Is(err, fs.SkipDir) {
 				break
 			}
@@ -110,12 +188,17 @@ func walkDirUnsorted(fsys scalibrfs.FS, name string, d fs.DirEntry, walkDirFn fs
 //
 // WalkDirUnsorted does not follow symbolic links found in directories,
 // but if root itself is a symbolic link, its target will be walked.
+//
+// DirEntry values passed to fn may reference a scoped child directory handle
+// that is closed once its parent directory finishes walking; call d.Info()
+// during fn rather than retaining DirEntry values for use after WalkDirUnsorted
+// returns.
 func WalkDirUnsorted(fsys scalibrfs.FS, root string, fn fs.WalkDirFunc, postFN postWalkDirFunc) error {
 	info, err := fs.Stat(fsys, root)
 	if err != nil {
 		err = fn(root, nil, err)
 	} else {
-		err = walkDirUnsorted(fsys, root, fs.FileInfoToDirEntry(info), fn, postFN)
+		err = walkDirUnsorted(fsys, root, root, 0, fs.FileInfoToDirEntry(info), fn, postFN)
 	}
 	if errors.Is(err, fs.SkipDir) || errors.Is(err, fs.SkipAll) {
 		return nil

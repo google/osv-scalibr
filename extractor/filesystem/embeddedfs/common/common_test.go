@@ -17,13 +17,20 @@ package common
 import (
 	"archive/tar"
 	"bytes"
+	"errors"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"testing/fstest"
 
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 )
 
 const (
@@ -332,6 +339,111 @@ func TestTARToTempDir_PathsAndTraversal(t *testing.T) {
 		defer os.Remove(parentEscapePath)
 		if _, statErr := os.Stat(parentEscapePath); !os.IsNotExist(statErr) {
 			t.Fatalf("traversal entry escaped tempDir to %s (TARToTempDir err = %v, statErr = %v)", parentEscapePath, err, statErr)
+		}
+	})
+}
+
+func TestEmbeddedDirFS_OpenDirAndOpenSubFS(t *testing.T) {
+	t.Run("delegates_and_normalizes_root_paths", func(t *testing.T) {
+		root := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(root, "sub"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, "top.txt"), []byte("top"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(root, "sub", "nested.txt"), []byte("nested"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		refCount := int32(1)
+		var refMu sync.Mutex
+		efs := &EmbeddedDirFS{
+			FS:       scalibrfs.DirFS(root),
+			RefCount: &refCount,
+			RefMu:    &refMu,
+		}
+		t.Cleanup(func() { _ = efs.Close() })
+
+		for _, rootName := range []string{"", "/", "."} {
+			dirFile, err := efs.OpenDir(rootName)
+			if err != nil {
+				t.Fatalf("OpenDir(%q): %v", rootName, err)
+			}
+			entries, err := dirFile.ReadDir(-1)
+			_ = dirFile.Close()
+			if err != nil {
+				t.Fatalf("ReadDir(%q): %v", rootName, err)
+			}
+			names := make([]string, 0, len(entries))
+			for _, e := range entries {
+				names = append(names, e.Name())
+			}
+			slices.Sort(names)
+			if want := []string{"sub", "top.txt"}; !slices.Equal(names, want) {
+				t.Errorf("OpenDir(%q) names = %v, want %v", rootName, names, want)
+			}
+
+			subRoot, err := efs.OpenSubFS(rootName)
+			if err != nil {
+				t.Fatalf("OpenSubFS(%q): %v", rootName, err)
+			}
+			got, readErr := fs.ReadFile(subRoot, "top.txt")
+			if c, ok := subRoot.(io.Closer); ok {
+				_ = c.Close()
+			}
+			if readErr != nil || string(got) != "top" {
+				t.Errorf("OpenSubFS(%q).ReadFile(top.txt) = (%q, %v), want (%q, nil)", rootName, got, readErr, "top")
+			}
+		}
+
+		for _, subName := range []string{"sub", "/sub"} {
+			subDir, err := efs.OpenDir(subName)
+			if err != nil {
+				t.Fatalf("OpenDir(%q): %v", subName, err)
+			}
+			entries, err := subDir.ReadDir(-1)
+			_ = subDir.Close()
+			if err != nil || len(entries) != 1 || entries[0].Name() != "nested.txt" {
+				t.Errorf("OpenDir(%q) entries = %v (err=%v), want [nested.txt]", subName, entries, err)
+			}
+
+			nestedSub, err := efs.OpenSubFS(subName)
+			if err != nil {
+				t.Fatalf("OpenSubFS(%q): %v", subName, err)
+			}
+			got, err := fs.ReadFile(nestedSub, "nested.txt")
+			if c, ok := nestedSub.(io.Closer); ok {
+				_ = c.Close()
+			}
+			if err != nil || string(got) != "nested" {
+				t.Errorf("OpenSubFS(%q).ReadFile(nested.txt) = (%q, %v), want (%q, nil)", subName, got, err, "nested")
+			}
+		}
+	})
+
+	t.Run("returns_err_unsupported_for_plain_fs", func(t *testing.T) {
+		plain := fstest.MapFS{
+			"sub/file.txt": {Data: []byte("ok")},
+		}
+		efs := &EmbeddedDirFS{FS: plain}
+
+		for _, name := range []string{"", "/", "sub"} {
+			if d, err := efs.OpenDir(name); err == nil {
+				_ = d.Close()
+				t.Errorf("OpenDir(%q) succeeded on plain FS, want ErrUnsupported", name)
+			} else if !errors.Is(err, errors.ErrUnsupported) {
+				t.Errorf("OpenDir(%q) err = %v, want ErrUnsupported", name, err)
+			}
+
+			if sub, err := efs.OpenSubFS(name); err == nil {
+				if c, ok := sub.(io.Closer); ok {
+					_ = c.Close()
+				}
+				t.Errorf("OpenSubFS(%q) succeeded on plain FS, want ErrUnsupported", name)
+			} else if !errors.Is(err, errors.ErrUnsupported) {
+				t.Errorf("OpenSubFS(%q) err = %v, want ErrUnsupported", name, err)
+			}
 		}
 	})
 }

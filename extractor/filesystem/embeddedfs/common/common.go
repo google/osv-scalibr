@@ -642,6 +642,42 @@ func (e *EmbeddedDirFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	return e.FS.ReadDir(name)
 }
 
+type dirOpener interface {
+	OpenDir(name string) (fs.ReadDirFile, error)
+}
+
+type subFSOpener interface {
+	OpenSubFS(name string) (scalibrfs.FS, error)
+}
+
+// OpenDir delegates streaming directory reads to the underlying FS when supported.
+// Returns an error wrapping errors.ErrUnsupported when the underlying FS does not
+// implement OpenDir, allowing callers to fall back to Open or ReadDir.
+func (e *EmbeddedDirFS) OpenDir(name string) (fs.ReadDirFile, error) {
+	name = strings.TrimPrefix(name, "/")
+	if name == "" {
+		name = "."
+	}
+	if opener, ok := e.FS.(dirOpener); ok {
+		return opener.OpenDir(name)
+	}
+	return nil, &fs.PathError{Op: "opendir", Path: name, Err: errors.ErrUnsupported}
+}
+
+// OpenSubFS delegates confined child-root creation to the underlying FS when supported.
+// Returns an error wrapping errors.ErrUnsupported when the underlying FS does not
+// implement OpenSubFS, allowing callers to continue traversing via the parent FS.
+func (e *EmbeddedDirFS) OpenSubFS(name string) (scalibrfs.FS, error) {
+	name = strings.TrimPrefix(name, "/")
+	if name == "" {
+		name = "."
+	}
+	if opener, ok := e.FS.(subFSOpener); ok {
+		return opener.OpenSubFS(name)
+	}
+	return nil, &fs.PathError{Op: "opensubfs", Path: name, Err: errors.ErrUnsupported}
+}
+
 // Stat returns a FileInfo describing the named file or directory.
 // If the name refers to the root directory ("/", "", or "."), it
 // returns a synthetic FileInfo representing a directory.
