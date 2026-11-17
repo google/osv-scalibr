@@ -99,9 +99,11 @@ func DirFS(root string) FS {
 }
 
 type rootFS struct {
-	dir  string
-	mu   sync.Mutex
-	root *os.Root
+	dir       string
+	preopened bool
+	inSubdir  bool
+	mu        sync.Mutex
+	root      *os.Root
 }
 
 func (r *rootFS) getRoot() (*os.Root, error) {
@@ -109,6 +111,9 @@ func (r *rootFS) getRoot() (*os.Root, error) {
 	defer r.mu.Unlock()
 	if r.root != nil {
 		return r.root, nil
+	}
+	if r.preopened {
+		return nil, fs.ErrClosed
 	}
 	root, err := os.OpenRoot(r.dir)
 	if err != nil {
@@ -118,15 +123,29 @@ func (r *rootFS) getRoot() (*os.Root, error) {
 	return root, nil
 }
 
+func normalizePathError(op, name string, err error) error {
+	if err == nil {
+		return nil
+	}
+	var pathErr *fs.PathError
+	if errors.As(err, &pathErr) {
+		if pathErr.Path != name {
+			return &fs.PathError{Op: pathErr.Op, Path: name, Err: pathErr.Err}
+		}
+		return err
+	}
+	return &fs.PathError{Op: op, Path: name, Err: err}
+}
+
 func (r *rootFS) withRoot(op, name string, fn func(*os.Root) error) error {
 	if r.dir == "" {
 		return &fs.PathError{Op: op, Path: name, Err: errors.New("os: DirFS with empty root")}
 	}
 	root, err := r.getRoot()
 	if err != nil {
-		return err
+		return normalizePathError(op, name, err)
 	}
-	return fn(root)
+	return normalizePathError(op, name, fn(root))
 }
 
 // Close releases the underlying os.Root file descriptor if one was opened.
@@ -155,8 +174,10 @@ func doInRoot[T any](
 		if opErr == nil {
 			return nil
 		}
-		if resolved, ok := resolve(root, name, opErr); ok {
-			res, opErr = fn(fsys, resolved)
+		if !r.inSubdir {
+			if resolved, ok := resolve(root, name, opErr); ok {
+				res, opErr = fn(fsys, resolved)
+			}
 		}
 		return opErr
 	})
@@ -169,6 +190,52 @@ func (r *rootFS) Open(name string) (fs.File, error) {
 
 func (r *rootFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	return doInRoot(r, "readdir", name, resolveInRoot, fs.ReadDir)
+}
+
+func validRelPath(name string) bool {
+	return fs.ValidPath(name) && (runtime.GOOS != "windows" || !strings.ContainsAny(name, "\\:"))
+}
+
+func openSubRoot(root *os.Root, name string) (*os.Root, error) {
+	if runtime.GOOS == "windows" {
+		return root.OpenRoot(filepath.FromSlash(name))
+	}
+	// Trailing "/" makes os.Root.OpenRoot run lstatat before openat on Unix so
+	// non-directories such as FIFOs return ENOTDIR without blocking.
+	return root.OpenRoot(name + "/")
+}
+
+// OpenSubFS opens a confined child FS rooted at name relative to r.
+// Callers must Close the returned FS when done to release its os.Root handle.
+func (r *rootFS) OpenSubFS(name string) (FS, error) {
+	if !validRelPath(name) {
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrInvalid}
+	}
+	var subRoot *os.Root
+	resolvedName := name
+	err := r.withRoot("open", name, func(root *os.Root) error {
+		var opErr error
+		subRoot, opErr = openSubRoot(root, name)
+		if opErr == nil {
+			return nil
+		}
+		if !r.inSubdir {
+			if resolved, ok := resolveInRoot(root, name, opErr); ok {
+				resolvedName = resolved
+				subRoot, opErr = openSubRoot(root, resolved)
+			}
+		}
+		return opErr
+	})
+	if err == nil {
+		return &rootFS{
+			dir:       filepath.Join(r.dir, filepath.FromSlash(resolvedName)),
+			root:      subRoot,
+			preopened: true,
+			inSubdir:  r.inSubdir || resolvedName != ".",
+		}, nil
+	}
+	return nil, err
 }
 
 func (r *rootFS) Stat(name string) (fs.FileInfo, error) {
@@ -287,9 +354,10 @@ func resolveInRoot(root *os.Root, name string, opErr error) (string, bool) {
 
 // Sub returns an FS corresponding to the subtree rooted at dir within fsys.
 // This is analogous to io/fs.Sub but preserves the scalibr FS interface
-// (ReadDir and Stat). dir must be a slash-separated, relative path. The
-// returned FS performs no validation of the names it is given, so it should
-// only be used with trusted paths.
+// (ReadDir and Stat). dir must be a slash-separated, relative path. Open,
+// ReadDir, and Stat perform no validation of the names they are given, so the
+// returned FS should only be used with trusted paths; OpenDir and OpenSubFS
+// reject invalid relative paths before joining with dir.
 func Sub(fsys FS, dir string) FS {
 	if dir == "" || dir == "." {
 		return fsys
@@ -312,6 +380,32 @@ func (s *subFS) ReadDir(name string) ([]fs.DirEntry, error) {
 
 func (s *subFS) Stat(name string) (fs.FileInfo, error) {
 	return s.fsys.Stat(path.Join(s.dir, name))
+}
+
+func (s *subFS) OpenDir(name string) (fs.ReadDirFile, error) {
+	if !validRelPath(name) {
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrInvalid}
+	}
+	opener, ok := s.fsys.(interface {
+		OpenDir(name string) (fs.ReadDirFile, error)
+	})
+	if !ok {
+		return nil, &fs.PathError{Op: "open", Path: name, Err: errors.ErrUnsupported}
+	}
+	return opener.OpenDir(path.Join(s.dir, name))
+}
+
+func (s *subFS) OpenSubFS(name string) (FS, error) {
+	if !validRelPath(name) {
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrInvalid}
+	}
+	opener, ok := s.fsys.(interface {
+		OpenSubFS(name string) (FS, error)
+	})
+	if !ok {
+		return nil, &fs.PathError{Op: "open", Path: name, Err: errors.ErrUnsupported}
+	}
+	return opener.OpenSubFS(path.Join(s.dir, name))
 }
 
 // RealFSScanRoots returns a one-element ScanRoot array representing the given

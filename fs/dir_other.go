@@ -1,0 +1,45 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//go:build !unix || !go1.26
+
+package fs
+
+import (
+	"errors"
+	"io/fs"
+)
+
+// OpenDir opens name for streaming directory reads via os.Root.
+func (r *rootFS) OpenDir(name string) (fs.ReadDirFile, error) {
+	f, err := r.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	info, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return nil, normalizePathError("open", name, err)
+	}
+	if !info.IsDir() {
+		_ = f.Close()
+		return nil, &fs.PathError{Op: "open", Path: name, Err: errors.New("not a directory")}
+	}
+	dir, ok := f.(fs.ReadDirFile)
+	if !ok {
+		_ = f.Close()
+		return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrInvalid}
+	}
+	return dir, nil
+}
