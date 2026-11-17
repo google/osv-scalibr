@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -86,15 +87,26 @@ const (
 	// sentinel or error type for errors.Is or errors.As. We match this message
 	// before walking path components in resolveInRoot so normal errors (such as
 	// fs.ErrNotExist on missing files) do not trigger redundant per-component
-	// root.Lstat syscalls. TestOSRootPathEscapesError and TestDirFS_Symlinks
+	// root.Lstat syscalls. TestOSRootPathEscapesError and TestConfinedDirFS_Symlinks
 	// fail if Go ever changes this string.
 	errPathEscapesMsg = "path escapes from parent"
 )
 
-// DirFS returns an FS implementation that accesses the real filesystem at the
-// given root, confined to root via os.Root. The underlying os.Root handle is
-// opened lazily on first access and can be released via Close.
+// DirFS returns an unconfined FS implementation rooted at the given directory on
+// the host filesystem (backed by os.DirFS). Use DirFS for trusted host paths;
+// use ConfinedDirFS when scanning untrusted or unpacked directory trees whose
+// symlinks must not escape root.
 func DirFS(root string) FS {
+	return os.DirFS(root).(FS)
+}
+
+// ConfinedDirFS returns an FS implementation rooted at the given directory and
+// confined to root via os.Root, rewriting intra-guest absolute symlinks (such as
+// /etc/os-release -> /usr/lib/os-release) relative to root while rejecting any
+// path or symlink that escapes root. The underlying os.Root handle is opened
+// lazily on first access and should be released via Close (Scanner.Scan closes
+// any io.Closer ScanRoot.FS automatically).
+func ConfinedDirFS(root string) FS {
 	return &rootFS{dir: root}
 }
 
@@ -314,16 +326,29 @@ func (s *subFS) Stat(name string) (fs.FileInfo, error) {
 	return s.fsys.Stat(path.Join(s.dir, name))
 }
 
-// RealFSScanRoots returns a one-element ScanRoot array representing the given
-// root path on the real filesystem SCALIBR is running on.
+// RealFSScanRoots returns a one-element ScanRoot slice for a trusted path on
+// the host filesystem. Use ConfinedScanRoots for untrusted or unpacked
+// directory trees.
 func RealFSScanRoots(path string) []*ScanRoot {
 	return []*ScanRoot{RealFSScanRoot(path)}
 }
 
-// RealFSScanRoot returns a ScanRoot array the given root path on the real
-// filesystem SCALIBR is running on.
+// RealFSScanRoot returns a ScanRoot for a trusted path on the host filesystem.
+// Use ConfinedScanRoot for untrusted or unpacked directory trees.
 func RealFSScanRoot(path string) *ScanRoot {
 	return &ScanRoot{FS: DirFS(path), Path: path}
+}
+
+// ConfinedScanRoots returns a one-element ScanRoot slice confined to path via
+// ConfinedDirFS (os.Root) for scanning untrusted or unpacked directory trees.
+func ConfinedScanRoots(path string) []*ScanRoot {
+	return []*ScanRoot{ConfinedScanRoot(path)}
+}
+
+// ConfinedScanRoot returns a ScanRoot confined to path via ConfinedDirFS
+// (os.Root) for scanning untrusted or unpacked directory trees.
+func ConfinedScanRoot(path string) *ScanRoot {
+	return &ScanRoot{FS: ConfinedDirFS(path), Path: path}
 }
 
 // NewReaderAt converts an io.Reader into an io.ReaderAt.
@@ -357,6 +382,10 @@ func openReader(root *ScanRoot, path string, reader io.Reader) (io.ReadCloser, e
 		if fsys != nil {
 			f, err := fsys.Open(filepath.ToSlash(path))
 			if err == nil {
+				if info, statErr := f.Stat(); statErr == nil && info.IsDir() {
+					_ = f.Close()
+					return nil, &fs.PathError{Op: "open", Path: path, Err: fs.ErrInvalid}
+				}
 				return f, nil
 			}
 			if !errors.Is(err, fs.ErrNotExist) || reader == nil {
@@ -365,12 +394,29 @@ func openReader(root *ScanRoot, path string, reader io.Reader) (io.ReadCloser, e
 		}
 	}
 	if reader == nil {
-		return nil, errors.New("GetRealPath: both root.FS and reader are nil")
+		return nil, errors.New("openReader: both root.FS and reader are nil")
 	}
 	return io.NopCloser(reader), nil
 }
 
-func copyToTempFile(reader io.Reader) (realPath string, err error) {
+func isSafeTempBase(base string) bool {
+	if base == "" || base == "." || base == ".." || len(base) > 128 || strings.HasSuffix(base, ".") {
+		return false
+	}
+	if _, err := filepath.Localize(base); err != nil {
+		return false
+	}
+	for i := range len(base) {
+		c := base[i]
+		isAlphaNum := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+		if !isAlphaNum && c != '.' && c != '_' && c != '+' && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+func copyToTempFile(reader io.Reader, relPath string) (realPath string, err error) {
 	dir, err := os.MkdirTemp("", "scalibr-tmp")
 	if err != nil {
 		return "", err
@@ -381,7 +427,11 @@ func copyToTempFile(reader io.Reader) (realPath string, err error) {
 		}
 	}()
 
-	realPath = filepath.Join(dir, "file")
+	fileName := "file"
+	if base := path.Base(filepath.ToSlash(relPath)); isSafeTempBase(base) {
+		fileName = base
+	}
+	realPath = filepath.Join(dir, fileName)
 	f, err := os.Create(realPath)
 	if err != nil {
 		return "", err
@@ -408,6 +458,8 @@ func closeIgnoringClosed(f *os.File) error {
 // filesystem and returns its absolute path. It is up to the caller to delete the temporary
 // directory (filepath.Dir(realPath)) once they are done using it.
 //
+// Prefer OpenOSPath or OpenOSFile when an isolated copy is not always required.
+//
 // Sample code to delete the directory:
 // ```
 // realPath := GetRealPath(...)
@@ -422,7 +474,47 @@ func GetRealPath(root *ScanRoot, path string, reader io.Reader) (string, error) 
 		return "", err
 	}
 	defer func() { _ = rc.Close() }()
-	return copyToTempFile(rc)
+	return copyToTempFile(rc, path)
+}
+
+var osDirFSType = reflect.TypeOf(os.DirFS("."))
+
+func isUnconfinedRealRoot(root *ScanRoot) bool {
+	return root != nil && !root.IsVirtual() && root.FS != nil && root.Path != "" &&
+		reflect.TypeOf(root.FS) == osDirFSType &&
+		filepath.Clean(reflect.ValueOf(root.FS).String()) == filepath.Clean(root.Path)
+}
+
+// OpenOSPath returns a host filesystem path for the target file along with a cleanup function
+// that removes any temporary copy that had to be created. On unconfined real filesystems
+// (DirFS / RealFSScanRoot), it returns the in-place file path without copying; on confined
+// (ConfinedDirFS / ConfinedScanRoot) or virtual filesystems, it copies the file into an isolated
+// temporary directory so database engines cannot follow sibling (-wal/-journal/-shm) symlinks.
+func OpenOSPath(root *ScanRoot, path string, reader io.Reader) (string, func() error, error) {
+	if isUnconfinedRealRoot(root) {
+		slashPath := filepath.ToSlash(path)
+		info, err := root.FS.Stat(slashPath)
+		if err == nil {
+			if info.IsDir() {
+				return "", nil, &fs.PathError{Op: "open", Path: path, Err: fs.ErrInvalid}
+			}
+			return filepath.Join(root.Path, filepath.FromSlash(slashPath)), func() error { return nil }, nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) || reader == nil {
+			return "", nil, err
+		}
+	}
+	rc, err := openReader(root, path, reader)
+	if err != nil {
+		return "", nil, err
+	}
+	realPath, copyErr := copyToTempFile(rc, path)
+	_ = rc.Close()
+	if copyErr != nil {
+		return "", nil, copyErr
+	}
+	dir := filepath.Dir(realPath)
+	return realPath, func() error { return os.RemoveAll(dir) }, nil
 }
 
 // OpenOSFile returns an *os.File handle for the target file along with a cleanup function that
@@ -437,7 +529,7 @@ func OpenOSFile(root *ScanRoot, path string, reader io.Reader) (*os.File, func()
 	if osFile, ok := rc.(*os.File); ok {
 		return osFile, func() error { return closeIgnoringClosed(osFile) }, nil
 	}
-	realPath, copyErr := copyToTempFile(rc)
+	realPath, copyErr := copyToTempFile(rc, path)
 	_ = rc.Close()
 	if copyErr != nil {
 		return nil, nil, copyErr
@@ -454,4 +546,28 @@ func OpenOSFile(root *ScanRoot, path string, reader io.Reader) (*os.File, func()
 		return errors.Join(closeErr, rmErr)
 	}
 	return osFile, cleanup, nil
+}
+
+var sqliteURIReplacer = strings.NewReplacer(
+	"%", "%25",
+	"?", "%3F",
+	"#", "%23",
+)
+
+// SQLiteReadOnlyURI encodes a host filesystem path as a read-only, immutable SQLite file: URI.
+// Escaping prevents special characters in host paths (such as '?') from injecting SQLite URI
+// query parameters (e.g. _pragma), and immutable=1 allows reading WAL-mode databases in read-only
+// or unprivileged directories without creating -wal/-shm sidecar files.
+func SQLiteReadOnlyURI(osPath string) string {
+	slashPath := filepath.ToSlash(osPath)
+	escaped := sqliteURIReplacer.Replace(slashPath)
+	switch {
+	case strings.HasPrefix(escaped, "//"):
+		// Preserve UNC / leading-double-slash paths without triggering URI authority parsing.
+		return "file://" + escaped + "?mode=ro&immutable=1"
+	case len(escaped) >= 3 && ((escaped[0] >= 'a' && escaped[0] <= 'z') || (escaped[0] >= 'A' && escaped[0] <= 'Z')) && escaped[1] == ':' && escaped[2] == '/':
+		return "file:/" + escaped + "?mode=ro&immutable=1"
+	default:
+		return "file:" + escaped + "?mode=ro&immutable=1"
+	}
 }

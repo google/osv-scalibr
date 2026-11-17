@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -33,6 +34,7 @@ import (
 	"github.com/google/osv-scalibr/extractor/filesystem/os/rpm"
 	rpmmeta "github.com/google/osv-scalibr/extractor/filesystem/os/rpm/metadata"
 	"github.com/google/osv-scalibr/extractor/filesystem/simplefileapi"
+	scalibrfs "github.com/google/osv-scalibr/fs"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
 	"github.com/google/osv-scalibr/testing/fakefs"
@@ -930,4 +932,66 @@ func scalibrFilesInTmp(t *testing.T) []string {
 		}
 	}
 	return filenames
+}
+
+func TestExtract_SQLiteReadOnlyDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod 0555 does not restrict directory writes on Windows")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("chmod 0555 does not restrict root")
+	}
+
+	filesInTmpWant := scalibrFilesInTmp(t)
+
+	root := t.TempDir()
+	rpmDir := filepath.Join(root, "var", "lib", "rpm")
+	if err := os.MkdirAll(rpmDir, 0o755); err != nil {
+		t.Fatalf("os.MkdirAll: %v", err)
+	}
+	dbBytes, err := os.ReadFile("testdata/rpmdb.sqlite")
+	if err != nil {
+		t.Fatalf("os.ReadFile: %v", err)
+	}
+	dbFile := filepath.Join(rpmDir, "rpmdb.sqlite")
+	if err := os.WriteFile(dbFile, dbBytes, 0o444); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	if err := os.Chmod(rpmDir, 0o555); err != nil {
+		t.Fatalf("os.Chmod(0555): %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(rpmDir, 0o755) })
+
+	relPath := "var/lib/rpm/rpmdb.sqlite"
+	info, err := os.Stat(dbFile)
+	if err != nil {
+		t.Fatalf("os.Stat: %v", err)
+	}
+	r, err := os.Open(dbFile)
+	if err != nil {
+		t.Fatalf("os.Open: %v", err)
+	}
+	defer func() { _ = r.Close() }()
+
+	e, err := rpm.New(&cpb.PluginConfig{})
+	if err != nil {
+		t.Fatalf("rpm.New: %v", err)
+	}
+	input := &filesystem.ScanInput{
+		FS:     scalibrfs.DirFS(root),
+		Root:   root,
+		Path:   relPath,
+		Info:   info,
+		Reader: r,
+	}
+	got, err := e.Extract(t.Context(), input)
+	if err != nil {
+		t.Fatalf("Extract(%q) on 0555 dir failed: %v", relPath, err)
+	}
+	if len(got.Packages) == 0 {
+		t.Fatalf("Extract(%q) returned 0 packages, want non-empty", relPath)
+	}
+	if diff := cmp.Diff(filesInTmpWant, scalibrFilesInTmp(t), cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+		t.Errorf("temporary files leaked (-want +got):\n%s", diff)
+	}
 }

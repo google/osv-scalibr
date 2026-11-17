@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -95,17 +96,67 @@ func TestSubEmptyDir(t *testing.T) {
 	}
 }
 
-func TestDirFS_LazyAndClose(t *testing.T) {
-	// DirFS("") returns a non-ErrNotExist error matching os.DirFS("").
+func TestDirFS_Unconfined(t *testing.T) {
+	// DirFS("") returns a non-ErrNotExist error.
 	emptyFS := scalibrfs.DirFS("")
 	if _, err := emptyFS.Stat("any"); err == nil || errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("DirFS(\"\").Stat(any) = %v, want non-ErrNotExist error", err)
 	}
 
-	// DirFS must not open the directory eagerly so callers can construct
+	parent := t.TempDir()
+	root := filepath.Join(parent, "hostroot")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "hello.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	roots := scalibrfs.RealFSScanRoots(root)
+	if len(roots) != 1 || roots[0].Path != root {
+		t.Fatalf("RealFSScanRoots(%q) = %v, want single root", root, roots)
+	}
+	fsys := roots[0].FS
+	b, err := fs.ReadFile(fsys, "hello.txt")
+	if err != nil {
+		t.Fatalf("ReadFile(hello.txt): %v", err)
+	}
+	if string(b) != "hello" {
+		t.Errorf("ReadFile(hello.txt) = %q, want %q", b, "hello")
+	}
+	if _, err := fsys.Open("../outside"); err == nil {
+		t.Errorf("Open(../outside) succeeded, want invalid path error")
+	}
+
+	if runtime.GOOS != "windows" {
+		target := filepath.Join(parent, "target.txt")
+		if err := os.WriteFile(target, []byte("linked"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(target, filepath.Join(root, "host-link.txt")); err != nil {
+			t.Fatal(err)
+		}
+		got, err := fs.ReadFile(fsys, "host-link.txt")
+		if err != nil {
+			t.Fatalf("ReadFile(host-link.txt) on unconfined DirFS: %v", err)
+		}
+		if string(got) != "linked" {
+			t.Errorf("ReadFile(host-link.txt) = %q, want %q", got, "linked")
+		}
+	}
+}
+
+func TestConfinedDirFS_LazyAndClose(t *testing.T) {
+	// ConfinedDirFS("") returns a non-ErrNotExist error matching os.DirFS("").
+	emptyFS := scalibrfs.ConfinedDirFS("")
+	if _, err := emptyFS.Stat("any"); err == nil || errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("ConfinedDirFS(\"\").Stat(any) = %v, want non-ErrNotExist error", err)
+	}
+
+	// ConfinedDirFS must not open the directory eagerly so callers can construct
 	// ScanRoot configs with placeholder paths before running a scan.
 	missing := filepath.Join(t.TempDir(), "does-not-exist")
-	lazyFS := scalibrfs.DirFS(missing)
+	lazyFS := scalibrfs.ConfinedDirFS(missing)
 	if _, err := lazyFS.Stat("."); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("Stat(.) on missing root = %v, want fs.ErrNotExist", err)
 	}
@@ -118,7 +169,11 @@ func TestDirFS_LazyAndClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fsys := scalibrfs.DirFS(dir)
+	roots := scalibrfs.ConfinedScanRoots(dir)
+	if len(roots) != 1 || roots[0].Path != dir {
+		t.Fatalf("ConfinedScanRoots(%q) = %v, want single root", dir, roots)
+	}
+	fsys := roots[0].FS
 	b, err := fs.ReadFile(fsys, "hello.txt")
 	if err != nil {
 		t.Fatalf("ReadFile(hello.txt): %v", err)
@@ -129,7 +184,7 @@ func TestDirFS_LazyAndClose(t *testing.T) {
 
 	closer, ok := fsys.(io.Closer)
 	if !ok {
-		t.Fatal("DirFS does not implement io.Closer")
+		t.Fatal("ConfinedDirFS does not implement io.Closer")
 	}
 	if err := closer.Close(); err != nil {
 		t.Fatalf("Close(): %v", err)
@@ -147,7 +202,7 @@ func TestDirFS_LazyAndClose(t *testing.T) {
 	}
 }
 
-func TestDirFS_Symlinks(t *testing.T) {
+func TestConfinedDirFS_Symlinks(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("symlink creation may require elevated privileges on Windows")
 	}
@@ -205,7 +260,7 @@ func TestDirFS_Symlinks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fsys := scalibrfs.DirFS(root)
+	fsys := scalibrfs.ConfinedDirFS(root)
 	t.Cleanup(func() {
 		if c, ok := fsys.(io.Closer); ok {
 			_ = c.Close()
@@ -389,19 +444,22 @@ func TestGetRealPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	scanRoot := scalibrfs.RealFSScanRoot(rootDir)
+	realScanRoot := scalibrfs.RealFSScanRoot(rootDir)
+	confinedScanRoot := scalibrfs.ConfinedScanRoot(rootDir)
 	t.Cleanup(func() {
-		if c, ok := scanRoot.FS.(io.Closer); ok {
+		if c, ok := confinedScanRoot.FS.(io.Closer); ok {
 			_ = c.Close()
 		}
 	})
 
 	for _, tc := range []struct {
-		name string
-		root *scalibrfs.ScanRoot
+		name     string
+		root     *scalibrfs.ScanRoot
+		confined bool
 	}{
-		{name: "with_scan_root_fs", root: scanRoot},
-		{name: "with_nil_scan_root_fs", root: &scalibrfs.ScanRoot{Path: rootDir}},
+		{name: "with_real_scan_root", root: realScanRoot, confined: false},
+		{name: "with_confined_scan_root", root: confinedScanRoot, confined: true},
+		{name: "with_nil_scan_root_fs", root: &scalibrfs.ScanRoot{Path: rootDir}, confined: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Pass a partially consumed reader to verify GetRealPath opens a fresh stream.
@@ -427,7 +485,7 @@ func TestGetRealPath(t *testing.T) {
 			if _, err := os.Stat(realPath + "-wal"); !errors.Is(err, fs.ErrNotExist) {
 				t.Errorf("sibling -wal file exists next to %q: %v", realPath, err)
 			}
-			if runtime.GOOS != "windows" {
+			if tc.confined && runtime.GOOS != "windows" {
 				outside := filepath.Join(t.TempDir(), "outside.dll")
 				if err := os.WriteFile(outside, []byte("secret"), 0o600); err != nil {
 					t.Fatal(err)
@@ -454,33 +512,60 @@ func TestOpenOSFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	scanRoot := scalibrfs.RealFSScanRoot(rootDir)
+	realRoot := scalibrfs.RealFSScanRoot(rootDir)
+	confinedRoot := scalibrfs.ConfinedScanRoot(rootDir)
 	t.Cleanup(func() {
-		if c, ok := scanRoot.FS.(io.Closer); ok {
+		if c, ok := confinedRoot.FS.(io.Closer); ok {
 			_ = c.Close()
 		}
 	})
 
-	f, cleanup, err := scalibrfs.OpenOSFile(scanRoot, "image.vmdk", nil)
-	if err != nil {
-		t.Fatalf("OpenOSFile(real fs): %v", err)
+	for _, tc := range []struct {
+		name string
+		root *scalibrfs.ScanRoot
+	}{
+		{name: "real_fs", root: realRoot},
+		{name: "confined_fs", root: confinedRoot},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f, cleanup, err := scalibrfs.OpenOSFile(tc.root, "image.vmdk", nil)
+			if err != nil {
+				t.Fatalf("OpenOSFile(%s): %v", tc.name, err)
+			}
+			// os.DirFS sets f.Name() to the full path, whereas os.Root sets f.Name() to the root-relative name.
+			if gotBase := filepath.Base(f.Name()); gotBase != "image.vmdk" {
+				t.Errorf("OpenOSFile(%s) copied to %q, want direct open of image.vmdk", tc.name, f.Name())
+			}
+			got, err := io.ReadAll(f)
+			if err != nil {
+				t.Fatalf("ReadAll(%s): %v", tc.name, err)
+			}
+			if string(got) != content {
+				t.Errorf("OpenOSFile(%s) content = %q, want %q", tc.name, got, content)
+			}
+			// Closing the file before cleanup (e.g. via saferwall/pe) must not fail cleanup.
+			if err := f.Close(); err != nil {
+				t.Fatalf("f.Close(): %v", err)
+			}
+			if err := cleanup(); err != nil {
+				t.Errorf("cleanup(%s): %v", tc.name, err)
+			}
+		})
 	}
-	if filepath.Dir(f.Name()) != rootDir {
-		t.Errorf("OpenOSFile(real fs) copied to %q, want direct open inside %q", f.Name(), rootDir)
-	}
-	got, err := io.ReadAll(f)
-	if err != nil {
-		t.Fatalf("ReadAll(real fs): %v", err)
-	}
-	if string(got) != content {
-		t.Errorf("OpenOSFile(real fs) content = %q, want %q", got, content)
-	}
-	// Closing the file before cleanup (e.g. via saferwall/pe) must not fail cleanup.
-	if err := f.Close(); err != nil {
-		t.Fatalf("f.Close(): %v", err)
-	}
-	if err := cleanup(); err != nil {
-		t.Errorf("cleanup(real fs): %v", err)
+
+	if runtime.GOOS != "windows" {
+		outside := filepath.Join(t.TempDir(), "outside.vmdk")
+		if err := os.WriteFile(outside, []byte("secret"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(outside, filepath.Join(rootDir, "escape.vmdk")); err != nil {
+			t.Fatal(err)
+		}
+		if f, c, err := scalibrfs.OpenOSFile(confinedRoot, "escape.vmdk", bytes.NewReader([]byte("dummy"))); err == nil {
+			_ = f.Close()
+			_ = c()
+			t.Errorf("OpenOSFile(confined, escape.vmdk) succeeded across escaping symlink, want error")
+		}
 	}
 
 	vf, vcleanup, err := scalibrfs.OpenOSFile(nil, "virtual.vmdk", bytes.NewReader([]byte(content)))
@@ -503,5 +588,200 @@ func TestOpenOSFile(t *testing.T) {
 	}
 	if _, err := os.Stat(tmpDir); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("temp dir %q still exists after cleanup: %v", tmpDir, err)
+	}
+}
+
+func TestOpenOSPath(t *testing.T) {
+	rootDir := t.TempDir()
+	content := "sqlite-db-bytes"
+	if err := os.WriteFile(filepath.Join(rootDir, "local.sqlite"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(rootDir, "local.sqlite-wal"), []byte("sibling"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// RealFSScanRoot (unconfined DirFS) returns the in-place path without copying or deleting rootDir on cleanup.
+	unconfinedRoot := scalibrfs.RealFSScanRoot(rootDir)
+	inPlacePath, cleanup, err := scalibrfs.OpenOSPath(unconfinedRoot, "local.sqlite", nil)
+	if err != nil {
+		t.Fatalf("OpenOSPath(RealFSScanRoot): %v", err)
+	}
+	if inPlacePath != filepath.Join(rootDir, "local.sqlite") {
+		t.Errorf("OpenOSPath(RealFSScanRoot) = %q, want %q", inPlacePath, filepath.Join(rootDir, "local.sqlite"))
+	}
+	if err := cleanup(); err != nil {
+		t.Errorf("cleanup(RealFSScanRoot): %v", err)
+	}
+	if _, err := os.Stat(inPlacePath); err != nil {
+		t.Fatalf("unconfined file %q removed by cleanup: %v", inPlacePath, err)
+	}
+	if _, _, err := scalibrfs.OpenOSPath(unconfinedRoot, "../outside", bytes.NewReader([]byte("x"))); err == nil {
+		t.Errorf("OpenOSPath(RealFSScanRoot ../outside) succeeded, want error")
+	}
+
+	confinedRoot := scalibrfs.ConfinedScanRoot(rootDir)
+	t.Cleanup(func() {
+		if c, ok := confinedRoot.FS.(io.Closer); ok {
+			_ = c.Close()
+		}
+	})
+
+	// Mismatched ScanRoot.FS vs ScanRoot.Path must not return the mismatched host path in place.
+	otherDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(otherDir, "local.sqlite"), []byte("wrong-root"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	mismatchedRoot := &scalibrfs.ScanRoot{FS: scalibrfs.DirFS(rootDir), Path: otherDir}
+	mismatchedPath, mismatchedCleanup, err := scalibrfs.OpenOSPath(mismatchedRoot, "local.sqlite", nil)
+	if err != nil {
+		t.Fatalf("OpenOSPath(mismatched): %v", err)
+	}
+	if filepath.Dir(mismatchedPath) == rootDir || filepath.Dir(mismatchedPath) == otherDir {
+		t.Errorf("OpenOSPath(mismatched) returned in-place path %q, want isolated temp dir", mismatchedPath)
+	}
+	gotMismatched, err := os.ReadFile(mismatchedPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%q): %v", mismatchedPath, err)
+	}
+	if string(gotMismatched) != content {
+		t.Errorf("OpenOSPath(mismatched) content = %q, want %q", gotMismatched, content)
+	}
+	if err := mismatchedCleanup(); err != nil {
+		t.Errorf("cleanup(mismatched): %v", err)
+	}
+
+	// ConfinedScanRoot and nil-FS ScanRoot copy to an isolated temp dir (without sibling -wal) and clean up.
+	for _, tc := range []struct {
+		name string
+		root *scalibrfs.ScanRoot
+	}{
+		{name: "confined_scan_root", root: confinedRoot},
+		{name: "nil_scan_root_fs", root: &scalibrfs.ScanRoot{Path: rootDir}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			isolatedPath, isolatedCleanup, err := scalibrfs.OpenOSPath(tc.root, "local.sqlite", nil)
+			if err != nil {
+				t.Fatalf("OpenOSPath(%s): %v", tc.name, err)
+			}
+			if filepath.Dir(isolatedPath) == rootDir {
+				t.Errorf("OpenOSPath(%s) returned in-place path %q, want isolated temp dir", tc.name, isolatedPath)
+			}
+			if _, err := os.Stat(isolatedPath + "-wal"); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("sibling -wal exists next to isolated path %q: %v", isolatedPath, err)
+			}
+			got, err := os.ReadFile(isolatedPath)
+			if err != nil {
+				t.Fatalf("ReadFile(%q): %v", isolatedPath, err)
+			}
+			if string(got) != content {
+				t.Errorf("OpenOSPath(%s) content = %q, want %q", tc.name, got, content)
+			}
+			isolatedDir := filepath.Dir(isolatedPath)
+			if err := isolatedCleanup(); err != nil {
+				t.Errorf("cleanup(%s): %v", tc.name, err)
+			}
+			if _, err := os.Stat(isolatedDir); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("isolated temp dir %q still exists after cleanup: %v", isolatedDir, err)
+			}
+			if runtime.GOOS != "windows" {
+				outside := filepath.Join(t.TempDir(), "outside.sqlite")
+				if err := os.WriteFile(outside, []byte("secret"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				escapeName := "escape-" + tc.name + ".sqlite"
+				if err := os.Symlink(outside, filepath.Join(rootDir, escapeName)); err != nil {
+					t.Fatal(err)
+				}
+				if p, c, err := scalibrfs.OpenOSPath(tc.root, escapeName, bytes.NewReader([]byte("dummy"))); err == nil {
+					_ = c()
+					t.Errorf("OpenOSPath(%s, %s) = %q across escaping symlink, want error", tc.name, escapeName, p)
+				}
+			}
+		})
+	}
+
+	// Directories are rejected up front on both unconfined and confined roots.
+	if err := os.Mkdir(filepath.Join(rootDir, "subdir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := scalibrfs.OpenOSPath(unconfinedRoot, "subdir", nil); !errors.Is(err, fs.ErrInvalid) {
+		t.Errorf("OpenOSPath(unconfined dir) err = %v, want fs.ErrInvalid", err)
+	}
+	if _, err := scalibrfs.GetRealPath(confinedRoot, "subdir", nil); !errors.Is(err, fs.ErrInvalid) {
+		t.Errorf("GetRealPath(confined dir) err = %v, want fs.ErrInvalid", err)
+	}
+
+	// Virtual reader copies to a temp dir and cleans up.
+	vPath, vCleanup, err := scalibrfs.OpenOSPath(nil, "virtual.sqlite", bytes.NewReader([]byte(content)))
+	if err != nil {
+		t.Fatalf("OpenOSPath(virtual): %v", err)
+	}
+	vDir := filepath.Dir(vPath)
+	if err := vCleanup(); err != nil {
+		t.Errorf("cleanup(virtual): %v", err)
+	}
+	if _, err := os.Stat(vDir); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("virtual temp dir %q still exists after cleanup: %v", vDir, err)
+	}
+}
+
+func TestGetRealPath_SanitizesUnsafeBasename(t *testing.T) {
+	tests := []struct {
+		name     string
+		relPath  string
+		wantBase string
+	}{
+		{name: "safe_sqlite", relPath: "var/lib/rpm/rpmdb.sqlite", wantBase: "rpmdb.sqlite"},
+		{name: "query_param", relPath: "dir/db.sql?mode=rw", wantBase: "file"},
+		{name: "windows_reserved_colon", relPath: "dir/COM1:stream", wantBase: "file"},
+		{name: "trailing_dot", relPath: "dir/bad.", wantBase: "file"},
+		{name: "too_long", relPath: "dir/" + strings.Repeat("a", 129), wantBase: "file"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			realPath, err := scalibrfs.GetRealPath(nil, tc.relPath, bytes.NewReader([]byte("x")))
+			if err != nil {
+				t.Fatalf("GetRealPath(%q): %v", tc.relPath, err)
+			}
+			defer func() { _ = os.RemoveAll(filepath.Dir(realPath)) }()
+			if got := filepath.Base(realPath); got != tc.wantBase {
+				t.Errorf("GetRealPath(%q) base = %q, want %q", tc.relPath, got, tc.wantBase)
+			}
+		})
+	}
+}
+
+func TestSQLiteReadOnlyURI(t *testing.T) {
+	tests := []struct {
+		path string
+		want string
+	}{
+		{
+			path: "/tmp/containers/storage/db.sql",
+			want: "file:/tmp/containers/storage/db.sql?mode=ro&immutable=1",
+		},
+		{
+			path: "/tmp/dir?k=v#frag/100%/db.sql",
+			want: "file:/tmp/dir%3Fk=v%23frag/100%25/db.sql?mode=ro&immutable=1",
+		},
+		{
+			path: "//server/share/db.sqlite",
+			want: "file:////server/share/db.sqlite?mode=ro&immutable=1",
+		},
+		{
+			path: "C:/ProgramData/winget/installed.db",
+			want: "file:/C:/ProgramData/winget/installed.db?mode=ro&immutable=1",
+		},
+		{
+			path: "testdata/db.sql",
+			want: "file:testdata/db.sql?mode=ro&immutable=1",
+		},
+	}
+	for _, tc := range tests {
+		if got := scalibrfs.SQLiteReadOnlyURI(tc.path); got != tc.want {
+			t.Errorf("SQLiteReadOnlyURI(%q) = %q, want %q", tc.path, got, tc.want)
+		}
 	}
 }

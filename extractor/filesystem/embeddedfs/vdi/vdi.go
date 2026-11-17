@@ -23,7 +23,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -137,24 +136,15 @@ func (e *Extractor) FileRequired(api filesystem.FileAPI) bool {
 
 // Extract returns an Inventory with embedded filesystems which contains mount functions for each filesystem in the .vdi file.
 func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {
-	vdiPath, err := input.GetRealPath()
+	vdiFile, cleanup, err := input.OpenOSFile()
 	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to get real path for %s: %w", input.Path, err)
+		return inventory.Inventory{}, fmt.Errorf("failed to open VDI image %s: %w", input.Path, err)
 	}
-	if input.Root == "" {
-		defer func() {
-			dir := filepath.Dir(vdiPath)
-			if err := os.RemoveAll(dir); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", dir, err)
-			}
-		}()
-	}
-
-	vdiFile, err := os.Open(vdiPath)
-	if err != nil {
-		return inventory.Inventory{}, fmt.Errorf("failed to open VDI image %s: %w", vdiPath, err)
-	}
-	defer vdiFile.Close()
+	defer func() {
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", input.Path, err)
+		}
+	}()
 
 	// Create a temporary file for the raw disk image
 	tmpRaw, err := os.CreateTemp("", "scalibr-vdi-raw-*.raw")
