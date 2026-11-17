@@ -160,15 +160,28 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 }
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
-	absPath, err := input.GetRealPath()
-	if err != nil {
-		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
+	var (
+		absPath string
+		cleanup func() error
+		err     error
+	)
+	if strings.HasSuffix(filepath.ToSlash(input.Path), ".sqlite") {
+		// erikvarga/go-rpmdb opens SQLite databases without ?mode=ro&immutable=1
+		// and rejects file: URIs, so keep an isolated copy for .sqlite DBs.
+		absPath, err = input.GetRealPath()
+		if err != nil {
+			return nil, fmt.Errorf("GetRealPath(%q): %w", input.Path, err)
+		}
+		cleanup = func() error { return os.RemoveAll(filepath.Dir(absPath)) }
+	} else {
+		absPath, cleanup, err = input.OpenOSPath()
+		if err != nil {
+			return nil, fmt.Errorf("OpenOSPath(%q): %w", input.Path, err)
+		}
 	}
-	// The file got copied to a temporary dir, remove it at the end.
 	defer func() {
-		dir := filepath.Dir(absPath)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", absPath, err)
 		}
 	}()
 	rpmPkgs, err := e.parseRPMDB(ctx, absPath)

@@ -141,20 +141,18 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 			return inventory.Inventory{}, fmt.Errorf("could not read the containerd metadb file: %w", err)
 		}
 	}
-	realPath, err := input.GetRealPath()
+	realPath, cleanup, err := input.OpenOSPath()
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}
-	if input.Root == "" {
-		defer func() {
-			if err := os.RemoveAll(filepath.Dir(realPath)); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", filepath.Dir(realPath), err)
-			}
-		}()
-	}
+	defer func() {
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", realPath, err)
+		}
+	}()
 	// Timeout is added to make sure Scalibr does not hand if the metadb file is open by another process.
 	// This will still allow to handle the snapshot of a machine.
-	metaDB, err := bolt.Open(realPath, 0444, &bolt.Options{Timeout: 1 * time.Second})
+	metaDB, err := bolt.Open(realPath, 0o444, &bolt.Options{Timeout: 1 * time.Second, ReadOnly: true})
 	if err != nil {
 		return inventory.Inventory{}, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}
@@ -555,18 +553,16 @@ func snapshotsMetadataFromDB(fsys scalibrfs.FS, scanRoot string, relMetadataDBPa
 		return nil, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}
 
-	fullMetadataDBPath, err := scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: fsys, Path: scanRoot}, relMetadataDBPath, nil)
+	fullMetadataDBPath, cleanup, err := scalibrfs.OpenOSPath(&scalibrfs.ScanRoot{FS: fsys, Path: scanRoot}, relMetadataDBPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}
-	if scanRoot == "" {
-		defer func() {
-			if err := os.RemoveAll(filepath.Dir(fullMetadataDBPath)); err != nil {
-				log.Errorf("os.RemoveAll(%q): %v", filepath.Dir(fullMetadataDBPath), err)
-			}
-		}()
-	}
-	metadataDB, err := bolt.Open(fullMetadataDBPath, 0444, &bolt.Options{Timeout: 1 * time.Second})
+	defer func() {
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", fullMetadataDBPath, err)
+		}
+	}()
+	metadataDB, err := bolt.Open(fullMetadataDBPath, 0o444, &bolt.Options{Timeout: 1 * time.Second, ReadOnly: true})
 	if err != nil {
 		return nil, fmt.Errorf("could not read the containerd metadb file: %w", err)
 	}

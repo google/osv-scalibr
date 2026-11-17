@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	scalibrfs "github.com/google/osv-scalibr/fs"
@@ -503,5 +504,183 @@ func TestOpenOSFile(t *testing.T) {
 	}
 	if _, err := os.Stat(tmpDir); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("temp dir %q still exists after cleanup: %v", tmpDir, err)
+	}
+}
+
+func TestOpenOSPath(t *testing.T) {
+	rootDir := t.TempDir()
+	content := "sqlite-db-bytes"
+	if err := os.WriteFile(filepath.Join(rootDir, "local.sqlite"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(rootDir, "local.sqlite-wal"), []byte("sibling"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Unconfined os.DirFS returns the in-place path without copying or deleting rootDir on cleanup.
+	unconfinedRoot := &scalibrfs.ScanRoot{FS: os.DirFS(rootDir).(scalibrfs.FS), Path: rootDir}
+	inPlacePath, cleanup, err := scalibrfs.OpenOSPath(unconfinedRoot, "local.sqlite", nil)
+	if err != nil {
+		t.Fatalf("OpenOSPath(unconfined): %v", err)
+	}
+	if inPlacePath != filepath.Join(rootDir, "local.sqlite") {
+		t.Errorf("OpenOSPath(unconfined) = %q, want %q", inPlacePath, filepath.Join(rootDir, "local.sqlite"))
+	}
+	if err := cleanup(); err != nil {
+		t.Errorf("cleanup(unconfined): %v", err)
+	}
+	if _, err := os.Stat(inPlacePath); err != nil {
+		t.Fatalf("unconfined file %q removed by cleanup: %v", inPlacePath, err)
+	}
+	if _, _, err := scalibrfs.OpenOSPath(unconfinedRoot, "../outside", bytes.NewReader([]byte("x"))); err == nil {
+		t.Errorf("OpenOSPath(unconfined ../outside) succeeded, want error")
+	}
+
+	// Confined and nil-FS ScanRoots copy to an isolated temp dir (without sibling -wal) and clean up.
+	confinedOSRoot, err := os.OpenRoot(rootDir)
+	if err != nil {
+		t.Fatalf("os.OpenRoot(%q): %v", rootDir, err)
+	}
+	defer func() { _ = confinedOSRoot.Close() }()
+
+	for _, tc := range []struct {
+		name string
+		root *scalibrfs.ScanRoot
+	}{
+		{name: "nil_fs", root: &scalibrfs.ScanRoot{Path: rootDir}},
+		{name: "confined_os_root", root: &scalibrfs.ScanRoot{FS: confinedOSRoot.FS().(scalibrfs.FS), Path: rootDir}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			isolatedPath, isolatedCleanup, err := scalibrfs.OpenOSPath(tc.root, "local.sqlite", nil)
+			if err != nil {
+				t.Fatalf("OpenOSPath(%s): %v", tc.name, err)
+			}
+			if filepath.Dir(isolatedPath) == rootDir {
+				t.Errorf("OpenOSPath(%s) returned in-place path %q, want isolated temp dir", tc.name, isolatedPath)
+			}
+			if _, err := os.Stat(isolatedPath + "-wal"); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("sibling -wal exists next to isolated path %q: %v", isolatedPath, err)
+			}
+			got, err := os.ReadFile(isolatedPath)
+			if err != nil {
+				t.Fatalf("ReadFile(%q): %v", isolatedPath, err)
+			}
+			if string(got) != content {
+				t.Errorf("OpenOSPath(%s) content = %q, want %q", tc.name, got, content)
+			}
+			isolatedDir := filepath.Dir(isolatedPath)
+			if err := isolatedCleanup(); err != nil {
+				t.Errorf("cleanup(%s): %v", tc.name, err)
+			}
+			if _, err := os.Stat(isolatedDir); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("isolated temp dir %q still exists after cleanup: %v", isolatedDir, err)
+			}
+		})
+	}
+	if runtime.GOOS != "windows" {
+		outside := filepath.Join(t.TempDir(), "outside.sqlite")
+		if err := os.WriteFile(outside, []byte("secret"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		escapeLink := filepath.Join(rootDir, "escape.sqlite")
+		if err := os.Symlink(outside, escapeLink); err != nil {
+			t.Fatal(err)
+		}
+		for _, tc := range []struct {
+			name string
+			root *scalibrfs.ScanRoot
+		}{
+			{name: "nil_fs", root: &scalibrfs.ScanRoot{Path: rootDir}},
+			{name: "confined_os_root", root: &scalibrfs.ScanRoot{FS: confinedOSRoot.FS().(scalibrfs.FS), Path: rootDir}},
+		} {
+			if p, c, err := scalibrfs.OpenOSPath(tc.root, "escape.sqlite", bytes.NewReader([]byte("dummy"))); err == nil {
+				_ = c()
+				t.Errorf("OpenOSPath(%s, escape.sqlite) = %q across escaping symlink, want error", tc.name, p)
+			}
+		}
+	}
+
+	// Directories are rejected up front on both unconfined and confined roots.
+	if err := os.Mkdir(filepath.Join(rootDir, "subdir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := scalibrfs.OpenOSPath(unconfinedRoot, "subdir", nil); !errors.Is(err, fs.ErrInvalid) {
+		t.Errorf("OpenOSPath(unconfined dir) err = %v, want fs.ErrInvalid", err)
+	}
+	if _, err := scalibrfs.GetRealPath(&scalibrfs.ScanRoot{FS: confinedOSRoot.FS().(scalibrfs.FS), Path: rootDir}, "subdir", nil); !errors.Is(err, fs.ErrInvalid) {
+		t.Errorf("GetRealPath(confined dir) err = %v, want fs.ErrInvalid", err)
+	}
+
+	// Virtual reader copies to a temp dir and cleans up.
+	vPath, vCleanup, err := scalibrfs.OpenOSPath(nil, "virtual.sqlite", bytes.NewReader([]byte(content)))
+	if err != nil {
+		t.Fatalf("OpenOSPath(virtual): %v", err)
+	}
+	vDir := filepath.Dir(vPath)
+	if err := vCleanup(); err != nil {
+		t.Errorf("cleanup(virtual): %v", err)
+	}
+	if _, err := os.Stat(vDir); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("virtual temp dir %q still exists after cleanup: %v", vDir, err)
+	}
+}
+
+func TestGetRealPath_SanitizesUnsafeBasename(t *testing.T) {
+	tests := []struct {
+		name     string
+		relPath  string
+		wantBase string
+	}{
+		{name: "safe_sqlite", relPath: "var/lib/rpm/rpmdb.sqlite", wantBase: "rpmdb.sqlite"},
+		{name: "query_param", relPath: "dir/db.sql?mode=rw", wantBase: "file"},
+		{name: "windows_reserved_colon", relPath: "dir/COM1:stream", wantBase: "file"},
+		{name: "trailing_dot", relPath: "dir/bad.", wantBase: "file"},
+		{name: "too_long", relPath: "dir/" + strings.Repeat("a", 129), wantBase: "file"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			realPath, err := scalibrfs.GetRealPath(nil, tc.relPath, bytes.NewReader([]byte("x")))
+			if err != nil {
+				t.Fatalf("GetRealPath(%q): %v", tc.relPath, err)
+			}
+			defer func() { _ = os.RemoveAll(filepath.Dir(realPath)) }()
+			if got := filepath.Base(realPath); got != tc.wantBase {
+				t.Errorf("GetRealPath(%q) base = %q, want %q", tc.relPath, got, tc.wantBase)
+			}
+		})
+	}
+}
+
+func TestSQLiteReadOnlyURI(t *testing.T) {
+	tests := []struct {
+		path string
+		want string
+	}{
+		{
+			path: "/tmp/containers/storage/db.sql",
+			want: "file:/tmp/containers/storage/db.sql?mode=ro&immutable=1",
+		},
+		{
+			path: "/tmp/dir?k=v#frag/100%/db.sql",
+			want: "file:/tmp/dir%3Fk=v%23frag/100%25/db.sql?mode=ro&immutable=1",
+		},
+		{
+			path: "//server/share/db.sqlite",
+			want: "file:////server/share/db.sqlite?mode=ro&immutable=1",
+		},
+		{
+			path: "C:/ProgramData/winget/installed.db",
+			want: "file:/C:/ProgramData/winget/installed.db?mode=ro&immutable=1",
+		},
+		{
+			path: "testdata/db.sql",
+			want: "file:testdata/db.sql?mode=ro&immutable=1",
+		},
+	}
+	for _, tc := range tests {
+		if got := scalibrfs.SQLiteReadOnlyURI(tc.path); got != tc.want {
+			t.Errorf("SQLiteReadOnlyURI(%q) = %q, want %q", tc.path, got, tc.want)
+		}
 	}
 }
