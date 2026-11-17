@@ -6817,6 +6817,12 @@ type SecretData struct {
 	//	*SecretData_HttpBearer
 	//	*SecretData_HttpCsrfToken
 	//	*SecretData_HttpCookie
+	//	*SecretData_SapAccessToken
+	//	*SecretData_SapSuccessFactorsAccessToken
+	//	*SecretData_SapAribaOauth2ClientCredentials
+	//	*SecretData_SapBtpOauth2ClientCredentials
+	//	*SecretData_SapConcurAccessToken
+	//	*SecretData_SapConcurRefreshToken
 	Secret        isSecretData_Secret `protobuf_oneof:"secret"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7687,6 +7693,60 @@ func (x *SecretData) GetHttpCookie() *SecretData_HTTPCookie {
 	return nil
 }
 
+func (x *SecretData) GetSapAccessToken() *SecretData_SAPAccessToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SapAccessToken); ok {
+			return x.SapAccessToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSapSuccessFactorsAccessToken() *SecretData_SAPSuccessFactorsAccessToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SapSuccessFactorsAccessToken); ok {
+			return x.SapSuccessFactorsAccessToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSapAribaOauth2ClientCredentials() *SecretData_SAPAribaOAuth2ClientCredentials {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SapAribaOauth2ClientCredentials); ok {
+			return x.SapAribaOauth2ClientCredentials
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSapBtpOauth2ClientCredentials() *SecretData_SAPBTPOAuth2ClientCredentials {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SapBtpOauth2ClientCredentials); ok {
+			return x.SapBtpOauth2ClientCredentials
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSapConcurAccessToken() *SecretData_SAPConcurAccessToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SapConcurAccessToken); ok {
+			return x.SapConcurAccessToken
+		}
+	}
+	return nil
+}
+
+func (x *SecretData) GetSapConcurRefreshToken() *SecretData_SAPConcurRefreshToken {
+	if x != nil {
+		if x, ok := x.Secret.(*SecretData_SapConcurRefreshToken); ok {
+			return x.SapConcurRefreshToken
+		}
+	}
+	return nil
+}
+
 type isSecretData_Secret interface {
 	isSecretData_Secret()
 }
@@ -8059,6 +8119,30 @@ type SecretData_HttpCookie struct {
 	HttpCookie *SecretData_HTTPCookie `protobuf:"bytes,92,opt,name=http_cookie,json=httpCookie,proto3,oneof"`
 }
 
+type SecretData_SapAccessToken struct {
+	SapAccessToken *SecretData_SAPAccessToken `protobuf:"bytes,93,opt,name=sap_access_token,json=sapAccessToken,proto3,oneof"`
+}
+
+type SecretData_SapSuccessFactorsAccessToken struct {
+	SapSuccessFactorsAccessToken *SecretData_SAPSuccessFactorsAccessToken `protobuf:"bytes,94,opt,name=sap_success_factors_access_token,json=sapSuccessFactorsAccessToken,proto3,oneof"`
+}
+
+type SecretData_SapAribaOauth2ClientCredentials struct {
+	SapAribaOauth2ClientCredentials *SecretData_SAPAribaOAuth2ClientCredentials `protobuf:"bytes,95,opt,name=sap_ariba_oauth2_client_credentials,json=sapAribaOauth2ClientCredentials,proto3,oneof"`
+}
+
+type SecretData_SapBtpOauth2ClientCredentials struct {
+	SapBtpOauth2ClientCredentials *SecretData_SAPBTPOAuth2ClientCredentials `protobuf:"bytes,96,opt,name=sap_btp_oauth2_client_credentials,json=sapBtpOauth2ClientCredentials,proto3,oneof"`
+}
+
+type SecretData_SapConcurAccessToken struct {
+	SapConcurAccessToken *SecretData_SAPConcurAccessToken `protobuf:"bytes,97,opt,name=sap_concur_access_token,json=sapConcurAccessToken,proto3,oneof"`
+}
+
+type SecretData_SapConcurRefreshToken struct {
+	SapConcurRefreshToken *SecretData_SAPConcurRefreshToken `protobuf:"bytes,98,opt,name=sap_concur_refresh_token,json=sapConcurRefreshToken,proto3,oneof"`
+}
+
 func (*SecretData_Gcpsak) isSecretData_Secret() {}
 
 func (*SecretData_AnthropicWorkspaceApiKey) isSecretData_Secret() {}
@@ -8242,6 +8326,18 @@ func (*SecretData_HttpBearer) isSecretData_Secret() {}
 func (*SecretData_HttpCsrfToken) isSecretData_Secret() {}
 
 func (*SecretData_HttpCookie) isSecretData_Secret() {}
+
+func (*SecretData_SapAccessToken) isSecretData_Secret() {}
+
+func (*SecretData_SapSuccessFactorsAccessToken) isSecretData_Secret() {}
+
+func (*SecretData_SapAribaOauth2ClientCredentials) isSecretData_Secret() {}
+
+func (*SecretData_SapBtpOauth2ClientCredentials) isSecretData_Secret() {}
+
+func (*SecretData_SapConcurAccessToken) isSecretData_Secret() {}
+
+func (*SecretData_SapConcurRefreshToken) isSecretData_Secret() {}
 
 type SecretStatus struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
@@ -13612,6 +13708,318 @@ func (x *SecretData_SalesforceOAuth2JWTCredentials) GetPrivateKey() string {
 	return ""
 }
 
+type SecretData_SAPAccessToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SAPAccessToken) Reset() {
+	*x = SecretData_SAPAccessToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[176]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SAPAccessToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SAPAccessToken) ProtoMessage() {}
+
+func (x *SecretData_SAPAccessToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[176]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SAPAccessToken.ProtoReflect.Descriptor instead.
+func (*SecretData_SAPAccessToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 82}
+}
+
+func (x *SecretData_SAPAccessToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *SecretData_SAPAccessToken) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+type SecretData_SAPSuccessFactorsAccessToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SAPSuccessFactorsAccessToken) Reset() {
+	*x = SecretData_SAPSuccessFactorsAccessToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[177]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SAPSuccessFactorsAccessToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SAPSuccessFactorsAccessToken) ProtoMessage() {}
+
+func (x *SecretData_SAPSuccessFactorsAccessToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[177]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SAPSuccessFactorsAccessToken.ProtoReflect.Descriptor instead.
+func (*SecretData_SAPSuccessFactorsAccessToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 83}
+}
+
+func (x *SecretData_SAPSuccessFactorsAccessToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type SecretData_SAPAribaOAuth2ClientCredentials struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Secret        string                 `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SAPAribaOAuth2ClientCredentials) Reset() {
+	*x = SecretData_SAPAribaOAuth2ClientCredentials{}
+	mi := &file_proto_scan_result_proto_msgTypes[178]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SAPAribaOAuth2ClientCredentials) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SAPAribaOAuth2ClientCredentials) ProtoMessage() {}
+
+func (x *SecretData_SAPAribaOAuth2ClientCredentials) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[178]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SAPAribaOAuth2ClientCredentials.ProtoReflect.Descriptor instead.
+func (*SecretData_SAPAribaOAuth2ClientCredentials) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 84}
+}
+
+func (x *SecretData_SAPAribaOAuth2ClientCredentials) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SecretData_SAPAribaOAuth2ClientCredentials) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+type SecretData_SAPBTPOAuth2ClientCredentials struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Secret        string                 `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
+	TokenUrl      string                 `protobuf:"bytes,3,opt,name=token_url,json=tokenUrl,proto3" json:"token_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SAPBTPOAuth2ClientCredentials) Reset() {
+	*x = SecretData_SAPBTPOAuth2ClientCredentials{}
+	mi := &file_proto_scan_result_proto_msgTypes[179]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SAPBTPOAuth2ClientCredentials) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SAPBTPOAuth2ClientCredentials) ProtoMessage() {}
+
+func (x *SecretData_SAPBTPOAuth2ClientCredentials) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[179]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SAPBTPOAuth2ClientCredentials.ProtoReflect.Descriptor instead.
+func (*SecretData_SAPBTPOAuth2ClientCredentials) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 85}
+}
+
+func (x *SecretData_SAPBTPOAuth2ClientCredentials) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SecretData_SAPBTPOAuth2ClientCredentials) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *SecretData_SAPBTPOAuth2ClientCredentials) GetTokenUrl() string {
+	if x != nil {
+		return x.TokenUrl
+	}
+	return ""
+}
+
+type SecretData_SAPConcurAccessToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SAPConcurAccessToken) Reset() {
+	*x = SecretData_SAPConcurAccessToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[180]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SAPConcurAccessToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SAPConcurAccessToken) ProtoMessage() {}
+
+func (x *SecretData_SAPConcurAccessToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[180]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SAPConcurAccessToken.ProtoReflect.Descriptor instead.
+func (*SecretData_SAPConcurAccessToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 86}
+}
+
+func (x *SecretData_SAPConcurAccessToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type SecretData_SAPConcurRefreshToken struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Secret        string                 `protobuf:"bytes,2,opt,name=secret,proto3" json:"secret,omitempty"`
+	Token         string                 `protobuf:"bytes,3,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SecretData_SAPConcurRefreshToken) Reset() {
+	*x = SecretData_SAPConcurRefreshToken{}
+	mi := &file_proto_scan_result_proto_msgTypes[181]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecretData_SAPConcurRefreshToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecretData_SAPConcurRefreshToken) ProtoMessage() {}
+
+func (x *SecretData_SAPConcurRefreshToken) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_scan_result_proto_msgTypes[181]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecretData_SAPConcurRefreshToken.ProtoReflect.Descriptor instead.
+func (*SecretData_SAPConcurRefreshToken) Descriptor() ([]byte, []int) {
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 87}
+}
+
+func (x *SecretData_SAPConcurRefreshToken) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SecretData_SAPConcurRefreshToken) GetSecret() string {
+	if x != nil {
+		return x.Secret
+	}
+	return ""
+}
+
+func (x *SecretData_SAPConcurRefreshToken) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
 type SecretData_BitwardenOAuth2AccessToken struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Bitwarden OAuth2 Access Token
@@ -13623,7 +14031,7 @@ type SecretData_BitwardenOAuth2AccessToken struct {
 
 func (x *SecretData_BitwardenOAuth2AccessToken) Reset() {
 	*x = SecretData_BitwardenOAuth2AccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[176]
+	mi := &file_proto_scan_result_proto_msgTypes[182]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13635,7 +14043,7 @@ func (x *SecretData_BitwardenOAuth2AccessToken) String() string {
 func (*SecretData_BitwardenOAuth2AccessToken) ProtoMessage() {}
 
 func (x *SecretData_BitwardenOAuth2AccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[176]
+	mi := &file_proto_scan_result_proto_msgTypes[182]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13648,7 +14056,7 @@ func (x *SecretData_BitwardenOAuth2AccessToken) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use SecretData_BitwardenOAuth2AccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_BitwardenOAuth2AccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 82}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 88}
 }
 
 func (x *SecretData_BitwardenOAuth2AccessToken) GetClientId() string {
@@ -13675,7 +14083,7 @@ type SecretData_HTTPBasicAuth struct {
 
 func (x *SecretData_HTTPBasicAuth) Reset() {
 	*x = SecretData_HTTPBasicAuth{}
-	mi := &file_proto_scan_result_proto_msgTypes[177]
+	mi := &file_proto_scan_result_proto_msgTypes[183]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13687,7 +14095,7 @@ func (x *SecretData_HTTPBasicAuth) String() string {
 func (*SecretData_HTTPBasicAuth) ProtoMessage() {}
 
 func (x *SecretData_HTTPBasicAuth) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[177]
+	mi := &file_proto_scan_result_proto_msgTypes[183]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13700,7 +14108,7 @@ func (x *SecretData_HTTPBasicAuth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HTTPBasicAuth.ProtoReflect.Descriptor instead.
 func (*SecretData_HTTPBasicAuth) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 83}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 89}
 }
 
 func (x *SecretData_HTTPBasicAuth) GetUsername() string {
@@ -13726,7 +14134,7 @@ type SecretData_HTTPBearer struct {
 
 func (x *SecretData_HTTPBearer) Reset() {
 	*x = SecretData_HTTPBearer{}
-	mi := &file_proto_scan_result_proto_msgTypes[178]
+	mi := &file_proto_scan_result_proto_msgTypes[184]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13738,7 +14146,7 @@ func (x *SecretData_HTTPBearer) String() string {
 func (*SecretData_HTTPBearer) ProtoMessage() {}
 
 func (x *SecretData_HTTPBearer) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[178]
+	mi := &file_proto_scan_result_proto_msgTypes[184]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13751,7 +14159,7 @@ func (x *SecretData_HTTPBearer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HTTPBearer.ProtoReflect.Descriptor instead.
 func (*SecretData_HTTPBearer) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 84}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 90}
 }
 
 func (x *SecretData_HTTPBearer) GetValue() string {
@@ -13770,7 +14178,7 @@ type SecretData_HTTPCSRFToken struct {
 
 func (x *SecretData_HTTPCSRFToken) Reset() {
 	*x = SecretData_HTTPCSRFToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[179]
+	mi := &file_proto_scan_result_proto_msgTypes[185]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13782,7 +14190,7 @@ func (x *SecretData_HTTPCSRFToken) String() string {
 func (*SecretData_HTTPCSRFToken) ProtoMessage() {}
 
 func (x *SecretData_HTTPCSRFToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[179]
+	mi := &file_proto_scan_result_proto_msgTypes[185]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13795,7 +14203,7 @@ func (x *SecretData_HTTPCSRFToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HTTPCSRFToken.ProtoReflect.Descriptor instead.
 func (*SecretData_HTTPCSRFToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 85}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 91}
 }
 
 func (x *SecretData_HTTPCSRFToken) GetValue() string {
@@ -13814,7 +14222,7 @@ type SecretData_HTTPCookie struct {
 
 func (x *SecretData_HTTPCookie) Reset() {
 	*x = SecretData_HTTPCookie{}
-	mi := &file_proto_scan_result_proto_msgTypes[180]
+	mi := &file_proto_scan_result_proto_msgTypes[186]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13826,7 +14234,7 @@ func (x *SecretData_HTTPCookie) String() string {
 func (*SecretData_HTTPCookie) ProtoMessage() {}
 
 func (x *SecretData_HTTPCookie) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[180]
+	mi := &file_proto_scan_result_proto_msgTypes[186]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13839,7 +14247,7 @@ func (x *SecretData_HTTPCookie) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_HTTPCookie.ProtoReflect.Descriptor instead.
 func (*SecretData_HTTPCookie) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 86}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 92}
 }
 
 func (x *SecretData_HTTPCookie) GetValues() map[string]string {
@@ -13858,7 +14266,7 @@ type SecretData_CursorAPIKey struct {
 
 func (x *SecretData_CursorAPIKey) Reset() {
 	*x = SecretData_CursorAPIKey{}
-	mi := &file_proto_scan_result_proto_msgTypes[181]
+	mi := &file_proto_scan_result_proto_msgTypes[187]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13870,7 +14278,7 @@ func (x *SecretData_CursorAPIKey) String() string {
 func (*SecretData_CursorAPIKey) ProtoMessage() {}
 
 func (x *SecretData_CursorAPIKey) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[181]
+	mi := &file_proto_scan_result_proto_msgTypes[187]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13883,7 +14291,7 @@ func (x *SecretData_CursorAPIKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CursorAPIKey.ProtoReflect.Descriptor instead.
 func (*SecretData_CursorAPIKey) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 87}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 93}
 }
 
 func (x *SecretData_CursorAPIKey) GetKey() string {
@@ -13902,7 +14310,7 @@ type SecretData_CircleCIPersonalAccessToken struct {
 
 func (x *SecretData_CircleCIPersonalAccessToken) Reset() {
 	*x = SecretData_CircleCIPersonalAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[182]
+	mi := &file_proto_scan_result_proto_msgTypes[188]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13914,7 +14322,7 @@ func (x *SecretData_CircleCIPersonalAccessToken) String() string {
 func (*SecretData_CircleCIPersonalAccessToken) ProtoMessage() {}
 
 func (x *SecretData_CircleCIPersonalAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[182]
+	mi := &file_proto_scan_result_proto_msgTypes[188]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13927,7 +14335,7 @@ func (x *SecretData_CircleCIPersonalAccessToken) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use SecretData_CircleCIPersonalAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_CircleCIPersonalAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 88}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 94}
 }
 
 func (x *SecretData_CircleCIPersonalAccessToken) GetToken() string {
@@ -13946,7 +14354,7 @@ type SecretData_CircleCIProjectToken struct {
 
 func (x *SecretData_CircleCIProjectToken) Reset() {
 	*x = SecretData_CircleCIProjectToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[183]
+	mi := &file_proto_scan_result_proto_msgTypes[189]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13958,7 +14366,7 @@ func (x *SecretData_CircleCIProjectToken) String() string {
 func (*SecretData_CircleCIProjectToken) ProtoMessage() {}
 
 func (x *SecretData_CircleCIProjectToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[183]
+	mi := &file_proto_scan_result_proto_msgTypes[189]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13971,7 +14379,7 @@ func (x *SecretData_CircleCIProjectToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_CircleCIProjectToken.ProtoReflect.Descriptor instead.
 func (*SecretData_CircleCIProjectToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 89}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 95}
 }
 
 func (x *SecretData_CircleCIProjectToken) GetToken() string {
@@ -13990,7 +14398,7 @@ type SecretData_URLCredentials struct {
 
 func (x *SecretData_URLCredentials) Reset() {
 	*x = SecretData_URLCredentials{}
-	mi := &file_proto_scan_result_proto_msgTypes[184]
+	mi := &file_proto_scan_result_proto_msgTypes[190]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14002,7 +14410,7 @@ func (x *SecretData_URLCredentials) String() string {
 func (*SecretData_URLCredentials) ProtoMessage() {}
 
 func (x *SecretData_URLCredentials) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[184]
+	mi := &file_proto_scan_result_proto_msgTypes[190]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14015,7 +14423,7 @@ func (x *SecretData_URLCredentials) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretData_URLCredentials.ProtoReflect.Descriptor instead.
 func (*SecretData_URLCredentials) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 90}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 96}
 }
 
 func (x *SecretData_URLCredentials) GetUrl() string {
@@ -14034,7 +14442,7 @@ type SecretData_SquarePersonalAccessToken struct {
 
 func (x *SecretData_SquarePersonalAccessToken) Reset() {
 	*x = SecretData_SquarePersonalAccessToken{}
-	mi := &file_proto_scan_result_proto_msgTypes[185]
+	mi := &file_proto_scan_result_proto_msgTypes[191]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14046,7 +14454,7 @@ func (x *SecretData_SquarePersonalAccessToken) String() string {
 func (*SecretData_SquarePersonalAccessToken) ProtoMessage() {}
 
 func (x *SecretData_SquarePersonalAccessToken) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[185]
+	mi := &file_proto_scan_result_proto_msgTypes[191]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14059,7 +14467,7 @@ func (x *SecretData_SquarePersonalAccessToken) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use SecretData_SquarePersonalAccessToken.ProtoReflect.Descriptor instead.
 func (*SecretData_SquarePersonalAccessToken) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 91}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 97}
 }
 
 func (x *SecretData_SquarePersonalAccessToken) GetKey() string {
@@ -14079,7 +14487,7 @@ type SecretData_SquareOAuthApplicationSecret struct {
 
 func (x *SecretData_SquareOAuthApplicationSecret) Reset() {
 	*x = SecretData_SquareOAuthApplicationSecret{}
-	mi := &file_proto_scan_result_proto_msgTypes[186]
+	mi := &file_proto_scan_result_proto_msgTypes[192]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14091,7 +14499,7 @@ func (x *SecretData_SquareOAuthApplicationSecret) String() string {
 func (*SecretData_SquareOAuthApplicationSecret) ProtoMessage() {}
 
 func (x *SecretData_SquareOAuthApplicationSecret) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_scan_result_proto_msgTypes[186]
+	mi := &file_proto_scan_result_proto_msgTypes[192]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14104,7 +14512,7 @@ func (x *SecretData_SquareOAuthApplicationSecret) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use SecretData_SquareOAuthApplicationSecret.ProtoReflect.Descriptor instead.
 func (*SecretData_SquareOAuthApplicationSecret) Descriptor() ([]byte, []int) {
-	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 92}
+	return file_proto_scan_result_proto_rawDescGZIP(), []int{72, 98}
 }
 
 func (x *SecretData_SquareOAuthApplicationSecret) GetId() string {
@@ -14675,7 +15083,7 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x06secret\x18\x01 \x01(\v2\x13.scalibr.SecretDataR\x06secret\x12-\n" +
 	"\x06status\x18\x02 \x01(\v2\x15.scalibr.SecretStatusR\x06status\x129\n" +
 	"\tlocations\x18\x03 \x03(\v2\x17.scalibr.LocationLegacyB\x02\x18\x01R\tlocations\x12-\n" +
-	"\blocation\x18\x04 \x01(\v2\x11.scalibr.LocationR\blocation\"\x8dv\n" +
+	"\blocation\x18\x04 \x01(\v2\x11.scalibr.LocationR\blocation\"\xcd~\n" +
 	"\n" +
 	"SecretData\x124\n" +
 	"\x06gcpsak\x18\x01 \x01(\v2\x1a.scalibr.SecretData.GCPSAKH\x00R\x06gcpsak\x12m\n" +
@@ -14782,7 +15190,13 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"httpBearer\x12K\n" +
 	"\x0fhttp_csrf_token\x18[ \x01(\v2!.scalibr.SecretData.HTTPCSRFTokenH\x00R\rhttpCsrfToken\x12A\n" +
 	"\vhttp_cookie\x18\\ \x01(\v2\x1e.scalibr.SecretData.HTTPCookieH\x00R\n" +
-	"httpCookie\x1a\xb0\x03\n" +
+	"httpCookie\x12N\n" +
+	"\x10sap_access_token\x18] \x01(\v2\".scalibr.SecretData.SAPAccessTokenH\x00R\x0esapAccessToken\x12z\n" +
+	" sap_success_factors_access_token\x18^ \x01(\v20.scalibr.SecretData.SAPSuccessFactorsAccessTokenH\x00R\x1csapSuccessFactorsAccessToken\x12\x83\x01\n" +
+	"#sap_ariba_oauth2_client_credentials\x18_ \x01(\v23.scalibr.SecretData.SAPAribaOAuth2ClientCredentialsH\x00R\x1fsapAribaOauth2ClientCredentials\x12}\n" +
+	"!sap_btp_oauth2_client_credentials\x18` \x01(\v21.scalibr.SecretData.SAPBTPOAuth2ClientCredentialsH\x00R\x1dsapBtpOauth2ClientCredentials\x12a\n" +
+	"\x17sap_concur_access_token\x18a \x01(\v2(.scalibr.SecretData.SAPConcurAccessTokenH\x00R\x14sapConcurAccessToken\x12d\n" +
+	"\x18sap_concur_refresh_token\x18b \x01(\v2).scalibr.SecretData.SAPConcurRefreshTokenH\x00R\x15sapConcurRefreshToken\x1a\xb0\x03\n" +
 	"\x06GCPSAK\x12$\n" +
 	"\x0eprivate_key_id\x18\x01 \x01(\tR\fprivateKeyId\x12!\n" +
 	"\fclient_email\x18\x02 \x01(\tR\vclientEmail\x12\x1c\n" +
@@ -15026,7 +15440,25 @@ const file_proto_scan_result_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x1f\n" +
 	"\vprivate_key\x18\x03 \x01(\tR\n" +
-	"privateKey\x1a^\n" +
+	"privateKey\x1a8\n" +
+	"\x0eSAPAccessToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x1a4\n" +
+	"\x1cSAPSuccessFactorsAccessToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1aI\n" +
+	"\x1fSAPAribaOAuth2ClientCredentials\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06secret\x18\x02 \x01(\tR\x06secret\x1ad\n" +
+	"\x1dSAPBTPOAuth2ClientCredentials\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06secret\x18\x02 \x01(\tR\x06secret\x12\x1b\n" +
+	"\ttoken_url\x18\x03 \x01(\tR\btokenUrl\x1a,\n" +
+	"\x14SAPConcurAccessToken\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x1aU\n" +
+	"\x15SAPConcurRefreshToken\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06secret\x18\x02 \x01(\tR\x06secret\x12\x14\n" +
+	"\x05token\x18\x03 \x01(\tR\x05token\x1a^\n" +
 	"\x1aBitwardenOAuth2AccessToken\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x02 \x01(\tR\fclientSecret\x1aG\n" +
@@ -15184,7 +15616,7 @@ func file_proto_scan_result_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_scan_result_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 190)
+var file_proto_scan_result_proto_msgTypes = make([]protoimpl.MessageInfo, 196)
 var file_proto_scan_result_proto_goTypes = []any{
 	(VexJustification)(0),                                    // 0: scalibr.VexJustification
 	(SeverityEnum)(0),                                        // 1: scalibr.SeverityEnum
@@ -15369,28 +15801,34 @@ var file_proto_scan_result_proto_goTypes = []any{
 	(*SecretData_SalesforceOAuth2ClientCredentials)(nil),    // 180: scalibr.SecretData.SalesforceOAuth2ClientCredentials
 	(*SecretData_SalesforceOAuth2RefreshCredentials)(nil),   // 181: scalibr.SecretData.SalesforceOAuth2RefreshCredentials
 	(*SecretData_SalesforceOAuth2JWTCredentials)(nil),       // 182: scalibr.SecretData.SalesforceOAuth2JWTCredentials
-	(*SecretData_BitwardenOAuth2AccessToken)(nil),           // 183: scalibr.SecretData.BitwardenOAuth2AccessToken
-	(*SecretData_HTTPBasicAuth)(nil),                        // 184: scalibr.SecretData.HTTPBasicAuth
-	(*SecretData_HTTPBearer)(nil),                           // 185: scalibr.SecretData.HTTPBearer
-	(*SecretData_HTTPCSRFToken)(nil),                        // 186: scalibr.SecretData.HTTPCSRFToken
-	(*SecretData_HTTPCookie)(nil),                           // 187: scalibr.SecretData.HTTPCookie
-	(*SecretData_CursorAPIKey)(nil),                         // 188: scalibr.SecretData.CursorAPIKey
-	(*SecretData_CircleCIPersonalAccessToken)(nil),          // 189: scalibr.SecretData.CircleCIPersonalAccessToken
-	(*SecretData_CircleCIProjectToken)(nil),                 // 190: scalibr.SecretData.CircleCIProjectToken
-	(*SecretData_URLCredentials)(nil),                       // 191: scalibr.SecretData.URLCredentials
-	(*SecretData_SquarePersonalAccessToken)(nil),            // 192: scalibr.SecretData.SquarePersonalAccessToken
-	(*SecretData_SquareOAuthApplicationSecret)(nil),         // 193: scalibr.SecretData.SquareOAuthApplicationSecret
-	nil,                             // 194: scalibr.SecretData.HTTPCookie.ValuesEntry
-	nil,                             // 195: scalibr.ContainerImageMetadata.OsInfoEntry
-	nil,                             // 196: scalibr.ContainerImageMetadata.LabelsEntry
-	(*timestamppb.Timestamp)(nil),   // 197: google.protobuf.Timestamp
-	(*anypb.Any)(nil),               // 198: google.protobuf.Any
-	(*osvschema.Vulnerability)(nil), // 199: osv.Vulnerability
-	(*durationpb.Duration)(nil),     // 200: google.protobuf.Duration
+	(*SecretData_SAPAccessToken)(nil),                       // 183: scalibr.SecretData.SAPAccessToken
+	(*SecretData_SAPSuccessFactorsAccessToken)(nil),         // 184: scalibr.SecretData.SAPSuccessFactorsAccessToken
+	(*SecretData_SAPAribaOAuth2ClientCredentials)(nil),      // 185: scalibr.SecretData.SAPAribaOAuth2ClientCredentials
+	(*SecretData_SAPBTPOAuth2ClientCredentials)(nil),        // 186: scalibr.SecretData.SAPBTPOAuth2ClientCredentials
+	(*SecretData_SAPConcurAccessToken)(nil),                 // 187: scalibr.SecretData.SAPConcurAccessToken
+	(*SecretData_SAPConcurRefreshToken)(nil),                // 188: scalibr.SecretData.SAPConcurRefreshToken
+	(*SecretData_BitwardenOAuth2AccessToken)(nil),           // 189: scalibr.SecretData.BitwardenOAuth2AccessToken
+	(*SecretData_HTTPBasicAuth)(nil),                        // 190: scalibr.SecretData.HTTPBasicAuth
+	(*SecretData_HTTPBearer)(nil),                           // 191: scalibr.SecretData.HTTPBearer
+	(*SecretData_HTTPCSRFToken)(nil),                        // 192: scalibr.SecretData.HTTPCSRFToken
+	(*SecretData_HTTPCookie)(nil),                           // 193: scalibr.SecretData.HTTPCookie
+	(*SecretData_CursorAPIKey)(nil),                         // 194: scalibr.SecretData.CursorAPIKey
+	(*SecretData_CircleCIPersonalAccessToken)(nil),          // 195: scalibr.SecretData.CircleCIPersonalAccessToken
+	(*SecretData_CircleCIProjectToken)(nil),                 // 196: scalibr.SecretData.CircleCIProjectToken
+	(*SecretData_URLCredentials)(nil),                       // 197: scalibr.SecretData.URLCredentials
+	(*SecretData_SquarePersonalAccessToken)(nil),            // 198: scalibr.SecretData.SquarePersonalAccessToken
+	(*SecretData_SquareOAuthApplicationSecret)(nil),         // 199: scalibr.SecretData.SquareOAuthApplicationSecret
+	nil,                             // 200: scalibr.SecretData.HTTPCookie.ValuesEntry
+	nil,                             // 201: scalibr.ContainerImageMetadata.OsInfoEntry
+	nil,                             // 202: scalibr.ContainerImageMetadata.LabelsEntry
+	(*timestamppb.Timestamp)(nil),   // 203: google.protobuf.Timestamp
+	(*anypb.Any)(nil),               // 204: google.protobuf.Any
+	(*osvschema.Vulnerability)(nil), // 205: osv.Vulnerability
+	(*durationpb.Duration)(nil),     // 206: google.protobuf.Duration
 }
 var file_proto_scan_result_proto_depIdxs = []int32{
-	197, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
-	197, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
+	203, // 0: scalibr.ScanResult.start_time:type_name -> google.protobuf.Timestamp
+	203, // 1: scalibr.ScanResult.end_time:type_name -> google.protobuf.Timestamp
 	9,   // 2: scalibr.ScanResult.status:type_name -> scalibr.ScanStatus
 	10,  // 3: scalibr.ScanResult.plugin_status:type_name -> scalibr.PluginStatus
 	8,   // 4: scalibr.ScanResult.inventory:type_name -> scalibr.Inventory
@@ -15406,7 +15844,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	14,  // 14: scalibr.Package.source_code:type_name -> scalibr.SourceCodeIdentifier
 	19,  // 15: scalibr.Package.purl:type_name -> scalibr.Purl
 	13,  // 16: scalibr.Package.location:type_name -> scalibr.PackageLocation
-	198, // 17: scalibr.Package.metadata_any:type_name -> google.protobuf.Any
+	204, // 17: scalibr.Package.metadata_any:type_name -> google.protobuf.Any
 	26,  // 18: scalibr.Package.python_metadata:type_name -> scalibr.PythonPackageMetadata
 	27,  // 19: scalibr.Package.pyproject_metadata:type_name -> scalibr.PyprojectMetadata
 	28,  // 20: scalibr.Package.ruby_gem_metadata:type_name -> scalibr.RubyGemMetadata
@@ -15461,7 +15899,7 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	17,  // 69: scalibr.PackageExploitabilitySignal.vuln_identifiers:type_name -> scalibr.VulnIdentifiers
 	0,   // 70: scalibr.FindingExploitabilitySignal.justification:type_name -> scalibr.VexJustification
 	20,  // 71: scalibr.Purl.qualifiers:type_name -> scalibr.Qualifier
-	199, // 72: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
+	205, // 72: scalibr.PackageVuln.vuln:type_name -> osv.Vulnerability
 	18,  // 73: scalibr.PackageVuln.exploitability_signals:type_name -> scalibr.FindingExploitabilitySignal
 	23,  // 74: scalibr.GenericFinding.adv:type_name -> scalibr.GenericFindingAdvisory
 	25,  // 75: scalibr.GenericFinding.target:type_name -> scalibr.GenericFindingTargetDetails
@@ -15479,8 +15917,8 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	52,  // 87: scalibr.JavaArchiveMetadata.dependencies:type_name -> scalibr.JavaLockfileDependency
 	53,  // 88: scalibr.JavaArchiveMetadata.parent:type_name -> scalibr.JavaLockfileParent
 	100, // 89: scalibr.PodmanMetadata.exposed_ports:type_name -> scalibr.PodmanMetadata.ExposedPortsEntry
-	197, // 90: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
-	197, // 91: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
+	203, // 90: scalibr.PodmanMetadata.started_time:type_name -> google.protobuf.Timestamp
+	203, // 91: scalibr.PodmanMetadata.finished_time:type_name -> google.protobuf.Timestamp
 	74,  // 92: scalibr.DockerContainersMetadata.ports:type_name -> scalibr.DockerPort
 	77,  // 93: scalibr.UnknownBinaryMetadata.attribution:type_name -> scalibr.UnknownBinaryAttribution
 	79,  // 94: scalibr.Secret.secret:type_name -> scalibr.SecretData
@@ -15546,17 +15984,17 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	171, // 154: scalibr.SecretData.bitbucket_credentials:type_name -> scalibr.SecretData.BitBucketCredentials
 	173, // 155: scalibr.SecretData.paystack_secret_key:type_name -> scalibr.SecretData.PaystackSecretKey
 	177, // 156: scalibr.SecretData.telegram_bot_api_token:type_name -> scalibr.SecretData.TelegramBotToken
-	188, // 157: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
+	194, // 157: scalibr.SecretData.cursor_api_key:type_name -> scalibr.SecretData.CursorAPIKey
 	172, // 158: scalibr.SecretData.elastic_cloud_api_key:type_name -> scalibr.SecretData.ElasticCloudAPIKey
-	191, // 159: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
+	197, // 159: scalibr.SecretData.url_credentials:type_name -> scalibr.SecretData.URLCredentials
 	180, // 160: scalibr.SecretData.salesforce_oauth2_client_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2ClientCredentials
 	178, // 161: scalibr.SecretData.salesforce_oauth2_access_token:type_name -> scalibr.SecretData.SalesforceOAuth2AccessToken
 	181, // 162: scalibr.SecretData.salesforce_oauth2_refresh_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2RefreshCredentials
 	106, // 163: scalibr.SecretData.mistral_api_key:type_name -> scalibr.SecretData.MistralAPIKey
-	189, // 164: scalibr.SecretData.circleci_personal_access_token:type_name -> scalibr.SecretData.CircleCIPersonalAccessToken
-	190, // 165: scalibr.SecretData.circleci_project_token:type_name -> scalibr.SecretData.CircleCIProjectToken
-	192, // 166: scalibr.SecretData.square_personal_access_token:type_name -> scalibr.SecretData.SquarePersonalAccessToken
-	193, // 167: scalibr.SecretData.square_oauth_application_secret:type_name -> scalibr.SecretData.SquareOAuthApplicationSecret
+	195, // 164: scalibr.SecretData.circleci_personal_access_token:type_name -> scalibr.SecretData.CircleCIPersonalAccessToken
+	196, // 165: scalibr.SecretData.circleci_project_token:type_name -> scalibr.SecretData.CircleCIProjectToken
+	198, // 166: scalibr.SecretData.square_personal_access_token:type_name -> scalibr.SecretData.SquarePersonalAccessToken
+	199, // 167: scalibr.SecretData.square_oauth_application_secret:type_name -> scalibr.SecretData.SquareOAuthApplicationSecret
 	182, // 168: scalibr.SecretData.salesforce_oauth2_jwt_credentials:type_name -> scalibr.SecretData.SalesforceOAuth2JWTCredentials
 	179, // 169: scalibr.SecretData.sendgrid_api_key:type_name -> scalibr.SecretData.SendGridAPIKey
 	118, // 170: scalibr.SecretData.deno_pat:type_name -> scalibr.SecretData.DenoPat
@@ -15574,39 +16012,45 @@ var file_proto_scan_result_proto_depIdxs = []int32{
 	161, // 182: scalibr.SecretData.packagist_conductor_update_token:type_name -> scalibr.SecretData.PackagistConductorUpdateToken
 	155, // 183: scalibr.SecretData.composer_http_basic_credentials:type_name -> scalibr.SecretData.ComposerPackagistCredentials
 	174, // 184: scalibr.SecretData.discord_bot_token:type_name -> scalibr.SecretData.DiscordBotToken
-	183, // 185: scalibr.SecretData.bitwarden_oauth2_access_token:type_name -> scalibr.SecretData.BitwardenOAuth2AccessToken
-	184, // 186: scalibr.SecretData.http_basic_auth:type_name -> scalibr.SecretData.HTTPBasicAuth
-	185, // 187: scalibr.SecretData.http_bearer:type_name -> scalibr.SecretData.HTTPBearer
-	186, // 188: scalibr.SecretData.http_csrf_token:type_name -> scalibr.SecretData.HTTPCSRFToken
-	187, // 189: scalibr.SecretData.http_cookie:type_name -> scalibr.SecretData.HTTPCookie
-	6,   // 190: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
-	197, // 191: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
-	82,  // 192: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
-	83,  // 193: scalibr.LocationLegacy.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
-	84,  // 194: scalibr.LocationLegacy.environment_variable:type_name -> scalibr.EnvironmentVariable
-	85,  // 195: scalibr.LocationLegacy.container_command:type_name -> scalibr.ContainerCommand
-	15,  // 196: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
-	87,  // 197: scalibr.Location.file:type_name -> scalibr.File
-	91,  // 198: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
-	89,  // 199: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
-	195, // 200: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
-	196, // 201: scalibr.ContainerImageMetadata.labels:type_name -> scalibr.ContainerImageMetadata.LabelsEntry
-	90,  // 202: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
-	92,  // 203: scalibr.LayerMetadata.attributes:type_name -> scalibr.LayerAttribute
-	3,   // 204: scalibr.InfoType.sensitivity:type_name -> scalibr.SensitivityLevel
-	93,  // 205: scalibr.SensitiveInformation.info_type:type_name -> scalibr.InfoType
-	4,   // 206: scalibr.SensitiveInformation.likelihood:type_name -> scalibr.Likelihood
-	86,  // 207: scalibr.SensitiveInformation.location:type_name -> scalibr.Location
-	98,  // 208: scalibr.RubyGemMetadata.Dependency.requirements:type_name -> scalibr.RubyGemMetadata.Dependency.RequirementConstraint
-	67,  // 209: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
-	176, // 210: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
-	200, // 211: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
-	194, // 212: scalibr.SecretData.HTTPCookie.values:type_name -> scalibr.SecretData.HTTPCookie.ValuesEntry
-	213, // [213:213] is the sub-list for method output_type
-	213, // [213:213] is the sub-list for method input_type
-	213, // [213:213] is the sub-list for extension type_name
-	213, // [213:213] is the sub-list for extension extendee
-	0,   // [0:213] is the sub-list for field type_name
+	189, // 185: scalibr.SecretData.bitwarden_oauth2_access_token:type_name -> scalibr.SecretData.BitwardenOAuth2AccessToken
+	190, // 186: scalibr.SecretData.http_basic_auth:type_name -> scalibr.SecretData.HTTPBasicAuth
+	191, // 187: scalibr.SecretData.http_bearer:type_name -> scalibr.SecretData.HTTPBearer
+	192, // 188: scalibr.SecretData.http_csrf_token:type_name -> scalibr.SecretData.HTTPCSRFToken
+	193, // 189: scalibr.SecretData.http_cookie:type_name -> scalibr.SecretData.HTTPCookie
+	183, // 190: scalibr.SecretData.sap_access_token:type_name -> scalibr.SecretData.SAPAccessToken
+	184, // 191: scalibr.SecretData.sap_success_factors_access_token:type_name -> scalibr.SecretData.SAPSuccessFactorsAccessToken
+	185, // 192: scalibr.SecretData.sap_ariba_oauth2_client_credentials:type_name -> scalibr.SecretData.SAPAribaOAuth2ClientCredentials
+	186, // 193: scalibr.SecretData.sap_btp_oauth2_client_credentials:type_name -> scalibr.SecretData.SAPBTPOAuth2ClientCredentials
+	187, // 194: scalibr.SecretData.sap_concur_access_token:type_name -> scalibr.SecretData.SAPConcurAccessToken
+	188, // 195: scalibr.SecretData.sap_concur_refresh_token:type_name -> scalibr.SecretData.SAPConcurRefreshToken
+	6,   // 196: scalibr.SecretStatus.status:type_name -> scalibr.SecretStatus.SecretStatusEnum
+	203, // 197: scalibr.SecretStatus.last_updated:type_name -> google.protobuf.Timestamp
+	82,  // 198: scalibr.LocationLegacy.filepath:type_name -> scalibr.Filepath
+	83,  // 199: scalibr.LocationLegacy.filepath_with_layer_details:type_name -> scalibr.FilepathWithLayerDetails
+	84,  // 200: scalibr.LocationLegacy.environment_variable:type_name -> scalibr.EnvironmentVariable
+	85,  // 201: scalibr.LocationLegacy.container_command:type_name -> scalibr.ContainerCommand
+	15,  // 202: scalibr.FilepathWithLayerDetails.layer_details:type_name -> scalibr.LayerDetails
+	87,  // 203: scalibr.Location.file:type_name -> scalibr.File
+	91,  // 204: scalibr.ContainerImageMetadata.layer_metadata:type_name -> scalibr.LayerMetadata
+	89,  // 205: scalibr.ContainerImageMetadata.base_image_chains:type_name -> scalibr.BaseImageChain
+	201, // 206: scalibr.ContainerImageMetadata.os_info:type_name -> scalibr.ContainerImageMetadata.OsInfoEntry
+	202, // 207: scalibr.ContainerImageMetadata.labels:type_name -> scalibr.ContainerImageMetadata.LabelsEntry
+	90,  // 208: scalibr.BaseImageChain.base_images:type_name -> scalibr.BaseImageDetails
+	92,  // 209: scalibr.LayerMetadata.attributes:type_name -> scalibr.LayerAttribute
+	3,   // 210: scalibr.InfoType.sensitivity:type_name -> scalibr.SensitivityLevel
+	93,  // 211: scalibr.SensitiveInformation.info_type:type_name -> scalibr.InfoType
+	4,   // 212: scalibr.SensitiveInformation.likelihood:type_name -> scalibr.Likelihood
+	86,  // 213: scalibr.SensitiveInformation.location:type_name -> scalibr.Location
+	98,  // 214: scalibr.RubyGemMetadata.Dependency.requirements:type_name -> scalibr.RubyGemMetadata.Dependency.RequirementConstraint
+	67,  // 215: scalibr.PodmanMetadata.ExposedPortsEntry.value:type_name -> scalibr.Protocol
+	176, // 216: scalibr.SecretData.HerokuSecretKey.heroku_secret_key_metadata:type_name -> scalibr.SecretData.HerokuSecretKeyMetadata
+	206, // 217: scalibr.SecretData.HerokuSecretKeyMetadata.expire_time:type_name -> google.protobuf.Duration
+	200, // 218: scalibr.SecretData.HTTPCookie.values:type_name -> scalibr.SecretData.HTTPCookie.ValuesEntry
+	219, // [219:219] is the sub-list for method output_type
+	219, // [219:219] is the sub-list for method input_type
+	219, // [219:219] is the sub-list for extension type_name
+	219, // [219:219] is the sub-list for extension extendee
+	0,   // [0:219] is the sub-list for field type_name
 }
 
 func init() { file_proto_scan_result_proto_init() }
@@ -15764,6 +16208,12 @@ func file_proto_scan_result_proto_init() {
 		(*SecretData_HttpBearer)(nil),
 		(*SecretData_HttpCsrfToken)(nil),
 		(*SecretData_HttpCookie)(nil),
+		(*SecretData_SapAccessToken)(nil),
+		(*SecretData_SapSuccessFactorsAccessToken)(nil),
+		(*SecretData_SapAribaOauth2ClientCredentials)(nil),
+		(*SecretData_SapBtpOauth2ClientCredentials)(nil),
+		(*SecretData_SapConcurAccessToken)(nil),
+		(*SecretData_SapConcurRefreshToken)(nil),
 	}
 	file_proto_scan_result_proto_msgTypes[74].OneofWrappers = []any{
 		(*LocationLegacy_Filepath)(nil),
@@ -15778,7 +16228,7 @@ func file_proto_scan_result_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_scan_result_proto_rawDesc), len(file_proto_scan_result_proto_rawDesc)),
 			NumEnums:      7,
-			NumMessages:   190,
+			NumMessages:   196,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
