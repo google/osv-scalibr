@@ -17,6 +17,7 @@ package chisel_test
 import (
 	"fmt"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -210,6 +211,75 @@ func TestExtract(t *testing.T) {
 			wantPackages:     []*extractor.Package{},
 			wantErr:          cmpopts.AnyError,
 			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			// A valid manifest padded with newlines: 671 bytes on disk, over 1 MiB
+			// decompressed.
+			name:             "decompressed size exceeds limit",
+			path:             "testdata/chisel/bomb.wall",
+			osrelease:        UbuntuNoble,
+			cfg:              &cpb.PluginConfig{MaxFileSizeBytes: 64 * units.KiB},
+			wantPackages:     []*extractor.Package{},
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			// single.wall decompresses to 3607 bytes.
+			name:             "decompressed size one byte over limit",
+			path:             "testdata/chisel/single.wall",
+			osrelease:        UbuntuNoble,
+			cfg:              &cpb.PluginConfig{MaxFileSizeBytes: 3606},
+			wantPackages:     []*extractor.Package{},
+			wantErr:          cmpopts.AnyError,
+			wantResultMetric: stats.FileExtractedResultErrorUnknown,
+		},
+		{
+			name:      "decompressed size at limit",
+			path:      "testdata/chisel/single.wall",
+			osrelease: UbuntuNoble,
+			cfg:       &cpb.PluginConfig{MaxFileSizeBytes: 3607},
+			wantPackages: []*extractor.Package{
+				{
+					Name:    "base-files",
+					Version: "13ubuntu10.2",
+					Metadata: &dpkgmeta.Metadata{
+						PackageName:       "base-files",
+						PackageVersion:    "13ubuntu10.2",
+						OSID:              "ubuntu",
+						OSVersionCodename: "noble",
+						OSVersionID:       "24.04",
+						Maintainer:        "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
+						Architecture:      "amd64",
+					},
+					Location: extractor.LocationFromPath("testdata/chisel/single.wall"),
+					PURLType: purl.TypeDebian,
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
+			name:      "max int64 size limit",
+			path:      "testdata/chisel/single.wall",
+			osrelease: UbuntuNoble,
+			cfg:       &cpb.PluginConfig{MaxFileSizeBytes: math.MaxInt64},
+			wantPackages: []*extractor.Package{
+				{
+					Name:    "base-files",
+					Version: "13ubuntu10.2",
+					Metadata: &dpkgmeta.Metadata{
+						PackageName:       "base-files",
+						PackageVersion:    "13ubuntu10.2",
+						OSID:              "ubuntu",
+						OSVersionCodename: "noble",
+						OSVersionID:       "24.04",
+						Maintainer:        "Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>",
+						Architecture:      "amd64",
+					},
+					Location: extractor.LocationFromPath("testdata/chisel/single.wall"),
+					PURLType: purl.TypeDebian,
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
 			name: "VERSION_CODENAME not set, fallback to VERSION_ID",

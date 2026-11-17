@@ -17,6 +17,9 @@ package chisel
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"math"
 
 	"github.com/canonical/chisel-manifest/public/manifest"
 	"github.com/google/osv-scalibr/extractor"
@@ -39,7 +42,8 @@ const (
 	Name = "os/chisel"
 
 	// defaultMaxFileSizeBytes is the maximum file size an extractor will unmarshal.
-	// If Extract gets a bigger file, it will return an error.
+	// If Extract gets a bigger file, it will return an error. It also caps the
+	// decompressed size of the manifest.
 	defaultMaxFileSizeBytes = 100 * units.MiB
 
 	// packageMaintainer is maintainer's contact of the package.
@@ -142,7 +146,19 @@ func (e Extractor) extractFromInput(_ context.Context, input *filesystem.ScanInp
 	}
 	defer r.Close()
 
-	chiselManifest, err := manifest.Read(r)
+	// The size check in FileRequired only covers the compressed file, so also
+	// bound the decompressed stream, which manifest.Read loads fully into memory.
+	limit := e.maxFileSizeBytes
+	if limit <= 0 {
+		limit = defaultMaxFileSizeBytes
+	}
+	// Leave room for the extra byte that detects an oversized manifest.
+	limit = min(limit, math.MaxInt64-1)
+	lr := &io.LimitedReader{R: r, N: limit + 1}
+	chiselManifest, err := manifest.Read(lr)
+	if lr.N <= 0 {
+		return pkgs, fmt.Errorf("decompressed chisel manifest %s exceeds size limit of %d bytes", input.Path, limit)
+	}
 	if err != nil {
 		return pkgs, err
 	}
