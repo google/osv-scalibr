@@ -537,7 +537,7 @@ func generateEXTFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       scalibrfs.DirFS(params.TempDir),
+		FS:       scalibrfs.ConfinedDirFS(params.TempDir),
 		File:     params.File,
 		TmpPaths: []string{params.TempDir, params.TmpRawPath},
 		RefCount: params.RefCount,
@@ -569,7 +569,7 @@ func generateFAT32FS(params generateFSParams) (*EmbeddedDirFS, error) {
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       scalibrfs.DirFS(params.TempDir),
+		FS:       scalibrfs.ConfinedDirFS(params.TempDir),
 		File:     f,
 		TmpPaths: []string{params.TempDir, params.TmpRawPath},
 		RefCount: params.RefCount,
@@ -586,7 +586,7 @@ func generateEXFATFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       scalibrfs.DirFS(params.TempDir),
+		FS:       scalibrfs.ConfinedDirFS(params.TempDir),
 		File:     params.File,
 		TmpPaths: []string{params.TempDir, params.TmpRawPath},
 		RefCount: params.RefCount,
@@ -611,7 +611,7 @@ func generateNTFSFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	*params.RefCount++
 	params.RefMu.Unlock()
 	return &EmbeddedDirFS{
-		FS:       scalibrfs.DirFS(params.TempDir),
+		FS:       scalibrfs.ConfinedDirFS(params.TempDir),
 		File:     params.File,
 		TmpPaths: []string{params.TempDir, params.TmpRawPath},
 		RefCount: params.RefCount,
@@ -619,7 +619,8 @@ func generateNTFSFS(params generateFSParams) (*EmbeddedDirFS, error) {
 	}, nil
 }
 
-// EmbeddedDirFS wraps scalibrfs.DirFS to include reference counting and cleanup.
+// EmbeddedDirFS wraps a temporary directory FS (typically scalibrfs.ConfinedDirFS)
+// with reference counting and cleanup.
 type EmbeddedDirFS struct {
 	FS       scalibrfs.FS
 	File     *os.File

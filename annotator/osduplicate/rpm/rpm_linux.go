@@ -21,9 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -91,15 +89,13 @@ func (a *Annotator) Annotate(ctx context.Context, input *annotator.ScanInput, re
 }
 
 func (a *Annotator) annotatePackagesInRPMDB(ctx context.Context, root *scalibrfs.ScanRoot, dbPath string, mainPackages *mainOSPackages, locationToPKGs map[string][]*extractor.Package) error {
-	realDBPath, err := scalibrfs.GetRealPath(root, dbPath, nil)
+	realDBPath, cleanup, err := scalibrfs.OpenOSPath(root, dbPath, nil)
 	if err != nil {
-		return fmt.Errorf("GetRealPath(%v, %v): %w", root, dbPath, err)
+		return fmt.Errorf("OpenOSPath(%q): %w", dbPath, err)
 	}
-	// The file got copied to a temporary dir, remove it at the end.
 	defer func() {
-		dir := filepath.Dir(realDBPath)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", realDBPath, err)
 		}
 	}()
 

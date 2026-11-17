@@ -43,7 +43,7 @@ type boltState struct {
 }
 
 func newBoltState(path string) (state, error) {
-	db, err := bolt.Open(path, 0444, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := bolt.Open(path, 0o444, &bolt.Options{Timeout: 1 * time.Second, ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}

@@ -318,4 +318,16 @@ func TestDirFSAndRealFSScanRoot(t *testing.T) {
 	if string(gotRoot) != "hello" {
 		t.Errorf("fs.ReadFile(RealFSScanRoot.FS) = %q, want %q", gotRoot, "hello")
 	}
+
+	confinedRoot := ConfinedScanRoot(t, dir)
+	if confinedRoot.Path != dir {
+		t.Errorf("ConfinedScanRoot().Path = %q, want %q", confinedRoot.Path, dir)
+	}
+	gotConfined, err := fs.ReadFile(confinedRoot.FS, "file.txt")
+	if err != nil {
+		t.Fatalf("fs.ReadFile(ConfinedScanRoot.FS): %v", err)
+	}
+	if string(gotConfined) != "hello" {
+		t.Errorf("fs.ReadFile(ConfinedScanRoot.FS) = %q, want %q", gotConfined, "hello")
+	}
 }

@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -166,14 +165,13 @@ func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanI
 }
 
 func (e Extractor) extractFromSQLite(ctx context.Context, input *filesystem.ScanInput, osrelease map[string]string) ([]*extractor.Package, error) {
-	absPath, err := input.GetRealPath()
+	absPath, cleanup, err := input.OpenOSPath()
 	if err != nil {
-		return nil, fmt.Errorf("GetRealPath(%v): %w", input, err)
+		return nil, fmt.Errorf("OpenOSPath(%q): %w", input.Path, err)
 	}
 	defer func() {
-		dir := filepath.Dir(absPath)
-		if err := os.RemoveAll(dir); err != nil {
-			log.Errorf("os.RemoveAll(%q): %v", dir, err)
+		if err := cleanup(); err != nil {
+			log.Errorf("cleanup(%q): %v", absPath, err)
 		}
 	}()
 
