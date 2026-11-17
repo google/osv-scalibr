@@ -87,15 +87,26 @@ const (
 	// sentinel or error type for errors.Is or errors.As. We match this message
 	// before walking path components in resolveInRoot so normal errors (such as
 	// fs.ErrNotExist on missing files) do not trigger redundant per-component
-	// root.Lstat syscalls. TestOSRootPathEscapesError and TestDirFS_Symlinks
+	// root.Lstat syscalls. TestOSRootPathEscapesError and TestConfinedDirFS_Symlinks
 	// fail if Go ever changes this string.
 	errPathEscapesMsg = "path escapes from parent"
 )
 
-// DirFS returns an FS implementation that accesses the real filesystem at the
-// given root, confined to root via os.Root. The underlying os.Root handle is
-// opened lazily on first access and can be released via Close.
+// DirFS returns an unconfined FS implementation rooted at the given directory on
+// the host filesystem (backed by os.DirFS). Use DirFS for trusted host paths;
+// use ConfinedDirFS when scanning untrusted or unpacked directory trees whose
+// symlinks must not escape root.
 func DirFS(root string) FS {
+	return os.DirFS(root).(FS)
+}
+
+// ConfinedDirFS returns an FS implementation rooted at the given directory and
+// confined to root via os.Root, rewriting intra-guest absolute symlinks (such as
+// /etc/os-release -> /usr/lib/os-release) relative to root while rejecting any
+// path or symlink that escapes root. The underlying os.Root handle is opened
+// lazily on first access and should be released via Close (Scanner.Scan closes
+// any io.Closer ScanRoot.FS automatically).
+func ConfinedDirFS(root string) FS {
 	return &rootFS{dir: root}
 }
 
@@ -315,16 +326,29 @@ func (s *subFS) Stat(name string) (fs.FileInfo, error) {
 	return s.fsys.Stat(path.Join(s.dir, name))
 }
 
-// RealFSScanRoots returns a one-element ScanRoot array representing the given
-// root path on the real filesystem SCALIBR is running on.
+// RealFSScanRoots returns a one-element ScanRoot slice for a trusted path on
+// the host filesystem. Use ConfinedScanRoots for untrusted or unpacked
+// directory trees.
 func RealFSScanRoots(path string) []*ScanRoot {
 	return []*ScanRoot{RealFSScanRoot(path)}
 }
 
-// RealFSScanRoot returns a ScanRoot array the given root path on the real
-// filesystem SCALIBR is running on.
+// RealFSScanRoot returns a ScanRoot for a trusted path on the host filesystem.
+// Use ConfinedScanRoot for untrusted or unpacked directory trees.
 func RealFSScanRoot(path string) *ScanRoot {
 	return &ScanRoot{FS: DirFS(path), Path: path}
+}
+
+// ConfinedScanRoots returns a one-element ScanRoot slice confined to path via
+// ConfinedDirFS (os.Root) for scanning untrusted or unpacked directory trees.
+func ConfinedScanRoots(path string) []*ScanRoot {
+	return []*ScanRoot{ConfinedScanRoot(path)}
+}
+
+// ConfinedScanRoot returns a ScanRoot confined to path via ConfinedDirFS
+// (os.Root) for scanning untrusted or unpacked directory trees.
+func ConfinedScanRoot(path string) *ScanRoot {
+	return &ScanRoot{FS: ConfinedDirFS(path), Path: path}
 }
 
 // NewReaderAt converts an io.Reader into an io.ReaderAt.
@@ -456,14 +480,16 @@ func GetRealPath(root *ScanRoot, path string, reader io.Reader) (string, error) 
 var osDirFSType = reflect.TypeOf(os.DirFS("."))
 
 func isUnconfinedRealRoot(root *ScanRoot) bool {
-	return root != nil && !root.IsVirtual() && root.FS != nil && reflect.TypeOf(root.FS) == osDirFSType
+	return root != nil && !root.IsVirtual() && root.FS != nil && root.Path != "" &&
+		reflect.TypeOf(root.FS) == osDirFSType &&
+		filepath.Clean(reflect.ValueOf(root.FS).String()) == filepath.Clean(root.Path)
 }
 
 // OpenOSPath returns a host filesystem path for the target file along with a cleanup function
 // that removes any temporary copy that had to be created. On unconfined real filesystems
-// (os.DirFS), it returns the in-place file path without copying; on confined or virtual
-// filesystems, it copies the file into an isolated temporary directory so database engines
-// cannot follow sibling (-wal/-journal/-shm) symlinks.
+// (DirFS / RealFSScanRoot), it returns the in-place file path without copying; on confined
+// (ConfinedDirFS / ConfinedScanRoot) or virtual filesystems, it copies the file into an isolated
+// temporary directory so database engines cannot follow sibling (-wal/-journal/-shm) symlinks.
 func OpenOSPath(root *ScanRoot, path string, reader io.Reader) (string, func() error, error) {
 	if isUnconfinedRealRoot(root) {
 		slashPath := filepath.ToSlash(path)

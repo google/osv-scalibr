@@ -318,4 +318,28 @@ func TestDirFSAndRealFSScanRoot(t *testing.T) {
 	if string(gotRoot) != "hello" {
 		t.Errorf("fs.ReadFile(RealFSScanRoot.FS) = %q, want %q", gotRoot, "hello")
 	}
+
+	confinedRoot := ConfinedScanRoot(t, dir)
+	if confinedRoot.Path != dir {
+		t.Errorf("ConfinedScanRoot().Path = %q, want %q", confinedRoot.Path, dir)
+	}
+	gotConfined, err := fs.ReadFile(confinedRoot.FS, "file.txt")
+	if err != nil {
+		t.Fatalf("fs.ReadFile(ConfinedScanRoot.FS): %v", err)
+	}
+	if string(gotConfined) != "hello" {
+		t.Errorf("fs.ReadFile(ConfinedScanRoot.FS) = %q, want %q", gotConfined, "hello")
+	}
+
+	escapeDir, _ := CreateSymlinkEscapeFixture(t, "escape.txt")
+	gotEscape, err := fs.ReadFile(RealFSScanRoot(t, escapeDir).FS, "escape.txt")
+	if err != nil {
+		t.Fatalf("fs.ReadFile(RealFSScanRoot escape.txt): %v", err)
+	}
+	if string(gotEscape) != OutsideFileContent {
+		t.Errorf("fs.ReadFile(RealFSScanRoot escape.txt) = %q, want %q", gotEscape, OutsideFileContent)
+	}
+	if _, err := fs.ReadFile(ConfinedScanRoot(t, escapeDir).FS, "escape.txt"); err == nil {
+		t.Errorf("fs.ReadFile(ConfinedScanRoot escape.txt) succeeded, want symlink escape error")
+	}
 }

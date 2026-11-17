@@ -129,7 +129,7 @@ func (e *Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (i
 	var refMu sync.Mutex
 	getEmbeddedFS := func(ctx context.Context) (scalibrfs.FS, error) {
 		return &common.EmbeddedDirFS{
-			FS:       scalibrfs.DirFS(tempDir),
+			FS:       scalibrfs.ConfinedDirFS(tempDir),
 			File:     nil,
 			TmpPaths: []string{tempDir},
 			RefCount: &refCount,

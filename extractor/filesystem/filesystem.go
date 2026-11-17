@@ -785,8 +785,9 @@ func (i *ScanInput) GetRealPath() (string, error) {
 }
 
 // OpenOSPath returns a host filesystem path for the scanned file along with a cleanup function.
-// On unconfined real filesystems (os.DirFS) it returns the in-place path without copying; on
-// confined or virtual filesystems it copies the file into an isolated temporary directory.
+// On unconfined real filesystems (DirFS / RealFSScanRoot) it returns the in-place path without
+// copying; on confined (ConfinedDirFS / ConfinedScanRoot) or virtual filesystems it copies the
+// file into an isolated temporary directory.
 func (i *ScanInput) OpenOSPath() (string, func() error, error) {
 	return scalibrfs.OpenOSPath(&scalibrfs.ScanRoot{FS: i.FS, Path: i.Root}, i.Path, i.Reader)
 }
