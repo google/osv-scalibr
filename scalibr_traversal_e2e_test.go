@@ -118,7 +118,7 @@ func packageSet(sr *scalibr.ScanResult) map[string]bool {
 	return got
 }
 
-func TestScan_RealFS_MultiPluginEndToEnd(t *testing.T) {
+func TestScan_ConfinedFS_MultiPluginEndToEnd(t *testing.T) {
 	parent := t.TempDir()
 	outside := filepath.Join(parent, "outside")
 	scanRoot := filepath.Join(parent, "rootfs")
@@ -208,7 +208,7 @@ func TestScan_RealFS_MultiPluginEndToEnd(t *testing.T) {
 	}
 
 	cfg := &scalibr.ScanConfig{
-		ScanRoots:    scalibrfs.RealFSScanRoots(scanRoot),
+		ScanRoots:    scalibrfs.ConfinedScanRoots(scanRoot),
 		Plugins:      plugins,
 		Capabilities: &plugin.Capabilities{DirectFS: true},
 		DirsToSkip:   []string{filepath.Join(scanRoot, "skip-by-name")},
@@ -285,7 +285,7 @@ func TestScan_RealFS_MultiPluginEndToEnd(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Run("read_symlinks_confinement", func(t *testing.T) {
 			symCfg := &scalibr.ScanConfig{
-				ScanRoots: scalibrfs.RealFSScanRoots(scanRoot),
+				ScanRoots: scalibrfs.ConfinedScanRoots(scanRoot),
 				Plugins: []plugin.Plugin{
 					mustNewExtractor(t, packagejson.New),
 					fromVelesDetector(t, privatekey.NewDetector(), "secrets/privatekey", 0),
@@ -320,6 +320,113 @@ func TestScan_RealFS_MultiPluginEndToEnd(t *testing.T) {
 			}
 			if !slices.Equal(symSecretPaths, []string{"etc/ssl/app.pem"}) {
 				t.Errorf("ReadSymlinks Scan() secret locations = %v, want [etc/ssl/app.pem]", symSecretPaths)
+			}
+		})
+	}
+}
+
+func TestScan_RealFS_MultiPluginEndToEnd(t *testing.T) {
+	parent := t.TempDir()
+	outside := filepath.Join(parent, "outside")
+	scanRoot := filepath.Join(parent, "hostroot")
+	if err := os.MkdirAll(scanRoot, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%q): %v", scanRoot, err)
+	}
+
+	pemKey := generateTestECPrivateKeyPEM(t)
+
+	mustWriteFile(t, scanRoot, "usr/lib/os-release", []byte("ID=debian\nVERSION_ID=\"12\"\n"))
+	mustWriteFile(t, scanRoot, "var/lib/dpkg/status", []byte(
+		"Package: curl\nStatus: install ok installed\nArchitecture: amd64\nVersion: 8.5.0-2\n\n",
+	))
+	mustWriteFile(t, scanRoot, "lib/apk/db/installed", []byte(
+		"P:musl\nV:1.2.4-r2\nA:x86_64\n\n",
+	))
+
+	mustWriteFile(t, scanRoot, "srv/web/app/package.json", []byte(`{"name":"web-app","version":"1.2.3"}`))
+	oversized := `{"name":"oversized-app","version":"9.9.9","pad":"` + strings.Repeat("a", 300*1024) + `"}`
+	mustWriteFile(t, scanRoot, "srv/web/oversized/package.json", []byte(oversized))
+	mustWriteFile(t, scanRoot, "srv/backend/go.mod", []byte("module example.com/backend\n\ngo 1.22\n\nrequire golang.org/x/text v0.14.0\n"))
+	mustWriteFile(t, scanRoot, "usr/lib/python3/dist-packages/requests-2.31.0.dist-info/METADATA", []byte(
+		"Metadata-Version: 2.1\nName: requests\nVersion: 2.31.0\n",
+	))
+	mustWriteFile(t, scanRoot, "opt/repo/.git/config", []byte("[remote \"origin\"]\n\turl = https://github.com/example/demo.git\n"))
+	mustWriteFile(t, scanRoot, "etc/ssl/app.pem", pemKey)
+
+	if runtime.GOOS != "windows" {
+		mustWriteFile(t, outside, "package.json", []byte(`{"name":"host-linked-pkg","version":"2.0.0"}`))
+		mustSymlink(t, scanRoot, filepath.Join(outside, "package.json"), "links/host/package.json")
+	}
+
+	plugins := []plugin.Plugin{
+		mustNewExtractor(t, dpkg.New),
+		mustNewExtractor(t, apk.New),
+		mustNewExtractor(t, packagejson.New),
+		mustNewExtractor(t, gomod.New),
+		mustNewExtractor(t, wheelegg.New),
+		mustNewExtractor(t, gitrepo.New),
+		fromVelesDetector(t, privatekey.NewDetector(), "secrets/privatekey", 0),
+	}
+
+	cfg := &scalibr.ScanConfig{
+		ScanRoots:    scalibrfs.RealFSScanRoots(scanRoot),
+		Plugins:      plugins,
+		Capabilities: &plugin.Capabilities{DirectFS: true},
+		MaxFileSize:  256 * 1024,
+	}
+
+	sr := scalibr.New().Scan(t.Context(), cfg)
+	assertScanSucceeded(t, sr)
+
+	pkgs := packageSet(sr)
+	for _, want := range []string{
+		"curl@8.5.0-2",
+		"musl@1.2.4-r2",
+		"web-app@1.2.3",
+		"golang.org/x/text@0.14.0",
+		"requests@2.31.0",
+		"demo@",
+	} {
+		if !pkgs[want] {
+			t.Errorf("Scan() packages = %v, want %q", pkgs, want)
+		}
+	}
+	for _, bad := range []string{"oversized-app@9.9.9", "host-linked-pkg@2.0.0"} {
+		if pkgs[bad] {
+			t.Errorf("Scan() extracted skipped package %q", bad)
+		}
+	}
+
+	var secretPaths []string
+	for _, s := range sr.Inventory.Secrets {
+		secretPaths = append(secretPaths, s.Location.PathOrEmpty())
+	}
+	if !slices.Equal(secretPaths, []string{"etc/ssl/app.pem"}) {
+		t.Errorf("Scan() secret locations = %v, want [etc/ssl/app.pem]", secretPaths)
+	}
+
+	// Trusted host scans (RealFSScanRoots) allow following valid host-to-host
+	// symlinks when ReadSymlinks is explicitly enabled.
+	if runtime.GOOS != "windows" {
+		t.Run("read_symlinks_follows_host_targets", func(t *testing.T) {
+			symCfg := &scalibr.ScanConfig{
+				ScanRoots: scalibrfs.RealFSScanRoots(scanRoot),
+				Plugins: []plugin.Plugin{
+					mustNewExtractor(t, packagejson.New),
+				},
+				ReadSymlinks: true,
+			}
+			symSR := scalibr.New().Scan(t.Context(), symCfg)
+			assertScanSucceeded(t, symSR)
+
+			var hostLocations []string
+			for _, p := range symSR.Inventory.Packages {
+				if p.Name == "host-linked-pkg" {
+					hostLocations = append(hostLocations, p.Location.PathOrEmpty())
+				}
+			}
+			if !slices.Equal(hostLocations, []string{"links/host/package.json"}) {
+				t.Errorf("ReadSymlinks host-linked-pkg locations = %v, want [links/host/package.json]", hostLocations)
 			}
 		})
 	}
@@ -470,48 +577,58 @@ func createDeepBenchmarkTree(b *testing.B) string {
 	return root
 }
 
-func BenchmarkScan_RealFS_DeepTree(b *testing.B) {
+func BenchmarkScan_DeepTree(b *testing.B) {
 	root := createDeepBenchmarkTree(b)
 
-	b.Run("default_plugins", func(b *testing.B) {
-		plugins := []plugin.Plugin{
-			mustNewExtractor(b, dpkg.New),
-			mustNewExtractor(b, apk.New),
-			mustNewExtractor(b, packagejson.New),
-			mustNewExtractor(b, gomod.New),
-			mustNewExtractor(b, wheelegg.New),
-			mustNewExtractor(b, gitrepo.New),
-		}
-		for b.Loop() {
-			cfg := &scalibr.ScanConfig{
-				ScanRoots:   scalibrfs.RealFSScanRoots(root),
-				Plugins:     plugins,
-				MaxFileSize: 10 * 1024 * 1024,
-			}
-			sr := scalibr.New().Scan(b.Context(), cfg)
-			if sr.Status.Status != plugin.ScanStatusSucceeded {
-				b.Fatalf("Scan() status = %v, want SUCCEEDED", sr.Status)
-			}
-		}
-	})
+	for _, mode := range []struct {
+		name      string
+		scanRoots func(path string) []*scalibrfs.ScanRoot
+	}{
+		{name: "real_fs", scanRoots: scalibrfs.RealFSScanRoots},
+		{name: "confined_fs", scanRoots: scalibrfs.ConfinedScanRoots},
+	} {
+		b.Run(mode.name, func(b *testing.B) {
+			b.Run("default_plugins", func(b *testing.B) {
+				plugins := []plugin.Plugin{
+					mustNewExtractor(b, dpkg.New),
+					mustNewExtractor(b, apk.New),
+					mustNewExtractor(b, packagejson.New),
+					mustNewExtractor(b, gomod.New),
+					mustNewExtractor(b, wheelegg.New),
+					mustNewExtractor(b, gitrepo.New),
+				}
+				for b.Loop() {
+					cfg := &scalibr.ScanConfig{
+						ScanRoots:   mode.scanRoots(root),
+						Plugins:     plugins,
+						MaxFileSize: 10 * 1024 * 1024,
+					}
+					sr := scalibr.New().Scan(b.Context(), cfg)
+					if sr.Status.Status != plugin.ScanStatusSucceeded {
+						b.Fatalf("Scan() status = %v, want SUCCEEDED", sr.Status)
+					}
+				}
+			})
 
-	b.Run("stat_extractor", func(b *testing.B) {
-		// Same tree, also calling api.Stat() on 20% of files (.bin) via execStatExtractor.
-		plugins := []plugin.Plugin{
-			mustNewExtractor(b, packagejson.New),
-			mustNewExtractor(b, gomod.New),
-			execStatExtractor{},
-		}
-		for b.Loop() {
-			cfg := &scalibr.ScanConfig{
-				ScanRoots:   scalibrfs.RealFSScanRoots(root),
-				Plugins:     plugins,
-				MaxFileSize: 10 * 1024 * 1024,
-			}
-			sr := scalibr.New().Scan(b.Context(), cfg)
-			if sr.Status.Status != plugin.ScanStatusSucceeded {
-				b.Fatalf("Scan() status = %v, want SUCCEEDED", sr.Status)
-			}
-		}
-	})
+			b.Run("stat_extractor", func(b *testing.B) {
+				// Same tree, also calling api.Stat() on 20% of files (.bin) via execStatExtractor.
+				plugins := []plugin.Plugin{
+					mustNewExtractor(b, packagejson.New),
+					mustNewExtractor(b, gomod.New),
+					execStatExtractor{},
+				}
+				for b.Loop() {
+					cfg := &scalibr.ScanConfig{
+						ScanRoots:   mode.scanRoots(root),
+						Plugins:     plugins,
+						MaxFileSize: 10 * 1024 * 1024,
+					}
+					sr := scalibr.New().Scan(b.Context(), cfg)
+					if sr.Status.Status != plugin.ScanStatusSucceeded {
+						b.Fatalf("Scan() status = %v, want SUCCEEDED", sr.Status)
+					}
+				}
+			})
+		})
+	}
 }

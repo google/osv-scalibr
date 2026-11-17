@@ -1371,4 +1371,31 @@ func TestScan_ClosesScanRoots(t *testing.T) {
 			t.Errorf("Scan closeCounts = (%d, %d), want (1, 1)", tracked1.closeCount, tracked2.closeCount)
 		}
 	})
+
+	t.Run("confined_scan_roots", func(t *testing.T) {
+		dir := filepath.Join(t.TempDir(), "confined")
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "file.txt"), []byte("hello"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		cfg := &scalibr.ScanConfig{
+			Plugins: []plugin.Plugin{
+				fe.New("test/ext", 1, []string{"file.txt"}, map[string]fe.NamesErr{"file.txt": {Names: []string{"pkg"}}}),
+			},
+			ScanRoots: scalibrfs.ConfinedScanRoots(dir),
+		}
+		res := scalibr.New().Scan(t.Context(), cfg)
+		if res.Status.Status != plugin.ScanStatusSucceeded {
+			t.Fatalf("Scan failed: %s", res.Status.FailureReason)
+		}
+		if len(res.Inventory.Packages) != 1 {
+			t.Fatalf("Scan got %d packages, want 1", len(res.Inventory.Packages))
+		}
+		// ConfinedDirFS's os.Root handle must be closed by Scan so dir can be deleted on all OSes.
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatalf("os.RemoveAll(%q) after Scan(): %v", dir, err)
+		}
+	})
 }
