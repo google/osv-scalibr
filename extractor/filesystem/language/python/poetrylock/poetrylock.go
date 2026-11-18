@@ -28,6 +28,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/commitextractor"
 	"github.com/google/osv-scalibr/extractor/filesystem/osv"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/plugin"
@@ -43,6 +44,7 @@ const (
 
 type poetryLockPackageSource struct {
 	Type   string `toml:"type"`
+	URL    string `toml:"url"`
 	Commit string `toml:"resolved_reference"`
 }
 
@@ -132,6 +134,9 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 		if lockPackage.Source.Commit != "" {
 			pkgDetails.SourceCode = &extractor.SourceCodeIdentifier{
 				Commit: lockPackage.Source.Commit,
+			}
+			if lockPackage.Source.Type == "git" {
+				pkgDetails.SourceCode.Repo = commitextractor.NormalizeRepo(lockPackage.Source.URL)
 			}
 		}
 		packages = append(packages, pkgDetails)
