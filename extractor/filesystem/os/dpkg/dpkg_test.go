@@ -1385,7 +1385,7 @@ func (l *testLogger) Warnf(format string, args ...any) {
 }
 
 // Infof is the formatted info logging function.
-func (testLogger) Infof(format string, args ...any) {
+func (*testLogger) Infof(format string, args ...any) {
 	golog.Printf(format, args...)
 }
 
@@ -1409,7 +1409,7 @@ func (l *testLogger) Warn(args ...any) {
 }
 
 // Info is the info logging function.
-func (testLogger) Info(args ...any) {
+func (*testLogger) Info(args ...any) {
 	golog.Println(args...)
 }
 

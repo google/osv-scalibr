@@ -68,7 +68,7 @@ func (t *Token) Raw() string {
 	return t.raw
 }
 
-func (t Token) isValid() bool {
+func (t *Token) isValid() bool {
 	return t.header != nil && t.payload != nil && t.signature != ""
 }
 
