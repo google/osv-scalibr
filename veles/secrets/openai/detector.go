@@ -33,7 +33,7 @@ const maxTokenLength = 200
 //
 // The regex is designed to be specific enough to avoid false positives.
 var keyRe = regexp.MustCompile(
-	`sk-[A-Za-z0-9_-]*T3BlbkFJ[A-Za-z0-9_-]+`)
+	`sk-[A-Za-z0-9_-]*T3BlbkFJ[A-Za-z\d_-]+`)
 
 // NewDetector returns a new simpletoken.Detector that matches OpenAI API keys
 // (both legacy and project-scoped formats).

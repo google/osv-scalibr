@@ -46,7 +46,7 @@ var (
 	// Other references also suggest similar formats:
 	// - https://gofastmcp.com/integrations/google
 	// - https://web.archive.org/web/20250418010928/https://docs.gitguardian.com/secrets-detection/secrets-detection-engine/detectors/specifics/google_oauth2_keys
-	clientIDRe = regexp.MustCompile(`[0-9]{10,15}-[a-zA-Z0-9]+\.apps\.googleusercontent\.com`)
+	clientIDRe = regexp.MustCompile(`\d{10,15}-[a-zA-Z\d]+\.apps\.googleusercontent\.com`)
 
 	// clientSecretRe is a regular expression that matches GCP OAuth2 client secrets.
 	// There is no clear documentation on the exact format of GCP OAuth2 client secrets.
@@ -55,7 +55,7 @@ var (
 	// References:
 	// - https://gofastmcp.com/integrations/google
 	// - https://web.archive.org/web/20250418010928/https://docs.gitguardian.com/secrets-detection/secrets-detection-engine/detectors/specifics/google_oauth2_keys
-	clientSecretRe = regexp.MustCompile(`\bGOCSPX-[a-zA-Z0-9_-]{28}`)
+	clientSecretRe = regexp.MustCompile(`\bGOCSPX-[a-zA-Z\d_-]{28}`)
 )
 
 // NewDetector returns a detector that matches GCP OAuth2 client credentials.

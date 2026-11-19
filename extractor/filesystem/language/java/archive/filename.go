@@ -22,9 +22,9 @@ import (
 
 // Regexes to determine if a string is a version
 var (
-	digit           = regexp.MustCompile("^[0-9]")
-	buildAndDigit   = regexp.MustCompile("^build[0-9]")
-	releaseAndDigit = regexp.MustCompile("^rc?[0-9]+([^a-zA-Z]|$)")
+	digit           = regexp.MustCompile(`^\d`)
+	buildAndDigit   = regexp.MustCompile(`^build\d`)
+	releaseAndDigit = regexp.MustCompile(`^rc?\d+([^a-zA-Z]|$)`)
 )
 
 // JarProps stores the name, version, and group ID of a Java archive.

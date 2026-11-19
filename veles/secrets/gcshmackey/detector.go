@@ -23,8 +23,8 @@ import (
 
 var (
 	// ref: https://cloud.google.com/storage/docs/authentication/hmackeys#overview
-	accessIDPattern = regexp.MustCompile(`GOOG(?:[A-Z0-9]{57}|[A-Z0-9]{20})`)
-	secretPattern   = regexp.MustCompile(`\b[A-Za-z0-9+/]{40}\b`)
+	accessIDPattern = regexp.MustCompile(`GOOG(?:[A-Z0-9]{57}|[A-Z\d]{20})`)
+	secretPattern   = regexp.MustCompile(`\b[A-Za-z\d+/]{40}\b`)
 )
 
 const (

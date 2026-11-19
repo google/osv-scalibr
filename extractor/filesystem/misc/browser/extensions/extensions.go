@@ -41,20 +41,20 @@ import (
 const Name = "browser/extensions"
 
 var (
-	windowsChromeExtensionsPattern   = regexp.MustCompile(`(?m)\/Google\/Chrome(?: Beta| SxS| for Testing|)\/User Data\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-	windowsChromiumExtensionsPattern = regexp.MustCompile(`(?m)\/Chromium\/User Data\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-	windowsFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)\/Mozilla\/Firefox\/Profiles\/[^\/]+\/extensions\/[^\/]+\.xpi$`)
-	windowsEdgeExtensionsPattern     = regexp.MustCompile(`(?m)\/Microsoft\/Edge(?: Beta| Dev| SxS|)\/User Data\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
+	windowsChromeExtensionsPattern   = regexp.MustCompile(`(?m)/Google/Chrome(?: Beta| SxS| for Testing|)/User Data/Default/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
+	windowsChromiumExtensionsPattern = regexp.MustCompile(`(?m)/Chromium/User Data/Default/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
+	windowsFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)/Mozilla/Firefox/Profiles/[^/]+/extensions/[^/]+\.xpi$`)
+	windowsEdgeExtensionsPattern     = regexp.MustCompile(`(?m)/Microsoft/Edge(?: Beta| Dev| SxS|)/User Data/Default/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
 
-	macosChromeExtensionsPattern   = regexp.MustCompile(`(?m)\/Google\/Chrome(?: Beta| SxS| for Testing| Canary|)\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-	macosChromiumExtensionsPattern = regexp.MustCompile(`(?m)\/Chromium\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-	macosFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)\/Library\/Application Support\/Firefox\/Profiles\/[^\/]+\/extensions\/[^\/]+\.xpi$`)
-	macosEdgeExtensionsPattern     = regexp.MustCompile(`(?m)\/Library\/Application Support\/Microsoft Edge(?: Beta| Dev| Canary|)\/[^\/]+\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
+	macosChromeExtensionsPattern   = regexp.MustCompile(`(?m)/Google/Chrome(?: Beta| SxS| for Testing| Canary|)/Default/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
+	macosChromiumExtensionsPattern = regexp.MustCompile(`(?m)/Chromium/Default/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
+	macosFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)/Library/Application Support/Firefox/Profiles/[^/]+/extensions/[^/]+\.xpi$`)
+	macosEdgeExtensionsPattern     = regexp.MustCompile(`(?m)/Library/Application Support/Microsoft Edge(?: Beta| Dev| Canary|)/[^/]+/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
 
-	linuxChromeExtensionsPattern   = regexp.MustCompile(`(?m)\/google-chrome(?:-beta|-unstable|-for-testing|)\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-	linuxChromiumExtensionsPattern = regexp.MustCompile(`(?m)\/chromium\/Default\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
-	linuxFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)\/(?:snap\/firefox\/common\/|\.var\/app\/org\.mozilla\.firefox\/|)\.mozilla\/firefox\/[^\/]+\/extensions\/[^\/]+\.xpi$`)
-	linuxEdgeExtensionsPattern     = regexp.MustCompile(`(?m)\/\.config\/microsoft-edge(-beta|-dev|)\/[^\/]+\/Extensions\/[a-p]{32}\/[^\/]+\/manifest\.json$`)
+	linuxChromeExtensionsPattern   = regexp.MustCompile(`(?m)/google-chrome(?:-beta|-unstable|-for-testing|)/Default/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
+	linuxChromiumExtensionsPattern = regexp.MustCompile(`(?m)/chromium/Default/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
+	linuxFirefoxExtensionsPattern  = regexp.MustCompile(`(?m)/(?:snap/firefox/common/|\.var/app/org\.mozilla\.firefox/|)\.mozilla/firefox/[^/]+/extensions/[^/]+\.xpi$`)
+	linuxEdgeExtensionsPattern     = regexp.MustCompile(`(?m)/\.config/microsoft-edge(-beta|-dev|)/[^/]+/Extensions/[a-p]{32}/[^/]+/manifest\.json$`)
 )
 
 type manifest struct {

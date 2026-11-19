@@ -127,7 +127,7 @@ func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (in
 // a quoted string (e.g. "Flask-Security-Too==3.4.3"). The name group permits the
 // characters allowed by PEP 508 distribution names: letters, digits, ".", "-", "_",
 // with the first and last characters constrained to be alphanumeric.
-var packageVersionRe = regexp.MustCompile(`['"]\s*([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)\s*(==|>=|<=)\s*([\w.]+)`)
+var packageVersionRe = regexp.MustCompile(`['"]\s*([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z\d])?)\s*(==|>=|<=)\s*([\w.]+)`)
 
 func (e Extractor) extractFromInput(ctx context.Context, input *filesystem.ScanInput) ([]*extractor.Package, error) {
 	s := bufio.NewScanner(input.Reader)

@@ -25,7 +25,7 @@ var (
 	pypiLocalVersionSplitter = regexp.MustCompile(`[._-]`)
 	pypiVersionPartsFinder   = regexp.MustCompile(`(\d+|[a-z]+|\.|-)`)
 	// from https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-	pypiVersionFinder = regexp.MustCompile(`^\s*v?(?:(?:(?P<epoch>[0-9]+)!)?(?P<release>[0-9]+(?:\.[0-9]+)*)(?P<pre>[-_\.]?(?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))[-_\.]?(?P<pre_n>[0-9]+)?)?(?P<post>(?:-(?P<post_n1>[0-9]+))|(?:[-_\.]?(?P<post_l>post|rev|r)[-_\.]?(?P<post_n2>[0-9]+)?))?(?P<dev>[-_\.]?(?P<dev_l>dev)[-_\.]?(?P<dev_n>[0-9]+)?)?)(?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?\s*$`)
+	pypiVersionFinder = regexp.MustCompile(`^\s*v?(?:(?:(?P<epoch>\d+)!)?(?P<release>\d+(?:\.\d+)*)(?P<pre>[-_.]?(?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))[-_.]?(?P<pre_n>\d+)?)?(?P<post>(?:-(?P<post_n1>\d+))|(?:[-_.]?(?P<post_l>post|rev|r)[-_.]?(?P<post_n2>\d+)?))?(?P<dev>[-_.]?(?P<dev_l>dev)[-_.]?(?P<dev_n>\d+)?)?)(?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z\d]+)*))?\s*$`)
 )
 
 // PyPIVersion is the representation of a version of a package that is held

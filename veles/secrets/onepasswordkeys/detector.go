@@ -36,18 +36,18 @@ const (
 
 // secretKeyRe matches 1Password Secret Keys in the format:
 // A3-<6 alphanum>-<11 alphanum OR 6 alphanum-5 alphanum>-<5 alphanum group x3>
-var secretKeyRe = regexp.MustCompile(`A3-[A-Z0-9]{6}-(?:(?:[A-Z0-9]{11})|(?:[A-Z0-9]{6}-[A-Z0-9]{5}))-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}`)
+var secretKeyRe = regexp.MustCompile(`A3-[A-Z0-9]{6}-(?:(?:[A-Z0-9]{11})|(?:[A-Z0-9]{6}-[A-Z0-9]{5}))-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z\d]{5}`)
 
 // serviceTokenRe matches 1Password Service Account Tokens, which:
 // - Start with "ops_eyJ"
 // - Followed by at least 250 base64 characters (a-zA-Z0-9+/)
 // - Optionally end with up to 3 '=' padding characters
-var serviceTokenRe = regexp.MustCompile(`ops_eyJ[a-zA-Z0-9+/]{250,}={0,3}`)
+var serviceTokenRe = regexp.MustCompile(`ops_eyJ[a-zA-Z\d+/]{250,}={0,3}`)
 
 // recoveryTokenRe matches 1Password Recovery Keys in the format:
 // - Start with "1PRK"
 // - Followed by 13 groups of 4 alphanum characters, each separated by '-'
-var recoveryTokenRe = regexp.MustCompile(`1PRK(?:-[A-Z0-9]{4}){13}`)
+var recoveryTokenRe = regexp.MustCompile(`1PRK(?:-[A-Z\d]{4}){13}`)
 
 // NewSecretKeyDetector returns a detector for 1Password Secret Keys.
 func NewSecretKeyDetector() veles.Detector {

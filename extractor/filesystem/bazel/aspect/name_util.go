@@ -21,8 +21,8 @@ import (
 
 var (
 	splitPattern   = regexp.MustCompile(`[+~]`)
-	versionPattern = regexp.MustCompile(`^\d+[\.\d]*$`)
-	commitPattern  = regexp.MustCompile(`^[0-9a-f]{40}$`)
+	versionPattern = regexp.MustCompile(`^\d+[.\d]*$`)
+	commitPattern  = regexp.MustCompile(`^[\da-f]{40}$`)
 )
 
 func normalizeModuleName(name string) string {

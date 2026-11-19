@@ -52,7 +52,7 @@ const (
 
 // We want to match strings like package_name-version, optionally with more parts, but usually standard semantic versions.
 // We'll extract anything that looks like a version suffix from the rootUri, when there is one.
-var versionRe = regexp.MustCompile(`^.*?-([0-9]+\.[0-9]+\.[0-9]+.*)$`)
+var versionRe = regexp.MustCompile(`^.*?-(\d+\.\d+\.\d+.*)$`)
 
 type packageConfigPackage struct {
 	Name            string `json:"name"`

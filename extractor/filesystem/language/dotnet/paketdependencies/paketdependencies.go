@@ -49,7 +49,7 @@ var (
 	// Regex to match NuGet package declarations in paket.dependencies
 	// Format: nuget PackageName [version constraint]
 	// Examples: "nuget NUnit", "nuget NUnit ~> 2.6.3", "nuget NUnit >= 2.6.3"
-	reNugetPackage = regexp.MustCompile(`^nuget\s+([^\s]+)(?:\s+(.+))?$`)
+	reNugetPackage = regexp.MustCompile(`^nuget\s+(\S+)(?:\s+(.+))?$`)
 
 	// Regex to match GitHub repository dependencies in paket.dependencies
 	// Format: github owner/repo[:commit_hash] [file_path]
@@ -58,7 +58,7 @@ var (
 	//   "github fsprojects/Paket v5.0.0"
 	//   "github owner/repo:commit_hash file/path.fs"
 	//   "github owner/repo file/path.fs" (no commit)
-	reGitHubPackage = regexp.MustCompile(`^github\s+([^\s/]+/[^\s:]+)(?::([^\s]+))?(?:\s+(.+))?$`)
+	reGitHubPackage = regexp.MustCompile(`^github\s+([^\s/]+/[^\s:]+)(?::(\S+))?(?:\s+(.+))?$`)
 )
 
 // Extractor extracts packages from Paket dependency files.

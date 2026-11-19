@@ -60,7 +60,7 @@ var (
 	//   - database: same as hostname
 	//   - username: same as hostname
 	//   - password: can match any allowed characters but colons must be escaped
-	pgpassRe = regexp.MustCompile(`^([ -9;-~]+):(\*|[0-9]{1,5}):([ -9;-~]+):([ -9;-~]+):((?:\\:|[ -9;-~])+)$`)
+	pgpassRe = regexp.MustCompile(`^([ -9;-~]+):(\*|\d{1,5}):([ -9;-~]+):([ -9;-~]+):((?:\\:|[ -9;-~])+)$`) //nolint:gocritic
 )
 
 // Extractor extracts postres credentials from .pgpass files.

@@ -34,7 +34,7 @@ var (
 // Pattern: "PMAK-" + 24 hex chars + "-" + 34 hex chars.
 const pmakMaxLen = 64
 
-var pmakRe = regexp.MustCompile(`PMAK-[A-Fa-f0-9]{24}-[A-Fa-f0-9]{34}`)
+var pmakRe = regexp.MustCompile(`PMAK-[A-Fa-f0-9]{24}-[A-Fa-f\d]{34}`)
 
 // PMAT (Postman Collection Access Token) structure seen in examples:
 //
@@ -43,7 +43,7 @@ var pmakRe = regexp.MustCompile(`PMAK-[A-Fa-f0-9]{24}-[A-Fa-f0-9]{34}`)
 // Pattern: "PMAT-" + 26 alphanumeric characters.
 const pmatMaxLen = 31
 
-var pmatRe = regexp.MustCompile(`PMAT-[A-Za-z0-9]{26}`)
+var pmatRe = regexp.MustCompile(`PMAT-[A-Za-z\d]{26}`)
 
 // NewAPIKeyDetector returns a detector for Postman API keys (PMAK-...).
 func NewAPIKeyDetector() veles.Detector {

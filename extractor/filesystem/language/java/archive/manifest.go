@@ -78,7 +78,7 @@ func parseManifest(f *zip.File) (manifest, error) {
 }
 
 var (
-	groupIDFinder = regexp.MustCompile(`[a-zA-Z0-9-_.]+`)
+	groupIDFinder = regexp.MustCompile(`[a-zA-Z\d-_.]+`)
 )
 
 // Transforms for manifest fields that need a little work to extract the group

@@ -25,10 +25,10 @@ var preFilter = regexp.MustCompile(`(?i)(?:csrf|xsrf)`)
 
 var csrfPatterns = []*regexp.Regexp{
 	// Quoted key value pairs (Logs, JSON).
-	regexp.MustCompile(`(?i)(?:x[-_])?(?:csrf|xsrf)(?:[-_]?middleware)?(?:[-_]?token)?["']?\s*:\s*["']([a-zA-Z0-9+/=_-]{16,128})["']`),
+	regexp.MustCompile(`(?i)(?:x[-_])?(?:csrf|xsrf)(?:[-_]?middleware)?(?:[-_]?token)?["']?\s*:\s*["']([a-zA-Z\d+/=_-]{16,128})["']`),
 
 	// Unquoted HTTP Headers (HTTP dumps).
-	regexp.MustCompile(`(?im)^(?:x[-_])?(?:csrf|xsrf)(?:[-_]?middleware)?(?:[-_]?token)?:\s+([a-zA-Z0-9+/=_-]{16,128})\b`),
+	regexp.MustCompile(`(?im)^(?:x[-_])?(?:csrf|xsrf)(?:[-_]?middleware)?(?:[-_]?token)?:\s+([a-zA-Z\d+/=_-]{16,128})\b`),
 
 	// CSRF tokens included in HTML tags will not be detected to avoid false positives
 }

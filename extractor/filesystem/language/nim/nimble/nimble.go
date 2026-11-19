@@ -67,7 +67,7 @@ func (e Extractor) FileRequired(api filesystem.FileAPI) bool {
 }
 
 // This regexp is used to extract packageName and version from the folder name for both new and old versioning ex: /root/.nimble/pkgs2/json_serialization-0.4.2-2b26a9e0fc79638dbb9272fb4ab5a1d79264f938 or /root/.nimble/pkgs/gura-0.1.1"
-var reFolder = regexp.MustCompile(`^(.*?)-([0-9]+(?:\.[0-9]+)*)(?:-[a-f0-9]+)?$`)
+var reFolder = regexp.MustCompile(`^(.*?)-(\d+(?:\.\d+)*)(?:-[a-f\d]+)?$`)
 
 // Extract extracts Package info from .Nimble file passed through the scan input.
 func (e Extractor) Extract(ctx context.Context, input *filesystem.ScanInput) (inventory.Inventory, error) {

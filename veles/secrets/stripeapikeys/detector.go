@@ -44,15 +44,15 @@ var (
 
 // Secret Keys Live (SK) regex: sk_live_[A-Za-z0-9]{10,99}
 const skMaxLen = 107 // Max length of the key itself, plus "sk_live_"
-var skRe = regexp.MustCompile(`sk_live_[A-Za-z0-9]{10,99}`)
+var skRe = regexp.MustCompile(`sk_live_[A-Za-z\d]{10,99}`)
 
 // Secret Keys Restricted (RK) regex: rk_live_[A-Za-z0-9]{10,99}
 const rkMaxLen = 107 // Max length of the key itself, plus "rk_live_"
-var rkRe = regexp.MustCompile(`rk_live_[A-Za-z0-9]{10,99}`)
+var rkRe = regexp.MustCompile(`rk_live_[A-Za-z\d]{10,99}`)
 
 // Stripe Webhook Signing Secrets regex: whsec_[A-Za-z0-9]{32}
 const whsecMaxLen = 38 // Max length of the key itself, plus "whsec_"
-var whsecRe = regexp.MustCompile(`whsec_[A-Za-z0-9]{32}`)
+var whsecRe = regexp.MustCompile(`whsec_[A-Za-z\d]{32}`)
 
 // NewSecretKeyDetector returns a detector for Stripe Secret Keys (sk_live_...).
 func NewSecretKeyDetector() veles.Detector {

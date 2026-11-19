@@ -23,10 +23,10 @@ import (
 
 const fineGrainedPATBase64MaxLen = 125 // 92 bytes, base64 encoded
 
-var fineGrainedPATPattern = regexp.MustCompile(`github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}`)
+var fineGrainedPATPattern = regexp.MustCompile(`github_pat_[A-Za-z0-9]{22}_[A-Za-z\d]{59}`)
 
 // base64(github_pat_ -> Z2l0aHViX3BhdF (minus the last incomplete byte)
-var fineGrainedPATBase64Pattern = regexp.MustCompile(`Z2l0aHViX3BhdF[0-9a-zA-Z+/=]{0,111}`)
+var fineGrainedPATBase64Pattern = regexp.MustCompile(`Z2l0aHViX3BhdF[\da-zA-Z+/=]{0,111}`)
 
 // NewFineGrainedPATDetector returns a new Veles Detector that finds Github fine-grained personal access tokens
 func NewFineGrainedPATDetector() veles.Detector {

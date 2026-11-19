@@ -33,7 +33,7 @@ import (
 const MaxTokenLength = 8192
 
 // jwtRe is a regular expression that matches the basic JWT structure (base64.base64.base64)
-var jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)
+var jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z\d_-]+`)
 
 // Token represents a decoded JSON Web Token (JWT).
 // The JWT consists of three sections: header, payload, and signature.

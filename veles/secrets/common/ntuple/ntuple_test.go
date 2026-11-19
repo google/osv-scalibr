@@ -151,9 +151,9 @@ func TestNTupleDetection(t *testing.T) {
 		},
 	}
 
-	aPattern := regexp.MustCompile(`a[a-z]*[0-9]`)
-	bPattern := regexp.MustCompile(`b[a-z]*[0-9]`)
-	cPattern := regexp.MustCompile(`c[a-z]*[0-9]`)
+	aPattern := regexp.MustCompile(`a[a-z]*\d`)
+	bPattern := regexp.MustCompile(`b[a-z]*\d`)
+	cPattern := regexp.MustCompile(`c[a-z]*\d`)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

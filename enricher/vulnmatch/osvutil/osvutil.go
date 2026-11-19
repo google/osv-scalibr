@@ -33,7 +33,7 @@ import (
 
 var (
 	pythonNormalizationRegex = regexp.MustCompile(`[-_.]+`)
-	goVersionSuffixRegexp    = regexp.MustCompile(`(v[0-9]+)`)
+	goVersionSuffixRegexp    = regexp.MustCompile(`(v\d+)`)
 )
 
 // NormalizedPackage holds the OSV-compatible package metadata.

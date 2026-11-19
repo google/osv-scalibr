@@ -70,7 +70,7 @@ func parseVersionLine(line string) (version string, ok bool) {
 	version = strings.TrimPrefix(line, "v")
 	// Skip if the version doesn't start with a digit.
 	// This is for skipping special keywords like 'lts/*', 'node', 'system'.
-	var startDigitRE = regexp.MustCompile(`^[0-9]`)
+	var startDigitRE = regexp.MustCompile(`^\d`)
 	if !startDigitRE.MatchString(version) {
 		return "", false
 	}
