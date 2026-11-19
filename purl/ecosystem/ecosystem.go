@@ -48,6 +48,13 @@ func apkToEcosystem(p *purl.PackageURL) osvecosystem.Parsed {
 	if p.Namespace == "chainguard" {
 		return osvecosystem.FromEcosystem(osvconstants.EcosystemChainguard)
 	}
+	// MinimOS advisories are published under a single unversioned ecosystem
+	if p.Namespace == "minimos" {
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemMinimOS)
+	}
+	if p.Namespace == "clnstrt" || p.Namespace == "cleanstart" {
+		return osvecosystem.FromEcosystem(osvconstants.EcosystemCleanStart)
+	}
 
 	distro := ""
 	for _, q := range p.Qualifiers {
@@ -55,6 +62,13 @@ func apkToEcosystem(p *purl.PackageURL) osvecosystem.Parsed {
 			distro = q.Value
 			break
 		}
+	}
+
+	if p.Namespace == "alpaquita" {
+		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemAlpaquita, Suffix: distroVersion(distro)}
+	}
+	if p.Namespace == "bellsoft-hardened-containers" {
+		return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemBellSoftHardenedContainers, Suffix: distroVersion(distro)}
 	}
 
 	if distro != "" {
@@ -77,6 +91,17 @@ func apkToEcosystem(p *purl.PackageURL) osvecosystem.Parsed {
 	}
 
 	return osvecosystem.FromEcosystem(ecosystem)
+}
+
+// distroVersion returns the version from a distro qualifier, which can
+// either be just the version (e.g. "23", used by scalibr) or prefixed
+// with the distro (e.g. "alpaquita-23", used by Syft).
+func distroVersion(distro string) string {
+	if idx := strings.LastIndex(distro, "-"); idx != -1 {
+		return distro[idx+1:]
+	}
+
+	return distro
 }
 
 func debToEcosystem(p *purl.PackageURL) osvecosystem.Parsed {
