@@ -1,0 +1,6 @@
+[package]
+  name = "hello_world"
+  version = "0.1.0"
+
+[dependencies]
+  abc = { version = "12.34.56", features = ["xyz"] }
