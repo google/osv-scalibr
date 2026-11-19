@@ -17,6 +17,7 @@ package internal
 import (
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/google/osv-scalibr/testing/fakefs"
 )
 
@@ -102,6 +103,54 @@ func TestFindParentGitignores(t *testing.T) {
 			got := GitignoreMatch(patterns, tt.path, false)
 			if got != tt.wantMatch {
 				t.Errorf("GitignoreMatch(%v): got %v, want %v", patterns, got, tt.wantMatch)
+			}
+		})
+	}
+}
+
+func TestChildGitignoreNegationOverridesParent(t *testing.T) {
+	parentPatterns := GitignorePattern{
+		gitignore.ParsePattern("*.txt", nil),
+		gitignore.ParsePattern("build/", nil),
+	}
+	childPatterns := GitignorePattern{
+		gitignore.ParsePattern("!requirements.txt", []string{"app"}),
+	}
+
+	gitignores := []GitignorePattern{parentPatterns, childPatterns}
+
+	tests := []struct {
+		name      string
+		path      []string
+		wantMatch bool
+	}{
+		{
+			name:      "child_negation_reincludes_file",
+			path:      []string{"app", "requirements.txt"},
+			wantMatch: false,
+		},
+		{
+			name:      "child_other_file_still_ignored_by_parent",
+			path:      []string{"app", "other.txt"},
+			wantMatch: true,
+		},
+		{
+			name:      "sibling_file_without_override_ignored_by_parent",
+			path:      []string{"hidden", "requirements.txt"},
+			wantMatch: true,
+		},
+		{
+			name:      "unmatched_file_not_ignored",
+			path:      []string{"app", "main.py"},
+			wantMatch: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GitignoreMatch(gitignores, tt.path, false)
+			if got != tt.wantMatch {
+				t.Errorf("GitignoreMatch(%v, %v): got %v, want %v", gitignores, tt.path, got, tt.wantMatch)
 			}
 		})
 	}
