@@ -75,7 +75,13 @@ func Parse(str string, ecosystem string) (Version, error) {
 	case "Docker Hardened Images":
 		return ParseSemverVersion(str), nil
 	case "Echo":
-		return ParseDebianVersion(str)
+		subeco := "Debian"
+
+		if len(parts) > 1 {
+			subeco = parts[1]
+		}
+
+		return ParseEchoVersion(str, subeco)
 	case "GHC":
 		return ParseSemverVersion(str), nil
 	case "Go":
