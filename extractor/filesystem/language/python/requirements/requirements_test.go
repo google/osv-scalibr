@@ -387,6 +387,58 @@ func TestExtract(t *testing.T) {
 			wantResultMetric: stats.FileExtractedResultSuccess,
 		},
 		{
+			name: "quoted-r",
+			path: "testdata/quoted-r.txt",
+			wantPackages: []*extractor.Package{
+				{
+					Name:     "pandas",
+					Version:  "2.2.3",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 2}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/other-requirements.txt", LineNumber: 1}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "pandas==2.2.3"},
+				},
+				{
+					Name:     "PyCrypto",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 3}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/no_version.txt", LineNumber: 1}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "PyCrypto"},
+				},
+				{
+					Name:     "GMPY2",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 3}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/no_version.txt", LineNumber: 2}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "GMPY2"},
+				},
+				{
+					Name:     "SymPy",
+					PURLType: purl.TypePyPi,
+					Location: extractor.PackageLocation{
+						Descriptor: &location.Location{File: &location.File{Path: "testdata/quoted-r.txt", LineNumber: 3}},
+						Related: []location.Location{
+							{File: &location.File{Path: "testdata/no_version.txt", LineNumber: 3}},
+						},
+					},
+					Metadata: &requirements.Metadata{Requirement: "SymPy"},
+				},
+			},
+			wantResultMetric: stats.FileExtractedResultSuccess,
+		},
+		{
 			name: "extras",
 			path: "testdata/extras.txt",
 			wantPackages: []*extractor.Package{
