@@ -49,7 +49,7 @@
           "name": "baz",
           "versionFrom": "2.0.0",
           "versionTo": "2.0.1",
-          "transitive": true
+          "transitive": false
         }
       ],
       "fixed": [
