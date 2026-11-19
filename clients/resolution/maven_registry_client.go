@@ -26,6 +26,7 @@ import (
 	"deps.dev/util/resolve/version"
 	"github.com/google/osv-scalibr/clients/datasource"
 	"github.com/google/osv-scalibr/internal/mavenutil"
+	"github.com/google/osv-scalibr/log"
 )
 
 // MavenRegistryClient is a client to fetch data from Maven registry.
@@ -168,12 +169,24 @@ func (c *MavenRegistryClient) fetchRequirements(ctx context.Context, vk resolve.
 	}); err != nil {
 		return nil, err
 	}
-	proj.ProcessDependencies(func(groupID, artifactID, version maven.String) (maven.DependencyManagement, error) {
-		return mavenutil.GetDependencyManagement(ctx, c.api, groupID, artifactID, version)
-	})
+	importErrs := mavenutil.ProcessDependencies(ctx, c.api, &proj)
+	if err := mavenutil.MissingVersionsError(proj.Dependencies, importErrs); err != nil {
+		if len(importErrs) > 0 {
+			// A BOM that failed to load may be transient or may need fixing, so
+			// surface it rather than guessing at the dependencies it manages.
+			return nil, fmt.Errorf("invalid Maven project %s:%s: %w", vk.Name, vk.Version, err)
+		}
+		// Maven rejects a dependency POM with an unversioned dependency and
+		// resolves none of its transitive dependencies. Skipping only the
+		// unversioned dependencies keeps the rest of the subtree resolvable.
+		log.Warnf("Skipping unversioned dependencies of Maven project %s:%s: %v", vk.Name, vk.Version, err)
+	}
 
 	reqs := make([]resolve.RequirementVersion, 0, len(proj.Dependencies))
 	for _, d := range proj.Dependencies {
+		if d.Version == "" {
+			continue
+		}
 		reqs = append(reqs, resolve.RequirementVersion{
 			VersionKey: resolve.VersionKey{
 				PackageKey: resolve.PackageKey{
