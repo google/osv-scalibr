@@ -623,6 +623,33 @@ func TestExtractor_Extract_v1(t *testing.T) {
 						Commit: "",
 					},
 				},
+				{
+					Name:     "7zip-bin",
+					Version:  "5.2.0",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/with-aliases.v1.lock", 30),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+				{
+					Name:     "JSONStream",
+					Version:  "1.3.5",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/with-aliases.v1.lock", 35),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
+				{
+					Name:     "@nicolo-ribaudo/chokidar-2",
+					Version:  "2.1.8-no-fsevents.3",
+					PURLType: purl.TypeNPM,
+					Location: extractor.LocationFromPathAndLine("testdata/with-aliases.v1.lock", 43),
+					SourceCode: &extractor.SourceCodeIdentifier{
+						Commit: "",
+					},
+				},
 			},
 		},
 	}

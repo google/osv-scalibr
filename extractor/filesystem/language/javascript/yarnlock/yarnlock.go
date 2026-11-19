@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	"deps.dev/util/semver"
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
 	"github.com/google/osv-scalibr/extractor/filesystem/language/javascript/internal/commitextractor"
@@ -51,7 +52,7 @@ var (
 	// Format for yarn.lock v2: `resolution: "@my-scope/my-first-package@https://github.com/my-org/my-first-pkg.git#commit=hash"`
 	yarnPackageResolutionRe = regexp.MustCompile(`^ {2}"?(?:resolution:|resolved)"? "([^ '"]+)"$`)
 	// "is spec actually an alias" regex.
-	yarnIsAliasRe = regexp.MustCompile(`^npm:[a-z@]`)
+	yarnIsAliasRe = regexp.MustCompile(`^npm:[\da-zA-Z@]`)
 )
 
 func shouldSkipYarnLine(line string) bool {
@@ -129,12 +130,13 @@ func extractYarnPackageName(header string) string {
 
 	// if the spec is an alias, extract the name of the underlying package
 	if yarnIsAliasRe.MatchString(spec) {
-		return extractYarnPackageName(
-			strings.TrimSuffix(
-				strings.TrimPrefix(spec, "npm:"),
-				"\"",
-			),
-		)
+		v := strings.TrimSuffix(strings.TrimPrefix(spec, "npm:"), "\"")
+
+		// a valid semver range takes precedence over a package name, matching
+		// how package managers resolve the ambiguity of e.g. "npm:2.1.8-pre.3"
+		if _, err := semver.NPM.ParseConstraint(v); err != nil {
+			return extractYarnPackageName(v)
+		}
 	}
 
 	if isScoped {
