@@ -90,7 +90,12 @@ func MakeEcosystem(metadata any) osvecosystem.Parsed {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemRedHat, Suffix: suffix}
 		}
 		if m.OSID == "rocky" {
-			return osvecosystem.FromEcosystem(osvconstants.EcosystemRockyLinux)
+			// OSV.dev keys RLSA advisories by major version only (e.g. "Rocky Linux:8").
+			// VERSION_ID in /etc/os-release is a full point release (e.g. "8.10"),
+			// so trim to the major version only. A bare major such as "8" is returned
+			// unchanged by strings.Cut (found=false, before=full string).
+			majorVersion, _, _ := strings.Cut(m.OSVersionID, ".")
+			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemRockyLinux, Suffix: majorVersion}
 		}
 		if m.OSID == "openEuler" {
 			return osvecosystem.Parsed{Ecosystem: osvconstants.EcosystemOpenEuler, Suffix: m.OpenEulerEcosystemSuffix()}

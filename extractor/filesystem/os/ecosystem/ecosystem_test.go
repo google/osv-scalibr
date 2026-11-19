@@ -332,11 +332,45 @@ func TestEcosystemRPM(t *testing.T) {
 			want: "Red Hat:enterprise_linux:9::baseos",
 		},
 		{
-			desc: "rocky",
+			desc: "rocky_no_version",
 			metadata: &rpmmeta.Metadata{
 				OSID: "rocky",
 			},
 			want: "Rocky Linux",
+		},
+		{
+			desc: "rocky_8",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "rocky",
+				OSVersionID: "8",
+			},
+			want: "Rocky Linux:8",
+		},
+		{
+			// Real VERSION_ID from rockylinux:8 docker image is "8.10" not "8".
+			// OSV.dev RLSA advisories use "Rocky Linux:8" (major only).
+			desc: "rocky_8_point_release",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "rocky",
+				OSVersionID: "8.10",
+			},
+			want: "Rocky Linux:8",
+		},
+		{
+			desc: "rocky_9",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "rocky",
+				OSVersionID: "9",
+			},
+			want: "Rocky Linux:9",
+		},
+		{
+			desc: "rocky_9_point_release",
+			metadata: &rpmmeta.Metadata{
+				OSID:        "rocky",
+				OSVersionID: "9.5",
+			},
+			want: "Rocky Linux:9",
 		},
 		{
 			desc: "openEuler_base_version_from_pretty_name",
