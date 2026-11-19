@@ -25,12 +25,14 @@ import (
 
 	"github.com/google/osv-scalibr/extractor"
 	"github.com/google/osv-scalibr/extractor/filesystem"
+	"github.com/google/osv-scalibr/extractor/filesystem/internal/linefinder"
 	"github.com/google/osv-scalibr/extractor/filesystem/internal/units"
 	"github.com/google/osv-scalibr/inventory"
 	"github.com/google/osv-scalibr/log"
 	"github.com/google/osv-scalibr/plugin"
 	"github.com/google/osv-scalibr/purl"
 	"github.com/google/osv-scalibr/stats"
+	"github.com/tidwall/gjson"
 
 	cpb "github.com/google/osv-scalibr/binary/proto/config_go_proto"
 )
@@ -158,6 +160,8 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 		return nil, errors.New("empty deps.json file or no libraries found")
 	}
 
+	finder := linefinder.NewJSONLineFinder(content)
+
 	var packages []*extractor.Package
 	for nameVersion, library := range deps.Libraries {
 		// Split name and version from "package/version" format
@@ -166,6 +170,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 			log.Warnf("Skipping library with missing name or version: %s", nameVersion)
 			continue
 		}
+		line := finder.LineOf("libraries." + gjson.Escape(nameVersion))
 		// If the library type is "project", this is the root/main package.
 		p := &extractor.Package{
 			Name:     name,
@@ -176,7 +181,7 @@ func (e Extractor) extractFromInput(input *filesystem.ScanInput) ([]*extractor.P
 				PackageVersion: version,
 				Type:           library.Type,
 			},
-			Location: extractor.LocationFromPath(input.Path),
+			Location: extractor.LocationFromPathAndLine(input.Path, line),
 		}
 		packages = append(packages, p)
 	}
