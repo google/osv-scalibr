@@ -16,7 +16,9 @@
 package metadata
 
 import (
+	"github.com/google/osv-scalibr/inventory/osvecosystem"
 	"github.com/google/osv-scalibr/purl"
+	purlecosystem "github.com/google/osv-scalibr/purl/ecosystem"
 	"github.com/google/osv-scalibr/purl/purlproto"
 
 	"github.com/google/osv-scalibr/binary/proto/metadata"
@@ -44,6 +46,12 @@ func ToProto(m *Metadata) *pb.CDXPackageMetadata {
 
 // IsProtoable marks the struct as a metadata type.
 func (m *Metadata) IsProtoable() {}
+
+// Ecosystem returns the OSV ecosystem derived from the package's PURL, or an
+// empty value if the PURL does not determine one.
+func (m *Metadata) Ecosystem() osvecosystem.Parsed {
+	return purlecosystem.FromPURL(m.PURL)
+}
 
 // ToStruct converts the SPDX metadata proto to the Metadata struct.
 func ToStruct(m *pb.CDXPackageMetadata) *Metadata {
